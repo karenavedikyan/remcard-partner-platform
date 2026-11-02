@@ -179,7 +179,7 @@ export function AgentPartnerHubModal({
                     <path d="M20 20l-3-3" strokeLinecap="round" />
                   </svg>
                 </span>
-                <span>Уже в RemCard</span>
+                <span className={styles.methodEyebrow}>Уже в RemCard</span>
                 <strong>Найти в RemCard</strong>
                 <p>
                   Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям, откройте
@@ -199,7 +199,7 @@ export function AgentPartnerHubModal({
                     <path d="M14 11a5 5 0 00-7 0l-1 1a5 5 0 007 7l1-1" strokeLinecap="round" />
                   </svg>
                 </span>
-                <span>Ещё не в RemCard</span>
+                <span className={styles.methodEyebrow}>Ещё не в RemCard</span>
                 <strong>Пригласить по ссылке</strong>
                 <p>
                   Знакомого магазина, специалиста, агента или компании ещё нет на платформе. Создайте приглашение

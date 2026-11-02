@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { PartnerSearchFacets, PartnerTaxonomyResponse } from "@/lib/types";
 import styles from "./PartnerDiscoveryNavigator.module.css";
+
+const NAV_WIDE_QUERY = "(min-width: 761px)";
 
 type Props = {
   stageId: string;
@@ -17,23 +19,43 @@ type Props = {
 export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loading, onStageChange, onSpecializationChange }: Props) {
   const [taxonomy, setTaxonomy] = useState<PartnerTaxonomyResponse | null>(null);
   const [error, setError] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [navWide, setNavWide] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const wasWideRef = useRef(true);
+
   const load = useCallback(async () => {
     try { setTaxonomy(await fetchPartnerTaxonomy()); setError(false); }
     catch { setError(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 761px)");
-    const update = () => setExpanded(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+
+  useLayoutEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia(NAV_WIDE_QUERY);
+    const sync = () => {
+      const wide = media.matches;
+      setNavWide(wide);
+      if (wide) {
+        setMobileOpen(false);
+        wasWideRef.current = true;
+        return;
+      }
+      if (wasWideRef.current) {
+        setMobileOpen(false);
+      }
+      wasWideRef.current = false;
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
+
+  const detailsOpen = navWide || mobileOpen;
+
   const stages = taxonomy?.stages ?? [];
   const selectedIndex = stages.findIndex(stage => stage.id === stageId);
   const covered = facets ? stages.filter(stage => (facets.stages[stage.id] ?? 0) > 0).length : null;
-  const count = (value: number | undefined) => loading || value === undefined ? "…" : String(value);
+  const count = (value: number | undefined) => (loading || value === undefined ? "…" : String(value));
   const chooseStage = (id: string) => {
     onSpecializationChange("");
     onStageChange(id);
@@ -44,8 +66,11 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
   return (
     <details
       className={styles.navigator}
-      open={expanded}
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
+      open={detailsOpen}
+      onToggle={(event) => {
+        if (navWide) return;
+        setMobileOpen(event.currentTarget.open);
+      }}
       data-testid="partner-discovery-navigator"
     >
       <summary>
@@ -78,7 +103,9 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
                 <b>Весь путь</b>
                 <em>{stageId ? "Все этапы" : "Вы здесь"}</em>
               </span>
-              <em>{count(facets?.baseTotal)}</em>
+              <span className={styles.stepCount} aria-hidden="true">
+                {count(facets?.baseTotal)}
+              </span>
             </button>
           </li>
           {stages.map((stage, index) => {
@@ -103,7 +130,9 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
                           : `Уровень ${index + 1}`}
                     </em>
                   </span>
-                  <em>{count(facets ? n ?? 0 : undefined)}</em>
+                  <span className={styles.stepCount} aria-hidden="true">
+                    {count(facets ? n ?? 0 : undefined)}
+                  </span>
                 </button>
               </li>
             );
@@ -114,7 +143,7 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
           <div className={styles.directionGroup}>
             <button type="button" aria-pressed={!specialization} onClick={() => onSpecializationChange("")}>
               <span>Все направления</span>
-              <em>{count(facets?.stageTotal)}</em>
+              <span className={styles.directionCount}>{count(facets?.stageTotal)}</span>
             </button>
             {(["services", "products"] as const).flatMap((group) =>
               (taxonomy?.[group] ?? [])
@@ -132,7 +161,9 @@ export function PartnerDiscoveryNavigator({ stageId, specialization, facets, loa
                     onClick={() => onSpecializationChange(`${group}:${item.id}`)}
                   >
                     <span>{item.label}</span>
-                    <em>{count(facets ? facets[group][item.id] ?? 0 : undefined)}</em>
+                    <span className={styles.directionCount}>
+                      {count(facets ? facets[group][item.id] ?? 0 : undefined)}
+                    </span>
                   </button>
                 )),
             )}

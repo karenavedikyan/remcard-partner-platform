@@ -183,7 +183,7 @@
   font-weight: 600;
 }
 
-.step em {
+.stepCount {
   font-style: normal;
   font-size: 11px;
   font-weight: 700;
@@ -196,6 +196,7 @@
   place-items: center;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .step:hover .node {
@@ -220,7 +221,7 @@
   color: var(--accent, var(--primary));
 }
 
-.step[aria-pressed="true"] em {
+.step[aria-pressed="true"] .stepCount {
   background: var(--accent, var(--primary));
   color: var(--primary-fg, #fff);
 }
@@ -279,7 +280,7 @@
   overflow-wrap: anywhere;
 }
 
-.directions button em {
+.directionCount {
   font-style: normal;
   font-size: 10px;
   padding: 0 6px;
@@ -288,6 +289,7 @@
   line-height: 16px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .directions button:hover {
@@ -300,7 +302,7 @@
   color: var(--primary-fg, #fff);
 }
 
-.directions button[aria-pressed="true"] em {
+.directions button[aria-pressed="true"] .directionCount {
   background: rgb(255 255 255 / 25%);
   color: inherit;
 }

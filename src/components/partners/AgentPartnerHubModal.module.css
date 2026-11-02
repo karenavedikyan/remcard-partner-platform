@@ -28,7 +28,7 @@
 
 .methodChoice {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto auto 1fr auto;
   align-content: start;
   gap: var(--space-3);
   padding: var(--space-6);
@@ -45,6 +45,7 @@
 .methodChoice:hover,
 .methodChoice:focus-visible {
   border-color: var(--accent, var(--primary));
+  background: var(--soft, var(--tint));
   outline: none;
 }
 
@@ -63,7 +64,7 @@
   color: var(--ink);
 }
 
-.methodChoice span {
+.methodEyebrow {
   color: var(--muted);
   text-transform: uppercase;
   font-size: var(--text-xs);
@@ -91,15 +92,12 @@
   color: var(--accent, var(--primary));
   font-size: var(--text-sm);
   margin-top: var(--space-2);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .sheetLink { width: min(720px, calc(100vw - 2 * var(--space-4))); }
 .sheetChoice { width: min(780px, calc(100vw - 2 * var(--space-4))); }
-.methodChoices button { display: grid; align-content: start; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
-.methodChoices button:hover { border-color: var(--primary); background: var(--soft); }
-.methodChoices span { color: var(--muted); text-transform: uppercase; font-size: var(--text-xs); letter-spacing: .05em; }
-.methodChoices strong { font-size: var(--text-lg); line-height: 1.2; }
-.methodChoices p { margin: 0; color: var(--muted); font-size: var(--text-sm); line-height: 1.5; }
 .anotherMethod { display: block; margin: 0 0 var(--space-3) auto; border: 0; padding: var(--space-2); color: var(--muted); background: transparent; font: inherit; font-size: var(--text-sm); cursor: pointer; }
 @media (max-width: 760px) { .methodChoices { grid-template-columns: 1fr; } }
 

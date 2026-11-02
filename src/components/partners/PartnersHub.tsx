@@ -531,6 +531,8 @@ export function PartnersHub({
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
+  const findMainRef = useRef<HTMLDivElement>(null);
+  const [findResultsWide, setFindResultsWide] = useState(false);
   const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
   const searchGate = useRef(createSearchRequestGate());
   const searchAbortRef = useRef<AbortController | null>(null);
@@ -548,6 +550,20 @@ export function PartnersHub({
   useEffect(() => {
     if (forcedTab) setTab(forcedTab);
   }, [forcedTab]);
+
+  useEffect(() => {
+    if (agentModalSurface !== "find" || tab !== "find") return;
+    const node = findMainRef.current;
+    if (!node) return;
+    const measure = () => {
+      setFindResultsWide(node.getBoundingClientRect().width > 1000);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [agentModalSurface, tab, findDirectoryDetailPartner]);
 
   useEffect(() => {
     if (isAgentR04 && defaultSearchRoleProp) {
@@ -1634,23 +1650,46 @@ export function PartnersHub({
    */
   const agentFindShowcase = (
     <div className={styles.findShell} data-testid="agent-partner-find-showcase">
+      {onOpenPartnerHub ? (
+        <div className={styles.findShowcaseIntro}>
+          <button
+            type="button"
+            className={styles.findBack}
+            onClick={() => onOpenPartnerHub("find")}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M15 18l-6-6 6-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            К выбору способа
+          </button>
+        </div>
+      ) : null}
       <p className={styles.modalLead}>
         Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
       </p>
       <div className={styles.findToolbarRow}>
         <form className={styles.modalSearchBlock} onSubmit={event => { event.preventDefault(); void loadSearch("reset"); }}>
-          <div className={styles.findSearchBox}>
+          <label className={styles.findSearchBox}>
+            <span className={styles.srOnly}>Поиск партнёров</span>
             <svg className={styles.findSearchIcon} viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
               <path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
-            <TextField
-              label="Поиск партнёров"
+            <input
+              type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Название, товар, услуга, этап или ID"
+              enterKeyHint="search"
             />
-          </div>
+          </label>
         </form>
         {/* P22c tip 30231a6: layout=modal-full is the sole refine disclosure owner. */}
         <div className={styles.findFilterSlot} data-testid="agent-partner-find-filter-slot">
@@ -1673,7 +1712,11 @@ export function PartnersHub({
             facets={searchFacets} loading={loadingSearch} onStageChange={setDiscoveryStageId}
             onSpecializationChange={setDiscoverySpecialization} />
         </aside>
-        <div className={styles.findMain}>
+        <div
+          className={styles.findMain}
+          ref={findMainRef}
+          data-results-wide={findResultsWide ? "true" : "false"}
+        >
           <div className={styles.findHeading}>
             <span>Партнёры RemCard</span>
             <h3>Найдите своего партнёра</h3>

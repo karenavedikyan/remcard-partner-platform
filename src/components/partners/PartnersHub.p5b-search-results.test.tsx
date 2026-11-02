@@ -161,11 +161,10 @@ describe("PartnersHub P5b modal search results", () => {
         initialProfile={agentProfile}
         variant="agent-r04"
         agentModalSurface="find"
+        forcedTab="find"
         partnersAudience="agent-r04"
       />,
     );
-
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent("Показано: 14+");
@@ -175,7 +174,7 @@ describe("PartnersHub P5b modal search results", () => {
     expect(within(results).getAllByTestId("agent-partner-search-result-card")).toHaveLength(14);
 
     await userEvent.click(
-      within(results).getAllByRole("button", { name: "Пригласить" })[0]!,
+      within(results).getAllByTestId("agent-partner-search-result-invite")[0]!,
     );
     expect(screen.getByTestId("partner-invite-dialog")).toHaveAttribute(
       "data-invite-target",
@@ -191,10 +190,10 @@ describe("PartnersHub P5b modal search results", () => {
         initialProfile={agentProfile}
         variant="agent-r04"
         agentModalSurface="find"
+        forcedTab="find"
         partnersAudience="agent-r04"
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
     await waitFor(() => {
       expect(screen.getByTestId("agent-partner-search-empty")).toBeInTheDocument();
     });
@@ -209,7 +208,9 @@ describe("PartnersHub P5b modal search results", () => {
       throw new Error(`unexpected fetch ${String(path)}`);
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
+    const search = screen.getByPlaceholderText("Название, товар, услуга, этап или ID");
+    await userEvent.type(search, "ошибка");
+
     await waitFor(() => {
       expect(screen.getByTestId("agent-partner-search-error")).toHaveTextContent("Сервер недоступен");
     });
