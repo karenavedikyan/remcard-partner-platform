@@ -1,0 +1,237 @@
+/* P25p: in-modal find directory detail (frozen Ht body); not a nested overlay */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.metaPill {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.type {
+  color: var(--muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--text-base, 1rem);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.stages {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.notice {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.statusRow {
+  margin: 0;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin-top: auto;
+  padding-top: var(--space-3, 0.75rem);
+  border-top: 1px solid var(--line);
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: var(--space-2, 0.5rem);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.backButton:hover {
+  background: color-mix(in srgb, var(--line, #d8d8d8) 35%, transparent);
+}
+
+.foot :global(button[data-testid="partner-find-directory-detail-invite"]) {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 680px) {
+  .foot :global(button[data-testid="partner-find-directory-detail-invite"]) {
+    flex: 1 1 auto;
+  }
+}
+
+/* P25r: frozen qt() fold-list.general-terms (in-hub detail) */
+.generalTermsFold {
+  border-top: 1px solid var(--line);
+  margin: 16px 0 0;
+  padding-top: 12px;
+  min-width: 0;
+}
+
+.generalTermsSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+}
+
+.generalTermsSummary::-webkit-details-marker {
+  display: none;
+}
+
+.generalTermsSummary::after {
+  content: "+";
+  font-size: 20px;
+  color: var(--muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.generalTermsFold[open] > .generalTermsSummary {
+  margin-bottom: 16px;
+}
+
+.generalTermsFold[open] > .generalTermsSummary::after {
+  content: "−";
+}
+
+.generalTermsBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2, 0.5rem);
+  border-radius: 5px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  background: var(--offset, #efeeeb);
+  color: var(--muted);
+  margin-left: 0;
+}
+
+.generalTermsBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.generalTermsSmall {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.termSummary {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.generalTermsFold .termSummary:first-of-type {
+  padding: 8px 0;
+}
+
+.termSummary span {
+  color: var(--ink);
+}
+
+.generalTermsDisclaimer {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.generalTermsError {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--bad, #a12828);
+}
+
+.generalTermsRetry {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+}

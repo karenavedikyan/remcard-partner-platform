@@ -15,9 +15,14 @@ import {
 
 type PartnerSearchResultInlineTermsProps = {
   partnerUserId: string;
+  /** Parent handoff (P25t): latest resolved public summary for find→detail snapshot. */
+  onPublicSummaryStateChange?: (partnerUserId: string, state: PartnerCertProgramState) => void;
 };
 
-export function PartnerSearchResultInlineTerms({ partnerUserId }: PartnerSearchResultInlineTermsProps) {
+export function PartnerSearchResultInlineTerms({
+  partnerUserId,
+  onPublicSummaryStateChange,
+}: PartnerSearchResultInlineTermsProps) {
   const titleId = useId();
   const [state, setState] = useState<PartnerCertProgramState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -37,11 +42,12 @@ export function PartnerSearchResultInlineTerms({ partnerUserId }: PartnerSearchR
     }).then((next) => {
       if (cancelled || partnerAtRequest !== partnerUserId) return;
       setState(next);
+      onPublicSummaryStateChange?.(partnerAtRequest, next);
     });
     return () => {
       cancelled = true;
     };
-  }, [partnerUserId, reloadKey]);
+  }, [partnerUserId, reloadKey, onPublicSummaryStateChange]);
 
   const retry = () => {
     resetPartnerSearchInlineTermsCache(partnerUserId);
@@ -139,10 +145,6 @@ export function PartnerSearchResultInlineTerms({ partnerUserId }: PartnerSearchR
                 : "категории"}
             </p>
           ) : null}
-          <p className={cardStyles.modalResultInlineTermsDisclaimer}>
-            Это общий процент на скидку клиенту и бонус агенту, не гарантированный доход. Итоговые
-            условия партнёр предложит после приглашения.
-          </p>
         </div>
       ) : null}
     </section>

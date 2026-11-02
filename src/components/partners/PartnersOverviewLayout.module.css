@@ -111,13 +111,13 @@
 }
 
 .zone {
-  /* Frozen `.pr-zone` uses gap --s5 between head and body (incl. quiet tools). */
+  /* Frozen `.panel.pr-zone` radius is --radius (16px); app token --radius-lg. */
   display: grid;
   gap: var(--space-5, 1.25rem);
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-lg, 16px);
   background: var(--surface);
   scroll-margin-top: 5.5rem;
 }

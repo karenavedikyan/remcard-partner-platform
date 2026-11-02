@@ -10,6 +10,8 @@ import {
 import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { partnerSpecializationHint } from "@/lib/agent-r04/partner-list-row";
 import type { PartnershipPartnerProfile } from "@/lib/agent-r04/partner-filters";
+import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
+import { getLegalSiteUrl } from "@/lib/auth-config";
 import type { PartnerSearchResult } from "@/lib/types";
 import styles from "./PartnerSearchResultCard.module.css";
 
@@ -20,6 +22,10 @@ export type PartnerSearchResultCardProps = {
   inviteDisabled: boolean;
   inviteBusy?: boolean;
   onInvite: () => void;
+  /** When set, «Подробнее» invokes this once (in-hub handoff); no navigation or new tab. */
+  onDetail?: () => void;
+  /** Parent P25t: card public summary state for find→detail snapshot handoff. */
+  onPublicSummaryStateChange?: (partnerUserId: string, state: PartnerCertProgramState) => void;
 };
 
 export type SearchResultInviteFoot = {
@@ -77,6 +83,42 @@ export function searchResultInviteFoot(
 export function searchResultShowOpenHint(partner: PartnerSearchResult): boolean {
   const status = partner.partnershipStatus?.trim() ?? "";
   return !status || status === "ENDED";
+}
+
+/** Canonical public catalog card on remcard.ru (navigator `/partner/[id]`), not in-hub find modal. */
+export function searchResultPublicPartnerDetailUrl(partner: PartnerSearchResult): string | null {
+  if (partner.isPublic === false) return null;
+  const id = partner.id?.trim();
+  if (!id) return null;
+  return `${getLegalSiteUrl()}/partner/${encodeURIComponent(id)}`;
+}
+
+export type SearchResultDetailFootTarget =
+  | { mode: "callback" }
+  | { mode: "legacy-public-url"; href: string }
+  | { mode: "none" };
+
+/** Prefer parent `onDetail` (frozen in-hub detail); else optional legacy public URL fallback. */
+export function searchResultDetailFootTarget(
+  partner: PartnerSearchResult,
+  opts: { onDetail?: () => void } = {},
+): SearchResultDetailFootTarget {
+  if (opts.onDetail) return { mode: "callback" };
+  const href = searchResultPublicPartnerDetailUrl(partner);
+  if (href) return { mode: "legacy-public-url", href };
+  return { mode: "none" };
+}
+
+export function searchResultShowDetailControl(
+  partner: PartnerSearchResult,
+  opts: { onDetail?: () => void } = {},
+): boolean {
+  return searchResultDetailFootTarget(partner, opts).mode !== "none";
+}
+
+/** @deprecated Use searchResultShowDetailControl — legacy URL visibility only. */
+export function searchResultShowPublicDetailLink(partner: PartnerSearchResult): boolean {
+  return searchResultPublicPartnerDetailUrl(partner) !== null;
 }
 
 export type SearchResultCoverTone = "store" | "company" | "specialist" | "agent" | "neutral";
@@ -196,6 +238,8 @@ export function PartnerSearchResultCard({
   inviteDisabled,
   inviteBusy = false,
   onInvite,
+  onDetail,
+  onPublicSummaryStateChange,
 }: PartnerSearchResultCardProps) {
   const typeLabel = searchResultTypeLabel(partner);
   const coverTone = searchResultCoverTone(partner);
@@ -210,6 +254,8 @@ export function PartnerSearchResultCard({
   const showOpenHint = searchResultShowOpenHint(partner) && !inviteFoot.disabled;
   const showStatusInFoot = Boolean(status && status !== "ENDED");
   const showInviteControl = !showStatusInFoot;
+  const detailFoot = searchResultDetailFootTarget(partner, { onDetail });
+  const showDetailControl = showInviteControl && detailFoot.mode !== "none";
 
   const coverToneClass =
     coverTone === "store"
@@ -303,7 +349,11 @@ export function PartnerSearchResultCard({
 
         {showPublishedTerms ? (
           <div className={styles.modalResultTerms} data-testid="agent-partner-search-result-terms">
-            <PartnerSearchResultInlineTerms key={partner.id} partnerUserId={partner.id} />
+            <PartnerSearchResultInlineTerms
+              key={partner.id}
+              partnerUserId={partner.id}
+              onPublicSummaryStateChange={onPublicSummaryStateChange}
+            />
           </div>
         ) : null}
       </div>
@@ -321,24 +371,52 @@ export function PartnerSearchResultCard({
           </span>
         ) : (
           <>
-            {inviteFoot.blockedReason ? (
-              <p
-                className={styles.modalResultFootNote}
-                data-testid="agent-partner-search-result-invite-blocked"
-              >
-                {inviteFoot.blockedReason}
-              </p>
+            {showDetailControl ? (
+              detailFoot.mode === "callback" ? (
+                <button
+                  type="button"
+                  className={styles.modalResultFootDetailLink}
+                  onClick={() => onDetail?.()}
+                  data-testid="agent-partner-search-result-detail"
+                >
+                  Подробнее
+                </button>
+              ) : (
+                <a
+                  className={styles.modalResultFootDetailLink}
+                  href={detailFoot.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="agent-partner-search-result-detail"
+                  data-detail-mode="legacy-public-url"
+                >
+                  Подробнее
+                </a>
+              )
             ) : null}
-            <Button
-              type="button"
-              variant="primary"
-              disabled={inviteFoot.disabled}
-              onClick={onInvite}
-              data-testid="agent-partner-search-result-invite"
-              aria-busy={inviteBusy || undefined}
+            <div
+              className={styles.modalResultFootActions}
+              data-testid="agent-partner-search-result-foot-actions"
             >
-              {inviteFoot.label}
-            </Button>
+              {inviteFoot.blockedReason ? (
+                <p
+                  className={styles.modalResultFootNote}
+                  data-testid="agent-partner-search-result-invite-blocked"
+                >
+                  {inviteFoot.blockedReason}
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="primary"
+                disabled={inviteFoot.disabled}
+                onClick={onInvite}
+                data-testid="agent-partner-search-result-invite"
+                aria-busy={inviteBusy || undefined}
+              >
+                {inviteFoot.label}
+              </Button>
+            </div>
           </>
         )}
       </div>

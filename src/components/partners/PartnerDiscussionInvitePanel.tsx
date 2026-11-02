@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
@@ -36,6 +36,11 @@ type Props = {
   presentationWizard?: boolean;
   /** P12: notify hub chrome when ready composition is shown. */
   onReadyChange?: (ready: boolean) => void;
+  /**
+   * P23l: unsaved wizard draft (step>1 or filled fields, not yet ready).
+   * Hub gates close/tab Stay without bumping discussionInvitePanelKey.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -50,6 +55,7 @@ export function PartnerDiscussionInvitePanel({
   onOpenDiscussion,
   presentationWizard = false,
   onReadyChange,
+  onDirtyChange,
 }: Props) {
   const router = useRouter();
   const openDiscussion =
@@ -73,8 +79,12 @@ export function PartnerDiscussionInvitePanel({
   const [revokingId, setRevokingId] = useState<string | null>(null);
   /** R1 ready hides history until «Открыть карточку приглашения». */
   const [historyRevealed, setHistoryRevealed] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
   const historyRef = useRef<HTMLDivElement>(null);
   const highlightedCardRef = useRef<HTMLLIElement>(null);
+  const onWizardStepChange = useCallback((step: number) => {
+    setWizardStep(step);
+  }, []);
 
   const loadInvites = useCallback(async () => {
     setLoadingInvites(true);
@@ -102,6 +112,19 @@ export function PartnerDiscussionInvitePanel({
       onReadyChange?.(false);
     };
   }, [onReadyChange, showWizardReady]);
+
+  const inviteDraftDirty =
+    Boolean(presentationWizard) &&
+    !createdSnapshot &&
+    (wizardStep > 1 || Boolean(recipientLabel.trim()) || Boolean(cooperationSubject.trim()));
+
+  // Layout effect so Hub dirty ref is current before paint / before the next close click.
+  useLayoutEffect(() => {
+    onDirtyChange?.(inviteDraftDirty);
+    return () => {
+      onDirtyChange?.(false);
+    };
+  }, [inviteDraftDirty, onDirtyChange]);
 
   const createLink = useCallback(async () => {
     setError("");
@@ -260,6 +283,7 @@ export function PartnerDiscussionInvitePanel({
             creating={creating}
             error={error}
             onCreate={() => void createLink()}
+            onStepChange={onWizardStepChange}
           />
         ) : (
           <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { displayCategoryLabel } from "@/lib/category-display";
@@ -76,6 +76,14 @@ import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDial
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
+/** P25p-owned shell — required dependency for in-Hub find detail (no stub). */
+import { PartnerFindDirectoryDetailShell } from "@/components/partners/PartnerFindDirectoryDetailShell";
+import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
+import {
+  agentTermsSnapshotForDetailHandoff,
+  shouldApplyPublicSummaryHandoffUpdate,
+  showAgentTermsForFindDetailHandoff,
+} from "@/components/partners/partnerSearchPublicSummaryHandoff";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { TermChangeModal } from "@/components/partners/TermChangeModal";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
@@ -124,6 +132,13 @@ export type PartnersHubProps = {
   /** P12: discussion-invite ready → hub chrome «Приглашение создано» / no tabs. */
   onDiscussionInviteReadyChange?: (ready: boolean) => void;
   discussionInviteReady?: boolean;
+  /**
+   * P23k: remount discussion-invite panel when Hub bumps this key (modal close / tab /
+   * reopen) so ready→return yields a fresh wizard without remounting find Hub state.
+   */
+  discussionInvitePanelKey?: string | number;
+  /** P23l: invite wizard draft dirty → Hub gates close/tab Stay without key bump. */
+  onDiscussionInviteDirtyChange?: (dirty: boolean) => void;
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
   partnersAudience?: PartnersHubAudience;
@@ -156,6 +171,8 @@ export function PartnersHub({
   onOpenPartnerHub,
   onDiscussionInviteReadyChange,
   discussionInviteReady = false,
+  discussionInvitePanelKey = 0,
+  onDiscussionInviteDirtyChange,
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
@@ -190,6 +207,24 @@ export function PartnersHub({
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
+  /** P23m: in-Hub find directory detail — same modal; keep find mounted underneath for scroll/query. */
+  const [findDirectoryDetailPartner, setFindDirectoryDetailPartner] =
+    useState<PartnerSearchResult | null>(null);
+  const findDirectoryDetailPartnerRef = useRef<PartnerSearchResult | null>(null);
+  findDirectoryDetailPartnerRef.current = findDirectoryDetailPartner;
+  /** Exact Подробнее triggers remembered at open (parent-owned; no SearchCard fork). */
+  const findDetailTriggerRefs = useRef<Map<string, HTMLElement>>(new Map());
+  /** Bumped to cancel queued focus restore / open-focus work on accepted close/tab/role or new open. */
+  const findDetailLifecycleGenRef = useRef(0);
+  /**
+   * P23q: identity-bound card→detail public-summary snapshots (P25t helper).
+   * Cleared on Hub surface teardown; Back keeps entries so reopen skips duplicate upstream read.
+   */
+  const publicSummaryByPartnerRef = useRef(new Map<string, PartnerCertProgramState>());
+  /** Forces shell re-render when a usable snapshot arrives for the open detail partner. */
+  const [publicSummaryHandoffTick, setPublicSummaryHandoffTick] = useState(0);
+  /** Invite dialog opened from detail shell — cancel restores that row's detail trigger. */
+  const inviteFromFindDetailPartnerIdRef = useRef<string | null>(null);
   const [counterOfferTarget, setCounterOfferTarget] = useState<{
     partnership: Partnership;
     action: "counter_offer" | "counter_offer_back";
@@ -198,6 +233,126 @@ export function PartnersHub({
     meProfile.user,
     searchRole,
   );
+
+  const rememberFindDetailTrigger = useCallback((partnerId: string, el?: HTMLElement | null) => {
+    if (!el) return;
+    findDetailTriggerRefs.current.set(partnerId, el);
+  }, []);
+
+  const focusFindDetailRowTrigger = useCallback((partnerId: string): boolean => {
+    const tryFocus = (el: HTMLElement | null | undefined): boolean => {
+      if (!el || !el.isConnected) return false;
+      if ("disabled" in el && Boolean((el as HTMLButtonElement).disabled)) return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      el.focus({ preventScroll: true });
+      return document.activeElement === el || el.contains(document.activeElement);
+    };
+
+    if (tryFocus(findDetailTriggerRefs.current.get(partnerId))) return true;
+
+    // Parent-owned scoped contract: card[data-partner-id] → its detail control (not global first button).
+    const scoped = document.querySelector<HTMLElement>(
+      `[data-testid="agent-partner-search-result-card"][data-partner-id="${partnerId}"] [data-testid="agent-partner-search-result-detail"]`,
+    );
+    return tryFocus(scoped);
+  }, []);
+
+  const scheduleFindDetailFocusRestore = useCallback(
+    (partnerId: string | null) => {
+      if (!partnerId) return;
+      const gen = findDetailLifecycleGenRef.current;
+      // After find host unhides / invite trap unmounts — sync focus is often stolen to BODY.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (gen !== findDetailLifecycleGenRef.current) return;
+          if (findDirectoryDetailPartnerRef.current) return;
+          focusFindDetailRowTrigger(partnerId);
+        });
+      });
+    },
+    [focusFindDetailRowTrigger],
+  );
+
+  const handlePublicSummaryStateChange = useCallback(
+    (partnerUserId: string, state: PartnerCertProgramState) => {
+      const writeGen = findDetailLifecycleGenRef.current;
+      publicSummaryByPartnerRef.current.set(partnerUserId, state);
+      const selectedId = findDirectoryDetailPartnerRef.current?.id ?? "";
+      if (
+        !shouldApplyPublicSummaryHandoffUpdate(
+          selectedId,
+          partnerUserId,
+          findDetailLifecycleGenRef.current,
+          writeGen,
+        )
+      ) {
+        return;
+      }
+      // loaded/empty only — errors are not snapshotted into detail (P25t contract).
+      if (state.status === "loading" || state.status === "error") return;
+      setPublicSummaryHandoffTick((n) => n + 1);
+    },
+    [],
+  );
+
+  const openFindDirectoryDetail = useCallback(
+    (partner: PartnerSearchResult) => {
+      findDetailLifecycleGenRef.current += 1;
+      const active = document.activeElement;
+      const trigger =
+        active instanceof HTMLElement &&
+        active.getAttribute("data-testid") === "agent-partner-search-result-detail"
+          ? active
+          : null;
+      rememberFindDetailTrigger(partner.id, trigger);
+      setFindDirectoryDetailPartner(partner);
+    },
+    [rememberFindDetailTrigger],
+  );
+
+  const closeFindDirectoryDetail = useCallback(
+    (opts?: { restoreFocus?: boolean }) => {
+      const id = findDirectoryDetailPartnerRef.current?.id ?? null;
+      findDetailLifecycleGenRef.current += 1;
+      setFindDirectoryDetailPartner(null);
+      if (opts?.restoreFocus !== false) {
+        scheduleFindDetailFocusRestore(id);
+      }
+    },
+    [scheduleFindDetailFocusRestore],
+  );
+
+  // Clear in-Hub detail on accepted close/tab remount key, surface change, or audience/role.
+  // Dirty Stay never bumps discussionInvitePanelKey — wizard draft is preserved separately.
+  // Cancel any queued focus/open work so unmounted updates cannot land.
+  // P23q: drop public-summary ownership map with the same teardown (not on plain Back).
+  useEffect(() => {
+    findDetailLifecycleGenRef.current += 1;
+    inviteFromFindDetailPartnerIdRef.current = null;
+    publicSummaryByPartnerRef.current.clear();
+    setPublicSummaryHandoffTick(0);
+    setFindDirectoryDetailPartner(null);
+  }, [discussionInvitePanelKey, agentModalSurface, partnersAudience, meId]);
+
+  // Entering detail: move focus into shell (scoped back control) so hidden find triggers do not leave BODY.
+  useLayoutEffect(() => {
+    const partner = findDirectoryDetailPartner;
+    if (!partner) return;
+    const gen = findDetailLifecycleGenRef.current;
+    const partnerId = partner.id;
+    requestAnimationFrame(() => {
+      if (gen !== findDetailLifecycleGenRef.current) return;
+      if (findDirectoryDetailPartnerRef.current?.id !== partnerId) return;
+      const back = document.querySelector<HTMLElement>(
+        `[data-testid="partner-find-directory-detail-shell"][data-partner-id="${partnerId}"] [data-testid="partner-find-directory-detail-back"]`,
+      );
+      back?.focus({ preventScroll: true });
+    });
+  }, [findDirectoryDetailPartner]);
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [termDraftDirty, setTermDraftDirty] = useState(false);
@@ -1422,6 +1577,15 @@ export function PartnersHub({
     </>
   );
 
+  // P23q: identity-bound snapshot for open find detail (tick re-reads ref after card callback).
+  void publicSummaryHandoffTick;
+  const findDetailAgentTermsSnapshot = findDirectoryDetailPartner
+    ? agentTermsSnapshotForDetailHandoff(
+        findDirectoryDetailPartner.id,
+        publicSummaryByPartnerRef.current,
+      )
+    : undefined;
+
   /**
    * P23c find modal vs frozen hub-wide:
    * keyword → exactly one refine (P22c modal-full owns details) → showcase.
@@ -1503,6 +1667,10 @@ export function PartnersHub({
                 showPublishedTerms={showAgentPublishedTerms}
                 inviteDisabled={Boolean(inviteTarget) || loadingSearch}
                 onInvite={() => setInviteTarget(partner)}
+                onDetail={() => openFindDirectoryDetail(partner)}
+                onPublicSummaryStateChange={
+                  showAgentPublishedTerms ? handlePublicSummaryStateChange : undefined
+                }
               />
             ))}
             {!loadingSearch && !searchError && searchResults.length === 0 ? (
@@ -1530,9 +1698,11 @@ export function PartnersHub({
                   </p>
                 )}
                 <PartnerDiscussionInvitePanel
+                  key={discussionInvitePanelKey}
                   showSectionTitle={false}
                   presentationWizard
                   onReadyChange={onDiscussionInviteReadyChange}
+                  onDirtyChange={onDiscussionInviteDirtyChange}
                 />
               </>
             ) : (
@@ -1569,14 +1739,48 @@ export function PartnersHub({
           </>
         ) : (
           <>
-            {agentFindShowcase}
+            {/* Keep find mounted (hidden) under detail so query/results/scroll/filters survive Back. */}
+            <div
+              hidden={Boolean(findDirectoryDetailPartner)}
+              data-testid="agent-r04-modal-find-results-host"
+            >
+              {agentFindShowcase}
+            </div>
+            {findDirectoryDetailPartner ? (
+              <PartnerFindDirectoryDetailShell
+                key={findDirectoryDetailPartner.id}
+                partner={findDirectoryDetailPartner}
+                onBack={() => closeFindDirectoryDetail({ restoreFocus: true })}
+                onInvite={() => {
+                  const target = findDirectoryDetailPartner;
+                  inviteFromFindDetailPartnerIdRef.current = target.id;
+                  // Leave detail without restoring find trigger yet — invite owns focus until cancel/sent.
+                  findDetailLifecycleGenRef.current += 1;
+                  setFindDirectoryDetailPartner(null);
+                  setInviteTarget(target);
+                }}
+                inviteDisabled={Boolean(inviteTarget) || Boolean(busyId) || loadingSearch}
+                /* P23n/P23q: AGENT-only via parent gate helper; non-AGENT never fetches/renders. */
+                showAgentTerms={showAgentTermsForFindDetailHandoff(showAgentPublishedTerms)}
+                agentTermsSnapshot={findDetailAgentTermsSnapshot}
+              />
+            ) : null}
             {inviteTarget ? (
               <PartnerInviteDialog
                 target={inviteTarget}
                 meProfile={meProfile}
                 busy={Boolean(busyId)}
-                onClose={() => setInviteTarget(null)}
+                onClose={() => {
+                  const fromDetailId = inviteFromFindDetailPartnerIdRef.current;
+                  inviteFromFindDetailPartnerIdRef.current = null;
+                  setInviteTarget(null);
+                  if (fromDetailId) {
+                    scheduleFindDetailFocusRestore(fromDetailId);
+                  }
+                }}
                 onSent={() => {
+                  inviteFromFindDetailPartnerIdRef.current = null;
+                  findDetailLifecycleGenRef.current += 1;
                   setInviteTarget(null);
                   onCloseAgentModal?.();
                   void loadList();

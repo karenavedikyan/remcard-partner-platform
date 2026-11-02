@@ -34,6 +34,8 @@ export type AgentDiscussionInviteWizardProps = {
   creating: boolean;
   error: string;
   onCreate: () => void;
+  /** P23l: report wizard step so Hub can gate dirty close without remounting. */
+  onStepChange?: (step: number) => void;
 };
 
 type Step = 1 | 2 | 3;
@@ -89,6 +91,7 @@ export function AgentDiscussionInviteWizard({
   creating,
   error,
   onCreate,
+  onStepChange,
 }: AgentDiscussionInviteWizardProps) {
   const [step, setStep] = useState<Step>(1);
   const [templateKey, setTemplateKey] = useState<AgentDiscussionInviteTemplateKey | "">(() =>
@@ -103,6 +106,10 @@ export function AgentDiscussionInviteWizard({
   const subjectInputId = useId();
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const wizardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   useEffect(() => {
     return () => {

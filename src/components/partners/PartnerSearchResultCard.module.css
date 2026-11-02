@@ -146,7 +146,7 @@
 
 .modalResultBody {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   padding: 0 var(--space-5, 1.25rem);
   min-width: 0;
 }
@@ -196,7 +196,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-1, 0.25rem);
 }
 
 .modalResultInlineTermsTitle {
@@ -230,7 +230,7 @@
 
 .modalResultInlineTermsList {
   display: grid;
-  gap: var(--space-3, 0.75rem);
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -306,13 +306,46 @@
 
 .modalResultFoot {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
   margin: 0;
   margin-top: auto;
   padding: var(--space-5, 1.25rem);
   padding-top: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.modalResultFootDetailLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding-inline: var(--space-2, 0.5rem);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text, var(--fg, #1a1a1a));
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.modalResultFootDetailLink:hover {
+  background: color-mix(in srgb, var(--line, #d8d8d8) 35%, transparent);
+}
+
+.modalResultFootActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-left: auto;
   min-width: 0;
 }
 
@@ -332,10 +365,16 @@
 
 @media (max-width: 680px) {
   .modalResultFoot {
-    justify-content: stretch;
+    flex-wrap: wrap;
+    justify-content: space-between;
   }
 
-  .modalResultFoot :global(button) {
+  .modalResultFootActions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
+  .modalResultFootActions :global(button) {
     flex: 1;
   }
 }
