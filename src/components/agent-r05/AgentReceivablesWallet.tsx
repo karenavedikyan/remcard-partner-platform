@@ -1,52 +1,31 @@
 "use client";
 
-import { useState } from "react";
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
 import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
-import walletStyles from "./agent-receivables-wallet.module.css";
+import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
+import type { ComponentProps } from "react";
 
-type WalletTab = "settlements" | "requisites";
+type RequisitesPanelProps = ComponentProps<typeof AgentPayoutRequisitesPanel>;
+
+const agentWalletRequisitesProps = {
+  disabled: true,
+  variant: "wallet",
+} as RequisitesPanelProps;
 
 export function AgentReceivablesWallet() {
-  const [tab, setTab] = useState<WalletTab>("settlements");
-
   return (
-    <div className={walletStyles.scope} data-testid="agent-r05-wallet">
-      <div className={walletStyles.tabs} role="tablist" aria-label="Кошелёк">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "settlements"}
-          className={`${walletStyles.tab} ${tab === "settlements" ? walletStyles.tabActive : ""}`}
-          onClick={() => setTab("settlements")}
-          data-testid="agent-r05-tab-settlements"
-        >
-          Взаиморасчёты
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "requisites"}
-          className={`${walletStyles.tab} ${tab === "requisites" ? walletStyles.tabActive : ""}`}
-          onClick={() => setTab("requisites")}
-          data-testid="agent-r05-tab-requisites"
-        >
-          Реквизиты
-        </button>
-      </div>
-      <div className={walletStyles.panel}>
-        {tab === "settlements" ? (
-          <AgentReceivablesHub />
-        ) : (
-          <div
-            className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}
-            data-testid="agent-r05-requisites-scope"
-          >
-            <AgentPayoutRequisitesPanel disabled />
-          </div>
-        )}
-      </div>
-    </div>
+    <WalletPrototypeShell
+      shellTestId="agent-r05-wallet"
+      settlementsTabTestId="agent-r05-tab-settlements"
+      requisitesTabTestId="agent-r05-tab-requisites"
+      requisitesScopeTestId="agent-r05-requisites-scope"
+      settlements={<AgentReceivablesHub />}
+      requisites={
+        <div className={agentStyles.agentScope}>
+          <AgentPayoutRequisitesPanel {...agentWalletRequisitesProps} />
+        </div>
+      }
+    />
   );
 }
