@@ -450,6 +450,10 @@
   min-width: 0;
 }
 
+.prototypeFind .body > div:not([hidden]) {
+  display: contents;
+}
+
 .prototypeFind .findShowcaseChrome {
   flex: 0 0 auto;
   display: flex;
@@ -458,11 +462,7 @@
   min-width: 0;
 }
 
-.prototypeFind .body > div:not([hidden]) {
-  min-width: 0;
-}
-
-@media (min-width: 681px) and (max-width: 1024px) {
+@media (min-width: 681px) {
   .prototypeFind .body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
@@ -479,42 +479,36 @@
     align-self: start;
   }
 
-  .prototypeFind .body > div:not([hidden]) {
+  .prototypeFind .body > div:not([hidden]) :global([data-testid="agent-partner-find-intro-row"]) {
     grid-column: 1;
-    grid-row: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .prototypeFind .body > div:not([hidden]) :global([data-testid="agent-partner-find-showcase"]) {
+    grid-column: 1 / -1;
+    grid-row: 2;
     min-width: 0;
   }
 }
 
 @media (max-width: 680px) {
   .prototypeFind .findShowcaseChrome {
-    order: -1;
+    order: 1;
     padding-right: 40px;
     justify-content: flex-start;
   }
 
+  .prototypeFind .body > div:not([hidden]) :global([data-testid="agent-partner-find-intro-row"]) {
+    order: 2;
+  }
+
+  .prototypeFind .body > div:not([hidden]) :global([data-testid="agent-partner-find-showcase"]) {
+    order: 3;
+  }
+
   .prototypeFind .anotherMethod {
     font-size: var(--text-xs);
-  }
-}
-
-@media (min-width: 1025px) {
-  .prototypeFind .body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    column-gap: var(--space-5);
-  }
-
-  .prototypeFind .findShowcaseChrome {
-    grid-column: 2;
-    grid-row: 1;
-    padding-right: 0;
-  }
-
-  .prototypeFind .body > div:not([hidden]) {
-    grid-column: 1;
-    grid-row: 1 / -1;
   }
 }
 
