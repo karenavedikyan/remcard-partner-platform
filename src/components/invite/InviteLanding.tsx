@@ -20,6 +20,7 @@ import {
   INVITE_MODERATION_NOTE,
   INVITE_PERCENT_EXPLAINER,
   inviterDisplayName,
+  inviteRegistrationHref,
 } from "@/lib/invite-presentation";
 import {
   linkInvitePreviewExcludedLabelsForDisplay,
@@ -403,7 +404,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
                   ) : null}
                 </p>
               ) : null}
-              <Link href={loginHref}>
+              <Link href={inviteRegistrationHref(preview.intendedPartnerType, returnTo)}>
                 <Button>Зарегистрироваться и продолжить</Button>
               </Link>
               <p className={styles.loginSecondary}>

@@ -440,7 +440,7 @@ export function shouldShowAgentPublishedTermsForSearch(
 /** Категории для создания ссылки-приглашения (без известного получателя). */
 export function resolveLinkInviteCreateCategories(
   inviter: PartnerSideProfile,
-  intendedPartnerType: "MASTER" | "STORE" | "COMPANY" | "",
+  intendedPartnerType: "AGENT" | "MASTER" | "STORE" | "COMPANY" | "",
 ): { categories: string[]; requiresManualPick: boolean; error?: string } {
   if (isStoreSide(inviter)) {
     return { categories: tradeSideTermCategories(inviter), requiresManualPick: false };

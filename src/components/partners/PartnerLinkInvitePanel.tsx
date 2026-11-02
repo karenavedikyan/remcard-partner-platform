@@ -50,7 +50,7 @@ type PartnerLinkInvitePanelProps = {
   showSectionTitle?: boolean;
 };
 
-type IntendedType = "" | "MASTER" | "STORE" | "COMPANY";
+type IntendedType = "" | "AGENT" | "MASTER" | "STORE" | "COMPANY";
 
 type InviteFormAction =
   | { type: "sync"; resetKey: string; categories: readonly string[]; blockedReason?: string }
@@ -80,6 +80,7 @@ function inviteFormReducer(state: InviteFormSnapshot, action: InviteFormAction):
 }
 
 const INTENDED_OPTIONS: { value: IntendedType; label: string }[] = [
+  { value: "AGENT", label: "Агент" },
   { value: "MASTER", label: "Специалист" },
   { value: "STORE", label: "Магазин" },
   { value: "COMPANY", label: "Компания" },
@@ -100,8 +101,6 @@ export function PartnerLinkInvitePanel({
   showSectionTitle = true,
 }: PartnerLinkInvitePanelProps) {
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
-  const needsIntendedType =
-    inviterSide.partnerType === "MASTER" || inviterSide.partnerType === "COMPANY";
   const [intendedType, setIntendedType] = useState<IntendedType>("");
   const resolved = useMemo(
     () => resolveLinkInviteCreateCategories(inviterSide, intendedType),
@@ -150,6 +149,10 @@ export function PartnerLinkInvitePanel({
     dispatch({ type: "set_error", error: "" });
     setShareHint("");
 
+    if (!intendedType) {
+      dispatch({ type: "set_error", error: "Укажите предполагаемый тип партнёра" });
+      return;
+    }
     if (resolved.error) {
       dispatch({ type: "set_error", error: resolved.error });
       return;
@@ -177,7 +180,7 @@ export function PartnerLinkInvitePanel({
       }>("/api/partnership/link-invite", {
         method: "POST",
         body: {
-          intendedPartnerType: needsIntendedType ? intendedType || null : null,
+          intendedPartnerType: intendedType,
           note: form.note.trim() || null,
           terms: inviteRowsToTerms(activeRows).map((term) => ({
             ...term,
@@ -212,7 +215,7 @@ export function PartnerLinkInvitePanel({
       inviterName: inviterShareName(),
       url,
       inviterType: meProfile.user.partnerType,
-      intendedType: needsIntendedType ? intendedType || null : null,
+      intendedType: intendedType || null,
     });
   }
 
@@ -265,12 +268,17 @@ export function PartnerLinkInvitePanel({
           Создание ссылки не подключает партнёрскую программу и не согласует условия автоматически — это
           приглашение к обсуждению. Ссылка действует 14 дней; условия фиксируются при создании.
         </p>
-        {needsIntendedType ? (
           <label className={styles.roleField}>
             <span>Предполагаемый тип партнёра</span>
             <select
               value={intendedType}
-              onChange={(event) => setIntendedType(event.target.value as IntendedType)}
+              disabled={creating}
+              onChange={(event) => {
+                setIntendedType(event.target.value as IntendedType);
+                setCreatedUrl(null);
+                setCreatedExpires(null);
+                setShareHint("");
+              }}
             >
               <option value="">Выберите тип</option>
               {INTENDED_OPTIONS.map((option) => (
@@ -280,7 +288,6 @@ export function PartnerLinkInvitePanel({
               ))}
             </select>
           </label>
-        ) : null}
 
         <p className={styles.hint}>
           Общий процент по категории — это условие между вами и партнёром. При рекомендации клиенту
@@ -425,7 +432,9 @@ export function PartnerLinkInvitePanel({
                   <span className={styles.hint}>
                     {" "}
                     · до {formatExpiry(invite.expiresAt)}
-                    {invite.intendedPartnerType ? ` · ${invite.intendedPartnerType}` : ""}
+                    {invite.intendedPartnerType
+                      ? ` · ${INTENDED_OPTIONS.find((option) => option.value === invite.intendedPartnerType)?.label ?? invite.intendedPartnerType}`
+                      : ""}
                   </span>
                 </div>
                 {invite.status === "PENDING" ? (

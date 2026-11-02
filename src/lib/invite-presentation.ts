@@ -47,6 +47,7 @@ export function resolveInviteAudience(
   intendedType: PartnerTypeCode,
 ): InviteAudience {
   if (intendedType === "MASTER") return "master";
+  if (intendedType === "AGENT") return "neutral";
   if (intendedType === "STORE") return "store";
   if (intendedType === "COMPANY") return "neutral";
   if (inviterType === "STORE") return "master";
@@ -59,6 +60,8 @@ export function formatInviteAudienceLabel(
   inviterType: PartnerTypeCode,
 ): string | null {
   switch (intendedType) {
+    case "AGENT":
+      return "Для агентов";
     case "MASTER":
       return "Для специалистов";
     case "STORE":
@@ -102,6 +105,19 @@ export function buildInviteHeroContent(preview: LinkInvitePublicPreview): Invite
   const audienceLabel = formatInviteAudienceLabel(intendedType, inviterType);
 
   const headline = `Сотрудничайте с ${name} через RemCard PROF`;
+
+  if (intendedType === "AGENT") {
+    return {
+      headline,
+      audienceLabel,
+      lead: "Приглашение для агента в RemCard PROF. Зарегистрируйтесь как агент или войдите в свой кабинет, чтобы ознакомиться с предложением и отдельно подтвердить сотрудничество.",
+      bullets: [
+        "Отдельный личный кабинет агента",
+        "Условия сотрудничества доступны до подтверждения",
+        "Регистрация не означает принятия предложения",
+      ],
+    };
+  }
 
   if (audience === "master") {
     return {
@@ -152,6 +168,16 @@ export const INVITE_GUEST_DISCLAIMER =
 
 export const INVITE_MODERATION_NOTE =
   "Завершите обязательные данные профиля в кабинете (имя, город, тип партнёра). Публикация в каталоге для принятия частного приглашения не требуется.";
+
+/** Advisory registration choice; never changes an existing account's role. */
+export function inviteRegistrationHref(intendedType: PartnerTypeCode, returnTo: string): string {
+  const roles: Record<string, string> = {
+    AGENT: "agent", MASTER: "specialist", STORE: "store", COMPANY: "company",
+  };
+  const role = roles[intendedType ?? ""];
+  if (!role) return `/login?returnTo=${encodeURIComponent(returnTo)}`;
+  return `/join?${new URLSearchParams({ role, returnTo }).toString()}`;
+}
 
 export function buildInviteShareMessage(options: {
   inviterName: string;
