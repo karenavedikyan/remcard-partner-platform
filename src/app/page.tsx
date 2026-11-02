@@ -48,6 +48,11 @@ export default async function HomePage(
   if (user.isBlocked) {
     return <SessionGate reason="blocked" />;
   }
+  // Staff access is independent of partner PRO onboarding and consents.
+  // Use the effective authenticated user, including delegated test sessions.
+  if (user.staffRole === "OWNER" || user.staffRole === "ADMIN") {
+    redirect("/admin/overview");
+  }
   const readinessResult = await fetchRemcardUpstream<CabinetReadiness>(
     "/api/account/cabinet-readiness",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
