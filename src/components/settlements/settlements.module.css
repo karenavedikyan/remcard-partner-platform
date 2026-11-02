@@ -6,7 +6,7 @@
   background: var(--surface);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .settlementDemo {
     padding: var(--space-4);
   }

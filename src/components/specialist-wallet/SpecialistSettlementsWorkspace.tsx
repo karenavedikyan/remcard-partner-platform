@@ -461,7 +461,7 @@ export function SpecialistSettlementsWorkspace({
   }
 
   return (
-    <div data-testid="specialist-settlements-workspace">
+    <div className={hubStyles.settlementDemo} data-testid="specialist-settlements-workspace">
       {data.coverageNote ? <p className={hubStyles.note}>{data.coverageNote}</p> : null}
       <p className={hubStyles.note}>
         Подтверждение получения вторым участником и частичные переводы пока недоступны. Показаны

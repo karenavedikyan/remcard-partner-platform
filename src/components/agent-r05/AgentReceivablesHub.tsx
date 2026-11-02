@@ -25,8 +25,33 @@ import {
   type LedgerView,
 } from "@/lib/agent-r05/receivables-prefs";
 import styles from "./agent-receivables.module.css";
+import hubStyles from "@/components/settlements/settlements.module.css";
 
 type Screen = "overview" | "partners" | "orders" | "order";
+
+function AgentSettlementsFrame({
+  children,
+  "data-testid": testId,
+  "data-ledger-view": ledgerView,
+  shellClassName,
+}: {
+  children: React.ReactNode;
+  "data-testid"?: string;
+  "data-ledger-view"?: LedgerView;
+  shellClassName?: string;
+}) {
+  return (
+    <div className={hubStyles.settlementDemo} data-testid="agent-settlements-workspace-frame">
+      <div
+        className={[styles.shell, shellClassName].filter(Boolean).join(" ")}
+        data-testid={testId}
+        {...(ledgerView ? { "data-ledger-view": ledgerView } : {})}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function formatWhen(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -409,11 +434,7 @@ export function AgentReceivablesHub() {
 
   if (screen === "overview") {
     return (
-      <div
-        className={styles.shell}
-        data-ledger-view={prefs.view}
-        data-testid="agent-r05-receivables"
-      >
+      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-receivables">
         {viewControl}
         <p className={styles.muted}>Выберите сумму, чтобы увидеть партнёров.</p>
         {error ? (
@@ -472,13 +493,13 @@ export function AgentReceivablesHub() {
             </details>
           </>
         ) : null}
-      </div>
+      </AgentSettlementsFrame>
     );
   }
 
   if (screen === "partners") {
     return (
-      <div className={styles.shell} data-ledger-view={prefs.view} data-testid="agent-r05-partners">
+      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-partners">
         <div className={styles.breadcrumb}>
           <button type="button" className={styles.backBtn} onClick={() => setScreen("overview")}>
             ← Все взаиморасчёты
@@ -547,13 +568,13 @@ export function AgentReceivablesHub() {
           ))}
         </div>
         {pagination}
-      </div>
+      </AgentSettlementsFrame>
     );
   }
 
   if (screen === "orders" && selectedPartner) {
     return (
-      <div className={styles.shell} data-ledger-view={prefs.view} data-testid="agent-r05-orders">
+      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-orders">
         <div className={styles.breadcrumb}>
           <button
             type="button"
@@ -639,21 +660,21 @@ export function AgentReceivablesHub() {
           ))}
         </div>
         {pagination}
-      </div>
+      </AgentSettlementsFrame>
     );
   }
 
   if (screen === "order") {
     if (loading && !orderDetail) {
       return (
-        <div className={styles.shell} data-testid="agent-r05-order-detail-loading">
+        <AgentSettlementsFrame data-testid="agent-r05-order-detail-loading">
           <p className={styles.meta}>Загружаем заказ…</p>
-        </div>
+        </AgentSettlementsFrame>
       );
     }
     if (error && !orderDetail) {
       return (
-        <div className={styles.shell} data-testid="agent-r05-order-detail-error">
+        <AgentSettlementsFrame data-testid="agent-r05-order-detail-error">
           <div className={styles.backRow}>
             <button
               type="button"
@@ -674,7 +695,7 @@ export function AgentReceivablesHub() {
               </Button>
             ) : null}
           </p>
-        </div>
+        </AgentSettlementsFrame>
       );
     }
   }
@@ -682,7 +703,7 @@ export function AgentReceivablesHub() {
   if (screen === "order" && orderDetail) {
     const { record, lines, totalsMismatch, history } = orderDetail;
     return (
-      <div className={`${styles.shell} ${styles.orderDetailShell}`} data-testid="agent-r05-order-detail">
+      <AgentSettlementsFrame shellClassName={styles.orderDetailShell} data-testid="agent-r05-order-detail">
         <div className={styles.backRow}>
           <button
             type="button"
@@ -781,7 +802,7 @@ export function AgentReceivablesHub() {
             </li>
           ))}
         </ol>
-      </div>
+      </AgentSettlementsFrame>
     );
   }
 
