@@ -51,6 +51,7 @@
   font-size: var(--pw-xs);
   color: var(--pw-muted);
   margin: 0 0 var(--pw-3);
+  line-height: 1.65;
 }
 
 .bankPanel {
@@ -91,6 +92,7 @@
   color: var(--pw-muted);
   font-size: var(--pw-sm);
   margin-bottom: var(--pw-5);
+  line-height: 1.65;
 }
 
 .bannerError,
@@ -117,6 +119,7 @@
   font-size: var(--pw-sm);
   color: var(--pw-muted);
   margin-top: var(--pw-3);
+  line-height: 1.65;
 }
 
 .fields {
@@ -369,7 +372,7 @@
   font-size: var(--pw-xs);
   color: var(--pw-muted);
   margin-top: var(--pw-4);
-  line-height: 1.45;
+  line-height: 1.65;
 }
 
 .walletPreview {
@@ -400,6 +403,7 @@
   margin: var(--pw-2) 0 0;
   font-size: var(--pw-sm);
   color: var(--pw-muted);
+  line-height: 1.65;
 }
 
 @media (max-width: 640px) {

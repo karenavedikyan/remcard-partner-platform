@@ -184,7 +184,7 @@ function validateClientForm(
 }
 
 function buildCreatePayload(form: FormState, isFirstItem: boolean) {
-  return {
+  const payload: Record<string, unknown> = {
     kind: form.kind,
     legalName: form.legalName.trim(),
     label: form.label.trim() || undefined,
@@ -193,9 +193,12 @@ function buildCreatePayload(form: FormState, isFirstItem: boolean) {
     accountNumber: form.accountNumber.replace(/\s/g, ""),
     corrAccount: form.corrAccount.replace(/\s/g, ""),
     inn: digitsOnly(form.inn) || undefined,
-    kpp: form.kind === "company" ? digitsOnly(form.kpp) : undefined,
     isPrimary: isFirstItem,
   };
+  if (form.kind === "company") {
+    payload.kpp = digitsOnly(form.kpp);
+  }
+  return payload;
 }
 
 function buildRevisePayload(form: FormState, expectedVersion: number | null) {
@@ -315,7 +318,7 @@ export function AgentPayoutRequisitesPanel({
       if (event.key === "Escape") {
         setFormOpen(false);
         setFormAlert("");
-        restoreFocusRef.current?.focus();
+        queueMicrotask(() => restoreFocusRef.current?.focus());
       }
     };
     window.addEventListener("keydown", onKey);
@@ -464,6 +467,7 @@ export function AgentPayoutRequisitesPanel({
   };
 
   const copyItem = async (item: AgentRequisitesItem) => {
+    if (disabled) return;
     setStatusMessage("");
     setError("");
     const full = await ensureFullDetail(item.id);
@@ -488,6 +492,7 @@ export function AgentPayoutRequisitesPanel({
   };
 
   const toggleExpanded = async (item: AgentRequisitesItem) => {
+    if (disabled) return;
     if (expandedId === item.id) {
       setExpandedId(null);
       return;
@@ -742,7 +747,7 @@ export function AgentPayoutRequisitesPanel({
           onClick={() => {
             setFormOpen(false);
             setFormAlert("");
-            restoreFocusRef.current?.focus();
+            queueMicrotask(() => restoreFocusRef.current?.focus());
           }}
         >
           Отменить
@@ -779,7 +784,7 @@ export function AgentPayoutRequisitesPanel({
                 <button
                   type="button"
                   className={styles.btn}
-                  disabled={pendingId === item.id || loadingDetail}
+                  disabled={disabled || pendingId === item.id || loadingDetail}
                   onClick={() => void toggleExpanded(item)}
                 >
                   {expandedId === item.id ? "Скрыть" : "Посмотреть"}
@@ -787,7 +792,7 @@ export function AgentPayoutRequisitesPanel({
                 <button
                   type="button"
                   className={styles.btn}
-                  disabled={pendingId === item.id}
+                  disabled={disabled || pendingId === item.id}
                   onClick={() => void copyItem(item)}
                 >
                   Скопировать
@@ -880,6 +885,7 @@ export function AgentPayoutRequisitesPanel({
           <select
             id={fieldId("wallet-select")}
             data-testid="bank-select"
+            disabled={disabled}
             value={selectedWalletId ?? selected.id}
             onChange={(e) => {
               setSelectedWalletId(e.target.value);
@@ -911,7 +917,7 @@ export function AgentPayoutRequisitesPanel({
           <button
             type="button"
             className={styles.btn}
-            disabled={pendingId === selected.id || loadingDetail}
+            disabled={disabled || pendingId === selected.id || loadingDetail}
             onClick={() => void toggleExpanded(selected)}
           >
             {expandedId === selected.id ? "Скрыть подробности" : "Посмотреть полностью"}
@@ -919,7 +925,7 @@ export function AgentPayoutRequisitesPanel({
           <button
             type="button"
             className={styles.btn}
-            disabled={pendingId === selected.id}
+            disabled={disabled || pendingId === selected.id}
             onClick={() => void copyItem(selected)}
           >
             Скопировать реквизиты
