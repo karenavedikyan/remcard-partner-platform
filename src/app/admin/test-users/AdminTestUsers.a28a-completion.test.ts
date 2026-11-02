@@ -22,4 +22,14 @@ describe("AdminTestUsers A28a presentation contract", () => {
     expect(client).not.toContain("nextDisplayNameForKind");
     expect(client).not.toContain("nextProfTestUserDisplayName");
   });
+
+  it("preserves root create error helper and strict list load controls", () => {
+    expect(client).toContain("adminTestUserCreateError");
+    expect(client).toContain("parseAdminTestUserListResponse");
+    expect(client).toContain("listLoadSeqRef");
+    expect(client).toContain("listError");
+    expect(client).toContain("Повторить загрузку");
+    expect(client).not.toContain("res.items ?? []");
+    expect(client).not.toContain("SERVICE_UNAVAILABLE");
+  });
 });

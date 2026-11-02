@@ -16,28 +16,11 @@ import {
   profTestUserKindLabel,
   type ProfTestUserCreateKind,
 } from "./adminTestUserKind";
+import { parseAdminTestUserListResponse, type AdminTestUserRow } from "./adminTestUserListParse";
 import styles from "../admin-test-users.module.css";
 import { adminTestUserCreateError } from "./adminTestUserCreateError";
 
-type TestUser = {
-  id: string;
-  publicId: string;
-  displayName: string;
-  partnerType: string | null;
-  partnerActivities: string[];
-  profTestDisabledAt: string | null;
-  profTestCreatedAt: string | null;
-  profTestPublicCatalogAllowed?: boolean;
-  catalogStatus?: string | null;
-  isPublic?: boolean;
-  isBlocked?: boolean;
-  organizationsOwned?: Array<{
-    id: string;
-    name: string;
-    catalogStatus: string;
-    catalogPublished: boolean;
-  }>;
-};
+type TestUser = AdminTestUserRow;
 
 function catalogStatusLabel(item: TestUser): string {
   const org = item.organizationsOwned?.[0];
@@ -55,8 +38,11 @@ function catalogStatusLabel(item: TestUser): string {
 export function AdminTestUsersClient() {
   const router = useRouter();
   const createGenRef = useRef(0);
+  const listLoadSeqRef = useRef(0);
+  const mountedRef = useRef(true);
   const [items, setItems] = useState<TestUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState("");
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
@@ -71,16 +57,33 @@ export function AdminTestUsersClient() {
   });
 
   const reload = useCallback(async () => {
+    const requestId = ++listLoadSeqRef.current;
     setLoading(true);
-    setError("");
+    if (requestId === listLoadSeqRef.current) setListError("");
     try {
-      const res = await remcardFetch<{ items: TestUser[] }>("/api/pro/admin/test-users");
-      setItems(res.items ?? []);
+      const res = await remcardFetch<unknown>("/api/pro/admin/test-users");
+      if (requestId !== listLoadSeqRef.current || !mountedRef.current) return;
+      const parsed = parseAdminTestUserListResponse(res);
+      if (!parsed.ok) {
+        setListError(parsed.message);
+        return;
+      }
+      setListError("");
+      setItems(parsed.items);
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
+      if (requestId !== listLoadSeqRef.current || !mountedRef.current) return;
+      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
     } finally {
-      setLoading(false);
+      if (requestId === listLoadSeqRef.current && mountedRef.current) setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      listLoadSeqRef.current += 1;
+    };
   }, []);
 
   useEffect(() => {
@@ -132,10 +135,20 @@ export function AdminTestUsersClient() {
         {" — "}
         создание и отключение второго ADMIN (только владелец; не пункт главной навигации).
       </p>
+      {listError ? (
+        <p role="alert" className={styles.adminError}>
+          {listError}
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className={styles.adminError}>
           {error}
         </p>
+      ) : null}
+      {listError && !loading ? (
+        <Button type="button" variant="secondary" onClick={() => void reload()}>
+          Повторить загрузку
+        </Button>
       ) : null}
 
       <section className={styles.panel}>
@@ -227,7 +240,7 @@ export function AdminTestUsersClient() {
       </div>
 
       {loading ? <p>Загрузка…</p> : null}
-      {!loading && items.length === 0 ? <p>Тестовых пользователей пока нет.</p> : null}
+      {!loading && !listError && items.length === 0 ? <p>Тестовых пользователей пока нет.</p> : null}
       {!loading && items.length > 0 && filtered.length === 0 ? (
         <p>Нет пользователей по выбранным фильтрам.</p>
       ) : null}
