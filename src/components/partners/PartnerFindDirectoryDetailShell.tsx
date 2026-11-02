@@ -10,6 +10,9 @@ import {
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
 import type { PartnerSearchResult } from "@/lib/types";
 import {
+  findDirectoryDetailInviteLabel,
+  searchResultDetailCatalogLine,
+  searchResultDetailStagesLine,
   searchResultDirectionGroups,
   searchResultInviteFoot,
   searchResultTypeLabel,
@@ -171,11 +174,14 @@ export function PartnerFindDirectoryDetailShell({
   const title = findDirectoryDetailDisplayTitle(partner);
   const typeLabel = searchResultTypeLabel(partner);
   const city = partner.city?.trim() || "";
-  const { primary, stages } = searchResultDirectionGroups(partner);
+  const { primary } = searchResultDirectionGroups(partner);
+  const catalogLine = searchResultDetailCatalogLine(partner);
+  const detailStagesLine = searchResultDetailStagesLine(partner);
   const description = partner.description?.trim() || "";
   const status = partner.partnershipStatus?.trim() || "";
   const statusLabel = status ? (PARTNERSHIP_STATUS_LABELS[status] ?? status) : "";
   const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled });
+  const inviteLabel = findDirectoryDetailInviteLabel(partner, { inviteDisabled });
 
   const topicsLine = primary.length > 0 ? primary.join(", ") : "";
 
@@ -212,11 +218,21 @@ export function PartnerFindDirectoryDetailShell({
           </p>
         )}
 
-        {stages.length > 0 ? (
-          <p className={styles.stages} data-testid="partner-find-directory-detail-stages">
-            {stages.join(" · ")}
+        <section
+          className={styles.profileDirections}
+          aria-labelledby="partner-find-directory-detail-directions-title"
+          data-testid="partner-find-directory-detail-profile-directions"
+        >
+          <h3 id="partner-find-directory-detail-directions-title" className={styles.profileDirectionsTitle}>
+            Специализация и этапы
+          </h3>
+          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-catalog">
+            {catalogLine || "Специализация не указана"}
           </p>
-        ) : null}
+          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-stages">
+            Этапы: {detailStagesLine}
+          </p>
+        </section>
 
         {description ? (
           <p className={styles.description} data-testid="partner-find-directory-detail-description">
@@ -268,7 +284,7 @@ export function PartnerFindDirectoryDetailShell({
           onClick={onInvite}
           data-testid="partner-find-directory-detail-invite"
         >
-          {inviteFoot.label}
+          {inviteLabel}
         </Button>
       </footer>
     </section>

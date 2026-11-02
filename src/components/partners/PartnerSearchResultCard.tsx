@@ -168,8 +168,8 @@ function labelsFromApi(partner: PartnerSearchResult): {
   stages: string[];
 } {
   const directions = [
-    ...(partner.workingProductLabels ?? []),
     ...(partner.workingServiceLabels ?? []),
+    ...(partner.workingProductLabels ?? []),
   ]
     .map((label) => label.trim())
     .filter(Boolean);
@@ -189,12 +189,14 @@ function labelsFromApi(partner: PartnerSearchResult): {
 export function searchResultDirectionGroups(partner: PartnerSearchResult): {
   primary: string[];
   stages: string[];
+  stageTotal: number;
 } {
   const fromApi = labelsFromApi(partner);
   if (fromApi.directions.length || fromApi.stages.length) {
     return {
       primary: fromApi.directions.slice(0, 4),
       stages: fromApi.stages.slice(0, 3),
+      stageTotal: fromApi.stages.length,
     };
   }
 
@@ -219,10 +221,63 @@ export function searchResultDirectionGroups(partner: PartnerSearchResult): {
     .map((id) => masterDirectionLabel(id))
     .filter((label) => label !== "Категория");
 
+  const uniqueStages = [...new Set(stages)];
   return {
     primary: [...new Set(fromHint)].slice(0, 4),
-    stages: [...new Set(stages)].slice(0, 3),
+    stages: uniqueStages.slice(0, 3),
+    stageTotal: uniqueStages.length,
   };
+}
+
+/** Card stage line: always rendered; frozen pr-stages fallback and overflow suffix. */
+export function searchResultCardStagesLine(partner: PartnerSearchResult): string {
+  const { stages, stageTotal } = searchResultDirectionGroups(partner);
+  if (stageTotal === 0) return "Этапы ремонта не указаны";
+  const head = stages.join(" · ");
+  return stageTotal > 3 ? `${head} и ещё ${stageTotal - 3}` : head;
+}
+
+/** Detail «Специализация и этапы» — products then services (frozen directoryFullDirections). */
+export function searchResultDetailCatalogLine(partner: PartnerSearchResult): string {
+  const products = [...new Set((partner.workingProductLabels ?? []).map((l) => l.trim()).filter(Boolean))];
+  const services = [...new Set((partner.workingServiceLabels ?? []).map((l) => l.trim()).filter(Boolean))];
+  const labels = [
+    ...products.map((label) => `Товары: ${label}`),
+    ...services.map((label) => `Работы и услуги: ${label}`),
+  ];
+  if (labels.length) return labels.join(" · ");
+
+  const asProfile = {
+    id: partner.id,
+    displayName: partner.displayName,
+    partnerType: partner.partnerType ?? partner.organizationPartnerType ?? undefined,
+    city: partner.city,
+    storeCategories: partner.storeCategories,
+    specializations: partner.specializations,
+    workingProductCategoryIds: partner.productCategoryIds,
+    workingServiceSpecializationIds: partner.serviceSpecializationIds,
+    workingNavigatorStageIds: partner.navigatorStageIds,
+  } as PartnershipPartnerProfile;
+
+  const fromHint = partnerSpecializationHint(asProfile).trim();
+  return fromHint;
+}
+
+export function searchResultDetailStagesLine(partner: PartnerSearchResult): string {
+  const { stages, stageTotal } = searchResultDirectionGroups(partner);
+  if (stageTotal === 0) return "не указаны";
+  const head = stages.join(", ");
+  return stageTotal > 3 ? `${head}, и ещё ${stageTotal - 3}` : head;
+}
+
+/** In-hub directory detail primary invite label (frozen Ht CTA). */
+export function findDirectoryDetailInviteLabel(
+  partner: PartnerSearchResult,
+  opts: { inviteDisabled?: boolean; inviteBusy?: boolean } = {},
+): string {
+  const foot = searchResultInviteFoot(partner, opts);
+  if (foot.label === "Сотрудничать") return "Предложить сотрудничество";
+  return foot.label;
 }
 
 /** Flat list kept for tests / callers that need a single array. */
@@ -244,7 +299,8 @@ export function PartnerSearchResultCard({
   const typeLabel = searchResultTypeLabel(partner);
   const coverTone = searchResultCoverTone(partner);
   const city = partner.city?.trim() || "";
-  const { primary, stages } = searchResultDirectionGroups(partner);
+  const { primary } = searchResultDirectionGroups(partner);
+  const stagesLine = searchResultCardStagesLine(partner);
   const monogram = searchResultMonogram(title);
   const status = partner.partnershipStatus?.trim() || "";
   const statusLabel = status
@@ -342,11 +398,9 @@ export function PartnerSearchResultCard({
             Направления не указаны
           </p>
         )}
-        {stages.length > 0 ? (
-          <p className={styles.modalResultStages} data-testid="agent-partner-search-result-stages">
-            {stages.join(" · ")}
-          </p>
-        ) : null}
+        <p className={styles.modalResultStages} data-testid="agent-partner-search-result-stages">
+          {stagesLine}
+        </p>
 
         {showPublishedTerms ? (
           <div className={styles.modalResultTerms} data-testid="agent-partner-search-result-terms">

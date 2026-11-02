@@ -192,11 +192,10 @@
 }
 
 .modalResultInlineTermsHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
   gap: var(--space-1, 0.25rem);
+  align-items: flex-start;
+  justify-items: start;
 }
 
 .modalResultInlineTermsTitle {
@@ -210,12 +209,12 @@
 .modalResultInlineTermsRange {
   display: grid;
   gap: 2px;
-  text-align: right;
+  text-align: left;
   min-width: 0;
 }
 
 .modalResultInlineTermsRange strong {
-  font-size: 1.6875rem;
+  font-size: 27px;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -256,6 +255,7 @@
 
 .modalResultInlineTermsList li b {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   flex: 0 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
