@@ -6,6 +6,10 @@
   --pw-soft: #f6f7f8;
   --pw-line: #dce0e3;
   --pw-tint: #fff1f1;
+  --wallet-tab-active-text: var(--pw-accent);
+  --wallet-tab-active-bg: var(--pw-tint);
+  --wallet-tab-active-border: var(--pw-accent);
+  --wallet-tab-focus-ring: var(--pw-accent);
   --pw-xs: clamp(0.75rem, 0.72rem + 0.1vw, 0.8rem);
   --pw-sm: clamp(0.875rem, 0.84rem + 0.1vw, 0.94rem);
   --pw-base: 1rem;
@@ -18,12 +22,17 @@
 }
 
 :global([data-theme="dark"]) .pw {
-  --pw-text: #eceef0;
-  --pw-muted: #a8adb4;
-  --pw-bg: #1c1f24;
-  --pw-soft: #252930;
-  --pw-line: #3a4048;
-  --pw-tint: color-mix(in srgb, var(--pw-accent) 16%, var(--pw-bg));
+  --pw-accent: #ff9497;
+  --pw-text: #f0f1f3;
+  --pw-muted: #b1b6c0;
+  --pw-bg: #202329;
+  --pw-soft: #292e36;
+  --pw-line: #454b54;
+  --pw-tint: #3c272b;
+  --wallet-tab-active-text: var(--pw-accent);
+  --wallet-tab-active-bg: var(--pw-tint);
+  --wallet-tab-active-border: #ffb4b6;
+  --wallet-tab-focus-ring: #ffd1d3;
 }
 
 .cabSections {
@@ -57,13 +66,13 @@
 }
 
 .tabActive {
-  color: var(--pw-accent);
-  border-color: var(--pw-accent);
-  background: var(--pw-tint);
+  color: var(--wallet-tab-active-text);
+  border-color: var(--wallet-tab-active-border);
+  background: var(--wallet-tab-active-bg);
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--pw-accent);
+  outline: 2px solid var(--wallet-tab-focus-ring);
   outline-offset: 2px;
 }
 

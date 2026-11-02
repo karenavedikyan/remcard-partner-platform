@@ -4,12 +4,8 @@ import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayo
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
-
-type RequisitesPanelProps = ComponentProps<typeof AgentPayoutRequisitesPanel>;
-
-const walletRequisitesProps = { variant: "wallet" } as RequisitesPanelProps;
 
 type Props = {
   /** Override settlements tab content (dev-fixture preview). */
@@ -26,7 +22,7 @@ export function SpecialistMasterWallet({ settlementsSlot }: Props) {
       settlements={settlementsSlot ?? <SpecialistSettlementsWorkspace />}
       requisites={
         <div className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}>
-          <AgentPayoutRequisitesPanel {...walletRequisitesProps} />
+          <AgentPayoutRequisitesPanel variant="wallet" />
         </div>
       }
     />

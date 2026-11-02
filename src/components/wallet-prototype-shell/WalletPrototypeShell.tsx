@@ -3,6 +3,7 @@
 import {
   useCallback,
   useId,
+  useRef,
   useState,
   type KeyboardEvent,
   type ReactNode,
@@ -34,17 +35,16 @@ export function WalletPrototypeShell({
 }: WalletPrototypeShellProps) {
   const [tab, setTab] = useState<WalletPrototypeTab>(defaultTab);
   const tablistId = useId();
+  const settlementsTabRef = useRef<HTMLButtonElement>(null);
+  const requisitesTabRef = useRef<HTMLButtonElement>(null);
 
-  const focusTab = useCallback(
-    (next: WalletPrototypeTab) => {
-      setTab(next);
-      const testId = next === "settlements" ? settlementsTabTestId : requisitesTabTestId;
-      queueMicrotask(() => {
-        document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)?.focus();
-      });
-    },
-    [requisitesTabTestId, settlementsTabTestId],
-  );
+  const focusTab = useCallback((next: WalletPrototypeTab) => {
+    setTab(next);
+    queueMicrotask(() => {
+      const target = next === "settlements" ? settlementsTabRef.current : requisitesTabRef.current;
+      target?.focus();
+    });
+  }, []);
 
   const onTabKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, current: WalletPrototypeTab) => {
@@ -77,6 +77,7 @@ export function WalletPrototypeShell({
       <div className={styles.walletActions}>
         <div className={styles.tabs} role="tablist" aria-label="Кошелёк" id={tablistId}>
           <button
+            ref={settlementsTabRef}
             type="button"
             role="tab"
             id={`${tablistId}-settlements`}
@@ -91,6 +92,7 @@ export function WalletPrototypeShell({
             Взаиморасчёты
           </button>
           <button
+            ref={requisitesTabRef}
             type="button"
             role="tab"
             id={`${tablistId}-requisites`}
