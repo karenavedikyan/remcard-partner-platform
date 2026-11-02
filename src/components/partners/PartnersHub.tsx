@@ -265,7 +265,12 @@ export function PartnersHub({
     const scoped = document.querySelector<HTMLElement>(
       `[data-testid="agent-partner-search-result-card"][data-partner-id="${partnerId}"] [data-testid="agent-partner-search-result-detail"]`,
     );
-    return tryFocus(scoped);
+    if (tryFocus(scoped)) return true;
+    // A confirmed invitation replaces both actions with a status. Keep keyboard
+    // context on that same card rather than losing focus to the document body.
+    return tryFocus(document.querySelector<HTMLElement>(
+      `[data-testid="agent-partner-search-result-card"][data-partner-id="${partnerId}"]`,
+    ));
   }, []);
 
   const scheduleFindDetailFocusRestore = useCallback(
@@ -342,6 +347,7 @@ export function PartnersHub({
     inviteFromFindDetailPartnerIdRef.current = null;
     publicSummaryByPartnerRef.current.clear();
     setPublicSummaryHandoffTick(0);
+    setInviteTarget(null);
     setFindDirectoryDetailPartner(null);
   }, [discussionInvitePanelKey, agentModalSurface, partnersAudience, meId]);
 
@@ -1705,7 +1711,12 @@ export function PartnersHub({
                 title={partnerTitle(partner)}
                 showPublishedTerms={showAgentPublishedTerms}
                 inviteDisabled={Boolean(inviteTarget) || loadingSearch}
-                onInvite={() => setInviteTarget(partner)}
+                onInvite={() => {
+                  if (agentModalSurface === "find") {
+                    inviteFromFindDetailPartnerIdRef.current = partner.id;
+                  }
+                  setInviteTarget(partner);
+                }}
                 onDetail={() => openFindDirectoryDetail(partner)}
                 onPublicSummaryStateChange={
                   showAgentPublishedTerms ? handlePublicSummaryStateChange : undefined
@@ -1845,9 +1856,15 @@ export function PartnersHub({
             ) : null}
             {inviteTarget ? (
               <PartnerInviteDialog
+                key={`${meId}:${inviteTarget.id}`}
                 target={inviteTarget}
                 meProfile={meProfile}
                 busy={Boolean(busyId)}
+                showSentState
+                showPublishedTerms={showAgentPublishedTerms}
+                publishedTermsSnapshot={agentTermsSnapshotForDetailHandoff(
+                  inviteTarget.id, publicSummaryByPartnerRef.current,
+                )}
                 onClose={() => {
                   const fromDetailId = inviteFromFindDetailPartnerIdRef.current;
                   inviteFromFindDetailPartnerIdRef.current = null;
@@ -1857,10 +1874,9 @@ export function PartnersHub({
                   }
                 }}
                 onSent={() => {
-                  inviteFromFindDetailPartnerIdRef.current = null;
-                  findDetailLifecycleGenRef.current += 1;
-                  setInviteTarget(null);
-                  onCloseAgentModal?.();
+                  // POST confirmed creation: retain filters, cursor and every loaded row.
+                  setSearchResults(rows => rows.map(row => row.id === inviteTarget.id
+                    ? { ...row, partnershipStatus: "INVITED" } : row));
                   void loadList();
                 }}
               />

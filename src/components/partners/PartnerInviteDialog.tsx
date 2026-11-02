@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   activeInviteRows,
@@ -27,6 +27,9 @@ import {
   validateInviteRows,
 } from "@/lib/partnership-rules";
 import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
+import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
+import { FindDirectoryDetailAgentTermsAccordion } from "./PartnerFindDirectoryDetailShell";
+import { searchResultDirectionGroups, searchResultTypeLabel } from "./PartnerSearchResultCard";
 import { Button } from "@/components/ui/Button";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
@@ -37,10 +40,26 @@ type PartnerInviteDialogProps = {
   busy: boolean;
   onClose: () => void;
   onSent: () => void;
+  /** Directory flow keeps search mounted and displays a confirmed result. */
+  showSentState?: boolean;
+  showPublishedTerms?: boolean;
+  publishedTermsSnapshot?: PartnerCertProgramState;
 };
 
 function partnerTitle(partner: PartnerSearchResult) {
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
+}
+
+function inviteControls(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(
+    'a[href],button,input,select,textarea,summary,[tabindex]',
+  )).filter(el => {
+    if (el.tabIndex < 0 || el.matches(":disabled") || el.closest("[hidden]")) return false;
+    const closed = el.closest("details:not([open])");
+    if (closed && closed.querySelector("summary") !== el) return false;
+    const style = window.getComputedStyle(el);
+    return style.display !== "none" && style.visibility !== "hidden";
+  });
 }
 
 type InviteFormAction =
@@ -76,6 +95,9 @@ export function PartnerInviteDialog({
   busy,
   onClose,
   onSent,
+  showSentState = false,
+  showPublishedTerms = false,
+  publishedTermsSnapshot,
 }: PartnerInviteDialogProps) {
   const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const targetSide = searchResultToPartnerSide(target);
@@ -90,6 +112,67 @@ export function PartnerInviteDialog({
       createInitialInviteFormState(initial.resetKey, initial.categories, initial.blockedReason),
   );
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<{
+    title: string;
+    meta: string;
+    note: string;
+    terms: Array<{ category: string; storePercent: number; isExcluded?: boolean }>;
+  } | null>(null);
+  const inFlight = useRef(false);
+  const mounted = useRef(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const closeCallback = useRef(onClose);
+  closeCallback.current = onClose;
+  const headingId = useId();
+  const targetMeta = [searchResultTypeLabel(target), target.city?.trim()].filter(Boolean).join(" · ");
+  const directions = searchResultDirectionGroups(target).primary.join(" · ");
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusHeading = () => headingRef.current?.focus({ preventScroll: true });
+    focusHeading();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!inFlight.current) closeCallback.current();
+      } else if (event.key === "Tab" && dialogRef.current) {
+        const controls = inviteControls(dialogRef.current);
+        const active = document.activeElement;
+        const first = controls[0], last = controls[controls.length - 1];
+        if (!controls.length || !controls.includes(active as HTMLElement) ||
+          (event.shiftKey ? active === first : active === last)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+          if (!controls.length) focusHeading();
+        }
+        // Do not let the underlying hub's focus trap consume the same key.
+        event.stopImmediatePropagation();
+      }
+    };
+    const onFocus = (event: FocusEvent) => {
+      const dialog = dialogRef.current;
+      if (!dialog || (event.target instanceof Node && dialog.contains(event.target))) return;
+      (inviteControls(dialog)[0] ?? headingRef.current)?.focus({ preventScroll: true });
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("focusin", onFocus, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("focusin", onFocus, true);
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (sent) headingRef.current?.focus({ preventScroll: true });
+  }, [sent]);
 
   useEffect(() => {
     dispatch({
@@ -101,7 +184,7 @@ export function PartnerInviteDialog({
   }, [resetKey, resolved.blockedReason, target.id]);
 
   async function submit() {
-    if (sending) {
+    if (inFlight.current || busy || sent) {
       return;
     }
     dispatch({ type: "set_error", error: "" });
@@ -131,7 +214,14 @@ export function PartnerInviteDialog({
       return;
     }
 
+    inFlight.current = true;
     setSending(true);
+    const submitted = {
+      title: partnerTitle(target),
+      meta: targetMeta,
+      note: form.note.trim(),
+      terms: agentCooperationRequest ? [] : inviteRowsToTerms(activeInviteRows(form)),
+    };
     try {
       const activeRows = activeInviteRows(form);
       await remcardFetch("/api/partnership/invite", {
@@ -152,15 +242,19 @@ export function PartnerInviteDialog({
               })),
             },
       });
+      if (!mounted.current) return;
+      if (showSentState) setSent(submitted);
       onSent();
-      onClose();
+      if (!showSentState) onClose();
     } catch (caught) {
+      if (!mounted.current) return;
       dispatch({
         type: "set_error",
         error: caught instanceof RemcardApiError ? caught.message : "Не удалось отправить приглашение",
       });
     } finally {
-      setSending(false);
+      inFlight.current = false;
+      if (mounted.current) setSending(false);
     }
   }
 
@@ -172,18 +266,59 @@ export function PartnerInviteDialog({
   return (
     <div className={styles.backdrop} role="presentation">
       <div
+        ref={dialogRef}
         className={styles.dialog}
         role="dialog"
-        aria-labelledby="invite-title"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        data-testid="partner-direct-invite-dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <h3 id="invite-title">{title}</h3>
+        <h3 ref={headingRef} tabIndex={-1} id={headingId}>
+          {sent ? "Приглашение отправлено" : title}
+        </h3>
+        {sent ? (
+          <section className={styles.sent} data-testid="partner-direct-invite-ready">
+            <strong>{sent.title}</strong>
+            {sent.meta ? <p className={styles.hint}>{sent.meta}</p> : null}
+            <p className={styles.notice}>
+              Приглашение адресовано выбранному профилю RemCard. Повторная регистрация не нужна.
+              Сотрудничество начнётся после согласования и принятия условий, не после отправки.
+            </p>
+            <p role="status" className={styles.waiting}>Ожидает ответа</p>
+            <details className={styles.sentCard}>
+              <summary>Карточка приглашения</summary>
+              <div className={styles.sentDetails}>
+                <strong>{sent.title}</strong>
+                <p className={styles.message}>{sent.note || "Без комментария"}</p>
+                {sent.terms.length ? sent.terms.map(term => (
+                  <p key={term.category}>
+                    {categoryLabel(term.category)}: {term.isExcluded ? "Не участвует" : `${term.storePercent}%`}
+                  </p>
+                )) : <p className={styles.hint}>Запрос к обсуждению, без числовых условий.</p>}
+              </div>
+            </details>
+            <Button type="button" onClick={onClose}>Назад к поиску</Button>
+          </section>
+        ) : (
+        <>
+        <div className={styles.targetSummary} data-testid="partner-direct-invite-target">
+          <strong>{partnerTitle(target)}</strong>
+          {targetMeta ? <p className={styles.hint}>{targetMeta}</p> : null}
+          {directions ? <p className={styles.message}>{directions}</p> : null}
+          <p className={styles.hint}>Партнёр уже в RemCard. Приглашение адресовано этому профилю.</p>
+        </div>
+        {agentCooperationRequest && showPublishedTerms ? (
+          <FindDirectoryDetailAgentTermsAccordion partnerUserId={target.id} snapshot={publishedTermsSnapshot} />
+        ) : null}
         <p className={styles.hint}>
           {agentCooperationRequest
-            ? "Ознакомьтесь с общими условиями партнёра выше. Числовые ставки указывает принимающий партнёр в персональном предложении."
+            ? "Общие условия не являются персональной договорённостью. Числовые ставки указывает принимающий партнёр в персональном предложении."
             : "Укажите процент по каждой категории. Партнёр увидит эти условия перед принятием приглашения."}
         </p>
 
+        <form className={styles.fields} onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+        <fieldset className={styles.fields} disabled={sending || busy}>
         {resolved.blockedReason ? (
           <p className={styles.error} role="alert">
             {resolved.blockedReason}
@@ -266,18 +401,22 @@ export function PartnerInviteDialog({
             {form.error}
           </p>
         ) : null}
+        </fieldset>
 
         <div className={styles.actions}>
           <Button
+            type="submit"
             disabled={busy || sending || Boolean(resolved.blockedReason)}
-            onClick={() => void submit()}
           >
             {sending ? "Отправка…" : resolved.mode === "store" ? "Отправить приглашение" : "Отправить запрос"}
           </Button>
-          <Button variant="secondary" disabled={sending} onClick={onClose}>
+          <Button className={styles.cancel} type="button" variant="secondary" disabled={sending || busy} onClick={onClose}>
             Отмена
           </Button>
         </div>
+        </form>
+        </>
+        )}
       </div>
     </div>
   );

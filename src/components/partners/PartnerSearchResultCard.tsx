@@ -281,6 +281,7 @@ export function PartnerSearchResultCard({
 
   return (
     <article
+      tabIndex={-1}
       className={styles.modalResultCard}
       data-testid="agent-partner-search-result-card"
       data-partner-id={partner.id}

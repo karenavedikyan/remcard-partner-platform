@@ -326,7 +326,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--text, var(--fg, #1a1a1a));
+  color: var(--ink, var(--text, var(--fg, #1a1a1a)));
   font: inherit;
   font-size: var(--text-sm, 0.875rem);
   font-weight: 600;

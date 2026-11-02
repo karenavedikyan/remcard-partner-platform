@@ -19,6 +19,71 @@
   display: grid;
   gap: var(--space-4);
   box-shadow: var(--shadow);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.targetSummary, .sent, .sentDetails {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.targetSummary {
+  padding: var(--space-4);
+  background: var(--offset);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.targetSummary p, .sent p {
+  margin: 0;
+}
+
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.waiting {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.sentCard {
+  border-block: 1px solid var(--line);
+  padding-block: var(--space-3);
+}
+
+.sentCard summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 600;
+}
+
+.sentDetails {
+  padding-block: var(--space-3);
+}
+
+:global([data-theme="dark"]) .dialog .hint,
+:global([data-theme="dark"]) .dialog .exclude {
+  color: #c5c7c9;
+}
+
+@media (max-width: 480px) {
+  .backdrop { padding: var(--space-3); }
+  .dialog { padding: var(--space-4); max-height: calc(100dvh - 24px); }
+  .actions > button { flex: 1 1 100%; }
 }
 
 .hint {
@@ -80,6 +145,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+
+.actions .cancel {
+  background: var(--offset);
+  color: var(--ink);
+  border-color: var(--line);
 }
 
 .linkPanel {

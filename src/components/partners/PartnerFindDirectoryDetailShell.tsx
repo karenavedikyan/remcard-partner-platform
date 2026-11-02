@@ -47,7 +47,7 @@ function agentTermsCategoryCount(state: PartnerCertProgramState): number | null 
   return null;
 }
 
-function FindDirectoryDetailAgentTermsAccordion({
+export function FindDirectoryDetailAgentTermsAccordion({
   partnerUserId,
   snapshot,
 }: {
@@ -227,6 +227,10 @@ export function PartnerFindDirectoryDetailShell({
             Описание в каталоге не указано
           </p>
         )}
+
+        <p className={styles.notice}>
+          Партнёр уже зарегистрирован в RemCard. Повторная регистрация для сотрудничества не нужна.
+        </p>
 
         {showAgentTerms ? (
           <FindDirectoryDetailAgentTermsAccordion
