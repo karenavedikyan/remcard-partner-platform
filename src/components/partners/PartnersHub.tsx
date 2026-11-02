@@ -71,6 +71,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Tabs } from "@/components/ui/Tabs";
 import { TextField } from "@/components/ui/FormField";
 import { PartnerInviteDialog } from "@/components/partners/PartnerInviteDialog";
+import { PartnerInvitationAcceptanceDialog } from "@/components/partners/PartnerInvitationAcceptanceDialog";
 import { PartnerGeneralTermsDetails } from "@/components/partners/PartnerGeneralTermsDetails";
 import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterOfferDialog";
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
@@ -213,6 +214,21 @@ export function PartnersHub({
   } | null>(null);
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [acceptance, setAcceptance] = useState<{
+    partnership: Partnership;
+    action: "accept" | "accept_pending";
+    accepted: boolean;
+    error: string;
+  } | null>(null);
+  const acceptanceRef = useRef(acceptance);
+  acceptanceRef.current = acceptance;
+  const acceptanceTriggerRef = useRef<HTMLElement | null>(null);
+  const acceptanceAnchorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    acceptanceRef.current = null;
+    setAcceptance(null);
+    return () => { acceptanceRef.current = null; };
+  }, [meId, partnersAudience]);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
   /** P23m: in-Hub find directory detail — same modal; keep find mounted underneath for scroll/query. */
   const [findDirectoryDetailPartner, setFindDirectoryDetailPartner] =
@@ -1077,6 +1093,8 @@ export function PartnersHub({
       return { ok: false, error: "", reason: "busy" };
     }
     partnershipPatchInFlightRef.current.add(partnership.id);
+    const acceptingInvitation = action === "accept" || action === "accept_pending";
+    const acceptanceOwner = acceptingInvitation ? acceptanceRef.current : null;
     setBusyId(partnership.id);
     if (!options?.suppressHubError) {
       setActionError("");
@@ -1086,10 +1104,16 @@ export function PartnersHub({
       if (action === "accept_pending") {
         body.expectedUpdatedAt = partnership.updatedAt;
       }
-      await remcardFetch(`/api/partnership/${partnership.id}`, {
+      const confirmation = await remcardFetch<{ ok?: boolean }>(`/api/partnership/${partnership.id}`, {
         method: "PATCH",
         body,
       });
+      if ((action === "accept" || action === "accept_pending") && confirmation?.ok !== true) {
+        throw new Error("Acceptance was not confirmed");
+      }
+      if (acceptingInvitation) {
+        if (acceptanceOwner && acceptanceRef.current !== acceptanceOwner) return { ok: true };
+      }
       if (isPartnershipInvitationWithdrawAction(action)) {
         partnershipWithdrawSettledRef.current.add(
           partnershipInvitationWithdrawSnapshotKey(partnership, action),
@@ -1106,11 +1130,22 @@ export function PartnersHub({
       return { ok: false, error, reason: "failed" };
     } finally {
       partnershipPatchInFlightRef.current.delete(partnership.id);
-      setBusyId(null);
+      if (!acceptanceOwner || acceptanceRef.current === acceptanceOwner) setBusyId(null);
     }
   }
 
   function handlePartnershipUiAction(partnership: Partnership, actionKind: string) {
+    if (actionKind === "accept" || actionKind === "accept_pending") {
+      if (!partnershipAllowsUiAction(partnership, meId, actionKind)) return;
+      acceptanceTriggerRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement : null;
+      setActionError("");
+      setAcceptance({
+        partnership: { ...partnership, terms: partnership.terms.map(term => ({ ...term })) },
+        action: actionKind, accepted: false, error: "",
+      });
+      return;
+    }
     if (actionKind === "counter_offer" || actionKind === "counter_offer_back") {
       setCounterOfferTarget({
         partnership,
@@ -1139,6 +1174,44 @@ export function PartnersHub({
       return;
     }
     void runPartnershipAction(partnership, actionKind);
+  }
+
+  function closeAcceptance() {
+    const target = acceptanceRef.current;
+    if (!target || partnershipPatchInFlightRef.current.has(target.partnership.id)) return;
+    acceptanceRef.current = null;
+    setAcceptance(null);
+    requestAnimationFrame(() => {
+      if (acceptanceRef.current) return;
+      const trigger = acceptanceTriggerRef.current;
+      if (!target.accepted && trigger && isVisiblyInteractable(trigger)) {
+        trigger.focus();
+      } else if (!focusPartnerInList(target.partnership.id)) {
+        acceptanceAnchorRef.current?.focus();
+      }
+    });
+  }
+
+  async function confirmAcceptance() {
+    const target = acceptanceRef.current;
+    if (!target || target.accepted) return;
+    const current = findPartnershipById(partnerships, target.partnership.id);
+    if (!current || !partnershipAllowsUiAction(current, meId, target.action)
+      || current.updatedAt !== target.partnership.updatedAt
+      || current.status !== target.partnership.status
+      || current.pendingProposedBy !== target.partnership.pendingProposedBy) {
+      setAcceptance({ ...target, error: "Предложение изменилось. Вернитесь к списку и откройте актуальные условия." });
+      return;
+    }
+    const result = await runPartnershipAction(target.partnership, target.action, { suppressHubError: true });
+    // Closing/unmounting or changing account must not resurrect an old receipt.
+    if (acceptanceRef.current !== target) return;
+    if (result.ok) {
+      const confirmed = { ...target, accepted: true, error: "" };
+      acceptanceRef.current = confirmed;
+      setAcceptance(confirmed);
+    }
+    else if (result.reason === "failed") setAcceptance({ ...target, error: result.error });
   }
 
   async function confirmLifecycleAction() {
@@ -1888,7 +1961,7 @@ export function PartnersHub({
   }
 
   return (
-    <div className={isAgentR04 ? styles.agentR04Root : undefined} data-variant={variant}>
+    <div ref={acceptanceAnchorRef} tabIndex={-1} className={isAgentR04 ? styles.agentR04Root : undefined} data-variant={variant}>
       {!isAgentR04 ? (
         <Tabs
           active={tab}
@@ -2028,7 +2101,7 @@ export function PartnersHub({
                 onCloseTermChange={requestCloseTermChange}
                 onTermDirtyChange={updateTermDraftDirty}
                 expandedTermPartnershipId={expandedTermPartnershipId}
-                suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen || Boolean(acceptance)}
                 detailActionError={actionError}
                 selectedIds={selectedPartnerIds}
                 onToggleSelect={togglePartnerSelect}
@@ -2133,7 +2206,7 @@ export function PartnersHub({
                   onCloseTermChange={requestCloseTermChange}
                   onTermDirtyChange={updateTermDraftDirty}
                   expandedTermPartnershipId={expandedTermPartnershipId}
-                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen || Boolean(acceptance)}
                   detailActionError={actionError}
                   selectedIds={selectedPartnerIds}
                   onToggleSelect={togglePartnerSelect}
@@ -2181,7 +2254,7 @@ export function PartnersHub({
                   onCloseTermChange={requestCloseTermChange}
                   onTermDirtyChange={updateTermDraftDirty}
                   expandedTermPartnershipId={expandedTermPartnershipId}
-                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+                  suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen || Boolean(acceptance)}
                   detailActionError={actionError}
                   selectedIds={selectedPartnerIds}
                   onToggleSelect={togglePartnerSelect}
@@ -2315,7 +2388,7 @@ export function PartnersHub({
               onCloseTermChange={requestCloseTermChange}
               onTermDirtyChange={updateTermDraftDirty}
               expandedTermPartnershipId={expandedTermPartnershipId}
-              suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen}
+              suspendDetailFocusTrap={Boolean(lifecycleConfirm) || termDiscardOpen || Boolean(acceptance)}
               detailActionError={actionError}
               selectedIds={selectedPartnerIds}
               onToggleSelect={togglePartnerSelect}
@@ -2752,6 +2825,13 @@ export function PartnersHub({
       ) : null}
 
       {isAgentR04 ? renderAgentTermChangeHost() : null}
+
+      {acceptance ? (
+        <PartnerInvitationAcceptanceDialog partnership={acceptance.partnership} meId={meId}
+          accepted={acceptance.accepted} error={acceptance.error}
+          busy={busyId === acceptance.partnership.id}
+          onAccept={() => void confirmAcceptance()} onClose={closeAcceptance} />
+      ) : null}
 
       {lifecycleConfirm
         ? (() => {

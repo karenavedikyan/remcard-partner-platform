@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
@@ -121,6 +121,15 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const [declinedLocally, setDeclinedLocally] = useState(false);
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [existingPartnershipId, setExistingPartnershipId] = useState<string | null>(null);
+  const acceptInFlight = useRef(false);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const [acceptedRedirect, setAcceptedRedirect] = useState<string | null>(null);
+  const acceptedTitleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (acceptedRedirect) acceptedTitleRef.current?.focus(); }, [acceptedRedirect]);
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -167,27 +176,31 @@ export function InviteLanding({ token }: InviteLandingProps) {
 
   async function acceptInvite() {
     if (
-      accepting ||
+      acceptInFlight.current ||
+      acceptedRedirect ||
       profileBlocksPrivateAccept(authUser, readiness) ||
       !preview ||
       !linkInvitePreviewHasAcceptableTerms(preview)
     ) {
       return;
     }
+    acceptInFlight.current = true;
     setAccepting(true);
     setAcceptError("");
     setExistingPartnershipId(null);
+    let confirmed = false;
     setDeclinedLocally(false);
     try {
       const result = await remcardFetch<{ ok: boolean; redirect?: string; code?: string }>(
         "/api/partnership/link-invite/accept",
         { method: "POST", body: { token } },
       );
-      if (result.redirect) {
-        router.replace(result.redirect);
-        router.refresh();
-      }
+      if (!mounted.current) return;
+      if (result.ok !== true) throw new Error("Acceptance was not confirmed");
+      confirmed = true;
+      setAcceptedRedirect("/partners");
     } catch (caught) {
+      if (!mounted.current) return;
       if (caught instanceof RemcardApiError && caught.status === 401) {
         setAcceptError("Сессия завершилась. Войдите снова.");
         setAuthUser(null);
@@ -202,10 +215,11 @@ export function InviteLanding({ token }: InviteLandingProps) {
           setExistingPartnershipId(body.partnershipId);
         }
       } else {
-        setAcceptError("Не удалось принять");
+        setAcceptError("Не удалось принять приглашение. Попробуйте ещё раз.");
       }
     } finally {
-      setAccepting(false);
+      acceptInFlight.current = confirmed;
+      if (mounted.current) setAccepting(false);
     }
   }
 
@@ -275,6 +289,31 @@ export function InviteLanding({ token }: InviteLandingProps) {
               {loadError}
             </p>
             <Button onClick={() => void loadPreview()}>Повторить</Button>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (acceptedRedirect && preview) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.wrap}>
+          <BrandMark />
+          <section className={`${styles.card} ${styles.acceptedCard}`} data-testid="link-invite-accepted">
+            <h1 ref={acceptedTitleRef} tabIndex={-1} className={styles.title}>Приглашение принято</h1>
+            <p className={styles.lead} role="status">
+              Сотрудничество с {inviterDisplayName(preview)} активно. Согласованные условия сохранены.
+              Запросить изменения можно отдельно из карточки действующего партнёра.
+            </p>
+            <ul className={styles.benefitList} data-testid="link-invite-accepted-terms">
+              {linkInvitePreviewParticipatingRowsForDisplay(preview.terms).map(term => (
+                <li key={term.category}>{displayCategoryLabel(term.category, term.categoryLabel)}: {term.storePercent}%</li>
+              ))}
+            </ul>
+            <Button onClick={() => { router.replace(acceptedRedirect); router.refresh(); }}>
+              К партнёрам
+            </Button>
           </section>
         </div>
       </main>
@@ -513,7 +552,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
               ) : null}
               {existingPartnershipId ? (
                 <p className={styles.lead}>
-                  <Link href={`/partners?terms=${encodeURIComponent(existingPartnershipId)}`}>
+                  <Link href="/partners">
                     Открыть существующее партнёрство в кабинете
                   </Link>
                 </p>

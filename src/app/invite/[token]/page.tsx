@@ -28,5 +28,5 @@ export async function generateMetadata(props: InvitePageProps): Promise<Metadata
 export default async function InvitePage(props: InvitePageProps) {
   const params = await props.params;
   const token = decodeURIComponent(params.token ?? "").trim();
-  return <InviteLanding token={token} />;
+  return <InviteLanding key={token} token={token} />;
 }

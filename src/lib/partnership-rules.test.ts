@@ -420,7 +420,6 @@ describe("partnership action rules", () => {
     const responder = getPartnershipUiActions(pending, "store-1");
     assert.deepEqual(responder.map((item) => item.kind), [
       "accept_pending",
-      "counter_offer_back",
       "reject",
     ]);
 

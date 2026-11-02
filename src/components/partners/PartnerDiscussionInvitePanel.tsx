@@ -16,6 +16,7 @@ import {
   buildDiscussionInviteShareText,
 } from "@/components/partners/AgentDiscussionInviteResult";
 import styles from "./PartnerInviteDialog.module.css";
+import { PartnerInviteHistory } from "./PartnerInviteHistory";
 
 type DiscussionInviteRow = {
   id: string;
@@ -27,6 +28,8 @@ type DiscussionInviteRow = {
   createdAt: string;
   joinedAt: string | null;
   canProposeTerms: boolean;
+  counterpartyDisplayName?: string | null;
+  canRecover?: boolean;
 };
 
 type Props = {
@@ -88,6 +91,7 @@ export function PartnerDiscussionInvitePanel({
   const [shareOpen, setShareOpen] = useState(false);
   const [invites, setInvites] = useState<DiscussionInviteRow[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
+  const [listError, setListError] = useState("");
   const [revokingId, setRevokingId] = useState<string | null>(null);
   /** R1 ready hides history until «Открыть карточку приглашения». */
   const [historyRevealed, setHistoryRevealed] = useState(false);
@@ -100,13 +104,14 @@ export function PartnerDiscussionInvitePanel({
 
   const loadInvites = useCallback(async () => {
     setLoadingInvites(true);
+    setListError("");
     try {
       const data = await remcardFetch<{ invites: DiscussionInviteRow[] }>(
         "/api/partnership/discussion-invite",
       );
       setInvites(data.invites ?? []);
     } catch {
-      setInvites([]);
+      setListError("Не удалось обновить список ссылок. Попробуйте ещё раз.");
     } finally {
       setLoadingInvites(false);
     }
@@ -364,55 +369,20 @@ export function PartnerDiscussionInvitePanel({
             title="Ваши ссылки к обсуждению"
             hint="Ожидающие ссылки можно отозвать до присоединения получателя."
           >
+            {listError ? <p className={styles.error} role="alert">{listError}</p> : null}
             {loadingInvites ? (
               <p className={styles.hint}>Загружаем список…</p>
             ) : invites.length === 0 ? (
               <p className={styles.hint}>Пока нет созданных ссылок.</p>
             ) : (
-              <ul className={styles.linkList} data-testid="discussion-invite-list">
-                {invites.map((row) => {
-                  const highlighted =
-                    Boolean(createdSnapshot?.inviteId) && row.id === createdSnapshot?.inviteId;
-                  return (
-                    <li
-                      key={row.id}
-                      className={styles.linkListItem}
-                      ref={highlighted ? highlightedCardRef : undefined}
-                      data-highlighted={highlighted ? "true" : undefined}
-                      data-testid={highlighted ? "discussion-invite-card-active" : undefined}
-                    >
-                      <div>
-                        <strong>{row.recipientLabel}</strong>
-                        <p className={styles.hint}>{row.cooperationSubject}</p>
-                        <p className={styles.hint}>
-                          {row.role === "author" ? "Вы создали" : "Вы участник"} · до{" "}
-                          {formatExpiry(row.expiresAt)}
-                        </p>
-                      </div>
-                      <div className={styles.actions}>
-                        <StatusBadge
-                          label={STATUS_LABEL[row.status] ?? row.status}
-                          tone={row.status === "JOINED" ? "active" : "neutral"}
-                        />
-                        {row.status === "JOINED" && row.canProposeTerms ? (
-                          <Button variant="secondary" onClick={() => openDiscussion(row.id)}>
-                            Открыть обсуждение
-                          </Button>
-                        ) : null}
-                        {row.role === "author" && row.status === "PENDING" ? (
-                          <Button
-                            variant="text"
-                            disabled={revokingId === row.id}
-                            onClick={() => void revokeInvite(row.id)}
-                          >
-                            {revokingId === row.id ? "Отзываем…" : "Отозвать"}
-                          </Button>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <PartnerInviteHistory kind="discussion" onChanged={loadInvites}
+                onOpenDiscussion={openDiscussion} highlightedId={createdSnapshot?.inviteId}
+                highlightedRef={highlightedCardRef} rows={invites.map(row => ({
+                  id: row.id, status: row.status, title: row.recipientLabel, subtitle: row.cooperationSubject,
+                  author: row.role === "author", createdAt: row.createdAt, expiresAt: row.expiresAt,
+                  acceptedAt: row.joinedAt, acceptedName: row.counterpartyDisplayName,
+                  canRecover: row.canRecover, canDiscuss: row.status === "JOINED" && row.canProposeTerms,
+                }))} />
             )}
           </Panel>
         </div>

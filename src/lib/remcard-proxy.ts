@@ -263,14 +263,16 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/partnership\/(list|search|incoming-count)$/,
     },
     { methods: new Set(["POST"]), pattern: /^\/api\/partnership\/(invite|remind)$/ },
-    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/link-invite$/ },
+    { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/partnership\/link-invite$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/link-invite\/[\w-]+\/link$/ },
     { methods: new Set(["DELETE"]), pattern: /^\/api\/partnership\/link-invite\/[\w-]+$/ },
     {
       methods: new Set(["GET"]),
       pattern: /^\/api\/partnership\/link-invite\/public\/[\w-]+$/,
     },
     { methods: new Set(["POST"]), pattern: /^\/api\/partnership\/link-invite\/accept$/ },
-    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/discussion-invite$/ },
+    { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/partnership\/discussion-invite$/ },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/discussion-invite\/[\w-]+\/link$/ },
     {
       methods: new Set(["GET", "DELETE"]),
       pattern: /^\/api\/partnership\/discussion-invite\/(?!join$)[\w-]+$/,

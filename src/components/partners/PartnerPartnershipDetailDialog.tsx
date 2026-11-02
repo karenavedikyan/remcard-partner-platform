@@ -202,6 +202,16 @@ export function PartnerPartnershipDetailDialog({
           ) : null}
           <p className={styles.metaBlock}>{partnerListSubtitle(partner)}</p>
           <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+          {["ACTIVE", "PAUSED", "ENDED"].includes(partnership.status) ? <div data-testid="partner-agreement-dates">
+            <p className={styles.metaBlock}>Начало сотрудничества: {partnership.startedAt
+              ? new Date(partnership.startedAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })
+              : "точная дата не сохранена"}</p>
+            {partnership.termsEffectiveAt ? <p className={styles.metaBlock}>
+              {partnership.termsChangedAt ? "Условия изменены с" : "Условия действуют с"}{" "}
+              {new Date(partnership.termsEffectiveAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}
+            </p> : null}
+            <p className={styles.metaBlock}>Ранее выданные сертификаты сохраняют свои скидку и вознаграждение.</p>
+          </div> : null}
 
           {showAgentEmptyExplain ? (
             <p className={styles.explain} data-testid="partner-detail-agent-empty-hint">
@@ -225,6 +235,13 @@ export function PartnerPartnershipDetailDialog({
           ) : (
             <p className={styles.metaBlock}>Персональные условия пока не согласованы.</p>
           )}
+
+          {partnership.note && (partnership.status === "INVITED" || partnership.status === "PENDING") ? (
+            <div data-testid="partner-detail-invitation-note">
+              <p className={styles.sectionTitle}>Сообщение партнёра</p>
+              <p className={styles.metaBlock} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{partnership.note}</p>
+            </div>
+          ) : null}
 
           {waiting.map((item) => (
             <p key={item.message} className={styles.waiting}>

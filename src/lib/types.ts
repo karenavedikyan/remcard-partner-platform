@@ -174,6 +174,10 @@ export type Partnership = {
   note: string | null;
   createdAt: string;
   updatedAt: string;
+  startedAt?: string | null;
+  termsEffectiveAt?: string | null;
+  termsChangedAt?: string | null;
+  termsRevisionCount?: number;
   storeUserId: string;
   proUserId: string;
   terms: PartnershipTerm[];

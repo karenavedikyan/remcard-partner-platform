@@ -1,0 +1,35 @@
+.history { display: grid; gap: 12px; min-width: 0; color: var(--ink); }
+.toolbar, .actions, .summary, .select { display: flex; align-items: center; gap: 10px; }
+.toolbar { flex-wrap: wrap; justify-content: space-between; }
+.select { font-size: 13px; min-height: 36px; cursor: pointer; }
+.list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.row { min-width: 0; border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 5px; }
+.row[data-highlighted="true"] { background: var(--soft); outline: 2px solid var(--line); outline-offset: 4px; }
+.summary { min-width: 0; align-items: flex-start; }
+.summary > input { flex: 0 0 auto; margin-top: 4px; }
+.identity { display: grid; min-width: 0; gap: 2px; flex: 1; overflow-wrap: anywhere; font-size: 14px; }
+.meta, .details { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.details { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-left: 24px; }
+.status { font-size: 12px; font-weight: 600; color: var(--ink); padding: 3px 7px; background: var(--offset); border-radius: 5px; }
+.status[data-accepted="true"] { color: #146142; background: #e3f4eb; }
+.actions { flex-wrap: wrap; padding-left: 20px; gap: 4px 12px; }
+.actions > button { min-height: 32px; padding-block: 4px; font-size: 13px; }
+.confirm { padding: 12px; border: 1px solid var(--line); background: var(--offset); border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.confirm p { margin: 0 0 8px; }
+.confirm .actions { padding-left: 0; }
+.link { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.link label { display: grid; gap: 6px; font-size: 12px; min-width: 0; }
+.link input { width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); padding: 9px; border-radius: 5px; font-size: 13px; }
+.link button { justify-self: start; }
+.error { color: var(--primary); font-size: 13px; overflow-wrap: anywhere; }
+.notice { font-size: 13px; margin: 0; }
+:global([data-theme="dark"]) .meta, :global([data-theme="dark"]) .details { color: #c5c7c9; }
+:global([data-theme="dark"]) .status[data-accepted="true"] { color: #b6edcf; background: #193b2e; }
+@media (max-width: 480px) {
+  .summary { flex-wrap: wrap; gap: 6px; }
+  .identity { flex-basis: calc(100% - 28px); }
+  .status { margin-left: 24px; }
+  .toolbar { gap: 6px; }
+  .toolbar > button { width: 100%; }
+  .details { display: grid; gap: 0; }
+}

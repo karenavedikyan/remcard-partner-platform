@@ -161,6 +161,10 @@
   margin: 0;
 }
 
+.acceptedCard {
+  overflow-wrap: anywhere;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

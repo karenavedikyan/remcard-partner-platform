@@ -33,6 +33,7 @@ import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
+import { PartnerInviteHistory } from "./PartnerInviteHistory";
 
 type LinkInviteRow = {
   id: string;
@@ -40,6 +41,8 @@ type LinkInviteRow = {
   expiresAt: string;
   createdAt: string;
   acceptedAt: string | null;
+  acceptedByName?: string | null;
+  canRecover?: boolean;
   intendedPartnerType: string | null;
   note: string | null;
   partnershipId: string | null;
@@ -560,37 +563,18 @@ export function PartnerLinkInvitePanel({
       </Panel>
 
       {wizard ? <button type="button" className={wizardStyles.historyToggle} aria-expanded={showHistory} onClick={() => setShowHistory(!showHistory)}>Ваши ссылки-приглашения</button> : null}
-      {!wizard || showHistory ? <Panel title="Ваши ссылки-приглашения" hint="Отозванные и использованные ссылки нельзя восстановить.">
+      {!wizard || showHistory ? <Panel title="Ваши ссылки-приглашения" hint="Удаление из списка не отменяет сотрудничество. Непринятую ссылку можно повторно отправить или отдельно отозвать.">
         {listError ? (
           <p className={styles.error} role="alert">
             {listError}
           </p>
         ) : null}
-        {invites.length === 0 ? (
-          <p className={styles.hint}>Активных ссылок пока нет.</p>
-        ) : (
-          <ul className={styles.linkList}>
-            {invites.map((invite) => (
-              <li key={invite.id} className={styles.linkListItem}>
-                <div>
-                  <strong>{invite.status}</strong>
-                  <span className={styles.hint}>
-                    {" "}
-                    · до {formatExpiry(invite.expiresAt)}
-                    {invite.intendedPartnerType
-                      ? ` · ${INTENDED_OPTIONS.find((option) => option.value === invite.intendedPartnerType)?.label ?? invite.intendedPartnerType}`
-                      : ""}
-                  </span>
-                </div>
-                {invite.status === "PENDING" ? (
-                  <Button variant="secondary" onClick={() => void revokeInvite(invite.id)}>
-                    Отозвать
-                  </Button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+        <PartnerInviteHistory kind="terms" onChanged={loadInvites} rows={invites.map(invite => ({
+          id: invite.id, status: invite.status, author: true,
+          title: INTENDED_OPTIONS.find(option => option.value === invite.intendedPartnerType)?.label ?? "Приглашение к сотрудничеству",
+          createdAt: invite.createdAt, expiresAt: invite.expiresAt, acceptedAt: invite.acceptedAt,
+          acceptedName: invite.acceptedByName, canRecover: invite.canRecover,
+        }))} />
       </Panel> : null}
     </div>
   );

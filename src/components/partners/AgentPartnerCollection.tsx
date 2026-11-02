@@ -301,6 +301,12 @@ export function AgentPartnerCollection(props: Props) {
   }, []);
   const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
 
+  // Accepted/rejected rows leave the incoming collection. Do not leave an invisible
+  // dialog's Escape/focus listeners alive after its partnership disappeared.
+  useEffect(() => {
+    if (detailPartnershipId && !detailPartnership) setDetailPartnershipId(null);
+  }, [detailPartnershipId, detailPartnership]);
+
   // One-shot deep-link open: apply once per focus id, then acknowledge so page-size/refresh
   // cannot reopen after the user explicitly closes.
   useEffect(() => {

@@ -389,16 +389,8 @@ export function getPartnershipUiActions(
     }
 
     if (authorId && !iAmAuthor) {
-      const requestChangesKind: PartnershipActionKind = iAmInitiator
-        ? "counter_offer_back"
-        : "counter_offer";
       return [
         { kind: "accept_pending", label: "Принять условия", variant: "primary" },
-        {
-          kind: requestChangesKind,
-          label: "Запросить другие условия",
-          variant: "secondary",
-        },
         { kind: "reject", label: "Отклонить", variant: "secondary" },
       ];
     }
