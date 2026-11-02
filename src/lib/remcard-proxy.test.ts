@@ -281,6 +281,8 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("PATCH", "/api/admin/users/u1"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/admin/users/u1"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/admin"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/access/audit"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/access/audit/extra"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/admin/access/audit"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/admin/notification-settings"), true);
     assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/admin/notification-settings"), true);

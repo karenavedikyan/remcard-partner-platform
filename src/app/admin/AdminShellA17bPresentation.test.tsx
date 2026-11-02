@@ -36,10 +36,10 @@ describe("A17b admin shell source contracts", () => {
     expect(nav).not.toContain("Главное меню");
     expect(nav).not.toContain("partnersChrome");
     expect(nav).not.toMatch(/\bnavCount\b|\bcountBadge\b|\bfakeCount\b/);
-    // A21a adds real /admin/clients; unimplemented R1 pages stay absent.
+    // A21a adds real /admin/clients; A35a adds /admin/settings; unimplemented R2 pages stay absent.
     expect(nav).not.toContain("/admin/tasks");
     expect(nav).toContain("/admin/analytics");
-    expect(nav).not.toContain("/admin/settings");
+    expect(nav).toContain('{ href: "/admin/settings", label: "Настройки"');
     expect((nav.match(/aria-label="Администрирование"/g) || []).length).toBe(2);
     expect(nav).toMatch(/navDialogTitle[\s\S]*Меню/);
     expect(nav).toContain('aria-label="Открыть меню"');

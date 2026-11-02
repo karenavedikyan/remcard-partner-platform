@@ -63,10 +63,10 @@ describe("A21a/A21f clients source contracts", () => {
   it("adds Клиенты to AdminNav without inventing unimplemented R1 links", () => {
     const nav = readFileSync(NAV, "utf8");
     expect(nav).toContain('{ href: "/admin/clients", label: "Клиенты"');
-    // Root7 publishes analytics/password; still no invented tasks/settings.
     expect(nav).toContain('{ href: "/admin/analytics", label: "Аналитика"');
+    // A21a adds real /admin/clients; A35a adds /admin/settings; still no invented tasks.
+    expect(nav).toContain('{ href: "/admin/settings", label: "Настройки"');
     expect(nav).not.toContain("/admin/tasks");
-    expect(nav).not.toContain("/admin/settings");
     expect(nav).not.toContain("Главное меню");
   });
 

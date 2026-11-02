@@ -45,6 +45,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["POST"]),
       pattern: /^\/api\/pro\/admin\/access\/users\/[\w-]+\/reset-password$/,
     },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/admin\/access\/audit$/ },
     /* A17a: exact readonly list for R1 «Команда». No /api/admin/* wildcard; no write/search. */
     { methods: new Set(["GET"]), pattern: /^\/api\/admin\/team$/ },
     /* A21a: exact readonly GET for R1 «Клиенты» (role=CLIENT via query). No wildcard, no write, no /users/:id. */

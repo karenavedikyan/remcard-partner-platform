@@ -16,7 +16,7 @@ type NavItem = {
   group: "primary" | "control" | "service";
 };
 
-/** Existing destinations only — no fake counts, no unimplemented R1 pages. */
+/** Existing destinations only — no fake counts, no unimplemented R1 pages except settings (A35a). */
 export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/overview", label: "Обзор", icon: "overview", group: "primary" },
   { href: "/admin/moderation", label: "Модерация", icon: "moderation", group: "primary" },
@@ -25,6 +25,7 @@ export const ADMIN_NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/analytics", label: "Аналитика", icon: "analytics", group: "primary" },
   { href: "/admin/team", label: "Команда", icon: "team", group: "primary" },
   { href: "/admin/notifications", label: "Уведомления", icon: "notifications", group: "control" },
+  { href: "/admin/settings", label: "Настройки", icon: "settings", group: "control" },
   { href: "/admin/test-users", label: "Тестовые пользователи", icon: "test", group: "service" },
   { href: "/admin/password", label: "Пароль", icon: "password", group: "service" },
   { href: "/profile", label: "Кабинет", icon: "cabinet", group: "service" },
@@ -122,6 +123,23 @@ function NavIcon({ name }: { name: string }) {
         <svg {...common}>
           <path
             d="M6 17h12l-1.2-1.8A6 6 0 0 1 15 9V8a3 3 0 1 0-6 0v1a6 6 0 0 1-1.8 6.2L6 17Zm4 2a2 2 0 0 0 4 0"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.77 1.05 1.41 1.1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
