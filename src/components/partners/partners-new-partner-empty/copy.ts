@@ -98,3 +98,12 @@ export function partnersNewPartnerEmptyCopy(
 
 export const PARTNERS_NEW_PARTNER_EMPTY_FOOT =
   "Раздел заполнится сам, когда появятся первые данные.";
+
+export const PARTNERS_NEW_PARTNER_EMPTY_HISTORY_KICKER = "Сеть партнёров";
+
+/** Non-empty collection, zero overview groups — no false “first data” or ended-row history promise. */
+export const PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT =
+  "Архив, скрытые записи и фильтры списка — в блоке ниже.";
+
+export const PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT_ARCHIVED_HIDDEN =
+  "Партнёры в архиве или скрытые из списка остаются вашими партнёрами — условия по ним действуют. Откройте список ниже, чтобы посмотреть записи и управлять ими.";

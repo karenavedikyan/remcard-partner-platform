@@ -123,6 +123,11 @@ import {
   type PartnerOverviewZone,
 } from "@/lib/partners-prototype-v1/overview-groups";
 import { PartnersOverviewLayout } from "@/components/partners/PartnersOverviewLayout";
+import {
+  parsePartnershipListPayload,
+  resolvePartnersEmptyPresentation,
+  shouldPinOverviewLegacyChrome,
+} from "@/components/partners/partners-overview-greeting";
 import styles from "./PartnersHub.module.css";
 
 export type PartnersHubProps = {
@@ -231,6 +236,8 @@ export function PartnersHub({
     defaultSearchRoleForUser(profileUserToPartnerSide(initialProfile.user, initialProfile.organization)),
   );
   const [listError, setListError] = useState("");
+  const [partnershipListReady, setPartnershipListReady] = useState(false);
+  const [overviewLegacyDisclosureOpen, setOverviewLegacyDisclosureOpen] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [failedSearchPage, setFailedSearchPage] = useState<{
     mode: "reset" | "append";
@@ -683,6 +690,7 @@ export function PartnersHub({
   const overviewZoneWaitingRef = useRef<HTMLDetailsElement>(null);
   /** terms= id already paged into its overview zone (refresh/page-size must not re-page). */
   const overviewDeepLinkAppliedRef = useRef<string | null>(null);
+  const [termsDeepLinkPending, setTermsDeepLinkPending] = useState(false);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
@@ -811,9 +819,18 @@ export function PartnersHub({
       const data = await remcardFetch<{ partnerships: Partnership[] }>(
         `/api/partnership/list${qs ? `?${qs}` : ""}`,
       );
-      setPartnerships(data.partnerships ?? []);
+      const parsed = parsePartnershipListPayload(data);
+      if (!parsed.ok) {
+        setPartnerships([]);
+        setPartnershipListReady(false);
+        setListError("Не удалось загрузить список");
+        return;
+      }
+      setPartnerships(parsed.partnerships as Partnership[]);
+      setPartnershipListReady(true);
     } catch (caught) {
       setPartnerships([]);
+      setPartnershipListReady(false);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
     } finally {
       setLoadingList(false);
@@ -1196,6 +1213,51 @@ export function PartnersHub({
     }
     return chips;
   }, [isAgentR04, listCity, listPartnerType, listSpecialization, listStage, listTaxonomyLabels]);
+
+  const partnersEmptyPresentation = useMemo(
+    () =>
+      resolvePartnersEmptyPresentation({
+        partnerships,
+        isActiveSegment: (status) => partnershipAgentSegment(status) === "active",
+      }),
+    [partnerships],
+  );
+
+  const listFiltersEngaged = useMemo(
+    () =>
+      listFilterChips.length > 0 || listSearch.trim().length > 0 || listStatus !== "",
+    [listFilterChips.length, listSearch, listStatus],
+  );
+
+  const termEditingActive = Boolean(
+    expandedTermPartnershipId || pendingTermOpenId || termDiscardOpen || termDraftDirty,
+  );
+
+  const overviewLegacyChromePinned = useMemo(
+    () =>
+      isOverview &&
+      shouldPinOverviewLegacyChrome({
+        bulkOutcomePresent: bulkOutcome != null,
+        selectedPartnerCount: selectedPartnerIds.size,
+        listArchiveView,
+        listFiltersEngaged,
+        termsDeepLinkId: termsPartnershipId,
+        termsDeepLinkResolving: termsDeepLinkPending,
+        lifecycleConfirmOpen: lifecycleConfirm != null,
+        termEditingActive,
+      }),
+    [
+      bulkOutcome,
+      isOverview,
+      lifecycleConfirm,
+      listArchiveView,
+      listFiltersEngaged,
+      selectedPartnerIds.size,
+      termEditingActive,
+      termsDeepLinkPending,
+      termsPartnershipId,
+    ],
+  );
 
   const resetListFilters = useCallback(() => {
     // Clears query + restrictions; preserves selected sort and list/cards view.
@@ -1710,21 +1772,31 @@ export function PartnersHub({
 
   useEffect(() => {
     if (!termsPartnershipId) {
+      overviewDeepLinkAppliedRef.current = null;
+      setTermsDeepLinkPending(false);
       return;
     }
+    setTermsDeepLinkPending(true);
     setTab("list");
     void loadTermRequests(termsPartnershipId);
   }, [termsPartnershipId]);
 
   useEffect(() => {
     if (!termsPartnershipId) {
-      overviewDeepLinkAppliedRef.current = null;
       return;
     }
     if (!overviewGroups || loadingList) return;
-    if (overviewDeepLinkAppliedRef.current === termsPartnershipId) return;
+    if (overviewDeepLinkAppliedRef.current === termsPartnershipId) {
+      setTermsDeepLinkPending(false);
+      return;
+    }
     const match = partnerships.find((p) => p.id === termsPartnershipId);
-    if (!match) return;
+    if (!match) {
+      if (partnershipListReady && !loadingList) {
+        setTermsDeepLinkPending(false);
+      }
+      return;
+    }
     const zone = overviewZoneForPartnership(match, meId);
     if (zone === "active") {
       const idx = overviewActiveRows.findIndex((p) => p.id === termsPartnershipId);
@@ -1743,6 +1815,7 @@ export function PartnersHub({
       return;
     }
     overviewDeepLinkAppliedRef.current = termsPartnershipId;
+    setTermsDeepLinkPending(false);
   }, [
     termsPartnershipId,
     overviewGroups,
@@ -2269,9 +2342,15 @@ export function PartnersHub({
         <PartnersOverviewLayout
           lead="Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке."
           counts={overviewGroups.counts}
-          collectionIsEmpty={
-            !loadingList && !listError && partnerships.length === 0
-          }
+          listReady={partnershipListReady}
+          collectionIsEmpty={partnersEmptyPresentation.collectionIsEmpty}
+          greetingVariant={partnersEmptyPresentation.greetingVariant}
+          hasArchivedOrHiddenActive={partnersEmptyPresentation.hasArchivedOrHiddenActive}
+          collectionCount={partnerships.length}
+          legacyDisclosureOpen={overviewLegacyDisclosureOpen}
+          legacyChromePinned={overviewLegacyChromePinned}
+          legacyBulkOutcomeVisible={bulkOutcome != null}
+          onLegacyDisclosureOpenChange={setOverviewLegacyDisclosureOpen}
           loading={loadingList}
           error={listError}
           onRetry={() => void loadList()}

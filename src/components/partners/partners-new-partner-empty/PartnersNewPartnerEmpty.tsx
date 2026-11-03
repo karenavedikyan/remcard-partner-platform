@@ -3,6 +3,9 @@
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import {
   PARTNERS_NEW_PARTNER_EMPTY_FOOT,
+  PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT,
+  PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT_ARCHIVED_HIDDEN,
+  PARTNERS_NEW_PARTNER_EMPTY_HISTORY_KICKER,
   partnersNewPartnerEmptyCopy,
   resolvePartnersNewPartnerEmptyRole,
   type PartnersNewPartnerEmptyStep,
@@ -15,8 +18,13 @@ import {
 } from "./icons";
 import styles from "./PartnersNewPartnerEmpty.module.css";
 
+export type PartnersNewPartnerEmptyVariant = "true-empty" | "history";
+
 export type PartnersNewPartnerEmptyProps = {
   audience: PartnersHubAudience | undefined;
+  variant?: PartnersNewPartnerEmptyVariant;
+  /** Archived/hidden ACTIVE/PAUSED rows still in the authorized collection. */
+  hasArchivedOrHiddenActive?: boolean;
   onOpenFind: () => void;
   onOpenLink: () => void;
 };
@@ -39,6 +47,8 @@ function StepIcon({ step }: { step: PartnersNewPartnerEmptyStep }) {
  */
 export function PartnersNewPartnerEmpty({
   audience,
+  variant = "true-empty",
+  hasArchivedOrHiddenActive = false,
   onOpenFind,
   onOpenLink,
 }: PartnersNewPartnerEmptyProps) {
@@ -48,11 +58,18 @@ export function PartnersNewPartnerEmpty({
   }
 
   const copy = partnersNewPartnerEmptyCopy(role);
+  const foot =
+    variant === "true-empty"
+      ? PARTNERS_NEW_PARTNER_EMPTY_FOOT
+      : hasArchivedOrHiddenActive
+        ? PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT_ARCHIVED_HIDDEN
+        : PARTNERS_NEW_PARTNER_EMPTY_HISTORY_FOOT;
 
   return (
     <section
       className={styles.root}
       data-testid="partners-empty"
+      data-partners-empty-variant={variant}
       data-empty-state="partners"
       aria-labelledby="partners-new-partner-empty-title"
     >
@@ -61,7 +78,9 @@ export function PartnersNewPartnerEmpty({
           <EmptyStateHandshakeIcon className={styles.artIcon} />
         </div>
         <div className={styles.heroText}>
-          <span className={styles.kicker}>{copy.kicker}</span>
+          <span className={styles.kicker}>
+            {variant === "true-empty" ? copy.kicker : PARTNERS_NEW_PARTNER_EMPTY_HISTORY_KICKER}
+          </span>
           <h2 className={styles.title} id="partners-new-partner-empty-title">
             {copy.title}
           </h2>
@@ -100,7 +119,7 @@ export function PartnersNewPartnerEmpty({
           </li>
         ))}
       </ol>
-      <p className={styles.foot}>{PARTNERS_NEW_PARTNER_EMPTY_FOOT}</p>
+      <p className={styles.foot}>{foot}</p>
     </section>
   );
 }

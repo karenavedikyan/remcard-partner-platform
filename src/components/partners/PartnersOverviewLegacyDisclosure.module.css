@@ -1,0 +1,58 @@
+.root {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface);
+}
+
+.summary {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--space-4, 1rem) var(--space-5, 1.25rem);
+  font-size: var(--text-sm, 0.9375rem);
+  font-weight: 700;
+  color: var(--ink);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 0.75rem);
+}
+
+.summary:disabled {
+  cursor: default;
+}
+
+.chevron {
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.root.open .chevron {
+  transform: rotate(180deg);
+}
+
+.summary:focus-visible {
+  outline: 3px solid var(--accent, var(--primary));
+  outline-offset: 3px;
+}
+
+.body {
+  padding: 0 var(--space-5, 1.25rem) var(--space-5, 1.25rem);
+  border-top: 1px solid var(--line);
+}
+
+.attachedLegacyPanel {
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md, 10px) var(--radius-md, 10px);
+  background: var(--surface);
+  padding: 0 var(--space-5, 1.25rem) var(--space-5, 1.25rem);
+  margin-top: -1px;
+}
