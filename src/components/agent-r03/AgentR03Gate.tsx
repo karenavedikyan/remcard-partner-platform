@@ -5,6 +5,8 @@ import { RemcardApiError } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import type { AgentR03Status } from "@/lib/agent-r03/types";
 import { Button } from "@/components/ui/Button";
+import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
+import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
 import styles from "./agent-r03.module.css";
 
 export function AgentR03Gate({ children }: { children: React.ReactNode }) {
@@ -33,7 +35,9 @@ export function AgentR03Gate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
+  if (loading) {
+    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/certificates"]} />;
+  }
   if (error) {
     return (
       <div className={styles.errorBlock}>

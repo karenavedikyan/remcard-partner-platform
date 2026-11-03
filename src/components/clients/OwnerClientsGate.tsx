@@ -7,6 +7,8 @@ import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
+import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
 import styles from "@/components/agent-r03/agent-r03.module.css";
 import {
   OwnerClientsModeProvider,
@@ -83,7 +85,9 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
+  if (loading) {
+    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/clients"]} />;
+  }
   if (error) {
     return (
       <div className={styles.errorBlock}>

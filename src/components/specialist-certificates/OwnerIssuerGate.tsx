@@ -9,6 +9,8 @@ import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-cert
 import { shouldRenderBusinessOwnerHome } from "@/lib/business-home/gate";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
+import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
 import styles from "@/components/agent-r03/agent-r03.module.css";
 import {
   OwnerIssuerModeProvider,
@@ -72,7 +74,9 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
     };
   }, [pathname, router, searchParams]);
 
-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
+  if (loading) {
+    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/recommendations"]} />;
+  }
   if (error) {
     return (
       <div className={styles.errorBlock}>

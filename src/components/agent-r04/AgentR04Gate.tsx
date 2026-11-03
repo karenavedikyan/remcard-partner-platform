@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { fetchAgentR04Status, type AgentR04Status } from "@/lib/agent-r04/api";
 import { Button } from "@/components/ui/Button";
+import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
+import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
 import styles from "./agent-r04.module.css";
 
 export function AgentR04Gate({
@@ -38,7 +40,9 @@ export function AgentR04Gate({
     };
   }, []);
 
-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
+  if (loading) {
+    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/partners"]} />;
+  }
   if (error) {
     return (
       <div className={styles.errorBlock}>
