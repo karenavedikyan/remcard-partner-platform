@@ -23,6 +23,7 @@ import { SpecialistPresetSection } from "@/components/profile/specialist/Special
 import type { ProProfileResponse } from "@/lib/types";
 import styles from "../agent/AgentProfileWizard.module.css";
 import stepStyles from "./SpecialistWorkingProfileWizard.module.css";
+import { ProfileSectionEmptyGate } from "@/components/profile/empty-state/ProfileSectionEmptyGate";
 
 const STEPS = ["О себе", "Специализация", "Связь и работа", "Проверка"] as const;
 
@@ -82,6 +83,8 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved, onDirtyC
   const [draft, setDraft] = useState<SpecialistProfileDraftPayload>({});
   const [savedProfile, setSavedProfile] = useState<SpecialistProfileDraftPayload>({});
   const [profileComplete, setProfileComplete] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [hydrateOk, setHydrateOk] = useState(false);
   const [editing, setEditing] = useState(true);
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [versionConflict, setVersionConflict] = useState<{
@@ -103,9 +106,12 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved, onDirtyC
       setSavedProfile(data.savedProfile ?? data.payload ?? {});
       setVersion(data.version ?? 0);
       setProfileComplete(Boolean(data.profileComplete));
+      setHasDraft(Boolean(data.hasDraft));
+      setHydrateOk(true);
       setEditing(!data.profileComplete || Boolean(data.hasDraft));
       setStep(Math.max(0, Math.min(3, (data.step ?? 1) - 1)));
     } catch {
+      setHydrateOk(false);
       setBanner({ kind: "error", text: "Не удалось загрузить черновик профиля." });
     } finally {
       setLoading(false);
@@ -400,8 +406,10 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved, onDirtyC
   }
 
   const patternStep = step === 0 || step === 1 || step === 3;
+  const showEmptyIntro = hydrateOk && !profileComplete && !hasDraft;
 
   return (
+    <ProfileSectionEmptyGate showEmptyIntro={showEmptyIntro} role="specialist">
     <div
       className={
         patternStep
@@ -873,5 +881,6 @@ export function SpecialistWorkingProfileWizard({ onWorkingProfileSaved, onDirtyC
         </section>
       </div>
     </div>
+    </ProfileSectionEmptyGate>
   );
 }

@@ -103,7 +103,10 @@ describe("BusinessWorkingProfileWizard skipStep", () => {
         basicsEditable
       />,
     );
-    await user.type(await screen.findByLabelText(/Название компании/i), "Юг");
+    await waitFor(() =>
+      expect(screen.getByTestId("business-profile-basics-panel")).toBeInTheDocument(),
+    );
+    await user.type(screen.getByLabelText(/Название компании/i), "Юг");
     await user.type(screen.getByLabelText(/Имя представителя/i), "Иван");
     await user.type(screen.getByLabelText(/^Город/i), "Краснодар");
     await user.click(screen.getByRole("button", { name: /Продолжить/i }));

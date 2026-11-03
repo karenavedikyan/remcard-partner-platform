@@ -157,4 +157,31 @@ describe("Independent R02.1 wizard review", () => {
     await screen.findByText(/проверьте подключение/i);
     await waitFor(() => expect(submit).not.toBeDisabled());
   });
+
+  it("shows empty onboarding before wizard when profile has no draft", async () => {
+    api.fetchAgentProfileDraft.mockResolvedValue({
+      step: 1,
+      version: 0,
+      draftEpoch: 0,
+      hasDraft: false,
+      profileComplete: false,
+      profileSaved: false,
+      payload: {},
+      savedProfile: {},
+    });
+    render(<AgentProfileWizard userId="new-agent" />);
+    await screen.findByTestId("empty-state");
+    expect(screen.queryByTestId("agent-profile-wizard")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("profile-empty-start"));
+    await screen.findByTestId("agent-profile-wizard");
+    expect(api.patchAgentProfileDraft).not.toHaveBeenCalled();
+    expect(api.finishAgentProfile).not.toHaveBeenCalled();
+  });
+
+  it("keeps load error state instead of empty onboarding", async () => {
+    api.fetchAgentProfileDraft.mockRejectedValue(new RemcardApiError(403, "Нет доступа", null));
+    render(<AgentProfileWizard userId="blocked-agent" />);
+    await screen.findByText("Нет доступа");
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+  });
 });
