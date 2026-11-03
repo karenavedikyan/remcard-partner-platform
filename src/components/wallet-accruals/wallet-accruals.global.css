@@ -425,6 +425,15 @@
 .wallet-accruals-coverage {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
+  color: var(--wallet-accrual-ink-muted-strong, #4a5058);
+}
+
+.pw .wallet-accruals .wallet-accruals-coverage {
+  color: var(--wallet-accrual-ink-muted-strong, #4a5058);
+}
+
+[data-theme=dark] .pw .wallet-accruals .wallet-accruals-coverage {
+  color: var(--wallet-accrual-ink-muted, #b8c0ca);
 }
 
 .wallet-accruals-quick__btn {
@@ -452,7 +461,7 @@
 .wallet-accruals-quick__btn--teal {
   background: rgba(26, 122, 109, 0.12);
   border-color: rgba(26, 122, 109, 0.35);
-  color: #0f5c52;
+  color: #0a4a41;
 }
 
 .wallet-accruals-quick__btn--accent {
