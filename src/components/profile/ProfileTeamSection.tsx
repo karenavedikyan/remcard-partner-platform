@@ -25,6 +25,8 @@ import {
   type TeamSectionView,
   type UnifiedPendingInvite,
 } from "@/lib/team-section-model";
+import { shouldShowTeamNewPartnerEmptyState } from "@/lib/team-new-partner-empty-gate";
+import { TeamSectionNewPartnerEmpty } from "./team-new-partner-empty/TeamSectionNewPartnerEmpty";
 import { Button } from "@/components/ui/Button";
 import {
   ProfileSoloPartnerEmployeeCard,
@@ -264,6 +266,18 @@ export function ProfileTeamSection({
   }
 
   const canManage = overview ? canManageTeam(overview) : false;
+
+  const showNewPartnerEmpty = shouldShowTeamNewPartnerEmptyState({
+    contentReady,
+    overview,
+    displayTeamCount: displayTeam.length,
+    pendingInviteCount: pendingUnified.length,
+    soloEmployeeCount: soloEmployees.length,
+    searchQuery: search,
+    locationFilter,
+    invitesLoadError: Boolean(invitesLoadError),
+    canManage,
+  });
 
   function openWizard(scope?: InviteWizardScope, branchId?: string) {
     setWizardScope(scope);
@@ -535,26 +549,6 @@ export function ProfileTeamSection({
 
   return (
     <div className={styles.root} data-testid="team-section-root">
-      <div className={styles.heading}>
-        <div>
-          <h2>Команда и доступы</h2>
-          <p>
-            Кто с вами работает, за что отвечает и к каким подразделениям имеет доступ.
-          </p>
-        </div>
-        {canManage ? (
-          <Button
-            type="button"
-            className={styles.headingCta}
-            data-testid="team-open-invite-wizard"
-            onClick={() => openWizard()}
-          >
-            <TeamIconUserPlus className={styles.ctaIcon} />
-            Пригласить сотрудника
-          </Button>
-        ) : null}
-      </div>
-
       {loading ? <p className={formStyles.hint}>Загружаем…</p> : null}
       {error ? (
         <div className={styles.errorRow} role="alert">
@@ -590,6 +584,39 @@ export function ProfileTeamSection({
           <code>{lastInviteUrl}</code>
         </div>
       ) : null}
+
+      {showNewPartnerEmpty ? (
+        <TeamSectionNewPartnerEmpty
+          onInvite={
+            canManage
+              ? () =>
+                  openWizard(overview?.myRole === "SOLO_PARTNER" ? "SOLO_PARTNER" : undefined)
+              : undefined
+          }
+        />
+      ) : null}
+
+      {!showNewPartnerEmpty ? (
+        <>
+      <div className={styles.heading}>
+        <div>
+          <h2>Команда и доступы</h2>
+          <p>
+            Кто с вами работает, за что отвечает и к каким подразделениям имеет доступ.
+          </p>
+        </div>
+        {canManage ? (
+          <Button
+            type="button"
+            className={styles.headingCta}
+            data-testid="team-open-invite-wizard"
+            onClick={() => openWizard()}
+          >
+            <TeamIconUserPlus className={styles.ctaIcon} />
+            Пригласить сотрудника
+          </Button>
+        ) : null}
+      </div>
 
       {overview && overview.myRole !== "OTHER" ? (
         <div className={styles.stats} data-testid="team-stats">
@@ -733,6 +760,8 @@ export function ProfileTeamSection({
         Владелец управляет организацией. Приглашённые сотрудники не могут сменить владельца, удалить
         организацию или повысить собственные права.
       </p>
+        </>
+      ) : null}
 
       {editMember && overview ? (
         <ProfileTeamMemberEditor

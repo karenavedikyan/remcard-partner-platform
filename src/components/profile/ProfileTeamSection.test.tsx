@@ -96,17 +96,22 @@ describe("ProfileTeamSection access gates", () => {
   });
 
   it("loads overview for org owner", async () => {
-    vi.mocked(remcardFetch).mockResolvedValue({
-      organization: { id: "o1", name: "Shop" },
-      myRole: "ORG_OWNER",
-      myBranchIds: [],
-      summary: {
-        totalEmployees: 0,
-        byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 },
-        pendingInvites: 0,
-      },
-      branches: [],
-      viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: { id: "o1", name: "Shop" },
+          myRole: "ORG_OWNER",
+          myBranchIds: [],
+          summary: {
+            totalEmployees: 0,
+            byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 },
+            pendingInvites: 0,
+          },
+          branches: [],
+          viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+        };
+      }
+      return { invites: [] };
     });
     render(
       <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
@@ -118,6 +123,55 @@ describe("ProfileTeamSection access gates", () => {
         "/api/pro/organization/employees-overview",
       );
     });
+    expect(await screen.findByTestId("empty-state")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Пригласите команду" })).toBeInTheDocument();
+    expect(screen.queryByTestId("team-stats")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("team-view-people")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("es-show-demo")).not.toBeInTheDocument();
+  });
+
+  it("keeps management UI when search filters to zero matches", async () => {
+    const user = userEvent.setup();
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: { id: "o1", name: "Shop" },
+          myRole: "ORG_OWNER",
+          myBranchIds: ["b1"],
+          summary: {
+            totalEmployees: 1,
+            byRole: { MANAGER: 0, SELLER: 1, VIEWER: 0 },
+            pendingInvites: 0,
+          },
+          team: [
+            {
+              userId: "u2",
+              displayName: "Мария",
+              publicId: "RC-M",
+              photoUrl: null,
+              lastActiveAt: null,
+              fullName: "Мария Иванова",
+              position: "Продавец",
+              membershipKind: "BRANCH_STAFF",
+              orgMemberStatus: null,
+              branchAccess: [],
+            },
+          ],
+          branches: [],
+          viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+        };
+      }
+      return { invites: [] };
+    });
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection />
+      </ProfileCabinetAccessProvider>,
+    );
+    await screen.findByTestId("team-stats");
+    await user.type(screen.getByLabelText(/Поиск по имени или должности/i), "zzz-no-match");
+    expect(await screen.findByText("Сотрудники не найдены")).toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
   it("keeps roster visible when invites GET fails with 500", async () => {

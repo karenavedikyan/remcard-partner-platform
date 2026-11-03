@@ -10,6 +10,7 @@ import {
   resolveDisplayTeam,
 } from "./team-section-model";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "./employees-overview-types";
+import { shouldShowTeamNewPartnerEmptyState } from "./team-new-partner-empty-gate";
 
 const sampleMember = (overrides: Partial<TeamMemberRow> = {}): TeamMemberRow => ({
   userId: "u1",
@@ -221,5 +222,78 @@ describe("team-section-model", () => {
       ],
     } as unknown as EmployeesOverviewResponse;
     expect(resolveDisplayTeam(overview)).toHaveLength(1);
+  });
+});
+
+describe("shouldShowTeamNewPartnerEmptyState", () => {
+  const baseOverview = {
+    organization: { id: "o1", name: "Shop" },
+    myRole: "ORG_OWNER" as const,
+    myBranchIds: [],
+    summary: {
+      totalEmployees: 0,
+      byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 },
+      pendingInvites: 0,
+    },
+    branches: [],
+    viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+  };
+
+  it("shows only when roster is empty without active filters", () => {
+    expect(
+      shouldShowTeamNewPartnerEmptyState({
+        contentReady: true,
+        overview: baseOverview,
+        displayTeamCount: 0,
+        pendingInviteCount: 0,
+        soloEmployeeCount: 0,
+        searchQuery: "",
+        locationFilter: "all",
+        invitesLoadError: false,
+        canManage: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowTeamNewPartnerEmptyState({
+        contentReady: true,
+        overview: baseOverview,
+        displayTeamCount: 0,
+        pendingInviteCount: 0,
+        soloEmployeeCount: 0,
+        searchQuery: "анна",
+        locationFilter: "all",
+        invitesLoadError: false,
+        canManage: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowTeamNewPartnerEmptyState({
+        contentReady: false,
+        overview: baseOverview,
+        displayTeamCount: 0,
+        pendingInviteCount: 0,
+        soloEmployeeCount: 0,
+        searchQuery: "",
+        locationFilter: "all",
+        invitesLoadError: false,
+        canManage: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("blocks empty onboarding when invite list failed to load for managers", () => {
+    expect(
+      shouldShowTeamNewPartnerEmptyState({
+        contentReady: true,
+        overview: baseOverview,
+        displayTeamCount: 0,
+        pendingInviteCount: 0,
+        soloEmployeeCount: 0,
+        searchQuery: "",
+        locationFilter: "all",
+        invitesLoadError: true,
+        canManage: true,
+      }),
+    ).toBe(false);
   });
 });
