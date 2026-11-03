@@ -8,14 +8,14 @@ export function CabinetShellIdentityReconcileDeadEnd() {
   return (
     <div
       className={skeletonStyles.root}
-      role="alert"
+      role="status"
       aria-live="polite"
       data-testid="cabinet-shell-identity-reconcile-dead-end"
     >
       <CabinetPageHeadingPlaceholder />
       <div className={styles.messageBlock}>
         <p className={styles.message}>
-          Не удалось обновить кабинет. Нажмите «Обновить страницу» или перейдите в другой раздел.
+          Обновляем кабинет. Если страница не обновилась, нажмите «Обновить страницу».
         </p>
         <button type="button" className={styles.reloadButton} onClick={() => window.location.reload()}>
           Обновить страницу
