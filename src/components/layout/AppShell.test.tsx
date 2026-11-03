@@ -15,6 +15,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
+vi.mock("@/lib/api-client", () => ({
+  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
+  RemcardApiError: class RemcardApiError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  },
+}));
+
 vi.mock("@/components/account-session/AccountSessionMenu", () => ({
   AccountSessionMenu: ({ displayName, roleLabel }: { displayName: string; roleLabel: string }) => (
     <div data-testid="account-session-menu-fixture">

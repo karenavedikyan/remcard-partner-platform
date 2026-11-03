@@ -69,15 +69,15 @@ export default async function HomePage(
     return <SessionGate returnTo="/" />;
   }
 
-  if (!isProfCabinetAllowed(readiness, user)) {
-    redirect("/?reason=role");
-  }
-
   const prefsResult = await fetchCabinetUiPreferencesServerCached(cookieKey);
   const prefsData = prefsResult.ok ? prefsResult.data : null;
   const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
   if (agentRoot) {
     redirect(agentRoot);
+  }
+
+  if (!isProfCabinetAllowed(readiness, user)) {
+    redirect("/?reason=role");
   }
 
   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;

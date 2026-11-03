@@ -164,7 +164,38 @@ describe("server home-page staff redirect", () => {
       ok: true,
       data: { ...denied, canAccessCabinet: true, isEmployee: false },
     });
+    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+  });
+
+  it("applies active-agent root redirect before the role gate when prefs qualify", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+    });
+    vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
+      if (path === "/api/account/cabinet-readiness") {
+        return { ok: true, data: { ...denied, canAccessCabinet: true, isEmployee: false } };
+      }
+      if (path === "/api/pro/cabinet-ui-preferences") {
+        return {
+          ok: true,
+          data: {
+            contractVersion: "2026-10-14.r01",
+            pilotEnabled: true,
+            pilotActive: true,
+            contextKey: "agent",
+            version: 1,
+            theme: null,
+            mobileNavKeys: ["certificates"],
+            permittedKeys: ["certificates", "home"],
+            defaultMobileNavKeys: null,
+          },
+        };
+      }
+      return { ok: true, data: denied };
+    });
+    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
   });
 
   it("preserves the existing active-agent destination", async () => {

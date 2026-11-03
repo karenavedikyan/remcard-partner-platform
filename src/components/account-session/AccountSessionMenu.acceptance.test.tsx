@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ current: vi.fn(), all: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: mocks.push, refresh: vi.fn() }),
 }));
 vi.mock("@/lib/account-session-exit", () => ({

@@ -1,0 +1,7 @@
+ FAIL  src/app/admin/AdminShellA17bPresentation.test.tsx
+ FAIL  src/components/profile/ProfileEditor.business-catalog.test.tsx
+ FAIL  src/components/profile/ProfileEditor.business-wizard-dirty.test.tsx
+ FAIL  src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx
+ FAIL  src/components/profile/ProfileEditor.test.tsx
+ FAIL  src/lib/category-display.test.ts [ src/lib/category-display.test.ts ]
+ FAIL  src/lib/profile-overview-display.test.tsx
