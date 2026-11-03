@@ -1,0 +1,356 @@
+diff --git a/artifacts/cabinet-nav-persistent-shell/logs/vitest-focused.log b/artifacts/cabinet-nav-persistent-shell/logs/vitest-focused.log
+index b5b74349..20ee96a6 100644
+--- a/artifacts/cabinet-nav-persistent-shell/logs/vitest-focused.log
++++ b/artifacts/cabinet-nav-persistent-shell/logs/vitest-focused.log
+@@ -1,33 +1,31 @@
+ 
+-> remcard-partner-platform@0.1.0 test:component
+-> vitest run src/lib/cabinet-shell-request-dedupe.test.tsx src/lib/session-peek.test.tsx src/app/(cabinet)/cabinet-routing-contract.test.tsx src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx src/components/layout/cabinet-shell-persistence.test.tsx src/app/(cabinet)/page.admin-root-redirect.test.tsx src/components/layout/CabinetPageLoadingSkeleton.test.tsx src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx src/components/agent-r03/AgentR03Gate.stale-route.test.tsx src/hooks/useIncomingPartnersCount.test.tsx src/lib/clients-rsc-boundary.test.ts src/lib/agent-cabinet-ui-prefs-apply.test.tsx src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx src/components/layout/cabinet-pathname-dismiss.test.tsx --maxWorkers=1
+-
+-
+  RUN  v3.2.7 /agent/repos/remcard-partner-platform
+ 
+- ✓ src/components/layout/cabinet-pathname-dismiss.test.tsx (4 tests) 169ms
+- ✓ src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx (2 tests) 52ms
+- ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 38ms
+- ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 41ms
+- ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 50ms
+- ✓ src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx (3 tests) 33ms
+- ✓ src/hooks/useIncomingPartnersCount.test.tsx (2 tests) 29ms
+- ✓ src/lib/session-peek.test.tsx (7 tests) 25ms
+- ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 24ms
++ ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (21 tests) 15ms
++ ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (4 tests) 5ms
++ ✓ src/components/layout/cabinet-pathname-dismiss.test.tsx (4 tests) 305ms
++ ✓ src/components/layout/AppShell.nav.test.tsx (4 tests) 168ms
++ ✓ src/components/account-session/AccountSessionMenu.acceptance.test.tsx (4 tests) 161ms
++ ✓ src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx (2 tests) 62ms
++ ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 58ms
++ ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 53ms
++ ✓ src/lib/session-peek.test.tsx (7 tests) 23ms
++ ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 28ms
++ ✓ src/hooks/useIncomingPartnersCount.test.tsx (2 tests) 32ms
++ ✓ src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx (3 tests) 32ms
++ ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 29ms
+ stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
+ Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
+ 
+ stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
+ Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
+ 
+- ✓ src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx (4 tests) 19ms
+- ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (16 tests) 12ms
+- ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (4 tests) 4ms
+- ✓ src/lib/clients-rsc-boundary.test.ts (2 tests) 2ms
+- ✓ src/lib/agent-cabinet-ui-prefs-apply.test.tsx (4 tests) 2ms
++ ✓ src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx (4 tests) 30ms
++ ✓ src/lib/clients-rsc-boundary.test.ts (2 tests) 3ms
++ ✓ src/lib/agent-cabinet-ui-prefs-apply.test.tsx (4 tests) 3ms
+ 
+- Test Files  14 passed (14)
+-      Tests  54 passed (54)
+-   Start at  14:07:20
+-   Duration  7.30s (transform 375ms, setup 1.27s, collect 576ms, tests 501ms, environment 3.13s, prepare 535ms)
++ Test Files  16 passed (16)
++      Tests  67 passed (67)
++   Start at  14:27:13
++   Duration  10.46s (transform 536ms, setup 1.70s, collect 849ms, tests 1.01s, environment 4.37s, prepare 760ms)
+ 
+diff --git a/src/app/(cabinet)/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+index ad0dd45e..ed00515b 100644
+--- a/src/app/(cabinet)/page.admin-root-redirect.test.tsx
++++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+@@ -10,10 +10,19 @@ import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
++import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
++import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
++
+ const redirect = vi.hoisted(() => vi.fn((path: string) => {
+   throw new Error(`NEXT_REDIRECT:${path}`);
+ }));
+ 
++const homeBranchFixtures = vi.hoisted(() => ({
++  specialistHome: false,
++  businessOwnerHome: false,
++  businessPartnerType: null as "STORE" | "COMPANY" | null,
++}));
++
+ vi.mock("next/navigation", () => ({ redirect }));
+ vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+ vi.mock("@/lib/session", async (importOriginal) => {
+@@ -38,14 +47,41 @@ vi.mock("@/lib/agent-nav/root-destination", () => ({
+ vi.mock("@/lib/specialist-r06/serverGate", () => ({
+   fetchSpecialistR06GateServer: async () => null,
+ }));
++vi.mock("@/lib/specialist-home/gate", () => ({
++  shouldRenderSpecialistHome: () => homeBranchFixtures.specialistHome,
++}));
++vi.mock("@/lib/business-home/gate", () => ({
++  shouldRenderBusinessOwnerHome: () => homeBranchFixtures.businessOwnerHome,
++  businessOwnerHomePartnerType: () => homeBranchFixtures.businessPartnerType,
++}));
+ 
+ const denied = {
+   nextStep: "ready", missingConsents: [], needsProfileOnboarding: false,
+   canAccessCabinet: false, isEmployee: false, isAdmin: false,
+ };
+ 
++const cabinetReady = { ...denied, canAccessCabinet: true };
++
++function mockCabinetReadyUpstream(extra: Record<string, unknown> = {}) {
++  vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
++    if (path === "/api/account/cabinet-readiness") {
++      return { ok: true, data: { ...cabinetReady, ...extra } };
++    }
++    if (path === "/api/pro/cabinet-ui-preferences") {
++      return { ok: true, data: null };
++    }
++    if (path === "/api/partnership/list") {
++      return { ok: true, data: { partnerships: [] } };
++    }
++    return { ok: true, data: denied };
++  });
++}
++
+ beforeEach(() => {
+   vi.clearAllMocks();
++  homeBranchFixtures.specialistHome = false;
++  homeBranchFixtures.businessOwnerHome = false;
++  homeBranchFixtures.businessPartnerType = null;
+   vi.mocked(getSessionUser).mockResolvedValue({
+     id: "synthetic-partner", role: "PRO", staffRole: null, isBlocked: false,
+   });
+@@ -102,8 +138,10 @@ describe("server home-page staff redirect", () => {
+     );
+     expect(redirect).not.toHaveBeenCalled();
+   });
++});
+ 
+-  it("keeps the guest login gate", async () => {
++describe("anonymous and guest fixtures", () => {
++  it("keeps the guest login gate (SessionGate)", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue(null);
+     const element = await HomePage({});
+     expect(element.type).toBe(SessionGate);
+@@ -112,7 +150,7 @@ describe("server home-page staff redirect", () => {
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+-  it("keeps PartnerWelcome for guests when registration welcome path is enabled", async () => {
++  it("keeps PartnerWelcome when registration welcome path is enabled", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue(null);
+     vi.mocked(fetchRegistrationCapabilitiesServer).mockResolvedValue({
+       welcomeEnabled: true,
+@@ -123,7 +161,9 @@ describe("server home-page staff redirect", () => {
+     expect(element.props.inviteToken).toBe("tok");
+     expect(redirect).not.toHaveBeenCalled();
+   });
++});
+ 
++describe("readiness and onboarding fixtures", () => {
+   it("keeps partner consent requirements", async () => {
+     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+       ok: true, data: {
+@@ -139,14 +179,51 @@ describe("server home-page staff redirect", () => {
+     });
+     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/onboarding?returnTo=%2F");
+   });
++});
++
++describe("role parity at layout-shell-equivalent branch returns", () => {
++  const clientUser = {
++    id: "synthetic-client", role: "CLIENT" as const, staffRole: null, isBlocked: false,
++  };
++
++  it("non-PRO non-employee with active agentRoot: agentRoot redirect wins over role gate", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
++    mockCabinetReadyUpstream({ isEmployee: false });
++    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
++    expect(redirect).toHaveBeenCalledExactlyOnceWith("/certificates");
++  });
++
++  it("non-PRO non-employee without agentRoot: role redirect on default dashboard branch (after list fetch)", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
++    mockCabinetReadyUpstream({ isEmployee: false });
++    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
++    expect(fetchRemcardUpstream).toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
++  });
++
++  it("non-PRO non-employee without agentRoot: role redirect on specialist branch", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
++    mockCabinetReadyUpstream({ isEmployee: false });
++    homeBranchFixtures.specialistHome = true;
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
++    expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
++  });
+ 
+-  it("keeps ready ordinary and delegated test partners in their cabinet", async () => {
++  it("non-PRO non-employee without agentRoot: role redirect on business-owner branch", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
++    mockCabinetReadyUpstream({ isEmployee: false });
++    homeBranchFixtures.businessOwnerHome = true;
++    homeBranchFixtures.businessPartnerType = "STORE";
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
++    expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
++  });
++
++  it("ordinary eligible PRO renders default dashboard branch", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+       id: "synthetic-test-partner", role: "PRO", staffRole: null, isProfTestUser: true,
+     });
+-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+-      ok: true, data: { ...denied, canAccessCabinet: true, partnerships: [] },
+-    });
++    mockCabinetReadyUpstream();
+     const element = await HomePage({});
+     expect(element.type).toBe(Fragment);
+     const kids = Children.toArray(element.props.children);
+@@ -156,52 +233,37 @@ describe("server home-page staff redirect", () => {
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+-  it("redirects authenticated non-PRO non-employee users with cabinet access to /?reason=role", async () => {
++  it("ordinary eligible PRO renders specialist branch when selected", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+-      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+-    });
+-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+-      ok: true,
+-      data: { ...denied, canAccessCabinet: true, isEmployee: false },
++      id: "synthetic-master", role: "PRO", staffRole: null, partnerType: "MASTER",
+     });
+-    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
+-    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
++    mockCabinetReadyUpstream();
++    homeBranchFixtures.specialistHome = true;
++    const element = await HomePage({});
++    const kids = Children.toArray(element.props.children);
++    expect(
++      kids.some((child) => isValidElement(child) && child.type === SpecialistHomeDashboard),
++    ).toBe(true);
++    expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+-  it("applies active-agent root redirect before the role gate when prefs qualify", async () => {
++  it("ordinary eligible PRO renders business-owner branch when selected", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+-      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+-    });
+-    vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
+-      if (path === "/api/account/cabinet-readiness") {
+-        return { ok: true, data: { ...denied, canAccessCabinet: true, isEmployee: false } };
+-      }
+-      if (path === "/api/pro/cabinet-ui-preferences") {
+-        return {
+-          ok: true,
+-          data: {
+-            contractVersion: "2026-10-14.r01",
+-            pilotEnabled: true,
+-            pilotActive: true,
+-            contextKey: "agent",
+-            version: 1,
+-            theme: null,
+-            mobileNavKeys: ["certificates"],
+-            permittedKeys: ["certificates", "home"],
+-            defaultMobileNavKeys: null,
+-          },
+-        };
+-      }
+-      return { ok: true, data: denied };
++      id: "synthetic-store", role: "PRO", staffRole: null, partnerType: "STORE",
+     });
+-    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
+-    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
++    mockCabinetReadyUpstream();
++    homeBranchFixtures.businessOwnerHome = true;
++    homeBranchFixtures.businessPartnerType = "STORE";
++    const element = await HomePage({});
++    const kids = Children.toArray(element.props.children);
++    expect(
++      kids.some((child) => isValidElement(child) && child.type === BusinessOwnerHomeDashboard),
++    ).toBe(true);
++    expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+-  it("preserves the existing active-agent destination", async () => {
+-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+-      ok: true, data: { ...denied, canAccessCabinet: true },
+-    });
++  it("preserves the existing active-agent destination for PRO users", async () => {
++    mockCabinetReadyUpstream();
+     vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
+     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
+   });
+diff --git a/src/app/(cabinet)/page.tsx b/src/app/(cabinet)/page.tsx
+index 57b71fb5..2953bdb9 100644
+--- a/src/app/(cabinet)/page.tsx
++++ b/src/app/(cabinet)/page.tsx
+@@ -6,13 +6,14 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+-import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
++import { hasPendingLoginConsents, type CabinetReadiness } from "@/lib/cabinet-readiness";
+ import {
+   fetchCabinetUiPreferencesServerCached,
+   fetchPartnershipListServerCached,
+   getCabinetReadinessServerCached,
+ } from "@/lib/cabinet-upstream-cache";
+ import { getSessionUser, isProfCabinetAllowed } from "@/lib/session";
++import type { AuthUser } from "@/lib/types";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+ import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
+@@ -26,6 +27,13 @@ import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeD
+ 
+ export const dynamic = "force-dynamic";
+ 
++/** Role parity where layout shell used to call requireProSession — only at each home branch return. */
++function redirectIfProfCabinetRoleDenied(readiness: CabinetReadiness, user: AuthUser): void {
++  if (!isProfCabinetAllowed(readiness, user)) {
++    redirect("/?reason=role");
++  }
++}
++
+ export default async function HomePage(
+   props: {
+     searchParams?: Promise<{ reason?: string; invite?: string; returnTo?: string }>;
+@@ -76,16 +84,13 @@ export default async function HomePage(
+     redirect(agentRoot);
+   }
+ 
+-  if (!isProfCabinetAllowed(readiness, user)) {
+-    redirect("/?reason=role");
+-  }
+-
+   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
+   const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
+   const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
+   const specialistHome = shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
+ 
+   if (specialistHome) {
++    redirectIfProfCabinetRoleDenied(readiness, user);
+     return (
+       <>
+         <PageHeading
+@@ -105,6 +110,7 @@ export default async function HomePage(
+   const businessPartnerType = businessOwnerHome ? businessOwnerHomePartnerType(user) : null;
+ 
+   if (businessOwnerHome && businessPartnerType) {
++    redirectIfProfCabinetRoleDenied(readiness, user);
+     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
+     return (
+       <>
+@@ -127,6 +133,8 @@ export default async function HomePage(
+   const partnerships = listResult.ok ? listResult.data.partnerships : [];
+   const incomingCount = countNeedsMyResponse(partnerships, user.id);
+ 
++  redirectIfProfCabinetRoleDenied(readiness, user);
++
+   return (
+     <>
+       <PageHeading

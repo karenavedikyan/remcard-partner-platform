@@ -13,6 +13,7 @@
 | Commit 4 — review round 2 fix | `9c98c0ae8e0e3c754c0b3c5db402ac639bbda808` |
 | Commit 5 — requestCache runtime | `48f04b9d8b93730a5439a13baf24bddcedd9b74b` |
 | Commit 6 — review round 3 (mocks + home order) | `f231e5031d1085526811363b64c6523aebf227aa` |
+| Commit 7 — branch-local role parity + fixtures | `aea56bd3b2923f60551974a43e4a9e895840ad63` |
 
 ## Moved routes (git rename)
 
@@ -22,7 +23,7 @@ See `moved-files.txt` — 18 `page.tsx` routes under `src/app/(cabinet)/` plus `
 
 - `peekCabinetSession` never redirects; layout renders bare `{children}` when not allowed.
 - **No session / missing readiness:** `requireProPageUser` → `null` → `SessionGate`; peek → `null` (no shell).
-- **Home redirect order (commits 4–6):** after readiness gates, `resolveActiveAgentRootRedirect` runs first (prefs load + agent root), then `isProfCabinetAllowed` → `redirect("/?reason=role")`, then home branches — same precedence as pre–route-group page before shell extraction. Covered by `page.admin-root-redirect.test.tsx` (“applies active-agent root redirect before the role gate”).
+- **Home role parity (commits 4–7):** `isProfCabinetAllowed` → `redirect("/?reason=role")` runs **only** immediately before each of the three home branch returns (specialist, business owner, default dashboard), after agent root, branch selection, and (default branch) partnership list fetch — same placement as legacy `CabinetShell` / `requireProSession`. Not before agent root, staff admin, or public gates. Fixtures in `page.admin-root-redirect.test.tsx`.
 
 ## Stale badge / UI prefs (corrected)
 
@@ -86,7 +87,19 @@ Home `/` uses cached readiness/prefs/list helpers (commit 4) — dedupes with la
 | Home role guard | `page.admin-root-redirect.test.tsx` | — |
 | Sidebar identity | `cabinet-shell-persistence.test.tsx` | Cold/warm DOM identity |
 
-Logs: `logs/vitest-full-suite.log` (454 files, `maxWorkers=1`, **7** failed files — base-only set in `logs/vitest-full-failures.txt`), `logs/vitest-focused.log` (**54** tests), `logs/tsc-noEmit.log` (command + exit **0**).
+Logs: `logs/vitest-full-suite.log` (454 files, `maxWorkers=1`, **7** failed files — matches base `bbf06ef8`; see `logs/vitest-full-failures.txt`; **not** full-suite green), `logs/vitest-focused.log` (**67** tests in **16** files incl. `AccountSessionMenu.acceptance.test.tsx`, `AppShell.nav.test.tsx`), `logs/tsc-noEmit.log` (command + exit **0**).
+
+### Full-suite failures vs base (unchanged by nav branch)
+
+| File |
+| --- |
+| `src/app/admin/AdminShellA17bPresentation.test.tsx` |
+| `src/components/profile/ProfileEditor.test.tsx` |
+| `src/components/profile/ProfileEditor.business-catalog.test.tsx` |
+| `src/components/profile/ProfileEditor.business-wizard-dirty.test.tsx` |
+| `src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx` |
+| `src/lib/category-display.test.ts` |
+| `src/lib/profile-overview-display.test.tsx` |
 
 ## Artifact checksums
 
