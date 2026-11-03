@@ -60,6 +60,7 @@ export default async function ProfilePage(props: {
       <SessionGate
         reason={profileResult.status === 401 ? "session" : undefined}
         returnTo={safeReturnTo}
+        shellContextTokenNone={profileResult.status === 401}
       />
     );
   }

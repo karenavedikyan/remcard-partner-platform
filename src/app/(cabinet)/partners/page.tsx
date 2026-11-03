@@ -36,6 +36,7 @@ export default async function PartnersPage(props: {
       <SessionGate
         reason={profileResult.status === 401 ? "session" : undefined}
         returnTo={returnPath}
+        shellContextTokenNone={profileResult.status === 401}
       />
     );
   }
