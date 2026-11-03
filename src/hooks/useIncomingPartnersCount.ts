@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
-import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import type { PartnershipListResponse } from "@/lib/types";
 
@@ -14,8 +13,8 @@ import type { PartnershipListResponse } from "@/lib/types";
  */
 export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
   const pathname = usePathname();
-  const router = useRouter();
-  const shell = useCabinetShellContext();
+  const shell = useCabinetShellStableContext();
+  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
@@ -36,21 +35,22 @@ export function useIncomingPartnersCount(initialCount: number, userId: string | 
       .catch((error) => {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === "AbortError") return;
-        if (isCabinetShellAuthFailure(error)) {
+        if (error instanceof RemcardApiError && error.status === 403) {
           setCount(0);
-          shell?.notifyAuthFailure();
-          router.refresh();
           return;
         }
-        if (error instanceof RemcardApiError) {
-          /* transient non-auth errors: keep last known count */
+        if (error instanceof RemcardApiError && error.status === 401) {
+          setCount(0);
+          requestShellRefreshIfStale?.("none");
+          return;
         }
+        /* transient non-auth errors: keep last known count */
       });
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [pathname, userId, router, shell]);
+  }, [pathname, userId, requestShellRefreshIfStale]);
 
   return count;
 }

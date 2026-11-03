@@ -1,8 +1,9 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CabinetShellContextProvider,
-  useCabinetShellContext,
+  useCabinetShellStableContext,
 } from "@/components/layout/cabinet-shell-context";
 
 const refresh = vi.fn();
@@ -12,14 +13,50 @@ vi.mock("next/navigation", () => ({
 }));
 
 function RefreshProbe({ fresh }: { fresh: string }) {
-  const shell = useCabinetShellContext();
+  const shell = useCabinetShellStableContext();
+  const shellContextToken = shell?.shellContextToken;
+  const acknowledgeShellContextMatch = shell?.acknowledgeShellContextMatch;
+  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
+
+  useEffect(() => {
+    if (!shellContextToken || !acknowledgeShellContextMatch || !requestShellRefreshIfStale) {
+      return;
+    }
+    if (shellContextToken === fresh) {
+      acknowledgeShellContextMatch();
+      return;
+    }
+    requestShellRefreshIfStale(fresh);
+  }, [shellContextToken, fresh, acknowledgeShellContextMatch, requestShellRefreshIfStale]);
+
   if (!shell) return null;
   if (shell.shellContextToken === fresh) {
-    shell.acknowledgeShellContextMatch();
     return <div data-testid="matched">ok</div>;
   }
-  shell.requestShellRefreshIfStale(fresh);
   return <div data-testid="stale">stale</div>;
+}
+
+function PersistentShellHarness({
+  shellToken,
+  initialFresh,
+}: {
+  shellToken: string;
+  initialFresh: string;
+}) {
+  const [fresh, setFresh] = useState(initialFresh);
+  return (
+    <>
+      <button type="button" data-testid="set-fresh-a" onClick={() => setFresh("A")}>
+        A
+      </button>
+      <button type="button" data-testid="set-fresh-b" onClick={() => setFresh("B")}>
+        B
+      </button>
+      <CabinetShellContextProvider shellContextToken={shellToken}>
+        <RefreshProbe fresh={fresh} />
+      </CabinetShellContextProvider>
+    </>
+  );
 }
 
 describe("cabinet shell refresh loop guard", () => {
@@ -28,47 +65,26 @@ describe("cabinet shell refresh loop guard", () => {
   });
 
   it("allows A->B->A->B refresh cycles without skipping the second stale pair", async () => {
-    const { rerender } = render(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="B" />
-      </CabinetShellContextProvider>,
-    );
+    render(<PersistentShellHarness shellToken="A" initialFresh="B" />);
     expect(refresh).toHaveBeenCalledTimes(1);
 
-    rerender(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="A" />
-      </CabinetShellContextProvider>,
-    );
+    await act(async () => {
+      screen.getByTestId("set-fresh-a").click();
+    });
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
 
-    rerender(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="B" />
-      </CabinetShellContextProvider>,
-    );
+    await act(async () => {
+      screen.getByTestId("set-fresh-b").click();
+    });
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
   });
 
-  it("retries once when shell token unchanged after refresh", () => {
-    const { rerender } = render(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="B" />
-      </CabinetShellContextProvider>,
-    );
+  it("caps at one refresh per stale pair while shell token is unchanged", async () => {
+    render(<PersistentShellHarness shellToken="A" initialFresh="B" />);
     expect(refresh).toHaveBeenCalledTimes(1);
-    rerender(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="B" />
-      </CabinetShellContextProvider>,
-    );
-    expect(refresh).toHaveBeenCalledTimes(2);
-    rerender(
-      <CabinetShellContextProvider shellContextToken="A">
-        <RefreshProbe fresh="B" />
-      </CabinetShellContextProvider>,
-    );
-    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(refresh.mock.calls.length).toBeLessThanOrEqual(3);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

@@ -12,9 +12,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-export type CabinetShellContextValue = {
+export type CabinetShellStableContextValue = {
   shellContextToken: string;
-  authFailureEpoch: number;
   notifyAuthFailure: () => void;
   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
   acknowledgeShellContextMatch: () => void;
@@ -23,12 +22,39 @@ export type CabinetShellContextValue = {
     freshPrefsSignature: string,
   ) => void;
   acknowledgeShellPrefsLayoutMatch: () => void;
+  isShellIdentityRefreshExhausted: (freshShellContextToken: string) => boolean;
 };
 
-const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
+/** @deprecated Use {@link useCabinetShellStableContext}; epoch is separate. */
+export type CabinetShellContextValue = CabinetShellStableContextValue & {
+  authFailureEpoch: number;
+};
 
+const CabinetShellStableContext = createContext<CabinetShellStableContextValue | null>(null);
+const CabinetShellAuthFailureEpochContext = createContext(0);
+const CabinetShellIdentityRefreshAttemptContext = createContext(0);
+
+export function useCabinetShellStableContext(): CabinetShellStableContextValue | null {
+  return useContext(CabinetShellStableContext);
+}
+
+export function useCabinetShellAuthFailureEpoch(): number {
+  return useContext(CabinetShellAuthFailureEpochContext);
+}
+
+/** Bumps when a shell-identity refresh pair is recorded (reconciler UI). */
+export function useCabinetShellIdentityRefreshAttempt(): number {
+  return useContext(CabinetShellIdentityRefreshAttemptContext);
+}
+
+/** Stable shell actions + token (identity does not change when authFailureEpoch bumps). */
 export function useCabinetShellContext(): CabinetShellContextValue | null {
-  return useContext(CabinetShellContext);
+  const stable = useCabinetShellStableContext();
+  const authFailureEpoch = useCabinetShellAuthFailureEpoch();
+  return useMemo(
+    () => (stable ? { ...stable, authFailureEpoch } : null),
+    [stable, authFailureEpoch],
+  );
 }
 
 type CabinetShellContextProviderProps = {
@@ -41,13 +67,17 @@ export function CabinetShellContextProvider({
   children,
 }: CabinetShellContextProviderProps) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
-  const refreshedPairsRef = useRef<Map<string, number>>(new Map());
+  const [identityRefreshAttempt, setIdentityRefreshAttempt] = useState(0);
+  const refreshedPairsRef = useRef<Set<string>>(new Set());
   const prefsRefreshPairsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     refreshedPairsRef.current.clear();
     prefsRefreshPairsRef.current.clear();
+    setIdentityRefreshAttempt(0);
   }, [shellContextToken]);
 
   const notifyAuthFailure = useCallback(() => {
@@ -56,11 +86,23 @@ export function CabinetShellContextProvider({
 
   const acknowledgeShellContextMatch = useCallback(() => {
     refreshedPairsRef.current.clear();
+    setIdentityRefreshAttempt(0);
   }, []);
 
   const acknowledgeShellPrefsLayoutMatch = useCallback(() => {
     prefsRefreshPairsRef.current.clear();
   }, []);
+
+  const isShellIdentityRefreshExhausted = useCallback(
+    (freshShellContextToken: string) => {
+      if (shellContextToken === freshShellContextToken) {
+        return false;
+      }
+      const pair = `${shellContextToken}|${freshShellContextToken}`;
+      return refreshedPairsRef.current.has(pair);
+    },
+    [shellContextToken],
+  );
 
   const requestShellRefreshIfPrefsBranchMismatch = useCallback(
     (layoutPrefsSignature: string, freshPrefsSignature: string) => {
@@ -73,9 +115,9 @@ export function CabinetShellContextProvider({
         return;
       }
       prefsRefreshPairsRef.current.add(pair);
-      router.refresh();
+      routerRef.current.refresh();
     },
-    [router],
+    [],
   );
 
   const requestShellRefreshIfStale = useCallback(
@@ -85,36 +127,44 @@ export function CabinetShellContextProvider({
         return;
       }
       const pair = `${shellContextToken}|${freshShellContextToken}`;
-      const attempts = refreshedPairsRef.current.get(pair) ?? 0;
-      if (attempts >= 2) {
+      if (refreshedPairsRef.current.has(pair)) {
         return;
       }
-      refreshedPairsRef.current.set(pair, attempts + 1);
-      router.refresh();
+      refreshedPairsRef.current.add(pair);
+      setIdentityRefreshAttempt((n) => n + 1);
+      routerRef.current.refresh();
     },
-    [router, shellContextToken],
+    [shellContextToken],
   );
 
-  const value = useMemo(
+  const stableValue = useMemo(
     () => ({
       shellContextToken,
-      authFailureEpoch,
       notifyAuthFailure,
       requestShellRefreshIfStale,
       acknowledgeShellContextMatch,
       requestShellRefreshIfPrefsBranchMismatch,
       acknowledgeShellPrefsLayoutMatch,
+      isShellIdentityRefreshExhausted,
     }),
     [
       shellContextToken,
-      authFailureEpoch,
       notifyAuthFailure,
       requestShellRefreshIfStale,
       acknowledgeShellContextMatch,
       requestShellRefreshIfPrefsBranchMismatch,
       acknowledgeShellPrefsLayoutMatch,
+      isShellIdentityRefreshExhausted,
     ],
   );
 
-  return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;
+  return (
+    <CabinetShellStableContext.Provider value={stableValue}>
+      <CabinetShellAuthFailureEpochContext.Provider value={authFailureEpoch}>
+        <CabinetShellIdentityRefreshAttemptContext.Provider value={identityRefreshAttempt}>
+          {children}
+        </CabinetShellIdentityRefreshAttemptContext.Provider>
+      </CabinetShellAuthFailureEpochContext.Provider>
+    </CabinetShellStableContext.Provider>
+  );
 }

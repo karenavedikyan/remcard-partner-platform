@@ -63,12 +63,20 @@ beforeEach(() => {
 });
 
 describe("useAgentCabinetPrefsPathRefresh auth failure", () => {
-  it.each([401, 403])("clears prefs to neutral on HTTP %i", async (status) => {
-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
+  it("clears prefs to neutral on HTTP 401", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
     const { result } = renderHook(() => PrefsPathRefreshProbe(), { wrapper: probeWrapper });
     await waitFor(() =>
       expect(result.current).toEqual(neutralCabinetUiPreferencesFallback),
     );
-    expect(mocks.refresh).toHaveBeenCalled();
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps prefs on HTTP 403 without refresh", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
+    const { result } = renderHook(() => PrefsPathRefreshProbe(), { wrapper: probeWrapper });
+    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
+    expect(result.current.version).toBe(3);
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { remcardFetch } from "@/lib/api-client";
-import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
 import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
 import { cabinetShellPrefsLayoutSignature } from "@/lib/cabinet-shell-prefs-signature";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
@@ -30,7 +29,9 @@ export function useCabinetShellPrefsPathRefresh({
 }: UseCabinetShellPrefsPathRefreshOptions): void {
   const pathname = usePathname();
   const router = useRouter();
-  const shell = useCabinetShellContext();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const shell = useCabinetShellStableContext();
   const acknowledgeShellPrefsLayoutMatch = shell?.acknowledgeShellPrefsLayoutMatch;
   const requestShellRefreshIfPrefsBranchMismatch = shell?.requestShellRefreshIfPrefsBranchMismatch;
   const layoutPrefsSignature = useMemo(
@@ -59,10 +60,13 @@ export function useCabinetShellPrefsPathRefresh({
       .catch((error) => {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === "AbortError") return;
-        if (isCabinetShellAuthFailure(error)) {
+        if (error instanceof RemcardApiError && error.status === 403) {
+          return;
+        }
+        if (error instanceof RemcardApiError && error.status === 401) {
           applyAuthFailureClear?.();
           onAuthFailure?.();
-          router.refresh();
+          routerRef.current.refresh();
         }
       });
     return () => {
@@ -76,7 +80,6 @@ export function useCabinetShellPrefsPathRefresh({
     applyAuthFailureClear,
     getApplyGeneration,
     onAuthFailure,
-    router,
     acknowledgeShellPrefsLayoutMatch,
     requestShellRefreshIfPrefsBranchMismatch,
   ]);

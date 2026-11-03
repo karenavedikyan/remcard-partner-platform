@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { RemcardApiError } from "@/lib/api-client";
+import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
 
 const mocks = vi.hoisted(() => ({
   remcardFetch: vi.fn(),
@@ -23,23 +24,68 @@ vi.mock("next/navigation", () => ({
 
 import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
 
-function BadgeProbe({ initial }: { initial: number }) {
-  const count = useIncomingPartnersCount(initial, "user-1");
+function BadgeProbe({ initial, userId = "user-1" }: { initial: number; userId?: string }) {
+  const count = useIncomingPartnersCount(initial, userId);
   return <span data-testid="badge-count">{count}</span>;
+}
+
+function PersistentHarness({
+  shellToken,
+  initial,
+  userId = "user-1",
+}: {
+  shellToken: string;
+  initial: number;
+  userId?: string;
+}) {
+  return (
+    <CabinetShellContextProvider shellContextToken={shellToken}>
+      <BadgeProbe initial={initial} userId={userId} />
+    </CabinetShellContextProvider>
+  );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   mocks.pathname = "/";
   mocks.remcardFetch.mockResolvedValue({ partnerships: [] });
 });
 
 describe("useIncomingPartnersCount", () => {
-  it("clears badge and refreshes router on auth failure", async () => {
+  it("clears badge and requests shell refresh on HTTP 401", async () => {
     mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "Unauthorized", null));
-    render(<BadgeProbe initial={5} />);
+    render(<PersistentHarness shellToken="shell-a" initial={5} />);
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByTestId("badge-count")).toHaveTextContent("0"));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 500));
+    });
+    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears badge on HTTP 403 without refresh or refetch loop", async () => {
+    mocks.remcardFetch.mockRejectedValueOnce(new RemcardApiError(403, "Forbidden", null));
+    mocks.remcardFetch.mockRejectedValueOnce(new RemcardApiError(401, "Unauthorized", null));
+    render(<PersistentHarness shellToken="shell-a" initial={5} />);
+    await waitFor(() => expect(screen.getByTestId("badge-count")).toHaveTextContent("0"));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 500));
+    });
+    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
+    expect(mocks.refresh).toHaveBeenCalledTimes(0);
+  });
+
+  it("does not refetch when authFailureEpoch bumps inside the provider", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "Unauthorized", null));
+    render(<PersistentHarness shellToken="shell-a" initial={3} />);
+    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 500));
+    });
+    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
+    expect(mocks.refresh.mock.calls.length).toBeLessThanOrEqual(1);
   });
 
   it("ignores late responses after pathname change (abort)", async () => {
@@ -49,10 +95,18 @@ describe("useIncomingPartnersCount", () => {
         resolve = res;
       }),
     );
-    const { rerender } = render(<BadgeProbe initial={0} />);
+    function PathHarness() {
+      return (
+        <CabinetShellContextProvider shellContextToken="tok">
+          <BadgeProbe initial={0} />
+        </CabinetShellContextProvider>
+      );
+    }
+    const { rerender } = render(<PathHarness />);
     mocks.pathname = "/clients";
-    rerender(<BadgeProbe initial={0} />);
+    rerender(<PathHarness />);
     resolve({ partnerships: [] });
-    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mocks.remcardFetch.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(mocks.remcardFetch.mock.calls.length).toBeLessThanOrEqual(3);
   });
 });

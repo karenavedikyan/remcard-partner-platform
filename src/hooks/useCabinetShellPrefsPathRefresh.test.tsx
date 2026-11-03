@@ -167,8 +167,8 @@ describe("useCabinetShellPrefsPathRefresh", () => {
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it.each([401, 403])("legacy branch refreshes on HTTP %i without in-memory prefs", async (status) => {
-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
+  it("legacy branch refreshes on HTTP 401", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
     renderHook(
       () =>
         useCabinetShellPrefsPathRefresh({
@@ -176,11 +176,24 @@ describe("useCabinetShellPrefsPathRefresh", () => {
         }),
       { wrapper: wrapper() },
     );
-    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
   });
 
-  it.each([401, 403])("agent branch force-clears prefs on HTTP %i", async (status) => {
-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
+  it("legacy branch ignores HTTP 403 without refresh", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
+    renderHook(
+      () =>
+        useCabinetShellPrefsPathRefresh({
+          layoutPrefs: legacyPrefs(),
+        }),
+      { wrapper: wrapper() },
+    );
+    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("agent branch force-clears prefs on HTTP 401", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
     const { result } = renderHook(
       () => {
         const agent = useAgentCabinetUiPrefs(agentPrefs({ version: 5 }));
@@ -195,5 +208,26 @@ describe("useCabinetShellPrefsPathRefresh", () => {
       { wrapper: wrapper() },
     );
     await waitFor(() => expect(result.current).toEqual(neutralCabinetUiPreferencesFallback));
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("agent branch keeps prefs on HTTP 403", async () => {
+    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
+    const { result } = renderHook(
+      () => {
+        const agent = useAgentCabinetUiPrefs(agentPrefs({ version: 5 }));
+        useCabinetShellPrefsPathRefresh({
+          layoutPrefs: agentPrefs({ version: 5 }),
+          applyServerPrefs: agent.applyServerPrefs,
+          applyAuthFailureClear: agent.applyAuthFailureClear,
+          getApplyGeneration: agent.getApplyGeneration,
+        });
+        return agent.prefs;
+      },
+      { wrapper: wrapper() },
+    );
+    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
+    expect(result.current.version).toBe(5);
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 });
