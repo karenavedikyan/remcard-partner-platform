@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSectionEmptyState";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   downloadAgentReceivablesExport,
@@ -17,6 +18,13 @@ import {
   type AgentReceivablesOverview,
 } from "@/lib/agent-r05/api";
 import { formatKopecks } from "@/lib/agent-r05/money";
+import {
+  buildAgentReceivablesHistoryProbeParams,
+  canShowAgentWalletEmptyState,
+  parseAgentHistoryTotalRecords,
+} from "@/lib/wallet-empty/agent-history-probe";
+import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
+import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 import { Button } from "@/components/ui/Button";
 import {
   defaultReceivablesPrefs,
@@ -87,11 +95,14 @@ function buildQuery(input: {
   return params;
 }
 
-export function AgentReceivablesHub() {
+export function AgentReceivablesHub({ walletEmptyViewerRole = "agent" }: WalletEmptyViewerProps) {
   const [screen, setScreen] = useState<Screen>("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [overview, setOverview] = useState<AgentReceivablesOverview | null>(null);
+  const [historyTotalRecords, setHistoryTotalRecords] = useState<number | null>(null);
+  const [historyProbeFailed, setHistoryProbeFailed] = useState(false);
+  const overviewGenerationRef = useRef(0);
   const [partners, setPartners] = useState<AgentReceivablePartnerGroup[]>([]);
   const [orders, setOrders] = useState<AgentReceivableRecord[]>([]);
   const [meta, setMeta] = useState<AgentReceivablesMeta | null>(null);
@@ -121,15 +132,36 @@ export function AgentReceivablesHub() {
   const [exportError, setExportError] = useState("");
 
   const reloadOverview = useCallback(async () => {
+    const generation = overviewGenerationRef.current + 1;
+    overviewGenerationRef.current = generation;
     setLoading(true);
     setError("");
+    setHistoryTotalRecords(null);
+    setHistoryProbeFailed(false);
     try {
-      const data = await fetchAgentReceivablesOverview();
-      setOverview(data);
+      const probeParams = buildAgentReceivablesHistoryProbeParams();
+      const [overviewData, ordersProbe] = await Promise.all([
+        fetchAgentReceivablesOverview(),
+        fetchAgentReceivableOrders(probeParams),
+      ]);
+      if (generation !== overviewGenerationRef.current) return;
+      const totalRecords = parseAgentHistoryTotalRecords(ordersProbe.meta);
+      if (totalRecords === null) {
+        setHistoryProbeFailed(true);
+      } else {
+        setHistoryTotalRecords(totalRecords);
+      }
+      setOverview(overviewData);
     } catch (caught) {
+      if (generation !== overviewGenerationRef.current) return;
+      setOverview(null);
+      setHistoryTotalRecords(null);
+      setHistoryProbeFailed(true);
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить кошелёк");
     } finally {
-      setLoading(false);
+      if (generation === overviewGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -433,10 +465,21 @@ export function AgentReceivablesHub() {
     ) : null;
 
   if (screen === "overview") {
+    const showWalletEmpty =
+      isSupportedWalletEmptyViewerRole(walletEmptyViewerRole) &&
+      canShowAgentWalletEmptyState({
+        overview,
+        historyTotalRecords,
+        historyProbeFailed,
+        loading,
+      });
+    const showOverviewLedger = overview && !loading && !showWalletEmpty && !error;
     return (
       <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-receivables">
-        {viewControl}
-        <p className={styles.muted}>Выберите сумму, чтобы увидеть партнёров.</p>
+        {!showWalletEmpty ? viewControl : null}
+        {!showWalletEmpty ? (
+          <p className={styles.muted}>Выберите сумму, чтобы увидеть партнёров.</p>
+        ) : null}
         {error ? (
           <p className={styles.error} role="alert">
             {error}{" "}
@@ -445,8 +488,16 @@ export function AgentReceivablesHub() {
             </Button>
           </p>
         ) : null}
+        {historyProbeFailed && overview && !error ? (
+          <p className={styles.meta} role="status">
+            Не удалось проверить историю начислений. Стартовая страница скрыта до полного ответа API.
+          </p>
+        ) : null}
         {loading && !overview ? <p className={styles.meta}>Загружаем…</p> : null}
-        {overview ? (
+        {showWalletEmpty ? (
+          <WalletSectionEmptyState role={walletEmptyViewerRole} />
+        ) : null}
+        {showOverviewLedger ? (
           <>
             <div className={styles.overviewGrid} data-testid="agent-r05-overview-grid">
               <button

@@ -34,6 +34,10 @@ import {
 } from "@/components/payout/PayoutRecordModal";
 import styles from "./settlements.module.css";
 import { RewardLifecyclePanel } from "./RewardLifecyclePanel";
+import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSectionEmptyState";
+import { isWalletSettlementsDataEmpty } from "@/lib/wallet-empty/is-empty";
+import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
+import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 
 function obligationPrimaryTitle(row: SettlementObligation) {
   const basis = row.basis?.trim();
@@ -275,7 +279,7 @@ function filterCompleted(rows: SettlementCompleted[], query: string) {
   );
 }
 
-export function SettlementsHub() {
+export function SettlementsHub({ walletEmptyViewerRole }: WalletEmptyViewerProps) {
   const [tab, setTab] = useState<SettlementsTab>("receivable");
   const [searchQ, setSearchQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -390,6 +394,18 @@ export function SettlementsHub() {
         <Button type="button" onClick={() => void load()}>
           Повторить
         </Button>
+      </div>
+    );
+  }
+
+  if (
+    isWalletSettlementsDataEmpty(data) &&
+    searchQ.trim() === "" &&
+    isSupportedWalletEmptyViewerRole(walletEmptyViewerRole)
+  ) {
+    return (
+      <div className={styles.settlementDemo} data-testid="settlements-hub">
+        <WalletSectionEmptyState role={walletEmptyViewerRole} />
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentCertificatesList } from "./AgentCertificatesList";
 import { OwnerIssuerModeProvider } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { fetchBusinessOwnerCertificates } from "@/lib/business-owner-certificates/api";
+import { fetchSpecialistIssuerCertificates } from "@/lib/specialist-certificates/api";
 import { businessCertificatesPageCopy } from "@/lib/business-owner-certificates/copy";
 
 vi.mock("qrcode", () => ({
@@ -25,6 +26,13 @@ vi.mock("@/lib/business-owner-certificates/api", () => ({
   patchBusinessOwnerCertificate: vi.fn(),
   deleteBusinessOwnerCertificate: vi.fn(),
   batchBusinessOwnerCertificates: vi.fn(),
+}));
+
+vi.mock("@/lib/specialist-certificates/api", () => ({
+  fetchSpecialistIssuerCertificates: vi.fn(),
+  patchSpecialistIssuerCertificate: vi.fn(),
+  deleteSpecialistIssuerCertificate: vi.fn(),
+  batchSpecialistIssuerCertificates: vi.fn(),
 }));
 
 const certRow = {
@@ -80,27 +88,18 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
     sessionStorage.clear();
   });
 
-  it("empty list: one primary create CTA, text-only empty, closed client-arrived details", async () => {
+  it("empty list: approved onboarding empty with scanner primary and create secondary", async () => {
     vi.mocked(fetchBusinessOwnerCertificates).mockResolvedValue(listMeta(0));
     renderBusiness(partnerType);
 
     await waitFor(() => {
-      expect(screen.getByTestId("business-certificates-empty")).toBeVisible();
+      expect(screen.getByTestId("empty-state")).toBeVisible();
     });
 
-    expect(createButtons()).toHaveLength(1);
-    expect(screen.getByTestId("business-certificates-create-cta-wrap")).toBeInTheDocument();
-    expect(screen.getByTestId("business-certificates-empty")).toHaveTextContent(copy.emptyCollection);
-    expect(screen.queryByRole("button", { name: copy.createCta, hidden: false })).toBe(
-      screen.getByTestId("business-certificates-create-cta"),
-    );
-
-    const details = screen.getByTestId("business-certificates-client-arrived");
-    expect(details).not.toHaveAttribute("open");
-    expect(screen.getByRole("link", { name: copy.verifyCertificateCta })).toHaveAttribute(
-      "href",
-      "/scanner",
-    );
+    expect(screen.queryByTestId("business-certificates-intro")).not.toBeInTheDocument();
+    expect(screen.getByTestId("es-проверить-сертификат")).toHaveAttribute("href", "/scanner");
+    expect(screen.getByRole("button", { name: copy.createCta })).toBeVisible();
+    expect(screen.queryByTestId("business-certificates-empty")).not.toBeInTheDocument();
   });
 
   it("populated list: still one create CTA before opening builder", async () => {
@@ -127,17 +126,22 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
     expect(createButtons()).toHaveLength(1);
   });
 
-  it("filtered-empty: no create CTA inside empty panel", async () => {
-    vi.mocked(fetchBusinessOwnerCertificates).mockResolvedValue(listMeta(0));
+  it("filtered-empty: restores list empty panel, not onboarding", async () => {
+    vi.mocked(fetchBusinessOwnerCertificates).mockImplementation(async (params) => {
+      if (params?.q) {
+        return { ...listMeta(0), activeCount: 2, archivedCount: 0, certificates: [] };
+      }
+      return { ...listMeta(2), certificates: [certRow] };
+    });
     const user = userEvent.setup();
     renderBusiness(partnerType);
-    await waitFor(() => expect(screen.getByTestId("business-certificates-empty")).toBeVisible());
+    await waitFor(() => expect(screen.getByRole("table")).toBeVisible());
     await user.type(screen.getByPlaceholderText(copy.searchPlaceholder), "zz-no-match");
-    await waitFor(() => expect(fetchBusinessOwnerCertificates).toHaveBeenCalledTimes(2));
-    expect(createButtons()).toHaveLength(1);
+    await waitFor(() => expect(screen.getByTestId("business-certificates-empty")).toBeVisible());
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
-  it("loading then loaded empty keeps single CTA", async () => {
+  it("loading then loaded empty shows onboarding (intro hidden after load)", async () => {
     let resolveFetch!: (v: ReturnType<typeof listMeta>) => void;
     vi.mocked(fetchBusinessOwnerCertificates).mockImplementation(
       () =>
@@ -146,10 +150,10 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
         }),
     );
     renderBusiness(partnerType);
-    expect(screen.queryByTestId("business-certificates-create-cta")).toBeInTheDocument();
+    expect(screen.getByTestId("business-certificates-create-cta")).toBeInTheDocument();
     resolveFetch(listMeta(0));
-    await waitFor(() => expect(screen.getByTestId("business-certificates-empty")).toBeVisible());
-    expect(createButtons()).toHaveLength(1);
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(screen.queryByTestId("business-certificates-create-cta")).not.toBeInTheDocument();
   });
 
   it("fetch error with empty list: keeps single intro create CTA (issuer shell preserves view)", async () => {
@@ -160,15 +164,34 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("opens existing create dialog once from primary CTA", async () => {
+  it("opens existing create dialog from secondary CTA", async () => {
     vi.mocked(fetchBusinessOwnerCertificates).mockResolvedValue(listMeta(0));
     const user = userEvent.setup();
     renderBusiness(partnerType);
-    await waitFor(() => expect(screen.getByTestId("business-certificates-create-cta")).toBeVisible());
-    await user.click(screen.getByTestId("business-certificates-create-cta"));
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    await user.click(screen.getByRole("button", { name: copy.createCta }));
     await waitFor(() =>
       expect(screen.getByTestId("specialist-certificate-create-dialog")).toBeVisible(),
     );
-    expect(createButtons()).toHaveLength(1);
+  });
+});
+
+describe("AgentCertificatesList specialist new-partner empty", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+  });
+
+  it("shows specialist onboarding copy", async () => {
+    vi.mocked(fetchSpecialistIssuerCertificates).mockResolvedValue(listMeta(0));
+    render(
+      <OwnerIssuerModeProvider mode="specialist">
+        <AgentCertificatesList accessMode="specialist" />
+      </OwnerIssuerModeProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(
+      screen.getByRole("heading", { name: "Сертификат — ваша рекомендация" }),
+    ).toBeVisible();
   });
 });

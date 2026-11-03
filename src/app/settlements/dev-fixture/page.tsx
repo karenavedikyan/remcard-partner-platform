@@ -27,6 +27,7 @@ export default function SettlementsDevFixturePage() {
       <PageHeading eyebrow="СПЕЦИАЛИСТ" title="Кошелёк" description="Dev-fixture превью." />
       <div className="specialist-wallet-dev-fixture">
         <SpecialistMasterWallet
+          walletEmptyViewerRole="specialist"
           settlementsSlot={<SpecialistSettlementsWorkspace previewData={fixture} />}
         />
       </div>

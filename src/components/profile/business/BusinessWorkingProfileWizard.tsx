@@ -30,6 +30,9 @@ import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profil
 import styles from "../agent/AgentProfileWizard.module.css";
 import stepStyles from "../specialist/SpecialistWorkingProfileWizard.module.css";
 import surfaceStyles from "./BusinessProfileSurface.module.css";
+import { ProfileSectionEmptyGate } from "@/components/profile/empty-state/ProfileSectionEmptyGate";
+import { businessProfileEmptyRole } from "@/components/profile/empty-state/profile-empty-copy";
+import { businessProfileShowEmptyIntro } from "@/components/profile/empty-state/business-profile-empty-intro";
 
 const WORK_MODES = [
   { value: "", label: "Не указано" },
@@ -340,8 +343,13 @@ export function BusinessWorkingProfileWizard({
   }
 
   const patternStep = step === 0 || step === 1 || step === 3;
+  const showEmptyIntro = businessProfileShowEmptyIntro(savedSnapshot, { forceEditing });
 
   return (
+    <ProfileSectionEmptyGate
+      showEmptyIntro={showEmptyIntro}
+      role={businessProfileEmptyRole(partnerType)}
+    >
     <div
       className={
         patternStep
@@ -715,5 +723,6 @@ export function BusinessWorkingProfileWizard({
         </section>
       </div>
     </div>
+    </ProfileSectionEmptyGate>
   );
 }

@@ -38,6 +38,10 @@ import { Button } from "@/components/ui/Button";
 import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 import hubStyles from "@/components/settlements/settlements.module.css";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
+import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSectionEmptyState";
+import { isWalletSettlementsDataEmpty } from "@/lib/wallet-empty/is-empty";
+import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
+import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 import {
   bonusStatusLabel,
   bonusStatusTone,
@@ -55,6 +59,8 @@ type Props = {
   payableHint?: string | null;
   /** When scope changes, clears stale UI (payout dialog, drill-down). */
   scopeKey?: string;
+  /** Role for new-partner empty onboarding (settlements tab only). */
+  walletEmptyViewerRole?: WalletEmptyViewerProps["walletEmptyViewerRole"];
 };
 
 const DEFAULT_PAYABLE_SUMMARY = "Я должен";
@@ -243,6 +249,7 @@ export function SpecialistSettlementsWorkspace({
   payableDirectionLabel = DEFAULT_PAYABLE_SUMMARY,
   payableHint = null,
   scopeKey = "default",
+  walletEmptyViewerRole = "specialist",
 }: Props) {
   const [screen, setScreen] = useState<Screen>("overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
@@ -456,6 +463,27 @@ export function SpecialistSettlementsWorkspace({
     return (
       <div className={hubStyles.error} role="alert">
         <p>Не удалось загрузить данные кошелька.</p>
+      </div>
+    );
+  }
+
+  const filtersAreDefault =
+    filters.q === "" &&
+    filters.status === "open" &&
+    filters.sort === "date-desc" &&
+    filters.from === "" &&
+    filters.to === "";
+  const showWalletEmpty =
+    screen === "overview" &&
+    filtersAreDefault &&
+    !periodError &&
+    isWalletSettlementsDataEmpty(data) &&
+    isSupportedWalletEmptyViewerRole(walletEmptyViewerRole);
+
+  if (showWalletEmpty) {
+    return (
+      <div className={hubStyles.settlementDemo} data-testid="specialist-settlements-workspace">
+        <WalletSectionEmptyState role={walletEmptyViewerRole} />
       </div>
     );
   }

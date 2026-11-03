@@ -77,7 +77,19 @@ describe("SpecialistSettlementsWorkspace", () => {
   it("shows period validation error without treating it as empty data", async () => {
     vi.mocked(fetchSettlements).mockResolvedValue({
       coverageNote: "",
-      receivable: [],
+      receivable: [
+        {
+          id: "b1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "store-1",
+          counterpartyName: "Alpha Shop",
+          amount: 100,
+          basis: "Сертификат RC-1",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
       payable: [],
       completed: [],
     });
@@ -131,10 +143,60 @@ describe("SpecialistSettlementsWorkspace", () => {
     expect(await screen.findByText(/2 начисления/i)).toBeInTheDocument();
   });
 
-  it("uses user-facing copy without paidAt jargon", async () => {
+  it("shows new-partner empty onboarding on successful zero ledger", async () => {
     vi.mocked(fetchSettlements).mockResolvedValue({
       coverageNote: "",
       receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(<SpecialistSettlementsWorkspace walletEmptyViewerRole="specialist" />);
+    expect(await screen.findByTestId("wallet-empty-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("specialist-wallet-receivable-total")).toBeNull();
+  });
+
+  it("keeps ledger UI when completed history exists", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [
+        {
+          id: "c1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "p1",
+          counterpartyName: "Partner",
+          amount: 10,
+          basis: "b",
+          status: "PAID",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          paidAt: "2026-10-02T10:00:00.000Z",
+          direction: "receivable",
+        },
+      ],
+    });
+    render(<SpecialistSettlementsWorkspace />);
+    expect(await screen.findByTestId("specialist-wallet-receivable-total")).toBeInTheDocument();
+    expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+  });
+
+  it("uses user-facing copy without paidAt jargon when ledger has rows", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [
+        {
+          id: "b1",
+          orderId: "o1",
+          accrualType: "bonus",
+          counterpartyId: "store-1",
+          counterpartyName: "Alpha Shop",
+          amount: 1,
+          basis: "Сертификат RC-1",
+          status: "CONFIRMED",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
       payable: [],
       completed: [],
     });

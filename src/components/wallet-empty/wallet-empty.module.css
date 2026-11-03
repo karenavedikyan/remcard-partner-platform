@@ -1,0 +1,300 @@
+/* Approved new-partner wallet empty state (prototype empty-states.css, local tokens only). */
+.root {
+  --es-accent: var(--primary-fill);
+  --es-kicker-ink: var(--primary);
+  --es-tint: var(--soft);
+  display: grid;
+  gap: var(--space-5);
+  max-width: 980px;
+  font-family: var(--font-body);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: center;
+  padding: var(--space-8);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: auto -120px -160px auto;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--es-tint), transparent 72%);
+  pointer-events: none;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  left: -60px;
+  top: -90px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--offset), transparent 70%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heroText {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.kicker {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--es-kicker-ink);
+}
+
+.title {
+  font-weight: 800;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.lead {
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.ctaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  background: var(--accent-fill);
+  color: var(--primary-fg);
+}
+
+.ctaLink:hover {
+  background: var(--accent-fill-hover);
+}
+
+.ctaLink:focus-visible {
+  outline: 2px solid var(--es-accent);
+  outline-offset: 3px;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.stepNum {
+  position: absolute;
+  right: var(--space-4);
+  top: var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepIco {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--es-tint);
+  color: var(--es-accent);
+}
+
+.stepIco svg {
+  width: 22px;
+  height: 22px;
+}
+
+.step strong {
+  display: block;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  padding-right: var(--space-5);
+}
+
+.step small {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.foot {
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--muted);
+  padding: 0 var(--space-2);
+}
+
+.card {
+  width: 236px;
+  aspect-ratio: 1.58;
+  border-radius: 18px;
+  padding: var(--space-4) var(--space-5);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: #f3efe9;
+  background: linear-gradient(135deg, #2a2c2b 0%, #1b1d1c 55%, #3a2628 100%);
+  box-shadow:
+    0 24px 44px -26px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(244, 147, 145, 0.28), transparent 70%);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardBrand {
+  font-weight: 800;
+  font-size: var(--text-sm);
+  letter-spacing: -0.04em;
+}
+
+.cardBrand em {
+  font-style: normal;
+  color: #f49391;
+}
+
+.cardChip {
+  width: 28px;
+  height: 20px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #d8c48a, #a98b4a);
+  opacity: 0.9;
+}
+
+.cardSum {
+  align-self: center;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cardFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--text-xs);
+  color: #d5d0c8;
+}
+
+.cardNum {
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .hero::before {
+  opacity: 0.8;
+}
+
+@media (max-width: 1000px) {
+  .steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .steps .step:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+    padding: var(--space-5);
+    border-radius: 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .actions .ctaLink {
+    flex: 1 1 100%;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .steps .step:last-child {
+    grid-column: auto;
+  }
+
+  .step {
+    padding: var(--space-4);
+    border-radius: 14px;
+  }
+}
