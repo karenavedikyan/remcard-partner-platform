@@ -1,0 +1,591 @@
+commit 6ef182de5987b86e876172ac69c83068fe32133a
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:27:28 2026 +0000
+
+    fix(cabinet): shared prefs path refresh for both shell branches
+    
+    Hoist one pathname-scoped cabinet-ui-preferences GET into CabinetAppShellClient
+    so legacy and agent shells stay fresh and remount on pilot/context changes.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/app/dev/r01-agent-shell/AgentAppShellFixtureClient.tsx b/src/app/dev/r01-agent-shell/AgentAppShellFixtureClient.tsx
+new file mode 100644
+index 00000000..bff02376
+--- /dev/null
++++ b/src/app/dev/r01-agent-shell/AgentAppShellFixtureClient.tsx
+@@ -0,0 +1,36 @@
++"use client";
++
++import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
++import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++import type { AuthUser } from "@/lib/types";
++
++type AgentAppShellFixtureClientProps = {
++  user: AuthUser;
++  incomingCount: number;
++  initialPrefs: CabinetUiPreferencesResponse;
++  fixturePathname?: string;
++  children: React.ReactNode;
++};
++
++export function AgentAppShellFixtureClient({
++  user,
++  incomingCount,
++  initialPrefs,
++  fixturePathname,
++  children,
++}: AgentAppShellFixtureClientProps) {
++  const agentPrefs = useAgentCabinetUiPrefs(initialPrefs);
++  return (
++    <AgentAppShell
++      user={user}
++      incomingCount={incomingCount}
++      prefs={agentPrefs.prefs}
++      saveMobileNavKeys={agentPrefs.saveMobileNavKeys}
++      saveTheme={agentPrefs.saveTheme}
++      fixturePathname={fixturePathname}
++    >
++      {children}
++    </AgentAppShell>
++  );
++}
+diff --git a/src/app/dev/r01-agent-shell/page.tsx b/src/app/dev/r01-agent-shell/page.tsx
+index f32465b1..3b81993f 100644
+--- a/src/app/dev/r01-agent-shell/page.tsx
++++ b/src/app/dev/r01-agent-shell/page.tsx
+@@ -1,5 +1,5 @@
+ import { notFound } from "next/navigation";
+-import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
++import { AgentAppShellFixtureClient } from "@/app/dev/r01-agent-shell/AgentAppShellFixtureClient";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import { defaultAgentMobileNavKeys } from "@/lib/agent-nav/sections";
+ import type { AuthUser } from "@/lib/types";
+@@ -52,7 +52,7 @@ export default async function R01AgentShellFixturePage(props: {
+   };
+ 
+   return (
+-    <AgentAppShell
++    <AgentAppShellFixtureClient
+       user={FIXTURE_USER}
+       incomingCount={2}
+       initialPrefs={FIXTURE_PREFS}
+@@ -80,6 +80,6 @@ export default async function R01AgentShellFixturePage(props: {
+           Fixture shell для R01 (без live auth). Контент страницы вне scope сравнения.
+         </p>
+       </section>
+-    </AgentAppShell>
++    </AgentAppShellFixtureClient>
+   );
+ }
+diff --git a/src/components/layout/CabinetAppShellClient.tsx b/src/components/layout/CabinetAppShellClient.tsx
+index cf88d045..feca4bb7 100644
+--- a/src/components/layout/CabinetAppShellClient.tsx
++++ b/src/components/layout/CabinetAppShellClient.tsx
+@@ -11,6 +11,12 @@ import {
+   CabinetShellContextProvider,
+   useCabinetShellContext,
+ } from "@/components/layout/cabinet-shell-context";
++import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++import { useCabinetShellPrefsPathRefresh } from "@/hooks/useCabinetShellPrefsPathRefresh";
++import {
++  enrichCabinetUiPreferencesForShell,
++  isActiveAgentCabinetContext,
++} from "@/lib/agent-nav/root-destination";
+ 
+ type CabinetAppShellClientProps = {
+   user: AuthUser;
+@@ -21,49 +27,85 @@ type CabinetAppShellClientProps = {
+   children: React.ReactNode;
+ };
+ 
+-export function CabinetAppShellClient({
++export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
++  const layoutPrefs = enrichCabinetUiPreferencesForShell(props.uiPrefs);
++  const agentBranch = isActiveAgentCabinetContext(layoutPrefs);
++
++  return (
++    <CabinetShellContextProvider shellContextToken={props.shellContextToken}>
++      {props.profTestSession?.active ? (
++        <ProfTestModeBanner session={props.profTestSession} />
++      ) : null}
++      {agentBranch ? (
++        <AgentCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
++      ) : (
++        <LegacyCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
++      )}
++    </CabinetShellContextProvider>
++  );
++}
++
++type ShellBranchProps = CabinetAppShellClientProps & {
++  layoutPrefs: CabinetUiPreferencesResponse;
++};
++
++function LegacyCabinetShellBranch({
+   user,
+   incomingCount,
+-  uiPrefs,
+-  profTestSession,
++  layoutPrefs,
+   shellContextToken,
+   children,
+-}: CabinetAppShellClientProps) {
+-  const banner =
+-    profTestSession?.active ? <ProfTestModeBanner session={profTestSession} /> : null;
++}: ShellBranchProps) {
++  const shell = useCabinetShellContext();
++  useCabinetShellPrefsPathRefresh({
++    layoutPrefs,
++    onAuthFailure: shell?.notifyAuthFailure,
++  });
+ 
+-  const agentShellKey = `${shellContextToken}:${uiPrefs.contextKey ?? "none"}:${user.id}`;
+-  const legacyShellKey = shellContextToken;
++  return (
++    <AppShell
++      key={shellContextToken}
++      user={user}
++      incomingCount={incomingCount}
++      notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
++    >
++      {children}
++    </AppShell>
++  );
++}
+ 
+-  if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
+-    return (
+-      <CabinetShellContextProvider shellContextToken={shellContextToken}>
+-        {banner}
+-        <AgentAppShell
+-          key={agentShellKey}
+-          user={user}
+-          incomingCount={incomingCount}
+-          notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
+-          initialPrefs={uiPrefs}
+-        >
+-          {children}
+-        </AgentAppShell>
+-      </CabinetShellContextProvider>
+-    );
+-  }
++function AgentCabinetShellBranch({
++  user,
++  incomingCount,
++  layoutPrefs,
++  uiPrefs,
++  shellContextToken,
++  children,
++}: ShellBranchProps) {
++  const shell = useCabinetShellContext();
++  const agentPrefs = useAgentCabinetUiPrefs(uiPrefs);
++  useCabinetShellPrefsPathRefresh({
++    layoutPrefs,
++    applyServerPrefs: agentPrefs.applyServerPrefs,
++    applyAuthFailureClear: agentPrefs.applyAuthFailureClear,
++    getApplyGeneration: agentPrefs.getApplyGeneration,
++    onAuthFailure: shell?.notifyAuthFailure,
++  });
++
++  const agentShellKey = `${shellContextToken}:${layoutPrefs.contextKey ?? "none"}:${user.id}`;
+ 
+   return (
+-    <CabinetShellContextProvider shellContextToken={shellContextToken}>
+-      {banner}
+-      <AppShell
+-        key={legacyShellKey}
+-        user={user}
+-        incomingCount={incomingCount}
+-        notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
+-      >
+-        {children}
+-      </AppShell>
+-    </CabinetShellContextProvider>
++    <AgentAppShell
++      key={agentShellKey}
++      user={user}
++      incomingCount={incomingCount}
++      notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
++      prefs={agentPrefs.prefs}
++      saveMobileNavKeys={agentPrefs.saveMobileNavKeys}
++      saveTheme={agentPrefs.saveTheme}
++    >
++      {children}
++    </AgentAppShell>
+   );
+ }
+ 
+diff --git a/src/components/layout/agent/AgentAppShell.tsx b/src/components/layout/agent/AgentAppShell.tsx
+index 4daad0b3..26e9a628 100644
+--- a/src/components/layout/agent/AgentAppShell.tsx
++++ b/src/components/layout/agent/AgentAppShell.tsx
+@@ -5,7 +5,6 @@ import { AccountSessionMenu } from "@/components/account-session/AccountSessionM
+ import { usePathname } from "next/navigation";
+ import { useCallback, useEffect, useMemo, useState } from "react";
+ import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+-import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
+ import type { AuthUser } from "@/lib/types";
+ import { BrandMark } from "@/components/layout/BrandMark";
+ import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
+@@ -14,8 +13,6 @@ import { NAV_ICONS } from "@/components/layout/NavIcons";
+ import { AgentNavIcon } from "@/components/layout/agent/AgentNavIcon";
+ import { MobileNavEditorDialog } from "@/components/layout/agent/MobileNavEditorDialog";
+ import { MobileNavMoreSheet } from "@/components/layout/agent/MobileNavMoreSheet";
+-import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
+-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+ import { useAgentThemeSync } from "@/components/layout/agent/useAgentThemeSync";
+ import {
+   resolveAgentDesktopNavKeys,
+@@ -25,6 +22,7 @@ import {
+   type AgentNavSectionKey,
+ } from "@/lib/agent-nav/sections";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++import type { ThemePreference } from "@/lib/theme-preference";
+ import styles from "./AgentAppShell.module.css";
+ 
+ function userInitials(displayName: string): string {
+@@ -38,7 +36,9 @@ type AgentAppShellProps = {
+   user: AuthUser;
+   incomingCount?: number;
+   notificationBell?: React.ReactNode;
+-  initialPrefs: CabinetUiPreferencesResponse;
++  prefs: CabinetUiPreferencesResponse;
++  saveMobileNavKeys: (mobileNavKeys: AgentNavSectionKey[]) => Promise<CabinetUiPreferencesResponse>;
++  saveTheme: (theme: ThemePreference) => Promise<CabinetUiPreferencesResponse>;
+   /** Dev/screenshot fixture: pretend pathname without changing the route. */
+   fixturePathname?: string;
+   children: React.ReactNode;
+@@ -48,7 +48,9 @@ export function AgentAppShell({
+   user,
+   incomingCount = 0,
+   notificationBell,
+-  initialPrefs,
++  prefs,
++  saveMobileNavKeys,
++  saveTheme,
+   fixturePathname,
+   children,
+ }: AgentAppShellProps) {
+@@ -61,16 +63,6 @@ export function AgentAppShell({
+   }, [pathname]);
+   const displayName = user.displayName?.trim() || "Партнёр RemCard";
+   const initials = userInitials(displayName);
+-  const shell = useCabinetShellContext();
+-  const { prefs, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, saveMobileNavKeys, saveTheme } =
+-    useAgentCabinetUiPrefs(initialPrefs);
+-  useAgentCabinetPrefsPathRefresh(
+-    applyServerPrefs,
+-    applyAuthFailureClear,
+-    getApplyGeneration,
+-    shell?.notifyAuthFailure,
+-  );
+-
+   const permittedKeys = useMemo(
+     () => prefs.permittedKeys ?? [],
+     [prefs.permittedKeys],
+diff --git a/src/components/layout/agent/useAgentCabinetUiPrefs.ts b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+index 3a0d64f8..5de3e39d 100644
+--- a/src/components/layout/agent/useAgentCabinetUiPrefs.ts
++++ b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+@@ -42,6 +42,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+   const versionRef = useRef(initial.version);
+   const saveInFlightRef = useRef(0);
+   const applyGenerationRef = useRef(0);
++  const blockInitialFromLayoutRef = useRef(false);
+ 
+   const applyIncoming = useCallback(
+     (
+@@ -52,6 +53,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+       if (source === "auth-failure") {
+         applyGenerationRef.current += 1;
+         versionRef.current = 0;
++        blockInitialFromLayoutRef.current = true;
+         setPrefs(next);
+         return;
+       }
+@@ -78,6 +80,13 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+   );
+ 
+   useEffect(() => {
++    blockInitialFromLayoutRef.current = false;
++  }, [initial.version, initial.pilotActive, initial.contextKey]);
++
++  useEffect(() => {
++    if (blockInitialFromLayoutRef.current) {
++      return;
++    }
+     applyIncoming(initial, "initial");
+   }, [
+     applyIncoming,
+diff --git a/src/components/layout/cabinet-shell-context.tsx b/src/components/layout/cabinet-shell-context.tsx
+index a7dc0b6b..0d1b44de 100644
+--- a/src/components/layout/cabinet-shell-context.tsx
++++ b/src/components/layout/cabinet-shell-context.tsx
+@@ -18,6 +18,11 @@ export type CabinetShellContextValue = {
+   notifyAuthFailure: () => void;
+   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
+   acknowledgeShellContextMatch: () => void;
++  requestShellRefreshIfPrefsBranchMismatch: (
++    layoutPrefsSignature: string,
++    freshPrefsSignature: string,
++  ) => void;
++  acknowledgeShellPrefsLayoutMatch: () => void;
+ };
+ 
+ const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
+@@ -38,9 +43,11 @@ export function CabinetShellContextProvider({
+   const router = useRouter();
+   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
+   const refreshedPairsRef = useRef<Map<string, number>>(new Map());
++  const prefsRefreshPairsRef = useRef<Set<string>>(new Set());
+ 
+   useEffect(() => {
+     refreshedPairsRef.current.clear();
++    prefsRefreshPairsRef.current.clear();
+   }, [shellContextToken]);
+ 
+   const notifyAuthFailure = useCallback(() => {
+@@ -51,6 +58,26 @@ export function CabinetShellContextProvider({
+     refreshedPairsRef.current.clear();
+   }, []);
+ 
++  const acknowledgeShellPrefsLayoutMatch = useCallback(() => {
++    prefsRefreshPairsRef.current.clear();
++  }, []);
++
++  const requestShellRefreshIfPrefsBranchMismatch = useCallback(
++    (layoutPrefsSignature: string, freshPrefsSignature: string) => {
++      if (layoutPrefsSignature === freshPrefsSignature) {
++        prefsRefreshPairsRef.current.clear();
++        return;
++      }
++      const pair = `${layoutPrefsSignature}|${freshPrefsSignature}`;
++      if (prefsRefreshPairsRef.current.has(pair)) {
++        return;
++      }
++      prefsRefreshPairsRef.current.add(pair);
++      router.refresh();
++    },
++    [router],
++  );
++
+   const requestShellRefreshIfStale = useCallback(
+     (freshShellContextToken: string) => {
+       if (shellContextToken === freshShellContextToken) {
+@@ -75,6 +102,8 @@ export function CabinetShellContextProvider({
+       notifyAuthFailure,
+       requestShellRefreshIfStale,
+       acknowledgeShellContextMatch,
++      requestShellRefreshIfPrefsBranchMismatch,
++      acknowledgeShellPrefsLayoutMatch,
+     }),
+     [
+       shellContextToken,
+@@ -82,6 +111,8 @@ export function CabinetShellContextProvider({
+       notifyAuthFailure,
+       requestShellRefreshIfStale,
+       acknowledgeShellContextMatch,
++      requestShellRefreshIfPrefsBranchMismatch,
++      acknowledgeShellPrefsLayoutMatch,
+     ],
+   );
+ 
+diff --git a/src/hooks/useAgentCabinetPrefsPathRefresh.ts b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+index 90c0a5b6..e171ad5a 100644
+--- a/src/hooks/useAgentCabinetPrefsPathRefresh.ts
++++ b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+@@ -1,48 +1,5 @@
+-"use client";
+-
+-import { useEffect } from "react";
+-import { usePathname, useRouter } from "next/navigation";
+-import { remcardFetch } from "@/lib/api-client";
+-import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
+-import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+-import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+-
+-/** Refreshes agent UI prefs on pathname change; clears stale private shell state on auth failure. */
+-export function useAgentCabinetPrefsPathRefresh(
+-  applyServerPrefs: (
+-    next: CabinetUiPreferencesResponse,
+-    requestGeneration?: number,
+-  ) => void,
+-  applyAuthFailureClear: () => void,
+-  getApplyGeneration: () => number,
+-  onAuthFailure?: () => void,
+-): void {
+-  const pathname = usePathname();
+-  const router = useRouter();
+-
+-  useEffect(() => {
+-    const requestGeneration = getApplyGeneration();
+-    const controller = new AbortController();
+-    let cancelled = false;
+-    void remcardFetch<CabinetUiPreferencesResponse>("/api/pro/cabinet-ui-preferences", {
+-      signal: controller.signal,
+-    })
+-      .then((data) => {
+-        if (cancelled) return;
+-        applyServerPrefs(enrichCabinetUiPreferencesForShell(data), requestGeneration);
+-      })
+-      .catch((error) => {
+-        if (cancelled) return;
+-        if (error instanceof DOMException && error.name === "AbortError") return;
+-        if (isCabinetShellAuthFailure(error)) {
+-          applyAuthFailureClear();
+-          onAuthFailure?.();
+-          router.refresh();
+-        }
+-      });
+-    return () => {
+-      cancelled = true;
+-      controller.abort();
+-    };
+-  }, [pathname, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, onAuthFailure, router]);
+-}
++export {
++  useAgentCabinetPrefsPathRefresh,
++  useCabinetShellPrefsPathRefresh,
++  type UseCabinetShellPrefsPathRefreshOptions,
++} from "@/hooks/useCabinetShellPrefsPathRefresh";
+diff --git a/src/hooks/useCabinetShellPrefsPathRefresh.ts b/src/hooks/useCabinetShellPrefsPathRefresh.ts
+new file mode 100644
+index 00000000..69b6b5bc
+--- /dev/null
++++ b/src/hooks/useCabinetShellPrefsPathRefresh.ts
+@@ -0,0 +1,113 @@
++"use client";
++
++import { useEffect, useMemo } from "react";
++import { usePathname, useRouter } from "next/navigation";
++import { remcardFetch } from "@/lib/api-client";
++import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
++import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
++import { cabinetShellPrefsLayoutSignature } from "@/lib/cabinet-shell-prefs-signature";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++export type UseCabinetShellPrefsPathRefreshOptions = {
++  layoutPrefs: CabinetUiPreferencesResponse;
++  applyServerPrefs?: (
++    next: CabinetUiPreferencesResponse,
++    requestGeneration?: number,
++  ) => void;
++  applyAuthFailureClear?: () => void;
++  getApplyGeneration?: () => number;
++  onAuthFailure?: () => void;
++};
++
++/** One GET /api/pro/cabinet-ui-preferences per pathname for both legacy and agent shells. */
++export function useCabinetShellPrefsPathRefresh({
++  layoutPrefs,
++  applyServerPrefs,
++  applyAuthFailureClear,
++  getApplyGeneration,
++  onAuthFailure,
++}: UseCabinetShellPrefsPathRefreshOptions): void {
++  const pathname = usePathname();
++  const router = useRouter();
++  const shell = useCabinetShellContext();
++  const acknowledgeShellPrefsLayoutMatch = shell?.acknowledgeShellPrefsLayoutMatch;
++  const requestShellRefreshIfPrefsBranchMismatch = shell?.requestShellRefreshIfPrefsBranchMismatch;
++  const layoutPrefsSignature = useMemo(
++    () => cabinetShellPrefsLayoutSignature(layoutPrefs),
++    [layoutPrefs],
++  );
++
++  useEffect(() => {
++    const requestGeneration = getApplyGeneration?.() ?? 0;
++    const controller = new AbortController();
++    let cancelled = false;
++    void remcardFetch<CabinetUiPreferencesResponse>("/api/pro/cabinet-ui-preferences", {
++      signal: controller.signal,
++    })
++      .then((data) => {
++        if (cancelled) return;
++        const fresh = enrichCabinetUiPreferencesForShell(data);
++        const freshSignature = cabinetShellPrefsLayoutSignature(fresh);
++        if (freshSignature === layoutPrefsSignature) {
++          acknowledgeShellPrefsLayoutMatch?.();
++          applyServerPrefs?.(fresh, requestGeneration);
++          return;
++        }
++        requestShellRefreshIfPrefsBranchMismatch?.(layoutPrefsSignature, freshSignature);
++      })
++      .catch((error) => {
++        if (cancelled) return;
++        if (error instanceof DOMException && error.name === "AbortError") return;
++        if (isCabinetShellAuthFailure(error)) {
++          applyAuthFailureClear?.();
++          onAuthFailure?.();
++          router.refresh();
++        }
++      });
++    return () => {
++      cancelled = true;
++      controller.abort();
++    };
++  }, [
++    pathname,
++    layoutPrefsSignature,
++    applyServerPrefs,
++    applyAuthFailureClear,
++    getApplyGeneration,
++    onAuthFailure,
++    router,
++    acknowledgeShellPrefsLayoutMatch,
++    requestShellRefreshIfPrefsBranchMismatch,
++  ]);
++}
++
++/** @deprecated Prefer useCabinetShellPrefsPathRefresh with layoutPrefs. */
++export function useAgentCabinetPrefsPathRefresh(
++  applyServerPrefs: (
++    next: CabinetUiPreferencesResponse,
++    requestGeneration?: number,
++  ) => void,
++  applyAuthFailureClear: () => void,
++  getApplyGeneration: () => number,
++  onAuthFailure?: () => void,
++  layoutPrefs?: CabinetUiPreferencesResponse,
++): void {
++  useCabinetShellPrefsPathRefresh({
++    layoutPrefs: layoutPrefs ?? {
++      contractVersion: "2026-10-14.r01",
++      pilotEnabled: false,
++      pilotActive: false,
++      contextKey: null,
++      version: 0,
++      theme: null,
++      mobileNavKeys: null,
++      permittedKeys: null,
++      defaultMobileNavKeys: null,
++    },
++    applyServerPrefs,
++    applyAuthFailureClear,
++    getApplyGeneration,
++    onAuthFailure,
++  });
++}
+diff --git a/src/lib/cabinet-shell-prefs-signature.ts b/src/lib/cabinet-shell-prefs-signature.ts
+new file mode 100644
+index 00000000..ec65a989
+--- /dev/null
++++ b/src/lib/cabinet-shell-prefs-signature.ts
+@@ -0,0 +1,14 @@
++import {
++  enrichCabinetUiPreferencesForShell,
++  isActiveAgentCabinetContext,
++} from "@/lib/agent-nav/root-destination";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++/** Layout branch identity for prefs refresh (pilot shell vs legacy; agent contextKey). */
++export function cabinetShellPrefsLayoutSignature(
++  prefs: CabinetUiPreferencesResponse,
++): string {
++  const enriched = enrichCabinetUiPreferencesForShell(prefs);
++  const branch = isActiveAgentCabinetContext(enriched) ? "agent" : "legacy";
++  return `${branch}:${enriched.contextKey ?? "none"}`;
++}

@@ -27,7 +27,14 @@ On **Next.js 15.5.28**, `(cabinet)/template.tsx` **does not re-execute on soft n
 
 ## M2 — Fail-closed clear (unchanged)
 
-`auth-failure` prefs source, generation bump, badge/bell epoch, `router.refresh()` on 401/403.
+`auth-failure` prefs source, generation bump, badge/bell epoch, `router.refresh()` on 401/403. After auth-failure clear, stale layout `initialPrefs` rehydrate is blocked until layout props change.
+
+## M3 — Shared prefs path refresh (both shells)
+
+- **`useCabinetShellPrefsPathRefresh`**: Single pathname-scoped GET `/api/pro/cabinet-ui-preferences` hoisted in **`CabinetAppShellClient`** (`LegacyCabinetShellBranch` + `AgentCabinetShellBranch`); removed from **`AgentAppShell`**.
+- **In-place (agent branch):** Monotonic apply for `mobileNavKeys` / `permittedKeys` / `version` when `cabinetShellPrefsLayoutSignature` matches layout (pilot branch + `contextKey`).
+- **Layout refresh:** When fresh prefs change agent↔legacy membership or `contextKey`, one bounded `router.refresh()` per `(layoutSig|freshSig)` pair (guard clears on match; separate from identity-token guard).
+- **Legacy branch:** No in-memory prefs state; pilot/context mismatch triggers layout refresh; fixed legacy mobile nav for non-pilot users unchanged.
 
 ## Tests
 
@@ -39,9 +46,10 @@ On **Next.js 15.5.28**, `(cabinet)/template.tsx` **does not re-execute on soft n
 | Loop guard A→B→A→B | `cabinet-shell-context-loop-guard.test.tsx` |
 | Shell remount / analytics | `cabinet-shell-context-remount.test.tsx`, `ProfPartnerSessionVisitOnPathname.test.tsx` |
 | M2 | `agent-cabinet-ui-prefs-apply.test.tsx`, monotonic + path refresh hooks |
+| M3 prefs | `useCabinetShellPrefsPathRefresh.test.tsx`, `CabinetAppShellClient.prefs-path-refresh.test.tsx` (exactly **one** prefs GET per pathname) |
 | Routing contract | `(cabinet)/cabinet-routing-contract.test.tsx` (requires `CabinetShell`, no `template.tsx`) |
 
-**Focused gate:** 76 passed (`logs/vitest-focused.log`).
+**Focused gate:** 88 passed (`logs/vitest-focused.log`).
 
 **Full suite:** 7 failing files — same as base `bbf06ef8` (`logs/vitest-full-failures.txt`). Not claimed green.
 
@@ -55,6 +63,8 @@ On **Next.js 15.5.28**, `(cabinet)/template.tsx` **does not re-execute on soft n
 | `88bc8c13` | Per-page `CabinetShell` wrapper; delete template; loop guard |
 | `3b782319` | Wrapper + loop tests |
 | `9569cb71` | Reconciler test stabilization |
+| `6ef182de` | M3 shared prefs path refresh |
+| `f8b18f7b` | M3 tests |
 
 ## Unresolved
 

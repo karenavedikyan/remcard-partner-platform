@@ -1,37 +1,3 @@
 Command: ./node_modules/.bin/vitest run … (focused gate, --maxWorkers=1)
-76 tests — see prior r4 gate list plus CabinetShell + loop-guard tests
-
-
- RUN  v3.2.7 /agent/repos/remcard-partner-platform
-
- ✓ src/components/layout/cabinet-pathname-dismiss.test.tsx (4 tests) 189ms
- ✓ src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx (2 tests) 117ms
- ✓ src/components/layout/cabinet-shell-context-remount.test.tsx (3 tests) 106ms
- ✓ src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx (2 tests) 53ms
- ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 53ms
- ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 48ms
- ✓ src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx (4 tests) 35ms
- ✓ src/components/layout/CabinetShellTemplateReconciler.test.tsx (4 tests) 31ms
- ✓ src/lib/session-peek.test.tsx (7 tests) 33ms
- ✓ src/hooks/useIncomingPartnersCount.test.tsx (2 tests) 31ms
- ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 28ms
-stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
-Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
-
-stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
-Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
-
- ✓ src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx (6 tests) 24ms
- ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 21ms
- ✓ src/components/layout/cabinet-shell-context-loop-guard.test.tsx (2 tests) 23ms
- ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (20 tests) 14ms
- ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (5 tests) 6ms
- ✓ src/components/layout/CabinetShell.test.tsx (2 tests) 4ms
- ✓ src/lib/clients-rsc-boundary.test.ts (2 tests) 2ms
- ✓ src/lib/agent-cabinet-ui-prefs-apply.test.tsx (5 tests) 3ms
-
- Test Files  19 passed (19)
-      Tests  76 passed (76)
-   Start at  15:21:51
-   Duration  10.80s (transform 480ms, setup 1.81s, collect 776ms, tests 821ms, environment 4.69s, prepare 799ms)
+88 tests
 
