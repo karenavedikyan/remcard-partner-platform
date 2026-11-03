@@ -1,6 +1,7 @@
 /* Approved new-partner wallet empty state (prototype empty-states.css, local tokens only). */
 .root {
   --es-accent: var(--primary-fill);
+  --es-accent-ink: var(--primary);
   --es-kicker-ink: var(--primary);
   --es-tint: var(--soft);
   display: grid;
@@ -107,7 +108,7 @@
 }
 
 .ctaLink:focus-visible {
-  outline: 2px solid var(--es-accent);
+  outline: 2px solid var(--es-accent-ink);
   outline-offset: 3px;
 }
 

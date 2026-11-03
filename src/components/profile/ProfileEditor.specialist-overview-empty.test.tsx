@@ -1,15 +1,55 @@
 /**
  * @vitest-environment jsdom
  */
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileEditor } from "./ProfileEditor";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import type { ProProfileResponse } from "@/lib/types";
+import {
+  EMPLOYEES_OVERVIEW_FIXTURE,
+  type EmployeesOverviewResponse,
+} from "@/lib/employees-overview-types";
 
 const pushMock = vi.fn();
 let mockSearchParams = new URLSearchParams("section=overview");
+
+const remcardFetchMock = vi.hoisted(() => vi.fn());
+
+const soloEmployeesOverview: EmployeesOverviewResponse = {
+  ...EMPLOYEES_OVERVIEW_FIXTURE,
+  organization: { id: "solo", name: "Solo" },
+  myRole: "SOLO_PARTNER",
+  myBranchIds: [],
+  summary: {
+    totalEmployees: 0,
+    byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 },
+    pendingInvites: 0,
+  },
+  branches: [],
+  viewer: {
+    userId: "u1",
+    isOrgOwner: true,
+    canManageEmployeesByBranchId: {},
+    canManageSoloPartnerEmployees: true,
+  },
+};
+
+async function installRemcardFetchMock() {
+  remcardFetchMock.mockImplementation(async (path: string) => {
+    if (path === "/api/pro/organization/employees-overview") {
+      return soloEmployeesOverview;
+    }
+    if (path === "/api/pro/employees") {
+      return { employees: [] };
+    }
+    if (path === "/api/pro/moderation-notes") {
+      return { notes: [] };
+    }
+    throw new Error(`unexpected remcardFetch path in specialist overview test: ${path}`);
+  });
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: pushMock, replace: vi.fn() }),
@@ -43,10 +83,7 @@ vi.mock("@/lib/profile-save", () => ({
 }));
 
 vi.mock("@/lib/api-client", () => ({
-  remcardFetch: vi.fn().mockResolvedValue({
-    notes: [],
-    employees: [],
-  }),
+  remcardFetch: (path: string, init?: RequestInit) => remcardFetchMock(path, init),
   RemcardApiError: class RemcardApiError extends Error {
     status: number;
     constructor(status: number, message: string) {
@@ -117,6 +154,8 @@ vi.mock("@/lib/agent-profile/api", () => ({
     Promise.resolve({ featureEnabled: false, eligible: false, hasAgentActivity: false }),
 }));
 
+const specialistR06Gate = { featureEnabled: true, eligible: true, profileComplete: false } as const;
+
 const masterProfile: ProProfileResponse = {
   organization: null,
   programs: [],
@@ -149,10 +188,24 @@ const masterProfile: ProProfileResponse = {
   },
 };
 
+async function expectLegacyOverviewSettled() {
+  await waitFor(() => expect(screen.getByText("Рабочий профиль")).toBeInTheDocument());
+  await waitFor(() => {
+    const paths = remcardFetchMock.mock.calls.map((call) => call[0]);
+    expect(paths).toContain("/api/pro/organization/employees-overview");
+    expect(paths).toContain("/api/pro/employees");
+  });
+  const teamBtn = await screen.findByRole("button", { name: /Сотрудники/i });
+  await waitFor(() => expect(within(teamBtn).getByText("0")).toBeInTheDocument());
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+}
+
 describe("ProfileEditor specialist overview empty intro", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     pushMock.mockReset();
     patchSpecialistDraft.mockReset();
+    remcardFetchMock.mockReset();
+    await installRemcardFetchMock();
     mockSearchParams = new URLSearchParams("section=overview");
     fetchSpecialistDraft.mockResolvedValue({
       contractVersion: "r06",
@@ -175,6 +228,7 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
@@ -195,6 +249,7 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
@@ -204,6 +259,7 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
@@ -230,10 +286,11 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
-    await waitFor(() => expect(screen.getByText("Рабочий профиль")).toBeInTheDocument());
+    await expectLegacyOverviewSettled();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
@@ -243,10 +300,11 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
-    await waitFor(() => expect(screen.getByText("Рабочий профиль")).toBeInTheDocument());
+    await expectLegacyOverviewSettled();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
@@ -262,10 +320,11 @@ describe("ProfileEditor specialist overview empty intro", () => {
       <ProfileEditor
         initial={masterProfile}
         cabinetAccess={ownerProfileCabinetAccess()}
+        initialSpecialistR06Gate={specialistR06Gate}
         section="overview"
       />,
     );
-    await waitFor(() => expect(screen.getByText("Рабочий профиль")).toBeInTheDocument());
+    await expectLegacyOverviewSettled();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 });

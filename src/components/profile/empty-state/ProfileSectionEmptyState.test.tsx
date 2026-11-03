@@ -1,6 +1,9 @@
 /**
  * @vitest-environment jsdom
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { ProfileSectionEmptyState } from "./ProfileSectionEmptyState";
@@ -53,5 +56,13 @@ describe("ProfileSectionEmptyState", () => {
   it("meets 4.5:1 contrast for white label on scoped primary-fill tokens", () => {
     expect(contrastRatio("#ffffff", "#c12b2f")).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio("#ffffff", "#b54844")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("binds focus-visible outline to es-accent for 3:1 ring contrast on hero card", () => {
+    const cssPath = join(dirname(fileURLToPath(import.meta.url)), "ProfileSectionEmptyState.module.css");
+    const css = readFileSync(cssPath, "utf8");
+    expect(css).toContain("outline: 2px solid var(--es-accent, #b52a2e);");
+    expect(contrastRatio("#b52a2e", "#ffffff")).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio("#ff9497", "#202329")).toBeGreaterThanOrEqual(3);
   });
 });

@@ -144,7 +144,7 @@
 
 .primaryBtn:focus-visible,
 .ghostBtn:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent, var(--primary)) 45%, transparent);
+  outline: 3px solid var(--accent, var(--primary));
   outline-offset: 3px;
 }
 

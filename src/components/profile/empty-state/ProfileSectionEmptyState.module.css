@@ -158,7 +158,7 @@
 }
 
 .primaryBtn:focus-visible {
-  outline: 2px solid var(--primary-fill, #c12b2f);
+  outline: 2px solid var(--es-accent, #b52a2e);
   outline-offset: 2px;
 }
 
