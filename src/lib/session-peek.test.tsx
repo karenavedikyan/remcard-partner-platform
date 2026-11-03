@@ -87,6 +87,20 @@ describe("peekCabinetSession", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
+  it("returns null when readiness is missing (page SessionGate, not layout redirect)", async () => {
+    fetchRemcardUpstream.mockImplementation(async (path: string) => {
+      if (path === "/api/auth/me") return { ok: true, data: { user: proUser } };
+      if (path === "/api/account/cabinet-readiness") {
+        return { ok: false, status: 503, message: "n/a", configured: true };
+      }
+      return { ok: false, status: 404, message: "n/a", configured: true };
+    });
+    const { peekCabinetSession, requireProPageUser } = await import("@/lib/session");
+    await expect(peekCabinetSession()).resolves.toBeNull();
+    await expect(requireProPageUser("/clients")).resolves.toBeNull();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
   it("returns PRO user when cabinet access is allowed", async () => {
     const { peekCabinetSession } = await import("@/lib/session");
     await expect(peekCabinetSession()).resolves.toEqual(proUser);

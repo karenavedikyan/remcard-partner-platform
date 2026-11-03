@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-const clientsAppDir = path.resolve(__dirname, "../app/clients");
+const clientsAppDir = path.resolve(__dirname, "../app/(cabinet)/clients");
 
 describe("clients pages RSC boundary", () => {
   it("does not pass render-prop functions into OwnerClientsGate", () => {

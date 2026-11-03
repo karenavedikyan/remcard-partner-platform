@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { remcardFetch } from "@/lib/api-client";
+import { usePathname, useRouter } from "next/navigation";
+import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import type { PartnershipListResponse } from "@/lib/types";
 
@@ -12,6 +13,7 @@ import type { PartnershipListResponse } from "@/lib/types";
  */
 export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
   const pathname = usePathname();
+  const router = useRouter();
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
@@ -29,14 +31,23 @@ export function useIncomingPartnersCount(initialCount: number, userId: string | 
         if (cancelled) return;
         setCount(countNeedsMyResponse(data.partnerships ?? [], userId));
       })
-      .catch(() => {
-        /* keep last known count on transient errors */
+      .catch((error) => {
+        if (cancelled) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (isCabinetShellAuthFailure(error)) {
+          setCount(0);
+          router.refresh();
+          return;
+        }
+        if (error instanceof RemcardApiError) {
+          /* transient non-auth errors: keep last known count */
+        }
       });
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [pathname, userId]);
+  }, [pathname, userId, router]);
 
   return count;
 }

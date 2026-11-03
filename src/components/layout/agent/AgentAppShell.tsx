@@ -5,6 +5,7 @@ import { AccountSessionMenu } from "@/components/account-session/AccountSessionM
 import { usePathname } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
 import type { AuthUser } from "@/lib/types";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
@@ -55,7 +56,9 @@ export function AgentAppShell({
   const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
-  const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
+  const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =
+    useAgentCabinetUiPrefs(initialPrefs);
+  useAgentCabinetPrefsPathRefresh(applyServerPrefs);
 
   const permittedKeys = useMemo(
     () => prefs.permittedKeys ?? [],

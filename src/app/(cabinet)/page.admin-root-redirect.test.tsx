@@ -1,4 +1,6 @@
-import { Fragment } from "react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { Children, Fragment, isValidElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./page";
 import { getSessionUser } from "@/lib/session";
@@ -6,6 +8,8 @@ import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
 import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
 import { SessionGate } from "@/components/auth/SessionGate";
+import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+import { HomeDashboard } from "@/components/home/HomeDashboard";
 const redirect = vi.hoisted(() => vi.fn((path: string) => {
   throw new Error(`NEXT_REDIRECT:${path}`);
 }));
@@ -50,6 +54,11 @@ beforeEach(() => {
 });
 
 describe("server home-page staff redirect", () => {
+  it("does not wrap content in CabinetShell (persistent (cabinet)/layout owns the shell)", () => {
+    const src = readFileSync(path.join(import.meta.dirname, "page.tsx"), "utf8");
+    expect(src).not.toMatch(/CabinetShell/);
+  });
+
   it.each(["OWNER", "ADMIN"])("redirects %s before partner readiness/profile/consent fetches", async (staffRole) => {
     vi.mocked(getSessionUser).mockResolvedValue({
       id: "synthetic-staff", role: "CLIENT", staffRole, isBlocked: false,
@@ -100,6 +109,18 @@ describe("server home-page staff redirect", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
+  it("keeps PartnerWelcome for guests when registration welcome path is enabled", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(null);
+    vi.mocked(fetchRegistrationCapabilitiesServer).mockResolvedValue({
+      welcomeEnabled: true,
+      agentRegistrationPathEnabled: true,
+    } as Awaited<ReturnType<typeof fetchRegistrationCapabilitiesServer>>);
+    const element = await HomePage({ searchParams: Promise.resolve({ invite: "tok", returnTo: "/join" }) });
+    expect(element.type).toBe(PartnerWelcome);
+    expect(element.props.inviteToken).toBe("tok");
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
   it("keeps partner consent requirements", async () => {
     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
       ok: true, data: {
@@ -125,6 +146,10 @@ describe("server home-page staff redirect", () => {
     });
     const element = await HomePage({});
     expect(element.type).toBe(Fragment);
+    const kids = Children.toArray(element.props.children);
+    expect(
+      kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
+    ).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
   });
 
