@@ -6,6 +6,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BusinessWorkingProfileWizard } from "./BusinessWorkingProfileWizard";
 import type { ProProfileResponse } from "@/lib/types";
+import { revealProfileWizardFromEmpty } from "@/components/profile/empty-state/profileEmptyTestHelpers";
 
 vi.mock("@/components/profile/agent/AgentPhoneField", () => ({
   AgentPhoneField: () => null,
@@ -72,6 +73,7 @@ describe("BusinessWorkingProfileWizard basics", () => {
         basicsEditable
       />,
     );
+    await revealProfileWizardFromEmpty();
     expect(await screen.findByTestId("business-profile-basics-panel")).toBeInTheDocument();
     expect(screen.getByLabelText(/Название магазина/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Имя представителя/i)).toBeInTheDocument();
@@ -102,6 +104,7 @@ describe("BusinessWorkingProfileWizard basics", () => {
         basicsEditable
       />,
     );
+    await revealProfileWizardFromEmpty(user);
     await screen.findByLabelText(/Название компании/i);
     await user.type(screen.getByLabelText(/Название компании/i), "Юг");
     await user.type(screen.getByLabelText(/Имя представителя/i), "Иван");

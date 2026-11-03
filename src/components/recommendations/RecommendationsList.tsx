@@ -11,6 +11,7 @@ import {
 import type { CertificateListResponse, StoreCertificate } from "@/lib/certificate-types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/CertificatesNewPartnerEmpty";
 import styles from "./recommendations.module.css";
 
 function formatDate(iso: string) {
@@ -50,13 +51,17 @@ export function RecommendationsList() {
     void load();
   }, [load]);
 
+  const showNewPartnerEmpty = loadState === "loaded" && !error && items.length === 0;
+
   return (
     <>
+      {!showNewPartnerEmpty ? (
       <div className={styles.pageActions}>
         <Link href="/recommendations/new">
           <Button>Создать рекомендацию</Button>
         </Link>
       </div>
+      ) : null}
 
       {loadState === "loading" ? <p className={styles.loading}>Загрузка…</p> : null}
 
@@ -69,7 +74,11 @@ export function RecommendationsList() {
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length === 0 ? (
+      {showNewPartnerEmpty ? (
+        <CertificatesNewPartnerEmpty role="specialist" createHref="/recommendations/new" />
+      ) : null}
+
+      {loadState === "loaded" && items.length === 0 && !showNewPartnerEmpty ? (
         <div className={styles.empty}>
           <p>Пока нет созданных рекомендаций.</p>
           <Link href="/recommendations/new">

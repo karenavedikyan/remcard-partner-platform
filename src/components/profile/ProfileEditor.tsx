@@ -60,6 +60,7 @@ import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
 import { AgentProfileSection } from "./agent/AgentProfileSection";
 import { SpecialistProfileSection } from "./specialist/SpecialistProfileSection";
 import { BusinessProfileSection } from "./business/BusinessProfileSection";
+import { SpecialistOverviewEmptyGate } from "./empty-state/SpecialistOverviewEmptyGate";
 import { BusinessCatalogPrerequisite } from "./business/BusinessCatalogPrerequisite";
 import { OrganizationCatalogSection } from "./business/OrganizationCatalogSection";
 import {
@@ -260,6 +261,7 @@ function ProfileEditorInner({
   );
   const [businessWizardDirty, setBusinessWizardDirty] = useState(false);
   const [specialistWizardDirty, setSpecialistWizardDirty] = useState(false);
+  const [specialistBasicsWizardRevealed, setSpecialistBasicsWizardRevealed] = useState(false);
   const catalogPrefillAppliedKeyRef = useRef<string | null>(null);
 
   const touchCatalogField = useCallback((field: CatalogPrefillField) => {
@@ -628,6 +630,7 @@ function ProfileEditorInner({
     if (initial.user.id !== syncedUserIdRef.current) {
       syncedUserIdRef.current = initial.user.id;
       applyProfile(initial);
+      setSpecialistBasicsWizardRevealed(false);
       return;
     }
     setProfile(initial);
@@ -709,6 +712,18 @@ function ProfileEditorInner({
     },
     [activeSection, confirmLeaveUnsaved, profileBasePath, router, searchParams],
   );
+
+  const startSpecialistProfileFromOverview = useCallback(() => {
+    setSpecialistBasicsWizardRevealed(true);
+    if (activeSection === "basics") return;
+    setActiveSection("basics");
+    const qs = buildProfileSectionHref(
+      "basics",
+      new URLSearchParams(searchParams.toString()),
+    ).split("?")[1];
+    const href = qs ? `${profileBasePath}?${qs}` : `${profileBasePath}?section=basics`;
+    router.push(href, { scroll: false });
+  }, [activeSection, profileBasePath, router, searchParams]);
 
   useEffect(() => {
     if (
@@ -865,12 +880,23 @@ function ProfileEditorInner({
               layout={pureAgentCompactUi ? "parity-overview" : "default"}
             />
             {!pureAgentCompactUi ? (
-              <ProfileOverviewSection
-                profile={profile}
-                onNavigateSection={navigateSection}
-                hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
-                fixtureOverview={fixtureOverview}
-              />
+              specialistR06Ui ? (
+                <SpecialistOverviewEmptyGate onStartFill={startSpecialistProfileFromOverview}>
+                  <ProfileOverviewSection
+                    profile={profile}
+                    onNavigateSection={navigateSection}
+                    hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+                    fixtureOverview={fixtureOverview}
+                  />
+                </SpecialistOverviewEmptyGate>
+              ) : (
+                <ProfileOverviewSection
+                  profile={profile}
+                  onNavigateSection={navigateSection}
+                  hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+                  fixtureOverview={fixtureOverview}
+                />
+              )
             ) : null}
           </>
         ) : null}
@@ -889,6 +915,7 @@ function ProfileEditorInner({
             <SpecialistProfileSection
               onWorkingProfileSaved={applyProfile}
               onDirtyChange={setSpecialistWizardDirty}
+              initialWizardRevealed={specialistBasicsWizardRevealed}
             />
             {partnerActivities.includes("AGENT") ? (
               <AgentProfileSection

@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CertificateListResponse } from "@/lib/certificate-types";
 import { SpecialistHomeDashboard } from "./SpecialistHomeDashboard";
 
@@ -32,7 +33,23 @@ function getStatText(text: string): HTMLElement {
   });
 }
 
+function withPartnershipListBlock(
+  handler: (path: string) => Promise<unknown> | unknown,
+): (path: string) => Promise<unknown> {
+  return async (path: string) => {
+    if (path === "/api/partnership/list") {
+      return { partnerships: [{ id: "p-existing" }] };
+    }
+    return handler(path);
+  };
+}
+
 describe("SpecialistHomeDashboard", () => {
+  beforeEach(() => {
+    cleanup();
+    vi.mocked(remcardFetch).mockReset();
+  });
+
   it("renders prototype copy and maps wallet metrics", async () => {
     vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
       if (path === "/api/pro/wallet/balance") {
@@ -89,7 +106,8 @@ describe("SpecialistHomeDashboard", () => {
   });
 
   it("shows zero certificates for empty list without treating as error", async () => {
-    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+    vi.mocked(remcardFetch).mockImplementation(
+      withPartnershipListBlock(async (path: string) => {
       if (path === "/api/pro/wallet/balance") {
         return { role: "MASTER", totalRub: 0, paidRub: 0, pendingRub: 0, count: 0 };
       }
@@ -97,7 +115,8 @@ describe("SpecialistHomeDashboard", () => {
         return { certificates: [] };
       }
       throw new Error(path);
-    });
+    }),
+    );
 
     render(<SpecialistHomeDashboard />);
 
@@ -137,7 +156,8 @@ describe("SpecialistHomeDashboard", () => {
   });
 
   it("renders large monetary values inside stat cards", async () => {
-    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+    vi.mocked(remcardFetch).mockImplementation(
+      withPartnershipListBlock(async (path: string) => {
       if (path === "/api/pro/wallet/balance") {
         return {
           role: "MASTER",
@@ -151,7 +171,8 @@ describe("SpecialistHomeDashboard", () => {
         return { certificates: [] };
       }
       throw new Error(path);
-    });
+    }),
+    );
 
     render(<SpecialistHomeDashboard />);
 
@@ -163,7 +184,8 @@ describe("SpecialistHomeDashboard", () => {
 
   it("retries metrics after partial failure", async () => {
     let walletCalls = 0;
-    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+    vi.mocked(remcardFetch).mockImplementation(
+      withPartnershipListBlock(async (path: string) => {
       if (path === "/api/pro/wallet/balance") {
         walletCalls += 1;
         if (walletCalls === 1) {
@@ -175,7 +197,8 @@ describe("SpecialistHomeDashboard", () => {
         return { certificates: [] };
       }
       throw new Error(path);
-    });
+    }),
+    );
 
     render(<SpecialistHomeDashboard />);
 
