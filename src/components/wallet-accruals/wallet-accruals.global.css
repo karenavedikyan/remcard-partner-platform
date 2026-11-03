@@ -596,8 +596,13 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   border: 1px solid var(--pw-line);
   border-radius: var(--pw-radius);
   padding: 0;
+  /* Explicit width: container-type:inline-size on __inner collapses intrinsic
+     inline size to padding (~40px); UA dialog then shrink-wraps without this. */
+  width: min(560px, calc(100vw - 2rem));
   max-width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .wallet-accrual-dialog__inner {
