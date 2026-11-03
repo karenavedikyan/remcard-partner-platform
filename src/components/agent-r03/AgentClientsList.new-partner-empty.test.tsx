@@ -76,11 +76,13 @@ describe.each([
     vi.mocked(fetchAgentClients).mockResolvedValue(emptyList);
   });
 
-  it("shows onboarding on true zero with page add + hero secondary", async () => {
+  it("shows onboarding on true zero with hero only (no legacy list chrome)", async () => {
     renderList(accessMode, partnerType);
     await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
-    expect(screen.getByTestId("clients-page-add")).toBeVisible();
     expect(screen.getByTestId("es-client-add")).toBeVisible();
+    expect(screen.queryByTestId("clients-page-add")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("agent-r03-collection-toolbar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("agent-r03-found-count")).not.toBeInTheDocument();
     expect(screen.queryByTestId("es-show-demo")).not.toBeInTheDocument();
   });
 
@@ -98,6 +100,8 @@ describe.each([
     await waitFor(() => expect(fetchAgentClients).toHaveBeenCalledTimes(2));
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     expect(screen.getByText("Добавьте первого клиента.")).toBeInTheDocument();
+    expect(screen.getByTestId("clients-page-add")).toBeVisible();
+    expect(screen.getByTestId("agent-r03-collection-toolbar")).toBeVisible();
   });
 });
 
@@ -117,6 +121,8 @@ describe("AgentClientsList new-partner empty flows", () => {
     renderList("agent");
     await waitFor(() => expect(screen.getByText("Добавьте первого клиента.")).toBeVisible());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.getByTestId("clients-page-add")).toBeVisible();
+    expect(screen.getByTestId("agent-r03-collection-toolbar")).toBeVisible();
   });
 
   it("archive tab empty with known active clients: archive copy only", async () => {
@@ -132,6 +138,8 @@ describe("AgentClientsList new-partner empty flows", () => {
     await user.selectOptions(screen.getByTestId("agent-r03-show-filter"), "archived");
     await waitFor(() => expect(screen.getByText("Архив пуст.")).toBeVisible());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.getByTestId("clients-page-add")).toBeVisible();
+    expect(screen.getByTestId("agent-r03-collection-toolbar")).toBeVisible();
   });
 
   it("page>1 empty page does not show onboarding", async () => {
@@ -170,7 +178,20 @@ describe("AgentClientsList new-partner empty flows", () => {
     expect(createAgentClient).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Отмена" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    await user.click(screen.getByTestId("clients-page-add"));
+    expect(createAgentClient).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["agent", undefined] as const,
+    ["specialist", undefined] as const,
+    ["business", "STORE"] as const,
+    ["business", "COMPANY"] as const,
+  ])("true zero (%s %s): hero add opens dialog", async (mode, partnerType) => {
+    const user = userEvent.setup();
+    renderList(mode, partnerType);
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(screen.queryByTestId("agent-r03-found-count")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("es-client-add"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(createAgentClient).not.toHaveBeenCalled();
   });
@@ -217,6 +238,8 @@ describe("AgentClientsList new-partner empty flows", () => {
     renderList("specialist");
     await waitFor(() => expect(screen.getByRole("table")).toBeVisible());
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.getByTestId("clients-page-add")).toBeVisible();
+    expect(screen.getByTestId("agent-r03-collection-toolbar")).toBeVisible();
     expect(within(screen.getByRole("table")).getByText("Client")).toBeInTheDocument();
   });
 });

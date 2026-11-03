@@ -310,12 +310,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       {accessMode === "agent" && !showNewPartnerEmpty ? (
         <AgentR03PageIntro variant="clients" />
       ) : null}
-      <div className={styles.pageActions}>
-        <Button data-testid="clients-page-add" onClick={openCreate}>
-          Добавить клиента
-        </Button>
-      </div>
+      {!showNewPartnerEmpty ? (
+        <div className={styles.pageActions}>
+          <Button data-testid="clients-page-add" onClick={openCreate}>
+            Добавить клиента
+          </Button>
+        </div>
+      ) : null}
       <div data-testid="agent-r03-capture-body">
+      {!showNewPartnerEmpty ? (
       <AgentR03ListToolbar
         searchPlaceholder="Имя, контакт, город или задача"
         q={qDraft}
@@ -355,6 +358,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         }}
         sortOptions={CLIENT_SORT_OPTIONS}
       />
+      ) : null}
 
       {loadState === "loading" && items.length === 0 ? (
         <p className={styles.loading}>Загрузка…</p>
