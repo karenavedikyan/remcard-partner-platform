@@ -116,3 +116,19 @@ export async function requireProPageUser(returnTo: string): Promise<AuthUser | n
 export async function requireProSession(returnTo?: string): Promise<AuthUser> {
   return ensureCabinetAccess(returnTo ?? "/");
 }
+
+/** Non-redirecting cabinet peek for persistent layout (same allow rules as isProfCabinetAllowed). */
+export async function peekCabinetSession(): Promise<AuthUser | null> {
+  const user = await getSessionUser();
+  if (!user || user.isBlocked) {
+    return null;
+  }
+  const readiness = await getCabinetReadinessServer();
+  if (!readiness) {
+    return null;
+  }
+  if (!isProfCabinetAllowed(readiness, user)) {
+    return null;
+  }
+  return user;
+}

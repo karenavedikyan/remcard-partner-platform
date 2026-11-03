@@ -1,0 +1,16 @@
+import { SessionGate } from "@/components/auth/SessionGate";
+import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
+import { requireProPageUser } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
+
+const RETURN_PATH = "/clients";
+
+export default async function ClientsPage() {
+  const user = await requireProPageUser(RETURN_PATH);
+  if (!user) {
+    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+  }
+
+  return <ClientsListWorkspace />;
+}

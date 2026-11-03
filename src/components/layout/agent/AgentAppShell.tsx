@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { usePathname } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
 import type { AuthUser } from "@/lib/types";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
@@ -51,6 +52,7 @@ export function AgentAppShell({
 }: AgentAppShellProps) {
   const pathname = usePathname();
   const activePathname = fixturePathname ?? pathname;
+  const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
@@ -111,7 +113,7 @@ export function AgentAppShell({
               const section = agentSectionByKey(key);
               const active = isPathActive(activePathname, section.href);
               const badge =
-                section.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
+                section.badgeKey === "partners" && liveIncomingCount > 0 ? liveIncomingCount : null;
               return (
                 <Link
                   key={key}

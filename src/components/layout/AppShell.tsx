@@ -8,7 +8,8 @@ import { AccountSessionMenu } from "@/components/account-session/AccountSessionM
 import { BrandMark } from "@/components/layout/BrandMark";
 import { CabinetMobileMoreSheet } from "@/components/layout/CabinetMobileMoreSheet";
 import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
-import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
+import { ProfPartnerSessionVisitOnPathname } from "@/components/layout/ProfPartnerSessionVisitOnPathname";
+import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
@@ -127,6 +128,7 @@ export function AppShell({
   notificationBell,
   children,
 }: AppShellProps) {
+  const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const navMode = resolveCabinetNavMode(user);
@@ -170,7 +172,7 @@ export function AppShell({
   return (
     <div className={styles.shell}>
       {user.role === "PRO" || (user.role === "CLIENT" && !user.staffRole) ? (
-        <ProfPartnerSessionVisit />
+        <ProfPartnerSessionVisitOnPathname />
       ) : null}
       {mobileMenuOpen ? (
         <button
@@ -203,7 +205,7 @@ export function AppShell({
           <NavLinks
             pathname={pathname}
             searchParams={searchParams}
-            incomingCount={incomingCount}
+            incomingCount={liveIncomingCount}
             navItems={navItems}
             onNavigate={closeMobileMenu}
           />
