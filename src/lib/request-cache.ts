@@ -1,21 +1,25 @@
-import { cache as reactCache } from "react";
+import * as React from "react";
 
 type CacheFn = <T extends (...args: never[]) => unknown>(fn: T) => T;
 
-function defaultRequestCache<T extends (...args: never[]) => unknown>(fn: T): T {
-  if (typeof reactCache === "function") {
-    return reactCache(fn) as T;
+/** Runtime `cache` exists on Next RSC React; plain Node/Vitest React 18 omits it. */
+type ReactWithOptionalCache = typeof React & {
+  cache?: CacheFn;
+};
+
+function resolveReactCache(): CacheFn | undefined {
+  const candidate = (React as ReactWithOptionalCache).cache;
+  return typeof candidate === "function" ? candidate : undefined;
+}
+
+/**
+ * Request-scoped memo in Next RSC (`React.cache`). Identity passthrough elsewhere (Vitest, Node).
+ * No module-level Map — dedupe on real navigations is proven only by native upstream counts.
+ */
+export function requestCache<T extends (...args: never[]) => unknown>(fn: T): T {
+  const reactCache = resolveReactCache();
+  if (reactCache) {
+    return reactCache(fn);
   }
   return fn;
-}
-
-let cacheImpl: CacheFn = defaultRequestCache;
-
-/** Test-only: replace React.cache with a deterministic per-test memo (vitest has no RSC cache). */
-export function __setRequestCacheForTests(impl: CacheFn | null): void {
-  cacheImpl = impl ?? defaultRequestCache;
-}
-
-export function requestCache<T extends (...args: never[]) => unknown>(fn: T): T {
-  return cacheImpl(fn);
 }

@@ -1,6 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * Mocks a per-test memo around wrapped loaders to exercise call wiring only.
+ * Does NOT prove production `requestCache` / `React.cache` semantics (native auditor).
+ */
+
 const upstreamCalls = vi.hoisted(() => ({ count: 0, paths: [] as string[] }));
+
+const memoizingRequestCache = vi.hoisted(() => {
+  return function memoRequestCache<T extends (...args: never[]) => unknown>(fn: T): T {
+    const map = new Map<string, ReturnType<T>>();
+    return ((...args: never[]) => {
+      const key = JSON.stringify(args);
+      if (!map.has(key)) {
+        map.set(key, fn(...args) as ReturnType<T>);
+      }
+      return map.get(key)!;
+    }) as T;
+  };
+});
+
+vi.mock("@/lib/request-cache", () => ({
+  requestCache: (fn: (...args: never[]) => unknown) => memoizingRequestCache(fn),
+}));
 
 vi.mock("@/lib/remcard-server", () => ({
   fetchRemcardUpstream: vi.fn(async (path: string) => {
@@ -51,27 +73,14 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers({ cookie: "session=test" }),
 }));
 
-function createTestRequestCache<T extends (...args: never[]) => unknown>(fn: T): T {
-  const map = new Map<string, ReturnType<T>>();
-  return ((...args: never[]) => {
-    const key = JSON.stringify(args);
-    if (!map.has(key)) {
-      map.set(key, fn(...args) as ReturnType<T>);
-    }
-    return map.get(key)!;
-  }) as T;
-}
-
-describe("cabinet shell upstream dedupe (request-scoped)", () => {
+describe("cabinet shell upstream loader wiring (mock memo, not React.cache)", () => {
   beforeEach(async () => {
     upstreamCalls.count = 0;
     upstreamCalls.paths = [];
     vi.resetModules();
-    const { __setRequestCacheForTests: setCache } = await import("@/lib/request-cache");
-    setCache(createTestRequestCache);
   });
 
-  it("dedupes auth/me and cabinet-readiness across page guard + shell loader", async () => {
+  it("invokes shared cached loaders once per cookie key across guard + shell loader", async () => {
     const { requireProPageUser } = await import("@/lib/session");
     const { loadCabinetShellClientProps } = await import("@/lib/cabinet-shell-data");
 
