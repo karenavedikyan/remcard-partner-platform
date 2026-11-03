@@ -29,6 +29,11 @@ import {
   clientRowDetail,
 } from "@/lib/agent-r03/clientListRow";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
+import { useOwnerClientsBusinessPartnerType } from "@/components/clients/OwnerClientsModeContext";
+import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import { isClientsNewPartnerEmptyEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import { mapClientsAccessToEmptyRole } from "@/components/clients/new-partner-empty/clientsEmptyCopy";
+import { listCountsFromApi } from "@/components/clients/new-partner-empty/listCountsFromApi";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -44,6 +49,7 @@ const emptyMeta: AgentR03ListMeta = {
 
 export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerClientsAccessMode }) {
   const router = useRouter();
+  const businessPartnerType = useOwnerClientsBusinessPartnerType();
   const [items, setItems] = useState<AgentClientRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -61,6 +67,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
   const [shareClient, setShareClient] = useState<AgentClientRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [knownListCounts, setKnownListCounts] = useState<{
+    active: number;
+    archived: number;
+  } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadGeneration = useRef(0);
 
@@ -78,13 +88,20 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       });
       if (generation !== loadGeneration.current) return;
       setItems(data.clients ?? []);
+      setKnownListCounts(listCountsFromApi(data));
       setMeta({
         page: data.page ?? page,
         pageSize: data.pageSize ?? pageSize,
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
-        activeCount: data.activeCount ?? 0,
-        archivedCount: data.archivedCount ?? 0,
+        activeCount:
+          typeof data.activeCount === "number" && Number.isFinite(data.activeCount)
+            ? data.activeCount
+            : 0,
+        archivedCount:
+          typeof data.archivedCount === "number" && Number.isFinite(data.archivedCount)
+            ? data.archivedCount
+            : 0,
         hasNextPage: data.hasNextPage ?? false,
         hasPrevPage: data.hasPrevPage ?? false,
         sort: data.sort,
@@ -93,6 +110,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
     } catch (caught) {
       if (generation !== loadGeneration.current) return;
       setItems([]);
+      setKnownListCounts(null);
       setLoadState("error");
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить клиентов");
     }
@@ -267,6 +285,17 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
   const currentPage = meta.page ?? page;
   const totalPages = Math.max(1, meta.totalPages ?? 1);
 
+  const showNewPartnerEmpty =
+    isClientsNewPartnerEmptyEligible({
+      loadState,
+      page: currentPage,
+      appliedQ,
+      archived,
+      sort,
+      itemsLength: items.length,
+      knownListCounts,
+    }) && mapClientsAccessToEmptyRole(accessMode, businessPartnerType) !== null;
+
   return (
     <div
       className={styles.r03Root}
@@ -278,9 +307,13 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
             : undefined
       }
     >
-      {accessMode === "agent" ? <AgentR03PageIntro variant="clients" /> : null}
+      {accessMode === "agent" && !showNewPartnerEmpty ? (
+        <AgentR03PageIntro variant="clients" />
+      ) : null}
       <div className={styles.pageActions}>
-        <Button onClick={openCreate}>Добавить клиента</Button>
+        <Button data-testid="clients-page-add" onClick={openCreate}>
+          Добавить клиента
+        </Button>
       </div>
       <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
@@ -336,7 +369,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       ) : null}
 
       {loadState === "loaded" && items.length === 0 ? (
-        <p className={styles.empty}>{archived ? "Архив пуст." : "Добавьте первого клиента."}</p>
+        showNewPartnerEmpty ? (
+          <ClientsNewPartnerEmptyState
+            accessMode={accessMode}
+            businessPartnerType={businessPartnerType}
+            onAddClient={openCreate}
+          />
+        ) : (
+          <p className={styles.empty}>{archived ? "Архив пуст." : "Добавьте первого клиента."}</p>
+        )
       ) : null}
 
       {items.length > 0 && viewMode === "cards" ? (
