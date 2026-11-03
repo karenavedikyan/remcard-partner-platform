@@ -21,7 +21,7 @@ describe("SettlementsHub", () => {
   it("shows API error with retry instead of zero balances", async () => {
     vi.mocked(fetchSettlements).mockRejectedValue(new RemcardApiError(500, "Сбой сервера"));
 
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
 
     expect(await screen.findByText(/сбой сервера/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /повторить/i })).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("SettlementsHub", () => {
       ],
     });
 
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
 
     expect(await screen.findByText(/Alpha Shop/)).toBeInTheDocument();
     expect(screen.getAllByText(/150 ₽/).length).toBeGreaterThan(0);
@@ -116,7 +116,7 @@ describe("SettlementsHub", () => {
   it("denies access for unrelated accounts", async () => {
     vi.mocked(fetchSettlements).mockRejectedValue(new RemcardApiError(403, "Forbidden"));
 
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
 
     expect(
       await screen.findByText(/раздел взаиморасчётов недоступен/i),
@@ -154,7 +154,7 @@ describe("SettlementsHub", () => {
       completed: [],
     });
 
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
     expect(await screen.findByText("Visible Partner")).toBeInTheDocument();
     expect(screen.getByText("Hidden Partner")).toBeInTheDocument();
 
@@ -192,7 +192,7 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
     const tile = await screen.findByRole("button", { name: /мне должны/i });
     expect(tile).toHaveTextContent("100");
     expect(tile).toHaveTextContent("500");
@@ -205,7 +205,7 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [{ id: "c1", orderId: "o1", accrualType: "bonus", counterpartyId: "x", counterpartyName: "Done", amount: 1, basis: "B", status: "PAID", createdAt: "2026-10-01T10:00:00.000Z", paidAt: "2026-10-02T10:00:00.000Z", direction: "receivable" }],
     });
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
     await screen.findByTestId("settlements-hub");
     expect(screen.getAllByRole("button", { name: /мне должны|я должен/i })).toHaveLength(2);
     expect(screen.getByTestId("settlements-completed-history")).toHaveTextContent("(1)");
@@ -231,7 +231,7 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
     expect(await screen.findByText("Сертификат RC-TITLE")).toBeInTheDocument();
     expect(screen.queryByText(/Заказ internal-order-uuid/i)).toBeNull();
   });

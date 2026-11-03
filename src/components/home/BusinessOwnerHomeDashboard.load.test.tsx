@@ -1,4 +1,5 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BusinessOwnerHomeDashboard } from "./BusinessOwnerHomeDashboard";
@@ -26,6 +27,7 @@ const contextTwoBranches = {
 
 describe("BusinessOwnerHomeDashboard load lifecycle", () => {
   beforeEach(() => {
+    cleanup();
     vi.mocked(remcardFetch).mockReset();
     sessionStorage.clear();
   });
@@ -94,7 +96,7 @@ describe("BusinessOwnerHomeDashboard load lifecycle", () => {
                 activeBranchLabel: "Second label",
                 selectedBranchId: "b2",
                 metrics: {
-                  primary: { state: "empty" },
+                  primary: { state: "ok", value: 2 },
                   secondary: { state: "empty" },
                   tertiary: { state: "empty" },
                 },
@@ -108,7 +110,7 @@ describe("BusinessOwnerHomeDashboard load lifecycle", () => {
         activeBranchLabel: "First label",
         selectedBranchId: "b1",
         metrics: {
-          primary: { state: "empty" },
+          primary: { state: "ok", value: 1 },
           secondary: { state: "empty" },
           tertiary: { state: "empty" },
         },

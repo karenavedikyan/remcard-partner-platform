@@ -49,6 +49,11 @@ import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import { AgentR03Pagination } from "./AgentR03Pagination";
 import { AgentCertificateCard } from "./AgentCertificateCard";
 import { AgentR03MobileCertRow } from "./AgentR03MobileCertRow";
+import { CertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/CertificatesNewPartnerEmpty";
+import { shouldShowCertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/shouldShowCertificatesNewPartnerEmpty";
+import { certificatesListKnownCountsFromApi } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
+import type { CertificatesListKnownCounts } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
+import type { CertificatesNewPartnerRole } from "@/components/certificates-new-partner-empty/copy";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -138,6 +143,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   const detailBasePath = isIssuerShell ? "/recommendations" : "/certificates";
   const [items, setItems] = useState<AgentCertificateRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
+  const [knownListCounts, setKnownListCounts] = useState<CertificatesListKnownCounts | null>(null);
   const [archived, setArchived] = useState(false);
   const [qDraft, setQDraft] = useState("");
   const [appliedQ, setAppliedQ] = useState("");
@@ -182,6 +188,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         return;
       }
       setItems(data.certificates ?? []);
+      setKnownListCounts(certificatesListKnownCountsFromApi(data));
       setMeta({
         page: data.page ?? page,
         pageSize: data.pageSize ?? pageSize,
@@ -205,6 +212,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         setLoadState("loaded");
       } else {
         setLoadState("error");
+        setKnownListCounts(null);
       }
     }
   }, [appliedQ, archived, isBusiness, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
@@ -254,6 +262,23 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   }
 
   const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
+
+  const showNewPartnerEmpty = shouldShowCertificatesNewPartnerEmpty({
+    loadState,
+    error,
+    itemsLength: items.length,
+    knownListCounts,
+    archived,
+    filtersActive,
+  });
+
+  const newPartnerRole: CertificatesNewPartnerRole = isBusiness
+    ? ownerMode?.businessPartnerType === "COMPANY"
+      ? "company"
+      : "store"
+    : isSpecialist
+      ? "specialist"
+      : "agent";
 
   async function runBatch(action: "archive" | "restore" | "delete") {
     let ids = [...selected];
@@ -456,7 +481,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             : undefined
       }
     >
-      {isBusiness ? (
+      {isBusiness && !showNewPartnerEmpty ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
           <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
@@ -476,18 +501,19 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             </Link>
           </details>
         </section>
-      ) : isIssuerShell ? (
+      ) : isIssuerShell && !showNewPartnerEmpty ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
             {issuerPageCopy.createCta}
           </Button>
         </section>
-      ) : (
+      ) : !showNewPartnerEmpty ? (
         <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
-      )}
+      ) : null}
 
       <div data-testid="agent-r03-capture-body">
+      {!showNewPartnerEmpty ? (
       <AgentR03ListToolbar
         searchPlaceholder={
           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
@@ -535,6 +561,15 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         }}
         statusOptions={CERT_STATUS_FILTER_OPTIONS}
       />
+      ) : null}
+
+      {showNewPartnerEmpty ? (
+        <CertificatesNewPartnerEmpty
+          role={newPartnerRole}
+          onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
+          createHref={isIssuerShell ? undefined : "/certificates/new"}
+        />
+      ) : null}
 
       {loadState === "loading" && items.length === 0 ? (
         <p className={styles.loading}>Загрузка…</p>
@@ -548,7 +583,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length === 0 ? (
+      {!showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>

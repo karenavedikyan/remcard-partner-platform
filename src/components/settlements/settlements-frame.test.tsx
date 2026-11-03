@@ -25,7 +25,20 @@ vi.mock("@/lib/agent-r05/api", () => ({
     coverage: { needsReviewCount: 0 },
   }),
   fetchAgentReceivablePartners: vi.fn(),
-  fetchAgentReceivableOrders: vi.fn(),
+  fetchAgentReceivableOrders: vi.fn().mockResolvedValue({
+    orders: [],
+    meta: {
+      totalRecords: 0,
+      confirmedTotalKopecks: 0,
+      selectionTotalKopecks: 0,
+      page: 1,
+      pageSize: 1,
+      pageCount: 0,
+      sort: "date-desc",
+      periodField: "purchaseAt",
+      periodTimezone: "UTC",
+    },
+  }),
   fetchAgentReceivableOrderDetail: vi.fn(),
   downloadAgentReceivablesExport: vi.fn(),
 }));
@@ -44,7 +57,7 @@ describe("settlements workspace prototype frame", () => {
   });
 
   it("wraps agent receivables in a single settlement demo frame", async () => {
-    render(<AgentReceivablesHub />);
+    render(<AgentReceivablesHub walletEmptyViewerRole="agent" />);
     const frame = await screen.findByTestId("agent-settlements-workspace-frame");
     expect(frame).toHaveClass(hubStyles.settlementDemo);
     expect(screen.getByTestId("agent-r05-receivables")).toBeInTheDocument();
@@ -54,7 +67,7 @@ describe("settlements workspace prototype frame", () => {
   });
 
   it("keeps hub settlements on one settlement demo root without nesting", async () => {
-    render(<SettlementsHub />);
+    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
     const hub = await screen.findByTestId("settlements-hub");
     expect(hub).toHaveClass(hubStyles.settlementDemo);
     expect(document.querySelectorAll('[data-testid="settlements-hub"]')).toHaveLength(1);

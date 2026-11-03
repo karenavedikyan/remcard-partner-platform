@@ -15,6 +15,7 @@ import {
   businessWalletPartnerTypeFromUser,
   resolveSettlementsPageShell,
 } from "@/lib/settlements-page-shell";
+import { resolveWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 
 export const dynamic = "force-dynamic";
 
@@ -61,17 +62,29 @@ export default async function SettlementsPage() {
         ? "Взаиморасчёты с партнёрами в обоих направлениях и реквизиты для выплат."
         : "Открытые обязательства и завершённые выплаты между партнёрами.";
 
+  const walletEmptyViewerRole =
+    resolveWalletEmptyViewerRole({
+      partnerType: user.partnerType,
+      partnerActivities: user.partnerActivities,
+      shell,
+      navMode,
+    }) ?? "specialist";
+
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
       {shell === "agent-r05" ? (
-        <AgentReceivablesWallet />
+        <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
-        <BusinessOwnerWallet partnerType={businessPartnerType} ownerUserId={user.id} />
+        <BusinessOwnerWallet
+          partnerType={businessPartnerType}
+          ownerUserId={user.id}
+          walletEmptyViewerRole={walletEmptyViewerRole}
+        />
       ) : shell === "master-wallet" ? (
-        <SpecialistMasterWallet />
+        <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : (
-        <SettlementsHub />
+        <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
       )}
     </CabinetShell>
   );

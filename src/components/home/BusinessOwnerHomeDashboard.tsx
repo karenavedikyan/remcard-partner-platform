@@ -21,6 +21,23 @@ import {
   readBusinessHomeBranchId,
   writeBusinessHomeBranchId,
 } from "@/lib/business-home/home-branch-preference";
+import {
+  businessOwnerHomeMetricsEligibleForEmptyCheck,
+  businessOwnerHomePendingSupplementalProbe,
+  shouldShowBusinessOwnerHomeEmpty,
+} from "@/lib/home-empty/gate";
+import {
+  initialCompanyLifetimeProbe,
+  initialStoreLifetimeProbe,
+  parsePartnershipCollectionProbe,
+  parseStoreOrdersLifetimeProbe,
+  type CompanyLifetimeActivityProbe,
+  type StoreLifetimeActivityProbe,
+} from "@/lib/home-empty/activity-probes";
+import type { StoreOrdersResponse } from "@/lib/history-types";
+import type { PartnershipListResponse } from "@/lib/types";
+import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
+import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type Props = {
@@ -69,12 +86,22 @@ export function BusinessOwnerHomeDashboard({
   const [contextEpoch, setContextEpoch] = useState(0);
   const [homeBranchId, setHomeBranchId] = useState<string | null>(() => readBusinessHomeBranchId());
   const loadGenerationRef = useRef(0);
+  const supplementalGenerationRef = useRef(0);
+  const [storeProbe, setStoreProbe] = useState<StoreLifetimeActivityProbe>(() =>
+    initialStoreLifetimeProbe(),
+  );
+  const [companyProbe, setCompanyProbe] = useState<CompanyLifetimeActivityProbe>(() =>
+    initialCompanyLifetimeProbe(),
+  );
 
   const loadMetrics = useCallback(async () => {
     const generation = ++loadGenerationRef.current;
+    supplementalGenerationRef.current += 1;
     setLoadState("loading");
     setSlices(initialBusinessHomeMetricSlices);
     setActiveBranchLabel(null);
+    setStoreProbe(initialStoreLifetimeProbe());
+    setCompanyProbe(initialCompanyLifetimeProbe());
 
     try {
       const branchQueryId = readBusinessHomeBranchId() ?? homeBranchId;
@@ -131,9 +158,129 @@ export function BusinessOwnerHomeDashboard({
     };
   }, [loadMetrics]);
 
-  const hints = statHints(partnerType, slices, activeBranchLabel);
+  useEffect(() => {
+    if (loadState !== "loaded") return;
+    if (branchSelectionRequired) {
+      setStoreProbe(initialStoreLifetimeProbe());
+      setCompanyProbe(initialCompanyLifetimeProbe());
+      return;
+    }
+    if (
+      slices.some(
+        (s) =>
+          s.state === "error" ||
+          s.state === "unavailable" ||
+          s.state === "needs_branch" ||
+          s.state === "invalid_branch",
+      )
+    ) {
+      setStoreProbe(initialStoreLifetimeProbe());
+      setCompanyProbe(initialCompanyLifetimeProbe());
+      return;
+    }
+
+    if (
+      !businessOwnerHomeMetricsEligibleForEmptyCheck({
+        partnerType,
+        branchSelectionRequired,
+        slices,
+      })
+    ) {
+      setStoreProbe(initialStoreLifetimeProbe());
+      setCompanyProbe(initialCompanyLifetimeProbe());
+      return;
+    }
+
+    const generation = ++supplementalGenerationRef.current;
+    let cancelled = false;
+
+    if (partnerType === "STORE") {
+      setStoreProbe({ ...initialStoreLifetimeProbe(), state: "loading" });
+      void (async () => {
+        let ordersOk = false;
+        let hasLifetimeOrders: boolean | null = null;
+        try {
+          const orders = await remcardFetch<StoreOrdersResponse>("/api/store/orders?limit=1");
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          const parsedOrders = parseStoreOrdersLifetimeProbe(orders);
+          ordersOk = parsedOrders.ok;
+          hasLifetimeOrders = parsedOrders.hasOrders;
+        } catch {
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          setStoreProbe({ ...initialStoreLifetimeProbe(), state: "error" });
+          return;
+        }
+        try {
+          const list = await remcardFetch<PartnershipListResponse>("/api/partnership/list");
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          const parsedPartners = parsePartnershipCollectionProbe(list);
+          if (!parsedPartners.ok) {
+            setStoreProbe({ ...initialStoreLifetimeProbe(), state: "error" });
+            return;
+          }
+          setStoreProbe({
+            state: "ok",
+            ordersOk,
+            hasLifetimeOrders,
+            partnershipsOk: true,
+            partnershipCount: parsedPartners.count,
+          });
+        } catch {
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          setStoreProbe({ ...initialStoreLifetimeProbe(), state: "error" });
+        }
+      })();
+    } else {
+      setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "loading" });
+      void remcardFetch<PartnershipListResponse>("/api/partnership/list")
+        .then((list) => {
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          const parsed = parsePartnershipCollectionProbe(list);
+          if (!parsed.ok) {
+            setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "error" });
+            return;
+          }
+          setCompanyProbe({
+            state: "ok",
+            partnershipsOk: true,
+            partnershipCount: parsed.count,
+          });
+        })
+        .catch(() => {
+          if (cancelled || generation !== supplementalGenerationRef.current) return;
+          setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "error" });
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadState, partnerType, branchSelectionRequired, slices]);
+
+  const showEmptyState = shouldShowBusinessOwnerHomeEmpty({
+    loadState,
+    partnerType,
+    branchSelectionRequired,
+    slices,
+    storeProbe,
+    companyProbe,
+  });
+
+  const pendingSupplementalProbe = businessOwnerHomePendingSupplementalProbe({
+    loadState,
+    partnerType,
+    branchSelectionRequired,
+    slices,
+    storeProbe,
+    companyProbe,
+  });
+
+  const displaySlices = loadState === "loading" ? initialBusinessHomeMetricSlices : slices;
+
+  const hints = statHints(partnerType, displaySlices, activeBranchLabel);
   const metricsFailed =
     loadState === "loaded" &&
+    !pendingSupplementalProbe &&
     slices.some(
       (s) =>
         s.state === "error" ||
@@ -141,6 +288,8 @@ export function BusinessOwnerHomeDashboard({
         s.state === "needs_branch" ||
         s.state === "invalid_branch",
     );
+
+  const emptyRole = partnerType === "STORE" ? "store" : "company";
 
   return (
     <div className={styles.grid}>
@@ -158,7 +307,7 @@ export function BusinessOwnerHomeDashboard({
         </section>
       ) : null}
 
-      {partnerType === "STORE" ? (
+      {partnerType === "STORE" && !showEmptyState && !pendingSupplementalProbe ? (
         <BusinessHomeBranchPicker
           selectedBranchId={selectedBranchId}
           branchSelectionRequired={branchSelectionRequired}
@@ -166,6 +315,12 @@ export function BusinessOwnerHomeDashboard({
         />
       ) : null}
 
+      {showEmptyState ? (
+        <PartnerHomeEmptyState role={emptyRole} />
+      ) : pendingSupplementalProbe ? (
+        <HomeSupplementalProbeSkeleton statLabels={copy.stats} />
+      ) : (
+        <>
       <section className={styles.heroTask} aria-labelledby="business-home-hero">
         <div>
           <h2 id="business-home-hero">{copy.heroTitle}</h2>
@@ -179,7 +334,7 @@ export function BusinessOwnerHomeDashboard({
 
       <div className={styles.stats} aria-live="polite">
         {copy.stats.map((label, index) => {
-          const slice = slices[index]!;
+          const slice = displaySlices[index]!;
           const err = sliceErrorMessage(slice);
           return (
             <div className={styles.stat} key={label}>
@@ -240,6 +395,8 @@ export function BusinessOwnerHomeDashboard({
           </Link>
         </section>
       </div>
+        </>
+      )}
     </div>
   );
 }

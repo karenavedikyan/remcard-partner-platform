@@ -1,0 +1,18 @@
+.root {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.panelPlaceholder {
+  min-height: 9rem;
+  pointer-events: none;
+}
+
+.panelPlaceholder::after {
+  content: "";
+  display: block;
+  height: 100%;
+  min-height: inherit;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}

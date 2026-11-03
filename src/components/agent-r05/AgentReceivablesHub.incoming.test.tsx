@@ -26,12 +26,31 @@ vi.mock("@/lib/agent-r05/receivables-prefs", () => ({
   saveReceivablesPrefs: vi.fn(),
 }));
 
-import { fetchAgentReceivablesOverview } from "@/lib/agent-r05/api";
+import { fetchAgentReceivableOrders, fetchAgentReceivablesOverview } from "@/lib/agent-r05/api";
+
+/** Default probe response for overview bundle (non-empty history; read-only GET). */
+function agentHistoryProbeFixture(totalRecords = 1) {
+  return {
+    orders: [] as never[],
+    meta: {
+      totalRecords,
+      confirmedTotalKopecks: 250000,
+      selectionTotalKopecks: 250000,
+      page: 1,
+      pageSize: 1,
+      pageCount: totalRecords > 0 ? totalRecords : 0,
+      sort: "date-desc",
+      periodField: "purchaseAt" as const,
+      periodTimezone: "UTC" as const,
+    },
+  };
+}
 
 describe("AgentReceivablesHub incomingOnly overview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchAgentReceivablesOverview).mockResolvedValue(overviewFixture as never);
+    vi.mocked(fetchAgentReceivableOrders).mockResolvedValue(agentHistoryProbeFixture(1) as never);
   });
 
   it("shows one primary receivable tile and no payable direction tile", async () => {

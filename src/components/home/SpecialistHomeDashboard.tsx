@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { CertificateListResponse } from "@/lib/certificate-types";
 import type { WalletBalanceResponse } from "@/lib/history-types";
@@ -10,10 +10,23 @@ import {
   initialSpecialistHomeMetrics,
   specialistHomeCertificateMetric,
   specialistHomeMetricsFromWallet,
-  type SpecialistHomeMetricSlice,
   type SpecialistHomeMetrics,
+  type SpecialistHomeMetricSlice,
   type SpecialistHomeMoneySlice,
 } from "@/lib/specialist-home/metrics";
+import { parsePartnershipCollectionProbe } from "@/lib/home-empty/activity-probes";
+import {
+  shouldShowSpecialistHomeEmpty,
+  specialistHomeMetricsEligibleForEmptyCheck,
+  specialistHomePendingSupplementalProbe,
+} from "@/lib/home-empty/gate";
+import {
+  specialistWalletEmptyProof,
+  type WalletEmptyProof,
+} from "@/lib/home-empty/wallet-empty-proof";
+import type { PartnershipListResponse } from "@/lib/types";
+import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
+import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
 import { formattedMoneyWrapGroups } from "@/lib/specialist-home/display";
@@ -78,10 +91,22 @@ export function SpecialistHomeDashboard({
 }: SpecialistHomeDashboardProps) {
   const [metrics, setMetrics] = useState<SpecialistHomeMetrics>(initialSpecialistHomeMetrics);
   const [loadState, setLoadState] = useState<"loading" | "loaded">("loading");
+  const [walletProof, setWalletProof] = useState<WalletEmptyProof>("unknown");
+  const [partnershipProbeState, setPartnershipProbeState] = useState<
+    "idle" | "loading" | "ok" | "error"
+  >("idle");
+  const [partnershipCount, setPartnershipCount] = useState<number | null>(null);
+  const loadGenerationRef = useRef(0);
+  const partnershipGenerationRef = useRef(0);
 
   const loadMetrics = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
+    partnershipGenerationRef.current += 1;
     setLoadState("loading");
     setMetrics(initialSpecialistHomeMetrics);
+    setWalletProof("unknown");
+    setPartnershipProbeState("idle");
+    setPartnershipCount(null);
 
     let wallet: WalletBalanceResponse | null = null;
     let walletError: string | null = null;
@@ -111,6 +136,10 @@ export function SpecialistHomeDashboard({
         }),
     ]);
 
+    if (generation !== loadGenerationRef.current) return;
+
+    const proof = specialistWalletEmptyProof(wallet, walletError);
+    setWalletProof(proof);
     const walletMetrics = specialistHomeMetricsFromWallet(wallet, walletError);
     setMetrics({
       certificates: specialistHomeCertificateMetric(certs, certError),
@@ -121,13 +150,69 @@ export function SpecialistHomeDashboard({
 
   useEffect(() => {
     void loadMetrics();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadMetrics]);
+
+  useEffect(() => {
+    if (loadState !== "loaded") return;
+    const nextMetrics = metrics;
+    if (
+      !specialistHomeMetricsEligibleForEmptyCheck(nextMetrics, loadState, walletProof)
+    ) {
+      setPartnershipProbeState("idle");
+      setPartnershipCount(null);
+      return;
+    }
+    const generation = ++partnershipGenerationRef.current;
+    let cancelled = false;
+    setPartnershipProbeState("loading");
+    remcardFetch<PartnershipListResponse>("/api/partnership/list")
+      .then((data) => {
+        if (cancelled || generation !== partnershipGenerationRef.current) return;
+        const parsed = parsePartnershipCollectionProbe(data);
+        if (!parsed.ok) {
+          setPartnershipCount(null);
+          setPartnershipProbeState("error");
+          return;
+        }
+        setPartnershipCount(parsed.count);
+        setPartnershipProbeState("ok");
+      })
+      .catch(() => {
+        if (cancelled || generation !== partnershipGenerationRef.current) return;
+        setPartnershipCount(null);
+        setPartnershipProbeState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadState, metrics, walletProof]);
+
+  const showEmptyState = shouldShowSpecialistHomeEmpty({
+    metrics,
+    loadState,
+    walletProof,
+    partnershipProbeState,
+    partnershipCount,
+  });
+
+  const pendingSupplementalProbe = specialistHomePendingSupplementalProbe({
+    metrics,
+    loadState,
+    walletProof,
+    partnershipProbeState,
+  });
 
   const metricsFailed =
     loadState === "loaded" &&
+    !pendingSupplementalProbe &&
     (metrics.certificates.state === "error" ||
       metrics.accrued.state === "error" ||
       metrics.received.state === "error");
+
+  const displayMetrics = loadState === "loading" ? initialSpecialistHomeMetrics : metrics;
 
   return (
     <div className={styles.grid}>
@@ -145,6 +230,14 @@ export function SpecialistHomeDashboard({
         </section>
       ) : null}
 
+      {showEmptyState ? (
+        <PartnerHomeEmptyState role="specialist" />
+      ) : pendingSupplementalProbe ? (
+        <HomeSupplementalProbeSkeleton
+          statLabels={["Сертификаты", "Начислено", "Получено"]}
+        />
+      ) : (
+        <>
       <section className={styles.heroTask} aria-labelledby="specialist-home-hero">
         <div>
           <h2 id="specialist-home-hero">Рекомендуйте проверенного партнёра</h2>
@@ -161,30 +254,30 @@ export function SpecialistHomeDashboard({
       <div className={styles.stats} aria-live="polite">
         <div className={styles.stat}>
           <span className={styles.statLabel}>Сертификаты</span>
-          <strong className={styles.statValue}>{metricCountLabel(metrics.certificates)}</strong>
-          {metrics.certificates.state === "error" ? (
+          <strong className={styles.statValue}>{metricCountLabel(displayMetrics.certificates)}</strong>
+          {displayMetrics.certificates.state === "error" ? (
             <p className={styles.statError} role="alert">
-              {metrics.certificates.message}
+              {displayMetrics.certificates.message}
             </p>
           ) : null}
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Начислено</span>
-          <StatMoneyValue label={moneyLabel(metrics.accrued)} />
+          <StatMoneyValue label={moneyLabel(displayMetrics.accrued)} />
           <span className={styles.statHint}>За покупки клиентов</span>
-          {metrics.accrued.state === "error" ? (
+          {displayMetrics.accrued.state === "error" ? (
             <p className={styles.statError} role="alert">
-              {metrics.accrued.message}
+              {displayMetrics.accrued.message}
             </p>
           ) : null}
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Получено</span>
-          <StatMoneyValue label={moneyLabel(metrics.received)} />
+          <StatMoneyValue label={moneyLabel(displayMetrics.received)} />
           <span className={styles.statHint}>Подтверждённые выплаты</span>
-          {metrics.received.state === "error" ? (
+          {displayMetrics.received.state === "error" ? (
             <p className={styles.statError} role="alert">
-              {metrics.received.message}
+              {displayMetrics.received.message}
             </p>
           ) : null}
         </div>
@@ -231,6 +324,8 @@ export function SpecialistHomeDashboard({
           </Link>
         </section>
       </div>
+        </>
+      )}
     </div>
   );
 }
