@@ -264,8 +264,4 @@
   .steps .step:last-child {
     grid-column: auto;
   }
-  .step {
-    padding: var(--es-s4);
-    border-radius: 14px;
-  }
 }

@@ -242,11 +242,6 @@
     grid-column: auto;
   }
 
-  .step {
-    padding: var(--space-4);
-    border-radius: 14px;
-  }
-
   .foot {
     flex-direction: column;
     align-items: flex-start;

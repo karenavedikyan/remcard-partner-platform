@@ -265,9 +265,4 @@
   .steps .step:last-child {
     grid-column: auto;
   }
-
-  .step {
-    padding: var(--space-4, 1rem);
-    border-radius: 14px;
-  }
 }
