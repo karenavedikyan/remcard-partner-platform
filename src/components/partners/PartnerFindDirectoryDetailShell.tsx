@@ -10,7 +10,10 @@ import {
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
 import type { PartnerSearchResult } from "@/lib/types";
 import {
-  searchResultDirectionGroups,
+  findDirectoryDetailInviteLabel,
+  searchResultDetailCatalogLine,
+  searchResultDetailStagesLine,
+  searchResultDetailTopicsLine,
   searchResultInviteFoot,
   searchResultTypeLabel,
 } from "@/components/partners/PartnerSearchResultCard";
@@ -31,6 +34,7 @@ export type PartnerFindDirectoryDetailShellProps = {
   onBack: () => void;
   onInvite: () => void;
   inviteDisabled?: boolean;
+  inviteBusy?: boolean;
   /** Frozen qt() block — AGENT-only; default false (no fetch/render). */
   showAgentTerms?: boolean;
   /** Optional parent snapshot (same certificate-program-summary contract as search card). */
@@ -165,19 +169,22 @@ export function PartnerFindDirectoryDetailShell({
   onBack,
   onInvite,
   inviteDisabled = false,
+  inviteBusy = false,
   showAgentTerms = false,
   agentTermsSnapshot,
 }: PartnerFindDirectoryDetailShellProps) {
   const title = findDirectoryDetailDisplayTitle(partner);
   const typeLabel = searchResultTypeLabel(partner);
   const city = partner.city?.trim() || "";
-  const { primary, stages } = searchResultDirectionGroups(partner);
+  const catalogLine = searchResultDetailCatalogLine(partner);
+  const detailStagesLine = searchResultDetailStagesLine(partner);
   const description = partner.description?.trim() || "";
   const status = partner.partnershipStatus?.trim() || "";
   const statusLabel = status ? (PARTNERSHIP_STATUS_LABELS[status] ?? status) : "";
-  const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled });
+  const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
+  const inviteLabel = findDirectoryDetailInviteLabel(partner, { inviteDisabled, inviteBusy });
 
-  const topicsLine = primary.length > 0 ? primary.join(", ") : "";
+  const topicsLine = searchResultDetailTopicsLine(partner);
 
   return (
     <section
@@ -212,11 +219,21 @@ export function PartnerFindDirectoryDetailShell({
           </p>
         )}
 
-        {stages.length > 0 ? (
-          <p className={styles.stages} data-testid="partner-find-directory-detail-stages">
-            {stages.join(" · ")}
+        <section
+          className={styles.profileDirections}
+          aria-labelledby="partner-find-directory-detail-directions-title"
+          data-testid="partner-find-directory-detail-profile-directions"
+        >
+          <h3 id="partner-find-directory-detail-directions-title" className={styles.profileDirectionsTitle}>
+            Специализация и этапы
+          </h3>
+          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-catalog">
+            {catalogLine || "Специализация не указана"}
           </p>
-        ) : null}
+          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-stages">
+            Этапы: {detailStagesLine}
+          </p>
+        </section>
 
         {description ? (
           <p className={styles.description} data-testid="partner-find-directory-detail-description">
@@ -253,23 +270,25 @@ export function PartnerFindDirectoryDetailShell({
       </div>
 
       <footer className={styles.foot}>
+        <Button
+          type="button"
+          variant="primary"
+          className={styles.footInvite}
+          disabled={inviteFoot.disabled}
+          onClick={onInvite}
+          data-testid="partner-find-directory-detail-invite"
+          aria-busy={inviteBusy || undefined}
+        >
+          {inviteLabel}
+        </Button>
         <button
           type="button"
-          className={styles.backButton}
+          className={`${styles.backButton} ${styles.footBack}`}
           onClick={onBack}
           data-testid="partner-find-directory-detail-back"
         >
           Назад к поиску
         </button>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={inviteFoot.disabled}
-          onClick={onInvite}
-          data-testid="partner-find-directory-detail-invite"
-        >
-          {inviteFoot.label}
-        </Button>
       </footer>
     </section>
   );

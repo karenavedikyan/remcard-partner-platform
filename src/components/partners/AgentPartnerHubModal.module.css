@@ -348,8 +348,6 @@
 .prototypeFind .header { position: absolute; top: 12px; right: 12px; padding: 0; z-index: 2; }
 .prototypeFind .header > div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .prototypeFind .closeBtn { min-height: 32px; width: 32px; height: 32px; }
-.prototypeFind .anotherMethod { position: absolute; top: 17px; right: 58px; margin: 0; padding: var(--space-2); font-size: var(--text-xs); }
-@media (max-width: 760px) { .prototypeFind .anotherMethod { position: static; margin: 0 36px var(--space-3) 0; text-align: left; } }
 
 @media (max-width: 680px) {
   .backdropFind {

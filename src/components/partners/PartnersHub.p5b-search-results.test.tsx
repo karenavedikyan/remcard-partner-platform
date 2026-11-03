@@ -6,17 +6,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PartnersHub } from "./PartnersHub";
 import { remcardFetch } from "@/lib/api-client";
 import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
+import { installPartnerDirectoryDomMocks } from "./test/installPartnerDirectoryDomMocks";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+const fetchPartnerTaxonomyMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@/lib/partner-taxonomy", () => ({
-  fetchPartnerTaxonomy: vi.fn().mockResolvedValue({
-    products: [{ kind: "product", id: "doors", label: "Двери" }],
-    services: [{ kind: "service", id: "elec", label: "Электрика" }],
-    stages: [{ kind: "stage", id: "L1-8", label: "Отделка" }],
-  }),
+  fetchPartnerTaxonomy: (...args: unknown[]) => fetchPartnerTaxonomyMock(...args),
 }));
 
 vi.mock("@/components/partners/PartnerGeneralTermsDetails", () => ({
@@ -104,11 +103,24 @@ const searchPartner = (id: string, overrides: Partial<PartnerSearchResult> = {})
   ...overrides,
 });
 
-function mockApis(partners: PartnerSearchResult[], nextCursor: string | null = null) {
+function mockApis(partners: PartnerSearchResult[], total?: number, nextCursor: string | null = null) {
   vi.mocked(remcardFetch).mockImplementation(async (path) => {
     if (path === "/api/partnership/list") return { partnerships: [] };
     if (typeof path === "string" && path.startsWith("/api/partnership/search")) {
-      return { partners, nextCursor, hasMore: Boolean(nextCursor) };
+      const partnerTotal = total ?? partners.length;
+      return {
+        partners,
+        nextCursor,
+        hasMore: Boolean(nextCursor),
+        facets: {
+          total: partnerTotal,
+          baseTotal: partnerTotal,
+          stageTotal: partnerTotal,
+          products: {},
+          services: {},
+          stages: {},
+        },
+      };
     }
     if (path === "/api/partnership/link-invite") return { invites: [] };
     if (path === "/api/pro/profile") return agentProfile;
@@ -117,8 +129,20 @@ function mockApis(partners: PartnerSearchResult[], nextCursor: string | null = n
 }
 
 describe("PartnersHub P5b modal search results", () => {
+  let restoreDom: (() => void) | undefined;
+
   beforeEach(() => {
+    restoreDom = installPartnerDirectoryDomMocks();
     vi.mocked(remcardFetch).mockReset();
+    fetchPartnerTaxonomyMock.mockResolvedValue({
+      products: [{ kind: "product", id: "doors", label: "Двери" }],
+      services: [{ kind: "service", id: "elec", label: "Электрика" }],
+      stages: [{ kind: "stage", id: "L1-8", label: "Отделка" }],
+    });
+  });
+
+  afterEach(() => {
+    restoreDom?.();
   });
 
   afterEach(() => {
@@ -153,7 +177,7 @@ describe("PartnersHub P5b modal search results", () => {
 
   it("renders every loaded result (no silent 12-cap), honest count, and opens invite", async () => {
     const partners = Array.from({ length: 14 }, (_, i) => searchPartner(`id-${i + 1}`));
-    mockApis(partners, "cursor-more");
+    mockApis(partners, 14, "cursor-more");
 
     render(
       <PartnersHub
@@ -161,21 +185,28 @@ describe("PartnersHub P5b modal search results", () => {
         initialProfile={agentProfile}
         variant="agent-r04"
         agentModalSurface="find"
+        forcedTab="find"
         partnersAudience="agent-r04"
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
+    await waitFor(
+      () => {
+        expect(
+          within(screen.getByTestId("agent-partner-search-results")).getAllByTestId(
+            "agent-partner-search-result-card",
+          ),
+        ).toHaveLength(14);
+      },
+      { timeout: 8000 },
+    );
 
-    await waitFor(() => {
-      expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent("Показано: 14+");
-    });
+    expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent(/14 партнёров/);
+    expect(screen.getByTestId("agent-partner-search-count")).not.toHaveTextContent(/открыт/);
 
     const results = screen.getByTestId("agent-partner-search-results");
-    expect(within(results).getAllByTestId("agent-partner-search-result-card")).toHaveLength(14);
-
     await userEvent.click(
-      within(results).getAllByRole("button", { name: "Пригласить" })[0]!,
+      within(results).getAllByTestId("agent-partner-search-result-invite")[0]!,
     );
     expect(screen.getByTestId("partner-invite-dialog")).toHaveAttribute(
       "data-invite-target",
@@ -191,10 +222,10 @@ describe("PartnersHub P5b modal search results", () => {
         initialProfile={agentProfile}
         variant="agent-r04"
         agentModalSurface="find"
+        forcedTab="find"
         partnersAudience="agent-r04"
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
     await waitFor(() => {
       expect(screen.getByTestId("agent-partner-search-empty")).toBeInTheDocument();
     });
@@ -209,7 +240,10 @@ describe("PartnersHub P5b modal search results", () => {
       throw new Error(`unexpected fetch ${String(path)}`);
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "Найти" }));
+    await userEvent.type(
+      screen.getByPlaceholderText("Название, товар, услуга, этап или ID"),
+      "retry",
+    );
     await waitFor(() => {
       expect(screen.getByTestId("agent-partner-search-error")).toHaveTextContent("Сервер недоступен");
     });

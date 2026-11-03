@@ -110,17 +110,64 @@ describe("PartnerSearchResultCard P25n frozen card footer", () => {
     expect(detail).toHaveAttribute("href", "https://remcard.ru/partner/frozen-demo-light-open");
   });
 
-  it("does not show detail link when partnership status occupies foot", () => {
+  it("does not show enabled invite when partnership status occupies foot", () => {
     render(
       <PartnerSearchResultCard
-        partner={openPartner({ partnershipStatus: "ACTIVE" })}
+        partner={openPartner({ partnershipStatus: "ACTIVE", isPublic: true })}
         title="Студия света"
         showPublishedTerms={false}
         inviteDisabled={false}
         onInvite={() => {}}
       />,
     );
-    expect(screen.queryByTestId("agent-partner-search-result-detail")).toBeNull();
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
     expect(screen.getByTestId("agent-partner-search-result-status")).toBeInTheDocument();
+  });
+
+  it("keeps Подробнее with ACTIVE/PENDING status for in-hub callback (audit: detail access without duplicate invite)", async () => {
+    const onDetail = vi.fn();
+    const { rerender } = render(
+      <PartnerSearchResultCard
+        partner={openPartner({ partnershipStatus: "ACTIVE" })}
+        title="Студия"
+        showPublishedTerms={false}
+        inviteDisabled={false}
+        onInvite={() => {}}
+        onDetail={onDetail}
+      />,
+    );
+    expect(screen.getByTestId("agent-partner-search-result-detail")).toHaveTextContent("Подробнее");
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
+    await userEvent.click(screen.getByTestId("agent-partner-search-result-detail"));
+    expect(onDetail).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <PartnerSearchResultCard
+        partner={openPartner({ partnershipStatus: "PENDING" })}
+        title="Студия"
+        showPublishedTerms={false}
+        inviteDisabled={false}
+        onInvite={() => {}}
+        onDetail={onDetail}
+      />,
+    );
+    expect(screen.getByTestId("agent-partner-search-result-detail")).toBeInTheDocument();
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
+  });
+
+  it("keeps legacy public Подробнее anchor with ACTIVE when onDetail omitted", () => {
+    render(
+      <PartnerSearchResultCard
+        partner={openPartner({ partnershipStatus: "ACTIVE" })}
+        title="Студия"
+        showPublishedTerms={false}
+        inviteDisabled={false}
+        onInvite={() => {}}
+      />,
+    );
+    const detail = screen.getByTestId("agent-partner-search-result-detail");
+    expect(detail.tagName).toBe("A");
+    expect(detail).toHaveAttribute("href", "https://remcard.ru/partner/frozen-demo-light-open");
+    expect(screen.queryByTestId("agent-partner-search-result-invite")).toBeNull();
   });
 });

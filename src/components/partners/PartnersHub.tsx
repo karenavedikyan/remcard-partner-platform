@@ -61,6 +61,7 @@ import Link from "next/link";
 import type {
   PartnerSearchFacets,
   PartnerSearchResult,
+  PartnerTaxonomyResponse,
   Partnership,
   ProProfileResponse,
   TermChangeRequest,
@@ -78,6 +79,12 @@ import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
 import { PartnerDiscoveryNavigator } from "@/components/partners/PartnerDiscoveryNavigator";
+import {
+  countOpenToCooperatePartners,
+  findShowcaseHeadingTitle,
+} from "@/components/partners/findShowcaseHeadingTitle";
+import { formatFindShowcaseCountLine, formatFindShowcasePartnerTotal } from "@/components/partners/findShowcaseCountLine";
+import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 /** P25p-owned shell — required dependency for in-Hub find detail (no stub). */
 import { PartnerFindDirectoryDetailShell } from "@/components/partners/PartnerFindDirectoryDetailShell";
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
@@ -131,6 +138,8 @@ export type PartnersHubProps = {
   onCloseAgentModal?: () => void;
   /** Overview CTA / empty scenarios — open existing find/link modal. */
   onOpenPartnerHub?: (tab: "find" | "link") => void;
+  /** Find modal: «Другой способ приглашения» in showcase intro row (same handler as modal shell). */
+  onChooseMethod?: () => void;
   /** P12: discussion-invite ready → hub chrome «Приглашение создано» / no tabs. */
   onDiscussionInviteReadyChange?: (ready: boolean) => void;
   discussionInviteReady?: boolean;
@@ -160,6 +169,13 @@ function partnerTitle(partner: { displayName: string | null; organizationName?: 
   return partner.organizationName?.trim() || partner.displayName?.trim() || "Партнёр";
 }
 
+/** Measured findMain width in hub-wide dialog (~932px @ 1240 sheet), not viewport. */
+export const FIND_MAIN_RESULTS_TWO_COL_MIN_PX = 640;
+
+export function findMainResultsWideEnough(mainWidthPx: number): boolean {
+  return mainWidthPx > FIND_MAIN_RESULTS_TWO_COL_MIN_PX;
+}
+
 export function PartnersHub({
   meId,
   initialProfile,
@@ -171,6 +187,7 @@ export function PartnersHub({
   agentModalSurface,
   onCloseAgentModal,
   onOpenPartnerHub,
+  onChooseMethod,
   onDiscussionInviteReadyChange,
   discussionInviteReady = false,
   discussionInvitePanelKey = 0,
@@ -197,6 +214,8 @@ export function PartnersHub({
   const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const findMainRef = useRef<HTMLDivElement>(null);
+  const [findResultsWide, setFindResultsWide] = useState(false);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const [filterProducts, setFilterProducts] = useState<string[]>([]);
@@ -366,6 +385,7 @@ export function PartnersHub({
       back?.focus({ preventScroll: true });
     });
   }, [findDirectoryDetailPartner]);
+
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
   const [termDraftDirty, setTermDraftDirty] = useState(false);
@@ -531,6 +551,8 @@ export function PartnersHub({
   const [searchPartnerType, setSearchPartnerType] = useState<AgentPartnerTypeFilter>("");
   const [discoverySpecialization, setDiscoverySpecialization] = useState("");
   const [discoveryStageId, setDiscoveryStageId] = useState("");
+  const [partnerTaxonomy, setPartnerTaxonomy] = useState<PartnerTaxonomyResponse | null>(null);
+  const [partnerTaxonomyError, setPartnerTaxonomyError] = useState(false);
   const [expandedTermsId, setExpandedTermsId] = useState<string | null>(null);
   const searchGate = useRef(createSearchRequestGate());
   const searchAbortRef = useRef<AbortController | null>(null);
@@ -544,6 +566,68 @@ export function PartnersHub({
    * filters leave and return so in-flight stale q/city can be aborted.
    */
   const searchAutoIssuedKeyRef = useRef<string | null>(null);
+
+  const findShowcaseCountLine = useMemo(() => {
+    if (!searchFacets || loadingSearch) return null;
+    const totalLine = formatFindShowcasePartnerTotal(searchFacets.total);
+    const allLoaded =
+      !searchNextCursor && searchResults.length >= searchFacets.total;
+    if (!allLoaded) {
+      return totalLine;
+    }
+    return formatFindShowcaseCountLine(
+      searchFacets.total,
+      countOpenToCooperatePartners(searchResults),
+    );
+  }, [loadingSearch, searchFacets, searchNextCursor, searchResults]);
+
+  const discoveryStageLabel = useMemo(() => {
+    if (!discoveryStageId || !partnerTaxonomy) return "";
+    return partnerTaxonomy.stages.find((s) => s.id === discoveryStageId)?.label?.trim() ?? "";
+  }, [discoveryStageId, partnerTaxonomy]);
+
+  const findShowcaseTitle = useMemo(
+    () =>
+      findShowcaseHeadingTitle({
+        stageId: discoveryStageId,
+        specialization: discoverySpecialization,
+        taxonomy: partnerTaxonomy,
+      }),
+    [discoveryStageId, discoverySpecialization, partnerTaxonomy],
+  );
+
+  useEffect(() => {
+    if (agentModalSurface !== "find") return;
+    let cancelled = false;
+    setPartnerTaxonomyError(false);
+    void fetchPartnerTaxonomy()
+      .then((data) => {
+        if (!cancelled) setPartnerTaxonomy(data);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPartnerTaxonomy(null);
+          setPartnerTaxonomyError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentModalSurface, taxonomyFilterResetKey]);
+
+  useLayoutEffect(() => {
+    if (agentModalSurface !== "find") return;
+    const node = findMainRef.current;
+    if (!node) return;
+    const measure = () => {
+      setFindResultsWide(findMainResultsWideEnough(node.getBoundingClientRect().width));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [agentModalSurface, searchResults.length, discoveryStageId, discoverySpecialization]);
 
   useEffect(() => {
     if (forcedTab) setTab(forcedTab);
@@ -1634,17 +1718,61 @@ export function PartnersHub({
    */
   const agentFindShowcase = (
     <div className={styles.findShell} data-testid="agent-partner-find-showcase">
-      <p className={styles.modalLead}>
-        Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
-      </p>
+      <div className={styles.findIntroRow} data-testid="agent-partner-find-intro-row">
+        <p className={styles.modalLead}>
+          Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
+        </p>
+        {agentModalSurface === "find" && onChooseMethod ? (
+          <button
+            type="button"
+            className={styles.findIntroBack}
+            data-testid="agent-partner-find-intro-back"
+            onClick={onChooseMethod}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <polyline
+                points="14,7 8,12 14,17"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Другой способ приглашения
+          </button>
+        ) : null}
+      </div>
       <div className={styles.findToolbarRow}>
-        <form className={styles.modalSearchBlock} onSubmit={event => { event.preventDefault(); void loadSearch("reset"); }}>
-          <TextField
-            label="Поиск партнёров"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Название, товар, услуга, этап или ID"
-          />
+        <form
+          className={styles.findSearchForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadSearch("reset");
+          }}
+        >
+          <label className={styles.findSearchBox}>
+            <span className={styles.srOnly}>Поиск по словам</span>
+            <svg className={styles.findSearchIcon} viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path
+                d="M20 20l-3.5-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Название, товар, услуга, этап или ID"
+              enterKeyHint="search"
+              maxLength={120}
+              data-testid="agent-partner-find-search-input"
+            />
+          </label>
         </form>
         {/* P22c tip 30231a6: layout=modal-full is the sole refine disclosure owner. */}
         <div className={styles.findFilterSlot} data-testid="agent-partner-find-filter-slot">
@@ -1656,7 +1784,11 @@ export function PartnersHub({
           {query ? <button type="button" onClick={() => setQuery("")}>Снять фильтр «{query}» ×</button> : null}
           {city ? <button type="button" onClick={() => setCity("")}>Город: {city} ×</button> : null}
           {searchPartnerType ? <button type="button" onClick={() => setSearchPartnerType("")}>Тип: {({ agent: "Агент", specialist: "Специалист", store: "Магазин", company: "Компания" })[searchPartnerType]} ×</button> : null}
-          {discoveryStageId ? <button type="button" onClick={() => setDiscoveryStageId("")}>Снять этап ×</button> : null}
+          {discoveryStageId ? (
+            <button type="button" onClick={() => setDiscoveryStageId("")}>
+              Этап: {discoveryStageLabel || discoveryStageId} ×
+            </button>
+          ) : null}
           {discoverySpecialization ? <button type="button" onClick={() => setDiscoverySpecialization("")}>Снять направление ×</button> : null}
           <button type="button" onClick={resetSearchFilters}>Сбросить всё</button>
         </div>
@@ -1667,10 +1799,24 @@ export function PartnersHub({
             facets={searchFacets} loading={loadingSearch} onStageChange={setDiscoveryStageId}
             onSpecializationChange={setDiscoverySpecialization} />
         </aside>
-        <div className={styles.findMain}>
+        <div
+          className={styles.findMain}
+          ref={findMainRef}
+          data-testid="agent-partner-find-main"
+          data-results-wide={findResultsWide ? "true" : "false"}
+        >
           <div className={styles.findHeading}>
-            <span>Партнёры RemCard</span>
-            <h3>Найдите своего партнёра</h3>
+            <span className={styles.findEyebrow}>Партнёры RemCard</span>
+            <h2 data-testid="agent-partner-find-showcase-title">{findShowcaseTitle}</h2>
+            {findShowcaseCountLine && !loadingSearch ? (
+              <p className={styles.findCount} role="status" data-testid="agent-partner-search-count">
+                {findShowcaseCountLine}
+              </p>
+            ) : partnerTaxonomyError ? (
+              <p className={styles.findCount} role="status">
+                Не удалось загрузить названия этапов
+              </p>
+            ) : null}
           </div>
           {searchError ? (
             <div className={styles.modalResultsError} role="alert" data-testid="agent-partner-search-error">
@@ -1686,13 +1832,6 @@ export function PartnersHub({
                 Повторить
               </Button>
             </div>
-          ) : null}
-          {searchResults.length > 0 || loadingSearch || searchFacets ? (
-            <p className={styles.modalResultsLead} data-testid="agent-partner-search-count">
-              {searchFacets && !loadingSearch ? `Найдено: ${searchFacets.total} · ` : ""}Показано: {searchResults.length}
-              {searchNextCursor ? "+" : ""}
-              {loadingSearch && searchResults.length > 0 ? " · обновляем…" : ""}
-            </p>
           ) : null}
           <div
             className={`${styles.modalResults} ${styles.modalResultsFind}`}

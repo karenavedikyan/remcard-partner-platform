@@ -44,7 +44,21 @@ export function AgentPartnerHubModal({
   const titleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const hasOpenedRef = useRef(open);
+  const chooseFindRef = useRef<HTMLButtonElement>(null);
+  const wasFindShowcaseRef = useRef(false);
   if (open) hasOpenedRef.current = true;
+
+  useEffect(() => {
+    if (open && tab === "find" && !choiceMode) {
+      wasFindShowcaseRef.current = true;
+    }
+  }, [open, tab, choiceMode]);
+
+  useEffect(() => {
+    if (!open || !choiceMode || !wasFindShowcaseRef.current) return;
+    chooseFindRef.current?.focus({ preventScroll: true });
+    wasFindShowcaseRef.current = false;
+  }, [open, choiceMode]);
 
   useEffect(() => {
     if (!open) return;
@@ -171,7 +185,7 @@ export function AgentPartnerHubModal({
         )}
         <div className={styles.body}>
           {choiceMode ? <div className={styles.methodChoices}>
-            <button type="button" onClick={() => onTabChange("find")}>
+            <button ref={chooseFindRef} type="button" onClick={() => onTabChange("find")}>
               <span>Уже в RemCard</span><strong>Найти в RemCard</strong>
               <p>Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям, откройте карточку и предложите сотрудничество.</p>
             </button>
@@ -180,7 +194,21 @@ export function AgentPartnerHubModal({
               <p>Знакомого магазина, специалиста, агента или компании ещё нет на платформе. Создайте приглашение и отправьте лично.</p>
             </button>
           </div> : null}
-          {!choiceMode && !readyMode && tab === "find" && onChooseMethod ? <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>Другой способ приглашения</button> : null}
+          {!choiceMode && !readyMode && tab === "find" && onChooseMethod && !prototypeMode ? (
+            <button className={styles.anotherMethod} type="button" onClick={onChooseMethod}>
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline
+                  points="14,7 8,12 14,17"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Другой способ приглашения
+            </button>
+          ) : null}
           <div hidden={choiceMode}>{children}</div>
         </div>
       </div>

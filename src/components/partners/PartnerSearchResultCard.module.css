@@ -1,6 +1,9 @@
 /* P5b: modal search result card — prototype-aligned composition (cover / identity / terms / CTA) */
 
 .modalResultCard {
+  --modal-result-secondary-fg: var(--muted);
+  container-type: inline-size;
+  container-name: partner-result-card;
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 0.75rem);
@@ -9,9 +12,12 @@
   border-radius: 12px;
   background: var(--surface);
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   /* Independent block size in .modalResults column flex — do not shrink into neighbors */
   flex: 0 0 auto;
   overflow: hidden;
+  overflow-x: clip;
 }
 
 .modalResultCover {
@@ -24,9 +30,9 @@
   height: 48px;
   min-height: 48px;
   padding: 0 var(--space-5, 1.25rem);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--muted);
   background: var(--offset, var(--surface-muted, #efeeeb));
   min-width: 0;
@@ -53,15 +59,15 @@
   align-items: center;
   max-width: 100%;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .modalResultTypeMuted {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--modal-result-cover-fg, var(--muted));
   font-weight: 600;
 }
 
@@ -113,9 +119,22 @@
   color: #b8c9ea;
 }
 
+:global([data-theme="dark"]) .modalResultLogoStore,
+:global(html.dark) .modalResultLogoStore {
+  background: color-mix(in srgb, var(--primary-fill, #b54844) 18%, var(--surface));
+  color: var(--ink);
+}
+
 :global([data-theme="dark"]) .modalResultLogoSpecialist,
 :global(html.dark) .modalResultLogoSpecialist {
   background: #223b2f;
+  color: var(--ink);
+}
+
+:global([data-theme="dark"]) .modalResultLogoNeutral,
+:global(html.dark) .modalResultLogoNeutral {
+  background: var(--offset);
+  color: var(--ink);
 }
 
 .modalResultTitleBlock {
@@ -138,9 +157,9 @@
 .modalResultCity,
 .modalResultCityMuted {
   margin: 0;
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--modal-result-secondary-fg);
   overflow-wrap: anywhere;
 }
 
@@ -162,10 +181,10 @@
 
 .modalResultStages {
   margin: 0;
-  min-height: 17px;
-  font-size: 11px;
+  min-height: 18px;
+  font-size: 12px;
   line-height: 1.5;
-  color: var(--muted);
+  color: var(--modal-result-secondary-fg);
   overflow-wrap: anywhere;
 }
 
@@ -192,30 +211,29 @@
 }
 
 .modalResultInlineTermsHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
   gap: var(--space-1, 0.25rem);
+  align-items: flex-start;
+  justify-items: start;
 }
 
 .modalResultInlineTermsTitle {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #5c605a;
+  color: var(--modal-result-secondary-fg);
 }
 
 .modalResultInlineTermsRange {
   display: grid;
   gap: 2px;
-  text-align: right;
+  text-align: left;
   min-width: 0;
 }
 
 .modalResultInlineTermsRange strong {
-  font-size: 1.6875rem;
+  font-size: 27px;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -223,9 +241,9 @@
 }
 
 .modalResultInlineTermsSub {
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
-  color: #5c605a;
+  color: var(--modal-result-secondary-fg);
 }
 
 .modalResultInlineTermsList {
@@ -242,7 +260,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3, 0.75rem);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
   color: var(--ink);
   min-width: 0;
@@ -256,6 +274,7 @@
 
 .modalResultInlineTermsList li b {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   flex: 0 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -266,14 +285,14 @@
 .modalResultInlineTermsDisclaimer,
 .modalResultInlineTermsMore {
   margin: 0;
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
-  color: #5c605a;
+  color: var(--modal-result-secondary-fg);
 }
 
 .modalResultInlineTermsError {
   margin: 0;
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
   color: var(--danger, #b42318);
 }
@@ -301,7 +320,7 @@
 :global(html.dark) .modalResultInlineTermsDisclaimer,
 :global([data-theme="dark"]) .modalResultInlineTermsMore,
 :global(html.dark) .modalResultInlineTermsMore {
-  color: #c5c7c9;
+  color: var(--modal-result-secondary-fg);
 }
 
 .modalResultFoot {
@@ -379,6 +398,62 @@
   }
 }
 
+/* Narrow hub columns (~195px @ 768 two-up): stack foot, drop brittle min-widths, avoid horizontal clip */
+@container partner-result-card (max-width: 280px) {
+  .modalResultCover {
+    row-gap: var(--space-1, 0.25rem);
+  }
+
+  .modalResultOpenHint {
+    margin-left: 0;
+    max-width: 100%;
+    flex: 1 1 100%;
+    text-align: left;
+  }
+
+  .modalResultFoot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  .modalResultFootDetailLink {
+    flex: 0 1 auto;
+    align-self: flex-start;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  .modalResultFootStatus {
+    margin-left: 0;
+    align-self: flex-start;
+    justify-content: flex-start;
+    max-width: 100%;
+  }
+
+  .modalResultFootActions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .modalResultFootActions :global(button) {
+    flex: 1 1 auto;
+    min-width: min(100%, 44px);
+    max-width: 100%;
+  }
+
+  .modalResultInlineTermsList li span:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
 @media (max-width: 360px) {
   .modalResultDirectionsPrimary {
     font-size: var(--text-sm);
@@ -393,16 +468,16 @@
 
 .modalResultLogoAgent {
   background: var(--offset, #efeeeb);
-  color: var(--muted);
+  color: var(--ink);
 }
 
 .modalResultOpenHint {
   margin-left: auto;
   max-width: min(48%, 12rem);
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 1.3333333;
   color: var(--modal-result-cover-fg);
   text-align: right;
   overflow-wrap: anywhere;
@@ -412,16 +487,21 @@
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 12px;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--modal-result-secondary-fg);
   overflow-wrap: anywhere;
 }
 
 :global([data-theme="dark"]) .modalResultLogoAgent,
 :global(html.dark) .modalResultLogoAgent {
   background: #2a2b28;
-  color: #b8bab4;
+  color: var(--muted);
+}
+
+:global([data-theme="dark"]) .modalResultCard,
+:global(html.dark) .modalResultCard {
+  --modal-result-secondary-fg: var(--muted);
 }
 
 /* === P25c: cover-band + secondary small text ≥4.5:1 (normal size; not --muted on band alone) === */
@@ -471,7 +551,7 @@
 .modalResultStages,
 .modalResultCity,
 .modalResultCityMuted {
-  color: #5c605a;
+  color: var(--modal-result-secondary-fg);
 }
 
 :global([data-theme="dark"]) .modalResultFootNote,
@@ -482,5 +562,25 @@
 :global(html.dark) .modalResultCity,
 :global([data-theme="dark"]) .modalResultCityMuted,
 :global(html.dark) .modalResultCityMuted {
-  color: #c5c7c9;
+  color: var(--modal-result-secondary-fg);
+}
+
+/* === P25 font minimum (12px computed px; stock Next auditor binding) === */
+
+.modalResultCover,
+.modalResultType,
+.modalResultTypeMuted,
+.modalResultStages,
+.modalResultOpenHint,
+.modalResultFootNote,
+.modalResultInlineTermsTitle,
+.modalResultInlineTermsSub,
+.modalResultInlineTermsList li,
+.modalResultInlineTermsMuted,
+.modalResultInlineTermsDisclaimer,
+.modalResultInlineTermsMore,
+.modalResultInlineTermsError,
+.modalResultCity,
+.modalResultCityMuted {
+  font-size: 12px;
 }

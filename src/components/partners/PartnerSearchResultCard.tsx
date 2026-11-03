@@ -182,6 +182,62 @@ function labelsFromApi(partner: PartnerSearchResult): {
   };
 }
 
+function dedupeTrimmedLabels(labels: readonly string[] | undefined): string[] {
+  return [...new Set((labels ?? []).map((label) => label.trim()).filter(Boolean))];
+}
+
+function profileFallback(partner: PartnerSearchResult): PartnershipPartnerProfile {
+  return {
+    id: partner.id,
+    displayName: partner.displayName,
+    partnerType: partner.partnerType ?? partner.organizationPartnerType ?? undefined,
+    city: partner.city,
+    storeCategories: partner.storeCategories,
+    specializations: partner.specializations,
+    workingProductCategoryIds: partner.productCategoryIds,
+    workingServiceSpecializationIds: partner.serviceSpecializationIds,
+    workingNavigatorStageIds: partner.navigatorStageIds,
+  } as PartnershipPartnerProfile;
+}
+
+/** All deduped stage labels from search DTO (or navigator fallback). */
+export function searchResultAllStageLabels(partner: PartnerSearchResult): string[] {
+  const fromApi = dedupeTrimmedLabels(partner.workingStageLabels);
+  if (fromApi.length) return fromApi;
+
+  const stages = (partner.navigatorStageIds ?? [])
+    .map((id) => masterDirectionLabel(id))
+    .filter((label) => label !== "Категория");
+  return [...new Set(stages)];
+}
+
+/**
+ * Card-only direction line: services → products, cap 3 (frozen showcase card).
+ * Shared `searchResultDirectionGroups` keeps legacy order for other callers.
+ */
+export function searchResultCardPrimaryDirectionLabels(partner: PartnerSearchResult): string[] {
+  const services = dedupeTrimmedLabels(partner.workingServiceLabels);
+  const products = dedupeTrimmedLabels(partner.workingProductLabels);
+  const combined = [...services, ...products];
+  if (combined.length) return combined.slice(0, 3);
+
+  const fromHint = partnerSpecializationHint(profileFallback(partner))
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return [...new Set(fromHint)].slice(0, 3);
+}
+
+/** Detail lead line: all service→product labels, comma-separated (Ht topics). */
+export function searchResultDetailTopicsLine(partner: PartnerSearchResult): string {
+  const services = dedupeTrimmedLabels(partner.workingServiceLabels);
+  const products = dedupeTrimmedLabels(partner.workingProductLabels);
+  const combined = [...services, ...products];
+  if (combined.length) return combined.join(", ");
+
+  return partnerSpecializationHint(profileFallback(partner)).trim();
+}
+
 /**
  * Real direction/stage labels from the search DTO.
  * Primary = products/services (or specialization hint); secondary = stages.
@@ -198,31 +254,55 @@ export function searchResultDirectionGroups(partner: PartnerSearchResult): {
     };
   }
 
-  const asProfile = {
-    id: partner.id,
-    displayName: partner.displayName,
-    partnerType: partner.partnerType ?? partner.organizationPartnerType ?? undefined,
-    city: partner.city,
-    storeCategories: partner.storeCategories,
-    specializations: partner.specializations,
-    workingProductCategoryIds: partner.productCategoryIds,
-    workingServiceSpecializationIds: partner.serviceSpecializationIds,
-    workingNavigatorStageIds: partner.navigatorStageIds,
-  } as PartnershipPartnerProfile;
-
-  const fromHint = partnerSpecializationHint(asProfile)
+  const fromHint = partnerSpecializationHint(profileFallback(partner))
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const stages = (partner.navigatorStageIds ?? [])
-    .map((id) => masterDirectionLabel(id))
-    .filter((label) => label !== "Категория");
-
+  const uniqueStages = searchResultAllStageLabels(partner);
   return {
     primary: [...new Set(fromHint)].slice(0, 4),
-    stages: [...new Set(stages)].slice(0, 3),
+    stages: uniqueStages.slice(0, 3),
   };
+}
+
+/** Card stage line: always rendered; truncated display with truthful total count. */
+export function searchResultCardStagesLine(partner: PartnerSearchResult): string {
+  const all = searchResultAllStageLabels(partner);
+  if (!all.length) return "Этапы ремонта не указаны";
+  const head = all.slice(0, 3).join(" · ");
+  return all.length > 3 ? `${head} и ещё ${all.length - 3}` : head;
+}
+
+/** Detail «Специализация и этапы» — products then services (frozen directoryFullDirections). */
+export function searchResultDetailCatalogLine(partner: PartnerSearchResult): string {
+  const products = [...new Set((partner.workingProductLabels ?? []).map((l) => l.trim()).filter(Boolean))];
+  const services = [...new Set((partner.workingServiceLabels ?? []).map((l) => l.trim()).filter(Boolean))];
+  const labels = [
+    ...products.map((label) => `Товары: ${label}`),
+    ...services.map((label) => `Работы и услуги: ${label}`),
+  ];
+  if (labels.length) return labels.join(" · ");
+
+  const fromHint = partnerSpecializationHint(profileFallback(partner)).trim();
+  return fromHint;
+}
+
+/** Detail profile block: full stage list (no card truncation). */
+export function searchResultDetailStagesLine(partner: PartnerSearchResult): string {
+  const all = searchResultAllStageLabels(partner);
+  if (!all.length) return "не указаны";
+  return all.join(", ");
+}
+
+/** In-hub directory detail primary invite label (frozen Ht CTA). */
+export function findDirectoryDetailInviteLabel(
+  partner: PartnerSearchResult,
+  opts: { inviteDisabled?: boolean; inviteBusy?: boolean } = {},
+): string {
+  const foot = searchResultInviteFoot(partner, opts);
+  if (foot.label === "Сотрудничать") return "Предложить сотрудничество";
+  return foot.label;
 }
 
 /** Flat list kept for tests / callers that need a single array. */
@@ -244,7 +324,8 @@ export function PartnerSearchResultCard({
   const typeLabel = searchResultTypeLabel(partner);
   const coverTone = searchResultCoverTone(partner);
   const city = partner.city?.trim() || "";
-  const { primary, stages } = searchResultDirectionGroups(partner);
+  const primaryDirections = searchResultCardPrimaryDirectionLabels(partner);
+  const stagesLine = searchResultCardStagesLine(partner);
   const monogram = searchResultMonogram(title);
   const status = partner.partnershipStatus?.trim() || "";
   const statusLabel = status
@@ -253,9 +334,8 @@ export function PartnerSearchResultCard({
   const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
   const showOpenHint = searchResultShowOpenHint(partner) && !inviteFoot.disabled;
   const showStatusInFoot = Boolean(status && status !== "ENDED");
-  const showInviteControl = !showStatusInFoot;
   const detailFoot = searchResultDetailFootTarget(partner, { onDetail });
-  const showDetailControl = showInviteControl && detailFoot.mode !== "none";
+  const showDetailControl = detailFoot.mode !== "none";
 
   const coverToneClass =
     coverTone === "store"
@@ -327,12 +407,12 @@ export function PartnerSearchResultCard({
       </div>
 
       <div className={styles.modalResultBody} data-testid="agent-partner-search-result-body">
-        {primary.length > 0 ? (
+        {primaryDirections.length > 0 ? (
           <p
             className={styles.modalResultDirectionsPrimary}
             data-testid="agent-partner-search-result-directions"
           >
-            {primary.join(" · ")}
+            {primaryDirections.join(" · ")}
           </p>
         ) : (
           <p
@@ -342,11 +422,9 @@ export function PartnerSearchResultCard({
             Направления не указаны
           </p>
         )}
-        {stages.length > 0 ? (
-          <p className={styles.modalResultStages} data-testid="agent-partner-search-result-stages">
-            {stages.join(" · ")}
-          </p>
-        ) : null}
+        <p className={styles.modalResultStages} data-testid="agent-partner-search-result-stages">
+          {stagesLine}
+        </p>
 
         {showPublishedTerms ? (
           <div className={styles.modalResultTerms} data-testid="agent-partner-search-result-terms">
@@ -363,6 +441,29 @@ export function PartnerSearchResultCard({
         className={styles.modalResultFoot}
         data-testid="agent-partner-search-result-foot"
       >
+        {showDetailControl ? (
+          detailFoot.mode === "callback" ? (
+            <button
+              type="button"
+              className={styles.modalResultFootDetailLink}
+              onClick={() => onDetail?.()}
+              data-testid="agent-partner-search-result-detail"
+            >
+              Подробнее
+            </button>
+          ) : (
+            <a
+              className={styles.modalResultFootDetailLink}
+              href={detailFoot.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="agent-partner-search-result-detail"
+              data-detail-mode="legacy-public-url"
+            >
+              Подробнее
+            </a>
+          )
+        ) : null}
         {showStatusInFoot ? (
           <span
             className={styles.modalResultFootStatus}
@@ -371,54 +472,29 @@ export function PartnerSearchResultCard({
             <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
           </span>
         ) : (
-          <>
-            {showDetailControl ? (
-              detailFoot.mode === "callback" ? (
-                <button
-                  type="button"
-                  className={styles.modalResultFootDetailLink}
-                  onClick={() => onDetail?.()}
-                  data-testid="agent-partner-search-result-detail"
-                >
-                  Подробнее
-                </button>
-              ) : (
-                <a
-                  className={styles.modalResultFootDetailLink}
-                  href={detailFoot.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="agent-partner-search-result-detail"
-                  data-detail-mode="legacy-public-url"
-                >
-                  Подробнее
-                </a>
-              )
-            ) : null}
-            <div
-              className={styles.modalResultFootActions}
-              data-testid="agent-partner-search-result-foot-actions"
-            >
-              {inviteFoot.blockedReason ? (
-                <p
-                  className={styles.modalResultFootNote}
-                  data-testid="agent-partner-search-result-invite-blocked"
-                >
-                  {inviteFoot.blockedReason}
-                </p>
-              ) : null}
-              <Button
-                type="button"
-                variant="primary"
-                disabled={inviteFoot.disabled}
-                onClick={onInvite}
-                data-testid="agent-partner-search-result-invite"
-                aria-busy={inviteBusy || undefined}
+          <div
+            className={styles.modalResultFootActions}
+            data-testid="agent-partner-search-result-foot-actions"
+          >
+            {inviteFoot.blockedReason ? (
+              <p
+                className={styles.modalResultFootNote}
+                data-testid="agent-partner-search-result-invite-blocked"
               >
-                {inviteFoot.label}
-              </Button>
-            </div>
-          </>
+                {inviteFoot.blockedReason}
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="primary"
+              disabled={inviteFoot.disabled}
+              onClick={onInvite}
+              data-testid="agent-partner-search-result-invite"
+              aria-busy={inviteBusy || undefined}
+            >
+              {inviteFoot.label}
+            </Button>
+          </div>
         )}
       </div>
     </article>

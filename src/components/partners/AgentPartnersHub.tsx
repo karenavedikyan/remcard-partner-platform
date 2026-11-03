@@ -239,6 +239,7 @@ export function AgentPartnersHub({
           discussionInviteReady={discussionInviteReady}
           discussionInvitePanelKey={discussionInvitePanelKey}
           onDiscussionInviteDirtyChange={updateInviteDirty}
+          onChooseMethod={chooseMethod}
         />
       </AgentPartnerHubModal>
 

@@ -11,7 +11,7 @@ describe("PartnerSearchResultCard P25c contrast appendix", () => {
     expect(appendix).toMatch(/--modal-result-cover-fg:/);
     expect(appendix).toMatch(/\.modalResultType[^}]*var\(--modal-result-cover-fg\)/s);
     expect(appendix).toMatch(/\.modalResultOpenHint[^}]*var\(--modal-result-cover-fg\)/s);
-    expect(appendix).toMatch(/\.modalResultFootNote[^}]*#5c605a/s);
+    expect(appendix).toMatch(/\.modalResultFootNote[^}]*var\(--modal-result-secondary-fg\)/s);
   });
 
   it("pairs the dark store foreground with a dark surface instead of the light tint fallback", () => {

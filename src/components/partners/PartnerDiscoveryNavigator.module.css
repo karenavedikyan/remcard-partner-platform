@@ -1,26 +1,564 @@
-.navigator { min-width: 0; color: var(--ink); }
-.navigator > summary { cursor: pointer; padding: var(--space-3); border: 1px solid var(--line); border-radius: 12px; font-weight: 700; }
-.body { display: grid; gap: var(--space-4); }
-.quest { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--accent-fill); color: var(--primary-fg); border-radius: 14px; }
-.quest > span { text-transform: uppercase; font-size: var(--text-xs); letter-spacing: .05em; }
-.quest > strong { font-size: var(--text-lg); }
-.quest small { font-size: var(--text-xs); }
-.progress { height: 5px; background: rgb(255 255 255 / .25); border-radius: 9px; overflow: hidden; }
-.progress i { display: block; height: 100%; background: #fff; }
-.path { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); position: relative; }
-.step { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; width: 100%; border: 0; padding: var(--space-2); border-radius: 12px; text-align: left; background: transparent; color: var(--ink); cursor: pointer; font: inherit; }
-.node { display: grid; place-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: 50%; width: 30px; height: 30px; font-size: var(--text-xs); }
-.step b { display: block; font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
-.step small { display: block; text-transform: uppercase; font-size: var(--text-xs); color: var(--muted); line-height: 1.3; }
-.step em, .directions em { font-style: normal; font-size: var(--text-xs); padding: 2px 6px; border-radius: 99px; background: var(--offset); }
-.step[aria-pressed="true"], .directions button[aria-pressed="true"] { background: var(--soft); color: var(--primary); }
-.step[aria-pressed="true"] .node { background: var(--accent-fill); color: var(--primary-fg); border-color: var(--accent-fill); }
-.step:disabled { color: var(--muted); cursor: not-allowed; }
-.step:not(:disabled):hover, .directions button:hover { background: var(--offset); }
-.directions { display: grid; gap: var(--space-1); }
-.directions h3, .directions h4 { margin: var(--space-2) 0; font-size: var(--text-xs); text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
-.directionGroup { display: grid; gap: var(--space-1); }
-.directions button { display: flex; gap: var(--space-2); justify-content: space-between; align-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; font-size: var(--text-sm); text-align: left; padding: var(--space-2); cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
-.navigator button:focus-visible, .navigator summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (min-width: 761px) { .navigator > summary { display: none; } }
-@media (max-width: 760px) { .body { padding-top: var(--space-3); } .quest { display: none; } .path { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step { min-height: 66px; } .step small { text-transform: none; } }
+/* Prototype-aligned partner find navigator (pr-nav-body / pr-quest / pr-path / pr-skill-grid) */
+
+.navigator {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+}
+
+.navigator > summary {
+  list-style: none;
+}
+
+.navigator > summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary {
+  display: none;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-5, 1.25rem);
+}
+
+.quest {
+  gap: var(--space-4, 1rem);
+}
+
+.questHead {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-4, 1rem);
+  border-radius: 14px;
+  color: #fff5f3;
+  background: linear-gradient(135deg, #8e1f23 0, var(--accent, #bb3035) 55%, #d9574f 100%);
+  box-shadow: 0 10px 24px -14px rgb(120 20 25 / 70%);
+}
+
+:global([data-theme="dark"]) .questHead,
+:global(html.dark) .questHead {
+  background: linear-gradient(135deg, #5a1d20 0, #9d3a3b 60%, #c25c58 100%);
+  color: #fff5f3;
+}
+
+.questEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.questEyebrow svg {
+  width: 13px;
+  height: 13px;
+}
+
+.questHead strong {
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.questBar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 22%);
+  overflow: hidden;
+}
+
+.questBar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 10px rgb(255 255 255 / 70%);
+  transition: width 0.35s ease;
+}
+
+.questHead small {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.error button {
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  position: relative;
+}
+
+.pathStep {
+  position: relative;
+}
+
+.pathStep::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--space-2, 0.5rem) + 17px);
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+
+.pathStep:first-child::before {
+  top: 50%;
+}
+
+.pathStep:last-child::before {
+  bottom: 50%;
+}
+
+.isPassed::before,
+.isCurrent::before {
+  background: var(--accent, #bb3035);
+}
+
+.isCurrent::before {
+  bottom: 50%;
+}
+
+.isPassed + .isCurrent::before {
+  top: -6px;
+}
+
+.pathAll::before {
+  top: 50%;
+}
+
+.navItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  padding: 9px var(--space-3, 0.75rem);
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.4;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  min-width: 0;
+}
+
+.navItem > span {
+  min-width: 0;
+}
+
+.navItem small {
+  font-size: var(--text-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.navItem:hover {
+  background: var(--offset);
+  color: var(--ink);
+}
+
+.navItem[aria-pressed="true"] {
+  background: var(--offset);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.navItem[aria-pressed="true"] small {
+  color: var(--ink);
+}
+
+.step {
+  position: relative;
+  z-index: 1;
+  gap: var(--space-3, 0.75rem);
+  padding: 7px var(--space-2, 0.5rem);
+  border-radius: 12px;
+  align-items: center;
+}
+
+.stepNode {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  color: var(--muted);
+  box-shadow: 0 2px 6px -2px rgb(0 0 0 / 18%);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.stepNode svg {
+  width: 16px;
+  height: 16px;
+}
+
+.stepNode i {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--offset);
+  border: 1px solid var(--surface);
+  color: var(--ink);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stepText b {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.stepText em {
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.step small {
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--offset);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.step:hover .stepNode {
+  transform: scale(1.06);
+  border-color: var(--accent, #bb3035);
+}
+
+.step[aria-pressed="true"] {
+  background: var(--offset);
+  font-weight: 600;
+}
+
+.step[aria-pressed="true"] .stepNode {
+  background: var(--accent, #bb3035);
+  border-color: var(--accent, #bb3035);
+  color: var(--onaccent, #fff);
+  box-shadow:
+    0 0 0 4px var(--tint, var(--soft)),
+    0 8px 18px -8px var(--accent, #bb3035);
+}
+
+.step[aria-pressed="true"] .stepNode i {
+  background: var(--surface);
+  color: var(--accent, #bb3035);
+  border-color: var(--accent, #bb3035);
+}
+
+.step[aria-pressed="true"] .stepText b,
+.step[aria-pressed="true"] .stepText em {
+  color: var(--ink);
+}
+
+.step[aria-pressed="true"] small {
+  background: var(--accent, #bb3035);
+  color: var(--onaccent, #fff);
+}
+
+.isPassed .stepNode {
+  border-color: var(--accent, #bb3035);
+  color: var(--accent, #bb3035);
+}
+
+.isPassed .stepNode i {
+  background: var(--tint, var(--soft));
+  color: var(--accent, #bb3035);
+  border-color: var(--tint, var(--soft));
+}
+
+.isEmpty .step {
+  cursor: default;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.isEmpty .step:hover {
+  background: none;
+}
+
+.isEmpty .stepNode {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  margin: 0 4px;
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--bg, var(--surface));
+  opacity: 0.75;
+}
+
+.isEmpty .stepNode svg {
+  width: 13px;
+  height: 13px;
+}
+
+.isEmpty .stepNode i {
+  display: none;
+}
+
+.isEmpty .stepText b {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.isEmpty .step {
+  min-height: 37px;
+  max-height: 37px;
+  padding-block: 4px;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.isEmpty .stepText {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.isEmpty .stepText em {
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.isEmpty small {
+  background: none;
+  opacity: 0.6;
+}
+
+.navSection {
+  display: grid;
+  gap: 2px;
+}
+
+.navSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin: var(--space-2, 0.5rem) 0;
+}
+
+.navSection h3 svg {
+  width: 13px;
+  height: 13px;
+  color: var(--accent, #bb3035);
+}
+
+.skills {
+  margin-top: var(--space-2, 0.5rem);
+}
+
+.skillGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skillGrid .navItem {
+  width: auto;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--text-xs, 0.75rem);
+  gap: 6px;
+  color: var(--ink);
+}
+
+.skillGrid .navItem small {
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--offset);
+  line-height: 16px;
+  color: var(--ink);
+}
+
+.skillGrid .navItem:hover {
+  border-color: var(--accent, #bb3035);
+  background: var(--surface);
+}
+
+.skillGrid .navItem[aria-pressed="true"] {
+  background: var(--accent, #bb3035);
+  border-color: var(--accent, #bb3035);
+  color: var(--onaccent, #fff);
+}
+
+.skillGrid .navItem[aria-pressed="true"] small {
+  background: rgb(255 255 255 / 25%);
+  color: inherit;
+}
+
+.navigator button:focus-visible,
+.navigator summary:focus-visible {
+  outline: 2px solid var(--accent, #bb3035);
+  outline-offset: 2px;
+}
+
+@media (min-width: 761px) and (max-width: 1000px) {
+  .isEmpty .step {
+    max-height: none;
+    height: auto;
+    min-height: 37px;
+  }
+
+  .isEmpty .stepText {
+    overflow: visible;
+  }
+
+  .isEmpty .stepText em {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 760px) {
+  .isEmpty .step {
+    max-height: none;
+    min-height: 44px;
+  }
+
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+    min-height: 44px;
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    list-style: none;
+  }
+
+  .summaryText {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    min-width: 0;
+  }
+
+  .summaryText b {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .summary svg {
+    width: 16px;
+    height: 16px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .navigator {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0 var(--space-3, 0.75rem);
+  }
+
+  .navigator:not([open]) > .body {
+    display: none;
+  }
+
+  .body {
+    padding-bottom: var(--space-3, 0.75rem);
+  }
+
+  .questHead {
+    display: none;
+  }
+
+  .navItem {
+    min-height: 44px;
+  }
+
+  .isEmpty .navItem {
+    min-height: 0;
+  }
+
+  .skillGrid .navItem {
+    min-height: 36px;
+  }
+}
+
+@media (min-width: 761px) {
+  .summary {
+    display: none;
+  }
+}

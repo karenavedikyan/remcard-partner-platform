@@ -52,7 +52,7 @@ describe("prototype showcase retry boundaries", () => {
     expect(await screen.findByText("Партнёр 2")).toBeInTheDocument();
     expect(screen.getAllByText("Партнёр 1")).toHaveLength(1);
     expect(screen.queryByTestId("agent-partner-search-error")).not.toBeInTheDocument();
-    expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent("Найдено: 2 · Показано: 2");
+    expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent(/2 партнёра · 2 открыты к сотрудничеству/);
     const queries = api.mock.calls.map(([p]) => String(p)).filter(p => p.startsWith("/api/partnership/search"));
     expect(queries).toHaveLength(3);
     expect(queries[2]).toBe(queries[1]);
@@ -72,7 +72,7 @@ describe("prototype showcase retry boundaries", () => {
     mount();
     await screen.findByTestId("agent-partner-search-error");
     fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
-    await waitFor(() => expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent("Найдено: 0 · Показано: 0"));
+    await waitFor(() => expect(screen.getByTestId("agent-partner-search-count")).toHaveTextContent("0 партнёров"));
     expect(screen.queryByTestId("agent-partner-search-error")).not.toBeInTheDocument();
     expect(screen.getByTestId("agent-partner-search-empty")).toBeInTheDocument();
   });

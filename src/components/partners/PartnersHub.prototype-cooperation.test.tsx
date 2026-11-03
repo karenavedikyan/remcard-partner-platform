@@ -54,7 +54,9 @@ describe("directory cooperation keeps the search context", () => {
     const cards = screen.getAllByTestId("agent-partner-search-result-card");
     expect(cards).toHaveLength(25);
     expect(cards[24]).toHaveTextContent("Приглашение");
-    await waitFor(() => expect(cards[24]).toHaveFocus());
+    await waitFor(() =>
+      expect(within(cards[24]!).getByTestId("agent-partner-search-result-detail")).toHaveFocus(),
+    );
     expect(within(cards[24]!).queryByRole("button", { name: "Сотрудничать" })).not.toBeInTheDocument();
     expect(within(cards[0]!).getByRole("button", { name: "Сотрудничать" })).toBeEnabled();
   });
