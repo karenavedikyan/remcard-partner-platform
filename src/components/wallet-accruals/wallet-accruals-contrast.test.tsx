@@ -8,7 +8,12 @@ const css = readFileSync(cssPath, "utf8");
 const PAGE_LIGHT = [0xf6, 0xf5, 0xf3] as const;
 /** Measured worst-case light composite behind teal chips (Chromium audit). */
 const WORST_TEAL_CHIP_LIGHT = [200, 210, 206] as const;
-const PAGE_DARK = [0x12, 0x14, 0x16] as const;
+const PAGE_DARK = [0x17, 0x1a, 0x17] as const;
+
+const COVERAGE_LIGHT_SELECTOR = "section.wallet-accruals p.wallet-accruals-coverage";
+
+const COVERAGE_DARK_SELECTOR =
+  'html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage';
 
 const MIN_RATIO = 4.8;
 
@@ -58,8 +63,8 @@ function contrastRatio(
 }
 
 function extractRuleBlock(selector: string): string {
-  const needle = `\n${selector} {`;
-  const idx = css.indexOf(needle);
+  const trimmed = selector.trim();
+  const idx = css.indexOf(trimmed);
   if (idx < 0) throw new Error(`Missing selector ${selector}`);
   const start = css.indexOf("{", idx);
   const end = css.indexOf("}", start);
@@ -126,17 +131,15 @@ describe("wallet-accruals.global.css WCAG contrast (E6)", () => {
     expect(contrastRatio(darkText, darkComposite)).toBeGreaterThanOrEqual(MIN_RATIO);
   });
 
-  it("coverage note uses scoped ink strong on light page (not global pw-muted)", () => {
-    const block = extractRuleBlock(".pw .wallet-accruals .wallet-accruals-coverage");
-    const color = extractDeclaration(block, "color");
-    expect(color).toContain("--wallet-accrual-ink-muted-strong");
-    const text = resolveCssColor(color, walletTokens);
-    expect(contrastRatio(text, PAGE_LIGHT)).toBeGreaterThanOrEqual(MIN_RATIO);
+  it("coverage note uses explicit light/dark colors (no .pw ancestors or var tokens)", () => {
+    expect(extractDeclaration(extractRuleBlock(COVERAGE_LIGHT_SELECTOR), "color")).toBe("#4a5058");
+    expect(extractDeclaration(extractRuleBlock(COVERAGE_DARK_SELECTOR), "color")).toBe("#b8c0ca");
 
-    const darkBlock = extractRuleBlock("[data-theme=dark] .pw .wallet-accruals .wallet-accruals-coverage");
-    const darkText = resolveCssColor(extractDeclaration(darkBlock, "color"), walletTokens);
-    const darkComposite = compositeFg(darkText, 1, PAGE_DARK);
+    const lightText = parseHexColor("#4a5058");
+    const darkText = parseHexColor("#b8c0ca");
+    expect(contrastRatio(lightText, PAGE_LIGHT)).toBeGreaterThanOrEqual(MIN_RATIO);
     expect(contrastRatio(darkText, PAGE_DARK)).toBeGreaterThanOrEqual(MIN_RATIO);
+    expect(contrastRatio(lightText, PAGE_DARK)).toBeLessThan(MIN_RATIO);
   });
 
   it("documents before/after ratios for audited failing pairs (regression guard)", () => {

@@ -425,15 +425,14 @@
 .wallet-accruals-coverage {
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
-  color: var(--wallet-accrual-ink-muted-strong, #4a5058);
 }
 
-.pw .wallet-accruals .wallet-accruals-coverage {
-  color: var(--wallet-accrual-ink-muted-strong, #4a5058);
+section.wallet-accruals p.wallet-accruals-coverage {
+  color: #4a5058;
 }
 
-[data-theme=dark] .pw .wallet-accruals .wallet-accruals-coverage {
-  color: var(--wallet-accrual-ink-muted, #b8c0ca);
+html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
+  color: #b8c0ca;
 }
 
 .wallet-accruals-quick__btn {
