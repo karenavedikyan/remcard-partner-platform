@@ -49,6 +49,9 @@ import { AgentR03ListToolbar } from "./AgentR03ListToolbar";
 import { AgentR03Pagination } from "./AgentR03Pagination";
 import { AgentCertificateCard } from "./AgentCertificateCard";
 import { AgentR03MobileCertRow } from "./AgentR03MobileCertRow";
+import { CertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/CertificatesNewPartnerEmpty";
+import { shouldShowCertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/shouldShowCertificatesNewPartnerEmpty";
+import type { CertificatesNewPartnerRole } from "@/components/certificates-new-partner-empty/copy";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -255,6 +258,24 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
 
   const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
 
+  const showNewPartnerEmpty = shouldShowCertificatesNewPartnerEmpty({
+    loadState,
+    error,
+    itemsLength: items.length,
+    activeCount: meta.activeCount ?? 0,
+    archivedCount: meta.archivedCount ?? 0,
+    archived,
+    filtersActive,
+  });
+
+  const newPartnerRole: CertificatesNewPartnerRole = isBusiness
+    ? ownerMode?.businessPartnerType === "COMPANY"
+      ? "company"
+      : "store"
+    : isSpecialist
+      ? "specialist"
+      : "agent";
+
   async function runBatch(action: "archive" | "restore" | "delete") {
     let ids = [...selected];
     if (action === "delete" && isBusiness) {
@@ -456,7 +477,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             : undefined
       }
     >
-      {isBusiness ? (
+      {isBusiness && !showNewPartnerEmpty ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
           <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
@@ -476,16 +497,16 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             </Link>
           </details>
         </section>
-      ) : isIssuerShell ? (
+      ) : isIssuerShell && !showNewPartnerEmpty ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
             {issuerPageCopy.createCta}
           </Button>
         </section>
-      ) : (
+      ) : !showNewPartnerEmpty ? (
         <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
-      )}
+      ) : null}
 
       <div data-testid="agent-r03-capture-body">
       <AgentR03ListToolbar
@@ -536,6 +557,14 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         statusOptions={CERT_STATUS_FILTER_OPTIONS}
       />
 
+      {showNewPartnerEmpty ? (
+        <CertificatesNewPartnerEmpty
+          role={newPartnerRole}
+          onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
+          createHref={isIssuerShell ? undefined : "/certificates/new"}
+        />
+      ) : null}
+
       {loadState === "loading" && items.length === 0 ? (
         <p className={styles.loading}>Загрузка…</p>
       ) : null}
@@ -548,7 +577,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length === 0 ? (
+      {!showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>

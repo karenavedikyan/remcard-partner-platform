@@ -15,6 +15,7 @@ import {
   type AgentPhoneFieldHandle,
 } from "@/components/profile/agent/AgentPhoneField";
 import styles from "./AgentProfileWizard.module.css";
+import { ProfileSectionEmptyGate } from "@/components/profile/empty-state/ProfileSectionEmptyGate";
 
 const STEPS = ["О себе", "Аудитория", "Контакты", "Проверка"] as const;
 
@@ -474,7 +475,10 @@ export function AgentProfileWizard({
     "Всё верно?",
   ];
 
+  const showEmptyIntro = !profileSaved && !profileComplete && !hasDraft;
+
   return (
+    <ProfileSectionEmptyGate showEmptyIntro={showEmptyIntro} role="agent">
     <div className={styles.pw} data-testid="agent-profile-wizard">
       <div className={styles.layout}>
         <aside className={styles.journey} aria-label="Шаги заполнения" data-testid="agent-profile-journey">
@@ -752,5 +756,6 @@ export function AgentProfileWizard({
         </section>
       </div>
     </div>
+    </ProfileSectionEmptyGate>
   );
 }
