@@ -2,7 +2,7 @@
 
 Branch: `cursor/remcard-cabinet-nav-r4-template-20261103`  
 Base before nav work: `bbf06ef8e371ad31193274ee59600f39c4dea920`  
-Tip after this pass: `2707583f` (see item commits below).
+Tip after this pass: `01905b79` (N2 dead-end copy; see item commits below).
 
 ## Soft-nav finding (unchanged, blocking)
 
@@ -32,7 +32,7 @@ On **Next.js 15.5.28**, the `(cabinet)` **route-group layout** persists across i
 
 ## L-a — Fail-closed dead end
 
-After one bounded refresh per stale pair, **`CabinetShellTemplateReconciler`** shows **`CabinetShellIdentityReconcileDeadEnd`** (Russian copy, reload via `window.location.reload`, focus ring, skeleton geometry). Navigating away / token match resets the cap.
+After one bounded refresh per stale pair, **`CabinetShellTemplateReconciler`** shows **`CabinetShellIdentityReconcileDeadEnd`** (`role="status"`, `aria-live="polite"`, neutral Russian copy + always-visible reload button, focus ring, skeleton geometry). Navigating away / token match resets the cap.
 
 ## M3-1 — Agent prefs branch key (blocker)
 

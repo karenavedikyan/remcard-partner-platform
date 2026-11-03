@@ -1,21 +1,21 @@
 
  RUN  v3.2.7 /agent/repos/remcard-partner-platform
 
- ✓ src/hooks/useIncomingPartnersCount.test.tsx (4 tests) 1537ms
-   ✓ useIncomingPartnersCount > clears badge and requests shell refresh on HTTP 401  523ms
-   ✓ useIncomingPartnersCount > clears badge on HTTP 403 without refresh or refetch loop  506ms
-   ✓ useIncomingPartnersCount > does not refetch when authFailureEpoch bumps inside the provider  504ms
- ✓ src/hooks/useCabinetShellPrefsPathRefresh.test.tsx (11 tests) 392ms
- ✓ src/components/layout/CabinetAppShellClient.branch-key.test.tsx (2 tests) 96ms
+ ✓ src/hooks/useIncomingPartnersCount.test.tsx (4 tests) 1547ms
+   ✓ useIncomingPartnersCount > clears badge and requests shell refresh on HTTP 401  527ms
+   ✓ useIncomingPartnersCount > clears badge on HTTP 403 without refresh or refetch loop  507ms
+   ✓ useIncomingPartnersCount > does not refetch when authFailureEpoch bumps inside the provider  508ms
+ ✓ src/hooks/useCabinetShellPrefsPathRefresh.test.tsx (11 tests) 393ms
+ ✓ src/components/layout/CabinetAppShellClient.branch-key.test.tsx (2 tests) 93ms
  ✓ src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx (2 tests) 66ms
- ✓ src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx (2 tests) 58ms
+ ✓ src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx (2 tests) 62ms
  ✓ src/components/layout/CabinetShellTemplateReconciler.test.tsx (6 tests) 46ms
- ✓ src/components/auth/SessionGate.test.tsx (5 tests) 40ms
+ ✓ src/components/auth/SessionGate.test.tsx (5 tests) 41ms
  ✓ src/components/layout/CabinetAppShellClient.prefs-path-refresh.test.tsx (1 test) 38ms
- ✓ src/components/layout/cabinet-shell-context-loop-guard.test.tsx (2 tests) 30ms
+ ✓ src/components/layout/cabinet-shell-context-loop-guard.test.tsx (2 tests) 31ms
 
  Test Files  9 passed (9)
       Tests  35 passed (35)
-   Start at  15:55:53
-   Duration  6.86s (transform 341ms, setup 745ms, collect 533ms, tests 2.30s, environment 1.87s, prepare 333ms)
+   Start at  15:57:18
+   Duration  6.97s (transform 388ms, setup 774ms, collect 588ms, tests 2.32s, environment 1.86s, prepare 340ms)
 

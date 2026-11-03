@@ -1,0 +1,64 @@
+commit 01905b79500994f1029791d912864ce5efdbc2a7
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:57:29 2026 +0000
+
+    fix(cabinet): N2 neutral status copy on shell reconcile dead-end
+    
+    Use role=status with polite live region and non-error Russian copy while
+    keeping the hard-reload affordance and skeleton geometry unchanged.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx
+index c7c09c38..6c11bd27 100644
+--- a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx
++++ b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx
+@@ -1,15 +1,23 @@
+ import { describe, expect, it, vi } from "vitest";
+-import { fireEvent, render, screen } from "@testing-library/react";
++import { fireEvent, render, screen, within } from "@testing-library/react";
+ import { CabinetShellIdentityReconcileDeadEnd } from "@/components/layout/CabinetShellIdentityReconcileDeadEnd";
+ 
++const STATUS_COPY =
++  "Обновляем кабинет. Если страница не обновилась, нажмите «Обновить страницу».";
++
+ describe("CabinetShellIdentityReconcileDeadEnd", () => {
+-  it("shows Russian copy and reload button with skeleton geometry", () => {
++  it("shows status role, neutral copy, and reload button with skeleton geometry", () => {
+     render(<CabinetShellIdentityReconcileDeadEnd />);
+-    expect(screen.getByTestId("cabinet-shell-identity-reconcile-dead-end")).toBeInTheDocument();
++    const root = screen.getByTestId("cabinet-shell-identity-reconcile-dead-end");
++    expect(root).toHaveAttribute("role", "status");
++    expect(root).toHaveAttribute("aria-live", "polite");
++    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
++    expect(within(root).getByText(STATUS_COPY)).toBeInTheDocument();
++    expect(screen.queryByText(/Не удалось/i)).not.toBeInTheDocument();
++    expect(screen.queryByText(/ошиб/i)).not.toBeInTheDocument();
+     expect(screen.getByTestId("cabinet-page-heading-placeholder")).toBeInTheDocument();
+     expect(screen.getByTestId("cabinet-page-loading-body")).toBeInTheDocument();
+     expect(screen.getByRole("button", { name: "Обновить страницу" })).toBeInTheDocument();
+-    expect(screen.getByText(/Не удалось обновить кабинет/)).toBeInTheDocument();
+   });
+ 
+   it("calls window.location.reload on button click", () => {
+diff --git a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx
+index 27fe4f0a..8882b4f0 100644
+--- a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx
++++ b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx
+@@ -8,14 +8,14 @@ export function CabinetShellIdentityReconcileDeadEnd() {
+   return (
+     <div
+       className={skeletonStyles.root}
+-      role="alert"
++      role="status"
+       aria-live="polite"
+       data-testid="cabinet-shell-identity-reconcile-dead-end"
+     >
+       <CabinetPageHeadingPlaceholder />
+       <div className={styles.messageBlock}>
+         <p className={styles.message}>
+-          Не удалось обновить кабинет. Нажмите «Обновить страницу» или перейдите в другой раздел.
++          Обновляем кабинет. Если страница не обновилась, нажмите «Обновить страницу».
+         </p>
+         <button type="button" className={styles.reloadButton} onClick={() => window.location.reload()}>
+           Обновить страницу
