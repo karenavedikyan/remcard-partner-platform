@@ -8,7 +8,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import { describe, expect, it } from "vitest";
 
 const cssPath = path.join(__dirname, "wallet-accruals.global.css");
@@ -76,19 +76,59 @@ body { margin: 0; font-family: Manrope, system-ui, sans-serif; }
 </body></html>`;
 }
 
+function isMissingBrowserError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("Executable doesn't exist");
+}
+
+/**
+ * Launch Chromium for geometry checks.
+ * Prefer WALLET_QA_CHROME / CHROME_BIN when set; otherwise Playwright default.
+ * Returns null when the bundled (or pointed) binary is missing so callers can skip.
+ */
+export async function launchGeometryBrowser(): Promise<Browser | null> {
+  const executablePath =
+    process.env.WALLET_QA_CHROME?.trim() ||
+    process.env.CHROME_BIN?.trim() ||
+    undefined;
+  try {
+    return await chromium.launch({
+      headless: true,
+      ...(executablePath ? { executablePath } : {}),
+    });
+  } catch (err) {
+    if (isMissingBrowserError(err)) {
+      console.warn(
+        "[wallet-accrual-dialog-width] Skipping Playwright geometry: browser executable missing.",
+        executablePath
+          ? `(tried executablePath=${executablePath})`
+          : "(Playwright bundled Chromium not installed; set WALLET_QA_CHROME or CHROME_BIN)",
+        err instanceof Error ? err.message : err,
+      );
+      return null;
+    }
+    throw err;
+  }
+}
+
 /** Native Chromium geometry against an arbitrary CSS string (used for RED/GREEN proof). */
 export async function measureDialogWidths(
   cssText: string,
   viewports: readonly { width: number; height: number }[] = VIEWPORTS,
+  browser?: Browser,
 ): Promise<DialogWidthMeasurement[]> {
   const dir = mkdtempSync(path.join(tmpdir(), "wallet-dialog-width-"));
   const htmlPath = path.join(dir, "fixture.html");
   writeFileSync(htmlPath, buildFixtureHtml(cssText), "utf8");
-  const browser = await chromium.launch({ headless: true });
+  const owned = !browser;
+  const launched = browser ?? (await launchGeometryBrowser());
+  if (!launched) {
+    throw new Error("Executable doesn't exist");
+  }
   const measurements: DialogWidthMeasurement[] = [];
   try {
     for (const viewport of viewports) {
-      const page = await browser.newPage({ viewport });
+      const page = await launched.newPage({ viewport });
       await page.goto(`file://${htmlPath}`, { waitUntil: "load" });
       const metrics = await page.evaluate(() => {
         const dlg = document.querySelector("dialog.wallet-accrual-dialog");
@@ -108,7 +148,7 @@ export async function measureDialogWidths(
       measurements.push({ viewport, ...metrics });
     }
   } finally {
-    await browser.close();
+    if (owned) await launched.close();
     rmSync(dir, { recursive: true, force: true });
   }
   return measurements;
@@ -139,15 +179,24 @@ describe("wallet-accrual-dialog width (inline-size collapse regression)", () => 
     );
   });
 
-  it("(c) Playwright native geometry: width >=280 at 375 and ~560 at 2038", async () => {
-    const measurements = await measureDialogWidths(css);
-    const at375 = measurements.find((m) => m.viewport.width === 375);
-    const at2038 = measurements.find((m) => m.viewport.width === 2038);
-    expect(at375).toBeTruthy();
-    expect(at2038).toBeTruthy();
-    expect(at375!.dialogWidth).toBeGreaterThanOrEqual(280);
-    expect(at2038!.dialogWidth).toBeGreaterThanOrEqual(560);
-    expect(at2038!.dialogWidth).toBeLessThanOrEqual(564);
-    expect(at375!.innerContainerType).toMatch(/inline-size|size/);
+  it("(c) Playwright native geometry: width >=280 at 375 and ~560 at 2038", async (ctx) => {
+    const browser = await launchGeometryBrowser();
+    if (!browser) {
+      ctx.skip();
+      return;
+    }
+    try {
+      const measurements = await measureDialogWidths(css, VIEWPORTS, browser);
+      const at375 = measurements.find((m) => m.viewport.width === 375);
+      const at2038 = measurements.find((m) => m.viewport.width === 2038);
+      expect(at375).toBeTruthy();
+      expect(at2038).toBeTruthy();
+      expect(at375!.dialogWidth).toBeGreaterThanOrEqual(280);
+      expect(at2038!.dialogWidth).toBeGreaterThanOrEqual(560);
+      expect(at2038!.dialogWidth).toBeLessThanOrEqual(564);
+      expect(at375!.innerContainerType).toMatch(/inline-size|size/);
+    } finally {
+      await browser.close();
+    }
   });
 });
