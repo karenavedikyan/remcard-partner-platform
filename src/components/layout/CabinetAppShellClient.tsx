@@ -9,7 +9,8 @@ import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
 import type { ProfTestSessionInfo } from "@/lib/types";
 import {
   CabinetShellContextProvider,
-  useCabinetShellContext,
+  useCabinetShellAuthFailureEpoch,
+  useCabinetShellStableContext,
 } from "@/components/layout/cabinet-shell-context";
 import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
 import { useCabinetShellPrefsPathRefresh } from "@/hooks/useCabinetShellPrefsPathRefresh";
@@ -30,6 +31,8 @@ type CabinetAppShellClientProps = {
 export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
   const layoutPrefs = enrichCabinetUiPreferencesForShell(props.uiPrefs);
   const agentBranch = isActiveAgentCabinetContext(layoutPrefs);
+  const legacyBranchKey = props.shellContextToken;
+  const agentBranchKey = `${props.shellContextToken}:${layoutPrefs.contextKey ?? "none"}:${props.user.id}`;
 
   return (
     <CabinetShellContextProvider shellContextToken={props.shellContextToken}>
@@ -37,9 +40,9 @@ export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
         <ProfTestModeBanner session={props.profTestSession} />
       ) : null}
       {agentBranch ? (
-        <AgentCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
+        <AgentCabinetShellBranch key={agentBranchKey} {...props} layoutPrefs={layoutPrefs} />
       ) : (
-        <LegacyCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
+        <LegacyCabinetShellBranch key={legacyBranchKey} {...props} layoutPrefs={layoutPrefs} />
       )}
     </CabinetShellContextProvider>
   );
@@ -56,7 +59,7 @@ function LegacyCabinetShellBranch({
   shellContextToken,
   children,
 }: ShellBranchProps) {
-  const shell = useCabinetShellContext();
+  const shell = useCabinetShellStableContext();
   useCabinetShellPrefsPathRefresh({
     layoutPrefs,
     onAuthFailure: shell?.notifyAuthFailure,
@@ -82,7 +85,7 @@ function AgentCabinetShellBranch({
   shellContextToken,
   children,
 }: ShellBranchProps) {
-  const shell = useCabinetShellContext();
+  const shell = useCabinetShellStableContext();
   const agentPrefs = useAgentCabinetUiPrefs(uiPrefs);
   useCabinetShellPrefsPathRefresh({
     layoutPrefs,
@@ -110,7 +113,8 @@ function AgentCabinetShellBranch({
 }
 
 function CabinetShellNotificationBell() {
-  const shell = useCabinetShellContext();
-  const remountKey = `${shell?.shellContextToken ?? "none"}:${shell?.authFailureEpoch ?? 0}`;
+  const shell = useCabinetShellStableContext();
+  const authFailureEpoch = useCabinetShellAuthFailureEpoch();
+  const remountKey = `${shell?.shellContextToken ?? "none"}:${authFailureEpoch}`;
   return <ProfNotificationBell key={remountKey} />;
 }
