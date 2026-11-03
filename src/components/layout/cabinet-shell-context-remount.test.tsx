@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppShell } from "@/components/layout/AppShell";
-import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
+import { AgentAppShellWithPrefsState } from "@/components/layout/agent/AgentAppShell.test-props";
 import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 
@@ -125,13 +125,13 @@ describe("cabinet shell context token remount", () => {
       <ThemeProvider>
         <CookieConsentProvider>
           <CabinetShellContextProvider shellContextToken="ctx-a">
-            <AgentAppShell
+            <AgentAppShellWithPrefsState
               key="ctx-a:ctx-1:user-1"
               user={{ id: "user-1", displayName: "Agent", role: "PRO" }}
               initialPrefs={agentPrefs}
             >
               <div data-testid="agent-page">agent</div>
-            </AgentAppShell>
+            </AgentAppShellWithPrefsState>
           </CabinetShellContextProvider>
         </CookieConsentProvider>
       </ThemeProvider>,
@@ -142,13 +142,13 @@ describe("cabinet shell context token remount", () => {
       <ThemeProvider>
         <CookieConsentProvider>
           <CabinetShellContextProvider shellContextToken="ctx-b">
-            <AgentAppShell
+            <AgentAppShellWithPrefsState
               key="ctx-b:ctx-1:user-1"
               user={{ id: "user-1", displayName: "Agent", role: "PRO" }}
               initialPrefs={agentPrefs}
             >
               <div data-testid="agent-page">agent</div>
-            </AgentAppShell>
+            </AgentAppShellWithPrefsState>
           </CabinetShellContextProvider>
         </CookieConsentProvider>
       </ThemeProvider>,

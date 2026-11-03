@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppShell } from "@/components/layout/AppShell";
-import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
+import { AgentAppShellWithPrefsState } from "@/components/layout/agent/AgentAppShell.test-props";
 import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { ProfNotificationBell } from "@/components/notifications/ProfNotificationBell";
 
@@ -101,9 +101,12 @@ describe("pathname change dismisses transient shell UI", () => {
     const ui = userEvent.setup();
     const { rerender } = render(
       <ThemeProvider>
-        <AgentAppShell user={{ id: "u1", displayName: "Test", role: "PRO" }} initialPrefs={agentInitialPrefs}>
+        <AgentAppShellWithPrefsState
+          user={{ id: "u1", displayName: "Test", role: "PRO" }}
+          initialPrefs={agentInitialPrefs}
+        >
           <div>content</div>
-        </AgentAppShell>
+        </AgentAppShellWithPrefsState>
       </ThemeProvider>,
     );
     await ui.click(screen.getByTestId("mobile-nav-more"));
@@ -112,9 +115,12 @@ describe("pathname change dismisses transient shell UI", () => {
     pathnameState.value = "/clients";
     rerender(
       <ThemeProvider>
-        <AgentAppShell user={{ id: "u1", displayName: "Test", role: "PRO" }} initialPrefs={agentInitialPrefs}>
+        <AgentAppShellWithPrefsState
+          user={{ id: "u1", displayName: "Test", role: "PRO" }}
+          initialPrefs={agentInitialPrefs}
+        >
           <div>content</div>
-        </AgentAppShell>
+        </AgentAppShellWithPrefsState>
       </ThemeProvider>,
     );
     expect(screen.queryByRole("dialog")).toBeNull();

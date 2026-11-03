@@ -23,7 +23,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mocks.refresh, push: vi.fn() }),
 }));
 
-import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
+import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
+import { useCabinetShellPrefsPathRefresh } from "@/hooks/useCabinetShellPrefsPathRefresh";
 import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
 
 const v3: CabinetUiPreferencesResponse = {
@@ -41,12 +42,19 @@ const v3: CabinetUiPreferencesResponse = {
 function PrefsPathRefreshProbe() {
   const { applyServerPrefs, applyAuthFailureClear, getApplyGeneration, prefs } =
     useAgentCabinetUiPrefs(v3);
-  useAgentCabinetPrefsPathRefresh(
+  useCabinetShellPrefsPathRefresh({
+    layoutPrefs: v3,
     applyServerPrefs,
     applyAuthFailureClear,
     getApplyGeneration,
-  );
+  });
   return prefs;
+}
+
+function probeWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <CabinetShellContextProvider shellContextToken="test">{children}</CabinetShellContextProvider>
+  );
 }
 
 beforeEach(() => {
@@ -57,7 +65,7 @@ beforeEach(() => {
 describe("useAgentCabinetPrefsPathRefresh auth failure", () => {
   it.each([401, 403])("clears prefs to neutral on HTTP %i", async (status) => {
     mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
-    const { result } = renderHook(() => PrefsPathRefreshProbe());
+    const { result } = renderHook(() => PrefsPathRefreshProbe(), { wrapper: probeWrapper });
     await waitFor(() =>
       expect(result.current).toEqual(neutralCabinetUiPreferencesFallback),
     );
