@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { WalletSectionEmptyState } from "./WalletSectionEmptyState";
+import styles from "./wallet-empty.module.css";
+
+/** Matches PAN-like or masked digit tails (not currency amounts on the hero). */
+const CARD_NUMBER_LIKE = /(?:••••|\*{4}|\b\d{4}\b(?!\s*₽))/;
 
 describe("WalletSectionEmptyState", () => {
   it("renders seller onboarding for store with scanner CTA", () => {
@@ -24,5 +28,17 @@ describe("WalletSectionEmptyState", () => {
   it("lists three numbered steps", () => {
     render(<WalletSectionEmptyState role="specialist" />);
     expect(screen.getAllByText(/^1$|^2$|^3$/)).toHaveLength(3);
+  });
+
+  it("decorative empty card shows neutral label without fake card digits", () => {
+    const { container } = render(<WalletSectionEmptyState role="company" />);
+    const card = container.querySelector(`.${styles.card}`);
+    expect(card).toBeTruthy();
+    expect(card).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Карта партнёра")).toBeInTheDocument();
+    const cardText = card?.textContent ?? "";
+    expect(cardText).not.toMatch(CARD_NUMBER_LIKE);
+    expect(cardText).not.toContain("0000");
+    expect(cardText).not.toContain("••••");
   });
 });

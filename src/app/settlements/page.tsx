@@ -15,6 +15,7 @@ import {
   businessWalletPartnerTypeFromUser,
   resolveSettlementsPageShell,
 } from "@/lib/settlements-page-shell";
+import { canLinkOnboardingHistoryFromUserRole } from "@/lib/onboarding-step/history-link-eligibility";
 import { resolveWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 
 export const dynamic = "force-dynamic";
@@ -80,11 +81,15 @@ export default async function SettlementsPage() {
           partnerType={businessPartnerType}
           ownerUserId={user.id}
           walletEmptyViewerRole={walletEmptyViewerRole}
+          canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
         />
       ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : (
-        <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
+        <SettlementsHub
+          walletEmptyViewerRole={walletEmptyViewerRole}
+          canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
+        />
       )}
     </CabinetShell>
   );

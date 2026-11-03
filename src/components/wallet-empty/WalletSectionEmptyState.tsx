@@ -4,14 +4,19 @@ import {
 } from "@/lib/wallet-empty/copy";
 import type { WalletEmptyAudienceRole } from "@/lib/wallet-empty/types";
 import { WalletEmptyIcon } from "./WalletEmptyIcons";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./wallet-empty.module.css";
 
 type Props = {
   role: WalletEmptyAudienceRole;
+  /** When `true`, seller steps may link to `/history`. Omitted/false → static (safe). */
+  canLinkOnboardingHistory?: boolean;
 };
 
-export function WalletSectionEmptyState({ role }: Props) {
-  const copy = walletEmptyCopy(role);
+export function WalletSectionEmptyState({ role, canLinkOnboardingHistory }: Props) {
+  const copy = walletEmptyCopy(role, {
+    canLinkReadOnlyHistory: canLinkOnboardingHistory,
+  });
   const href = walletEmptyPrimaryHref(role);
 
   return (
@@ -32,7 +37,7 @@ export function WalletSectionEmptyState({ role }: Props) {
           <div className={styles.cardSum}>0 ₽</div>
           <div className={styles.cardFoot}>
             <span>{copy.cardFootLabel}</span>
-            <span className={styles.cardNum}>•••• 0000</span>
+            <span className={styles.cardLabel}>Карта партнёра</span>
           </div>
         </div>
         <div className={styles.heroText}>
@@ -55,14 +60,15 @@ export function WalletSectionEmptyState({ role }: Props) {
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li className={styles.step} key={step.title}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIco}>
-              <WalletEmptyIcon name={step.icon} />
-            </span>
-            <div>
-              <strong>{step.title}</strong>
-              <small>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIco}
+              iconSlot={<WalletEmptyIcon name={step.icon} />}
+            />
           </li>
         ))}
       </ol>

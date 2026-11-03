@@ -8,6 +8,8 @@ export type OwnerIssuerModeValue = {
   mode: OwnerIssuerAccessMode;
   /** Set when mode is business (store/company owner shell). */
   businessPartnerType?: "STORE" | "COMPANY";
+  /** From `/api/auth/me` in OwnerIssuerGate (session role). */
+  canLinkOnboardingHistory?: boolean;
 };
 
 const Ctx = createContext<OwnerIssuerModeValue | null>(null);
@@ -15,14 +17,18 @@ const Ctx = createContext<OwnerIssuerModeValue | null>(null);
 export function OwnerIssuerModeProvider({
   mode,
   businessPartnerType,
+  canLinkOnboardingHistory,
   children,
 }: {
   mode: OwnerIssuerAccessMode;
   businessPartnerType?: "STORE" | "COMPANY";
+  canLinkOnboardingHistory?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Ctx.Provider value={{ mode, businessPartnerType }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ mode, businessPartnerType, canLinkOnboardingHistory }}>
+      {children}
+    </Ctx.Provider>
   );
 }
 

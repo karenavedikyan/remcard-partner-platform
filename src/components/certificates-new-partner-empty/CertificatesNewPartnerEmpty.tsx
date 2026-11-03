@@ -9,6 +9,7 @@ import {
   type CertificatesNewPartnerRole,
 } from "./copy";
 import { EmptyStateIcon } from "./EmptyStateIcon";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./certificates-new-partner-empty.module.css";
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
   onCreateCertificate?: () => void;
   /** Agent list uses /certificates/new instead of dialog. */
   createHref?: string;
+  canLinkOnboardingHistory?: boolean;
 };
 
 function actionTestId(label: string) {
@@ -87,8 +89,16 @@ function EmptyActionControl({
   );
 }
 
-export function CertificatesNewPartnerEmpty({ role, onCreateCertificate, createHref }: Props) {
-  const copy = certificatesNewPartnerEmptyCopy(role);
+export function CertificatesNewPartnerEmpty({
+  role,
+  onCreateCertificate,
+  createHref,
+  canLinkOnboardingHistory,
+}: Props) {
+  const copy = certificatesNewPartnerEmptyCopy(role, {
+    canLinkReadOnlyHistory: canLinkOnboardingHistory,
+  });
+  const allowCreateHrefFallback = role === "agent" || role === "specialist";
 
   return (
     <section
@@ -130,14 +140,20 @@ export function CertificatesNewPartnerEmpty({ role, onCreateCertificate, createH
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li key={step.title} className={styles.step}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIco}>
-              <EmptyStateIcon name={step.icon} className={styles.stepIcoSvg} />
-            </span>
-            <div>
-              <strong className={styles.stepTitle}>{step.title}</strong>
-              <small className={styles.stepNote}>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              handlers={{ onCreateCertificate }}
+              createHref={createHref}
+              allowCreateHrefFallback={allowCreateHrefFallback}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIco}
+              titleClassName={styles.stepTitle}
+              noteClassName={styles.stepNote}
+              iconSlot={<EmptyStateIcon name={step.icon} className={styles.stepIcoSvg} />}
+            />
           </li>
         ))}
       </ol>

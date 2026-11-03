@@ -9,6 +9,7 @@ import {
   type ClientsEmptyCabinetRole,
 } from "./clientsEmptyCopy";
 import { ClientsEmptyIcon } from "./ClientsEmptyIcons";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./clients-new-partner-empty.module.css";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 
@@ -16,6 +17,7 @@ type Props = {
   accessMode: OwnerClientsAccessMode;
   businessPartnerType?: "STORE" | "COMPANY";
   onAddClient?: () => void;
+  canLinkOnboardingHistory?: boolean;
 };
 
 function primaryHref(action: "scan" | "recommend"): string {
@@ -26,6 +28,7 @@ export function ClientsNewPartnerEmptyState({
   accessMode,
   businessPartnerType,
   onAddClient,
+  canLinkOnboardingHistory,
 }: Props) {
   const role: ClientsEmptyCabinetRole | null = mapClientsAccessToEmptyRole(
     accessMode,
@@ -33,7 +36,9 @@ export function ClientsNewPartnerEmptyState({
   );
   if (!role) return null;
 
-  const content = clientsEmptyContentForRole(role);
+  const content = clientsEmptyContentForRole(role, {
+    canLinkReadOnlyHistory: canLinkOnboardingHistory,
+  });
   const primaryTestId =
     content.primaryCta.action === "scan" ? "es-action-scan" : "es-action-recommend";
 
@@ -77,14 +82,18 @@ export function ClientsNewPartnerEmptyState({
       <ol className={styles.steps}>
         {content.steps.map((step, index) => (
           <li key={step.title} className={styles.step}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIco}>
-              <ClientsEmptyIcon name={step.icon} className={styles.stepIcon} />
-            </span>
-            <div>
-              <strong className={styles.stepTitle}>{step.title}</strong>
-              <small className={styles.stepNote}>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              handlers={{ onAddClient }}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIco}
+              titleClassName={styles.stepTitle}
+              noteClassName={styles.stepNote}
+              iconSlot={<ClientsEmptyIcon name={step.icon} className={styles.stepIcon} />}
+            />
           </li>
         ))}
       </ol>

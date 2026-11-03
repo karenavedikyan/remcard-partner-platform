@@ -1,6 +1,7 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { RecommendationsListRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+import { canLinkOnboardingHistoryFromUserRole } from "@/lib/onboarding-step/history-link-eligibility";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,9 @@ export default async function RecommendationsPage() {
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
-      <RecommendationsListRouteBody />
+      <RecommendationsListRouteBody
+        canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
+      />
     </CabinetShell>
   );
 }

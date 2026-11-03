@@ -29,4 +29,26 @@ describe("clients empty copy", () => {
       expect(copy.secondaryCta.label).toBe("Добавить клиента");
     }
   });
+
+  it("routes specialist purchases step to settlements; agent to history when allowed", () => {
+    const agentBag = clientsEmptyContentForRole("AGENT", { canLinkReadOnlyHistory: true }).steps.find(
+      (s) => s.title === "Следите за покупками",
+    );
+    const specialistBag = clientsEmptyContentForRole("SPECIALIST").steps.find(
+      (s) => s.title === "Следите за покупками",
+    );
+    expect(agentBag?.action).toMatchObject({ kind: "link", href: "/history" });
+    expect(specialistBag?.action).toMatchObject({ kind: "link", href: "/settlements" });
+    if (specialistBag?.action.kind === "link") {
+      expect(specialistBag.action.noteHint).toBe("Начисления и выплаты — в кошельке");
+      expect(specialistBag.action.accessibleName).toContain("Открыть кошелёк");
+    }
+  });
+
+  it("static purchases step when history capability is not granted", () => {
+    const step = clientsEmptyContentForRole("STORE").steps.find(
+      (s) => s.title === "Следите за покупками",
+    );
+    expect(step?.action.kind).toBe("none");
+  });
 });

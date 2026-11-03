@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { RemcardApiError, remcardFetchBlob } from "@/lib/api-client";
-import { certificateStatusLabel, certificateStatusTone } from "@/lib/certificate-labels";
+import { certificateStatusLabel } from "@/lib/certificate-labels";
 import {
   clientVisibleDiscountSummary,
   getCertificateCodeForApi,
@@ -14,7 +14,6 @@ import {
 } from "@/lib/certificate-url";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import styles from "./recommendations.module.css";
 
 type CertificateResultViewProps = {
@@ -44,13 +43,10 @@ function RemcardBrandMark() {
     <div className={styles.specialistCertBrand} aria-hidden>
       <span className={styles.specialistCertLogo}>
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M6 26V12l10-7 10 7v14H20v-8h-8v8H6z"
-            fill="currentColor"
-          />
+          <path d="M6 26V12l10-7 10 7v14H20v-8h-8v8H6z" fill="currentColor" />
         </svg>
       </span>
-      <span>RemCard</span>
+      <strong>RemCard</strong>
     </div>
   );
 }
@@ -59,7 +55,7 @@ export function CertificateResultView({
   certificate,
   displayCode,
   showCreateSuccessBanner = false,
-  presentation = "default",
+  presentation: _presentation = "default",
   privateAlias = null,
 }: CertificateResultViewProps) {
   const shownCode = displayCode?.trim() || certificate.promoCode;
@@ -79,6 +75,15 @@ export function CertificateResultView({
     if (names.length > 0) return names.join(", ");
     return certificateDisplayTitle(certificate);
   }, [certificate]);
+
+  const offerCount = offerLines.length;
+  const offerCountLabel =
+    offerCount === 1
+      ? "1 предложение"
+      : offerCount >= 2 && offerCount <= 4
+        ? `${offerCount} предложения`
+        : `${offerCount} предложений`;
+  const statusLabel = certificateStatusLabel(certificate.status);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,21 +170,9 @@ export function CertificateResultView({
     }
   }
 
-  if (presentation === "specialist") {
-    const offerCount = offerLines.length;
-    const offerCountLabel =
-      offerCount === 1
-        ? "1 предложение"
-        : offerCount >= 2 && offerCount <= 4
-          ? `${offerCount} предложения`
-          : `${offerCount} предложений`;
-    const statusLabel = certificateStatusLabel(certificate.status);
-
-    return (
-      <section
-        className={styles.specialistCertWrap}
-        data-testid="specialist-certificate-preview"
-      >
+  return (
+    <section className={styles.specialistCertWrap} data-testid="recommendation-create-success">
+      <div data-testid="specialist-certificate-preview">
         {showCreateSuccessBanner ? (
           <div className={styles.successBanner}>Готово — документ создан</div>
         ) : null}
@@ -193,9 +186,7 @@ export function CertificateResultView({
             {offerCount > 0 ? (
               <>
                 <strong>{offerCountLabel}</strong>
-                <span>
-                  {[...new Set(offerLines.map((o) => o.partnerName))].join(" · ")}
-                </span>
+                <span>{[...new Set(offerLines.map((o) => o.partnerName))].join(" · ")}</span>
               </>
             ) : (
               <span>Уточните предложение у партнёра</span>
@@ -214,7 +205,11 @@ export function CertificateResultView({
           <div className={styles.specialistCertCode} data-testid="certificate-code">
             {shownCode}
           </div>
-          <button type="button" className={styles.specialistCopyCodeBtn} onClick={() => void copyCode()}>
+          <button
+            type="button"
+            className={styles.specialistCopyCodeBtn}
+            onClick={() => void copyCode()}
+          >
             Скопировать код
           </button>
           {privateAlias?.trim() ? (
@@ -231,6 +226,7 @@ export function CertificateResultView({
             href={pageUrl}
             target="_blank"
             rel="noopener noreferrer"
+            data-testid="certificate-public-view"
           >
             Посмотреть как клиент
           </a>
@@ -258,89 +254,9 @@ export function CertificateResultView({
             рабочий публичный домен RemCard.
           </p>
         ) : null}
-
-        <div className={styles.cardActions}>
-          <Button onClick={() => void copyLink()} disabled={!pageUrl}>
-            Скопировать ссылку
-          </Button>
-          <Button variant="secondary" onClick={() => void shareLink()} disabled={!pageUrl}>
-            Поделиться
-          </Button>
-          <Button variant="secondary" disabled={pdfLoading} onClick={() => void downloadPdf()}>
-            {pdfLoading ? "Загрузка PDF…" : "Скачать PDF"}
-          </Button>
-        </div>
-
-        {codeCopyState === "ok" ? <p className={styles.copyOk}>Код скопирован</p> : null}
-        {codeCopyState === "error" ? (
-          <p className={styles.errorText} role="alert">
-            Не удалось скопировать код
-          </p>
-        ) : null}
-        {linkCopyState === "ok" ? <p className={styles.copyOk}>Ссылка скопирована</p> : null}
-        {linkCopyState === "error" ? (
-          <p className={styles.errorText} role="alert">
-            Не удалось скопировать ссылку
-          </p>
-        ) : null}
-        {pdfError ? (
-          <p className={styles.errorText} role="alert">
-            {pdfError}
-          </p>
-        ) : null}
-      </section>
-    );
-  }
-
-  return (
-    <div className={styles.resultWrap} data-testid="recommendation-create-success">
-      {showCreateSuccessBanner ? (
-        <div className={styles.successBanner}>Готово — документ создан</div>
-      ) : null}
-
-      <div className={styles.certificateCard}>
-        <div className={styles.cardHeader}>
-          <div>
-            <h3>{certificateDisplayTitle(certificate)}</h3>
-            <p className={styles.meta}>
-              Скидка для клиента: {clientVisibleDiscountSummary(certificate)}
-            </p>
-          </div>
-          <StatusBadge
-            label={certificateStatusLabel(certificate.status)}
-            tone={certificateStatusTone(certificate.status)}
-          />
-        </div>
-
-        <ul className={styles.termsList}>
-          {offerLines.map((line) => (
-            <li key={line.key}>
-              {line.categoryLabel}: скидка {line.discountPercent}%
-            </li>
-          ))}
-        </ul>
-
-        <div className={styles.codeRow}>
-          <span className={styles.codeValue}>{shownCode}</span>
-        </div>
-
-        {qrDataUrl ? (
-          <div className={styles.qrBox}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt={`QR-код документа ${shownCode}`} />
-          </div>
-        ) : null}
       </div>
 
-      {testOnlyLink ? (
-        <p className={styles.notice}>
-          Клиентская ссылка относится к тестовому контуру и не предназначена для отправки реальным
-          клиентам. Для production задайте `NEXT_PUBLIC_CERTIFICATE_BASE_URL` на рабочий публичный
-          домен RemCard.
-        </p>
-      ) : null}
-
-      <div className={styles.cardActions}>
+      <div className={styles.specialistCertActionRow}>
         <Button onClick={() => void copyLink()} disabled={!pageUrl}>
           Скопировать ссылку
         </Button>
@@ -352,6 +268,12 @@ export function CertificateResultView({
         </Button>
       </div>
 
+      {codeCopyState === "ok" ? <p className={styles.copyOk}>Код скопирован</p> : null}
+      {codeCopyState === "error" ? (
+        <p className={styles.errorText} role="alert">
+          Не удалось скопировать код
+        </p>
+      ) : null}
       {linkCopyState === "ok" ? <p className={styles.copyOk}>Ссылка скопирована</p> : null}
       {linkCopyState === "error" ? (
         <p className={styles.errorText} role="alert">
@@ -363,6 +285,6 @@ export function CertificateResultView({
           {pdfError}
         </p>
       ) : null}
-    </div>
+    </section>
   );
 }

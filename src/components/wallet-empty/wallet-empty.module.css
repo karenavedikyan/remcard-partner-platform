@@ -122,15 +122,9 @@
 }
 
 .step {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  align-items: start;
-  padding: var(--space-5);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 .stepNum {
@@ -249,8 +243,8 @@
   color: #d5d0c8;
 }
 
-.cardNum {
-  letter-spacing: 0.14em;
+.cardLabel {
+  letter-spacing: 0.02em;
   font-weight: 700;
 }
 

@@ -3,6 +3,7 @@
 import { scannerEmptyCopy } from "@/lib/scanner-empty/copy";
 import { Button } from "@/components/ui/Button";
 import { ScannerEmptyIconScan, ScannerEmptyStepIcon } from "./ScannerEmptyIcons";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./scanner-new-partner-empty.module.css";
 
 type ScannerNewPartnerEmptyProps = {
@@ -44,14 +45,18 @@ export function ScannerNewPartnerEmpty({ onOpenScanner }: ScannerNewPartnerEmpty
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li key={step.title} className={styles.step}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIco}>
-              <ScannerEmptyStepIcon name={step.icon} className={styles.stepIcoSvg} />
-            </span>
-            <div>
-              <strong className={styles.stepTitle}>{step.title}</strong>
-              <small className={styles.stepNote}>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              handlers={{ openScanner: onOpenScanner }}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIco}
+              titleClassName={styles.stepTitle}
+              noteClassName={styles.stepNote}
+              iconSlot={<ScannerEmptyStepIcon name={step.icon} className={styles.stepIcoSvg} />}
+            />
           </li>
         ))}
       </ol>

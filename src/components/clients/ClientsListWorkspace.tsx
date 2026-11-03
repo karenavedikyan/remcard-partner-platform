@@ -33,9 +33,13 @@ function ClientsListBody() {
   );
 }
 
-export function ClientsListWorkspace() {
+type Props = {
+  canLinkOnboardingHistory?: boolean;
+};
+
+export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
   return (
-    <OwnerClientsGate>
+    <OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>
       <ClientsListBody />
     </OwnerClientsGate>
   );

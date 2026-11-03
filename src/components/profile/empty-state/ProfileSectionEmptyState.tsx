@@ -1,7 +1,9 @@
 "use client";
 
 import { profileEmptyCopy, type ProfileEmptyRole } from "./profile-empty-copy";
+import { profileEmptyStepAction } from "./profile-step-actions";
 import { ProfileEmptyIcon } from "./ProfileEmptyIcons";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./ProfileSectionEmptyState.module.css";
 
 type Props = {
@@ -44,14 +46,18 @@ export function ProfileSectionEmptyState({ role, onStartFill }: Props) {
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li className={styles.step} key={step.title}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIcoWrap}>
-              <ProfileEmptyIcon name={step.icon} className={styles.stepIco} />
-            </span>
-            <div>
-              <strong className={styles.stepTitle}>{step.title}</strong>
-              <small className={styles.stepNote}>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={profileEmptyStepAction(step, role)}
+              handlers={{ onStartFill }}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIcoWrap}
+              titleClassName={styles.stepTitle}
+              noteClassName={styles.stepNote}
+              iconSlot={<ProfileEmptyIcon name={step.icon} className={styles.stepIco} />}
+            />
           </li>
         ))}
       </ol>

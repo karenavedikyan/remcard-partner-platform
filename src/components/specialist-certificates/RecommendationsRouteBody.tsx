@@ -87,9 +87,13 @@ function RecommendationsDetailPageContent({ certificateId }: { certificateId: st
   );
 }
 
-export function RecommendationsListRouteBody() {
+export function RecommendationsListRouteBody({
+  canLinkOnboardingHistory,
+}: {
+  canLinkOnboardingHistory?: boolean;
+} = {}) {
   return (
-    <OwnerIssuerGate>
+    <OwnerIssuerGate canLinkOnboardingHistory={canLinkOnboardingHistory}>
       <RecommendationsListPageContent />
     </OwnerIssuerGate>
   );

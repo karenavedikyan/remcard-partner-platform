@@ -5,11 +5,23 @@ import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub"
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { RemcardApiError } from "@/lib/api-client";
 
+vi.mock("@/lib/api-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-client")>();
+  return {
+    ...actual,
+    remcardFetch: vi.fn(),
+  };
+});
+
 vi.mock("@/lib/settlements-loader", () => ({
   fetchSettlements: vi.fn(),
   isSettlementsAccessDenied: vi.fn((error: unknown) =>
     error instanceof RemcardApiError && (error.status === 403 || error.status === 404),
   ),
+}));
+
+vi.mock("@/lib/auth-session", () => ({
+  fetchAuthMeSafe: vi.fn(),
 }));
 
 vi.mock("@/lib/agent-r05/api", () => ({
@@ -27,6 +39,8 @@ vi.mock("@/lib/agent-r05/receivables-prefs", () => ({
 }));
 
 import { fetchSettlements } from "@/lib/settlements-loader";
+import { fetchAuthMeSafe } from "@/lib/auth-session";
+import { remcardFetch } from "@/lib/api-client";
 import {
   fetchAgentReceivableOrders,
   fetchAgentReceivablePartners,
@@ -67,6 +81,12 @@ function mockAgentEmptyProbe(totalRecords: number) {
 describe("wallet empty integrations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(remcardFetch).mockReset();
+    vi.mocked(fetchAuthMeSafe).mockReset();
+    vi.mocked(fetchAuthMeSafe).mockResolvedValue({
+      ok: true,
+      data: { user: { role: "PRO" } },
+    });
   });
 
   it("agent R05 shows empty only when overview and unfiltered history probe are zero", async () => {
@@ -237,5 +257,49 @@ describe("wallet empty integrations", () => {
     render(<SettlementsHub />);
     expect(await screen.findByTestId("settlements-hub")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+  });
+
+  it("store empty hub stays static when page prop is omitted", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(<SettlementsHub walletEmptyViewerRole="store" />);
+    await screen.findByTestId("wallet-empty-state");
+    expect(vi.mocked(remcardFetch)).not.toHaveBeenCalled();
+    expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /Открыть историю/i })).toBeNull();
+  });
+
+  it("store empty hub links history when canLinkOnboardingHistory prop is true without auth/me", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(<SettlementsHub walletEmptyViewerRole="store" canLinkOnboardingHistory />);
+    await screen.findByTestId("wallet-empty-state");
+    expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole("link", { name: /Подтверждение.*Открыть историю/i }),
+    ).toHaveAttribute("href", "/history");
+  });
+
+  it("store empty hub stays static when canLinkOnboardingHistory prop is false without auth/me", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [],
+      payable: [],
+      completed: [],
+    });
+    render(
+      <SettlementsHub walletEmptyViewerRole="store" canLinkOnboardingHistory={false} />,
+    );
+    await screen.findByTestId("wallet-empty-state");
+    expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /Открыть историю/i })).toBeNull();
   });
 });

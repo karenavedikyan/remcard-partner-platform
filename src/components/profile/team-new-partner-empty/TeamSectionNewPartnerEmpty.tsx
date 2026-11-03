@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { TEAM_NEW_PARTNER_EMPTY_COPY } from "@/lib/team-new-partner-empty-copy";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./TeamSectionNewPartnerEmpty.module.css";
+import { teamNewPartnerEmptyStepAction } from "./team-step-actions";
 import {
   EmptyStateIconMapPin,
   EmptyStateIconSend,
@@ -50,16 +52,21 @@ export function TeamSectionNewPartnerEmpty({ onInvite }: Props) {
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => {
           const StepIcon = STEP_ICONS[step.icon];
+          const action = teamNewPartnerEmptyStepAction(step, {
+            canInvite: Boolean(onInvite),
+          });
           return (
             <li key={step.title} className={styles.step}>
-              <span className={styles.stepNum}>{index + 1}</span>
-              <span className={styles.stepIcoWrap}>
-                <StepIcon className={styles.stepIco} />
-              </span>
-              <div>
-                <strong>{step.title}</strong>
-                <small>{step.note}</small>
-              </div>
+              <OnboardingStepItem
+                index={index}
+                title={step.title}
+                note={step.note}
+                action={action}
+                handlers={{ onInvite }}
+                stepNumClassName={styles.stepNum}
+                iconWrapClassName={styles.stepIcoWrap}
+                iconSlot={<StepIcon className={styles.stepIco} />}
+              />
             </li>
           );
         })}

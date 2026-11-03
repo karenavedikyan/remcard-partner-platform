@@ -15,6 +15,7 @@ type Props = WalletEmptyViewerProps & {
   /** Stable owner id for settlements load / modal cleanup (not only STORE vs COMPANY). */
   ownerUserId: string;
   settlementsSlot?: ReactNode;
+  canLinkOnboardingHistory?: boolean;
 };
 
 export function BusinessOwnerWallet({
@@ -22,6 +23,7 @@ export function BusinessOwnerWallet({
   ownerUserId,
   settlementsSlot,
   walletEmptyViewerRole,
+  canLinkOnboardingHistory,
 }: Props) {
   const copy = businessWalletPageCopy(partnerType);
 
@@ -30,6 +32,7 @@ export function BusinessOwnerWallet({
       <WalletAccrualsWorkspace
         scopeKey={`${partnerType}:${ownerUserId}`}
         walletEmptyViewerRole={walletEmptyViewerRole}
+        canLinkOnboardingHistory={canLinkOnboardingHistory}
         fallbackRibbon={copy.eyebrow}
         masterLedger={{
           ledgerScopeKey: `${partnerType}:${ownerUserId}:ledger`,

@@ -1,3 +1,9 @@
+import type { OnboardingStepAction } from "@/lib/onboarding-step/types";
+import {
+  ONBOARDING_PARTNER_FIRST_HINT,
+  onboardingStepAccessibleName,
+} from "@/lib/onboarding-step/read-only-history";
+
 export type HomeEmptyRole = "specialist" | "store" | "company";
 
 export type HomeEmptyIconName =
@@ -16,6 +22,7 @@ export type HomeEmptyStep = {
   icon: HomeEmptyIconName;
   title: string;
   note: string;
+  action: OnboardingStepAction;
 };
 
 export type HomeEmptyCopy = {
@@ -41,16 +48,27 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
             icon: "user",
             title: "Профиль и направления",
             note: "Чем занимаетесь и где",
+            action: { kind: "link", href: "/profile?section=basics" },
           },
           {
             icon: "handshake",
             title: "Партнёры",
             note: "Магазины и коллеги с условиями для вас",
+            action: { kind: "link", href: "/partners" },
           },
           {
             icon: "ticket",
             title: "Сертификат клиенту",
             note: "Ссылка — и клиент идёт к партнёру",
+            action: {
+              kind: "link",
+              href: "/recommendations/new",
+              noteHint: ONBOARDING_PARTNER_FIRST_HINT,
+              accessibleName: onboardingStepAccessibleName(
+                "Сертификат клиенту",
+                `Ссылка — и клиент идёт к партнёру. ${ONBOARDING_PARTNER_FIRST_HINT}`,
+              ),
+            },
           },
         ],
         primaryCta: {
@@ -75,16 +93,19 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
             icon: "percent",
             title: "Профиль и условия",
             note: "Категории, скидка и бонус",
+            action: { kind: "link", href: "/profile?section=basics" },
           },
           {
             icon: "handshake",
             title: "Партнёры",
             note: "Агенты и специалисты, которые рекомендуют вас",
+            action: { kind: "link", href: "/partners" },
           },
           {
             icon: "scan",
             title: "Проверка на кассе",
             note: "Сканируйте сертификат при покупке",
+            action: { kind: "link", href: "/scanner" },
           },
         ],
         primaryCta: {
@@ -109,16 +130,19 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
             icon: "mapPin",
             title: "Профиль и филиалы",
             note: "Адреса и направления",
+            action: { kind: "link", href: "/profile?section=branches" },
           },
           {
             icon: "users",
             title: "Сотрудники и права",
             note: "Каждый видит только своё",
+            action: { kind: "link", href: "/profile?section=team" },
           },
           {
             icon: "handshake",
             title: "Партнёры и условия",
             note: "Кто приводит клиентов и на каких условиях",
+            action: { kind: "link", href: "/partners" },
           },
         ],
         primaryCta: {

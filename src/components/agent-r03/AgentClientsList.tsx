@@ -29,7 +29,10 @@ import {
   clientRowDetail,
 } from "@/lib/agent-r03/clientListRow";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
-import { useOwnerClientsBusinessPartnerType } from "@/components/clients/OwnerClientsModeContext";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsCanLinkOnboardingHistory,
+} from "@/components/clients/OwnerClientsModeContext";
 import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
 import { isClientsNewPartnerEmptyEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
 import { mapClientsAccessToEmptyRole } from "@/components/clients/new-partner-empty/clientsEmptyCopy";
@@ -50,6 +53,9 @@ const emptyMeta: AgentR03ListMeta = {
 export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerClientsAccessMode }) {
   const router = useRouter();
   const businessPartnerType = useOwnerClientsBusinessPartnerType();
+  const gateCanLinkOnboardingHistory = useOwnerClientsCanLinkOnboardingHistory();
+  const canLinkOnboardingHistory =
+    accessMode === "agent" ? (gateCanLinkOnboardingHistory ?? true) : gateCanLinkOnboardingHistory;
   const [items, setItems] = useState<AgentClientRow[]>([]);
   const [meta, setMeta] = useState<AgentR03ListMeta>(emptyMeta);
   const [archived, setArchived] = useState(false);
@@ -378,6 +384,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
             accessMode={accessMode}
             businessPartnerType={businessPartnerType}
             onAddClient={openCreate}
+            canLinkOnboardingHistory={canLinkOnboardingHistory}
           />
         ) : (
           <p className={styles.empty}>{archived ? "Архив пуст." : "Добавьте первого клиента."}</p>

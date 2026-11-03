@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { homeEmptyCopy, type HomeEmptyRole } from "@/lib/home-empty/copy";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import { HomeEmptyIcon } from "./HomeEmptyIcon";
 import styles from "./PartnerHomeEmptyState.module.css";
 
@@ -43,14 +44,17 @@ export function PartnerHomeEmptyState({ role }: PartnerHomeEmptyStateProps) {
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li className={styles.step} key={step.title}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIconWrap}>
-              <HomeEmptyIcon name={step.icon} className={styles.stepIcon} />
-            </span>
-            <div>
-              <strong className={styles.stepTitle}>{step.title}</strong>
-              <small className={styles.stepNote}>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIconWrap}
+              titleClassName={styles.stepTitle}
+              noteClassName={styles.stepNote}
+              iconSlot={<HomeEmptyIcon name={step.icon} className={styles.stepIcon} />}
+            />
           </li>
         ))}
       </ol>

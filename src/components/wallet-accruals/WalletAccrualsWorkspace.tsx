@@ -24,7 +24,6 @@ import {
 } from "@/lib/wallet-empty/agent-history-probe";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
-
 export type WalletMasterLedgerOptions = {
   ledgerScopeKey?: string;
   payableSummaryLabel?: string;
@@ -41,6 +40,7 @@ type Props = {
   masterLedger?: WalletMasterLedgerOptions | boolean;
   agentRegistry?: boolean;
   walletEmptyViewerRole?: WalletEmptyViewerProps["walletEmptyViewerRole"];
+  canLinkOnboardingHistory?: boolean;
 };
 
 type Subview = "shell" | "master-ledger" | "agent-registry";
@@ -71,6 +71,7 @@ export function WalletAccrualsWorkspace({
   masterLedger,
   agentRegistry = false,
   walletEmptyViewerRole,
+  canLinkOnboardingHistory,
 }: Props) {
   const masterLedgerEnabled = Boolean(masterLedger);
   const ledgerOptions =
@@ -99,7 +100,6 @@ export function WalletAccrualsWorkspace({
   const [agentGateSignals, setAgentGateSignals] =
     useState<AgentReceivablesEmptyGateSignals | null>(null);
   const [agentGateLoading, setAgentGateLoading] = useState(false);
-
   const needsAgentEmptyGate =
     agentRegistry &&
     walletEmptyViewerRole === "agent" &&
@@ -222,7 +222,12 @@ export function WalletAccrualsWorkspace({
     isSupportedWalletEmptyViewerRole(walletEmptyViewerRole) &&
     isWalletSettlementsDataEmpty(response)
   ) {
-    return <WalletSectionEmptyState role={walletEmptyViewerRole} />;
+    return (
+      <WalletSectionEmptyState
+        role={walletEmptyViewerRole}
+        canLinkOnboardingHistory={canLinkOnboardingHistory}
+      />
+    );
   }
 
   if (
@@ -236,7 +241,12 @@ export function WalletAccrualsWorkspace({
       loading: false,
     })
   ) {
-    return <WalletSectionEmptyState role={walletEmptyViewerRole} />;
+    return (
+      <WalletSectionEmptyState
+        role={walletEmptyViewerRole}
+        canLinkOnboardingHistory={canLinkOnboardingHistory}
+      />
+    );
   }
 
   if (subview === "master-ledger" && masterLedgerEnabled) {

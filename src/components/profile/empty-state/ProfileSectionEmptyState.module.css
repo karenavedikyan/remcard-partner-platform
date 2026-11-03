@@ -172,15 +172,9 @@
 }
 
 .step {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--es-s3);
-  align-items: start;
-  padding: var(--es-s5);
-  border: 1px solid var(--es-line);
-  border-radius: 16px;
-  background: var(--es-surface);
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 .stepNum {

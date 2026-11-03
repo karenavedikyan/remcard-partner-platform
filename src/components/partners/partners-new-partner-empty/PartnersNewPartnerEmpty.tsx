@@ -16,6 +16,7 @@ import {
   EmptyStatePercentIcon,
   EmptyStateSearchIcon,
 } from "./icons";
+import { OnboardingStepItem } from "@/components/onboarding-step/OnboardingStepItem";
 import styles from "./PartnersNewPartnerEmpty.module.css";
 
 export type PartnersNewPartnerEmptyVariant = "true-empty" | "history";
@@ -108,14 +109,16 @@ export function PartnersNewPartnerEmpty({
       <ol className={styles.steps}>
         {copy.steps.map((step, index) => (
           <li key={step.title} className={styles.step}>
-            <span className={styles.stepNum}>{index + 1}</span>
-            <span className={styles.stepIco}>
-              <StepIcon step={step} />
-            </span>
-            <div>
-              <strong>{step.title}</strong>
-              <small>{step.note}</small>
-            </div>
+            <OnboardingStepItem
+              index={index}
+              title={step.title}
+              note={step.note}
+              action={step.action}
+              handlers={{ openFind: onOpenFind, openLink: onOpenLink }}
+              stepNumClassName={styles.stepNum}
+              iconWrapClassName={styles.stepIco}
+              iconSlot={<StepIcon step={step} />}
+            />
           </li>
         ))}
       </ol>

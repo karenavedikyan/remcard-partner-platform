@@ -14,8 +14,13 @@ import {
   OwnerIssuerModeProvider,
   type OwnerIssuerAccessMode,
 } from "@/components/specialist-certificates/OwnerIssuerModeContext";
-
-export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
+export function OwnerIssuerGate({
+  children,
+  canLinkOnboardingHistory: canLinkOnboardingHistoryFromPage,
+}: {
+  children: React.ReactNode;
+  canLinkOnboardingHistory?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -23,17 +28,21 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
   const [businessPartnerType, setBusinessPartnerType] = useState<"STORE" | "COMPANY" | undefined>(
     undefined,
   );
+  const [canLinkOnboardingHistory, setCanLinkOnboardingHistory] = useState<
+    boolean | undefined
+  >(undefined);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      fetchAgentR03Status(),
-      fetchSpecialistR06Status(),
-      remcardFetch<{ user: AuthUser }>("/api/auth/me"),
-    ])
-      .then(([r03, r06, mePayload]) => {
+    void (async () => {
+      try {
+        const [r03, r06, mePayload] = await Promise.all([
+          fetchAgentR03Status(),
+          fetchSpecialistR06Status(),
+          remcardFetch<{ user: AuthUser }>("/api/auth/me"),
+        ]);
         if (cancelled) return;
         const me = mePayload.user;
         const r03Eligible = Boolean(r03.featureEnabled && r03.eligible);
@@ -46,6 +55,7 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
         }
         if (r06Eligible) {
           setMode("specialist");
+          setCanLinkOnboardingHistory(false);
           return;
         }
         if (shouldRenderBusinessOwnerHome(me)) {
@@ -53,24 +63,25 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
           if (me.partnerType === "STORE" || me.partnerType === "COMPANY") {
             setBusinessPartnerType(me.partnerType);
           }
+          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }
         setMode("legacy");
-      })
-      .catch((caught) => {
+        setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
+      } catch (caught) {
         if (!cancelled) {
           setError(
             caught instanceof RemcardApiError ? caught.message : "Не удалось проверить доступ",
           );
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [pathname, router, searchParams]);
+  }, [canLinkOnboardingHistoryFromPage, pathname, router, searchParams]);
 
   if (loading) return <p className={styles.loading}>Загрузка…</p>;
   if (error) {
@@ -85,7 +96,11 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
   }
   if (!mode) return null;
   return (
-    <OwnerIssuerModeProvider mode={mode} businessPartnerType={businessPartnerType}>
+    <OwnerIssuerModeProvider
+      mode={mode}
+      businessPartnerType={businessPartnerType}
+      canLinkOnboardingHistory={canLinkOnboardingHistory}
+    >
       {children}
     </OwnerIssuerModeProvider>
   );

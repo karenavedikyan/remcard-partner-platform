@@ -3,6 +3,7 @@ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
 import { AgentCertificatesList } from "@/components/agent-r03/AgentCertificatesList";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { canLinkOnboardingHistoryFromUserRole } from "@/lib/onboarding-step/history-link-eligibility";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,9 @@ export default async function CertificatesPage() {
         description="Рекомендуйте. Делитесь ссылками."
       />
       <AgentR03Gate>
-        <AgentCertificatesList />
+        <AgentCertificatesList
+          canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
+        />
       </AgentR03Gate>
     </CabinetShell>
   );

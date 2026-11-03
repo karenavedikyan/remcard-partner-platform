@@ -1,4 +1,9 @@
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import type { OnboardingStepAction } from "@/lib/onboarding-step/types";
+import {
+  ONBOARDING_PARTNER_FIRST_HINT,
+  onboardingStepAccessibleName,
+} from "@/lib/onboarding-step/read-only-history";
 
 export type PartnersNewPartnerEmptyRole = "agent" | "specialist" | "store" | "company";
 
@@ -6,6 +11,7 @@ export type PartnersNewPartnerEmptyStep = {
   icon: "search" | "link" | "percent";
   title: string;
   note: string;
+  action: OnboardingStepAction;
 };
 
 export type PartnersNewPartnerEmptyCopy = {
@@ -39,6 +45,58 @@ function isSellerRole(role: PartnersNewPartnerEmptyRole): boolean {
   return role === "store" || role === "company";
 }
 
+const PARTNER_TERMS_STEP_ACTION: OnboardingStepAction = {
+  kind: "button",
+  handler: "openFind",
+  noteHint: ONBOARDING_PARTNER_FIRST_HINT,
+  accessibleName: onboardingStepAccessibleName(
+    "Согласуйте условия",
+    `Скидка и бонус по каждой категории. ${ONBOARDING_PARTNER_FIRST_HINT}`,
+  ),
+};
+
+const PARTNER_ONBOARDING_STEPS: PartnersNewPartnerEmptyStep[] = [
+  {
+    icon: "search",
+    title: "Найдите в RemCard",
+    note: "По категориям и городу",
+    action: { kind: "button", handler: "openFind" },
+  },
+  {
+    icon: "link",
+    title: "Или пригласите по ссылке",
+    note: "Если партнёра ещё нет в системе",
+    action: { kind: "button", handler: "openLink" },
+  },
+  {
+    icon: "percent",
+    title: "Согласуйте условия",
+    note: "Скидка и бонус по каждой категории",
+    action: PARTNER_TERMS_STEP_ACTION,
+  },
+];
+
+const PARTNER_ONBOARDING_STEPS_ISSUER: PartnersNewPartnerEmptyStep[] = [
+  {
+    icon: "search",
+    title: "Найдите в RemCard",
+    note: "Магазины и специалисты по категориям",
+    action: { kind: "button", handler: "openFind" },
+  },
+  {
+    icon: "link",
+    title: "Или пригласите по ссылке",
+    note: "Если партнёра ещё нет в системе",
+    action: { kind: "button", handler: "openLink" },
+  },
+  {
+    icon: "percent",
+    title: "Согласуйте условия",
+    note: "Скидка и бонус по каждой категории",
+    action: PARTNER_TERMS_STEP_ACTION,
+  },
+];
+
 export function partnersNewPartnerEmptyCopy(
   role: PartnersNewPartnerEmptyRole,
 ): PartnersNewPartnerEmptyCopy {
@@ -48,23 +106,7 @@ export function partnersNewPartnerEmptyCopy(
       kicker: "Пока пусто",
       title: "Партнёры приведут клиентов",
       lead: "Агенты и специалисты рекомендуют вас — вы подтверждаете покупки.",
-      steps: [
-        {
-          icon: "search",
-          title: "Найдите в RemCard",
-          note: "По категориям и городу",
-        },
-        {
-          icon: "link",
-          title: "Или пригласите по ссылке",
-          note: "Если партнёра ещё нет в системе",
-        },
-        {
-          icon: "percent",
-          title: "Согласуйте условия",
-          note: "Скидка и бонус по каждой категории",
-        },
-      ],
+      steps: PARTNER_ONBOARDING_STEPS,
       primaryLabel: "Найти партнёра",
       secondaryLabel: "Пригласить по ссылке",
     };
@@ -74,23 +116,7 @@ export function partnersNewPartnerEmptyCopy(
     kicker: "Пока пусто",
     title: "Соберите сеть партнёров",
     lead: "Чем больше партнёров — тем больше поводов для сертификата.",
-    steps: [
-      {
-        icon: "search",
-        title: "Найдите в RemCard",
-        note: "Магазины и специалисты по категориям",
-      },
-      {
-        icon: "link",
-        title: "Или пригласите по ссылке",
-        note: "Если партнёра ещё нет в системе",
-      },
-      {
-        icon: "percent",
-        title: "Согласуйте условия",
-        note: "Скидка и бонус по каждой категории",
-      },
-    ],
+    steps: PARTNER_ONBOARDING_STEPS_ISSUER,
     primaryLabel: "Найти партнёра",
     secondaryLabel: "Пригласить по ссылке",
   };

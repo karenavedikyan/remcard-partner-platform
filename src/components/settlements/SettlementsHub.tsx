@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RemcardApiError } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import {
   bonusStatusLabel,
@@ -279,7 +279,13 @@ function filterCompleted(rows: SettlementCompleted[], query: string) {
   );
 }
 
-export function SettlementsHub({ walletEmptyViewerRole }: WalletEmptyViewerProps) {
+export function SettlementsHub({
+  walletEmptyViewerRole,
+  canLinkOnboardingHistory,
+}: WalletEmptyViewerProps & {
+  /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
+  canLinkOnboardingHistory?: boolean;
+}) {
   const [tab, setTab] = useState<SettlementsTab>("receivable");
   const [searchQ, setSearchQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -405,7 +411,10 @@ export function SettlementsHub({ walletEmptyViewerRole }: WalletEmptyViewerProps
   ) {
     return (
       <div className={styles.settlementDemo} data-testid="settlements-hub">
-        <WalletSectionEmptyState role={walletEmptyViewerRole} />
+        <WalletSectionEmptyState
+          role={walletEmptyViewerRole}
+          canLinkOnboardingHistory={canLinkOnboardingHistory}
+        />
       </div>
     );
   }

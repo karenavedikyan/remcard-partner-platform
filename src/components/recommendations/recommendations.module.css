@@ -566,12 +566,15 @@
   margin-top: 0.65rem;
 }
 
+/* === rc-cert: shared certificate result card (prototype parity) === */
 .specialistCertWrap {
   display: grid;
   gap: var(--space-4);
   max-width: 520px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .specialistCertCard {
@@ -592,7 +595,7 @@
   gap: 8px;
   font-weight: 800;
   font-size: 24px;
-  letter-spacing: -0.04em;
+  letter-spacing: -1px;
 }
 
 .specialistCertLogo {
@@ -606,8 +609,8 @@
 }
 
 .specialistCertLogo svg {
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
 }
 
 .specialistCertBadge {
@@ -619,14 +622,14 @@
 
 .specialistCertTitle {
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: 18px;
   font-weight: 700;
 }
 
 .specialistCertPartner {
   margin: 0;
-  font-size: var(--text-sm);
-  color: #c8cdd3;
+  font-size: 16px;
+  color: #fff;
 }
 
 .specialistCertOffers {
@@ -659,7 +662,7 @@
   font-size: 24px;
   font-weight: 800;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.08em;
+  letter-spacing: 2px;
   overflow-wrap: anywhere;
 }
 
@@ -668,19 +671,19 @@
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0.55rem 1.15rem;
-  border: 1px solid rgb(255 255 255 / 35%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 10%);
+  padding: 12px 20px;
+  border: 1px solid #626872;
+  border-radius: 10px;
+  background: #262c35;
   color: #fff;
   font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .specialistCopyCodeBtn:hover {
-  background: rgb(255 255 255 / 18%);
+  background: #303844;
 }
 
 .specialistCopyCodeBtn:focus-visible {
@@ -719,7 +722,7 @@
 .specialistCertManagement {
   width: 100%;
   border-top: 1px solid rgb(255 255 255 / 19%);
-  margin-top: 8px;
+  margin-top: 20px;
   padding-top: 16px;
   text-align: left;
   display: grid;
@@ -727,22 +730,56 @@
 }
 
 .specialistCertManagementLabel {
-  font-size: var(--text-xs);
+  font-size: 12px;
   color: #c8cdd3;
 }
 
 .specialistCertPublicLink {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin: 0;
-  font-weight: 600;
+  width: 100%;
+  min-height: 44px;
+  margin: 16px 0 0;
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
   color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.specialistCertPublicLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .specialistCertDetails {
   border-top: 1px solid var(--line);
-  padding-top: var(--space-3);
-  font-size: var(--text-sm);
+  padding: 14px 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.specialistCertActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  width: 100%;
+}
+
+.specialistCertActionRow :global(button) {
+  min-height: 44px;
+}
+
+@media (max-width: 650px) {
+  .specialistCertCard {
+    padding: 18px 12px;
+  }
 }
 
 .specialistCertDetails summary {

@@ -1,0 +1,72 @@
+.stepAction {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-sizing: border-box;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stepAction:hover {
+  border-color: color-mix(in srgb, var(--line) 55%, var(--ink));
+  background: color-mix(in srgb, var(--surface) 92%, var(--offset));
+}
+
+.stepAction:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.stepStatic {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: default;
+}
+
+.stepBody {
+  min-width: 0;
+}
+
+.stepTitle {
+  display: block;
+  font-size: max(12px, var(--text-sm, 0.875rem));
+  line-height: 1.35;
+}
+
+.stepNote {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: max(12px, var(--text-xs, 0.75rem));
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.chevron {
+  align-self: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepAction {
+    transition: none;
+  }
+}

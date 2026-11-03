@@ -10,7 +10,7 @@ import { SpecialistCertificateDetailDialog } from "@/components/specialist-certi
 import { certificateListDetail } from "@/lib/agent-r03/certificateOffers";
 import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
 import { AgentR03PageIntro } from "./AgentR03PageIntro";
-import { RemcardApiError } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   batchAgentCertificates,
   deleteAgentCertificate,
@@ -71,9 +71,14 @@ export type AgentCertificatesListAccessMode = "agent" | "specialist" | "business
 
 type AgentCertificatesListProps = {
   accessMode?: AgentCertificatesListAccessMode;
+  /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
+  canLinkOnboardingHistory?: boolean;
 };
 
-export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificatesListProps = {}) {
+export function AgentCertificatesList({
+  accessMode = "agent",
+  canLinkOnboardingHistory,
+}: AgentCertificatesListProps = {}) {
   const isSpecialist = accessMode === "specialist";
   const isBusiness = accessMode === "business";
   const isIssuerShell = isSpecialist || isBusiness;
@@ -279,6 +284,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     : isSpecialist
       ? "specialist"
       : "agent";
+
+  const businessHistoryLink =
+    canLinkOnboardingHistory ?? ownerMode?.canLinkOnboardingHistory;
 
   async function runBatch(action: "archive" | "restore" | "delete") {
     let ids = [...selected];
@@ -568,6 +576,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
           role={newPartnerRole}
           onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
           createHref={isIssuerShell ? undefined : "/certificates/new"}
+          canLinkOnboardingHistory={isBusiness ? businessHistoryLink : undefined}
         />
       ) : null}
 

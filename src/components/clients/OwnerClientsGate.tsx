@@ -12,13 +12,21 @@ import {
   OwnerClientsModeProvider,
   type OwnerClientsAccessMode,
 } from "@/components/clients/OwnerClientsModeContext";
-
 export type { OwnerClientsAccessMode };
 
-export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
+export function OwnerClientsGate({
+  children,
+  canLinkOnboardingHistory: canLinkOnboardingHistoryFromPage,
+}: {
+  children: React.ReactNode;
+  canLinkOnboardingHistory?: boolean;
+}) {
   const [mode, setMode] = useState<OwnerClientsAccessMode | null>(null);
   const [businessPartnerType, setBusinessPartnerType] = useState<
     "STORE" | "COMPANY" | undefined
+  >(undefined);
+  const [canLinkOnboardingHistory, setCanLinkOnboardingHistory] = useState<
+    boolean | undefined
   >(undefined);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,10 +42,12 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (r03.featureEnabled && r03.eligible) {
           setMode("agent");
+          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }
         if (r06.featureEnabled && r06.eligible) {
           setMode("specialist");
+          setCanLinkOnboardingHistory(false);
           return;
         }
       } catch (caught) {
@@ -62,6 +72,7 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
         if (business.eligible) {
           setMode("business");
           setBusinessPartnerType(business.partnerType);
+          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }
       } catch (caught) {
@@ -81,7 +92,7 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canLinkOnboardingHistoryFromPage]);
 
   if (loading) return <p className={styles.loading}>Загрузка…</p>;
   if (error) {
@@ -102,7 +113,11 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
     );
   }
   return (
-    <OwnerClientsModeProvider mode={mode} businessPartnerType={businessPartnerType}>
+    <OwnerClientsModeProvider
+      mode={mode}
+      businessPartnerType={businessPartnerType}
+      canLinkOnboardingHistory={canLinkOnboardingHistory}
+    >
       {children}
     </OwnerClientsModeProvider>
   );
