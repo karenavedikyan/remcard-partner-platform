@@ -61,6 +61,12 @@ type Props = {
   scopeKey?: string;
   /** Role for new-partner empty onboarding (settlements tab only). */
   walletEmptyViewerRole?: WalletEmptyViewerProps["walletEmptyViewerRole"];
+  /** Opened from accruals shell — skip duplicate direction overview tiles. */
+  skipOverview?: boolean;
+  /** Return to single wallet card surface. */
+  onBack?: () => void;
+  /** Refetch settlements (accruals parent); required when previewData is snapshot from parent. */
+  onDataRefresh?: (options?: { preserveDataOnError?: boolean }) => void | Promise<void>;
 };
 
 const DEFAULT_PAYABLE_SUMMARY = "Я должен";
@@ -250,8 +256,11 @@ export function SpecialistSettlementsWorkspace({
   payableHint = null,
   scopeKey = "default",
   walletEmptyViewerRole,
+  skipOverview = false,
+  onBack,
+  onDataRefresh,
 }: Props) {
-  const [screen, setScreen] = useState<Screen>("overview");
+  const [screen, setScreen] = useState<Screen>(skipOverview ? "partners" : "overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
   const [selectedPartner, setSelectedPartner] = useState<SettlementPartnerGroup | null>(null);
   const [filters, setFilters] = useState<SettlementLedgerFilters>(defaultLedgerFilters());
@@ -263,6 +272,7 @@ export function SpecialistSettlementsWorkspace({
   const [exportError, setExportError] = useState("");
   const [data, setData] = useState<SettlementsResponse | null>(previewData ?? null);
   const [payoutTarget, setPayoutTarget] = useState<PayoutRecordTarget | null>(null);
+  const [refreshNotice, setRefreshNotice] = useState("");
   const loadGenerationRef = useRef(0);
 
   const openPayoutModal = useCallback((row: SettlementObligation) => {
@@ -311,9 +321,16 @@ export function SpecialistSettlementsWorkspace({
   }, [previewData]);
 
   useEffect(() => {
+    if (previewData) {
+      setData(previewData);
+      setLoading(false);
+    }
+  }, [previewData]);
+
+  useEffect(() => {
     loadGenerationRef.current += 1;
     setPayoutTarget(null);
-    setScreen("overview");
+    setScreen(skipOverview ? "partners" : "overview");
     setDirection("receivable");
     setSelectedPartner(null);
     setPage(1);
@@ -321,7 +338,7 @@ export function SpecialistSettlementsWorkspace({
     if (!previewData) {
       void load();
     }
-  }, [scopeKey, load, previewData]);
+  }, [scopeKey, load, previewData, skipOverview]);
 
   const updateFilters = useCallback((patch: Partial<SettlementLedgerFilters>) => {
     setFilters((f) => ({ ...f, ...patch }));
@@ -439,6 +456,14 @@ export function SpecialistSettlementsWorkspace({
     }
   }
 
+  const handlePayoutSuccess = useCallback(async () => {
+    if (onDataRefresh) {
+      await onDataRefresh({ preserveDataOnError: true });
+      return;
+    }
+    await load();
+  }, [load, onDataRefresh]);
+
   if (loading) {
     return <div className={hubStyles.loading}>Загружаем кошелёк…</div>;
   }
@@ -491,6 +516,11 @@ export function SpecialistSettlementsWorkspace({
   return (
     <div className={hubStyles.settlementDemo} data-testid="specialist-settlements-workspace">
       {data.coverageNote ? <p className={hubStyles.note}>{data.coverageNote}</p> : null}
+      {refreshNotice ? (
+        <p className={hubStyles.note} role="status" data-testid="specialist-refresh-notice">
+          {refreshNotice}
+        </p>
+      ) : null}
       <p className={hubStyles.note}>
         Подтверждение получения вторым участником и частичные переводы пока недоступны. Показаны
         данные по подтверждённым покупкам.
@@ -584,7 +614,7 @@ export function SpecialistSettlementsWorkspace({
         </div>
       ) : null}
 
-      {screen === "overview" ? (
+      {screen === "overview" && !skipOverview ? (
         <>
           <div className={`${hubStyles.summary} ${walletStyles.directionSummary}`}>
             <button
@@ -623,14 +653,43 @@ export function SpecialistSettlementsWorkspace({
         </>
       ) : null}
 
+      {skipOverview ? (
+        <div className={hubStyles.actions}>
+          <Button
+            type="button"
+            variant={direction === "receivable" ? "primary" : "secondary"}
+            onClick={() => openDirection("receivable")}
+          >
+            Мне должны
+          </Button>
+          <Button
+            type="button"
+            variant={direction === "payable" ? "primary" : "secondary"}
+            onClick={() => openDirection("payable")}
+          >
+            {payableDirectionLabel}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setScreen("reconciliation")}>
+            Сверка за период
+          </Button>
+        </div>
+      ) : null}
+
       {screen === "partners" ? (
         <>
           <button
             type="button"
             className={hubStyles.breadcrumbBack}
-            onClick={() => setScreen("overview")}
+            data-testid={skipOverview && onBack ? "wallet-ledger-back" : undefined}
+            onClick={() => {
+              if (skipOverview && onBack) {
+                onBack();
+                return;
+              }
+              setScreen("overview");
+            }}
           >
-            ← Все взаиморасчёты
+            ← {skipOverview ? "К кошельку" : "Все взаиморасчёты"}
           </button>
           <div className={hubStyles.focusHeader}>
             <div>
@@ -759,8 +818,12 @@ export function SpecialistSettlementsWorkspace({
 
       {screen === "reconciliation" && recon ? (
         <>
-          <Button type="button" variant="secondary" onClick={() => setScreen("overview")}>
-            ← Обзор
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setScreen(skipOverview ? "partners" : "overview")}
+          >
+            ← {skipOverview ? "К реестру" : "Обзор"}
           </Button>
           <h2 className={hubStyles.groupTitle}>Сверка (ограниченная)</h2>
           <p className={hubStyles.meta}>
@@ -808,7 +871,16 @@ export function SpecialistSettlementsWorkspace({
         <PayoutRecordModal
           target={payoutTarget}
           onClose={() => setPayoutTarget(null)}
-          onSuccess={() => void load()}
+          onSuccess={async () => {
+            await handlePayoutSuccess();
+            setPayoutTarget(null);
+          }}
+          onPostRecordRefreshFailure={async () => {
+            setPayoutTarget(null);
+            setRefreshNotice(
+              "Выплата записана, не удалось обновить данные, обновите страницу",
+            );
+          }}
         />
       ) : null}
     </div>

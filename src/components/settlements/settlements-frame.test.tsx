@@ -24,21 +24,21 @@ vi.mock("@/lib/agent-r05/api", () => ({
     pendingCount: 0,
     coverage: { needsReviewCount: 0 },
   }),
-  fetchAgentReceivablePartners: vi.fn(),
-  fetchAgentReceivableOrders: vi.fn().mockResolvedValue({
-    orders: [],
+  fetchAgentReceivablePartners: vi.fn().mockResolvedValue({
+    partners: [],
     meta: {
       totalRecords: 0,
       confirmedTotalKopecks: 0,
       selectionTotalKopecks: 0,
       page: 1,
-      pageSize: 1,
+      pageSize: 25,
       pageCount: 0,
-      sort: "date-desc",
+      sort: "name",
       periodField: "purchaseAt",
       periodTimezone: "UTC",
     },
   }),
+  fetchAgentReceivableOrders: vi.fn(),
   fetchAgentReceivableOrderDetail: vi.fn(),
   downloadAgentReceivablesExport: vi.fn(),
 }));

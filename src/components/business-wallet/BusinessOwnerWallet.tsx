@@ -4,7 +4,7 @@ import type { BusinessClientsPartnerType } from "@/lib/business-clients/gate";
 import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
-import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
+import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccrualsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
 import type { ReactNode } from "react";
@@ -27,12 +27,16 @@ export function BusinessOwnerWallet({
 
   const workspace =
     settlementsSlot ?? (
-      <SpecialistSettlementsWorkspace
+      <WalletAccrualsWorkspace
         scopeKey={`${partnerType}:${ownerUserId}`}
         walletEmptyViewerRole={walletEmptyViewerRole}
-        payableSummaryLabel={copy.payableSummaryLabel}
-        payableDirectionLabel={copy.payableDirectionLabel}
-        payableHint={copy.payableHint}
+        fallbackRibbon={copy.eyebrow}
+        masterLedger={{
+          ledgerScopeKey: `${partnerType}:${ownerUserId}:ledger`,
+          payableSummaryLabel: copy.payableSummaryLabel,
+          payableDirectionLabel: copy.payableDirectionLabel,
+          payableHint: copy.payableHint,
+        }}
       />
     );
 

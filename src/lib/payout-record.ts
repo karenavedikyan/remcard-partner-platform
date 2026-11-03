@@ -1,4 +1,4 @@
-import { remcardFetch } from "./api-client";
+import { RemcardApiError, remcardFetch } from "./api-client";
 
 export type PayoutMethod = "CASH" | "TRANSFER";
 
@@ -56,4 +56,37 @@ export function newPayoutIdempotencyKey(bonusId: string): string {
     return `prof-i-d.${bonusId}.${crypto.randomUUID()}`;
   }
   return `prof-i-d.${bonusId}.${Date.now()}`;
+}
+
+/** Pending payout attempt keys — reused until success clears (client-side; server dedup not assumed). */
+const pendingAttemptKeys = new Map<string, string>();
+
+export function getOrCreatePayoutAttemptIdempotencyKey(bonusId: string): string {
+  const cached = pendingAttemptKeys.get(bonusId);
+  if (cached) return cached;
+  const key = newPayoutIdempotencyKey(bonusId);
+  pendingAttemptKeys.set(bonusId, key);
+  return key;
+}
+
+export function clearPayoutAttemptIdempotencyKey(bonusId: string): void {
+  pendingAttemptKeys.delete(bonusId);
+}
+
+/** Test-only reset. */
+export function resetPayoutAttemptIdempotencyKeysForTests(): void {
+  pendingAttemptKeys.clear();
+}
+
+export function isLikelyUnknownPayoutNetworkOutcome(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof RemcardApiError) {
+    const { status } = error;
+    if (status === 0) return true;
+    if (status === 408 || status === 502 || status === 503 || status === 504) return true;
+    return false;
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return /fetch|network|failed to fetch|load failed/i.test(message);
 }

@@ -307,11 +307,6 @@ export function CertificateCreateForm({
     [partnerSearchQuery, selectablePartners],
   );
 
-  const pendingPartners = useMemo(
-    () => partners.filter((p) => p.programReady === false || p.categories.length === 0),
-    [partners],
-  );
-
   function ensurePartnerCategoryDefaults(partner: AvailablePartner) {
     for (const cat of partner.categories) {
       const fieldKey = categoryFieldKey(partner.storeUserId, cat.category);
@@ -737,18 +732,6 @@ export function CertificateCreateForm({
                       </Button>
                     </Link>
                   </div>
-                  {pendingPartners.length > 0 ? (
-                    <details className={styles.optionalBlock}>
-                      <summary>Ожидают согласования</summary>
-                      <div className={styles.optionalBlockBody}>
-                        {pendingPartners.map((partner) => (
-                          <p key={partnerSelectionKey(partner)} className={styles.meta}>
-                            {partner.storeName} · ещё нельзя добавить в сертификат
-                          </p>
-                        ))}
-                      </div>
-                    </details>
-                  ) : null}
                   <div className={styles.createFormFooter}>
                     <small data-testid="specialist-cert-selected-count">
                       Выбрано: {selectedPartners.length}
@@ -953,31 +936,22 @@ export function CertificateCreateForm({
                   </p>
                 ) : (
                   <div className={styles.partnerPick}>
-                    {partners.map((partner) => {
+                    {selectablePartners.map((partner) => {
                       const key = partnerSelectionKey(partner);
-                      const disabled =
-                        partner.programReady === false || partner.categories.length === 0;
                       const selected = selectedKeys.includes(key);
                       return (
                         <label
                           key={key}
-                          className={`${styles.partnerOption} ${selected ? styles.partnerOptionSelected : ""} ${disabled ? styles.partnerOptionDisabled : ""}`}
+                          className={`${styles.partnerOption} ${selected ? styles.partnerOptionSelected : ""}`}
                         >
                           <input
                             type="checkbox"
                             checked={selected}
-                            disabled={disabled}
                             onChange={() => togglePartner(partner)}
                           />
                           <span>
                             <strong>{partner.storeName}</strong>
                             {partner.city ? ` · ${partner.city}` : ""}
-                            {disabled && partner.programMissing?.length ? (
-                              <span className={styles.conditionMeta}>
-                                {" "}
-                                — профиль партнёра не готов
-                              </span>
-                            ) : null}
                           </span>
                         </label>
                       );

@@ -524,7 +524,10 @@ export function SettlementsHub({ walletEmptyViewerRole }: WalletEmptyViewerProps
         <PayoutRecordModal
           target={payoutTarget}
           onClose={() => setPayoutTarget(null)}
-          onSuccess={() => void load()}
+          onSuccess={async () => {
+            await load();
+            setPayoutTarget(null);
+          }}
         />
       ) : null}
     </div>

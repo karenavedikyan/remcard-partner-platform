@@ -29,8 +29,10 @@ vi.mock("@/lib/agent-r05/receivables-prefs", () => ({
 import { fetchSettlements } from "@/lib/settlements-loader";
 import {
   fetchAgentReceivableOrders,
+  fetchAgentReceivablePartners,
   fetchAgentReceivablesOverview,
 } from "@/lib/agent-r05/api";
+import { buildAgentReceivablesHistoryProbeParams } from "@/lib/wallet-empty/agent-history-probe";
 
 const emptyOverview = {
   contractVersion: "1",
@@ -47,17 +49,17 @@ const probeMeta = (totalRecords: number) => ({
   confirmedTotalKopecks: 0,
   selectionTotalKopecks: 0,
   page: 1,
-  pageSize: 1,
-  pageCount: totalRecords > 0 ? totalRecords : 0,
-  sort: "date-desc",
+  pageSize: 25,
+  pageCount: totalRecords > 0 ? 1 : 0,
+  sort: "name",
   periodField: "purchaseAt" as const,
   periodTimezone: "UTC" as const,
 });
 
 function mockAgentEmptyProbe(totalRecords: number) {
   vi.mocked(fetchAgentReceivablesOverview).mockResolvedValue(emptyOverview);
-  vi.mocked(fetchAgentReceivableOrders).mockResolvedValue({
-    orders: [],
+  vi.mocked(fetchAgentReceivablePartners).mockResolvedValue({
+    partners: [],
     meta: probeMeta(totalRecords),
   });
 }
@@ -75,9 +77,15 @@ describe("wallet empty integrations", () => {
       "agent",
     );
     expect(screen.queryByTestId("agent-r05-overview-grid")).toBeNull();
-    const probeCall = vi.mocked(fetchAgentReceivableOrders).mock.calls[0]?.[0];
+    const probeCall = vi.mocked(fetchAgentReceivablePartners).mock.calls.find(([params]) =>
+      params.get("pageSize") === "25" && params.get("sort") === "name",
+    )?.[0];
     expect(probeCall).toBeInstanceOf(URLSearchParams);
     expect((probeCall as URLSearchParams).get("status")).toBe("all");
+    expect((probeCall as URLSearchParams).toString()).toBe(
+      buildAgentReceivablesHistoryProbeParams().toString(),
+    );
+    expect(vi.mocked(fetchAgentReceivableOrders)).not.toHaveBeenCalled();
   });
 
   it("agent hides onboarding when history has closed/cancelled rows but overview is zero", async () => {
@@ -89,8 +97,8 @@ describe("wallet empty integrations", () => {
 
   it("agent hides onboarding when history probe meta is missing", async () => {
     vi.mocked(fetchAgentReceivablesOverview).mockResolvedValue(emptyOverview);
-    vi.mocked(fetchAgentReceivableOrders).mockResolvedValue({
-      orders: [],
+    vi.mocked(fetchAgentReceivablePartners).mockResolvedValue({
+      partners: [],
       meta: { ...probeMeta(0), totalRecords: undefined as unknown as number },
     });
     render(<AgentReceivablesHub walletEmptyViewerRole="agent" />);
@@ -119,13 +127,13 @@ describe("wallet empty integrations", () => {
           setTimeout(() => resolve(emptyOverview), 30);
         }),
     );
-    vi.mocked(fetchAgentReceivableOrders).mockImplementation(
+    vi.mocked(fetchAgentReceivablePartners).mockImplementation(
       () =>
         new Promise((resolve) => {
           setTimeout(
             () =>
               resolve({
-                orders: [],
+                partners: [],
                 meta: probeMeta(5),
               }),
             80,

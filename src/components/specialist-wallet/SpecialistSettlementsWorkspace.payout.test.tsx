@@ -4,6 +4,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialistSettlementsWorkspace } from "./SpecialistSettlementsWorkspace";
 import { RemcardApiError } from "@/lib/api-client";
 
+vi.mock("@/components/ui/Button.module.css", () => ({ default: {} }));
+vi.mock("@/components/payout/payout-record.module.css", () => ({ default: {} }));
+vi.mock("@/components/settlements/settlements.module.css", () => ({ default: {} }));
+vi.mock("@/components/specialist-wallet/specialist-wallet.module.css", () => ({ default: {} }));
+vi.mock("@/components/wallet-empty/wallet-empty.module.css", () => ({ default: {} }));
+
+vi.mock("@/components/settlements/RewardLifecyclePanel", () => ({
+  RewardLifecyclePanel: () => null,
+}));
+
+vi.mock("@/components/ui/Button", () => ({
+  Button: ({
+    children,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string }) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  ),
+}));
+
 vi.mock("@/lib/settlements-loader", () => ({
   fetchSettlements: vi.fn(),
   isSettlementsAccessDenied: vi.fn((error: unknown) =>
@@ -11,12 +32,13 @@ vi.mock("@/lib/settlements-loader", () => ({
   ),
 }));
 
-vi.mock("@/lib/payout-record", () => ({
-  payoutConfirmLabel: (m: string) => (m === "CASH" ? "Подтвердить выплату наличными" : "Подтвердить перевод"),
-  PAYOUT_EXTERNAL_FACT_NOTE: "note",
-  newPayoutIdempotencyKey: (id: string) => `key-${id}`,
-  recordBonusPayoutFact: vi.fn().mockResolvedValue({ replay: false }),
-}));
+vi.mock("@/lib/payout-record", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/payout-record")>();
+  return {
+    ...actual,
+    recordBonusPayoutFact: vi.fn().mockResolvedValue({ replay: false }),
+  };
+});
 
 import { fetchSettlements } from "@/lib/settlements-loader";
 import { recordBonusPayoutFact } from "@/lib/payout-record";

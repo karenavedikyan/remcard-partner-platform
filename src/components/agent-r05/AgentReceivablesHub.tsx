@@ -10,7 +10,6 @@ import {
   fetchAgentReceivableOrderDetail,
   fetchAgentReceivableOrders,
   fetchAgentReceivablePartners,
-  fetchAgentReceivablesOverview,
   type AgentReceivableOrderLine,
   type AgentReceivablePartnerGroup,
   type AgentReceivableRecord,
@@ -19,9 +18,9 @@ import {
 } from "@/lib/agent-r05/api";
 import { formatKopecks } from "@/lib/agent-r05/money";
 import {
-  buildAgentReceivablesHistoryProbeParams,
   canShowAgentWalletEmptyState,
-  parseAgentHistoryTotalRecords,
+  fetchAgentReceivablesEmptyGateSignals,
+  type AgentReceivablesEmptyGateSignals,
 } from "@/lib/wallet-empty/agent-history-probe";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
@@ -39,17 +38,29 @@ type Screen = "overview" | "partners" | "orders" | "order";
 
 function AgentSettlementsFrame({
   children,
+  onBack,
   "data-testid": testId,
   "data-ledger-view": ledgerView,
   shellClassName,
 }: {
   children: React.ReactNode;
+  onBack?: () => void;
   "data-testid"?: string;
   "data-ledger-view"?: LedgerView;
   shellClassName?: string;
 }) {
   return (
     <div className={hubStyles.settlementDemo} data-testid="agent-settlements-workspace-frame">
+      {onBack ? (
+        <button
+          type="button"
+          className={hubStyles.breadcrumbBack}
+          onClick={onBack}
+          data-testid="wallet-agent-registry-back"
+        >
+          ← К кошельку
+        </button>
+      ) : null}
       <div
         className={[styles.shell, shellClassName].filter(Boolean).join(" ")}
         data-testid={testId}
@@ -95,14 +106,30 @@ function buildQuery(input: {
   return params;
 }
 
-export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewerProps = {}) {
+export function AgentReceivablesHub({
+  walletEmptyViewerRole,
+  onBack,
+  initialEmptyGateSignals,
+}: WalletEmptyViewerProps & {
+  onBack?: () => void;
+  /** When set, skips duplicate overview+probe fetch on first overview mount. */
+  initialEmptyGateSignals?: AgentReceivablesEmptyGateSignals | null;
+} = {}) {
+  const hasInitialSignals = initialEmptyGateSignals != null;
   const [screen, setScreen] = useState<Screen>("overview");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [overview, setOverview] = useState<AgentReceivablesOverview | null>(null);
-  const [historyTotalRecords, setHistoryTotalRecords] = useState<number | null>(null);
-  const [historyProbeFailed, setHistoryProbeFailed] = useState(false);
+  const [loading, setLoading] = useState(!hasInitialSignals);
+  const [error, setError] = useState(initialEmptyGateSignals?.error ?? "");
+  const [overview, setOverview] = useState<AgentReceivablesOverview | null>(
+    initialEmptyGateSignals?.overview ?? null,
+  );
+  const [historyTotalRecords, setHistoryTotalRecords] = useState<number | null>(
+    initialEmptyGateSignals?.historyTotalRecords ?? null,
+  );
+  const [historyProbeFailed, setHistoryProbeFailed] = useState(
+    initialEmptyGateSignals?.historyProbeFailed ?? false,
+  );
   const overviewGenerationRef = useRef(0);
+  const skipInitialOverviewReloadRef = useRef(hasInitialSignals);
   const [partners, setPartners] = useState<AgentReceivablePartnerGroup[]>([]);
   const [orders, setOrders] = useState<AgentReceivableRecord[]>([]);
   const [meta, setMeta] = useState<AgentReceivablesMeta | null>(null);
@@ -138,36 +165,13 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
     setError("");
     setHistoryTotalRecords(null);
     setHistoryProbeFailed(false);
-    const probeParams = buildAgentReceivablesHistoryProbeParams();
-    const [overviewResult, probeResult] = await Promise.allSettled([
-      fetchAgentReceivablesOverview(),
-      fetchAgentReceivableOrders(probeParams),
-    ]);
+    const signals = await fetchAgentReceivablesEmptyGateSignals();
     if (generation !== overviewGenerationRef.current) return;
 
-    if (overviewResult.status === "rejected") {
-      const caught = overviewResult.reason;
-      setOverview(null);
-      setHistoryTotalRecords(null);
-      setHistoryProbeFailed(false);
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить кошелёк");
-    } else {
-      setOverview(overviewResult.value);
-      setError("");
-      if (probeResult.status === "rejected") {
-        setHistoryTotalRecords(null);
-        setHistoryProbeFailed(true);
-      } else {
-        const totalRecords = parseAgentHistoryTotalRecords(probeResult.value.meta);
-        if (totalRecords === null) {
-          setHistoryTotalRecords(null);
-          setHistoryProbeFailed(true);
-        } else {
-          setHistoryTotalRecords(totalRecords);
-          setHistoryProbeFailed(false);
-        }
-      }
-    }
+    setOverview(signals.overview);
+    setError(signals.error);
+    setHistoryTotalRecords(signals.historyTotalRecords);
+    setHistoryProbeFailed(signals.historyProbeFailed);
     if (generation === overviewGenerationRef.current) {
       setLoading(false);
     }
@@ -240,7 +244,12 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
   }, []);
 
   useEffect(() => {
-    if (screen === "overview") void reloadOverview();
+    if (screen !== "overview") return;
+    if (skipInitialOverviewReloadRef.current) {
+      skipInitialOverviewReloadRef.current = false;
+      return;
+    }
+    void reloadOverview();
   }, [reloadOverview, screen]);
 
   useEffect(() => {
@@ -483,7 +492,7 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
       });
     const showOverviewLedger = overview && !loading && !showWalletEmpty && !error;
     return (
-      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-receivables">
+      <AgentSettlementsFrame onBack={onBack} data-ledger-view={prefs.view} data-testid="agent-r05-receivables">
         {!showWalletEmpty ? viewControl : null}
         {!showWalletEmpty ? (
           <p className={styles.muted}>Выберите сумму, чтобы увидеть партнёров.</p>
@@ -562,7 +571,7 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
 
   if (screen === "partners") {
     return (
-      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-partners">
+      <AgentSettlementsFrame onBack={onBack} data-ledger-view={prefs.view} data-testid="agent-r05-partners">
         <div className={styles.breadcrumb}>
           <button type="button" className={styles.backBtn} onClick={() => setScreen("overview")}>
             ← Все взаиморасчёты
@@ -637,7 +646,7 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
 
   if (screen === "orders" && selectedPartner) {
     return (
-      <AgentSettlementsFrame data-ledger-view={prefs.view} data-testid="agent-r05-orders">
+      <AgentSettlementsFrame onBack={onBack} data-ledger-view={prefs.view} data-testid="agent-r05-orders">
         <div className={styles.breadcrumb}>
           <button
             type="button"
@@ -730,14 +739,14 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
   if (screen === "order") {
     if (loading && !orderDetail) {
       return (
-        <AgentSettlementsFrame data-testid="agent-r05-order-detail-loading">
+        <AgentSettlementsFrame onBack={onBack} data-testid="agent-r05-order-detail-loading">
           <p className={styles.meta}>Загружаем заказ…</p>
         </AgentSettlementsFrame>
       );
     }
     if (error && !orderDetail) {
       return (
-        <AgentSettlementsFrame data-testid="agent-r05-order-detail-error">
+        <AgentSettlementsFrame onBack={onBack} data-testid="agent-r05-order-detail-error">
           <div className={styles.backRow}>
             <button
               type="button"
@@ -766,7 +775,7 @@ export function AgentReceivablesHub({ walletEmptyViewerRole }: WalletEmptyViewer
   if (screen === "order" && orderDetail) {
     const { record, lines, totalsMismatch, history } = orderDetail;
     return (
-      <AgentSettlementsFrame shellClassName={styles.orderDetailShell} data-testid="agent-r05-order-detail">
+      <AgentSettlementsFrame onBack={onBack} shellClassName={styles.orderDetailShell} data-testid="agent-r05-order-detail">
         <div className={styles.backRow}>
           <button
             type="button"

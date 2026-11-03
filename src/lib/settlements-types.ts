@@ -12,6 +12,7 @@ export type SettlementObligation = {
   hasIndividualTerms?: boolean;
   confirmationAt?: string | null;
   confirmationLabel?: string;
+  rewardPaidAt?: string | null;
   id: string;
   orderId: string;
   accrualType: SettlementAccrualType;

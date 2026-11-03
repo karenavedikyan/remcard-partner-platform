@@ -2,7 +2,7 @@
 
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
-import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
+import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccrualsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
 
@@ -13,7 +13,15 @@ export function AgentReceivablesWallet({ walletEmptyViewerRole }: WalletEmptyVie
       settlementsTabTestId="agent-r05-tab-settlements"
       requisitesTabTestId="agent-r05-tab-requisites"
       requisitesScopeTestId="agent-r05-requisites-scope"
-      settlements={<AgentReceivablesHub walletEmptyViewerRole={walletEmptyViewerRole} />}
+      settlements={
+        <WalletAccrualsWorkspace
+          incomingOnly
+          scopeKey="agent-r05-settlements"
+          fallbackRibbon="Агент"
+          agentRegistry
+          walletEmptyViewerRole={walletEmptyViewerRole}
+        />
+      }
       requisites={
         <div className={agentStyles.agentScope}>
           <AgentPayoutRequisitesPanel disabled variant="wallet" />

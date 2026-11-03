@@ -9,21 +9,21 @@ import { RECEIVABLES_PREFS_KEY } from "@/lib/agent-r05/receivables-prefs";
 vi.mock("@/lib/agent-r05/api", () => ({
   downloadAgentReceivablesExport: vi.fn(),
   fetchAgentReceivableOrderDetail: vi.fn(),
-  fetchAgentReceivableOrders: vi.fn().mockResolvedValue({
-    orders: [],
+  fetchAgentReceivablePartners: vi.fn().mockResolvedValue({
+    partners: [],
     meta: {
       totalRecords: 1,
       confirmedTotalKopecks: 10000,
       selectionTotalKopecks: 10000,
       page: 1,
-      pageSize: 1,
+      pageSize: 25,
       pageCount: 1,
-      sort: "date-desc",
+      sort: "name",
       periodField: "purchaseAt",
       periodTimezone: "UTC",
     },
   }),
-  fetchAgentReceivablePartners: vi.fn(),
+  fetchAgentReceivableOrders: vi.fn(),
   fetchAgentReceivablesOverview: vi.fn().mockResolvedValue({
     contractVersion: "test",
     confirmedTotalKopecks: 10000,

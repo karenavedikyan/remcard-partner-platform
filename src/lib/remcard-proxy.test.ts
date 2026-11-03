@@ -125,6 +125,21 @@ const stubServer = createServer(async (request, response) => {
     response.end(JSON.stringify({ reward: null, permissions: null }));
     return;
   }
+
+  if (/^\/api\/bonus\/[^/]+\/pay$/i.test(url.pathname) && request.method === "POST") {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ bonus: { id: "bonus-stub", status: "PAID" } }));
+    return;
+  }
+
+  if (/^\/api\/bonus\/[^/]+\/payout-actions$/i.test(url.pathname) && request.method === "GET") {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ canRecordCash: true, canRecordTransfer: false }));
+    return;
+  }
+
   if (url.pathname === "/api/store/order" && request.method === "POST") {
     stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
     response.writeHead(201, {
@@ -1024,6 +1039,121 @@ describe("remcard proxy transport checks", () => {
 
     const clientResponse = buildProxyNextResponse(replay);
     assert.equal(clientResponse.headers.get("Idempotent-Replayed"), "true");
+  });
+
+  it("forwards Idempotency-Key only for scoped POST /api/bonus/:id/pay via BFF builder and proxy", async () => {
+    const bonusId = "clxyz123456789012345678";
+    const payPath = `/api/bonus/${bonusId}/pay`;
+    const clientKey = `prof-i-d.${bonusId}.550e8400-e29b-41d4-a716-446655440000`;
+    const paySegments = ["api", "bonus", bonusId, "pay"];
+
+    stubState.lastIdempotencyKey = "stale";
+    const payRequest = new NextRequest(`http://localhost:3000/api/remcard/${paySegments.join("/")}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "http://localhost:3000",
+        Cookie: "remcard-token=abc; remcard-csrf=qa-csrf",
+        "X-CSRF-Token": "qa-csrf",
+        "Idempotency-Key": clientKey,
+      },
+      body: JSON.stringify({ method: "CASH" }),
+    });
+    const payInput = await buildRemcardProxyRequestInput(payRequest, paySegments);
+    assert.ok(payInput);
+    assert.equal(payInput.idempotencyKeyHeader, clientKey);
+    const payResult = await proxyRemcardRequest(payInput);
+    assert.equal(payResult.ok, true);
+    assert.equal(stubState.lastIdempotencyKey, clientKey);
+
+    stubState.lastIdempotencyKey = "stale";
+    const invalid = await proxyRemcardRequest({
+      method: "POST",
+      pathname: payPath,
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ method: "CASH" }),
+      idempotencyKeyHeader: "bad key!",
+    });
+    assert.equal(invalid.ok, false);
+    if (invalid.ok) return;
+    assert.equal(invalid.status, 400);
+    assert.equal(stubState.lastIdempotencyKey, "stale");
+
+    stubState.lastIdempotencyKey = "stale";
+    const missingKeyInput = await buildRemcardProxyRequestInput(
+      new NextRequest(`http://localhost:3000/api/remcard/${paySegments.join("/")}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://localhost:3000",
+        },
+        body: JSON.stringify({ method: "CASH" }),
+      }),
+      paySegments,
+    );
+    assert.ok(missingKeyInput);
+    assert.equal(missingKeyInput.idempotencyKeyHeader, null);
+    const missingKeyResult = await proxyRemcardRequest(missingKeyInput);
+    assert.equal(missingKeyResult.ok, true);
+    assert.equal(stubState.lastIdempotencyKey, null);
+
+    const actionsSegments = ["api", "bonus", bonusId, "payout-actions"];
+    stubState.lastIdempotencyKey = "stale";
+    const actionsInput = await buildRemcardProxyRequestInput(
+      new NextRequest(`http://localhost:3000/api/remcard/${actionsSegments.join("/")}`, {
+        method: "GET",
+        headers: { "Idempotency-Key": "must-not-leak" },
+      }),
+      actionsSegments,
+    );
+    assert.ok(actionsInput);
+    assert.equal(actionsInput.idempotencyKeyHeader, null);
+    await proxyRemcardRequest(actionsInput);
+    assert.equal(stubState.lastIdempotencyKey, null);
+
+    const consentInput = await buildRemcardProxyRequestInput(
+      new NextRequest("http://localhost:3000/api/remcard/api/account/consent", {
+        method: "POST",
+        headers: { "Idempotency-Key": "must-not-leak" },
+        body: JSON.stringify({ legalDocumentId: "doc-1" }),
+      }),
+      ["api", "account", "consent"],
+    );
+    assert.ok(consentInput);
+    assert.equal(consentInput.idempotencyKeyHeader, null);
+
+    const storeKey = "550e8400-e29b-41d4-a716-446655440000";
+    stubState.lastIdempotencyKey = null;
+    const storeResult = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: storeKey,
+    });
+    assert.equal(storeResult.ok, true);
+    assert.equal(stubState.lastIdempotencyKey, storeKey);
+
+    stubState.lastIdempotencyKey = null;
+    const rewardResult = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/wallet/order-rewards/caaaaaaaaaaaaaaaaaaaaaaaa",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: "remcard-token=abc",
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ type: "fulfill", lineId: "doors" }),
+      csrfHeader: "qa-csrf",
+      idempotencyKeyHeader: "reward-exact-key",
+    });
+    assert.equal(rewardResult.ok, true);
+    assert.equal(stubState.lastIdempotencyKey, "reward-exact-key");
   });
 
   it("times out hung upstream requests", async () => {

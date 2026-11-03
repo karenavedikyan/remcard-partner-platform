@@ -26,20 +26,21 @@ vi.mock("@/lib/agent-r05/receivables-prefs", () => ({
   saveReceivablesPrefs: vi.fn(),
 }));
 
-import { fetchAgentReceivableOrders, fetchAgentReceivablesOverview } from "@/lib/agent-r05/api";
+import { fetchAgentReceivablePartners, fetchAgentReceivablesOverview } from "@/lib/agent-r05/api";
+import { buildAgentReceivablesHistoryProbeParams } from "@/lib/wallet-empty/agent-history-probe";
 
-/** Default probe response for overview bundle (non-empty history; read-only GET). */
+/** Default probe response for overview bundle (partner groups; read-only GET). */
 function agentHistoryProbeFixture(totalRecords = 1) {
   return {
-    orders: [] as never[],
+    partners: [] as never[],
     meta: {
       totalRecords,
       confirmedTotalKopecks: 250000,
       selectionTotalKopecks: 250000,
       page: 1,
-      pageSize: 1,
-      pageCount: totalRecords > 0 ? totalRecords : 0,
-      sort: "date-desc",
+      pageSize: 25,
+      pageCount: totalRecords > 0 ? 1 : 0,
+      sort: "name",
       periodField: "purchaseAt" as const,
       periodTimezone: "UTC" as const,
     },
@@ -50,7 +51,12 @@ describe("AgentReceivablesHub incomingOnly overview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchAgentReceivablesOverview).mockResolvedValue(overviewFixture as never);
-    vi.mocked(fetchAgentReceivableOrders).mockResolvedValue(agentHistoryProbeFixture(1) as never);
+    vi.mocked(fetchAgentReceivablePartners).mockImplementation((params) => {
+      if (params.toString() === buildAgentReceivablesHistoryProbeParams().toString()) {
+        return Promise.resolve(agentHistoryProbeFixture(1) as never);
+      }
+      return Promise.resolve({ partners: [], meta: agentHistoryProbeFixture(0).meta } as never);
+    });
   });
 
   it("shows one primary receivable tile and no payable direction tile", async () => {

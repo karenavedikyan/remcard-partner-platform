@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
-import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
+import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccrualsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
 import type { ReactNode } from "react";
@@ -20,7 +20,15 @@ export function SpecialistMasterWallet({ settlementsSlot, walletEmptyViewerRole 
       settlementsTabTestId="specialist-wallet-tab-settlements"
       requisitesTabTestId="specialist-wallet-tab-requisites"
       requisitesScopeTestId="specialist-wallet-requisites-scope"
-      settlements={settlementsSlot ?? <SpecialistSettlementsWorkspace walletEmptyViewerRole={walletEmptyViewerRole} />}
+      settlements={
+        settlementsSlot ?? (
+          <WalletAccrualsWorkspace
+            scopeKey="specialist-master"
+            walletEmptyViewerRole={walletEmptyViewerRole}
+            masterLedger={{ ledgerScopeKey: "specialist-master-ledger" }}
+          />
+        )
+      }
       requisites={
         <div className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}>
           <AgentPayoutRequisitesPanel variant="wallet" />

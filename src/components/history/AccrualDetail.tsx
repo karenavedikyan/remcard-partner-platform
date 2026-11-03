@@ -195,7 +195,10 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
             payoutActions,
           }}
           onClose={() => setPayoutModalOpen(false)}
-          onSuccess={() => void load()}
+          onSuccess={async () => {
+            await load();
+            setPayoutModalOpen(false);
+          }}
         />
       ) : null}
     </div>
