@@ -663,8 +663,10 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.1;
-  /* Keep number + currency together; tiles stack when the dialog is narrow. */
-  white-space: nowrap;
+  /* 3-column desktop: wrap at spaces (and anywhere if unbreakable) so large
+     amounts stay inside the tile; nowrap only when tiles stack (see @container). */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .wallet-accrual-stat-tiles__tile span {
@@ -1289,6 +1291,11 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
 @container wallet-accrual-dialog (max-width: 480px) {
   .wallet-accrual-stat-tiles {
     grid-template-columns: 1fr;
+  }
+
+  /* Stacked tiles are wide enough: keep «number + ₽» on one line. */
+  .wallet-accrual-stat-tiles__tile strong {
+    white-space: nowrap;
   }
 
   .wallet-txn-panel__head-row {

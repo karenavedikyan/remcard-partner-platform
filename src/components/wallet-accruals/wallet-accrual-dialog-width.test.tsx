@@ -80,6 +80,10 @@ body { margin: 0; font-family: Manrope, system-ui, sans-serif; }
 </body></html>`;
 }
 
+/** Large formatted amounts that fit at 4f64b8cf (wrap at spaces) but overflow with global nowrap. */
+const AMOUNT_LARGE_INT = "9 999 999 999 ₽";
+const AMOUNT_LARGE_FRAC = "99 999 999 999,99 ₽";
+
 /** Fixture with stat tiles + long unbroken row (320/375 overflow regression). */
 function buildWrapFixtureHtml(cssText: string, theme: "light" | "dark" = "light"): string {
   const themeAttr = theme === "dark" ? ' data-theme="dark"' : "";
@@ -110,15 +114,15 @@ body { margin: 0; font-family: Manrope, system-ui, sans-serif; background: var(-
     </div>
     <div class="wallet-accrual-stat-tiles" data-testid="wallet-detail-stat-tiles">
       <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-confirmed">
-        <strong>8 900 ₽</strong>
+        <strong>${AMOUNT_LARGE_INT}</strong>
         <span>Подтверждено</span>
       </div>
       <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-waiting">
-        <strong>1 200 ₽</strong>
+        <strong>${AMOUNT_LARGE_FRAC}</strong>
         <span>Ожидает</span>
       </div>
       <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-suspended">
-        <strong>450 ₽</strong>
+        <strong>${AMOUNT_LARGE_FRAC}</strong>
         <span>Приостановлено</span>
       </div>
     </div>
@@ -129,7 +133,7 @@ body { margin: 0; font-family: Manrope, system-ui, sans-serif; background: var(-
           <span class="wallet-accrual-row__sub">Партнёр · № order-long-1</span>
         </span>
         <span class="wallet-status-badge wallet-status-badge--confirmed">
-          <span class="wallet-status-badge__amount">8 900 ₽</span>
+          <span class="wallet-status-badge__amount">${AMOUNT_LARGE_INT}</span>
         </span>
       </button>
     </div>
@@ -359,6 +363,91 @@ export async function measureDialogWrap(
   return results;
 }
 
+export type DesktopTileAmountFit = {
+  viewport: { width: number; height: number };
+  dialogWidth: number;
+  tiles: {
+    tileTestId: string;
+    amount: string;
+    strongScrollWidth: number;
+    strongClientWidth: number;
+    textRight: number;
+    tileRight: number;
+  }[];
+};
+
+/**
+ * Native Chromium: large amounts must fit inside 3-column tiles in a ~560px dialog
+ * (desktop viewports). Fails when global white-space:nowrap prevents wrapping at spaces.
+ */
+export async function measureDesktopTileAmountFit(
+  cssText: string,
+  viewports: readonly { width: number; height: number }[] = [
+    { width: 768, height: 1024 },
+    { width: 1440, height: 900 },
+    { width: 2038, height: 982 },
+  ],
+  browser?: Browser,
+): Promise<DesktopTileAmountFit[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), "wallet-dialog-desktop-amounts-"));
+  const htmlPath = path.join(dir, "fixture.html");
+  writeFileSync(htmlPath, buildWrapFixtureHtml(cssText, "light"), "utf8");
+  const owned = !browser;
+  const launched = browser ?? (await launchGeometryBrowser());
+  if (!launched) {
+    throw new Error("Executable doesn't exist");
+  }
+  const results: DesktopTileAmountFit[] = [];
+  try {
+    for (const viewport of viewports) {
+      const page = await launched.newPage({ viewport });
+      await page.goto(`file://${htmlPath}`, { waitUntil: "load" });
+      const metrics = await page.evaluate(() => {
+        const dlg = document.querySelector("dialog.wallet-accrual-dialog");
+        if (!dlg) return null;
+        const dialogWidth = dlg.getBoundingClientRect().width;
+        const tiles: {
+          tileTestId: string;
+          amount: string;
+          strongScrollWidth: number;
+          strongClientWidth: number;
+          textRight: number;
+          tileRight: number;
+        }[] = [];
+        for (const tile of Array.from(
+          dlg.querySelectorAll(".wallet-accrual-stat-tiles__tile"),
+        )) {
+          const strong = tile.querySelector("strong");
+          if (!strong) continue;
+          const range = document.createRange();
+          range.selectNodeContents(strong);
+          const rects = Array.from(range.getClientRects());
+          const textRight =
+            rects.length === 0
+              ? strong.getBoundingClientRect().right
+              : Math.max(...rects.map((r) => r.right));
+          tiles.push({
+            tileTestId: (tile as HTMLElement).dataset.testid || "",
+            amount: strong.textContent?.trim() || "",
+            strongScrollWidth: strong.scrollWidth,
+            strongClientWidth: strong.clientWidth,
+            textRight,
+            tileRight: tile.getBoundingClientRect().right,
+          });
+        }
+        return { dialogWidth, tiles };
+      });
+      await page.close();
+      if (!metrics) throw new Error(`missing dialog at ${viewport.width}`);
+      results.push({ viewport, ...metrics });
+    }
+  } finally {
+    if (owned) await launched.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return results;
+}
+
 describe("wallet-accrual-dialog content wrap at 320/375", () => {
   const css = readFileSync(cssPath, "utf8");
 
@@ -381,6 +470,40 @@ describe("wallet-accrual-dialog content wrap at 320/375", () => {
           expect(
             tile.labelRight,
             `label past tile edge (${tile.tileTestId} @ ${m.viewport.width} ${m.theme})`,
+          ).toBeLessThanOrEqual(tile.tileRight + 1);
+        }
+      }
+    } finally {
+      await browser.close();
+    }
+  });
+});
+
+describe("wallet-accrual-dialog desktop tile amounts (3-column, ~560px)", () => {
+  const css = readFileSync(cssPath, "utf8");
+
+  it("Playwright: large amounts fit inside tiles at 768/1440/2038 (no global nowrap)", async (ctx) => {
+    process.env.CHROME_BIN ||= "/usr/local/bin/google-chrome";
+    const browser = await launchGeometryBrowser();
+    if (!browser) {
+      ctx.skip();
+      return;
+    }
+    try {
+      const measurements = await measureDesktopTileAmountFit(css, undefined, browser);
+      expect(measurements).toHaveLength(3);
+      for (const m of measurements) {
+        expect(m.dialogWidth).toBeGreaterThanOrEqual(550);
+        expect(m.dialogWidth).toBeLessThanOrEqual(564);
+        expect(m.tiles.length).toBe(3);
+        for (const tile of m.tiles) {
+          expect(
+            tile.strongScrollWidth,
+            `strong overflow ${tile.tileTestId} «${tile.amount}» @ ${m.viewport.width}: scroll=${tile.strongScrollWidth} client=${tile.strongClientWidth}`,
+          ).toBeLessThanOrEqual(tile.strongClientWidth + 1);
+          expect(
+            tile.textRight,
+            `amount past tile edge ${tile.tileTestId} «${tile.amount}» @ ${m.viewport.width}: textRight=${tile.textRight} tileRight=${tile.tileRight}`,
           ).toBeLessThanOrEqual(tile.tileRight + 1);
         }
       }
