@@ -1,0 +1,508 @@
+diff --git a/src/app/(cabinet)/CabinetTabLoading.tsx b/src/app/(cabinet)/CabinetTabLoading.tsx
+new file mode 100644
+index 00000000..00940c1c
+--- /dev/null
++++ b/src/app/(cabinet)/CabinetTabLoading.tsx
+@@ -0,0 +1,13 @@
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import {
++  CABINET_TAB_LOADING_HEADINGS,
++  type CabinetLoadingHeading,
++} from "@/lib/cabinet-loading-copy";
++
++export function CabinetTabLoading({ routeKey }: { routeKey: keyof typeof CABINET_TAB_LOADING_HEADINGS }) {
++  return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS[routeKey]} />;
++}
++
++export function CabinetTabLoadingFromHeading(props: CabinetLoadingHeading) {
++  return <CabinetPageLoadingSkeleton {...props} />;
++}
+diff --git a/src/app/(cabinet)/certificates/loading.tsx b/src/app/(cabinet)/certificates/loading.tsx
+new file mode 100644
+index 00000000..9e6fc069
+--- /dev/null
++++ b/src/app/(cabinet)/certificates/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function CertificatesLoading() {
++  return <CabinetTabLoading routeKey="/certificates" />;
++}
+diff --git a/src/app/(cabinet)/clients/loading.tsx b/src/app/(cabinet)/clients/loading.tsx
+new file mode 100644
+index 00000000..dae73c3e
+--- /dev/null
++++ b/src/app/(cabinet)/clients/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function ClientsLoading() {
++  return <CabinetTabLoading routeKey="/clients" />;
++}
+diff --git a/src/app/(cabinet)/history/loading.tsx b/src/app/(cabinet)/history/loading.tsx
+new file mode 100644
+index 00000000..dcd4f696
+--- /dev/null
++++ b/src/app/(cabinet)/history/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function HistoryLoading() {
++  return <CabinetTabLoading routeKey="/history" />;
++}
+diff --git a/src/app/(cabinet)/loading.tsx b/src/app/(cabinet)/loading.tsx
+new file mode 100644
+index 00000000..e80e4ea3
+--- /dev/null
++++ b/src/app/(cabinet)/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function CabinetGroupLoading() {
++  return <CabinetTabLoading routeKey="/" />;
++}
+diff --git a/src/app/(cabinet)/notifications/loading.tsx b/src/app/(cabinet)/notifications/loading.tsx
+new file mode 100644
+index 00000000..f067d7a6
+--- /dev/null
++++ b/src/app/(cabinet)/notifications/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function NotificationsLoading() {
++  return <CabinetTabLoading routeKey="/notifications" />;
++}
+diff --git a/src/app/(cabinet)/partners/loading.tsx b/src/app/(cabinet)/partners/loading.tsx
+new file mode 100644
+index 00000000..27196215
+--- /dev/null
++++ b/src/app/(cabinet)/partners/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function PartnersLoading() {
++  return <CabinetTabLoading routeKey="/partners" />;
++}
+diff --git a/src/app/(cabinet)/profile/loading.tsx b/src/app/(cabinet)/profile/loading.tsx
+new file mode 100644
+index 00000000..c4728c21
+--- /dev/null
++++ b/src/app/(cabinet)/profile/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function ProfileLoading() {
++  return <CabinetTabLoading routeKey="/profile" />;
++}
+diff --git a/src/app/(cabinet)/recommendations/loading.tsx b/src/app/(cabinet)/recommendations/loading.tsx
+new file mode 100644
+index 00000000..a2d350aa
+--- /dev/null
++++ b/src/app/(cabinet)/recommendations/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function RecommendationsLoading() {
++  return <CabinetTabLoading routeKey="/recommendations" />;
++}
+diff --git a/src/app/(cabinet)/scanner/loading.tsx b/src/app/(cabinet)/scanner/loading.tsx
+new file mode 100644
+index 00000000..1c17c31f
+--- /dev/null
++++ b/src/app/(cabinet)/scanner/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function ScannerLoading() {
++  return <CabinetTabLoading routeKey="/scanner" />;
++}
+diff --git a/src/app/(cabinet)/settlements/loading.tsx b/src/app/(cabinet)/settlements/loading.tsx
+new file mode 100644
+index 00000000..029dca12
+--- /dev/null
++++ b/src/app/(cabinet)/settlements/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetTabLoading } from "@/app/(cabinet)/CabinetTabLoading";
++
++export default function SettlementsLoading() {
++  return <CabinetTabLoading routeKey="/settlements" />;
++}
+diff --git a/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx b/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx
+new file mode 100644
+index 00000000..a704a38c
+--- /dev/null
++++ b/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx
+@@ -0,0 +1,37 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
++
++const fetchAgentR03Status = vi.hoisted(() => vi.fn());
++
++vi.mock("@/lib/agent-r03/api", () => ({
++  fetchAgentR03Status,
++}));
++
++beforeEach(() => {
++  vi.clearAllMocks();
++});
++
++describe("AgentR03Gate stale route protection", () => {
++  it("does not apply eligibility after unmount when the fetch resolves late", async () => {
++    let resolve!: (value: unknown) => void;
++    fetchAgentR03Status.mockReturnValue(
++      new Promise((res) => {
++        resolve = res;
++      }),
++    );
++
++    const { unmount } = render(
++      <AgentR03Gate>
++        <div data-testid="allowed-body">allowed</div>
++      </AgentR03Gate>,
++    );
++
++    expect(screen.getByTestId("cabinet-page-loading-skeleton")).toBeInTheDocument();
++    unmount();
++
++    resolve({ featureEnabled: true, eligible: true });
++    await waitFor(() => expect(fetchAgentR03Status).toHaveBeenCalledTimes(1));
++    expect(screen.queryByTestId("allowed-body")).toBeNull();
++  });
++});
+diff --git a/src/components/agent-r03/AgentR03Gate.tsx b/src/components/agent-r03/AgentR03Gate.tsx
+index ec892677..e9b00e1b 100644
+--- a/src/components/agent-r03/AgentR03Gate.tsx
++++ b/src/components/agent-r03/AgentR03Gate.tsx
+@@ -5,6 +5,8 @@ import { RemcardApiError } from "@/lib/api-client";
+ import { fetchAgentR03Status } from "@/lib/agent-r03/api";
+ import type { AgentR03Status } from "@/lib/agent-r03/types";
+ import { Button } from "@/components/ui/Button";
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
+ import styles from "./agent-r03.module.css";
+ 
+ export function AgentR03Gate({ children }: { children: React.ReactNode }) {
+@@ -33,7 +35,9 @@ export function AgentR03Gate({ children }: { children: React.ReactNode }) {
+     };
+   }, []);
+ 
+-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
++  if (loading) {
++    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/certificates"]} />;
++  }
+   if (error) {
+     return (
+       <div className={styles.errorBlock}>
+diff --git a/src/components/agent-r04/AgentR04Gate.tsx b/src/components/agent-r04/AgentR04Gate.tsx
+index 60993c5e..3982d225 100644
+--- a/src/components/agent-r04/AgentR04Gate.tsx
++++ b/src/components/agent-r04/AgentR04Gate.tsx
+@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
+ import { RemcardApiError } from "@/lib/api-client";
+ import { fetchAgentR04Status, type AgentR04Status } from "@/lib/agent-r04/api";
+ import { Button } from "@/components/ui/Button";
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
+ import styles from "./agent-r04.module.css";
+ 
+ export function AgentR04Gate({
+@@ -38,7 +40,9 @@ export function AgentR04Gate({
+     };
+   }, []);
+ 
+-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
++  if (loading) {
++    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/partners"]} />;
++  }
+   if (error) {
+     return (
+       <div className={styles.errorBlock}>
+diff --git a/src/components/clients/OwnerClientsGate.tsx b/src/components/clients/OwnerClientsGate.tsx
+index 97e28ce2..1b2057e2 100644
+--- a/src/components/clients/OwnerClientsGate.tsx
++++ b/src/components/clients/OwnerClientsGate.tsx
+@@ -7,6 +7,8 @@ import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
+ import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
+ import type { AuthUser } from "@/lib/types";
+ import { Button } from "@/components/ui/Button";
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
+ import styles from "@/components/agent-r03/agent-r03.module.css";
+ import {
+   OwnerClientsModeProvider,
+@@ -83,7 +85,9 @@ export function OwnerClientsGate({ children }: { children: React.ReactNode }) {
+     };
+   }, []);
+ 
+-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
++  if (loading) {
++    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/clients"]} />;
++  }
+   if (error) {
+     return (
+       <div className={styles.errorBlock}>
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.module.css b/src/components/layout/CabinetPageLoadingSkeleton.module.css
+new file mode 100644
+index 00000000..76afa32c
+--- /dev/null
++++ b/src/components/layout/CabinetPageLoadingSkeleton.module.css
+@@ -0,0 +1,102 @@
++.root {
++  min-width: 0;
++  max-width: 100%;
++  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
++}
++
++.heading {
++  margin-bottom: var(--space-8);
++  min-width: 0;
++  max-width: 100%;
++}
++
++.eyebrow {
++  font-size: var(--text-xs);
++  font-weight: 750;
++  letter-spacing: 0.13em;
++  text-transform: uppercase;
++  color: var(--muted);
++  display: block;
++  margin-bottom: var(--space-3);
++}
++
++.title {
++  font-size: clamp(1.65rem, 3vw, 2.15rem);
++  font-weight: 800;
++  line-height: 1.15;
++  margin: 0;
++}
++
++.description {
++  margin: var(--space-3) 0 0;
++  max-width: 52rem;
++  color: var(--muted);
++  font-size: var(--text-sm);
++  line-height: 1.5;
++  min-height: 1.5em;
++}
++
++.descriptionHidden {
++  visibility: hidden;
++  margin: var(--space-3) 0 0;
++  min-height: 1.5em;
++}
++
++.grid {
++  display: grid;
++  gap: var(--space-4);
++  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
++  min-height: 12rem;
++}
++
++.block {
++  border-radius: 12px;
++  border: 1px solid var(--line);
++  background: var(--surface);
++  min-height: 7.5rem;
++  opacity: 0;
++  animation: cabinetSkeletonReveal 130ms ease forwards;
++}
++
++.blockWide {
++  grid-column: 1 / -1;
++  min-height: 10rem;
++}
++
++@keyframes cabinetSkeletonReveal {
++  to {
++    opacity: 1;
++  }
++}
++
++@keyframes cabinetSkeletonShimmer {
++  0% {
++    background-position: 200% 0;
++  }
++  100% {
++    background-position: -200% 0;
++  }
++}
++
++@media (prefers-reduced-motion: no-preference) {
++  .blockShimmer {
++    background: linear-gradient(
++      110deg,
++      var(--surface) 8%,
++      var(--offset) 18%,
++      var(--surface) 33%
++    );
++    background-size: 200% 100%;
++    animation:
++      cabinetSkeletonReveal 130ms ease forwards,
++      cabinetSkeletonShimmer 1.4s ease-in-out 130ms infinite;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .block {
++    opacity: 1;
++    animation: none;
++    background: var(--offset);
++  }
++}
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.test.tsx b/src/components/layout/CabinetPageLoadingSkeleton.test.tsx
+new file mode 100644
+index 00000000..9b759a02
+--- /dev/null
++++ b/src/components/layout/CabinetPageLoadingSkeleton.test.tsx
+@@ -0,0 +1,19 @@
++import { describe, expect, it } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++describe("CabinetPageLoadingSkeleton", () => {
++  it("keeps static route heading visible and exposes busy status semantics", () => {
++    render(
++      <CabinetPageLoadingSkeleton
++        eyebrow="RemCard PROF"
++        title="Клиенты"
++        description="Клиенты, с которыми вы работаете в кабинете."
++      />,
++    );
++    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
++    expect(screen.getByRole("heading", { level: 1, name: "Клиенты" })).toBeInTheDocument();
++    expect(screen.getByText("RemCard PROF")).toBeInTheDocument();
++    expect(screen.getByText(/Клиенты, с которыми вы работаете/i)).toBeInTheDocument();
++  });
++});
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.tsx b/src/components/layout/CabinetPageLoadingSkeleton.tsx
+new file mode 100644
+index 00000000..506dd074
+--- /dev/null
++++ b/src/components/layout/CabinetPageLoadingSkeleton.tsx
+@@ -0,0 +1,38 @@
++import type { CabinetLoadingHeading } from "@/lib/cabinet-loading-copy";
++import styles from "./CabinetPageLoadingSkeleton.module.css";
++
++type CabinetPageLoadingSkeletonProps = CabinetLoadingHeading;
++
++export function CabinetPageLoadingSkeleton({
++  eyebrow,
++  title,
++  description,
++}: CabinetPageLoadingSkeletonProps) {
++  return (
++    <div
++      className={styles.root}
++      role="status"
++      aria-busy="true"
++      aria-label={`Загрузка раздела «${title}»`}
++      data-testid="cabinet-page-loading-skeleton"
++    >
++      <header className={styles.heading}>
++        <span className={styles.eyebrow}>{eyebrow}</span>
++        <h1 className={styles.title}>{title}</h1>
++        {description ? (
++          <p className={styles.description}>{description}</p>
++        ) : (
++          <p className={styles.descriptionHidden} aria-hidden>
++            .
++          </p>
++        )}
++      </header>
++      <div className={styles.grid} aria-hidden>
++        <div className={`${styles.block} ${styles.blockWide} ${styles.blockShimmer}`} />
++        <div className={`${styles.block} ${styles.blockShimmer}`} />
++        <div className={`${styles.block} ${styles.blockShimmer}`} />
++        <div className={`${styles.block} ${styles.blockShimmer}`} />
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/specialist-certificates/OwnerIssuerGate.tsx b/src/components/specialist-certificates/OwnerIssuerGate.tsx
+index 3259f008..202ce29a 100644
+--- a/src/components/specialist-certificates/OwnerIssuerGate.tsx
++++ b/src/components/specialist-certificates/OwnerIssuerGate.tsx
+@@ -9,6 +9,8 @@ import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-cert
+ import { shouldRenderBusinessOwnerHome } from "@/lib/business-home/gate";
+ import type { AuthUser } from "@/lib/types";
+ import { Button } from "@/components/ui/Button";
++import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
+ import styles from "@/components/agent-r03/agent-r03.module.css";
+ import {
+   OwnerIssuerModeProvider,
+@@ -72,7 +74,9 @@ export function OwnerIssuerGate({ children }: { children: React.ReactNode }) {
+     };
+   }, [pathname, router, searchParams]);
+ 
+-  if (loading) return <p className={styles.loading}>Загрузка…</p>;
++  if (loading) {
++    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/recommendations"]} />;
++  }
+   if (error) {
+     return (
+       <div className={styles.errorBlock}>
+diff --git a/src/lib/cabinet-loading-copy.ts b/src/lib/cabinet-loading-copy.ts
+new file mode 100644
+index 00000000..464e0277
+--- /dev/null
++++ b/src/lib/cabinet-loading-copy.ts
+@@ -0,0 +1,57 @@
++export type CabinetLoadingHeading = {
++  eyebrow: string;
++  title: string;
++  description?: string;
++};
++
++export const CABINET_TAB_LOADING_HEADINGS: Record<string, CabinetLoadingHeading> = {
++  "/": {
++    eyebrow: "RemCard PROF",
++    title: "Моя главная",
++    description: "Обзор партнёрств и быстрые переходы к основным разделам кабинета.",
++  },
++  "/partners": {
++    eyebrow: "RemCard PROF",
++    title: "Партнёры",
++    description: "Поиск, приглашения и управление партнёрствами.",
++  },
++  "/clients": {
++    eyebrow: "RemCard PROF",
++    title: "Клиенты",
++    description: "Клиенты, с которыми вы работаете в кабинете.",
++  },
++  "/history": {
++    eyebrow: "RemCard PROF",
++    title: "История",
++    description: "Покупки и начисления по данным сервера — без пересчёта по текущим условиям.",
++  },
++  "/recommendations": {
++    eyebrow: "RemCard PROF",
++    title: "Рекомендации",
++    description: "Сертификаты и рекомендации для ваших клиентов.",
++  },
++  "/scanner": {
++    eyebrow: "RemCard PROF",
++    title: "Сканер",
++    description: "Сканируйте QR или введите код, проверьте документ и подтвердите покупку.",
++  },
++  "/certificates": {
++    eyebrow: "АГЕНТ",
++    title: "Сертификаты",
++    description: "Рекомендуйте. Делитесь ссылками.",
++  },
++  "/settlements": {
++    eyebrow: "RemCard PROF",
++    title: "Взаиморасчёты",
++    description: "Открытые обязательства и завершённые выплаты между партнёрами.",
++  },
++  "/profile": {
++    eyebrow: "RemCard PROF",
++    title: "Профиль",
++    description: "Данные кабинета, каталог и настройки.",
++  },
++  "/notifications": {
++    eyebrow: "RemCard PROF",
++    title: "Уведомления",
++  },
++};

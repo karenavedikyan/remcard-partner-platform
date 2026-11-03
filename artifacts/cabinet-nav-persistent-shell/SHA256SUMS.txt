@@ -1,0 +1,6 @@
+3174a0902eebc116f3fac32c2f0c87074efe6a26fd28b9ad0ddaf094a9635e55  artifacts/cabinet-nav-persistent-shell/source.diff
+676aa47b8653528ba6fe280ce1097be57ee74062905c626ee20158ed1fb7f46f  artifacts/cabinet-nav-persistent-shell/commit1-request-dedupe.diff
+660f7c5095afd430cd559efa39f72706dbccd8a6f674947749c4388bb00bc26d  artifacts/cabinet-nav-persistent-shell/commit2-persistent-shell.diff
+cb515bf92bae45bc5acdd7b50545b946cb81ba615889f6fbd3833c8465639250  artifacts/cabinet-nav-persistent-shell/commit3-stable-loading.diff
+0fa1be855653286264a6075e31dce09fe893bfb83c5f7da7d8f643ac7230e8d3  artifacts/cabinet-nav-persistent-shell/partner-nav.tar.gz
+5b8145264be8a4cb8ce2ae2fa0fe6682cd070031e05d23e54654c22cd7f3de31  artifacts/cabinet-nav-persistent-shell/REPORT.md

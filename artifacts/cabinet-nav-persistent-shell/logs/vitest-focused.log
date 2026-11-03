@@ -1,0 +1,21 @@
+
+> remcard-partner-platform@0.1.0 test:component
+> vitest run src/lib/cabinet-shell-request-dedupe.test.tsx src/lib/session-peek.test.tsx src/app/(cabinet)/cabinet-routing-contract.test.tsx src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx src/components/layout/cabinet-shell-persistence.test.tsx src/app/(cabinet)/page.admin-root-redirect.test.tsx src/components/layout/CabinetPageLoadingSkeleton.test.tsx src/components/agent-r03/AgentR03Gate.stale-route.test.tsx --maxWorkers=1
+
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 99ms
+ ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 96ms
+ ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 59ms
+ ✓ src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx (3 tests) 39ms
+ ✓ src/lib/session-peek.test.tsx (6 tests) 24ms
+ ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 29ms
+ ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (13 tests) 13ms
+ ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (4 tests) 5ms
+
+ Test Files  8 passed (8)
+      Tests  32 passed (32)
+   Start at  14:00:19
+   Duration  5.71s (transform 375ms, setup 993ms, collect 427ms, tests 364ms, environment 2.47s, prepare 408ms)
+

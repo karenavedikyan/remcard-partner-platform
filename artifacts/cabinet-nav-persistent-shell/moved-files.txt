@@ -1,0 +1,22 @@
+A	src/app/(cabinet)/cabinet-routing-contract.test.tsx
+R088	src/app/certificates/[id]/page.tsx	src/app/(cabinet)/certificates/[id]/page.tsx
+R090	src/app/certificates/new/page.tsx	src/app/(cabinet)/certificates/new/page.tsx
+R087	src/app/certificates/page.tsx	src/app/(cabinet)/certificates/page.tsx
+R075	src/app/clients/[id]/page.tsx	src/app/(cabinet)/clients/[id]/page.tsx
+R072	src/app/clients/page.tsx	src/app/(cabinet)/clients/page.tsx
+R089	src/app/history/accruals/[id]/page.tsx	src/app/(cabinet)/history/accruals/[id]/page.tsx
+R089	src/app/history/page.tsx	src/app/(cabinet)/history/page.tsx
+R088	src/app/history/purchases/[id]/page.tsx	src/app/(cabinet)/history/purchases/[id]/page.tsx
+A	src/app/(cabinet)/layout.tsx
+R084	src/app/notifications/page.tsx	src/app/(cabinet)/notifications/page.tsx
+R096	src/app/page.admin-root-redirect.test.tsx	src/app/(cabinet)/page.admin-root-redirect.test.tsx
+R096	src/app/page.tsx	src/app/(cabinet)/page.tsx
+R094	src/app/partners/agent-terms/page.tsx	src/app/(cabinet)/partners/agent-terms/page.tsx
+R096	src/app/partners/page.tsx	src/app/(cabinet)/partners/page.tsx
+R096	src/app/profile/page.tsx	src/app/(cabinet)/profile/page.tsx
+R100	src/app/profile/pureAgentProfilePage.module.css	src/app/(cabinet)/profile/pureAgentProfilePage.module.css
+R076	src/app/recommendations/[id]/page.tsx	src/app/(cabinet)/recommendations/[id]/page.tsx
+R068	src/app/recommendations/new/page.tsx	src/app/(cabinet)/recommendations/new/page.tsx
+R073	src/app/recommendations/page.tsx	src/app/(cabinet)/recommendations/page.tsx
+R086	src/app/scanner/page.tsx	src/app/(cabinet)/scanner/page.tsx
+R096	src/app/settlements/page.tsx	src/app/(cabinet)/settlements/page.tsx

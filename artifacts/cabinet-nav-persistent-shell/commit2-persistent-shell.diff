@@ -1,0 +1,1163 @@
+diff --git a/src/app/(cabinet)/cabinet-routing-contract.test.tsx b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
+new file mode 100644
+index 00000000..02f49b66
+--- /dev/null
++++ b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
+@@ -0,0 +1,74 @@
++import { readFileSync, readdirSync, statSync } from "node:fs";
++import path from "node:path";
++import { describe, expect, it } from "vitest";
++
++const CABINET_ROOT = path.join(process.cwd(), "src/app/(cabinet)");
++
++const EXPECTED_ROUTE_FILES = [
++  "page.tsx",
++  "partners/page.tsx",
++  "partners/agent-terms/page.tsx",
++  "clients/page.tsx",
++  "clients/[id]/page.tsx",
++  "certificates/page.tsx",
++  "certificates/new/page.tsx",
++  "certificates/[id]/page.tsx",
++  "history/page.tsx",
++  "history/accruals/[id]/page.tsx",
++  "history/purchases/[id]/page.tsx",
++  "notifications/page.tsx",
++  "profile/page.tsx",
++  "recommendations/page.tsx",
++  "recommendations/new/page.tsx",
++  "recommendations/[id]/page.tsx",
++  "scanner/page.tsx",
++  "settlements/page.tsx",
++];
++
++function walkPageFiles(dir: string, base = ""): string[] {
++  const entries = readdirSync(dir);
++  const pages: string[] = [];
++  for (const entry of entries) {
++    const rel = base ? `${base}/${entry}` : entry;
++    const full = path.join(dir, entry);
++    if (statSync(full).isDirectory()) {
++      pages.push(...walkPageFiles(full, rel));
++      continue;
++    }
++    if (entry === "page.tsx") {
++      pages.push(rel);
++    }
++  }
++  return pages.sort();
++}
++
++describe("(cabinet) routing contract", () => {
++  it("contains exactly the 18 moved routes and no extra page.tsx files", () => {
++    const pages = walkPageFiles(CABINET_ROOT);
++    expect(pages).toEqual([...EXPECTED_ROUTE_FILES].sort());
++  });
++
++  it("does not import CabinetShell from any moved page", () => {
++    for (const rel of EXPECTED_ROUTE_FILES) {
++      const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
++      expect(src, rel).not.toMatch(/CabinetShell/);
++    }
++  });
++
++  it("keeps a server guard on every page except home (custom guest flow)", () => {
++    for (const rel of EXPECTED_ROUTE_FILES) {
++      const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
++      if (rel === "page.tsx") {
++        expect(src).toMatch(/getSessionUser/);
++        continue;
++      }
++      expect(src, rel).toMatch(/requireProPageUser/);
++    }
++  });
++
++  it("defines a persistent layout with peekCabinetSession", () => {
++    const layout = readFileSync(path.join(CABINET_ROOT, "layout.tsx"), "utf8");
++    expect(layout).toMatch(/peekCabinetSession/);
++    expect(layout).not.toMatch(/\bredirect\s*\(/);
++  });
++});
+diff --git a/src/app/certificates/[id]/page.tsx b/src/app/(cabinet)/certificates/[id]/page.tsx
+similarity index 88%
+rename from src/app/certificates/[id]/page.tsx
+rename to src/app/(cabinet)/certificates/[id]/page.tsx
+index b96f7100..1eddaf41 100644
+--- a/src/app/certificates/[id]/page.tsx
++++ b/src/app/(cabinet)/certificates/[id]/page.tsx
+@@ -1,7 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -18,7 +17,7 @@ export default async function CertificateDetailPage(props: PageProps) {
+   }
+ 
+   return (
+-    <CabinetShell returnTo="/certificates">
++    <>
+       <PageHeading
+         eyebrow="Сертификат"
+         title="Сертификат Ремкард"
+@@ -27,6 +26,6 @@ export default async function CertificateDetailPage(props: PageProps) {
+       <AgentR03Gate>
+         <AgentCertificateDetail certificateId={params.id} />
+       </AgentR03Gate>
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/certificates/new/page.tsx b/src/app/(cabinet)/certificates/new/page.tsx
+similarity index 90%
+rename from src/app/certificates/new/page.tsx
+rename to src/app/(cabinet)/certificates/new/page.tsx
+index 35e0f2e3..39517def 100644
+--- a/src/app/certificates/new/page.tsx
++++ b/src/app/(cabinet)/certificates/new/page.tsx
+@@ -1,7 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { CertificateCreateForm } from "@/components/recommendations/CertificateCreateForm";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -19,7 +18,7 @@ export default async function NewCertificatePage(props: {
+   }
+ 
+   return (
+-    <CabinetShell returnTo="/certificates">
++    <>
+       <PageHeading
+         eyebrow="Сертификат"
+         title="Новый сертификат"
+@@ -32,6 +31,6 @@ export default async function NewCertificatePage(props: {
+           successHrefBase="/certificates"
+         />
+       </AgentR03Gate>
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/certificates/page.tsx b/src/app/(cabinet)/certificates/page.tsx
+similarity index 87%
+rename from src/app/certificates/page.tsx
+rename to src/app/(cabinet)/certificates/page.tsx
+index c083b662..ed309991 100644
+--- a/src/app/certificates/page.tsx
++++ b/src/app/(cabinet)/certificates/page.tsx
+@@ -1,7 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { AgentCertificatesList } from "@/components/agent-r03/AgentCertificatesList";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -16,7 +15,7 @@ export default async function CertificatesPage() {
+   }
+ 
+   return (
+-    <CabinetShell returnTo={RETURN_PATH}>
++    <>
+       <PageHeading
+         eyebrow="АГЕНТ"
+         title="Сертификаты"
+@@ -25,6 +24,6 @@ export default async function CertificatesPage() {
+       <AgentR03Gate>
+         <AgentCertificatesList />
+       </AgentR03Gate>
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/clients/[id]/page.tsx b/src/app/(cabinet)/clients/[id]/page.tsx
+similarity index 75%
+rename from src/app/clients/[id]/page.tsx
+rename to src/app/(cabinet)/clients/[id]/page.tsx
+index 22bad873..ce88825e 100644
+--- a/src/app/clients/[id]/page.tsx
++++ b/src/app/(cabinet)/clients/[id]/page.tsx
+@@ -1,6 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ClientDetailWorkspace } from "@/components/clients/ClientDetailWorkspace";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { requireProPageUser } from "@/lib/session";
+ 
+ export const dynamic = "force-dynamic";
+@@ -15,9 +14,5 @@ export default async function ClientDetailPage(props: PageProps) {
+     return <SessionGate reason="session" returnTo={returnPath} />;
+   }
+ 
+-  return (
+-    <CabinetShell returnTo="/clients">
+-      <ClientDetailWorkspace clientId={params.id} />
+-    </CabinetShell>
+-  );
++  return <ClientDetailWorkspace clientId={params.id} />;
+ }
+diff --git a/src/app/clients/page.tsx b/src/app/(cabinet)/clients/page.tsx
+similarity index 72%
+rename from src/app/clients/page.tsx
+rename to src/app/(cabinet)/clients/page.tsx
+index 83e9db83..9e480c52 100644
+--- a/src/app/clients/page.tsx
++++ b/src/app/(cabinet)/clients/page.tsx
+@@ -1,6 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { requireProPageUser } from "@/lib/session";
+ 
+ export const dynamic = "force-dynamic";
+@@ -13,9 +12,5 @@ export default async function ClientsPage() {
+     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+   }
+ 
+-  return (
+-    <CabinetShell returnTo={RETURN_PATH}>
+-      <ClientsListWorkspace />
+-    </CabinetShell>
+-  );
++  return <ClientsListWorkspace />;
+ }
+diff --git a/src/app/history/accruals/[id]/page.tsx b/src/app/(cabinet)/history/accruals/[id]/page.tsx
+similarity index 89%
+rename from src/app/history/accruals/[id]/page.tsx
+rename to src/app/(cabinet)/history/accruals/[id]/page.tsx
+index 50b6a72e..cbf3c9b4 100644
+--- a/src/app/history/accruals/[id]/page.tsx
++++ b/src/app/(cabinet)/history/accruals/[id]/page.tsx
+@@ -1,6 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AccrualDetail } from "@/components/history/AccrualDetail";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { accrualDetailHref, parseAccrualType } from "@/lib/accrual-type";
+ import { requireProPageUser } from "@/lib/session";
+@@ -23,9 +22,9 @@ export default async function AccrualDetailPage(props: AccrualDetailPageProps) {
+   }
+ 
+   return (
+-    <CabinetShell returnTo={returnPath}>
++    <>
+       <PageHeading eyebrow="RemCard PROF" title="Начисление" />
+       <AccrualDetail user={user} accrualId={params.id} accrualType={accrualType} />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/history/page.tsx b/src/app/(cabinet)/history/page.tsx
+similarity index 89%
+rename from src/app/history/page.tsx
+rename to src/app/(cabinet)/history/page.tsx
+index 20557643..d6d0aa65 100644
+--- a/src/app/history/page.tsx
++++ b/src/app/(cabinet)/history/page.tsx
+@@ -1,6 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { HistoryHub } from "@/components/history/HistoryHub";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -22,13 +21,13 @@ export default async function HistoryPage(props: HistoryPageProps) {
+   const initialPromoCode = searchParams?.search ?? "";
+ 
+   return (
+-    <CabinetShell returnTo={RETURN_PATH}>
++    <>
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="История"
+         description="Покупки и начисления по данным сервера — без пересчёта по текущим условиям."
+       />
+       <HistoryHub user={user} initialPromoCode={initialPromoCode} />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/history/purchases/[id]/page.tsx b/src/app/(cabinet)/history/purchases/[id]/page.tsx
+similarity index 88%
+rename from src/app/history/purchases/[id]/page.tsx
+rename to src/app/(cabinet)/history/purchases/[id]/page.tsx
+index 0d7775af..22362be2 100644
+--- a/src/app/history/purchases/[id]/page.tsx
++++ b/src/app/(cabinet)/history/purchases/[id]/page.tsx
+@@ -1,6 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PurchaseDetail } from "@/components/history/PurchaseDetail";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -21,13 +20,13 @@ export default async function PurchaseDetailPage(props: PurchaseDetailPageProps)
+   }
+ 
+   return (
+-    <CabinetShell returnTo={returnPath}>
++    <>
+       <PageHeading eyebrow="RemCard PROF" title="Покупка" />
+       <PurchaseDetail
+         user={user}
+         purchaseId={params.id}
+         promoHint={searchParams?.promo}
+       />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/(cabinet)/layout.tsx b/src/app/(cabinet)/layout.tsx
+new file mode 100644
+index 00000000..c3deecb9
+--- /dev/null
++++ b/src/app/(cabinet)/layout.tsx
+@@ -0,0 +1,17 @@
++import { peekCabinetSession } from "@/lib/session";
++import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
++import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
++
++export default async function CabinetRouteGroupLayout({
++  children,
++}: {
++  children: React.ReactNode;
++}) {
++  const user = await peekCabinetSession();
++  if (!user) {
++    return children;
++  }
++
++  const shellProps = await loadCabinetShellClientProps(user);
++  return <CabinetAppShellClient {...shellProps}>{children}</CabinetAppShellClient>;
++}
+diff --git a/src/app/notifications/page.tsx b/src/app/(cabinet)/notifications/page.tsx
+similarity index 84%
+rename from src/app/notifications/page.tsx
+rename to src/app/(cabinet)/notifications/page.tsx
+index 41b4d3f0..42cb8627 100644
+--- a/src/app/notifications/page.tsx
++++ b/src/app/(cabinet)/notifications/page.tsx
+@@ -1,4 +1,3 @@
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { ProfNotificationCenter } from "@/components/notifications/ProfNotificationCenter";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+@@ -14,9 +13,9 @@ export default async function NotificationsPage() {
+   }
+ 
+   return (
+-    <CabinetShell returnTo={returnPath}>
++    <>
+       <PageHeading eyebrow="RemCard PROF" title="Уведомления" />
+       <ProfNotificationCenter />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+similarity index 96%
+rename from src/app/page.admin-root-redirect.test.tsx
+rename to src/app/(cabinet)/page.admin-root-redirect.test.tsx
+index c8cb7be2..abdf6ef8 100644
+--- a/src/app/page.admin-root-redirect.test.tsx
++++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+@@ -1,3 +1,4 @@
++import { Fragment } from "react";
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import HomePage from "./page";
+ import { getSessionUser } from "@/lib/session";
+@@ -5,8 +6,6 @@ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
+ import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
+ import { SessionGate } from "@/components/auth/SessionGate";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+-
+ const redirect = vi.hoisted(() => vi.fn((path: string) => {
+   throw new Error(`NEXT_REDIRECT:${path}`);
+ }));
+@@ -24,7 +23,6 @@ vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null })
+ vi.mock("@/components/home/SpecialistHomeDashboard", () => ({ SpecialistHomeDashboard: () => null }));
+ vi.mock("@/components/home/BusinessOwnerHomeDashboard", () => ({ BusinessOwnerHomeDashboard: () => null }));
+ vi.mock("@/components/ui/PageHeading", () => ({ PageHeading: () => null }));
+-vi.mock("@/components/layout/CabinetShell", () => ({ CabinetShell: () => null }));
+ vi.mock("@/lib/agent-nav/root-destination", () => ({
+   resolveActiveAgentRootRedirect: vi.fn(),
+   isActiveAgentCabinetContext: () => false,
+@@ -126,7 +124,7 @@ describe("server home-page staff redirect", () => {
+       ok: true, data: { ...denied, canAccessCabinet: true, partnerships: [] },
+     });
+     const element = await HomePage({});
+-    expect(element.type).toBe(CabinetShell);
++    expect(element.type).toBe(Fragment);
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+diff --git a/src/app/page.tsx b/src/app/(cabinet)/page.tsx
+similarity index 96%
+rename from src/app/page.tsx
+rename to src/app/(cabinet)/page.tsx
+index aff23b45..569615e8 100644
+--- a/src/app/page.tsx
++++ b/src/app/(cabinet)/page.tsx
+@@ -5,7 +5,6 @@ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
+ import { PageHeading } from "@/components/ui/PageHeading";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import type { CabinetReadiness } from "@/lib/cabinet-readiness";
+@@ -90,7 +89,7 @@ export default async function HomePage(
+ 
+   if (specialistHome) {
+     return (
+-      <CabinetShell returnTo="/">
++      <>
+         <PageHeading
+           eyebrow="Специалист"
+           title="Ваш кабинет"
+@@ -100,7 +99,7 @@ export default async function HomePage(
+           needsProfileCompletion={readiness.needsProfileCompletion}
+           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+         />
+-      </CabinetShell>
++      </>
+     );
+   }
+ 
+@@ -110,7 +109,7 @@ export default async function HomePage(
+   if (businessOwnerHome && businessPartnerType) {
+     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
+     return (
+-      <CabinetShell returnTo="/">
++      <>
+         <PageHeading
+           eyebrow={eyebrow}
+           title="Ваш кабинет"
+@@ -121,7 +120,7 @@ export default async function HomePage(
+           needsProfileCompletion={readiness.needsProfileCompletion}
+           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+         />
+-      </CabinetShell>
++      </>
+     );
+   }
+ 
+@@ -133,7 +132,7 @@ export default async function HomePage(
+   const incomingCount = countNeedsMyResponse(partnerships, user.id);
+ 
+   return (
+-    <CabinetShell returnTo="/">
++    <>
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="Моя главная"
+@@ -146,6 +145,6 @@ export default async function HomePage(
+         needsProfileCompletion={readiness.needsProfileCompletion}
+         catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+       />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/partners/agent-terms/page.tsx b/src/app/(cabinet)/partners/agent-terms/page.tsx
+similarity index 94%
+rename from src/app/partners/agent-terms/page.tsx
+rename to src/app/(cabinet)/partners/agent-terms/page.tsx
+index 98ee16f9..02dceac7 100644
+--- a/src/app/partners/agent-terms/page.tsx
++++ b/src/app/(cabinet)/partners/agent-terms/page.tsx
+@@ -2,7 +2,6 @@ import Link from "next/link";
+ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerAgentGeneralTermsEditor } from "@/components/partners/PartnerAgentGeneralTermsEditor";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import { requireProPageUser } from "@/lib/session";
+@@ -34,7 +33,7 @@ export default async function PartnerAgentTermsPage() {
+           : undefined;
+ 
+   return (
+-    <CabinetShell returnTo="/partners">
++    <>
+       <PageHeading
+         eyebrow="Партнёры"
+         title="Мои условия для агентов"
+@@ -44,6 +43,6 @@ export default async function PartnerAgentTermsPage() {
+         <Link href="/partners">← К партнёрам</Link>
+       </p>
+       <PartnerAgentGeneralTermsEditor canEdit={canEdit} readOnlyReason={readOnlyReason} />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/partners/page.tsx b/src/app/(cabinet)/partners/page.tsx
+similarity index 96%
+rename from src/app/partners/page.tsx
+rename to src/app/(cabinet)/partners/page.tsx
+index d8362570..844a00a5 100644
+--- a/src/app/partners/page.tsx
++++ b/src/app/(cabinet)/partners/page.tsx
+@@ -2,7 +2,6 @@ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
+ import { PartnersHub } from "@/components/partners/PartnersHub";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import { requireProPageUser } from "@/lib/session";
+@@ -61,7 +60,7 @@ export default async function PartnersPage(props: {
+   });
+ 
+   return (
+-    <CabinetShell returnTo={returnPath}>
++    <>
+       <PageHeading
+         eyebrow={presentation.heading.eyebrow}
+         title={presentation.heading.title}
+@@ -77,6 +76,6 @@ export default async function PartnersPage(props: {
+       ) : (
+         <PartnersHub meId={user.id} initialProfile={profileResult.data} />
+       )}
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/profile/page.tsx b/src/app/(cabinet)/profile/page.tsx
+similarity index 96%
+rename from src/app/profile/page.tsx
+rename to src/app/(cabinet)/profile/page.tsx
+index 82d17eec..ba631152 100644
+--- a/src/app/profile/page.tsx
++++ b/src/app/(cabinet)/profile/page.tsx
+@@ -1,7 +1,6 @@
+ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ProfileEditor } from "@/components/profile/ProfileEditor";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { sanitizeReturnTo } from "@/lib/auth-flow";
+ import {
+@@ -122,5 +121,5 @@ export default async function ProfilePage(props: {
+     profileChrome
+   );
+ 
+-  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
++  return body;
+ }
+diff --git a/src/app/profile/pureAgentProfilePage.module.css b/src/app/(cabinet)/profile/pureAgentProfilePage.module.css
+similarity index 100%
+rename from src/app/profile/pureAgentProfilePage.module.css
+rename to src/app/(cabinet)/profile/pureAgentProfilePage.module.css
+diff --git a/src/app/recommendations/[id]/page.tsx b/src/app/(cabinet)/recommendations/[id]/page.tsx
+similarity index 76%
+rename from src/app/recommendations/[id]/page.tsx
+rename to src/app/(cabinet)/recommendations/[id]/page.tsx
+index 8a78009c..e9cef3af 100644
+--- a/src/app/recommendations/[id]/page.tsx
++++ b/src/app/(cabinet)/recommendations/[id]/page.tsx
+@@ -1,5 +1,4 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsDetailRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -17,9 +16,5 @@ export default async function RecommendationDetailPage(props: RecommendationDeta
+     return <SessionGate reason="session" returnTo={returnPath} />;
+   }
+ 
+-  return (
+-    <CabinetShell returnTo={returnPath}>
+-      <RecommendationsDetailRouteBody certificateId={params.id} />
+-    </CabinetShell>
+-  );
++  return <RecommendationsDetailRouteBody certificateId={params.id} />;
+ }
+diff --git a/src/app/recommendations/new/page.tsx b/src/app/(cabinet)/recommendations/new/page.tsx
+similarity index 68%
+rename from src/app/recommendations/new/page.tsx
+rename to src/app/(cabinet)/recommendations/new/page.tsx
+index 6778b82c..b4524cb5 100644
+--- a/src/app/recommendations/new/page.tsx
++++ b/src/app/(cabinet)/recommendations/new/page.tsx
+@@ -1,6 +1,5 @@
+ import { Suspense } from "react";
+ import { SessionGate } from "@/components/auth/SessionGate";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsCreateRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -15,10 +14,8 @@ export default async function NewRecommendationPage() {
+   }
+ 
+   return (
+-    <CabinetShell returnTo={RETURN_PATH}>
+-      <Suspense fallback={<p>Загрузка формы…</p>}>
+-        <RecommendationsCreateRouteBody />
+-      </Suspense>
+-    </CabinetShell>
++    <Suspense fallback={<p>Загрузка формы…</p>}>
++      <RecommendationsCreateRouteBody />
++    </Suspense>
+   );
+ }
+diff --git a/src/app/recommendations/page.tsx b/src/app/(cabinet)/recommendations/page.tsx
+similarity index 73%
+rename from src/app/recommendations/page.tsx
+rename to src/app/(cabinet)/recommendations/page.tsx
+index 22fe64ee..6b415191 100644
+--- a/src/app/recommendations/page.tsx
++++ b/src/app/(cabinet)/recommendations/page.tsx
+@@ -1,5 +1,4 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsListRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -13,9 +12,5 @@ export default async function RecommendationsPage() {
+     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+   }
+ 
+-  return (
+-    <CabinetShell returnTo={RETURN_PATH}>
+-      <RecommendationsListRouteBody />
+-    </CabinetShell>
+-  );
++  return <RecommendationsListRouteBody />;
+ }
+diff --git a/src/app/scanner/page.tsx b/src/app/(cabinet)/scanner/page.tsx
+similarity index 86%
+rename from src/app/scanner/page.tsx
+rename to src/app/(cabinet)/scanner/page.tsx
+index 34d3304e..14672d7a 100644
+--- a/src/app/scanner/page.tsx
++++ b/src/app/(cabinet)/scanner/page.tsx
+@@ -1,5 +1,4 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { ScannerHub } from "@/components/scanner/ScannerHub";
+ import { requireProPageUser } from "@/lib/session";
+@@ -15,13 +14,13 @@ export default async function ScannerPage() {
+   }
+ 
+   return (
+-    <CabinetShell returnTo={RETURN_PATH}>
++    <>
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="Сканер"
+         description="Сканируйте QR или введите код, проверьте документ и подтвердите покупку."
+       />
+       <ScannerHub userId={user.id} />
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/app/settlements/page.tsx b/src/app/(cabinet)/settlements/page.tsx
+similarity index 96%
+rename from src/app/settlements/page.tsx
+rename to src/app/(cabinet)/settlements/page.tsx
+index 05034e40..0e97140e 100644
+--- a/src/app/settlements/page.tsx
++++ b/src/app/(cabinet)/settlements/page.tsx
+@@ -4,7 +4,6 @@ import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesW
+ import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
+ import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
+ import { SettlementsHub } from "@/components/settlements/SettlementsHub";
+-import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
+ import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
+@@ -71,7 +70,7 @@ export default async function SettlementsPage() {
+     }) ?? "specialist";
+ 
+   return (
+-    <CabinetShell returnTo={RETURN_PATH}>
++    <>
+       <PageHeading eyebrow={eyebrow} title={title} description={description} />
+       {shell === "agent-r05" ? (
+         <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+@@ -86,6 +85,6 @@ export default async function SettlementsPage() {
+       ) : (
+         <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
+       )}
+-    </CabinetShell>
++    </>
+   );
+ }
+diff --git a/src/components/layout/AppShell.tsx b/src/components/layout/AppShell.tsx
+index 6df66702..5a04931e 100644
+--- a/src/components/layout/AppShell.tsx
++++ b/src/components/layout/AppShell.tsx
+@@ -8,7 +8,8 @@ import { AccountSessionMenu } from "@/components/account-session/AccountSessionM
+ import { BrandMark } from "@/components/layout/BrandMark";
+ import { CabinetMobileMoreSheet } from "@/components/layout/CabinetMobileMoreSheet";
+ import { NAV_ICONS, type NavIconKey } from "@/components/layout/NavIcons";
+-import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
++import { ProfPartnerSessionVisitOnPathname } from "@/components/layout/ProfPartnerSessionVisitOnPathname";
++import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+ import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
+ import { ThemeToggle } from "@/components/layout/ThemeToggle";
+ import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
+@@ -127,6 +128,7 @@ export function AppShell({
+   notificationBell,
+   children,
+ }: AppShellProps) {
++  const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
+   const pathname = usePathname();
+   const searchParams = useSearchParams();
+   const navMode = resolveCabinetNavMode(user);
+@@ -170,7 +172,7 @@ export function AppShell({
+   return (
+     <div className={styles.shell}>
+       {user.role === "PRO" || (user.role === "CLIENT" && !user.staffRole) ? (
+-        <ProfPartnerSessionVisit />
++        <ProfPartnerSessionVisitOnPathname />
+       ) : null}
+       {mobileMenuOpen ? (
+         <button
+@@ -203,7 +205,7 @@ export function AppShell({
+           <NavLinks
+             pathname={pathname}
+             searchParams={searchParams}
+-            incomingCount={incomingCount}
++            incomingCount={liveIncomingCount}
+             navItems={navItems}
+             onNavigate={closeMobileMenu}
+           />
+diff --git a/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx b/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx
+new file mode 100644
+index 00000000..e51246a2
+--- /dev/null
++++ b/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx
+@@ -0,0 +1,92 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, waitFor } from "@testing-library/react";
++import { COOKIE_CONSENT_KEY } from "@/lib/cookie-consent";
++
++const mocks = vi.hoisted(() => ({
++  visit: vi.fn(),
++  pathname: "/",
++  search: "",
++}));
++
++vi.mock("@/lib/prof-admin-management-api", () => ({
++  recordProfSessionVisit: mocks.visit,
++  fetchManagementOverview: vi.fn(),
++}));
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => mocks.pathname,
++  useSearchParams: () => new URLSearchParams(mocks.search),
++}));
++
++import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { ProfPartnerSessionVisitOnPathname } from "@/components/layout/ProfPartnerSessionVisitOnPathname";
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  mocks.visit.mockResolvedValue({ ok: true, recorded: true });
++  mocks.pathname = "/";
++  mocks.search = "";
++  localStorage.setItem(
++    COOKIE_CONSENT_KEY,
++    JSON.stringify({
++      necessary: true,
++      analytics: true,
++      marketing: false,
++      decidedAt: "2026-10-01T00:00:00.000Z",
++      version: "1.0",
++    }),
++  );
++});
++
++describe("ProfPartnerSessionVisitOnPathname cadence", () => {
++  it("records once when analytics consent is on", async () => {
++    render(
++      <CookieConsentProvider>
++        <ProfPartnerSessionVisitOnPathname />
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
++  });
++
++  it("does not record when analytics consent is off", async () => {
++    localStorage.setItem(
++      COOKIE_CONSENT_KEY,
++      JSON.stringify({
++        necessary: true,
++        analytics: false,
++        marketing: false,
++        decidedAt: "2026-10-01T00:00:00.000Z",
++        version: "1.0",
++      }),
++    );
++    render(
++      <CookieConsentProvider>
++        <ProfPartnerSessionVisitOnPathname />
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).not.toHaveBeenCalled());
++  });
++
++  it("fires again on pathname change but not on query-only change", async () => {
++    const { rerender } = render(
++      <CookieConsentProvider>
++        <ProfPartnerSessionVisitOnPathname />
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
++    mocks.pathname = "/clients";
++    rerender(
++      <CookieConsentProvider>
++        <ProfPartnerSessionVisitOnPathname />
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(2));
++    mocks.search = "section=find";
++    rerender(
++      <CookieConsentProvider>
++        <ProfPartnerSessionVisitOnPathname />
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(2));
++  });
++});
+diff --git a/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+new file mode 100644
+index 00000000..5949223c
+--- /dev/null
++++ b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+@@ -0,0 +1,10 @@
++"use client";
++
++import { usePathname } from "next/navigation";
++import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
++
++/** Re-mount visit tracker on pathname change (persistent shell no longer remounts AppShell). */
++export function ProfPartnerSessionVisitOnPathname() {
++  const pathname = usePathname();
++  return <ProfPartnerSessionVisit key={pathname} />;
++}
+diff --git a/src/components/layout/agent/AgentAppShell.tsx b/src/components/layout/agent/AgentAppShell.tsx
+index 16cd0b0c..45ff0308 100644
+--- a/src/components/layout/agent/AgentAppShell.tsx
++++ b/src/components/layout/agent/AgentAppShell.tsx
+@@ -4,6 +4,7 @@ import Link from "next/link";
+ import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
+ import { usePathname } from "next/navigation";
+ import { useCallback, useMemo, useState } from "react";
++import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+ import type { AuthUser } from "@/lib/types";
+ import { BrandMark } from "@/components/layout/BrandMark";
+ import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
+@@ -51,6 +52,7 @@ export function AgentAppShell({
+ }: AgentAppShellProps) {
+   const pathname = usePathname();
+   const activePathname = fixturePathname ?? pathname;
++  const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
+   const displayName = user.displayName?.trim() || "Партнёр RemCard";
+   const initials = userInitials(displayName);
+   const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
+@@ -111,7 +113,7 @@ export function AgentAppShell({
+               const section = agentSectionByKey(key);
+               const active = isPathActive(activePathname, section.href);
+               const badge =
+-                section.badgeKey === "partners" && incomingCount > 0 ? incomingCount : null;
++                section.badgeKey === "partners" && liveIncomingCount > 0 ? liveIncomingCount : null;
+               return (
+                 <Link
+                   key={key}
+diff --git a/src/components/layout/cabinet-shell-persistence.test.tsx b/src/components/layout/cabinet-shell-persistence.test.tsx
+new file mode 100644
+index 00000000..ccb9f1be
+--- /dev/null
++++ b/src/components/layout/cabinet-shell-persistence.test.tsx
+@@ -0,0 +1,68 @@
++import { describe, expect, it, vi } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { ThemeProvider } from "@/contexts/ThemeContext";
++import { AppShell } from "@/components/layout/AppShell";
++import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
++
++const pathnameState = vi.hoisted(() => ({ value: "/" }));
++
++vi.mock("@/lib/prof-admin-management-api", () => ({
++  recordProfSessionVisit: vi.fn().mockResolvedValue({ ok: true, recorded: false }),
++  fetchManagementOverview: vi.fn(),
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
++}));
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => pathnameState.value,
++  useSearchParams: () => new URLSearchParams(""),
++  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
++}));
++
++vi.mock("@/components/account-session/AccountSessionMenu", () => ({
++  AccountSessionMenu: () => <div data-testid="account-session-menu-fixture" />,
++}));
++
++function renderShell() {
++  return render(
++    <ThemeProvider>
++      <CookieConsentProvider>
++        <AppShell user={{ id: "user-1", displayName: "Тестовый партнёр", role: "PRO" }}>
++          <div data-testid="page-content">content</div>
++        </AppShell>
++      </CookieConsentProvider>
++    </ThemeProvider>,
++  );
++}
++
++describe("persistent cabinet shell harness", () => {
++  it("keeps the sidebar node across pathname changes", () => {
++    pathnameState.value = "/";
++    const { rerender } = renderShell();
++    const sidebarBefore = screen.getByLabelText("Основная навигация");
++
++    pathnameState.value = "/clients";
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <AppShell user={{ id: "user-1", displayName: "Тестовый партнёр", role: "PRO" }}>
++            <div data-testid="page-content">content</div>
++          </AppShell>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    const sidebarAfter = screen.getByLabelText("Основная навигация");
++    expect(sidebarBefore).toBe(sidebarAfter);
++  });
++
++  it("marks the active nav item for nested routes", () => {
++    expect(isCabinetNavItemActive("/clients", "/clients/abc", new URLSearchParams())).toBe(true);
++    expect(isCabinetNavItemActive("/partners", "/partners", new URLSearchParams("section=find"))).toBe(
++      true,
++    );
++  });
++});
+diff --git a/src/hooks/useIncomingPartnersCount.ts b/src/hooks/useIncomingPartnersCount.ts
+new file mode 100644
+index 00000000..84bf272b
+--- /dev/null
++++ b/src/hooks/useIncomingPartnersCount.ts
+@@ -0,0 +1,42 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { usePathname } from "next/navigation";
++import { remcardFetch } from "@/lib/api-client";
++import { countNeedsMyResponse } from "@/lib/partnership-rules";
++import type { PartnershipListResponse } from "@/lib/types";
++
++/**
++ * Keeps the partners sidebar badge fresh when the cabinet layout persists across navigations.
++ * One list fetch per pathname change (same volume as the former per-navigation server shell fetch).
++ */
++export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
++  const pathname = usePathname();
++  const [count, setCount] = useState(initialCount);
++
++  useEffect(() => {
++    setCount(initialCount);
++  }, [initialCount]);
++
++  useEffect(() => {
++    if (!userId) return;
++    const controller = new AbortController();
++    let cancelled = false;
++    void remcardFetch<PartnershipListResponse>("/api/partnership/list", {
++      signal: controller.signal,
++    })
++      .then((data) => {
++        if (cancelled) return;
++        setCount(countNeedsMyResponse(data.partnerships ?? [], userId));
++      })
++      .catch(() => {
++        /* keep last known count on transient errors */
++      });
++    return () => {
++      cancelled = true;
++      controller.abort();
++    };
++  }, [pathname, userId]);
++
++  return count;
++}
+diff --git a/src/lib/request-cache.ts b/src/lib/request-cache.ts
+index 73a28302..bd28a35a 100644
+--- a/src/lib/request-cache.ts
++++ b/src/lib/request-cache.ts
+@@ -2,11 +2,18 @@ import { cache as reactCache } from "react";
+ 
+ type CacheFn = <T extends (...args: never[]) => unknown>(fn: T) => T;
+ 
+-let cacheImpl: CacheFn = reactCache as CacheFn;
++function defaultRequestCache<T extends (...args: never[]) => unknown>(fn: T): T {
++  if (typeof reactCache === "function") {
++    return reactCache(fn) as T;
++  }
++  return fn;
++}
++
++let cacheImpl: CacheFn = defaultRequestCache;
+ 
+ /** Test-only: replace React.cache with a deterministic per-test memo (vitest has no RSC cache). */
+ export function __setRequestCacheForTests(impl: CacheFn | null): void {
+-  cacheImpl = impl ?? (reactCache as CacheFn);
++  cacheImpl = impl ?? defaultRequestCache;
+ }
+ 
+ export function requestCache<T extends (...args: never[]) => unknown>(fn: T): T {
+diff --git a/src/lib/session-peek.test.tsx b/src/lib/session-peek.test.tsx
+new file mode 100644
+index 00000000..9ec3cab6
+--- /dev/null
++++ b/src/lib/session-peek.test.tsx
+@@ -0,0 +1,111 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++const redirect = vi.hoisted(() => vi.fn((path: string) => {
++  throw new Error(`NEXT_REDIRECT:${path}`);
++}));
++
++vi.mock("next/navigation", () => ({ redirect }));
++vi.mock("next/headers", () => ({ headers: async () => new Headers({ cookie: "s=test" }) }));
++
++const fetchRemcardUpstream = vi.hoisted(() => vi.fn());
++
++vi.mock("@/lib/remcard-server", () => ({ fetchRemcardUpstream }));
++
++const readyReadiness = {
++  canAccessCabinet: true,
++  isEmployee: false,
++  isAdmin: false,
++  needsProfileOnboarding: false,
++  missingConsents: [],
++};
++
++const proUser = { id: "p1", role: "PRO" as const, isBlocked: false, staffRole: null };
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  vi.resetModules();
++  fetchRemcardUpstream.mockImplementation(async (path: string) => {
++    if (path === "/api/auth/me") {
++      return { ok: true, data: { user: proUser } };
++    }
++    if (path === "/api/account/cabinet-readiness") {
++      return { ok: true, data: readyReadiness };
++    }
++    return { ok: false, status: 404, message: "n/a", configured: true };
++  });
++});
++
++describe("peekCabinetSession", () => {
++  it("returns null for anonymous users without redirecting", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") return { ok: true, data: { user: null } };
++      return { ok: false, status: 401, message: "n/a", configured: true };
++    });
++    const { peekCabinetSession } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toBeNull();
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns null for blocked users", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") {
++        return { ok: true, data: { user: { ...proUser, isBlocked: true } } };
++      }
++      return { ok: true, data: readyReadiness };
++    });
++    const { peekCabinetSession } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toBeNull();
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns null when consents pending", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") return { ok: true, data: { user: proUser } };
++      if (path === "/api/account/cabinet-readiness") {
++        return {
++          ok: true,
++          data: { ...readyReadiness, missingConsents: [{ kind: "TERMS", status: "missing" }] },
++        };
++      }
++      return { ok: false, status: 404, message: "n/a", configured: true };
++    });
++    const { peekCabinetSession } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toBeNull();
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns null for onboarding-required users", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") return { ok: true, data: { user: proUser } };
++      if (path === "/api/account/cabinet-readiness") {
++        return { ok: true, data: { ...readyReadiness, needsProfileOnboarding: true } };
++      }
++      return { ok: false, status: 404, message: "n/a", configured: true };
++    });
++    const { peekCabinetSession } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toBeNull();
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns PRO user when cabinet access is allowed", async () => {
++    const { peekCabinetSession } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toEqual(proUser);
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns employee user when readiness marks employee", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") {
++        return { ok: true, data: { user: { ...proUser, role: "CLIENT" as const } } };
++      }
++      if (path === "/api/account/cabinet-readiness") {
++        return { ok: true, data: { ...readyReadiness, isEmployee: true } };
++      }
++      return { ok: false, status: 404, message: "n/a", configured: true };
++    });
++    const { peekCabinetSession } = await import("@/lib/session");
++    const user = await peekCabinetSession();
++    expect(user?.role).toBe("CLIENT");
++    expect(redirect).not.toHaveBeenCalled();
++  });
++});
+diff --git a/src/lib/session.ts b/src/lib/session.ts
+index 6b775a3f..0b5e2fd3 100644
+--- a/src/lib/session.ts
++++ b/src/lib/session.ts
+@@ -116,3 +116,19 @@ export async function requireProPageUser(returnTo: string): Promise<AuthUser | n
+ export async function requireProSession(returnTo?: string): Promise<AuthUser> {
+   return ensureCabinetAccess(returnTo ?? "/");
+ }
++
++/** Non-redirecting cabinet peek for persistent layout (same allow rules as isProfCabinetAllowed). */
++export async function peekCabinetSession(): Promise<AuthUser | null> {
++  const user = await getSessionUser();
++  if (!user || user.isBlocked) {
++    return null;
++  }
++  const readiness = await getCabinetReadinessServer();
++  if (!readiness) {
++    return null;
++  }
++  if (!isProfCabinetAllowed(readiness, user)) {
++    return null;
++  }
++  return user;
++}
