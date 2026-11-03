@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import type { PartnerOverviewZone } from "@/lib/partners-prototype-v1/overview-groups";
+import { PartnersNewPartnerEmpty } from "@/components/partners/partners-new-partner-empty/PartnersNewPartnerEmpty";
 import styles from "./PartnersOverviewLayout.module.css";
 
 export type PartnersOverviewLayoutProps = {
@@ -26,6 +28,13 @@ export type PartnersOverviewLayoutProps = {
     decide: React.RefObject<HTMLDivElement>;
     waiting: React.RefObject<HTMLDetailsElement>;
   };
+  /** Role-specific onboarding copy (AGENT / SPECIALIST / STORE / COMPANY). */
+  partnersAudience?: PartnersHubAudience;
+  /**
+   * True only after a successful list response with zero rows in the full API collection
+   * (all statuses). Must not be inferred from overview tile counts.
+   */
+  collectionIsEmpty: boolean;
 };
 
 const LEAD_DEFAULT =
@@ -47,23 +56,27 @@ export function PartnersOverviewLayout({
   activeSlot,
   waitingSlot,
   zoneRefs,
+  partnersAudience,
+  collectionIsEmpty,
 }: PartnersOverviewLayoutProps) {
-  const isEmpty =
-    !loading && !error && counts.active === 0 && counts.decisions === 0 && counts.outgoing === 0;
+  const showOnboarding = !loading && !error && collectionIsEmpty;
+  const showOverview = !loading && !error && !collectionIsEmpty;
 
   return (
     <div className={styles.root} data-testid="partners-overview">
-      <div className={styles.head}>
-        <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
-        <button
-          type="button"
-          className={styles.primaryCta}
-          onClick={onOpenFind}
-          data-testid="partners-overview-cta-find"
-        >
-          Найти партнёра
-        </button>
-      </div>
+      {!showOnboarding ? (
+        <div className={styles.head}>
+          <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
+          <button
+            type="button"
+            className={styles.primaryCta}
+            onClick={onOpenFind}
+            data-testid="partners-overview-cta-find"
+          >
+            Найти партнёра
+          </button>
+        </div>
+      ) : null}
 
       {loading ? (
         <p className={styles.statusBanner} data-testid="partners-overview-loading">
@@ -80,47 +93,15 @@ export function PartnersOverviewLayout({
         </div>
       ) : null}
 
-      {!loading && !error && isEmpty ? (
-        <section className={styles.empty} data-testid="partners-empty">
-          <h2>Партнёров пока нет</h2>
-          <p className={styles.emptyMuted}>
-            Партнёр — это магазин, мастер или компания, которым вы рекомендуете клиентов и которые
-            рекомендуют вас. Начните с одного из двух путей.
-          </p>
-          <div className={styles.scenarios}>
-            <button
-              type="button"
-              className={styles.scenario}
-              onClick={onOpenFind}
-              data-testid="partners-scenario-find"
-            >
-              <span className={styles.scenarioEyebrow}>Уже в RemCard</span>
-              <strong>Найти в RemCard</strong>
-              <p>
-                Партнёр уже зарегистрирован. Посмотрите витрину по этапам ремонта и направлениям,
-                сравните условия и отправьте приглашение.
-              </p>
-              <span className={styles.scenarioLink}>Открыть витрину</span>
-            </button>
-            <button
-              type="button"
-              className={styles.scenario}
-              onClick={onOpenLink}
-              data-testid="partners-scenario-link"
-            >
-              <span className={styles.scenarioEyebrow}>Ещё не в RemCard</span>
-              <strong>Пригласить по ссылке</strong>
-              <p>
-                Знакомого магазина или мастера нет на платформе. Создайте приглашение: по нему он
-                зарегистрируется и вернётся к обсуждению условий.
-              </p>
-              <span className={styles.scenarioLink}>Создать приглашение</span>
-            </button>
-          </div>
-        </section>
+      {showOnboarding ? (
+        <PartnersNewPartnerEmpty
+          audience={partnersAudience ?? "agent-r04"}
+          onOpenFind={onOpenFind}
+          onOpenLink={onOpenLink}
+        />
       ) : null}
 
-      {!loading && !error && !isEmpty ? (
+      {showOverview ? (
         <>
           <div className={styles.tiles} data-testid="partners-overview-tiles">
             <button

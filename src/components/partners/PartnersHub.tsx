@@ -1991,9 +1991,13 @@ export function PartnersHub({
         <PartnersOverviewLayout
           lead="Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке."
           counts={overviewGroups.counts}
+          collectionIsEmpty={
+            !loadingList && !listError && partnerships.length === 0
+          }
           loading={loadingList}
           error={listError}
           onRetry={() => void loadList()}
+          partnersAudience={partnersAudience}
           onOpenFind={() => onOpenPartnerHub?.("find")}
           onOpenLink={() => onOpenPartnerHub?.("link")}
           onTileNavigate={scrollToOverviewZone}
