@@ -6,13 +6,14 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
-import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
+import { hasPendingLoginConsents, type CabinetReadiness } from "@/lib/cabinet-readiness";
 import {
   fetchCabinetUiPreferencesServerCached,
   fetchPartnershipListServerCached,
   getCabinetReadinessServerCached,
 } from "@/lib/cabinet-upstream-cache";
 import { getSessionUser, isProfCabinetAllowed } from "@/lib/session";
+import type { AuthUser } from "@/lib/types";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
 import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
@@ -25,6 +26,13 @@ import {
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
 
 export const dynamic = "force-dynamic";
+
+/** Role parity where layout shell used to call requireProSession — only at each home branch return. */
+function redirectIfProfCabinetRoleDenied(readiness: CabinetReadiness, user: AuthUser): void {
+  if (!isProfCabinetAllowed(readiness, user)) {
+    redirect("/?reason=role");
+  }
+}
 
 export default async function HomePage(
   props: {
@@ -76,16 +84,13 @@ export default async function HomePage(
     redirect(agentRoot);
   }
 
-  if (!isProfCabinetAllowed(readiness, user)) {
-    redirect("/?reason=role");
-  }
-
   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
   const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
   const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
   const specialistHome = shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
 
   if (specialistHome) {
+    redirectIfProfCabinetRoleDenied(readiness, user);
     return (
       <>
         <PageHeading
@@ -105,6 +110,7 @@ export default async function HomePage(
   const businessPartnerType = businessOwnerHome ? businessOwnerHomePartnerType(user) : null;
 
   if (businessOwnerHome && businessPartnerType) {
+    redirectIfProfCabinetRoleDenied(readiness, user);
     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
     return (
       <>
@@ -126,6 +132,8 @@ export default async function HomePage(
 
   const partnerships = listResult.ok ? listResult.data.partnerships : [];
   const incomingCount = countNeedsMyResponse(partnerships, user.id);
+
+  redirectIfProfCabinetRoleDenied(readiness, user);
 
   return (
     <>

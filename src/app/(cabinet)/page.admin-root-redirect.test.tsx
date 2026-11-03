@@ -10,8 +10,17 @@ import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination
 import { SessionGate } from "@/components/auth/SessionGate";
 import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
+import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
+
 const redirect = vi.hoisted(() => vi.fn((path: string) => {
   throw new Error(`NEXT_REDIRECT:${path}`);
+}));
+
+const homeBranchFixtures = vi.hoisted(() => ({
+  specialistHome: false,
+  businessOwnerHome: false,
+  businessPartnerType: null as "STORE" | "COMPANY" | null,
 }));
 
 vi.mock("next/navigation", () => ({ redirect }));
@@ -38,14 +47,41 @@ vi.mock("@/lib/agent-nav/root-destination", () => ({
 vi.mock("@/lib/specialist-r06/serverGate", () => ({
   fetchSpecialistR06GateServer: async () => null,
 }));
+vi.mock("@/lib/specialist-home/gate", () => ({
+  shouldRenderSpecialistHome: () => homeBranchFixtures.specialistHome,
+}));
+vi.mock("@/lib/business-home/gate", () => ({
+  shouldRenderBusinessOwnerHome: () => homeBranchFixtures.businessOwnerHome,
+  businessOwnerHomePartnerType: () => homeBranchFixtures.businessPartnerType,
+}));
 
 const denied = {
   nextStep: "ready", missingConsents: [], needsProfileOnboarding: false,
   canAccessCabinet: false, isEmployee: false, isAdmin: false,
 };
 
+const cabinetReady = { ...denied, canAccessCabinet: true };
+
+function mockCabinetReadyUpstream(extra: Record<string, unknown> = {}) {
+  vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
+    if (path === "/api/account/cabinet-readiness") {
+      return { ok: true, data: { ...cabinetReady, ...extra } };
+    }
+    if (path === "/api/pro/cabinet-ui-preferences") {
+      return { ok: true, data: null };
+    }
+    if (path === "/api/partnership/list") {
+      return { ok: true, data: { partnerships: [] } };
+    }
+    return { ok: true, data: denied };
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  homeBranchFixtures.specialistHome = false;
+  homeBranchFixtures.businessOwnerHome = false;
+  homeBranchFixtures.businessPartnerType = null;
   vi.mocked(getSessionUser).mockResolvedValue({
     id: "synthetic-partner", role: "PRO", staffRole: null, isBlocked: false,
   });
@@ -102,8 +138,10 @@ describe("server home-page staff redirect", () => {
     );
     expect(redirect).not.toHaveBeenCalled();
   });
+});
 
-  it("keeps the guest login gate", async () => {
+describe("anonymous and guest fixtures", () => {
+  it("keeps the guest login gate (SessionGate)", async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
     const element = await HomePage({});
     expect(element.type).toBe(SessionGate);
@@ -112,7 +150,7 @@ describe("server home-page staff redirect", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("keeps PartnerWelcome for guests when registration welcome path is enabled", async () => {
+  it("keeps PartnerWelcome when registration welcome path is enabled", async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
     vi.mocked(fetchRegistrationCapabilitiesServer).mockResolvedValue({
       welcomeEnabled: true,
@@ -123,7 +161,9 @@ describe("server home-page staff redirect", () => {
     expect(element.props.inviteToken).toBe("tok");
     expect(redirect).not.toHaveBeenCalled();
   });
+});
 
+describe("readiness and onboarding fixtures", () => {
   it("keeps partner consent requirements", async () => {
     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
       ok: true, data: {
@@ -139,14 +179,51 @@ describe("server home-page staff redirect", () => {
     });
     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/onboarding?returnTo=%2F");
   });
+});
 
-  it("keeps ready ordinary and delegated test partners in their cabinet", async () => {
+describe("role parity at layout-shell-equivalent branch returns", () => {
+  const clientUser = {
+    id: "synthetic-client", role: "CLIENT" as const, staffRole: null, isBlocked: false,
+  };
+
+  it("non-PRO non-employee with active agentRoot: agentRoot redirect wins over role gate", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
+    mockCabinetReadyUpstream({ isEmployee: false });
+    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
+    expect(redirect).toHaveBeenCalledExactlyOnceWith("/certificates");
+  });
+
+  it("non-PRO non-employee without agentRoot: role redirect on default dashboard branch (after list fetch)", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
+    mockCabinetReadyUpstream({ isEmployee: false });
+    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+    expect(fetchRemcardUpstream).toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
+  });
+
+  it("non-PRO non-employee without agentRoot: role redirect on specialist branch", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
+    mockCabinetReadyUpstream({ isEmployee: false });
+    homeBranchFixtures.specialistHome = true;
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+    expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
+  });
+
+  it("non-PRO non-employee without agentRoot: role redirect on business-owner branch", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(clientUser);
+    mockCabinetReadyUpstream({ isEmployee: false });
+    homeBranchFixtures.businessOwnerHome = true;
+    homeBranchFixtures.businessPartnerType = "STORE";
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+    expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
+  });
+
+  it("ordinary eligible PRO renders default dashboard branch", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({
       id: "synthetic-test-partner", role: "PRO", staffRole: null, isProfTestUser: true,
     });
-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
-      ok: true, data: { ...denied, canAccessCabinet: true, partnerships: [] },
-    });
+    mockCabinetReadyUpstream();
     const element = await HomePage({});
     expect(element.type).toBe(Fragment);
     const kids = Children.toArray(element.props.children);
@@ -156,52 +233,37 @@ describe("server home-page staff redirect", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("redirects authenticated non-PRO non-employee users with cabinet access to /?reason=role", async () => {
+  it("ordinary eligible PRO renders specialist branch when selected", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({
-      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+      id: "synthetic-master", role: "PRO", staffRole: null, partnerType: "MASTER",
     });
-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
-      ok: true,
-      data: { ...denied, canAccessCabinet: true, isEmployee: false },
-    });
-    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
-    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+    mockCabinetReadyUpstream();
+    homeBranchFixtures.specialistHome = true;
+    const element = await HomePage({});
+    const kids = Children.toArray(element.props.children);
+    expect(
+      kids.some((child) => isValidElement(child) && child.type === SpecialistHomeDashboard),
+    ).toBe(true);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("applies active-agent root redirect before the role gate when prefs qualify", async () => {
+  it("ordinary eligible PRO renders business-owner branch when selected", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({
-      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+      id: "synthetic-store", role: "PRO", staffRole: null, partnerType: "STORE",
     });
-    vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
-      if (path === "/api/account/cabinet-readiness") {
-        return { ok: true, data: { ...denied, canAccessCabinet: true, isEmployee: false } };
-      }
-      if (path === "/api/pro/cabinet-ui-preferences") {
-        return {
-          ok: true,
-          data: {
-            contractVersion: "2026-10-14.r01",
-            pilotEnabled: true,
-            pilotActive: true,
-            contextKey: "agent",
-            version: 1,
-            theme: null,
-            mobileNavKeys: ["certificates"],
-            permittedKeys: ["certificates", "home"],
-            defaultMobileNavKeys: null,
-          },
-        };
-      }
-      return { ok: true, data: denied };
-    });
-    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
-    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
+    mockCabinetReadyUpstream();
+    homeBranchFixtures.businessOwnerHome = true;
+    homeBranchFixtures.businessPartnerType = "STORE";
+    const element = await HomePage({});
+    const kids = Children.toArray(element.props.children);
+    expect(
+      kids.some((child) => isValidElement(child) && child.type === BusinessOwnerHomeDashboard),
+    ).toBe(true);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("preserves the existing active-agent destination", async () => {
-    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
-      ok: true, data: { ...denied, canAccessCabinet: true },
-    });
+  it("preserves the existing active-agent destination for PRO users", async () => {
+    mockCabinetReadyUpstream();
     vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
   });
