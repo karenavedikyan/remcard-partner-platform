@@ -11,6 +11,7 @@
 | Commit 2 — persistent shell | `a057025501c8d03a54d679c833b9a855659ecddd` |
 | Commit 3 — stable loading | `62b887f51b2b1c152b9decc49fa7e2fe4c2f2080` |
 | Commit 4 — review round 2 fix | `9c98c0ae8e0e3c754c0b3c5db402ac639bbda808` |
+| Commit 5 — requestCache runtime | `48f04b9d8b93730a5439a13baf24bddcedd9b74b` |
 
 ## Moved routes (git rename)
 
@@ -74,7 +75,7 @@ Home `/` uses cached readiness/prefs/list helpers (commit 4) — dedupes with la
 
 | Area | Unit / vitest | Native / manual |
 | --- | --- | --- |
-| Request dedupe | Injectable `__setRequestCacheForTests` — **plumbing only**, not production `React.cache` | Auditor: upstream counts per navigation on live server |
+| Request dedupe | `cabinet-shell-request-dedupe.test.tsx` mocks `requestCache` with a **per-test** memo to verify loader wiring only; production uses `React.cache` when present (Next RSC) and **identity** in plain Node/Vitest (React 18.3 has no runtime `cache`). No production test hook, no module-level Map. | **Native auditor:** upstream counts per navigation on live server |
 | Prefs monotonic | `agent-cabinet-ui-prefs-apply.test.tsx`, `useAgentCabinetUiPrefs.monotonic.test.tsx` | PATCH/GET race under real latency |
 | Pathname dismiss | `cabinet-pathname-dismiss.test.tsx` | Back/forward, mobile more sheet |
 | Skeleton headings | `CabinetPageLoadingSkeleton.heading.test.tsx` | Visual geometry vs final content |
