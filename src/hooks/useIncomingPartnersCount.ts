@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
+import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import type { PartnershipListResponse } from "@/lib/types";
 
@@ -14,6 +15,7 @@ import type { PartnershipListResponse } from "@/lib/types";
 export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
   const pathname = usePathname();
   const router = useRouter();
+  const shell = useCabinetShellContext();
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export function useIncomingPartnersCount(initialCount: number, userId: string | 
         if (error instanceof DOMException && error.name === "AbortError") return;
         if (isCabinetShellAuthFailure(error)) {
           setCount(0);
+          shell?.notifyAuthFailure();
           router.refresh();
           return;
         }
@@ -47,7 +50,7 @@ export function useIncomingPartnersCount(initialCount: number, userId: string | 
       cancelled = true;
       controller.abort();
     };
-  }, [pathname, userId, router]);
+  }, [pathname, userId, router, shell]);
 
   return count;
 }

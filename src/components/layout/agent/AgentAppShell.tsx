@@ -15,6 +15,7 @@ import { AgentNavIcon } from "@/components/layout/agent/AgentNavIcon";
 import { MobileNavEditorDialog } from "@/components/layout/agent/MobileNavEditorDialog";
 import { MobileNavMoreSheet } from "@/components/layout/agent/MobileNavMoreSheet";
 import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
+import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
 import { useAgentThemeSync } from "@/components/layout/agent/useAgentThemeSync";
 import {
   resolveAgentDesktopNavKeys,
@@ -60,9 +61,15 @@ export function AgentAppShell({
   }, [pathname]);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
-  const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =
+  const shell = useCabinetShellContext();
+  const { prefs, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, saveMobileNavKeys, saveTheme } =
     useAgentCabinetUiPrefs(initialPrefs);
-  useAgentCabinetPrefsPathRefresh(applyServerPrefs);
+  useAgentCabinetPrefsPathRefresh(
+    applyServerPrefs,
+    applyAuthFailureClear,
+    getApplyGeneration,
+    shell?.notifyAuthFailure,
+  );
 
   const permittedKeys = useMemo(
     () => prefs.permittedKeys ?? [],

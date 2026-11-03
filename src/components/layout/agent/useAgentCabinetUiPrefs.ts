@@ -9,6 +9,7 @@ import {
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import type { AgentNavSectionKey } from "@/lib/agent-nav/sections";
 import type { ThemePreference } from "@/lib/theme-preference";
+import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
 
 export class CabinetUiPrefsSaveError extends Error {
   status: number;
@@ -40,9 +41,26 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
   const [prefs, setPrefs] = useState(initial);
   const versionRef = useRef(initial.version);
   const saveInFlightRef = useRef(0);
+  const applyGenerationRef = useRef(0);
 
   const applyIncoming = useCallback(
-    (next: CabinetUiPreferencesResponse, source: CabinetUiPrefsApplySource) => {
+    (
+      next: CabinetUiPreferencesResponse,
+      source: CabinetUiPrefsApplySource,
+      requestGeneration?: number,
+    ) => {
+      if (source === "auth-failure") {
+        applyGenerationRef.current += 1;
+        versionRef.current = 0;
+        setPrefs(next);
+        return;
+      }
+      if (
+        requestGeneration !== undefined &&
+        requestGeneration !== applyGenerationRef.current
+      ) {
+        return;
+      }
       if (
         !shouldApplyIncomingCabinetUiPrefs(
           versionRef.current,
@@ -74,6 +92,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
 
   const saveMobileNavKeys = useCallback(
     async (mobileNavKeys: AgentNavSectionKey[]) => {
+      const requestGeneration = applyGenerationRef.current;
       saveInFlightRef.current += 1;
       try {
         const next = await remcardFetch<CabinetUiPreferencesResponse>(
@@ -83,7 +102,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
             body: { mobileNavKeys, expectedVersion: versionRef.current },
           },
         );
-        applyIncoming(next, "patch");
+        applyIncoming(next, "patch", requestGeneration);
         return next;
       } catch (error) {
         throw wrapSaveError(error);
@@ -96,6 +115,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
 
   const saveTheme = useCallback(
     async (theme: ThemePreference) => {
+      const requestGeneration = applyGenerationRef.current;
       saveInFlightRef.current += 1;
       try {
         const next = await remcardFetch<CabinetUiPreferencesResponse>(
@@ -105,7 +125,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
             body: { theme, expectedVersion: versionRef.current },
           },
         );
-        applyIncoming(next, "patch");
+        applyIncoming(next, "patch", requestGeneration);
         return next;
       } catch (error) {
         throw wrapSaveError(error);
@@ -116,12 +136,25 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
     [applyIncoming],
   );
 
+  const getApplyGeneration = useCallback(() => applyGenerationRef.current, []);
+
   const applyServerPrefs = useCallback(
-    (next: CabinetUiPreferencesResponse) => {
-      applyIncoming(next, "get");
+    (next: CabinetUiPreferencesResponse, requestGeneration?: number) => {
+      applyIncoming(next, "get", requestGeneration);
     },
     [applyIncoming],
   );
 
-  return { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme };
+  const applyAuthFailureClear = useCallback(() => {
+    applyIncoming(neutralCabinetUiPreferencesFallback, "auth-failure");
+  }, [applyIncoming]);
+
+  return {
+    prefs,
+    applyServerPrefs,
+    applyAuthFailureClear,
+    getApplyGeneration,
+    saveMobileNavKeys,
+    saveTheme,
+  };
 }
