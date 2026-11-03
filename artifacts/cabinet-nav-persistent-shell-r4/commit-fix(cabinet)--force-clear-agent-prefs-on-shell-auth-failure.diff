@@ -1,0 +1,245 @@
+diff --git a/src/components/layout/agent/AgentAppShell.tsx b/src/components/layout/agent/AgentAppShell.tsx
+index 75a15ea0..4daad0b3 100644
+--- a/src/components/layout/agent/AgentAppShell.tsx
++++ b/src/components/layout/agent/AgentAppShell.tsx
+@@ -15,6 +15,7 @@ import { AgentNavIcon } from "@/components/layout/agent/AgentNavIcon";
+ import { MobileNavEditorDialog } from "@/components/layout/agent/MobileNavEditorDialog";
+ import { MobileNavMoreSheet } from "@/components/layout/agent/MobileNavMoreSheet";
+ import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+ import { useAgentThemeSync } from "@/components/layout/agent/useAgentThemeSync";
+ import {
+   resolveAgentDesktopNavKeys,
+@@ -60,9 +61,15 @@ export function AgentAppShell({
+   }, [pathname]);
+   const displayName = user.displayName?.trim() || "Партнёр RemCard";
+   const initials = userInitials(displayName);
+-  const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =
++  const shell = useCabinetShellContext();
++  const { prefs, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, saveMobileNavKeys, saveTheme } =
+     useAgentCabinetUiPrefs(initialPrefs);
+-  useAgentCabinetPrefsPathRefresh(applyServerPrefs);
++  useAgentCabinetPrefsPathRefresh(
++    applyServerPrefs,
++    applyAuthFailureClear,
++    getApplyGeneration,
++    shell?.notifyAuthFailure,
++  );
+ 
+   const permittedKeys = useMemo(
+     () => prefs.permittedKeys ?? [],
+diff --git a/src/components/layout/agent/useAgentCabinetUiPrefs.ts b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+index 45dadf5e..3a0d64f8 100644
+--- a/src/components/layout/agent/useAgentCabinetUiPrefs.ts
++++ b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+@@ -9,6 +9,7 @@ import {
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import type { AgentNavSectionKey } from "@/lib/agent-nav/sections";
+ import type { ThemePreference } from "@/lib/theme-preference";
++import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
+ 
+ export class CabinetUiPrefsSaveError extends Error {
+   status: number;
+@@ -40,9 +41,26 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+   const [prefs, setPrefs] = useState(initial);
+   const versionRef = useRef(initial.version);
+   const saveInFlightRef = useRef(0);
++  const applyGenerationRef = useRef(0);
+ 
+   const applyIncoming = useCallback(
+-    (next: CabinetUiPreferencesResponse, source: CabinetUiPrefsApplySource) => {
++    (
++      next: CabinetUiPreferencesResponse,
++      source: CabinetUiPrefsApplySource,
++      requestGeneration?: number,
++    ) => {
++      if (source === "auth-failure") {
++        applyGenerationRef.current += 1;
++        versionRef.current = 0;
++        setPrefs(next);
++        return;
++      }
++      if (
++        requestGeneration !== undefined &&
++        requestGeneration !== applyGenerationRef.current
++      ) {
++        return;
++      }
+       if (
+         !shouldApplyIncomingCabinetUiPrefs(
+           versionRef.current,
+@@ -74,6 +92,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+ 
+   const saveMobileNavKeys = useCallback(
+     async (mobileNavKeys: AgentNavSectionKey[]) => {
++      const requestGeneration = applyGenerationRef.current;
+       saveInFlightRef.current += 1;
+       try {
+         const next = await remcardFetch<CabinetUiPreferencesResponse>(
+@@ -83,7 +102,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+             body: { mobileNavKeys, expectedVersion: versionRef.current },
+           },
+         );
+-        applyIncoming(next, "patch");
++        applyIncoming(next, "patch", requestGeneration);
+         return next;
+       } catch (error) {
+         throw wrapSaveError(error);
+@@ -96,6 +115,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+ 
+   const saveTheme = useCallback(
+     async (theme: ThemePreference) => {
++      const requestGeneration = applyGenerationRef.current;
+       saveInFlightRef.current += 1;
+       try {
+         const next = await remcardFetch<CabinetUiPreferencesResponse>(
+@@ -105,7 +125,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+             body: { theme, expectedVersion: versionRef.current },
+           },
+         );
+-        applyIncoming(next, "patch");
++        applyIncoming(next, "patch", requestGeneration);
+         return next;
+       } catch (error) {
+         throw wrapSaveError(error);
+@@ -116,12 +136,25 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+     [applyIncoming],
+   );
+ 
++  const getApplyGeneration = useCallback(() => applyGenerationRef.current, []);
++
+   const applyServerPrefs = useCallback(
+-    (next: CabinetUiPreferencesResponse) => {
+-      applyIncoming(next, "get");
++    (next: CabinetUiPreferencesResponse, requestGeneration?: number) => {
++      applyIncoming(next, "get", requestGeneration);
+     },
+     [applyIncoming],
+   );
+ 
+-  return { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme };
++  const applyAuthFailureClear = useCallback(() => {
++    applyIncoming(neutralCabinetUiPreferencesFallback, "auth-failure");
++  }, [applyIncoming]);
++
++  return {
++    prefs,
++    applyServerPrefs,
++    applyAuthFailureClear,
++    getApplyGeneration,
++    saveMobileNavKeys,
++    saveTheme,
++  };
+ }
+diff --git a/src/hooks/useAgentCabinetPrefsPathRefresh.ts b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+index 28fbbba7..90c0a5b6 100644
+--- a/src/hooks/useAgentCabinetPrefsPathRefresh.ts
++++ b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+@@ -4,18 +4,24 @@ import { useEffect } from "react";
+ import { usePathname, useRouter } from "next/navigation";
+ import { remcardFetch } from "@/lib/api-client";
+ import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
+-import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+ 
+ /** Refreshes agent UI prefs on pathname change; clears stale private shell state on auth failure. */
+ export function useAgentCabinetPrefsPathRefresh(
+-  applyServerPrefs: (next: CabinetUiPreferencesResponse) => void,
++  applyServerPrefs: (
++    next: CabinetUiPreferencesResponse,
++    requestGeneration?: number,
++  ) => void,
++  applyAuthFailureClear: () => void,
++  getApplyGeneration: () => number,
++  onAuthFailure?: () => void,
+ ): void {
+   const pathname = usePathname();
+   const router = useRouter();
+ 
+   useEffect(() => {
++    const requestGeneration = getApplyGeneration();
+     const controller = new AbortController();
+     let cancelled = false;
+     void remcardFetch<CabinetUiPreferencesResponse>("/api/pro/cabinet-ui-preferences", {
+@@ -23,13 +29,14 @@ export function useAgentCabinetPrefsPathRefresh(
+     })
+       .then((data) => {
+         if (cancelled) return;
+-        applyServerPrefs(enrichCabinetUiPreferencesForShell(data));
++        applyServerPrefs(enrichCabinetUiPreferencesForShell(data), requestGeneration);
+       })
+       .catch((error) => {
+         if (cancelled) return;
+         if (error instanceof DOMException && error.name === "AbortError") return;
+         if (isCabinetShellAuthFailure(error)) {
+-          applyServerPrefs(neutralCabinetUiPreferencesFallback);
++          applyAuthFailureClear();
++          onAuthFailure?.();
+           router.refresh();
+         }
+       });
+@@ -37,5 +44,5 @@ export function useAgentCabinetPrefsPathRefresh(
+       cancelled = true;
+       controller.abort();
+     };
+-  }, [pathname, applyServerPrefs, router]);
++  }, [pathname, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, onAuthFailure, router]);
+ }
+diff --git a/src/hooks/useIncomingPartnersCount.ts b/src/hooks/useIncomingPartnersCount.ts
+index 5f8f4786..9eb8b681 100644
+--- a/src/hooks/useIncomingPartnersCount.ts
++++ b/src/hooks/useIncomingPartnersCount.ts
+@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
+ import { usePathname, useRouter } from "next/navigation";
+ import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+ import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
++import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+ import type { PartnershipListResponse } from "@/lib/types";
+ 
+@@ -14,6 +15,7 @@ import type { PartnershipListResponse } from "@/lib/types";
+ export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
+   const pathname = usePathname();
+   const router = useRouter();
++  const shell = useCabinetShellContext();
+   const [count, setCount] = useState(initialCount);
+ 
+   useEffect(() => {
+@@ -36,6 +38,7 @@ export function useIncomingPartnersCount(initialCount: number, userId: string |
+         if (error instanceof DOMException && error.name === "AbortError") return;
+         if (isCabinetShellAuthFailure(error)) {
+           setCount(0);
++          shell?.notifyAuthFailure();
+           router.refresh();
+           return;
+         }
+@@ -47,7 +50,7 @@ export function useIncomingPartnersCount(initialCount: number, userId: string |
+       cancelled = true;
+       controller.abort();
+     };
+-  }, [pathname, userId, router]);
++  }, [pathname, userId, router, shell]);
+ 
+   return count;
+ }
+diff --git a/src/lib/agent-cabinet-ui-prefs-apply.ts b/src/lib/agent-cabinet-ui-prefs-apply.ts
+index 701df474..73598c08 100644
+--- a/src/lib/agent-cabinet-ui-prefs-apply.ts
++++ b/src/lib/agent-cabinet-ui-prefs-apply.ts
+@@ -1,6 +1,6 @@
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ 
+-export type CabinetUiPrefsApplySource = "patch" | "get" | "initial";
++export type CabinetUiPrefsApplySource = "patch" | "get" | "initial" | "auth-failure";
+ 
+ export function shouldApplyIncomingCabinetUiPrefs(
+   currentVersion: number,
+@@ -8,6 +8,7 @@ export function shouldApplyIncomingCabinetUiPrefs(
+   saveInFlightCount: number,
+   source: CabinetUiPrefsApplySource,
+ ): boolean {
++  if (source === "auth-failure") return true;
+   if (source === "patch") return true;
+   if (saveInFlightCount > 0) return false;
+   return incoming.version >= currentVersion;

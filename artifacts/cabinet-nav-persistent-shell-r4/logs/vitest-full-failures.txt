@@ -1,0 +1,11 @@
+Full suite (vitest run --maxWorkers=1): 7 failed test files (same set as base bbf06ef8; not nav-related).
+
+src/app/admin/AdminShellA17bPresentation.test.tsx
+src/components/profile/ProfileEditor.test.tsx
+src/components/profile/ProfileEditor.business-catalog.test.tsx
+src/components/profile/ProfileEditor.business-wizard-dirty.test.tsx
+src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx
+src/lib/category-display.test.ts
+src/lib/profile-overview-display.test.tsx
+
+Summary line from log: Test Files  7 failed | 449 passed | 1 skipped (457)

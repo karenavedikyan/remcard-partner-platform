@@ -1,0 +1,133 @@
+diff --git a/src/lib/cabinet-shell-context-token.test.ts b/src/lib/cabinet-shell-context-token.test.ts
+new file mode 100644
+index 00000000..f9495b61
+--- /dev/null
++++ b/src/lib/cabinet-shell-context-token.test.ts
+@@ -0,0 +1,70 @@
++import { describe, expect, it } from "vitest";
++import type { AuthUser } from "@/lib/types";
++import {
++  buildCabinetShellContextPayload,
++  computeCabinetShellContextTokenFromUser,
++  hashCabinetShellContextPayload,
++} from "@/lib/cabinet-shell-context-token";
++
++const baseUser = (): AuthUser => ({
++  id: "user-a",
++  role: "PRO",
++  staffRole: null,
++  partnerType: "STORE",
++  partnerActivities: ["b", "a"],
++  displayName: "Secret Name",
++  city: "Moscow",
++  catalogStatus: "live",
++});
++
++describe("cabinet shell context token", () => {
++  it("returns none when peek user is null", () => {
++    expect(computeCabinetShellContextTokenFromUser(null, "br_1")).toBe("none");
++  });
++
++  it("is stable for the same identity and branch", () => {
++    const user = baseUser();
++    const t1 = computeCabinetShellContextTokenFromUser(user, "br_1");
++    const t2 = computeCabinetShellContextTokenFromUser(user, "br_1");
++    expect(t1).toBe(t2);
++    expect(t1).toMatch(/^[a-f0-9]{32}$/);
++  });
++
++  it("sorts partnerActivities independently of input order", () => {
++    const u1: AuthUser = { ...baseUser(), partnerActivities: ["z", "a", "m"] };
++    const u2: AuthUser = { ...baseUser(), partnerActivities: ["a", "m", "z"] };
++    expect(computeCabinetShellContextTokenFromUser(u1, undefined)).toBe(
++      computeCabinetShellContextTokenFromUser(u2, undefined),
++    );
++  });
++
++  it("changes when id, role, staffRole, partnerType, or branch cookie differ", () => {
++    const base = computeCabinetShellContextTokenFromUser(baseUser(), "br_1");
++    expect(computeCabinetShellContextTokenFromUser({ ...baseUser(), id: "user-b" }, "br_1")).not.toBe(
++      base,
++    );
++    expect(computeCabinetShellContextTokenFromUser({ ...baseUser(), role: "ADMIN" }, "br_1")).not.toBe(
++      base,
++    );
++    expect(
++      computeCabinetShellContextTokenFromUser({ ...baseUser(), staffRole: "manager" }, "br_1"),
++    ).not.toBe(base);
++    expect(
++      computeCabinetShellContextTokenFromUser({ ...baseUser(), partnerType: "AGENT" }, "br_1"),
++    ).not.toBe(base);
++    expect(computeCabinetShellContextTokenFromUser(baseUser(), "br_2")).not.toBe(base);
++  });
++
++  it("never embeds raw branch cookie or session display fields in the token", () => {
++    const branch = "br_super_secret_branch_id";
++    const user = baseUser();
++    const token = computeCabinetShellContextTokenFromUser(user, branch);
++    expect(token).not.toContain(branch);
++    expect(token).not.toContain(user.id);
++    expect(token).not.toContain(user.displayName ?? "");
++    expect(token).not.toContain(user.city ?? "");
++    expect(token).not.toContain(user.catalogStatus ?? "");
++    const payload = buildCabinetShellContextPayload(user, branch);
++    expect(hashCabinetShellContextPayload(payload)).toBe(token);
++  });
++});
+diff --git a/src/lib/cabinet-shell-context-token.ts b/src/lib/cabinet-shell-context-token.ts
+new file mode 100644
+index 00000000..9aecbfd3
+--- /dev/null
++++ b/src/lib/cabinet-shell-context-token.ts
+@@ -0,0 +1,51 @@
++import { createHash } from "node:crypto";
++import { cookies } from "next/headers";
++import type { AuthUser } from "@/lib/types";
++
++export const REMCARD_PRO_BRANCH_COOKIE = "remcard-pro-branch";
++
++function sortedPartnerActivities(user: AuthUser): string {
++  return [...(user.partnerActivities ?? [])].sort().join("\u001f");
++}
++
++/** Canonical shell identity payload (server-only; never expose to client/HTML). */
++export function buildCabinetShellContextPayload(
++  user: AuthUser,
++  proBranchCookieValue: string | undefined,
++): string {
++  return [
++    user.id,
++    user.role ?? "",
++    user.staffRole ?? "",
++    user.partnerType ?? "",
++    sortedPartnerActivities(user),
++    proBranchCookieValue ?? "",
++  ].join("|");
++}
++
++export function hashCabinetShellContextPayload(payload: string): string {
++  return createHash("sha256").update(payload, "utf8").digest("hex").slice(0, 32);
++}
++
++export function computeCabinetShellContextTokenFromUser(
++  user: AuthUser | null,
++  proBranchCookieValue: string | undefined,
++): string {
++  if (!user) {
++    return "none";
++  }
++  return hashCabinetShellContextPayload(
++    buildCabinetShellContextPayload(user, proBranchCookieValue),
++  );
++}
++
++/** Request-scoped token from peek/layout user (no extra upstream session calls). */
++export async function computeCabinetShellContextToken(
++  user: AuthUser | null,
++): Promise<string> {
++  if (!user) {
++    return "none";
++  }
++  const proBranch = (await cookies()).get(REMCARD_PRO_BRANCH_COOKIE)?.value;
++  return computeCabinetShellContextTokenFromUser(user, proBranch);
++}

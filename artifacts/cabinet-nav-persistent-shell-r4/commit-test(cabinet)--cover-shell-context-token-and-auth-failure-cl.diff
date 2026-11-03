@@ -1,0 +1,429 @@
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.test.tsx b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+new file mode 100644
+index 00000000..b3ccf38b
+--- /dev/null
++++ b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+@@ -0,0 +1,72 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
++import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
++
++const refresh = vi.fn();
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ refresh }),
++}));
++
++describe("CabinetShellTemplateReconciler", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("renders children when shell context is absent", () => {
++    render(
++      <CabinetShellTemplateReconciler freshShellContextToken="abc">
++        <div data-testid="page">page</div>
++      </CabinetShellTemplateReconciler>,
++    );
++    expect(screen.getByTestId("page")).toBeInTheDocument();
++    expect(refresh).not.toHaveBeenCalled();
++  });
++
++  it("renders children when tokens match", () => {
++    render(
++      <CabinetShellContextProvider shellContextToken="token-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="token-a">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(screen.getByTestId("page")).toBeInTheDocument();
++    expect(refresh).not.toHaveBeenCalled();
++  });
++
++  it("hides children and refreshes once per stale pair", () => {
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(screen.queryByTestId("page")).not.toBeInTheDocument();
++    expect(screen.getByTestId("cabinet-page-detail-loading-skeleton")).toBeInTheDocument();
++    expect(refresh).toHaveBeenCalledTimes(1);
++
++    rerender(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("refreshes when fresh token is none but shell still mounted", () => {
++    render(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="none">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++    expect(screen.queryByTestId("page")).not.toBeInTheDocument();
++  });
++});
+diff --git a/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx b/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx
+index e51246a2..0068f0db 100644
+--- a/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx
++++ b/src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx
+@@ -16,9 +16,11 @@ vi.mock("@/lib/prof-admin-management-api", () => ({
+ vi.mock("next/navigation", () => ({
+   usePathname: () => mocks.pathname,
+   useSearchParams: () => new URLSearchParams(mocks.search),
++  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+ }));
+ 
+ import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
+ import { ProfPartnerSessionVisitOnPathname } from "@/components/layout/ProfPartnerSessionVisitOnPathname";
+ 
+ beforeEach(() => {
+@@ -67,6 +69,26 @@ describe("ProfPartnerSessionVisitOnPathname cadence", () => {
+     await waitFor(() => expect(mocks.visit).not.toHaveBeenCalled());
+   });
+ 
++  it("re-keys analytics when shell identity changes on the same pathname", async () => {
++    const { rerender } = render(
++      <CookieConsentProvider>
++        <CabinetShellContextProvider shellContextToken="identity-a">
++          <ProfPartnerSessionVisitOnPathname />
++        </CabinetShellContextProvider>
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
++
++    rerender(
++      <CookieConsentProvider>
++        <CabinetShellContextProvider shellContextToken="identity-b">
++          <ProfPartnerSessionVisitOnPathname />
++        </CabinetShellContextProvider>
++      </CookieConsentProvider>,
++    );
++    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(2));
++  });
++
+   it("fires again on pathname change but not on query-only change", async () => {
+     const { rerender } = render(
+       <CookieConsentProvider>
+diff --git a/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx b/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx
+index dad45212..bd4bda7e 100644
+--- a/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx
++++ b/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx
+@@ -16,6 +16,7 @@ vi.mock("@/lib/api-client", () => ({
+ }));
+ 
+ import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
+ 
+ const v3: CabinetUiPreferencesResponse = {
+   contractVersion: "2026-10-14.r01",
+@@ -80,6 +81,44 @@ describe("useAgentCabinetUiPrefs monotonic apply", () => {
+     await waitFor(() => expect(result.current.prefs.version).toBe(4));
+   });
+ 
++  it("force-clears private prefs on auth failure even with version>=1 and save in flight", async () => {
++    let resolvePatch!: (value: CabinetUiPreferencesResponse) => void;
++    remcardFetch.mockReturnValueOnce(
++      new Promise((res) => {
++        resolvePatch = res;
++      }),
++    );
++    const { result } = renderHook(() => useAgentCabinetUiPrefs(v4));
++
++    let patchPromise!: Promise<unknown>;
++    await act(async () => {
++      patchPromise = result.current.saveMobileNavKeys(["home"]);
++      result.current.applyAuthFailureClear();
++    });
++    await waitFor(() =>
++      expect(result.current.prefs).toEqual(neutralCabinetUiPreferencesFallback),
++    );
++
++    await act(async () => {
++      resolvePatch(v5);
++      await patchPromise;
++    });
++    expect(result.current.prefs).toEqual(neutralCabinetUiPreferencesFallback);
++  });
++
++  it("drops stale GET after auth failure clear", async () => {
++    const { result } = renderHook(() => useAgentCabinetUiPrefs(v4));
++    const gen = result.current.getApplyGeneration();
++    act(() => {
++      result.current.applyAuthFailureClear();
++    });
++    act(() => {
++      result.current.applyServerPrefs(v5, gen);
++    });
++    expect(result.current.prefs.version).toBe(0);
++    expect(result.current.prefs.pilotActive).toBe(false);
++  });
++
+   it("does not override theme PATCH with stale GET", async () => {
+     let resolvePatch!: (value: CabinetUiPreferencesResponse) => void;
+     remcardFetch.mockReturnValueOnce(
+diff --git a/src/components/layout/cabinet-shell-context-remount.test.tsx b/src/components/layout/cabinet-shell-context-remount.test.tsx
+new file mode 100644
+index 00000000..24ac17ba
+--- /dev/null
++++ b/src/components/layout/cabinet-shell-context-remount.test.tsx
+@@ -0,0 +1,159 @@
++import { describe, expect, it, vi } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { ThemeProvider } from "@/contexts/ThemeContext";
++import { AppShell } from "@/components/layout/AppShell";
++import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
++import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++const pathnameState = vi.hoisted(() => ({ value: "/" }));
++
++vi.mock("@/lib/prof-admin-management-api", () => ({
++  recordProfSessionVisit: vi.fn().mockResolvedValue({ ok: true, recorded: false }),
++  fetchManagementOverview: vi.fn(),
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
++}));
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => pathnameState.value,
++  useSearchParams: () => new URLSearchParams(""),
++  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
++}));
++
++vi.mock("@/components/account-session/AccountSessionMenu", () => ({
++  AccountSessionMenu: () => <div data-testid="account-session-menu-fixture" />,
++}));
++
++const agentPrefs: CabinetUiPreferencesResponse = {
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: true,
++  pilotActive: true,
++  contextKey: "ctx-1",
++  version: 1,
++  theme: "system",
++  mobileNavKeys: ["home"],
++  permittedKeys: ["home", "clients"],
++  defaultMobileNavKeys: null,
++};
++
++describe("cabinet shell context token remount", () => {
++  it("remounts legacy AppShell when identity token changes", () => {
++    pathnameState.value = "/";
++    const { rerender } = render(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="token-user-a">
++            <AppShell
++              key="token-user-a"
++              user={{ id: "user-a", displayName: "User A", role: "PRO" }}
++            >
++              <div data-testid="page-content">content</div>
++            </AppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++    const sidebarBefore = screen.getByLabelText("Основная навигация");
++
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="token-user-b">
++            <AppShell
++              key="token-user-b"
++              user={{ id: "user-b", displayName: "User B", role: "PRO" }}
++            >
++              <div data-testid="page-content">content</div>
++            </AppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    const sidebarAfter = screen.getByLabelText("Основная навигация");
++    expect(sidebarBefore).not.toBe(sidebarAfter);
++  });
++
++  it("remounts legacy AppShell on branch token change for same user id", () => {
++    const { rerender } = render(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="token-branch-a">
++            <AppShell
++              key="token-branch-a"
++              user={{ id: "user-1", displayName: "Same", role: "PRO" }}
++            >
++              <div>content</div>
++            </AppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++    const sidebarBefore = screen.getByLabelText("Основная навигация");
++
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="token-branch-b">
++            <AppShell
++              key="token-branch-b"
++              user={{ id: "user-1", displayName: "Same", role: "PRO" }}
++            >
++              <div>content</div>
++            </AppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    expect(sidebarBefore).not.toBe(screen.getByLabelText("Основная навигация"));
++  });
++
++  it("remounts AgentAppShell when shell context token changes", () => {
++    const { rerender } = render(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="ctx-a">
++            <AgentAppShell
++              key="ctx-a:ctx-1:user-1"
++              user={{ id: "user-1", displayName: "Agent", role: "PRO" }}
++              initialPrefs={agentPrefs}
++            >
++              <div data-testid="agent-page">agent</div>
++            </AgentAppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++    const navBefore = screen.getByLabelText("Основная навигация");
++
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetShellContextProvider shellContextToken="ctx-b">
++            <AgentAppShell
++              key="ctx-b:ctx-1:user-1"
++              user={{ id: "user-1", displayName: "Agent", role: "PRO" }}
++              initialPrefs={agentPrefs}
++            >
++              <div data-testid="agent-page">agent</div>
++            </AgentAppShell>
++          </CabinetShellContextProvider>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    expect(navBefore).not.toBe(screen.getByLabelText("Основная навигация"));
++  });
++});
+diff --git a/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx b/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx
+new file mode 100644
+index 00000000..5eea7e35
+--- /dev/null
++++ b/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx
+@@ -0,0 +1,66 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { renderHook, waitFor } from "@testing-library/react";
++import { RemcardApiError } from "@/lib/api-client";
++import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++const mocks = vi.hoisted(() => ({
++  remcardFetch: vi.fn(),
++  pathname: "/",
++  refresh: vi.fn(),
++}));
++
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return {
++    ...actual,
++    remcardFetch: mocks.remcardFetch,
++  };
++});
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => mocks.pathname,
++  useRouter: () => ({ refresh: mocks.refresh, push: vi.fn() }),
++}));
++
++import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
++import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++
++const v3: CabinetUiPreferencesResponse = {
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: true,
++  pilotActive: true,
++  contextKey: "ctx",
++  version: 3,
++  theme: "system",
++  mobileNavKeys: ["home"],
++  permittedKeys: ["home"],
++  defaultMobileNavKeys: null,
++};
++
++function PrefsPathRefreshProbe() {
++  const { applyServerPrefs, applyAuthFailureClear, getApplyGeneration, prefs } =
++    useAgentCabinetUiPrefs(v3);
++  useAgentCabinetPrefsPathRefresh(
++    applyServerPrefs,
++    applyAuthFailureClear,
++    getApplyGeneration,
++  );
++  return prefs;
++}
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  mocks.pathname = "/";
++});
++
++describe("useAgentCabinetPrefsPathRefresh auth failure", () => {
++  it.each([401, 403])("clears prefs to neutral on HTTP %i", async (status) => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
++    const { result } = renderHook(() => PrefsPathRefreshProbe());
++    await waitFor(() =>
++      expect(result.current).toEqual(neutralCabinetUiPreferencesFallback),
++    );
++    expect(mocks.refresh).toHaveBeenCalled();
++  });
++});
+diff --git a/src/lib/agent-cabinet-ui-prefs-apply.test.tsx b/src/lib/agent-cabinet-ui-prefs-apply.test.tsx
+index a3e14455..8a2924c9 100644
+--- a/src/lib/agent-cabinet-ui-prefs-apply.test.tsx
++++ b/src/lib/agent-cabinet-ui-prefs-apply.test.tsx
+@@ -30,4 +30,9 @@ describe("shouldApplyIncomingCabinetUiPrefs", () => {
+   it("blocks GET while save is in flight", () => {
+     expect(shouldApplyIncomingCabinetUiPrefs(5, base(6), 1, "get")).toBe(false);
+   });
++
++  it("force-clears via auth-failure regardless of version or save in flight", () => {
++    const neutral = base(0);
++    expect(shouldApplyIncomingCabinetUiPrefs(9, neutral, 3, "auth-failure")).toBe(true);
++  });
+ });

@@ -1,0 +1,297 @@
+diff --git a/src/app/(cabinet)/layout.tsx b/src/app/(cabinet)/layout.tsx
+index c3deecb9..3ec38d04 100644
+--- a/src/app/(cabinet)/layout.tsx
++++ b/src/app/(cabinet)/layout.tsx
+@@ -1,5 +1,6 @@
+ import { peekCabinetSession } from "@/lib/session";
+ import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
+ import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
+ 
+ export default async function CabinetRouteGroupLayout({
+@@ -12,6 +13,13 @@ export default async function CabinetRouteGroupLayout({
+     return children;
+   }
+ 
+-  const shellProps = await loadCabinetShellClientProps(user);
+-  return <CabinetAppShellClient {...shellProps}>{children}</CabinetAppShellClient>;
++  const [shellProps, shellContextToken] = await Promise.all([
++    loadCabinetShellClientProps(user),
++    computeCabinetShellContextToken(user),
++  ]);
++  return (
++    <CabinetAppShellClient {...shellProps} shellContextToken={shellContextToken}>
++      {children}
++    </CabinetAppShellClient>
++  );
+ }
+diff --git a/src/app/(cabinet)/template.tsx b/src/app/(cabinet)/template.tsx
+new file mode 100644
+index 00000000..aeaaaf65
+--- /dev/null
++++ b/src/app/(cabinet)/template.tsx
+@@ -0,0 +1,18 @@
++import { peekCabinetSession } from "@/lib/session";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
++import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
++
++export default async function CabinetRouteGroupTemplate({
++  children,
++}: {
++  children: React.ReactNode;
++}) {
++  const user = await peekCabinetSession();
++  const freshShellContextToken = await computeCabinetShellContextToken(user);
++
++  return (
++    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
++      {children}
++    </CabinetShellTemplateReconciler>
++  );
++}
+diff --git a/src/components/layout/CabinetAppShellClient.tsx b/src/components/layout/CabinetAppShellClient.tsx
+index 236d83da..cf88d045 100644
+--- a/src/components/layout/CabinetAppShellClient.tsx
++++ b/src/components/layout/CabinetAppShellClient.tsx
+@@ -7,12 +7,17 @@ import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
+ import type { ProfTestSessionInfo } from "@/lib/types";
++import {
++  CabinetShellContextProvider,
++  useCabinetShellContext,
++} from "@/components/layout/cabinet-shell-context";
+ 
+ type CabinetAppShellClientProps = {
+   user: AuthUser;
+   incomingCount: number;
+   uiPrefs: CabinetUiPreferencesResponse;
+   profTestSession?: ProfTestSessionInfo | null;
++  shellContextToken: string;
+   children: React.ReactNode;
+ };
+ 
+@@ -21,35 +26,49 @@ export function CabinetAppShellClient({
+   incomingCount,
+   uiPrefs,
+   profTestSession,
++  shellContextToken,
+   children,
+ }: CabinetAppShellClientProps) {
+-  const bell = user.id ? <ProfNotificationBell /> : null;
+   const banner =
+     profTestSession?.active ? <ProfTestModeBanner session={profTestSession} /> : null;
+ 
++  const agentShellKey = `${shellContextToken}:${uiPrefs.contextKey ?? "none"}:${user.id}`;
++  const legacyShellKey = shellContextToken;
++
+   if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
+     return (
+-      <>
++      <CabinetShellContextProvider shellContextToken={shellContextToken}>
+         {banner}
+         <AgentAppShell
+-          key={`${uiPrefs.contextKey ?? "none"}:${user.id}`}
++          key={agentShellKey}
+           user={user}
+           incomingCount={incomingCount}
+-          notificationBell={bell}
++          notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
+           initialPrefs={uiPrefs}
+         >
+           {children}
+         </AgentAppShell>
+-      </>
++      </CabinetShellContextProvider>
+     );
+   }
+ 
+   return (
+-    <>
++    <CabinetShellContextProvider shellContextToken={shellContextToken}>
+       {banner}
+-      <AppShell user={user} incomingCount={incomingCount} notificationBell={bell}>
++      <AppShell
++        key={legacyShellKey}
++        user={user}
++        incomingCount={incomingCount}
++        notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
++      >
+         {children}
+       </AppShell>
+-    </>
++    </CabinetShellContextProvider>
+   );
+ }
++
++function CabinetShellNotificationBell() {
++  const shell = useCabinetShellContext();
++  const remountKey = `${shell?.shellContextToken ?? "none"}:${shell?.authFailureEpoch ?? 0}`;
++  return <ProfNotificationBell key={remountKey} />;
++}
+diff --git a/src/components/layout/CabinetShell.tsx b/src/components/layout/CabinetShell.tsx
+index 5174bb32..2af3324e 100644
+--- a/src/components/layout/CabinetShell.tsx
++++ b/src/components/layout/CabinetShell.tsx
+@@ -1,5 +1,6 @@
+ import { requireProSession } from "@/lib/session";
+ import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
+ import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
+ 
+ type CabinetShellProps = {
+@@ -9,10 +10,13 @@ type CabinetShellProps = {
+ 
+ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
+   const user = await requireProSession(returnTo);
+-  const shellProps = await loadCabinetShellClientProps(user);
++  const [shellProps, shellContextToken] = await Promise.all([
++    loadCabinetShellClientProps(user),
++    computeCabinetShellContextToken(user),
++  ]);
+ 
+   return (
+-    <CabinetAppShellClient {...shellProps}>
++    <CabinetAppShellClient {...shellProps} shellContextToken={shellContextToken}>
+       {children}
+     </CabinetAppShellClient>
+   );
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.tsx b/src/components/layout/CabinetShellTemplateReconciler.tsx
+new file mode 100644
+index 00000000..1f5f5023
+--- /dev/null
++++ b/src/components/layout/CabinetShellTemplateReconciler.tsx
+@@ -0,0 +1,38 @@
++"use client";
++
++import type { ReactNode } from "react";
++import { useEffect } from "react";
++import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++type CabinetShellTemplateReconcilerProps = {
++  freshShellContextToken: string;
++  children: ReactNode;
++};
++
++export function CabinetShellTemplateReconciler({
++  freshShellContextToken,
++  children,
++}: CabinetShellTemplateReconcilerProps) {
++  const shell = useCabinetShellContext();
++
++  useEffect(() => {
++    if (!shell) {
++      return;
++    }
++    if (shell.shellContextToken === freshShellContextToken) {
++      return;
++    }
++    shell.requestShellRefreshIfStale(freshShellContextToken);
++  }, [shell, freshShellContextToken]);
++
++  if (!shell) {
++    return children;
++  }
++
++  if (shell.shellContextToken === freshShellContextToken) {
++    return children;
++  }
++
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+index 5949223c..b31a1f62 100644
+--- a/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
++++ b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+@@ -2,9 +2,12 @@
+ 
+ import { usePathname } from "next/navigation";
+ import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
++import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
+ 
+-/** Re-mount visit tracker on pathname change (persistent shell no longer remounts AppShell). */
++/** Re-mount visit tracker on pathname or shell identity change (persistent layout). */
+ export function ProfPartnerSessionVisitOnPathname() {
+   const pathname = usePathname();
+-  return <ProfPartnerSessionVisit key={pathname} />;
++  const shell = useCabinetShellContext();
++  const shellToken = shell?.shellContextToken ?? "none";
++  return <ProfPartnerSessionVisit key={`${shellToken}:${pathname}`} />;
+ }
+diff --git a/src/components/layout/cabinet-shell-context.tsx b/src/components/layout/cabinet-shell-context.tsx
+new file mode 100644
+index 00000000..ed01c366
+--- /dev/null
++++ b/src/components/layout/cabinet-shell-context.tsx
+@@ -0,0 +1,70 @@
++"use client";
++
++import {
++  createContext,
++  useCallback,
++  useContext,
++  useMemo,
++  useRef,
++  useState,
++  type ReactNode,
++} from "react";
++import { useRouter } from "next/navigation";
++
++export type CabinetShellContextValue = {
++  shellContextToken: string;
++  authFailureEpoch: number;
++  notifyAuthFailure: () => void;
++  requestShellRefreshIfStale: (freshShellContextToken: string) => void;
++};
++
++const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
++
++export function useCabinetShellContext(): CabinetShellContextValue | null {
++  return useContext(CabinetShellContext);
++}
++
++type CabinetShellContextProviderProps = {
++  shellContextToken: string;
++  children: ReactNode;
++};
++
++export function CabinetShellContextProvider({
++  shellContextToken,
++  children,
++}: CabinetShellContextProviderProps) {
++  const router = useRouter();
++  const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
++  const refreshedPairsRef = useRef<Set<string>>(new Set());
++
++  const notifyAuthFailure = useCallback(() => {
++    setAuthFailureEpoch((n) => n + 1);
++  }, []);
++
++  const requestShellRefreshIfStale = useCallback(
++    (freshShellContextToken: string) => {
++      if (shellContextToken === freshShellContextToken) {
++        return;
++      }
++      const pair = `${shellContextToken}|${freshShellContextToken}`;
++      if (refreshedPairsRef.current.has(pair)) {
++        return;
++      }
++      refreshedPairsRef.current.add(pair);
++      router.refresh();
++    },
++    [router, shellContextToken],
++  );
++
++  const value = useMemo(
++    () => ({
++      shellContextToken,
++      authFailureEpoch,
++      notifyAuthFailure,
++      requestShellRefreshIfStale,
++    }),
++    [shellContextToken, authFailureEpoch, notifyAuthFailure, requestShellRefreshIfStale],
++  );
++
++  return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;
++}

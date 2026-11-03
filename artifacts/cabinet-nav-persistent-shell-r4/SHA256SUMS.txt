@@ -1,0 +1,11 @@
+a695bb37ce3efcf4572934f39922b8d2aec0b8a6e1827106028270f5fd221b9c  commit-fix(cabinet)--add-hashed-shell-context-token-helper.diff
+6596c3e6978874ca562c07fc1eff11646b3a90ed4a8f7bc87b472edd15ea1073  commit-fix(cabinet)--force-clear-agent-prefs-on-shell-auth-failure.diff
+8d0f90b31b9dc2b431f41793da4984d2611b1d2e67667df7243ecf2199d36443  commit-fix(cabinet)--reconcile-persistent-shell-identity-via-templa.diff
+50df2ffc98f718ad31ec962132a0044b76fcd560f4ea8c0a2a7fd8ce651b07fd  commit-test(cabinet)--cover-shell-context-token-and-auth-failure-cl.diff
+c159ac78d5357c55f5d76d8d00659b426c491498d8de3d8d81e17bbb538acdf0  delta-r3-to-r4.diff
+b013da600953733c67823ed8e18b754e3b77c6cb16ed02c89cefaed0e3c44ab9  logs/tsc-noEmit.log
+f0708faa95f8c6832b89a0ed74e07e1fb94b556c81970f793c8c2d0480dd5ea9  logs/vitest-focused.log
+40198455d2bb8a9dba24d3ef49e3848f3fbc2e6e78a8d50e413805e1bc789440  logs/vitest-full-failures.txt
+7381cf75aa32a3268461009802b594ffcf5efc97b6d0cc76f4fd785b480613ba  logs/vitest-full-suite.log
+758247f41b9a2eb49f8c24bae4a5b75f782bbe93b063332a40237764ff382970  REPORT.md
+4b8d3c590a4bcd66e0b6b90a5cfd692b8585154f454b8a99b9538f09bb81d222  source.diff
