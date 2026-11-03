@@ -101,10 +101,17 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         calls.push({ url, init });
+        if (url.includes("/api/store/orders")) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        }
         if (url.includes("/api/store/order/preview")) {
           return new Response(JSON.stringify(previewAllowed), { status: 200 });
         }
-        if (url.includes("/api/store/order")) {
+        if (
+          url.includes("/api/store/order") &&
+          !url.includes("/api/store/orders") &&
+          init?.method === "POST"
+        ) {
           orderPostCount += 1;
           if (orderPostCount === 1) {
             throw new TypeError("Failed to fetch");
@@ -149,6 +156,9 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
+        if (url.includes("/api/store/orders")) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        }
         if (url.includes("/api/store/order/preview")) {
           return new Response(JSON.stringify(previewAllowed), { status: 200 });
         }
@@ -176,6 +186,9 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
+        if (url.includes("/api/store/orders")) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        }
         if (url.includes("/api/store/order/preview")) {
           return new Response(JSON.stringify(previewAllowed), { status: 200 });
         }
@@ -209,6 +222,9 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
+        if (url.includes("/api/store/orders")) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+        }
         if (url.includes("/api/store/order/preview")) {
           return new Response(JSON.stringify(previewAllowed), { status: 200 });
         }

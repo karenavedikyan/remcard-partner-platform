@@ -50,7 +50,17 @@ import { validateOrderCreateResponse } from "@/lib/scanner-order-submit";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
 import { QrScanner } from "./QrScanner";
+import { ScannerNewPartnerEmpty } from "./ScannerNewPartnerEmpty";
+import {
+  initialScannerEmptyActivityProbe,
+  scannerEmptyProbeAfterSuccessfulOrder,
+  shouldShowScannerNewPartnerEmpty,
+  type ScannerEmptyActivityProbe,
+} from "@/lib/scanner-empty/eligibility";
+import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
 import styles from "./scanner.module.css";
+
+const SCANNER_WORKBENCH_ID = "scanner-workbench";
 
 type ScanMode = "manual" | "camera" | "success";
 
@@ -191,15 +201,47 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const [cameraError, setCameraError] = useState("");
   const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
   const [attemptRestoreDone, setAttemptRestoreDone] = useState(false);
+  const [activityProbe, setActivityProbe] = useState<ScannerEmptyActivityProbe>(
+    initialScannerEmptyActivityProbe,
+  );
 
   const previewRequestIdRef = useRef(0);
+  const workbenchRef = useRef<HTMLDivElement | null>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
   const submitInFlightRef = useRef(false);
+  const sessionOrderCompletedRef = useRef(false);
+
+  const showNewPartnerEmpty = shouldShowScannerNewPartnerEmpty(activityProbe);
+
+  useEffect(() => {
+    let cancelled = false;
+    setActivityProbe({ status: "loading" });
+    void loadScannerEmptyActivityProbe().then((probe) => {
+      if (cancelled || sessionOrderCompletedRef.current) {
+        return;
+      }
+      setActivityProbe(probe);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const invalidatePreviewRequest = useCallback(() => {
     previewRequestIdRef.current += 1;
     previewAbortRef.current?.abort();
     previewAbortRef.current = null;
+  }, []);
+
+  const focusScannerWorkbench = useCallback(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    workbenchRef.current?.scrollIntoView?.({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    window.requestAnimationFrame(() => {
+      document.getElementById("scanner-manual-code")?.focus();
+    });
   }, []);
 
   const resetAll = useCallback(() => {
@@ -238,6 +280,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       switch (outcome.kind) {
         case "success": {
           const data = validateOrderCreateResponse(outcome.data);
+          sessionOrderCompletedRef.current = true;
           markStoreOrderAttemptSucceeded(userId, data.order.id);
           clearStoreOrderAttempt();
           setConfirmedCode(certificateCode);
@@ -247,6 +290,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setStoredAttempt(null);
           setOrderUncertain(false);
           setOrderConflict(false);
+          setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
           break;
         }
         case "conflict": {
@@ -762,15 +806,21 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   return (
     <>
-      <div className={styles.scannerHero}>
-        <span className={styles.scannerIcon} aria-hidden>
-          ▣
-        </span>
-        <p className={styles.scannerLead}>
-          Сканируйте QR-код документа или введите промокод вручную. Предпросмотр не создаёт
-          покупку — подтверждение только по кнопке ниже.
-        </p>
-      </div>
+      {showNewPartnerEmpty ? (
+        <ScannerNewPartnerEmpty onOpenScanner={focusScannerWorkbench} />
+      ) : null}
+      <div id={SCANNER_WORKBENCH_ID} ref={workbenchRef}>
+        {!showNewPartnerEmpty ? (
+          <div className={styles.scannerHero}>
+            <span className={styles.scannerIcon} aria-hidden>
+              ▣
+            </span>
+            <p className={styles.scannerLead}>
+              Сканируйте QR-код документа или введите промокод вручную. Предпросмотр не создаёт
+              покупку — подтверждение только по кнопке ниже.
+            </p>
+          </div>
+        ) : null}
       <div className={styles.modeSwitch}>
         <button
           type="button"
@@ -804,6 +854,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         <div className={styles.manualRow}>
           <div className={styles.manualInput}>
             <TextField
+              id="scanner-manual-code"
               label="Код или промокод"
               value={manualCode}
               placeholder="RC-XXXXXX"
@@ -868,6 +919,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           ) : null}
         </div>
       ) : null}
+      </div>
     </>
   );
 }
