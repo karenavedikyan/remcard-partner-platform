@@ -1,5 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AccrualDetail } from "@/components/history/AccrualDetail";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { accrualDetailHref, parseAccrualType } from "@/lib/accrual-type";
 import { requireProPageUser } from "@/lib/session";
@@ -22,9 +23,9 @@ export default async function AccrualDetailPage(props: AccrualDetailPageProps) {
   }
 
   return (
-    <>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading eyebrow="RemCard PROF" title="Начисление" />
       <AccrualDetail user={user} accrualId={params.id} accrualType={accrualType} />
-    </>
+    </CabinetShell>
   );
 }

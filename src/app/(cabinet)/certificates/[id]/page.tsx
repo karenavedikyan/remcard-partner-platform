@@ -1,6 +1,7 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
 import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
 
@@ -17,7 +18,7 @@ export default async function CertificateDetailPage(props: PageProps) {
   }
 
   return (
-    <>
+    <CabinetShell returnTo="/certificates">
       <PageHeading
         eyebrow="Сертификат"
         title="Сертификат Ремкард"
@@ -26,6 +27,6 @@ export default async function CertificateDetailPage(props: PageProps) {
       <AgentR03Gate>
         <AgentCertificateDetail certificateId={params.id} />
       </AgentR03Gate>
-    </>
+    </CabinetShell>
   );
 }

@@ -21,6 +21,7 @@ export function CabinetShellTemplateReconciler({
       return;
     }
     if (shell.shellContextToken === freshShellContextToken) {
+      shell.acknowledgeShellContextMatch();
       return;
     }
     shell.requestShellRefreshIfStale(freshShellContextToken);

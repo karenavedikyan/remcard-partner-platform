@@ -4,6 +4,7 @@ import { SessionGate } from "@/components/auth/SessionGate";
 import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
 import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { hasPendingLoginConsents, type CabinetReadiness } from "@/lib/cabinet-readiness";
@@ -92,7 +93,7 @@ export default async function HomePage(
   if (specialistHome) {
     redirectIfProfCabinetRoleDenied(readiness, user);
     return (
-      <>
+      <CabinetShell returnTo="/">
         <PageHeading
           eyebrow="Специалист"
           title="Ваш кабинет"
@@ -102,7 +103,7 @@ export default async function HomePage(
           needsProfileCompletion={readiness.needsProfileCompletion}
           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
         />
-      </>
+      </CabinetShell>
     );
   }
 
@@ -113,7 +114,7 @@ export default async function HomePage(
     redirectIfProfCabinetRoleDenied(readiness, user);
     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
     return (
-      <>
+      <CabinetShell returnTo="/">
         <PageHeading
           eyebrow={eyebrow}
           title="Ваш кабинет"
@@ -124,7 +125,7 @@ export default async function HomePage(
           needsProfileCompletion={readiness.needsProfileCompletion}
           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
         />
-      </>
+      </CabinetShell>
     );
   }
 
@@ -136,7 +137,7 @@ export default async function HomePage(
   redirectIfProfCabinetRoleDenied(readiness, user);
 
   return (
-    <>
+    <CabinetShell returnTo="/">
       <PageHeading
         eyebrow="RemCard PROF"
         title="Моя главная"
@@ -149,6 +150,6 @@ export default async function HomePage(
         needsProfileCompletion={readiness.needsProfileCompletion}
         catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
       />
-    </>
+    </CabinetShell>
   );
 }

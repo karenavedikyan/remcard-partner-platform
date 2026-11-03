@@ -1,4 +1,5 @@
 import { SessionGate } from "@/components/auth/SessionGate";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { RecommendationsListRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
 import { requireProPageUser } from "@/lib/session";
 
@@ -12,5 +13,9 @@ export default async function RecommendationsPage() {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
   }
 
-  return <RecommendationsListRouteBody />;
+  return (
+    <CabinetShell returnTo={RETURN_PATH}>
+      <RecommendationsListRouteBody />
+    </CabinetShell>
+  );
 }

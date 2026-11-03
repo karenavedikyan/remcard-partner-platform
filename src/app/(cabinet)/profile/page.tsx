@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { sanitizeReturnTo } from "@/lib/auth-flow";
 import {
@@ -121,5 +122,5 @@ export default async function ProfilePage(props: {
     profileChrome
   );
 
-  return body;
+  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { PartnerAgentGeneralTermsEditor } from "@/components/partners/PartnerAgentGeneralTermsEditor";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
@@ -33,7 +34,7 @@ export default async function PartnerAgentTermsPage() {
           : undefined;
 
   return (
-    <>
+    <CabinetShell returnTo="/partners">
       <PageHeading
         eyebrow="Партнёры"
         title="Мои условия для агентов"
@@ -43,6 +44,6 @@ export default async function PartnerAgentTermsPage() {
         <Link href="/partners">← К партнёрам</Link>
       </p>
       <PartnerAgentGeneralTermsEditor canEdit={canEdit} readOnlyReason={readOnlyReason} />
-    </>
+    </CabinetShell>
   );
 }

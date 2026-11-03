@@ -1,5 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -12,5 +13,9 @@ export default async function ClientsPage() {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
   }
 
-  return <ClientsListWorkspace />;
+  return (
+    <CabinetShell returnTo={RETURN_PATH}>
+      <ClientsListWorkspace />
+    </CabinetShell>
+  );
 }

@@ -48,11 +48,17 @@ describe("(cabinet) routing contract", () => {
     expect(pages).toEqual([...EXPECTED_ROUTE_FILES].sort());
   });
 
-  it("does not import CabinetShell from any moved page", () => {
+  it("wraps every page body in CabinetShell (fresh identity on soft nav)", () => {
     for (const rel of EXPECTED_ROUTE_FILES) {
       const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
-      expect(src, rel).not.toMatch(/CabinetShell/);
+      expect(src, rel).toMatch(/CabinetShell/);
+      expect(src, rel).toMatch(/returnTo=/);
     }
+  });
+
+  it("does not define a route-group template (Next skips it on sibling soft nav)", () => {
+    const templatePath = path.join(CABINET_ROOT, "template.tsx");
+    expect(() => readFileSync(templatePath)).toThrow();
   });
 
   it("keeps a server guard on every page except home (custom guest flow)", () => {

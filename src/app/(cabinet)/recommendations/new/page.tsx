@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SessionGate } from "@/components/auth/SessionGate";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { RecommendationsCreateRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
 import { requireProPageUser } from "@/lib/session";
 
@@ -14,8 +15,10 @@ export default async function NewRecommendationPage() {
   }
 
   return (
-    <Suspense fallback={<p>Загрузка формы…</p>}>
-      <RecommendationsCreateRouteBody />
-    </Suspense>
+    <CabinetShell returnTo={RETURN_PATH}>
+      <Suspense fallback={<p>Загрузка формы…</p>}>
+        <RecommendationsCreateRouteBody />
+      </Suspense>
+    </CabinetShell>
   );
 }

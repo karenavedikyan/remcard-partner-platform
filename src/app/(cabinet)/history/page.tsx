@@ -1,5 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { HistoryHub } from "@/components/history/HistoryHub";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
 
@@ -21,13 +22,13 @@ export default async function HistoryPage(props: HistoryPageProps) {
   const initialPromoCode = searchParams?.search ?? "";
 
   return (
-    <>
+    <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading
         eyebrow="RemCard PROF"
         title="История"
         description="Покупки и начисления по данным сервера — без пересчёта по текущим условиям."
       />
       <HistoryHub user={user} initialPromoCode={initialPromoCode} />
-    </>
+    </CabinetShell>
   );
 }

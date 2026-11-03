@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { Children, Fragment, isValidElement } from "react";
+import { Children, isValidElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./page";
 import { getSessionUser } from "@/lib/session";
@@ -9,6 +9,7 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
 import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
@@ -35,6 +36,7 @@ vi.mock("@/lib/registration/capabilities-server", () => ({
 }));
 vi.mock("@/components/auth/SessionGate", () => ({ SessionGate: () => null }));
 vi.mock("@/components/registration/PartnerWelcome", () => ({ PartnerWelcome: () => null }));
+vi.mock("@/components/layout/CabinetShell", () => ({ CabinetShell: () => null }));
 vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null }));
 vi.mock("@/components/home/SpecialistHomeDashboard", () => ({ SpecialistHomeDashboard: () => null }));
 vi.mock("@/components/home/BusinessOwnerHomeDashboard", () => ({ BusinessOwnerHomeDashboard: () => null }));
@@ -92,12 +94,13 @@ beforeEach(() => {
   } as Awaited<ReturnType<typeof fetchRegistrationCapabilitiesServer>>);
 });
 
-describe("server home-page staff redirect", () => {
-  it("does not wrap content in CabinetShell (persistent (cabinet)/layout owns the shell)", () => {
-    const src = readFileSync(path.join(import.meta.dirname, "page.tsx"), "utf8");
-    expect(src).not.toMatch(/CabinetShell/);
-  });
+function treeContainsType(node: unknown, type: unknown): boolean {
+  if (!isValidElement(node)) return false;
+  if (node.type === type) return true;
+  return Children.toArray(node.props.children).some((child) => treeContainsType(child, type));
+}
 
+describe("server home-page staff redirect", () => {
   it.each(["OWNER", "ADMIN"])("redirects %s before partner readiness/profile/consent fetches", async (staffRole) => {
     vi.mocked(getSessionUser).mockResolvedValue({
       id: "synthetic-staff", role: "CLIENT", staffRole, isBlocked: false,
@@ -219,17 +222,14 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
     expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
   });
 
-  it("ordinary eligible PRO renders default dashboard branch", async () => {
+  it("keeps ready ordinary and delegated test partners in their cabinet", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({
       id: "synthetic-test-partner", role: "PRO", staffRole: null, isProfTestUser: true,
     });
     mockCabinetReadyUpstream();
     const element = await HomePage({});
-    expect(element.type).toBe(Fragment);
-    const kids = Children.toArray(element.props.children);
-    expect(
-      kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
-    ).toBe(true);
+    expect(element.type).toBe(CabinetShell);
+    expect(treeContainsType(element, HomeDashboard)).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -240,10 +240,8 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
     mockCabinetReadyUpstream();
     homeBranchFixtures.specialistHome = true;
     const element = await HomePage({});
-    const kids = Children.toArray(element.props.children);
-    expect(
-      kids.some((child) => isValidElement(child) && child.type === SpecialistHomeDashboard),
-    ).toBe(true);
+    expect(element.type).toBe(CabinetShell);
+    expect(treeContainsType(element, SpecialistHomeDashboard)).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -255,10 +253,8 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
     homeBranchFixtures.businessOwnerHome = true;
     homeBranchFixtures.businessPartnerType = "STORE";
     const element = await HomePage({});
-    const kids = Children.toArray(element.props.children);
-    expect(
-      kids.some((child) => isValidElement(child) && child.type === BusinessOwnerHomeDashboard),
-    ).toBe(true);
+    expect(element.type).toBe(CabinetShell);
+    expect(treeContainsType(element, BusinessOwnerHomeDashboard)).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
   });
 

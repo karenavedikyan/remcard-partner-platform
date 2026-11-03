@@ -1,3 +1,4 @@
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { ProfNotificationCenter } from "@/components/notifications/ProfNotificationCenter";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
@@ -13,9 +14,9 @@ export default async function NotificationsPage() {
   }
 
   return (
-    <>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading eyebrow="RemCard PROF" title="Уведомления" />
       <ProfNotificationCenter />
-    </>
+    </CabinetShell>
   );
 }

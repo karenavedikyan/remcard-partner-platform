@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
 import { PartnersHub } from "@/components/partners/PartnersHub";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
@@ -60,7 +61,7 @@ export default async function PartnersPage(props: {
   });
 
   return (
-    <>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading
         eyebrow={presentation.heading.eyebrow}
         title={presentation.heading.title}
@@ -76,6 +77,6 @@ export default async function PartnersPage(props: {
       ) : (
         <PartnersHub meId={user.id} initialProfile={profileResult.data} />
       )}
-    </>
+    </CabinetShell>
   );
 }

@@ -4,6 +4,7 @@ import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesW
 import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
 import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
+import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
 import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
@@ -70,7 +71,7 @@ export default async function SettlementsPage() {
     }) ?? "specialist";
 
   return (
-    <>
+    <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
       {shell === "agent-r05" ? (
         <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
@@ -85,6 +86,6 @@ export default async function SettlementsPage() {
       ) : (
         <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
       )}
-    </>
+    </CabinetShell>
   );
 }

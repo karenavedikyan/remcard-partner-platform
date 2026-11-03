@@ -1,23 +1,21 @@
-import { requireProSession } from "@/lib/session";
-import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
+import { peekCabinetSession } from "@/lib/session";
 import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
-import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
+import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
 
 type CabinetShellProps = {
   children: React.ReactNode;
+  /** Preserved for page parity; guards run on the page before this wrapper. */
   returnTo?: string;
 };
 
-export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
-  const user = await requireProSession(returnTo);
-  const [shellProps, shellContextToken] = await Promise.all([
-    loadCabinetShellClientProps(user),
-    computeCabinetShellContextToken(user),
-  ]);
+/** Per-page fresh shell identity (soft nav re-runs the page segment, not route-group template). */
+export async function CabinetShell({ children }: CabinetShellProps) {
+  const user = await peekCabinetSession();
+  const freshShellContextToken = await computeCabinetShellContextToken(user);
 
   return (
-    <CabinetAppShellClient {...shellProps} shellContextToken={shellContextToken}>
+    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
       {children}
-    </CabinetAppShellClient>
+    </CabinetShellTemplateReconciler>
   );
 }

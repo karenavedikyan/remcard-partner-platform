@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -16,6 +17,7 @@ export type CabinetShellContextValue = {
   authFailureEpoch: number;
   notifyAuthFailure: () => void;
   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
+  acknowledgeShellContextMatch: () => void;
 };
 
 const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
@@ -35,22 +37,32 @@ export function CabinetShellContextProvider({
 }: CabinetShellContextProviderProps) {
   const router = useRouter();
   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
-  const refreshedPairsRef = useRef<Set<string>>(new Set());
+  const refreshedPairsRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    refreshedPairsRef.current.clear();
+  }, [shellContextToken]);
 
   const notifyAuthFailure = useCallback(() => {
     setAuthFailureEpoch((n) => n + 1);
   }, []);
 
+  const acknowledgeShellContextMatch = useCallback(() => {
+    refreshedPairsRef.current.clear();
+  }, []);
+
   const requestShellRefreshIfStale = useCallback(
     (freshShellContextToken: string) => {
       if (shellContextToken === freshShellContextToken) {
+        refreshedPairsRef.current.clear();
         return;
       }
       const pair = `${shellContextToken}|${freshShellContextToken}`;
-      if (refreshedPairsRef.current.has(pair)) {
+      const attempts = refreshedPairsRef.current.get(pair) ?? 0;
+      if (attempts >= 2) {
         return;
       }
-      refreshedPairsRef.current.add(pair);
+      refreshedPairsRef.current.set(pair, attempts + 1);
       router.refresh();
     },
     [router, shellContextToken],
@@ -62,8 +74,15 @@ export function CabinetShellContextProvider({
       authFailureEpoch,
       notifyAuthFailure,
       requestShellRefreshIfStale,
+      acknowledgeShellContextMatch,
     }),
-    [shellContextToken, authFailureEpoch, notifyAuthFailure, requestShellRefreshIfStale],
+    [
+      shellContextToken,
+      authFailureEpoch,
+      notifyAuthFailure,
+      requestShellRefreshIfStale,
+      acknowledgeShellContextMatch,
+    ],
   );
 
   return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;
