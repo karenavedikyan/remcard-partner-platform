@@ -215,6 +215,12 @@ export function PartnersHub({
   const [loadingList, setLoadingList] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const findMainRef = useRef<HTMLDivElement>(null);
+  const findShowcaseRef = useRef<HTMLDivElement>(null);
+  const findShowcaseTitleRef = useRef<HTMLHeadingElement>(null);
+  const inviteReturnFocusRef = useRef<HTMLElement | null>(null);
+  const inviteReturnFocusPartnerIdRef = useRef<string | null>(null);
+  const pendingSearchRetryFocusRef = useRef(false);
+  const findHostWasHiddenRef = useRef(true);
   const [findResultsWide, setFindResultsWide] = useState(false);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
@@ -308,6 +314,65 @@ export function PartnersHub({
     [focusFindDetailRowTrigger],
   );
 
+  const tryFocusInteractive = useCallback(
+    (el: HTMLElement | null | undefined, allowDisabled = false): boolean => {
+      if (!el || !el.isConnected) return false;
+      if (!allowDisabled && "disabled" in el && Boolean((el as HTMLButtonElement).disabled)) {
+        return false;
+      }
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+      el.focus({ preventScroll: true });
+      return document.activeElement === el || el.contains(document.activeElement);
+    },
+    [],
+  );
+
+  const focusFindModalEntry = useCallback(() => {
+    const back = document.querySelector<HTMLElement>('[data-testid="agent-partner-find-intro-back"]');
+    if (tryFocusInteractive(back)) return true;
+    const title = findShowcaseTitleRef.current;
+    if (!title) return false;
+    title.focus({ preventScroll: true });
+    return document.activeElement === title;
+  }, [tryFocusInteractive]);
+
+  const captureInviteReturnFocus = useCallback((partnerId: string) => {
+    const active = document.activeElement;
+    inviteReturnFocusRef.current = active instanceof HTMLElement ? active : null;
+    inviteReturnFocusPartnerIdRef.current = partnerId;
+  }, []);
+
+  const restoreInviteReturnFocus = useCallback(
+    (partnerId: string) => {
+      if (tryFocusInteractive(inviteReturnFocusRef.current)) return true;
+      const inviteBtn = document.querySelector<HTMLElement>(
+        `[data-testid="agent-partner-search-result-card"][data-partner-id="${partnerId}"] [data-testid="agent-partner-search-result-invite"]`,
+      );
+      if (tryFocusInteractive(inviteBtn)) return true;
+      if (focusFindDetailRowTrigger(partnerId)) return true;
+      const cardBtn = document.querySelector<HTMLElement>(
+        `[data-testid="agent-partner-search-result-card"][data-partner-id="${partnerId}"] button:not([disabled])`,
+      );
+      return tryFocusInteractive(cardBtn);
+    },
+    [focusFindDetailRowTrigger, tryFocusInteractive],
+  );
+
+  const beginInviteFromPartner = useCallback(
+    (partner: PartnerSearchResult, opts?: { fromFindDetail?: boolean }) => {
+      captureInviteReturnFocus(partner.id);
+      if (opts?.fromFindDetail || agentModalSurface === "find") {
+        inviteFromFindDetailPartnerIdRef.current = partner.id;
+      }
+      setInviteTarget(partner);
+    },
+    [agentModalSurface, captureInviteReturnFocus],
+  );
+
   const handlePublicSummaryStateChange = useCallback(
     (partnerUserId: string, state: PartnerCertProgramState) => {
       const writeGen = findDetailLifecycleGenRef.current;
@@ -364,6 +429,8 @@ export function PartnersHub({
   useEffect(() => {
     findDetailLifecycleGenRef.current += 1;
     inviteFromFindDetailPartnerIdRef.current = null;
+    inviteReturnFocusPartnerIdRef.current = null;
+    inviteReturnFocusRef.current = null;
     publicSummaryByPartnerRef.current.clear();
     setPublicSummaryHandoffTick(0);
     setInviteTarget(null);
@@ -385,6 +452,77 @@ export function PartnersHub({
       back?.focus({ preventScroll: true });
     });
   }, [findDirectoryDetailPartner]);
+
+  useEffect(() => {
+    if (!isModalSurface || agentModalSurface !== "find") return;
+    const host = document.querySelector('[data-testid="agent-r04-modal-find-results-host"]');
+    if (!(host instanceof HTMLElement)) return;
+
+    const considerFocus = () => {
+      const hidden = Boolean(host.parentElement?.closest("[hidden]"));
+      if (hidden) {
+        findHostWasHiddenRef.current = true;
+        return;
+      }
+      if (!findHostWasHiddenRef.current) return;
+      findHostWasHiddenRef.current = false;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const active = document.activeElement;
+          if (active && active !== document.body) return;
+          focusFindModalEntry();
+        });
+      });
+    };
+
+    considerFocus();
+    const observer = new MutationObserver(considerFocus);
+    const choiceWrapper = host.parentElement;
+    if (choiceWrapper instanceof HTMLElement) {
+      observer.observe(choiceWrapper, { attributes: true, attributeFilter: ["hidden"] });
+    }
+    const hiddenAncestor = host.parentElement?.closest("[hidden]");
+    if (hiddenAncestor instanceof HTMLElement) {
+      observer.observe(hiddenAncestor, { attributes: true, attributeFilter: ["hidden"] });
+    }
+    return () => observer.disconnect();
+  }, [agentModalSurface, focusFindModalEntry, isModalSurface]);
+
+  useLayoutEffect(() => {
+    if (!isModalSurface || agentModalSurface !== "find") return;
+    if (loadingSearch || !pendingSearchRetryFocusRef.current) return;
+    pendingSearchRetryFocusRef.current = false;
+    requestAnimationFrame(() => {
+      if (searchError) {
+        tryFocusInteractive(
+          document.querySelector<HTMLElement>('[data-testid="agent-partner-search-error"] button'),
+          true,
+        );
+        return;
+      }
+      if (
+        !tryFocusInteractive(
+          document.querySelector<HTMLElement>('[data-testid="agent-partner-find-search-input"]'),
+        )
+      ) {
+        findShowcaseTitleRef.current?.focus({ preventScroll: true });
+      }
+    });
+  }, [agentModalSurface, isModalSurface, loadingSearch, searchError, tryFocusInteractive]);
+
+  useLayoutEffect(() => {
+    if (inviteTarget) return;
+    const partnerId = inviteReturnFocusPartnerIdRef.current;
+    if (!partnerId) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        restoreInviteReturnFocus(partnerId);
+        inviteReturnFocusPartnerIdRef.current = null;
+        inviteReturnFocusRef.current = null;
+        inviteFromFindDetailPartnerIdRef.current = null;
+      });
+    });
+  }, [inviteTarget, restoreInviteReturnFocus]);
 
   const [expandedTermPartnershipId, setExpandedTermPartnershipId] = useState<string | null>(null);
   const [termRequests, setTermRequests] = useState<Record<string, TermRequestState>>({});
@@ -1717,7 +1855,11 @@ export function PartnersHub({
    * No outer hub findRefine wrapper (would nest a second disclosure).
    */
   const agentFindShowcase = (
-    <div className={styles.findShell} data-testid="agent-partner-find-showcase">
+    <div
+      className={styles.findShell}
+      data-testid="agent-partner-find-showcase"
+      ref={findShowcaseRef}
+    >
       <div className={styles.findIntroRow} data-testid="agent-partner-find-intro-row">
         <p className={styles.modalLead}>
           Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.
@@ -1807,7 +1949,13 @@ export function PartnersHub({
         >
           <div className={styles.findHeading}>
             <span className={styles.findEyebrow}>Партнёры RemCard</span>
-            <h2 data-testid="agent-partner-find-showcase-title">{findShowcaseTitle}</h2>
+            <h2
+              data-testid="agent-partner-find-showcase-title"
+              tabIndex={-1}
+              ref={findShowcaseTitleRef}
+            >
+              {findShowcaseTitle}
+            </h2>
             {findShowcaseCountLine && !loadingSearch ? (
               <p className={styles.findCount} role="status" data-testid="agent-partner-search-count">
                 {findShowcaseCountLine}
@@ -1825,7 +1973,9 @@ export function PartnersHub({
                 type="button"
                 variant="secondary"
                 disabled={loadingSearch}
+                data-testid="agent-partner-search-retry"
                 onClick={() => {
+                  pendingSearchRetryFocusRef.current = true;
                   void loadSearch(failedSearchPage?.mode ?? "reset", failedSearchPage?.cursor ?? null);
                 }}
               >
@@ -1850,12 +2000,7 @@ export function PartnersHub({
                 title={partnerTitle(partner)}
                 showPublishedTerms={showAgentPublishedTerms}
                 inviteDisabled={Boolean(inviteTarget) || loadingSearch}
-                onInvite={() => {
-                  if (agentModalSurface === "find") {
-                    inviteFromFindDetailPartnerIdRef.current = partner.id;
-                  }
-                  setInviteTarget(partner);
-                }}
+                onInvite={() => beginInviteFromPartner(partner)}
                 onDetail={() => openFindDirectoryDetail(partner)}
                 onPublicSummaryStateChange={
                   showAgentPublishedTerms ? handlePublicSummaryStateChange : undefined
@@ -1981,11 +2126,10 @@ export function PartnersHub({
                 onBack={() => closeFindDirectoryDetail({ restoreFocus: true })}
                 onInvite={() => {
                   const target = findDirectoryDetailPartner;
-                  inviteFromFindDetailPartnerIdRef.current = target.id;
-                  // Leave detail without restoring find trigger yet — invite owns focus until cancel/sent.
+                  if (!target) return;
                   findDetailLifecycleGenRef.current += 1;
                   setFindDirectoryDetailPartner(null);
-                  setInviteTarget(target);
+                  beginInviteFromPartner(target, { fromFindDetail: true });
                 }}
                 inviteDisabled={Boolean(inviteTarget) || Boolean(busyId) || loadingSearch}
                 /* P23n/P23q: AGENT-only via parent gate helper; non-AGENT never fetches/renders. */
@@ -2005,12 +2149,7 @@ export function PartnersHub({
                   inviteTarget.id, publicSummaryByPartnerRef.current,
                 )}
                 onClose={() => {
-                  const fromDetailId = inviteFromFindDetailPartnerIdRef.current;
-                  inviteFromFindDetailPartnerIdRef.current = null;
                   setInviteTarget(null);
-                  if (fromDetailId) {
-                    scheduleFindDetailFocusRestore(fromDetailId);
-                  }
                 }}
                 onSent={() => {
                   // POST confirmed creation: retain filters, cursor and every loaded row.

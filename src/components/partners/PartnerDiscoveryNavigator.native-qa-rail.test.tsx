@@ -55,6 +55,25 @@ describe("PartnerDiscoveryNavigator native QA rail CSS (scoped)", () => {
     expect(contrastRatio(TOKENS.light.muted, TOKENS.light.offset)).toBeLessThan(4.5);
   });
 
+  it("raises quest head 12px copy contrast (A2)", () => {
+    expect(css).toMatch(/\.questEyebrow\s*\{[^}]*opacity:\s*1/s);
+    expect(css).toMatch(/\.questHead\s+small\s*\{[^}]*opacity:\s*1/s);
+    expect(css).toMatch(/#bf403c/);
+    expect(css).toMatch(/#a64744/);
+    const lightCaptionOnEnd = contrastRatio("#fff5f3", "#bf403c");
+    const darkCaptionOnEnd = contrastRatio("#fff5f3", "#a64744");
+    expect(lightCaptionOnEnd).toBeGreaterThanOrEqual(4.5);
+    expect(darkCaptionOnEnd).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("uses dark overlay on selected direction chip count (A1)", () => {
+    expect(css).toMatch(
+      /\.skillGrid\s+\.navItem\[aria-pressed="true"\]\s+small\s*\{[^}]*background:\s*rgb\(0\s+0\s+0\s+\/\s*18%\)[^}]*color:\s*var\(--onaccent,\s*#fff\)/s,
+    );
+    const badgeOnAccent = contrastRatio("#ffffff", "#962628");
+    expect(badgeOnAccent).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("allows full empty-stage caption in compact rail 761–1000px (B3)", () => {
     expect(css).not.toMatch(/@media\s*\(min-width:\s*768px\)\s*and\s*\(max-width:\s*900px\)/);
     expect(css).toMatch(
