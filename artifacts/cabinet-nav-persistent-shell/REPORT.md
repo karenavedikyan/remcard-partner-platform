@@ -38,10 +38,17 @@ Shell path after commit 1: auth/me + list + prefs load in one `Promise.all` wave
 
 **Note:** `/` home still calls `fetchRemcardUpstream` for readiness directly (unchanged page logic); dedupe applies wherever `getSessionUser` / cached readiness / layout shell loaders participate.
 
+## Auth nuance (layout peek vs page guards)
+
+- `peekCabinetSession` never calls `redirect` and never throws; when not allowed it returns `null` and `(cabinet)/layout.tsx` renders bare `{children}`.
+- **No session / missing readiness:** same as `requireProPageUser` → `null` → page `SessionGate` (not a layout redirect). Verified in `session-peek.test.tsx` (readiness 503 → peek null + `requireProPageUser` null, no redirect).
+- **Blocked / consents / onboarding / role:** peek returns `null` (layout bare children); pages still run their existing redirects or gates (`/` home redirects consents/onboarding; guarded tabs use `requireProPageUser` redirects). Peek does not bypass stricter page behavior.
+
 ## Stale badge / UI prefs
 
-- **Partners badge:** `useIncomingPartnersCount` in `AppShell` and `AgentAppShell` — refetches `/api/partnership/list` on `pathname` change (abortable), same one-list-call-per-navigation volume as the old server shell refetch.
-- **Agent mobile nav / theme prefs:** still driven by `useAgentCabinetUiPrefs(initialPrefs)`; `router.refresh()` re-runs the layout and replaces `initialPrefs` as before.
+- **Partners badge:** `useIncomingPartnersCount` refetches `/api/partnership/list` on `pathname` change with `AbortController` + cancelled flag. On **401/403**, badge clears to `0` and `router.refresh()` re-runs server peek/layout so stale user/shell data is not kept.
+- **Agent UI prefs:** `useAgentCabinetPrefsPathRefresh` refetches `/api/pro/cabinet-ui-preferences` on pathname change (abortable). On **401/403**, applies `neutralCabinetUiPreferencesFallback` and `router.refresh()`.
+- **`router.refresh()`** still replaces layout `initialPrefs` after explicit refresh (unchanged).
 
 ## Analytics cadence
 
@@ -64,16 +71,28 @@ Shell path after commit 1: auth/me + list + prefs load in one `Promise.all` wave
 - Client badge refresh adds a client fetch on pathname change; aborted on rapid switching to avoid stale writes.
 - Home readiness double-fetch (page + peek/layout) remains possible on `/` for allowed users — out of scope for page-specific dedupe.
 
+## Test files touched for route move / layout ownership
+
+| File | Change |
+| --- | --- |
+| `src/app/(cabinet)/page.admin-root-redirect.test.tsx` | Moved with `page.tsx`; import `./page`; expect Fragment + `HomeDashboard` (not `CabinetShell`); `PartnerWelcome` coverage; static assert page has no `CabinetShell` |
+| `src/lib/clients-rsc-boundary.test.ts` | `clientsAppDir` → `src/app/(cabinet)/clients` |
+| `src/app/(cabinet)/cabinet-routing-contract.test.tsx` | New — fs reads under `(cabinet)` |
+| `src/lib/session-peek.test.tsx` | New/extended — peek never redirects |
+| `src/hooks/useIncomingPartnersCount.test.tsx` | New — auth failure + abort |
+| (unchanged paths) | All other vitest files — no references to pre-move `app/page.tsx` or moved colocated assets |
+
 ## Tests — unit vs native
 
 | Area | Unit / vitest | Native / manual |
 | --- | --- | --- |
-| Request dedupe | `cabinet-shell-request-dedupe.test.tsx` (injectable request cache) | Full RSC request isolation in production |
+| Request dedupe | `cabinet-shell-request-dedupe.test.tsx` exercises **call plumbing** via test-only `__setRequestCacheForTests` (Map memo simulating per-request dedupe). Production uses `React.cache` only. | **Auditor:** upstream call counts per real navigation on a running server |
 | Peek / no redirect | `session-peek.test.tsx` | — |
 | Routing contract | `cabinet-routing-contract.test.tsx` | — |
 | Analytics cadence | `ProfPartnerSessionVisitOnPathname.test.tsx` | — |
 | Sidebar DOM identity | Harness: same `aside` node on pathname rerender (`cabinet-shell-persistence.test.tsx`) | Cold/warm Next client navigation node identity |
 | Skeleton geometry | Static heading text + grid min-heights; `role=status` | Delayed network: shimmer after ~130ms vs final layout |
-| Stale route data | `AgentR03Gate.stale-route.test.tsx` (cancel on unmount) | Rapid tab switching, back/forward |
+| Stale route data | `AgentR03Gate.stale-route.test.tsx`, `useIncomingPartnersCount.test.tsx` | Rapid tab switching, back/forward |
+| Badge auth failure | `useIncomingPartnersCount.test.tsx` | Session expiry mid-navigation |
 
-Logs: `logs/vitest-focused.log`, `logs/tsc-noEmit.log`.
+Logs: `logs/vitest-focused.log` (**39** tests), `logs/tsc-noEmit.log` (**exit 0**, no diagnostics).

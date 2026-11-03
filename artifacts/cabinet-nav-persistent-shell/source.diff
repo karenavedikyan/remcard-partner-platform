@@ -432,27 +432,31 @@ index 41b4d3f0..42cb8627 100644
    );
  }
 diff --git a/src/app/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
-similarity index 96%
+similarity index 82%
 rename from src/app/page.admin-root-redirect.test.tsx
 rename to src/app/(cabinet)/page.admin-root-redirect.test.tsx
-index c8cb7be2..abdf6ef8 100644
+index c8cb7be2..26036080 100644
 --- a/src/app/page.admin-root-redirect.test.tsx
 +++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
-@@ -1,3 +1,4 @@
-+import { Fragment } from "react";
+@@ -1,3 +1,6 @@
++import { readFileSync } from "node:fs";
++import path from "node:path";
++import { Children, Fragment, isValidElement } from "react";
  import { beforeEach, describe, expect, it, vi } from "vitest";
  import HomePage from "./page";
  import { getSessionUser } from "@/lib/session";
-@@ -5,8 +6,6 @@ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+@@ -5,8 +8,8 @@ import { fetchRemcardUpstream } from "@/lib/remcard-server";
  import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
  import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
  import { SessionGate } from "@/components/auth/SessionGate";
 -import { CabinetShell } from "@/components/layout/CabinetShell";
 -
++import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
++import { HomeDashboard } from "@/components/home/HomeDashboard";
  const redirect = vi.hoisted(() => vi.fn((path: string) => {
    throw new Error(`NEXT_REDIRECT:${path}`);
  }));
-@@ -24,7 +23,6 @@ vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null })
+@@ -24,7 +27,6 @@ vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null })
  vi.mock("@/components/home/SpecialistHomeDashboard", () => ({ SpecialistHomeDashboard: () => null }));
  vi.mock("@/components/home/BusinessOwnerHomeDashboard", () => ({ BusinessOwnerHomeDashboard: () => null }));
  vi.mock("@/components/ui/PageHeading", () => ({ PageHeading: () => null }));
@@ -460,12 +464,47 @@ index c8cb7be2..abdf6ef8 100644
  vi.mock("@/lib/agent-nav/root-destination", () => ({
    resolveActiveAgentRootRedirect: vi.fn(),
    isActiveAgentCabinetContext: () => false,
-@@ -126,7 +124,7 @@ describe("server home-page staff redirect", () => {
+@@ -52,6 +54,11 @@ beforeEach(() => {
+ });
+ 
+ describe("server home-page staff redirect", () => {
++  it("does not wrap content in CabinetShell (persistent (cabinet)/layout owns the shell)", () => {
++    const src = readFileSync(path.join(import.meta.dirname, "page.tsx"), "utf8");
++    expect(src).not.toMatch(/CabinetShell/);
++  });
++
+   it.each(["OWNER", "ADMIN"])("redirects %s before partner readiness/profile/consent fetches", async (staffRole) => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+       id: "synthetic-staff", role: "CLIENT", staffRole, isBlocked: false,
+@@ -102,6 +109,18 @@ describe("server home-page staff redirect", () => {
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
++  it("keeps PartnerWelcome for guests when registration welcome path is enabled", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue(null);
++    vi.mocked(fetchRegistrationCapabilitiesServer).mockResolvedValue({
++      welcomeEnabled: true,
++      agentRegistrationPathEnabled: true,
++    } as Awaited<ReturnType<typeof fetchRegistrationCapabilitiesServer>>);
++    const element = await HomePage({ searchParams: Promise.resolve({ invite: "tok", returnTo: "/join" }) });
++    expect(element.type).toBe(PartnerWelcome);
++    expect(element.props.inviteToken).toBe("tok");
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
+   it("keeps partner consent requirements", async () => {
+     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+       ok: true, data: {
+@@ -126,7 +145,11 @@ describe("server home-page staff redirect", () => {
        ok: true, data: { ...denied, canAccessCabinet: true, partnerships: [] },
      });
      const element = await HomePage({});
 -    expect(element.type).toBe(CabinetShell);
 +    expect(element.type).toBe(Fragment);
++    const kids = Children.toArray(element.props.children);
++    expect(
++      kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
++    ).toBe(true);
      expect(redirect).not.toHaveBeenCalled();
    });
  
@@ -1336,26 +1375,33 @@ index 00000000..5949223c
 +  return <ProfPartnerSessionVisit key={pathname} />;
 +}
 diff --git a/src/components/layout/agent/AgentAppShell.tsx b/src/components/layout/agent/AgentAppShell.tsx
-index 16cd0b0c..45ff0308 100644
+index 16cd0b0c..e45445e6 100644
 --- a/src/components/layout/agent/AgentAppShell.tsx
 +++ b/src/components/layout/agent/AgentAppShell.tsx
-@@ -4,6 +4,7 @@ import Link from "next/link";
+@@ -4,6 +4,8 @@ import Link from "next/link";
  import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
  import { usePathname } from "next/navigation";
  import { useCallback, useMemo, useState } from "react";
 +import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
++import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
  import type { AuthUser } from "@/lib/types";
  import { BrandMark } from "@/components/layout/BrandMark";
  import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
-@@ -51,6 +52,7 @@ export function AgentAppShell({
+@@ -51,9 +53,12 @@ export function AgentAppShell({
  }: AgentAppShellProps) {
    const pathname = usePathname();
    const activePathname = fixturePathname ?? pathname;
 +  const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
    const displayName = user.displayName?.trim() || "Партнёр RemCard";
    const initials = userInitials(displayName);
-   const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
-@@ -111,7 +113,7 @@ export function AgentAppShell({
+-  const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
++  const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =
++    useAgentCabinetUiPrefs(initialPrefs);
++  useAgentCabinetPrefsPathRefresh(applyServerPrefs);
+ 
+   const permittedKeys = useMemo(
+     () => prefs.permittedKeys ?? [],
+@@ -111,7 +116,7 @@ export function AgentAppShell({
                const section = agentSectionByKey(key);
                const active = isPathActive(activePathname, section.href);
                const badge =
@@ -1462,17 +1508,129 @@ index 3259f008..202ce29a 100644
    if (error) {
      return (
        <div className={styles.errorBlock}>
+diff --git a/src/hooks/useAgentCabinetPrefsPathRefresh.ts b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+new file mode 100644
+index 00000000..28fbbba7
+--- /dev/null
++++ b/src/hooks/useAgentCabinetPrefsPathRefresh.ts
+@@ -0,0 +1,41 @@
++"use client";
++
++import { useEffect } from "react";
++import { usePathname, useRouter } from "next/navigation";
++import { remcardFetch } from "@/lib/api-client";
++import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
++import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
++
++/** Refreshes agent UI prefs on pathname change; clears stale private shell state on auth failure. */
++export function useAgentCabinetPrefsPathRefresh(
++  applyServerPrefs: (next: CabinetUiPreferencesResponse) => void,
++): void {
++  const pathname = usePathname();
++  const router = useRouter();
++
++  useEffect(() => {
++    const controller = new AbortController();
++    let cancelled = false;
++    void remcardFetch<CabinetUiPreferencesResponse>("/api/pro/cabinet-ui-preferences", {
++      signal: controller.signal,
++    })
++      .then((data) => {
++        if (cancelled) return;
++        applyServerPrefs(enrichCabinetUiPreferencesForShell(data));
++      })
++      .catch((error) => {
++        if (cancelled) return;
++        if (error instanceof DOMException && error.name === "AbortError") return;
++        if (isCabinetShellAuthFailure(error)) {
++          applyServerPrefs(neutralCabinetUiPreferencesFallback);
++          router.refresh();
++        }
++      });
++    return () => {
++      cancelled = true;
++      controller.abort();
++    };
++  }, [pathname, applyServerPrefs, router]);
++}
+diff --git a/src/hooks/useIncomingPartnersCount.test.tsx b/src/hooks/useIncomingPartnersCount.test.tsx
+new file mode 100644
+index 00000000..cab589bf
+--- /dev/null
++++ b/src/hooks/useIncomingPartnersCount.test.tsx
+@@ -0,0 +1,58 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import { RemcardApiError } from "@/lib/api-client";
++
++const mocks = vi.hoisted(() => ({
++  remcardFetch: vi.fn(),
++  pathname: "/",
++  refresh: vi.fn(),
++}));
++
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return {
++    ...actual,
++    remcardFetch: mocks.remcardFetch,
++  };
++});
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => mocks.pathname,
++  useRouter: () => ({ refresh: mocks.refresh, push: vi.fn() }),
++}));
++
++import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
++
++function BadgeProbe({ initial }: { initial: number }) {
++  const count = useIncomingPartnersCount(initial, "user-1");
++  return <span data-testid="badge-count">{count}</span>;
++}
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  mocks.pathname = "/";
++  mocks.remcardFetch.mockResolvedValue({ partnerships: [] });
++});
++
++describe("useIncomingPartnersCount", () => {
++  it("clears badge and refreshes router on auth failure", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "Unauthorized", null));
++    render(<BadgeProbe initial={5} />);
++    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
++    await waitFor(() => expect(screen.getByTestId("badge-count")).toHaveTextContent("0"));
++  });
++
++  it("ignores late responses after pathname change (abort)", async () => {
++    let resolve!: (value: { partnerships: [] }) => void;
++    mocks.remcardFetch.mockReturnValue(
++      new Promise((res) => {
++        resolve = res;
++      }),
++    );
++    const { rerender } = render(<BadgeProbe initial={0} />);
++    mocks.pathname = "/clients";
++    rerender(<BadgeProbe initial={0} />);
++    resolve({ partnerships: [] });
++    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(2));
++  });
++});
 diff --git a/src/hooks/useIncomingPartnersCount.ts b/src/hooks/useIncomingPartnersCount.ts
 new file mode 100644
-index 00000000..84bf272b
+index 00000000..5f8f4786
 --- /dev/null
 +++ b/src/hooks/useIncomingPartnersCount.ts
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,53 @@
 +"use client";
 +
 +import { useEffect, useState } from "react";
-+import { usePathname } from "next/navigation";
-+import { remcardFetch } from "@/lib/api-client";
++import { usePathname, useRouter } from "next/navigation";
++import { remcardFetch, RemcardApiError } from "@/lib/api-client";
++import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
 +import { countNeedsMyResponse } from "@/lib/partnership-rules";
 +import type { PartnershipListResponse } from "@/lib/types";
 +
@@ -1482,6 +1640,7 @@ index 00000000..84bf272b
 + */
 +export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
 +  const pathname = usePathname();
++  const router = useRouter();
 +  const [count, setCount] = useState(initialCount);
 +
 +  useEffect(() => {
@@ -1499,14 +1658,23 @@ index 00000000..84bf272b
 +        if (cancelled) return;
 +        setCount(countNeedsMyResponse(data.partnerships ?? [], userId));
 +      })
-+      .catch(() => {
-+        /* keep last known count on transient errors */
++      .catch((error) => {
++        if (cancelled) return;
++        if (error instanceof DOMException && error.name === "AbortError") return;
++        if (isCabinetShellAuthFailure(error)) {
++          setCount(0);
++          router.refresh();
++          return;
++        }
++        if (error instanceof RemcardApiError) {
++          /* transient non-auth errors: keep last known count */
++        }
 +      });
 +    return () => {
 +      cancelled = true;
 +      controller.abort();
 +    };
-+  }, [pathname, userId]);
++  }, [pathname, userId, router]);
 +
 +  return count;
 +}
@@ -1573,6 +1741,17 @@ index 00000000..464e0277
 +    title: "Уведомления",
 +  },
 +};
+diff --git a/src/lib/cabinet-shell-auth-failure.ts b/src/lib/cabinet-shell-auth-failure.ts
+new file mode 100644
+index 00000000..1c4721b9
+--- /dev/null
++++ b/src/lib/cabinet-shell-auth-failure.ts
+@@ -0,0 +1,5 @@
++import { RemcardApiError } from "@/lib/api-client";
++
++export function isCabinetShellAuthFailure(error: unknown): boolean {
++  return error instanceof RemcardApiError && (error.status === 401 || error.status === 403);
++}
 diff --git a/src/lib/cabinet-shell-data.ts b/src/lib/cabinet-shell-data.ts
 new file mode 100644
 index 00000000..582d5d01
@@ -1759,6 +1938,26 @@ index 00000000..62487384
 +    );
 +  });
 +});
+diff --git a/src/lib/cabinet-ui-preferences-fallback.ts b/src/lib/cabinet-ui-preferences-fallback.ts
+new file mode 100644
+index 00000000..d12cd641
+--- /dev/null
++++ b/src/lib/cabinet-ui-preferences-fallback.ts
+@@ -0,0 +1,14 @@
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++/** Non-pilot shell fallback when prefs cannot be loaded (auth failure or missing data). */
++export const neutralCabinetUiPreferencesFallback: CabinetUiPreferencesResponse = {
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: false,
++  pilotActive: false,
++  contextKey: null,
++  version: 0,
++  theme: null,
++  mobileNavKeys: null,
++  permittedKeys: null,
++  defaultMobileNavKeys: null,
++};
 diff --git a/src/lib/cabinet-upstream-cache.ts b/src/lib/cabinet-upstream-cache.ts
 new file mode 100644
 index 00000000..f40cdf6f
@@ -1800,6 +1999,19 @@ index 00000000..f40cdf6f
 +    headers: cookieHeaderFromKey(cookieKey),
 +  });
 +});
+diff --git a/src/lib/clients-rsc-boundary.test.ts b/src/lib/clients-rsc-boundary.test.ts
+index 250c63bf..885de4cc 100644
+--- a/src/lib/clients-rsc-boundary.test.ts
++++ b/src/lib/clients-rsc-boundary.test.ts
+@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
+ import path from "node:path";
+ import { describe, expect, it } from "vitest";
+ 
+-const clientsAppDir = path.resolve(__dirname, "../app/clients");
++const clientsAppDir = path.resolve(__dirname, "../app/(cabinet)/clients");
+ 
+ describe("clients pages RSC boundary", () => {
+   it("does not pass render-prop functions into OwnerClientsGate", () => {
 diff --git a/src/lib/request-cache.ts b/src/lib/request-cache.ts
 new file mode 100644
 index 00000000..bd28a35a
@@ -1829,10 +2041,10 @@ index 00000000..bd28a35a
 +}
 diff --git a/src/lib/session-peek.test.tsx b/src/lib/session-peek.test.tsx
 new file mode 100644
-index 00000000..9ec3cab6
+index 00000000..d2edbcc0
 --- /dev/null
 +++ b/src/lib/session-peek.test.tsx
-@@ -0,0 +1,111 @@
+@@ -0,0 +1,125 @@
 +import { beforeEach, describe, expect, it, vi } from "vitest";
 +
 +const redirect = vi.hoisted(() => vi.fn((path: string) => {
@@ -1919,6 +2131,20 @@ index 00000000..9ec3cab6
 +    });
 +    const { peekCabinetSession } = await import("@/lib/session");
 +    await expect(peekCabinetSession()).resolves.toBeNull();
++    expect(redirect).not.toHaveBeenCalled();
++  });
++
++  it("returns null when readiness is missing (page SessionGate, not layout redirect)", async () => {
++    fetchRemcardUpstream.mockImplementation(async (path: string) => {
++      if (path === "/api/auth/me") return { ok: true, data: { user: proUser } };
++      if (path === "/api/account/cabinet-readiness") {
++        return { ok: false, status: 503, message: "n/a", configured: true };
++      }
++      return { ok: false, status: 404, message: "n/a", configured: true };
++    });
++    const { peekCabinetSession, requireProPageUser } = await import("@/lib/session");
++    await expect(peekCabinetSession()).resolves.toBeNull();
++    await expect(requireProPageUser("/clients")).resolves.toBeNull();
 +    expect(redirect).not.toHaveBeenCalled();
 +  });
 +
