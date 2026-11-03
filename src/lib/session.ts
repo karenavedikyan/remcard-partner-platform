@@ -1,13 +1,20 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
+import {
+  getAuthMeServerCached,
+  getCabinetReadinessServerCached,
+} from "@/lib/cabinet-upstream-cache";
 import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
 import type { AuthUser } from "@/lib/types";
 
+async function getRequestCookieKey(): Promise<string> {
+  return (await headers()).get("cookie") ?? "";
+}
+
 export async function getSessionUser(): Promise<AuthUser | null> {
-  const cookieHeader = (await headers()).get("cookie");
-  const auth = await getAuthMeServer(cookieHeader);
+  const cookieKey = await getRequestCookieKey();
+  const auth = await getAuthMeServerCached(cookieKey);
   if (!auth.ok || !auth.data.user) {
     return null;
   }
@@ -15,11 +22,8 @@ export async function getSessionUser(): Promise<AuthUser | null> {
 }
 
 async function getCabinetReadinessServer(): Promise<CabinetReadiness | null> {
-  const cookieHeader = (await headers()).get("cookie");
-  const result = await fetchRemcardUpstream<CabinetReadiness>("/api/account/cabinet-readiness", {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-  });
-  return result.ok ? result.data : null;
+  const cookieKey = await getRequestCookieKey();
+  return getCabinetReadinessServerCached(cookieKey);
 }
 
 function loginRedirect(returnTo: string, step?: "consents"): never {
