@@ -1,74 +1,68 @@
-# Cabinet nav persistent shell — review round 4 (security fixes, corrected M1)
+# Cabinet nav persistent shell — review round 4 (final items)
 
-Branch: `cursor/remcard-cabinet-nav-r4-template-20261103`.
+Branch: `cursor/remcard-cabinet-nav-r4-template-20261103`  
+Base before nav work: `bbf06ef8e371ad31193274ee59600f39c4dea920`  
+Tip after this pass: `2707583f` (see item commits below).
 
-## Soft-nav finding (blocking correction)
+## Soft-nav finding (unchanged, blocking)
 
-On **Next.js 15.5.28**, `(cabinet)/template.tsx` **does not re-execute on soft navigation** between sibling pages (confirmed with in-repo `nav/template-probe`: page RSC updates; template/layout server output for the route group stays pinned). Next only re-renders from the first differing segment (`renderComponentsOnThisLevel` / Flight router state).
+On **Next.js 15.5.28**, the `(cabinet)` **route-group layout** persists across in-cabinet soft navigation; **layout/template server code does not re-run** on sibling soft nav. Fresh shell identity must come from the **page segment** (`CabinetShell` / `SessionGate` reporter), not from a route-group template.
 
-**Implication:** A route-group template cannot supply a fresh shell-context token on in-cabinet soft nav. M1 was corrected to run the token on **each page segment** instead.
+## Loop guard design (implemented)
 
-## M1 — Identity staleness (corrected)
+- Attempted-refresh pairs live in a **`useRef` `Set`** inside `CabinetShellContextProvider` (mounts once with persistent layout).
+- Reconciliation runs in **`useEffect`** with **primitive/stable callback deps** only — never during render, never `router.refresh()` during render.
+- **Idempotent dedupe:** `${shellToken}|${freshToken}` in the ref set; **max one refresh per pair**; Strict Mode double effects must not double refresh.
+- Set clears when a wrapper acknowledges a match and when layout `shellContextToken` changes.
+- Tests model the **persistent provider** and swap page children via harness state (no provider-root rerender, no module/`globalThis` state).
 
-- **`CabinetShell` (`src/components/layout/CabinetShell.tsx`)**: Thin **server** wrapper restored on all 18 `(cabinet)` pages (same `returnTo` prop as baseline). Uses `peekCabinetSession` + `computeCabinetShellContextToken` (no redirect, no prefs/partnership fetch, no AppShell). Renders **`CabinetShellTemplateReconciler`** around `{children}`.
-- **Persistent `(cabinet)/layout`**: Still owns `CabinetAppShellClient` + layout token (unchanged).
-- **`template.tsx`**: **Removed** (ineffective for soft nav).
-- **Reconciler + context**: Compares page fresh token vs layout shell token; mismatch ⇒ detail skeleton + capped `router.refresh()`.
-- **Loop guard fix**: Clear refresh-pair map on token match, on layout `shellContextToken` change, and allow **one retry** per stale pair if layout token unchanged after refresh (fixes A→B→A→B hang).
+## H1 — Partners/prefs auth loops (blocker)
 
-### Page parity vs baseline `bbf06ef8`
+- **`authFailureEpoch`** moved to a separate context so stable shell callbacks do not change identity when the bell remount epoch bumps.
+- **`useIncomingPartnersCount`:** stable `useCabinetShellStableContext` callbacks only; **401** ⇒ badge `0` + bounded `requestShellRefreshIfStale("none")`; **403** ⇒ badge `0` only (no notify, no refresh).
+- **`useCabinetShellPrefsPathRefresh`:** **401** ⇒ force-clear + one refresh; **403** ⇒ no clear, no refresh (valid employee denied on partnership list).
+- Router calls use **refs** so `useRouter()` object identity does not retrigger effects.
 
-- **17 routes**: Restored verbatim from baseline paths (pure move into `(cabinet)/`).
-- **`(cabinet)/page.tsx` (home)**: Not byte-identical — retains r3 **home role-parity** (`redirectIfProfCabinetRoleDenied`, request-scoped upstream cache helpers). **Obstacle to full byte parity:** those review-round fixes must stay; only `CabinetShell returnTo="/"` wrappers were re-added around the three dashboard branches.
+## M1b — SessionGate null-user gap
 
-### Token fields (unchanged)
+- **`SessionGate`** (server): same peek + `computeCabinetShellContextToken` as `CabinetShell` (blocked/readiness/consents via peek — no extra upstream).
+- **`CabinetShellIdentityReporter`** (client, no UI): reports fresh token in an effect; **AuthFlow stays visible** (not wrapped in skeleton reconciler).
+- Optional **`shellContextTokenNone`**: profile/partners upstream failure emits `"none"` only when `profileResult.status === 401`; other SessionGate call sites unchanged.
+- **`SessionGate` usage:** only under `src/app/(cabinet)/` (verified by repo grep).
 
-`id | role | staffRole | partnerType | sorted partnerActivities | remcard-pro-branch` → SHA-256 (32 hex). Peek null ⇒ `"none"`. Raw cookie/session display fields never reach client/HTML.
+## L-a — Fail-closed dead end
 
-## M2 — Fail-closed clear (unchanged)
+After one bounded refresh per stale pair, **`CabinetShellTemplateReconciler`** shows **`CabinetShellIdentityReconcileDeadEnd`** (Russian copy, reload via `window.location.reload`, focus ring, skeleton geometry). Navigating away / token match resets the cap.
 
-`auth-failure` prefs source, generation bump, badge/bell epoch, `router.refresh()` on 401/403. After auth-failure clear, stale layout `initialPrefs` rehydrate is blocked until layout props change.
+## M3-1 — Agent prefs branch key (blocker)
 
-## M3 — Shared prefs path refresh (both shells)
+- **`AgentCabinetShellBranch`** / **`LegacyCabinetShellBranch`** outer roots keyed by `shellContextToken` (+ agent `contextKey` + `user.id`) so pathname prefs hook state cannot leak across users/contexts.
 
-- **`useCabinetShellPrefsPathRefresh`**: Single pathname-scoped GET `/api/pro/cabinet-ui-preferences` hoisted in **`CabinetAppShellClient`** (`LegacyCabinetShellBranch` + `AgentCabinetShellBranch`); removed from **`AgentAppShell`**.
-- **In-place (agent branch):** Monotonic apply for `mobileNavKeys` / `permittedKeys` / `version` when `cabinetShellPrefsLayoutSignature` matches layout (pilot branch + `contextKey`).
-- **Layout refresh:** When fresh prefs change agent↔legacy membership or `contextKey`, one bounded `router.refresh()` per `(layoutSig|freshSig)` pair (guard clears on match; separate from identity-token guard).
-- **Legacy branch:** No in-memory prefs state; pilot/context mismatch triggers layout refresh; fixed legacy mobile nav for non-pilot users unchanged.
+## Token
+
+Plain **SHA-256 truncated to 32 hex** via existing `hashCabinetShellContextPayload` — **no HMAC, no env secret**. Token material is server-side payload only; **never logged** in product code.
 
 ## Tests
 
-| Area | Vitest (`--maxWorkers=1`) |
-|------|---------------------------|
-| Token helper | `cabinet-shell-context-token.test.ts` |
-| Page wrapper | `CabinetShell.test.tsx` |
-| Reconciler | `CabinetShellTemplateReconciler.test.tsx` |
-| Loop guard A→B→A→B | `cabinet-shell-context-loop-guard.test.tsx` |
-| Shell remount / analytics | `cabinet-shell-context-remount.test.tsx`, `ProfPartnerSessionVisitOnPathname.test.tsx` |
-| M2 | `agent-cabinet-ui-prefs-apply.test.tsx`, monotonic + path refresh hooks |
-| M3 prefs | `useCabinetShellPrefsPathRefresh.test.tsx`, `CabinetAppShellClient.prefs-path-refresh.test.tsx` (exactly **one** prefs GET per pathname) |
-| Routing contract | `(cabinet)/cabinet-routing-contract.test.tsx` (requires `CabinetShell`, no `template.tsx`) |
+| Gate | Result |
+|------|--------|
+| Focused nav (`logs/vitest-focused.log`) | **35 passed** (9 files, `--maxWorkers=1`) |
+| Full suite (`logs/vitest-full-suite.log`) | **7 failing files** — same set as base `bbf06ef8` (`logs/vitest-full-failures.txt`); **not green** |
+| `tsc --noEmit` (`logs/tsc-noEmit.log`) | **exit 0** |
 
-**Focused gate:** 88 passed (`logs/vitest-focused.log`).
+## Item commits (this pass)
 
-**Full suite:** 7 failing files — same as base `bbf06ef8` (`logs/vitest-full-failures.txt`). Not claimed green.
+| Item | SHA | Summary |
+|------|-----|---------|
+| H1 | `10af7613` | Stable shell context; 401/403 split; hook loop fixes |
+| M1b | `e50c6823` | SessionGate identity reporter + profile/partners 401 none |
+| L-a | `d89d73c5` | Reconcile dead-end UI + reconciler cap behavior |
+| M3-1 | `2707583f` | Key outer shell branches for prefs hook remount |
 
-**`tsc --noEmit`:** exit 0 (`logs/tsc-noEmit.log`).
+## Unresolved / honest gaps
 
-## r4 commits (latest)
-
-| SHA | Summary |
-|-----|---------|
-| `4167a940` … `1c2c7769` | Initial r4 token + M2 |
-| `88bc8c13` | Per-page `CabinetShell` wrapper; delete template; loop guard |
-| `3b782319` | Wrapper + loop tests |
-| `9569cb71` | Reconciler test stabilization |
-| `6ef182de` | M3 shared prefs path refresh |
-| `f8b18f7b` | M3 tests |
-
-## Unresolved
-
-- Live-server proof of upstream request-count reduction remains **unproven**.
-- Seven unrelated full-suite failures unchanged on this branch.
+- Live-server **request-count reduction** vs baseline remains **unproven** (no new upstream endpoints added; no QA harness run in this pass).
+- Seven **non-nav** full-suite failures unchanged from base.
+- Home `(cabinet)/page.tsx` still carries r3 role-parity helpers (not byte-identical to pre-nav baseline).
 
 **READY NOT DEPLOYED**

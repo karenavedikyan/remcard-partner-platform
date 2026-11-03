@@ -1,0 +1,333 @@
+commit d89d73c58d02149902dc0649fb850519bb91c804
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:50:53 2026 +0000
+
+    fix(cabinet): fail-closed shell identity reconcile dead-end UI
+    
+    After one bounded refresh per stale pair, show a reload affordance instead
+    of an endless skeleton or mismatched private page content.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.module.css b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.module.css
+new file mode 100644
+index 00000000..18421182
+--- /dev/null
++++ b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.module.css
+@@ -0,0 +1,46 @@
++.messageBlock {
++  margin-bottom: var(--space-8);
++  min-width: 0;
++  max-width: 100%;
++  display: grid;
++  gap: var(--space-4);
++}
++
++.message {
++  margin: 0;
++  max-width: 52rem;
++  font-size: var(--text-sm);
++  line-height: 1.5;
++  color: var(--foreground);
++}
++
++.reloadButton {
++  justify-self: start;
++  font: inherit;
++  font-size: var(--text-sm);
++  font-weight: 650;
++  line-height: 1.25;
++  padding: var(--space-3) var(--space-5);
++  border-radius: var(--radius-md);
++  border: 1px solid var(--border);
++  background: var(--background);
++  color: var(--foreground);
++  cursor: pointer;
++}
++
++.reloadButton:focus-visible {
++  outline: 2px solid var(--ring);
++  outline-offset: 2px;
++}
++
++@media (prefers-color-scheme: dark) {
++  .message {
++    color: var(--foreground);
++  }
++
++  .reloadButton {
++    background: var(--background);
++    color: var(--foreground);
++    border-color: var(--border);
++  }
++}
+diff --git a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx
+new file mode 100644
+index 00000000..c7c09c38
+--- /dev/null
++++ b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.test.tsx
+@@ -0,0 +1,23 @@
++import { describe, expect, it, vi } from "vitest";
++import { fireEvent, render, screen } from "@testing-library/react";
++import { CabinetShellIdentityReconcileDeadEnd } from "@/components/layout/CabinetShellIdentityReconcileDeadEnd";
++
++describe("CabinetShellIdentityReconcileDeadEnd", () => {
++  it("shows Russian copy and reload button with skeleton geometry", () => {
++    render(<CabinetShellIdentityReconcileDeadEnd />);
++    expect(screen.getByTestId("cabinet-shell-identity-reconcile-dead-end")).toBeInTheDocument();
++    expect(screen.getByTestId("cabinet-page-heading-placeholder")).toBeInTheDocument();
++    expect(screen.getByTestId("cabinet-page-loading-body")).toBeInTheDocument();
++    expect(screen.getByRole("button", { name: "Обновить страницу" })).toBeInTheDocument();
++    expect(screen.getByText(/Не удалось обновить кабинет/)).toBeInTheDocument();
++  });
++
++  it("calls window.location.reload on button click", () => {
++    const reload = vi.fn();
++    vi.stubGlobal("location", { ...window.location, reload });
++    render(<CabinetShellIdentityReconcileDeadEnd />);
++    fireEvent.click(screen.getByRole("button", { name: "Обновить страницу" }));
++    expect(reload).toHaveBeenCalledTimes(1);
++    vi.unstubAllGlobals();
++  });
++});
+diff --git a/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx
+new file mode 100644
+index 00000000..27fe4f0a
+--- /dev/null
++++ b/src/components/layout/CabinetShellIdentityReconcileDeadEnd.tsx
+@@ -0,0 +1,27 @@
++"use client";
++
++import styles from "./CabinetShellIdentityReconcileDeadEnd.module.css";
++import skeletonStyles from "./CabinetPageLoadingSkeleton.module.css";
++import { CabinetPageHeadingPlaceholder, CabinetPageLoadingSkeletonBody } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export function CabinetShellIdentityReconcileDeadEnd() {
++  return (
++    <div
++      className={skeletonStyles.root}
++      role="alert"
++      aria-live="polite"
++      data-testid="cabinet-shell-identity-reconcile-dead-end"
++    >
++      <CabinetPageHeadingPlaceholder />
++      <div className={styles.messageBlock}>
++        <p className={styles.message}>
++          Не удалось обновить кабинет. Нажмите «Обновить страницу» или перейдите в другой раздел.
++        </p>
++        <button type="button" className={styles.reloadButton} onClick={() => window.location.reload()}>
++          Обновить страницу
++        </button>
++      </div>
++      <CabinetPageLoadingSkeletonBody />
++    </div>
++  );
++}
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.test.tsx b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+index fd884768..2750ef85 100644
+--- a/src/components/layout/CabinetShellTemplateReconciler.test.tsx
++++ b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+@@ -1,5 +1,6 @@
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+-import { render, screen } from "@testing-library/react";
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { useState } from "react";
+ import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
+ import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
+ 
+@@ -9,6 +10,34 @@ vi.mock("next/navigation", () => ({
+   useRouter: () => ({ refresh }),
+ }));
+ 
++function ReconcilerHarness({
++  shellToken,
++  initialFresh,
++}: {
++  shellToken: string;
++  initialFresh: string;
++}) {
++  const [fresh, setFresh] = useState(initialFresh);
++  return (
++    <>
++      <button type="button" data-testid="fresh-a" onClick={() => setFresh("shell-a")}>
++        a
++      </button>
++      <button type="button" data-testid="fresh-b" onClick={() => setFresh("fresh-b")}>
++        b
++      </button>
++      <button type="button" data-testid="fresh-none" onClick={() => setFresh("none")}>
++        none
++      </button>
++      <CabinetShellContextProvider shellContextToken={shellToken}>
++        <CabinetShellTemplateReconciler freshShellContextToken={fresh}>
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>
++    </>
++  );
++}
++
+ describe("CabinetShellTemplateReconciler", () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+@@ -26,8 +55,8 @@ describe("CabinetShellTemplateReconciler", () => {
+ 
+   it("renders children when tokens match", () => {
+     render(
+-      <CabinetShellContextProvider shellContextToken="token-a">
+-        <CabinetShellTemplateReconciler freshShellContextToken="token-a">
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="shell-a">
+           <div data-testid="page">page</div>
+         </CabinetShellTemplateReconciler>
+       </CabinetShellContextProvider>,
+@@ -36,44 +65,24 @@ describe("CabinetShellTemplateReconciler", () => {
+     expect(refresh).not.toHaveBeenCalled();
+   });
+ 
+-  it("hides children and refreshes once per stale pair", () => {
+-    const { rerender } = render(
+-      <CabinetShellContextProvider shellContextToken="shell-a">
+-        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
+-          <div data-testid="page">page</div>
+-        </CabinetShellTemplateReconciler>
+-      </CabinetShellContextProvider>,
+-    );
++  it("hides children, refreshes once, then shows dead-end UI for persistent mismatch", async () => {
++    render(<ReconcilerHarness shellToken="shell-a" initialFresh="fresh-b" />);
+     expect(screen.queryByTestId("page")).not.toBeInTheDocument();
+-    expect(screen.getByTestId("cabinet-page-detail-loading-skeleton")).toBeInTheDocument();
+     expect(refresh).toHaveBeenCalledTimes(1);
+-
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="shell-a">
+-        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
+-          <div data-testid="page">page</div>
+-        </CabinetShellTemplateReconciler>
+-      </CabinetShellContextProvider>,
+-    );
+-    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
+-    const capped = refresh.mock.calls.length;
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="shell-a">
+-        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
+-          <div data-testid="page">page</div>
+-        </CabinetShellTemplateReconciler>
+-      </CabinetShellContextProvider>,
++    await waitFor(() =>
++      expect(screen.getByTestId("cabinet-shell-identity-reconcile-dead-end")).toBeInTheDocument(),
+     );
+-    expect(refresh.mock.calls.length).toBeLessThanOrEqual(capped + 1);
+-    const cappedAgain = refresh.mock.calls.length;
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="shell-a">
+-        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
+-          <div data-testid="page">page</div>
+-        </CabinetShellTemplateReconciler>
+-      </CabinetShellContextProvider>,
++    expect(refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("does not refresh again when remounting the same stale pair in a persistent provider", async () => {
++    render(<ReconcilerHarness shellToken="shell-a" initialFresh="fresh-b" />);
++    await waitFor(() =>
++      expect(screen.getByTestId("cabinet-shell-identity-reconcile-dead-end")).toBeInTheDocument(),
+     );
+-    expect(refresh.mock.calls.length).toBe(cappedAgain);
++    expect(refresh).toHaveBeenCalledTimes(1);
++    fireEvent.click(screen.getByTestId("fresh-b"));
++    expect(refresh).toHaveBeenCalledTimes(1);
+   });
+ 
+   it("refreshes when fresh token is none but shell still mounted", () => {
+@@ -87,4 +96,14 @@ describe("CabinetShellTemplateReconciler", () => {
+     expect(refresh).toHaveBeenCalledTimes(1);
+     expect(screen.queryByTestId("page")).not.toBeInTheDocument();
+   });
++
++  it("resets cap after tokens match via harness fresh token", async () => {
++    render(<ReconcilerHarness shellToken="shell-a" initialFresh="fresh-b" />);
++    expect(refresh).toHaveBeenCalledTimes(1);
++    fireEvent.click(screen.getByTestId("fresh-a"));
++    await waitFor(() => expect(screen.getByTestId("page")).toBeInTheDocument());
++    expect(refresh).toHaveBeenCalledTimes(1);
++    fireEvent.click(screen.getByTestId("fresh-b"));
++    expect(refresh).toHaveBeenCalledTimes(2);
++  });
+ });
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.tsx b/src/components/layout/CabinetShellTemplateReconciler.tsx
+index 6cc399e4..e726ff11 100644
+--- a/src/components/layout/CabinetShellTemplateReconciler.tsx
++++ b/src/components/layout/CabinetShellTemplateReconciler.tsx
+@@ -1,9 +1,10 @@
+ "use client";
+ 
+ import type { ReactNode } from "react";
+-import { useEffect } from "react";
+-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { useEffect, useState } from "react";
++import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
+ import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import { CabinetShellIdentityReconcileDeadEnd } from "@/components/layout/CabinetShellIdentityReconcileDeadEnd";
+ 
+ type CabinetShellTemplateReconcilerProps = {
+   freshShellContextToken: string;
+@@ -14,26 +15,51 @@ export function CabinetShellTemplateReconciler({
+   freshShellContextToken,
+   children,
+ }: CabinetShellTemplateReconcilerProps) {
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
++  const shellContextToken = shell?.shellContextToken;
++  const acknowledgeShellContextMatch = shell?.acknowledgeShellContextMatch;
++  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
++  const isShellIdentityRefreshExhausted = shell?.isShellIdentityRefreshExhausted;
++  const [identityRefreshAttempted, setIdentityRefreshAttempted] = useState(false);
+ 
+   useEffect(() => {
+-    if (!shell) {
++    setIdentityRefreshAttempted(false);
++  }, [shellContextToken, freshShellContextToken]);
++
++  useEffect(() => {
++    if (!shellContextToken || !acknowledgeShellContextMatch || !requestShellRefreshIfStale) {
++      return;
++    }
++    if (shellContextToken === freshShellContextToken) {
++      acknowledgeShellContextMatch();
++      setIdentityRefreshAttempted(false);
+       return;
+     }
+-    if (shell.shellContextToken === freshShellContextToken) {
+-      shell.acknowledgeShellContextMatch();
++    if (isShellIdentityRefreshExhausted?.(freshShellContextToken)) {
++      setIdentityRefreshAttempted(true);
+       return;
+     }
+-    shell.requestShellRefreshIfStale(freshShellContextToken);
+-  }, [shell, freshShellContextToken]);
++    requestShellRefreshIfStale(freshShellContextToken);
++    setIdentityRefreshAttempted(true);
++  }, [
++    shellContextToken,
++    freshShellContextToken,
++    acknowledgeShellContextMatch,
++    requestShellRefreshIfStale,
++    isShellIdentityRefreshExhausted,
++  ]);
+ 
+   if (!shell) {
+     return children;
+   }
+ 
+-  if (shell.shellContextToken === freshShellContextToken) {
++  if (shellContextToken === freshShellContextToken) {
+     return children;
+   }
+ 
++  if (identityRefreshAttempted) {
++    return <CabinetShellIdentityReconcileDeadEnd />;
++  }
++
+   return <CabinetPageDetailLoadingSkeleton />;
+ }

@@ -1,0 +1,239 @@
+commit e50c6823905288f9d4e2a14e4870b809d25cfe49
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:50:48 2026 +0000
+
+    fix(cabinet): reconcile SessionGate identity without hiding login UI
+    
+    Compute the same peek-based shell token as CabinetShell, report it via a
+    client reporter, and force none only on upstream profile HTTP 401.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/app/(cabinet)/partners/page.tsx b/src/app/(cabinet)/partners/page.tsx
+index d8362570..a0eced60 100644
+--- a/src/app/(cabinet)/partners/page.tsx
++++ b/src/app/(cabinet)/partners/page.tsx
+@@ -36,6 +36,7 @@ export default async function PartnersPage(props: {
+       <SessionGate
+         reason={profileResult.status === 401 ? "session" : undefined}
+         returnTo={returnPath}
++        shellContextTokenNone={profileResult.status === 401}
+       />
+     );
+   }
+diff --git a/src/app/(cabinet)/profile/page.tsx b/src/app/(cabinet)/profile/page.tsx
+index 82d17eec..989c1459 100644
+--- a/src/app/(cabinet)/profile/page.tsx
++++ b/src/app/(cabinet)/profile/page.tsx
+@@ -60,6 +60,7 @@ export default async function ProfilePage(props: {
+       <SessionGate
+         reason={profileResult.status === 401 ? "session" : undefined}
+         returnTo={safeReturnTo}
++        shellContextTokenNone={profileResult.status === 401}
+       />
+     );
+   }
+diff --git a/src/components/auth/SessionGate.test.tsx b/src/components/auth/SessionGate.test.tsx
+new file mode 100644
+index 00000000..a5ae9b7c
+--- /dev/null
++++ b/src/components/auth/SessionGate.test.tsx
+@@ -0,0 +1,109 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import { useState } from "react";
++import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
++import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
++
++const refresh = vi.fn();
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ refresh }),
++}));
++
++vi.mock("@/components/auth/AuthFlow", () => ({
++  AuthFlow: () => <div data-testid="auth-flow">auth</div>,
++}));
++
++const peekCabinetSession = vi.fn();
++const computeCabinetShellContextToken = vi.fn();
++
++vi.mock("@/lib/session", () => ({
++  peekCabinetSession: (...args: unknown[]) => peekCabinetSession(...args),
++}));
++
++vi.mock("@/lib/cabinet-shell-context-token", () => ({
++  computeCabinetShellContextToken: (...args: unknown[]) => computeCabinetShellContextToken(...args),
++}));
++
++import { SessionGate } from "@/components/auth/SessionGate";
++
++async function renderGateInProvider(shellToken: string, props: Parameters<typeof SessionGate>[0]) {
++  const ui = await SessionGate(props);
++  return render(
++    <CabinetShellContextProvider shellContextToken={shellToken}>{ui}</CabinetShellContextProvider>,
++  );
++}
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  peekCabinetSession.mockResolvedValue(null);
++  computeCabinetShellContextToken.mockResolvedValue("none");
++});
++
++describe("SessionGate shell identity reconciler", () => {
++  it("requests exactly one refresh for null user inside the persistent provider", async () => {
++    const ui = await SessionGate({ reason: "session" });
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="shell-a">{ui}</CabinetShellContextProvider>,
++    );
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
++    expect(screen.getByTestId("auth-flow")).toBeInTheDocument();
++    const uiAgain = await SessionGate({ reason: "session" });
++    rerender(
++      <CabinetShellContextProvider shellContextToken="shell-a">{uiAgain}</CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("does not refresh when peek user matches shell token (upstream failure UI)", async () => {
++    peekCabinetSession.mockResolvedValue({ id: "u1", role: "PRO" });
++    computeCabinetShellContextToken.mockResolvedValue("shell-a");
++    await renderGateInProvider("shell-a", { reason: "session" });
++    await waitFor(() => expect(screen.getByTestId("auth-flow")).toBeInTheDocument());
++    expect(refresh).not.toHaveBeenCalled();
++  });
++
++  it("forces none token only when shellContextTokenNone is set", async () => {
++    peekCabinetSession.mockResolvedValue({ id: "u1", role: "PRO" });
++    computeCabinetShellContextToken.mockResolvedValue("shell-a");
++    await renderGateInProvider("shell-a", { shellContextTokenNone: true });
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
++  });
++
++  it("does not refresh outside the persistent provider", async () => {
++    const ui = await SessionGate({ reason: "session" });
++    render(ui);
++    await waitFor(() => expect(screen.getByTestId("auth-flow")).toBeInTheDocument());
++    expect(refresh).not.toHaveBeenCalled();
++  });
++
++  it("runs A->none->B->A->B refresh cycle with bounded counts", () => {
++    function CycleHarness() {
++      const [shellToken, setShellToken] = useState("A");
++      const [fresh, setFresh] = useState("B");
++      return (
++        <>
++          <button type="button" data-testid="shell-b" onClick={() => setShellToken("B")} />
++          <button type="button" data-testid="fresh-none" onClick={() => setFresh("none")} />
++          <button type="button" data-testid="fresh-a" onClick={() => setFresh("A")} />
++          <button type="button" data-testid="fresh-b" onClick={() => setFresh("B")} />
++          <CabinetShellContextProvider shellContextToken={shellToken}>
++            <CabinetShellTemplateReconciler freshShellContextToken={fresh}>
++              <div data-testid="auth-flow">auth</div>
++            </CabinetShellTemplateReconciler>
++          </CabinetShellContextProvider>
++        </>
++      );
++    }
++
++    render(<CycleHarness />);
++    expect(refresh).toHaveBeenCalledTimes(1);
++    screen.getByTestId("fresh-a").click();
++    expect(refresh).toHaveBeenCalledTimes(1);
++    screen.getByTestId("fresh-none").click();
++    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(1);
++    screen.getByTestId("shell-b").click();
++    screen.getByTestId("fresh-b").click();
++    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(1);
++  });
++});
+diff --git a/src/components/auth/SessionGate.tsx b/src/components/auth/SessionGate.tsx
+index 960ef1c2..3966c28f 100644
+--- a/src/components/auth/SessionGate.tsx
++++ b/src/components/auth/SessionGate.tsx
+@@ -1,18 +1,36 @@
+ import { AuthFlow } from "@/components/auth/AuthFlow";
+ import { sanitizeReturnTo } from "@/lib/auth-flow";
++import { CabinetShellIdentityReporter } from "@/components/layout/CabinetShellIdentityReporter";
++import { peekCabinetSession } from "@/lib/session";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
+ 
+ type SessionGateProps = {
+   reason?: string;
+   returnTo?: string | null;
+   initialStep?: "code" | "consents";
++  /** When true, reconciler sees identity "none" (session loss) even if peek still has a user. */
++  shellContextTokenNone?: boolean;
+ };
+ 
+-export function SessionGate({ reason, returnTo, initialStep }: SessionGateProps) {
++export async function SessionGate({
++  reason,
++  returnTo,
++  initialStep,
++  shellContextTokenNone,
++}: SessionGateProps) {
++  const user = await peekCabinetSession();
++  const freshShellContextToken = shellContextTokenNone
++    ? "none"
++    : await computeCabinetShellContextToken(user);
++
+   return (
+-    <AuthFlow
+-      reason={reason}
+-      returnTo={sanitizeReturnTo(returnTo)}
+-      initialStep={initialStep}
+-    />
++    <>
++      <CabinetShellIdentityReporter freshShellContextToken={freshShellContextToken} />
++      <AuthFlow
++        reason={reason}
++        returnTo={sanitizeReturnTo(returnTo)}
++        initialStep={initialStep}
++      />
++    </>
+   );
+ }
+diff --git a/src/components/layout/CabinetShellIdentityReporter.tsx b/src/components/layout/CabinetShellIdentityReporter.tsx
+new file mode 100644
+index 00000000..3bec05ab
+--- /dev/null
++++ b/src/components/layout/CabinetShellIdentityReporter.tsx
+@@ -0,0 +1,36 @@
++"use client";
++
++import { useEffect } from "react";
++import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
++
++type CabinetShellIdentityReporterProps = {
++  freshShellContextToken: string;
++};
++
++/** Reports page-segment shell identity without hiding sibling UI (SessionGate). */
++export function CabinetShellIdentityReporter({
++  freshShellContextToken,
++}: CabinetShellIdentityReporterProps) {
++  const shell = useCabinetShellStableContext();
++  const shellContextToken = shell?.shellContextToken;
++  const acknowledgeShellContextMatch = shell?.acknowledgeShellContextMatch;
++  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
++
++  useEffect(() => {
++    if (!shellContextToken || !acknowledgeShellContextMatch || !requestShellRefreshIfStale) {
++      return;
++    }
++    if (shellContextToken === freshShellContextToken) {
++      acknowledgeShellContextMatch();
++      return;
++    }
++    requestShellRefreshIfStale(freshShellContextToken);
++  }, [
++    shellContextToken,
++    freshShellContextToken,
++    acknowledgeShellContextMatch,
++    requestShellRefreshIfStale,
++  ]);
++
++  return null;
++}

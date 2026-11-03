@@ -1,0 +1,254 @@
+commit 2707583f91f010f04074d5b206f6d5e1a4b9251c
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:50:53 2026 +0000
+
+    fix(cabinet): key prefs shell branches by identity and context
+    
+    Remount legacy and agent branch roots when shell token or agent context
+    changes so prefs state cannot leak across users or contexts.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/components/layout/CabinetAppShellClient.branch-key.test.tsx b/src/components/layout/CabinetAppShellClient.branch-key.test.tsx
+new file mode 100644
+index 00000000..89a4a4fd
+--- /dev/null
++++ b/src/components/layout/CabinetAppShellClient.branch-key.test.tsx
+@@ -0,0 +1,173 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { ThemeProvider } from "@/contexts/ThemeContext";
++import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++const mocks = vi.hoisted(() => ({
++  remcardFetch: vi.fn(),
++  pathname: "/",
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: mocks.remcardFetch,
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
++}));
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => mocks.pathname,
++  useSearchParams: () => new URLSearchParams(""),
++  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
++}));
++
++vi.mock("@/lib/prof-admin-management-api", () => ({
++  recordProfSessionVisit: vi.fn().mockResolvedValue({ ok: true, recorded: false }),
++  fetchManagementOverview: vi.fn(),
++}));
++
++vi.mock("@/components/account-session/AccountSessionMenu", () => ({
++  AccountSessionMenu: () => <div data-testid="account-session-menu-fixture" />,
++}));
++
++function agentPrefs(overrides: Partial<CabinetUiPreferencesResponse>): CabinetUiPreferencesResponse {
++  return {
++    contractVersion: "2026-10-14.r01",
++    pilotEnabled: true,
++    pilotActive: true,
++    contextKey: "ctx-a",
++    version: 5,
++    theme: "dark",
++    mobileNavKeys: ["home", "clients", "certificates", "partners"],
++    permittedKeys: ["home", "clients", "certificates", "partners", "profile"],
++    defaultMobileNavKeys: null,
++    ...overrides,
++  };
++}
++
++function legacyPrefs(): CabinetUiPreferencesResponse {
++  return {
++    contractVersion: "2026-10-14.r01",
++    pilotEnabled: false,
++    pilotActive: false,
++    contextKey: null,
++    version: 0,
++    theme: null,
++    mobileNavKeys: null,
++    permittedKeys: null,
++    defaultMobileNavKeys: null,
++  };
++}
++
++function renderShell(props: React.ComponentProps<typeof CabinetAppShellClient>) {
++  return render(
++    <ThemeProvider>
++      <CookieConsentProvider>
++        <CabinetAppShellClient {...props}>
++          <div>page</div>
++        </CabinetAppShellClient>
++      </CookieConsentProvider>
++    </ThemeProvider>,
++  );
++}
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  mocks.pathname = "/";
++});
++
++describe("CabinetAppShellClient branch keys", () => {
++  it("agent user A v5 wide -> agent user B v2 narrow renders B prefs", async () => {
++    mocks.remcardFetch.mockImplementation(async (path: string) => {
++      if (path === "/api/pro/cabinet-ui-preferences") {
++        return agentPrefs({ version: 2, contextKey: "ctx-b" });
++      }
++      return { partnerships: [] };
++    });
++
++    const { rerender } = renderShell({
++      user: { id: "user-a", displayName: "A", role: "PRO" },
++      incomingCount: 0,
++      uiPrefs: agentPrefs({ version: 5 }),
++      shellContextToken: "tok-a",
++    });
++
++    await waitFor(() => expect(screen.getByTestId("nav-mobile-partners")).toBeInTheDocument());
++
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetAppShellClient
++            user={{ id: "user-b", displayName: "B", role: "PRO" }}
++            incomingCount={0}
++            uiPrefs={agentPrefs({
++              version: 2,
++              contextKey: "ctx-b",
++              theme: "light",
++              mobileNavKeys: ["home"],
++              permittedKeys: ["home"],
++            })}
++            shellContextToken="tok-b"
++          >
++            <div>page</div>
++          </CabinetAppShellClient>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    await waitFor(() => {
++      expect(screen.queryByTestId("nav-mobile-partners")).not.toBeInTheDocument();
++      expect(screen.getByTestId("nav-mobile-home")).toBeInTheDocument();
++    });
++  });
++
++  it("legacy branch resets when shell token changes", async () => {
++    mocks.remcardFetch.mockImplementation(async (path: string) => {
++      if (path === "/api/pro/cabinet-ui-preferences") return legacyPrefs();
++      return { partnerships: [] };
++    });
++
++    const { rerender } = renderShell({
++      user: { id: "user-a", displayName: "A", role: "PRO" },
++      incomingCount: 0,
++      uiPrefs: legacyPrefs(),
++      shellContextToken: "legacy-a",
++    });
++
++    await waitFor(() => {
++      const prefsCalls = mocks.remcardFetch.mock.calls.filter(
++        (c) => c[0] === "/api/pro/cabinet-ui-preferences",
++      );
++      expect(prefsCalls.length).toBeGreaterThanOrEqual(1);
++    });
++
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <CabinetAppShellClient
++            user={{ id: "user-b", displayName: "B", role: "PRO" }}
++            incomingCount={0}
++            uiPrefs={legacyPrefs()}
++            shellContextToken="legacy-b"
++          >
++            <div>page</div>
++          </CabinetAppShellClient>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++
++    await waitFor(() => {
++      expect(screen.getAllByText("B").length).toBeGreaterThanOrEqual(1);
++      const prefsCalls = mocks.remcardFetch.mock.calls.filter(
++        (c) => c[0] === "/api/pro/cabinet-ui-preferences",
++      );
++      expect(prefsCalls.length).toBeGreaterThanOrEqual(2);
++    });
++  });
++});
+diff --git a/src/components/layout/CabinetAppShellClient.tsx b/src/components/layout/CabinetAppShellClient.tsx
+index feca4bb7..3e60c258 100644
+--- a/src/components/layout/CabinetAppShellClient.tsx
++++ b/src/components/layout/CabinetAppShellClient.tsx
+@@ -9,7 +9,8 @@ import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
+ import type { ProfTestSessionInfo } from "@/lib/types";
+ import {
+   CabinetShellContextProvider,
+-  useCabinetShellContext,
++  useCabinetShellAuthFailureEpoch,
++  useCabinetShellStableContext,
+ } from "@/components/layout/cabinet-shell-context";
+ import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
+ import { useCabinetShellPrefsPathRefresh } from "@/hooks/useCabinetShellPrefsPathRefresh";
+@@ -30,6 +31,8 @@ type CabinetAppShellClientProps = {
+ export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
+   const layoutPrefs = enrichCabinetUiPreferencesForShell(props.uiPrefs);
+   const agentBranch = isActiveAgentCabinetContext(layoutPrefs);
++  const legacyBranchKey = props.shellContextToken;
++  const agentBranchKey = `${props.shellContextToken}:${layoutPrefs.contextKey ?? "none"}:${props.user.id}`;
+ 
+   return (
+     <CabinetShellContextProvider shellContextToken={props.shellContextToken}>
+@@ -37,9 +40,9 @@ export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
+         <ProfTestModeBanner session={props.profTestSession} />
+       ) : null}
+       {agentBranch ? (
+-        <AgentCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
++        <AgentCabinetShellBranch key={agentBranchKey} {...props} layoutPrefs={layoutPrefs} />
+       ) : (
+-        <LegacyCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
++        <LegacyCabinetShellBranch key={legacyBranchKey} {...props} layoutPrefs={layoutPrefs} />
+       )}
+     </CabinetShellContextProvider>
+   );
+@@ -56,7 +59,7 @@ function LegacyCabinetShellBranch({
+   shellContextToken,
+   children,
+ }: ShellBranchProps) {
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
+   useCabinetShellPrefsPathRefresh({
+     layoutPrefs,
+     onAuthFailure: shell?.notifyAuthFailure,
+@@ -82,7 +85,7 @@ function AgentCabinetShellBranch({
+   shellContextToken,
+   children,
+ }: ShellBranchProps) {
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
+   const agentPrefs = useAgentCabinetUiPrefs(uiPrefs);
+   useCabinetShellPrefsPathRefresh({
+     layoutPrefs,
+@@ -110,7 +113,8 @@ function AgentCabinetShellBranch({
+ }
+ 
+ function CabinetShellNotificationBell() {
+-  const shell = useCabinetShellContext();
+-  const remountKey = `${shell?.shellContextToken ?? "none"}:${shell?.authFailureEpoch ?? 0}`;
++  const shell = useCabinetShellStableContext();
++  const authFailureEpoch = useCabinetShellAuthFailureEpoch();
++  const remountKey = `${shell?.shellContextToken ?? "none"}:${authFailureEpoch}`;
+   return <ProfNotificationBell key={remountKey} />;
+ }

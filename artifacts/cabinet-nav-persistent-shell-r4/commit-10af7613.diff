@@ -1,0 +1,646 @@
+commit 10af761313c3e2176c8c49e19fc511bbd6b62a65
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:50:43 2026 +0000
+
+    fix(cabinet): stop auth-failure refresh loops in shell hooks
+    
+    Split authFailureEpoch from stable shell context, stabilize router-backed
+    callbacks with refs, and treat HTTP 403 separately from 401 for partners
+    badge and prefs path refresh.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+index b31a1f62..fd190aa1 100644
+--- a/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
++++ b/src/components/layout/ProfPartnerSessionVisitOnPathname.tsx
+@@ -2,12 +2,12 @@
+ 
+ import { usePathname } from "next/navigation";
+ import { ProfPartnerSessionVisit } from "@/components/layout/ProfPartnerSessionVisit";
+-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
+ 
+ /** Re-mount visit tracker on pathname or shell identity change (persistent layout). */
+ export function ProfPartnerSessionVisitOnPathname() {
+   const pathname = usePathname();
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
+   const shellToken = shell?.shellContextToken ?? "none";
+   return <ProfPartnerSessionVisit key={`${shellToken}:${pathname}`} />;
+ }
+diff --git a/src/components/layout/cabinet-shell-context-loop-guard.test.tsx b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+index ef959da9..03b879a6 100644
+--- a/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
++++ b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+@@ -1,8 +1,9 @@
+-import { act, render, waitFor } from "@testing-library/react";
++import { act, render, screen, waitFor } from "@testing-library/react";
++import { useEffect, useState } from "react";
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import {
+   CabinetShellContextProvider,
+-  useCabinetShellContext,
++  useCabinetShellStableContext,
+ } from "@/components/layout/cabinet-shell-context";
+ 
+ const refresh = vi.fn();
+@@ -12,63 +13,78 @@ vi.mock("next/navigation", () => ({
+ }));
+ 
+ function RefreshProbe({ fresh }: { fresh: string }) {
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
++  const shellContextToken = shell?.shellContextToken;
++  const acknowledgeShellContextMatch = shell?.acknowledgeShellContextMatch;
++  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
++
++  useEffect(() => {
++    if (!shellContextToken || !acknowledgeShellContextMatch || !requestShellRefreshIfStale) {
++      return;
++    }
++    if (shellContextToken === fresh) {
++      acknowledgeShellContextMatch();
++      return;
++    }
++    requestShellRefreshIfStale(fresh);
++  }, [shellContextToken, fresh, acknowledgeShellContextMatch, requestShellRefreshIfStale]);
++
+   if (!shell) return null;
+   if (shell.shellContextToken === fresh) {
+-    shell.acknowledgeShellContextMatch();
+     return <div data-testid="matched">ok</div>;
+   }
+-  shell.requestShellRefreshIfStale(fresh);
+   return <div data-testid="stale">stale</div>;
+ }
+ 
++function PersistentShellHarness({
++  shellToken,
++  initialFresh,
++}: {
++  shellToken: string;
++  initialFresh: string;
++}) {
++  const [fresh, setFresh] = useState(initialFresh);
++  return (
++    <>
++      <button type="button" data-testid="set-fresh-a" onClick={() => setFresh("A")}>
++        A
++      </button>
++      <button type="button" data-testid="set-fresh-b" onClick={() => setFresh("B")}>
++        B
++      </button>
++      <CabinetShellContextProvider shellContextToken={shellToken}>
++        <RefreshProbe fresh={fresh} />
++      </CabinetShellContextProvider>
++    </>
++  );
++}
++
+ describe("cabinet shell refresh loop guard", () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+   });
+ 
+   it("allows A->B->A->B refresh cycles without skipping the second stale pair", async () => {
+-    const { rerender } = render(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="B" />
+-      </CabinetShellContextProvider>,
+-    );
++    render(<PersistentShellHarness shellToken="A" initialFresh="B" />);
+     expect(refresh).toHaveBeenCalledTimes(1);
+ 
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="A" />
+-      </CabinetShellContextProvider>,
+-    );
++    await act(async () => {
++      screen.getByTestId("set-fresh-a").click();
++    });
+     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+ 
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="B" />
+-      </CabinetShellContextProvider>,
+-    );
++    await act(async () => {
++      screen.getByTestId("set-fresh-b").click();
++    });
+     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+   });
+ 
+-  it("retries once when shell token unchanged after refresh", () => {
+-    const { rerender } = render(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="B" />
+-      </CabinetShellContextProvider>,
+-    );
++  it("caps at one refresh per stale pair while shell token is unchanged", async () => {
++    render(<PersistentShellHarness shellToken="A" initialFresh="B" />);
++    expect(refresh).toHaveBeenCalledTimes(1);
++    await act(async () => {
++      await new Promise((r) => setTimeout(r, 0));
++    });
+     expect(refresh).toHaveBeenCalledTimes(1);
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="B" />
+-      </CabinetShellContextProvider>,
+-    );
+-    expect(refresh).toHaveBeenCalledTimes(2);
+-    rerender(
+-      <CabinetShellContextProvider shellContextToken="A">
+-        <RefreshProbe fresh="B" />
+-      </CabinetShellContextProvider>,
+-    );
+-    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
+-    expect(refresh.mock.calls.length).toBeLessThanOrEqual(3);
+   });
+ });
+diff --git a/src/components/layout/cabinet-shell-context.tsx b/src/components/layout/cabinet-shell-context.tsx
+index 0d1b44de..aa0cac96 100644
+--- a/src/components/layout/cabinet-shell-context.tsx
++++ b/src/components/layout/cabinet-shell-context.tsx
+@@ -12,9 +12,8 @@ import {
+ } from "react";
+ import { useRouter } from "next/navigation";
+ 
+-export type CabinetShellContextValue = {
++export type CabinetShellStableContextValue = {
+   shellContextToken: string;
+-  authFailureEpoch: number;
+   notifyAuthFailure: () => void;
+   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
+   acknowledgeShellContextMatch: () => void;
+@@ -23,12 +22,39 @@ export type CabinetShellContextValue = {
+     freshPrefsSignature: string,
+   ) => void;
+   acknowledgeShellPrefsLayoutMatch: () => void;
++  isShellIdentityRefreshExhausted: (freshShellContextToken: string) => boolean;
+ };
+ 
+-const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
++/** @deprecated Use {@link useCabinetShellStableContext}; epoch is separate. */
++export type CabinetShellContextValue = CabinetShellStableContextValue & {
++  authFailureEpoch: number;
++};
++
++const CabinetShellStableContext = createContext<CabinetShellStableContextValue | null>(null);
++const CabinetShellAuthFailureEpochContext = createContext(0);
++const CabinetShellIdentityRefreshAttemptContext = createContext(0);
++
++export function useCabinetShellStableContext(): CabinetShellStableContextValue | null {
++  return useContext(CabinetShellStableContext);
++}
++
++export function useCabinetShellAuthFailureEpoch(): number {
++  return useContext(CabinetShellAuthFailureEpochContext);
++}
++
++/** Bumps when a shell-identity refresh pair is recorded (reconciler UI). */
++export function useCabinetShellIdentityRefreshAttempt(): number {
++  return useContext(CabinetShellIdentityRefreshAttemptContext);
++}
+ 
++/** Stable shell actions + token (identity does not change when authFailureEpoch bumps). */
+ export function useCabinetShellContext(): CabinetShellContextValue | null {
+-  return useContext(CabinetShellContext);
++  const stable = useCabinetShellStableContext();
++  const authFailureEpoch = useCabinetShellAuthFailureEpoch();
++  return useMemo(
++    () => (stable ? { ...stable, authFailureEpoch } : null),
++    [stable, authFailureEpoch],
++  );
+ }
+ 
+ type CabinetShellContextProviderProps = {
+@@ -41,13 +67,17 @@ export function CabinetShellContextProvider({
+   children,
+ }: CabinetShellContextProviderProps) {
+   const router = useRouter();
++  const routerRef = useRef(router);
++  routerRef.current = router;
+   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
+-  const refreshedPairsRef = useRef<Map<string, number>>(new Map());
++  const [identityRefreshAttempt, setIdentityRefreshAttempt] = useState(0);
++  const refreshedPairsRef = useRef<Set<string>>(new Set());
+   const prefsRefreshPairsRef = useRef<Set<string>>(new Set());
+ 
+   useEffect(() => {
+     refreshedPairsRef.current.clear();
+     prefsRefreshPairsRef.current.clear();
++    setIdentityRefreshAttempt(0);
+   }, [shellContextToken]);
+ 
+   const notifyAuthFailure = useCallback(() => {
+@@ -56,12 +86,24 @@ export function CabinetShellContextProvider({
+ 
+   const acknowledgeShellContextMatch = useCallback(() => {
+     refreshedPairsRef.current.clear();
++    setIdentityRefreshAttempt(0);
+   }, []);
+ 
+   const acknowledgeShellPrefsLayoutMatch = useCallback(() => {
+     prefsRefreshPairsRef.current.clear();
+   }, []);
+ 
++  const isShellIdentityRefreshExhausted = useCallback(
++    (freshShellContextToken: string) => {
++      if (shellContextToken === freshShellContextToken) {
++        return false;
++      }
++      const pair = `${shellContextToken}|${freshShellContextToken}`;
++      return refreshedPairsRef.current.has(pair);
++    },
++    [shellContextToken],
++  );
++
+   const requestShellRefreshIfPrefsBranchMismatch = useCallback(
+     (layoutPrefsSignature: string, freshPrefsSignature: string) => {
+       if (layoutPrefsSignature === freshPrefsSignature) {
+@@ -73,9 +115,9 @@ export function CabinetShellContextProvider({
+         return;
+       }
+       prefsRefreshPairsRef.current.add(pair);
+-      router.refresh();
++      routerRef.current.refresh();
+     },
+-    [router],
++    [],
+   );
+ 
+   const requestShellRefreshIfStale = useCallback(
+@@ -85,36 +127,44 @@ export function CabinetShellContextProvider({
+         return;
+       }
+       const pair = `${shellContextToken}|${freshShellContextToken}`;
+-      const attempts = refreshedPairsRef.current.get(pair) ?? 0;
+-      if (attempts >= 2) {
++      if (refreshedPairsRef.current.has(pair)) {
+         return;
+       }
+-      refreshedPairsRef.current.set(pair, attempts + 1);
+-      router.refresh();
++      refreshedPairsRef.current.add(pair);
++      setIdentityRefreshAttempt((n) => n + 1);
++      routerRef.current.refresh();
+     },
+-    [router, shellContextToken],
++    [shellContextToken],
+   );
+ 
+-  const value = useMemo(
++  const stableValue = useMemo(
+     () => ({
+       shellContextToken,
+-      authFailureEpoch,
+       notifyAuthFailure,
+       requestShellRefreshIfStale,
+       acknowledgeShellContextMatch,
+       requestShellRefreshIfPrefsBranchMismatch,
+       acknowledgeShellPrefsLayoutMatch,
++      isShellIdentityRefreshExhausted,
+     }),
+     [
+       shellContextToken,
+-      authFailureEpoch,
+       notifyAuthFailure,
+       requestShellRefreshIfStale,
+       acknowledgeShellContextMatch,
+       requestShellRefreshIfPrefsBranchMismatch,
+       acknowledgeShellPrefsLayoutMatch,
++      isShellIdentityRefreshExhausted,
+     ],
+   );
+ 
+-  return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;
++  return (
++    <CabinetShellStableContext.Provider value={stableValue}>
++      <CabinetShellAuthFailureEpochContext.Provider value={authFailureEpoch}>
++        <CabinetShellIdentityRefreshAttemptContext.Provider value={identityRefreshAttempt}>
++          {children}
++        </CabinetShellIdentityRefreshAttemptContext.Provider>
++      </CabinetShellAuthFailureEpochContext.Provider>
++    </CabinetShellStableContext.Provider>
++  );
+ }
+diff --git a/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx b/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx
+index daebf1a4..ff0e073a 100644
+--- a/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx
++++ b/src/hooks/useAgentCabinetPrefsPathRefresh.test.tsx
+@@ -63,12 +63,20 @@ beforeEach(() => {
+ });
+ 
+ describe("useAgentCabinetPrefsPathRefresh auth failure", () => {
+-  it.each([401, 403])("clears prefs to neutral on HTTP %i", async (status) => {
+-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
++  it("clears prefs to neutral on HTTP 401", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
+     const { result } = renderHook(() => PrefsPathRefreshProbe(), { wrapper: probeWrapper });
+     await waitFor(() =>
+       expect(result.current).toEqual(neutralCabinetUiPreferencesFallback),
+     );
+-    expect(mocks.refresh).toHaveBeenCalled();
++    expect(mocks.refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("keeps prefs on HTTP 403 without refresh", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
++    const { result } = renderHook(() => PrefsPathRefreshProbe(), { wrapper: probeWrapper });
++    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
++    expect(result.current.version).toBe(3);
++    expect(mocks.refresh).not.toHaveBeenCalled();
+   });
+ });
+diff --git a/src/hooks/useCabinetShellPrefsPathRefresh.test.tsx b/src/hooks/useCabinetShellPrefsPathRefresh.test.tsx
+index cea2a4d9..e9e92ffa 100644
+--- a/src/hooks/useCabinetShellPrefsPathRefresh.test.tsx
++++ b/src/hooks/useCabinetShellPrefsPathRefresh.test.tsx
+@@ -167,8 +167,8 @@ describe("useCabinetShellPrefsPathRefresh", () => {
+     expect(mocks.refresh).toHaveBeenCalledTimes(1);
+   });
+ 
+-  it.each([401, 403])("legacy branch refreshes on HTTP %i without in-memory prefs", async (status) => {
+-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
++  it("legacy branch refreshes on HTTP 401", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
+     renderHook(
+       () =>
+         useCabinetShellPrefsPathRefresh({
+@@ -176,11 +176,24 @@ describe("useCabinetShellPrefsPathRefresh", () => {
+         }),
+       { wrapper: wrapper() },
+     );
+-    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
++    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+   });
+ 
+-  it.each([401, 403])("agent branch force-clears prefs on HTTP %i", async (status) => {
+-    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(status, "denied", null));
++  it("legacy branch ignores HTTP 403 without refresh", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
++    renderHook(
++      () =>
++        useCabinetShellPrefsPathRefresh({
++          layoutPrefs: legacyPrefs(),
++        }),
++      { wrapper: wrapper() },
++    );
++    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
++    expect(mocks.refresh).not.toHaveBeenCalled();
++  });
++
++  it("agent branch force-clears prefs on HTTP 401", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "denied", null));
+     const { result } = renderHook(
+       () => {
+         const agent = useAgentCabinetUiPrefs(agentPrefs({ version: 5 }));
+@@ -195,5 +208,26 @@ describe("useCabinetShellPrefsPathRefresh", () => {
+       { wrapper: wrapper() },
+     );
+     await waitFor(() => expect(result.current).toEqual(neutralCabinetUiPreferencesFallback));
++    expect(mocks.refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("agent branch keeps prefs on HTTP 403", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(403, "denied", null));
++    const { result } = renderHook(
++      () => {
++        const agent = useAgentCabinetUiPrefs(agentPrefs({ version: 5 }));
++        useCabinetShellPrefsPathRefresh({
++          layoutPrefs: agentPrefs({ version: 5 }),
++          applyServerPrefs: agent.applyServerPrefs,
++          applyAuthFailureClear: agent.applyAuthFailureClear,
++          getApplyGeneration: agent.getApplyGeneration,
++        });
++        return agent.prefs;
++      },
++      { wrapper: wrapper() },
++    );
++    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
++    expect(result.current.version).toBe(5);
++    expect(mocks.refresh).not.toHaveBeenCalled();
+   });
+ });
+diff --git a/src/hooks/useCabinetShellPrefsPathRefresh.ts b/src/hooks/useCabinetShellPrefsPathRefresh.ts
+index 69b6b5bc..8085b9bc 100644
+--- a/src/hooks/useCabinetShellPrefsPathRefresh.ts
++++ b/src/hooks/useCabinetShellPrefsPathRefresh.ts
+@@ -1,10 +1,9 @@
+ "use client";
+ 
+-import { useEffect, useMemo } from "react";
++import { useEffect, useMemo, useRef } from "react";
+ import { usePathname, useRouter } from "next/navigation";
+-import { remcardFetch } from "@/lib/api-client";
+-import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
+-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { remcardFetch, RemcardApiError } from "@/lib/api-client";
++import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
+ import { enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+ import { cabinetShellPrefsLayoutSignature } from "@/lib/cabinet-shell-prefs-signature";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+@@ -30,7 +29,9 @@ export function useCabinetShellPrefsPathRefresh({
+ }: UseCabinetShellPrefsPathRefreshOptions): void {
+   const pathname = usePathname();
+   const router = useRouter();
+-  const shell = useCabinetShellContext();
++  const routerRef = useRef(router);
++  routerRef.current = router;
++  const shell = useCabinetShellStableContext();
+   const acknowledgeShellPrefsLayoutMatch = shell?.acknowledgeShellPrefsLayoutMatch;
+   const requestShellRefreshIfPrefsBranchMismatch = shell?.requestShellRefreshIfPrefsBranchMismatch;
+   const layoutPrefsSignature = useMemo(
+@@ -59,10 +60,13 @@ export function useCabinetShellPrefsPathRefresh({
+       .catch((error) => {
+         if (cancelled) return;
+         if (error instanceof DOMException && error.name === "AbortError") return;
+-        if (isCabinetShellAuthFailure(error)) {
++        if (error instanceof RemcardApiError && error.status === 403) {
++          return;
++        }
++        if (error instanceof RemcardApiError && error.status === 401) {
+           applyAuthFailureClear?.();
+           onAuthFailure?.();
+-          router.refresh();
++          routerRef.current.refresh();
+         }
+       });
+     return () => {
+@@ -76,7 +80,6 @@ export function useCabinetShellPrefsPathRefresh({
+     applyAuthFailureClear,
+     getApplyGeneration,
+     onAuthFailure,
+-    router,
+     acknowledgeShellPrefsLayoutMatch,
+     requestShellRefreshIfPrefsBranchMismatch,
+   ]);
+diff --git a/src/hooks/useIncomingPartnersCount.test.tsx b/src/hooks/useIncomingPartnersCount.test.tsx
+index cab589bf..1fb226f5 100644
+--- a/src/hooks/useIncomingPartnersCount.test.tsx
++++ b/src/hooks/useIncomingPartnersCount.test.tsx
+@@ -1,6 +1,7 @@
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+-import { render, screen, waitFor } from "@testing-library/react";
++import { act, render, screen, waitFor } from "@testing-library/react";
+ import { RemcardApiError } from "@/lib/api-client";
++import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
+ 
+ const mocks = vi.hoisted(() => ({
+   remcardFetch: vi.fn(),
+@@ -23,23 +24,68 @@ vi.mock("next/navigation", () => ({
+ 
+ import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+ 
+-function BadgeProbe({ initial }: { initial: number }) {
+-  const count = useIncomingPartnersCount(initial, "user-1");
++function BadgeProbe({ initial, userId = "user-1" }: { initial: number; userId?: string }) {
++  const count = useIncomingPartnersCount(initial, userId);
+   return <span data-testid="badge-count">{count}</span>;
+ }
+ 
++function PersistentHarness({
++  shellToken,
++  initial,
++  userId = "user-1",
++}: {
++  shellToken: string;
++  initial: number;
++  userId?: string;
++}) {
++  return (
++    <CabinetShellContextProvider shellContextToken={shellToken}>
++      <BadgeProbe initial={initial} userId={userId} />
++    </CabinetShellContextProvider>
++  );
++}
++
+ beforeEach(() => {
+   vi.clearAllMocks();
++  vi.useRealTimers();
+   mocks.pathname = "/";
+   mocks.remcardFetch.mockResolvedValue({ partnerships: [] });
+ });
+ 
+ describe("useIncomingPartnersCount", () => {
+-  it("clears badge and refreshes router on auth failure", async () => {
++  it("clears badge and requests shell refresh on HTTP 401", async () => {
+     mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "Unauthorized", null));
+-    render(<BadgeProbe initial={5} />);
++    render(<PersistentHarness shellToken="shell-a" initial={5} />);
+     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+     await waitFor(() => expect(screen.getByTestId("badge-count")).toHaveTextContent("0"));
++    await act(async () => {
++      await new Promise((r) => setTimeout(r, 500));
++    });
++    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
++    expect(mocks.refresh).toHaveBeenCalledTimes(1);
++  });
++
++  it("clears badge on HTTP 403 without refresh or refetch loop", async () => {
++    mocks.remcardFetch.mockRejectedValueOnce(new RemcardApiError(403, "Forbidden", null));
++    mocks.remcardFetch.mockRejectedValueOnce(new RemcardApiError(401, "Unauthorized", null));
++    render(<PersistentHarness shellToken="shell-a" initial={5} />);
++    await waitFor(() => expect(screen.getByTestId("badge-count")).toHaveTextContent("0"));
++    await act(async () => {
++      await new Promise((r) => setTimeout(r, 500));
++    });
++    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
++    expect(mocks.refresh).toHaveBeenCalledTimes(0);
++  });
++
++  it("does not refetch when authFailureEpoch bumps inside the provider", async () => {
++    mocks.remcardFetch.mockRejectedValue(new RemcardApiError(401, "Unauthorized", null));
++    render(<PersistentHarness shellToken="shell-a" initial={3} />);
++    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(1));
++    await act(async () => {
++      await new Promise((r) => setTimeout(r, 500));
++    });
++    expect(mocks.remcardFetch).toHaveBeenCalledTimes(1);
++    expect(mocks.refresh.mock.calls.length).toBeLessThanOrEqual(1);
+   });
+ 
+   it("ignores late responses after pathname change (abort)", async () => {
+@@ -49,10 +95,18 @@ describe("useIncomingPartnersCount", () => {
+         resolve = res;
+       }),
+     );
+-    const { rerender } = render(<BadgeProbe initial={0} />);
++    function PathHarness() {
++      return (
++        <CabinetShellContextProvider shellContextToken="tok">
++          <BadgeProbe initial={0} />
++        </CabinetShellContextProvider>
++      );
++    }
++    const { rerender } = render(<PathHarness />);
+     mocks.pathname = "/clients";
+-    rerender(<BadgeProbe initial={0} />);
++    rerender(<PathHarness />);
+     resolve({ partnerships: [] });
+-    await waitFor(() => expect(mocks.remcardFetch).toHaveBeenCalledTimes(2));
++    await waitFor(() => expect(mocks.remcardFetch.mock.calls.length).toBeGreaterThanOrEqual(2));
++    expect(mocks.remcardFetch.mock.calls.length).toBeLessThanOrEqual(3);
+   });
+ });
+diff --git a/src/hooks/useIncomingPartnersCount.ts b/src/hooks/useIncomingPartnersCount.ts
+index 9eb8b681..6a364d1d 100644
+--- a/src/hooks/useIncomingPartnersCount.ts
++++ b/src/hooks/useIncomingPartnersCount.ts
+@@ -1,10 +1,9 @@
+ "use client";
+ 
+ import { useEffect, useState } from "react";
+-import { usePathname, useRouter } from "next/navigation";
++import { usePathname } from "next/navigation";
+ import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+-import { isCabinetShellAuthFailure } from "@/lib/cabinet-shell-auth-failure";
+-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
++import { useCabinetShellStableContext } from "@/components/layout/cabinet-shell-context";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+ import type { PartnershipListResponse } from "@/lib/types";
+ 
+@@ -14,8 +13,8 @@ import type { PartnershipListResponse } from "@/lib/types";
+  */
+ export function useIncomingPartnersCount(initialCount: number, userId: string | undefined): number {
+   const pathname = usePathname();
+-  const router = useRouter();
+-  const shell = useCabinetShellContext();
++  const shell = useCabinetShellStableContext();
++  const requestShellRefreshIfStale = shell?.requestShellRefreshIfStale;
+   const [count, setCount] = useState(initialCount);
+ 
+   useEffect(() => {
+@@ -36,21 +35,22 @@ export function useIncomingPartnersCount(initialCount: number, userId: string |
+       .catch((error) => {
+         if (cancelled) return;
+         if (error instanceof DOMException && error.name === "AbortError") return;
+-        if (isCabinetShellAuthFailure(error)) {
++        if (error instanceof RemcardApiError && error.status === 403) {
+           setCount(0);
+-          shell?.notifyAuthFailure();
+-          router.refresh();
+           return;
+         }
+-        if (error instanceof RemcardApiError) {
+-          /* transient non-auth errors: keep last known count */
++        if (error instanceof RemcardApiError && error.status === 401) {
++          setCount(0);
++          requestShellRefreshIfStale?.("none");
++          return;
+         }
++        /* transient non-auth errors: keep last known count */
+       });
+     return () => {
+       cancelled = true;
+       controller.abort();
+     };
+-  }, [pathname, userId, router, shell]);
++  }, [pathname, userId, requestShellRefreshIfStale]);
+ 
+   return count;
+ }
