@@ -48,6 +48,9 @@ function extractRuleBlock(css: string, selector: string): string {
   return css.slice(start + 1, end);
 }
 
+const LONG_UNBROKEN =
+  "Сертификат на услуги премиум-класса с очень длинным описанием основания начисления без пробелов_и_переносов_по_умолчанию";
+
 function buildFixtureHtml(cssText: string): string {
   return `<!DOCTYPE html>
 <html lang="ru"><head>
@@ -58,6 +61,7 @@ function buildFixtureHtml(cssText: string): string {
   --pw-line: #d7d2cc; --pw-radius: 12px; --pw-bg: #fff; --pw-text: #1d1d1f;
   --pw-muted: #5a6068; --pw-2: 8px; --pw-3: 12px; --pw-4: 16px;
   --pw-accent: #b52a2e; --wallet-accrual-ink-muted: #5a6068;
+  --wallet-accrual-ink-muted-strong: #5a6068;
 }
 body { margin: 0; font-family: Manrope, system-ui, sans-serif; }
 </style>
@@ -71,6 +75,65 @@ body { margin: 0; font-family: Manrope, system-ui, sans-serif; }
     </div>
     <p style="font-size:12px">Партнёр · № 9988776655 · 1 234 567,89 ₽</p>
     <button type="button" style="min-height:44px;min-width:44px;font-size:12px">Закрыть</button>
+  </form>
+</dialog>
+</body></html>`;
+}
+
+/** Fixture with stat tiles + long unbroken row (320/375 overflow regression). */
+function buildWrapFixtureHtml(cssText: string, theme: "light" | "dark" = "light"): string {
+  const themeAttr = theme === "dark" ? ' data-theme="dark"' : "";
+  return `<!DOCTYPE html>
+<html lang="ru"${themeAttr}><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+:root {
+  --pw-line: #d7d2cc; --pw-radius: 12px; --pw-bg: #fff; --pw-text: #1d1d1f;
+  --pw-muted: #5a6068; --pw-2: 8px; --pw-3: 12px; --pw-4: 16px;
+  --pw-accent: #b52a2e; --wallet-accrual-ink-muted: #5a6068;
+  --wallet-accrual-ink-muted-strong: #5a6068;
+  --wallet-accrual-ink-muted-on-dark: #b8bec6;
+}
+html[data-theme="dark"] {
+  --pw-bg: #171a17; --pw-text: #f2f2f0; --pw-line: #3a3f3a; --pw-muted: #b8bec6;
+}
+body { margin: 0; font-family: Manrope, system-ui, sans-serif; background: var(--pw-bg); color: var(--pw-text); }
+</style>
+<style id="wallet-accruals-css">${cssText}</style>
+</head><body>
+<dialog class="wallet-accrual-dialog" open data-testid="wrap-dialog">
+  <form method="dialog" class="wallet-accrual-dialog__inner">
+    <div class="wallet-accrual-dialog__head">
+      <h3>График · исходящие</h3>
+      <button type="button" class="wallet-accrual-dialog__close" aria-label="Закрыть">×</button>
+    </div>
+    <div class="wallet-accrual-stat-tiles" data-testid="wallet-detail-stat-tiles">
+      <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-confirmed">
+        <strong>8 900 ₽</strong>
+        <span>Подтверждено</span>
+      </div>
+      <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-waiting">
+        <strong>1 200 ₽</strong>
+        <span>Ожидает</span>
+      </div>
+      <div class="wallet-accrual-stat-tiles__tile" data-testid="wallet-detail-stat-suspended">
+        <strong>450 ₽</strong>
+        <span>Приостановлено</span>
+      </div>
+    </div>
+    <div class="wallet-accrual-row-list">
+      <button type="button" class="wallet-accrual-row wallet-accruals-history__row" data-testid="wrap-long-row">
+        <span class="wallet-accrual-row__main">
+          <strong class="wallet-accrual-row__title">${LONG_UNBROKEN}</strong>
+          <span class="wallet-accrual-row__sub">Партнёр · № order-long-1</span>
+        </span>
+        <span class="wallet-status-badge wallet-status-badge--confirmed">
+          <span class="wallet-status-badge__amount">8 900 ₽</span>
+        </span>
+      </button>
+    </div>
+    <button type="button" class="pw-btn primary" style="min-height:44px;min-width:44px;font-size:12px">Закрыть</button>
   </form>
 </dialog>
 </body></html>`;
@@ -195,6 +258,132 @@ describe("wallet-accrual-dialog width (inline-size collapse regression)", () => 
       expect(at2038!.dialogWidth).toBeGreaterThanOrEqual(560);
       expect(at2038!.dialogWidth).toBeLessThanOrEqual(564);
       expect(at375!.innerContainerType).toMatch(/inline-size|size/);
+    } finally {
+      await browser.close();
+    }
+  });
+});
+
+export type DialogWrapMeasurement = {
+  viewport: { width: number; height: number };
+  theme: "light" | "dark";
+  overflowing: { tag: string; className: string; scrollWidth: number; clientWidth: number }[];
+  tileLabelOverflow: {
+    tileTestId: string;
+    labelRight: number;
+    tileRight: number;
+  }[];
+};
+
+/** Native Chromium: no horizontal overflow in dialog content at narrow viewports. */
+export async function measureDialogWrap(
+  cssText: string,
+  viewports: readonly { width: number; height: number }[] = [
+    { width: 320, height: 640 },
+    { width: 375, height: 812 },
+  ],
+  themes: readonly ("light" | "dark")[] = ["light", "dark"],
+  browser?: Browser,
+): Promise<DialogWrapMeasurement[]> {
+  const dir = mkdtempSync(path.join(tmpdir(), "wallet-dialog-wrap-"));
+  const owned = !browser;
+  const launched = browser ?? (await launchGeometryBrowser());
+  if (!launched) {
+    throw new Error("Executable doesn't exist");
+  }
+  const results: DialogWrapMeasurement[] = [];
+  try {
+    for (const theme of themes) {
+      const htmlPath = path.join(dir, `fixture-${theme}.html`);
+      writeFileSync(htmlPath, buildWrapFixtureHtml(cssText, theme), "utf8");
+      for (const viewport of viewports) {
+        const page = await launched.newPage({ viewport });
+        await page.goto(`file://${htmlPath}`, { waitUntil: "load" });
+        const metrics = await page.evaluate(() => {
+          const dlg = document.querySelector("dialog.wallet-accrual-dialog");
+          if (!dlg) return null;
+          const overflowing: {
+            tag: string;
+            className: string;
+            scrollWidth: number;
+            clientWidth: number;
+          }[] = [];
+          for (const el of Array.from(dlg.querySelectorAll("*"))) {
+            const htmlEl = el as HTMLElement;
+            if (htmlEl.scrollWidth > htmlEl.clientWidth + 1) {
+              overflowing.push({
+                tag: htmlEl.tagName.toLowerCase(),
+                className: String(htmlEl.className || ""),
+                scrollWidth: htmlEl.scrollWidth,
+                clientWidth: htmlEl.clientWidth,
+              });
+            }
+          }
+          if ((dlg as HTMLElement).scrollWidth > (dlg as HTMLElement).clientWidth + 1) {
+            overflowing.push({
+              tag: "dialog",
+              className: dlg.className,
+              scrollWidth: (dlg as HTMLElement).scrollWidth,
+              clientWidth: (dlg as HTMLElement).clientWidth,
+            });
+          }
+          const tileLabelOverflow: {
+            tileTestId: string;
+            labelRight: number;
+            tileRight: number;
+          }[] = [];
+          for (const tile of Array.from(
+            dlg.querySelectorAll(".wallet-accrual-stat-tiles__tile"),
+          )) {
+            const span = tile.querySelector("span");
+            if (!span) continue;
+            const tileRect = tile.getBoundingClientRect();
+            const labelRect = span.getBoundingClientRect();
+            tileLabelOverflow.push({
+              tileTestId: (tile as HTMLElement).dataset.testid || "",
+              labelRight: labelRect.right,
+              tileRight: tileRect.right,
+            });
+          }
+          return { overflowing, tileLabelOverflow };
+        });
+        await page.close();
+        if (!metrics) throw new Error(`missing dialog at ${viewport.width} ${theme}`);
+        results.push({ viewport, theme, ...metrics });
+      }
+    }
+  } finally {
+    if (owned) await launched.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return results;
+}
+
+describe("wallet-accrual-dialog content wrap at 320/375", () => {
+  const css = readFileSync(cssPath, "utf8");
+
+  it("Playwright: no horizontal overflow; tile labels stay inside tiles", async (ctx) => {
+    process.env.CHROME_BIN ||= "/usr/local/bin/google-chrome";
+    const browser = await launchGeometryBrowser();
+    if (!browser) {
+      ctx.skip();
+      return;
+    }
+    try {
+      const measurements = await measureDialogWrap(css, undefined, undefined, browser);
+      expect(measurements.length).toBeGreaterThanOrEqual(4);
+      for (const m of measurements) {
+        expect(
+          m.overflowing,
+          `overflow at ${m.viewport.width}px ${m.theme}: ${JSON.stringify(m.overflowing)}`,
+        ).toEqual([]);
+        for (const tile of m.tileLabelOverflow) {
+          expect(
+            tile.labelRight,
+            `label past tile edge (${tile.tileTestId} @ ${m.viewport.width} ${m.theme})`,
+          ).toBeLessThanOrEqual(tile.tileRight + 1);
+        }
+      }
     } finally {
       await browser.close();
     }

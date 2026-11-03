@@ -663,12 +663,17 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.1;
+  /* Keep number + currency together; tiles stack when the dialog is narrow. */
+  white-space: nowrap;
 }
 
 .wallet-accrual-stat-tiles__tile span {
+  display: block;
   font-size: 0.75rem;
   color: var(--wallet-accrual-ink-muted-strong);
   font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 [data-theme=dark] .wallet-accrual-stat-tiles__tile span {
@@ -744,12 +749,15 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .wallet-accrual-row__title {
   font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1.2;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .wallet-accrual-row__sub,
@@ -757,6 +765,8 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   font-size: 0.75rem;
   color: var(--pw-muted);
   line-height: 1.25;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .wallet-status-badge {
@@ -1277,6 +1287,10 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
 }
 
 @container wallet-accrual-dialog (max-width: 480px) {
+  .wallet-accrual-stat-tiles {
+    grid-template-columns: 1fr;
+  }
+
   .wallet-txn-panel__head-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:

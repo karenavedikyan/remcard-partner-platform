@@ -176,6 +176,8 @@ export function WalletAccrualsShell({
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const shellFocusRef = useRef<HTMLElement>(null);
   const skipDialogFocusRestoreRef = useRef(false);
+  /** Guards against double restore (closeDialog + native `close` used to clear the ref then fall back). */
+  const focusRestorePendingRef = useRef(false);
 
   const effectiveDirection = incomingOnly ? "in" : direction;
 
@@ -223,9 +225,12 @@ export function WalletAccrualsShell({
   const rememberFocus = useCallback(() => {
     const active = document.activeElement;
     returnFocusRef.current = active instanceof HTMLElement ? active : null;
+    focusRestorePendingRef.current = true;
   }, []);
 
   const restoreFocus = useCallback(() => {
+    if (!focusRestorePendingRef.current) return;
+    focusRestorePendingRef.current = false;
     const target = returnFocusRef.current;
     returnFocusRef.current = null;
     if (target && document.contains(target)) {
@@ -248,8 +253,9 @@ export function WalletAccrualsShell({
     dialogRef.current?.close();
     setDialog({ type: "closed" });
     setScheduleExpanded(false);
-    restoreFocus();
-  }, [restoreFocus]);
+    // Focus restore is owned exclusively by the dialog `close` listener so every
+    // close path (Escape/cancel, X, footer, programmatic) restores exactly once.
+  }, []);
 
   useEffect(() => {
     const node = dialogRef.current;
