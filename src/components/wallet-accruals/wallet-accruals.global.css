@@ -663,8 +663,8 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.1;
-  /* 3-column desktop: wrap at spaces (and anywhere if unbreakable) so large
-     amounts stay inside the tile; nowrap only when tiles stack (see @container). */
+  /* Allow wrapping (incl. NBSP group breaks via overflow-wrap) so large
+     formatMoneyRub amounts never overflow the tile at any dialog width. */
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -1291,11 +1291,6 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
 @container wallet-accrual-dialog (max-width: 480px) {
   .wallet-accrual-stat-tiles {
     grid-template-columns: 1fr;
-  }
-
-  /* Stacked tiles are wide enough: keep «number + ₽» on one line. */
-  .wallet-accrual-stat-tiles__tile strong {
-    white-space: nowrap;
   }
 
   .wallet-txn-panel__head-row {
