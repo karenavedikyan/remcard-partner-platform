@@ -31,10 +31,10 @@ index 00000000..cb0c22b1
 +}
 diff --git a/src/app/(cabinet)/cabinet-routing-contract.test.tsx b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
 new file mode 100644
-index 00000000..02f49b66
+index 00000000..15085f31
 --- /dev/null
 +++ b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,80 @@
 +import { readFileSync, readdirSync, statSync } from "node:fs";
 +import path from "node:path";
 +import { describe, expect, it } from "vitest";
@@ -85,11 +85,17 @@ index 00000000..02f49b66
 +    expect(pages).toEqual([...EXPECTED_ROUTE_FILES].sort());
 +  });
 +
-+  it("does not import CabinetShell from any moved page", () => {
++  it("wraps every page body in CabinetShell (fresh identity on soft nav)", () => {
 +    for (const rel of EXPECTED_ROUTE_FILES) {
 +      const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
-+      expect(src, rel).not.toMatch(/CabinetShell/);
++      expect(src, rel).toMatch(/CabinetShell/);
++      expect(src, rel).toMatch(/returnTo=/);
 +    }
++  });
++
++  it("does not define a route-group template (Next skips it on sibling soft nav)", () => {
++    const templatePath = path.join(CABINET_ROOT, "template.tsx");
++    expect(() => readFileSync(templatePath)).toThrow();
 +  });
 +
 +  it("keeps a server guard on every page except home (custom guest flow)", () => {
@@ -121,37 +127,9 @@ index 00000000..68e5514b
 +  return <CabinetPageDetailLoadingSkeleton />;
 +}
 diff --git a/src/app/certificates/[id]/page.tsx b/src/app/(cabinet)/certificates/[id]/page.tsx
-similarity index 88%
+similarity index 100%
 rename from src/app/certificates/[id]/page.tsx
 rename to src/app/(cabinet)/certificates/[id]/page.tsx
-index b96f7100..1eddaf41 100644
---- a/src/app/certificates/[id]/page.tsx
-+++ b/src/app/(cabinet)/certificates/[id]/page.tsx
-@@ -1,7 +1,6 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
- import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -18,7 +17,7 @@ export default async function CertificateDetailPage(props: PageProps) {
-   }
- 
-   return (
--    <CabinetShell returnTo="/certificates">
-+    <>
-       <PageHeading
-         eyebrow="Сертификат"
-         title="Сертификат Ремкард"
-@@ -27,6 +26,6 @@ export default async function CertificateDetailPage(props: PageProps) {
-       <AgentR03Gate>
-         <AgentCertificateDetail certificateId={params.id} />
-       </AgentR03Gate>
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/certificates/loading.tsx b/src/app/(cabinet)/certificates/loading.tsx
 new file mode 100644
 index 00000000..9e6fc069
@@ -175,69 +153,13 @@ index 00000000..3b07b2d4
 +  return <CabinetPageDetailLoadingSkeleton />;
 +}
 diff --git a/src/app/certificates/new/page.tsx b/src/app/(cabinet)/certificates/new/page.tsx
-similarity index 90%
+similarity index 100%
 rename from src/app/certificates/new/page.tsx
 rename to src/app/(cabinet)/certificates/new/page.tsx
-index 35e0f2e3..39517def 100644
---- a/src/app/certificates/new/page.tsx
-+++ b/src/app/(cabinet)/certificates/new/page.tsx
-@@ -1,7 +1,6 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
- import { CertificateCreateForm } from "@/components/recommendations/CertificateCreateForm";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -19,7 +18,7 @@ export default async function NewCertificatePage(props: {
-   }
- 
-   return (
--    <CabinetShell returnTo="/certificates">
-+    <>
-       <PageHeading
-         eyebrow="Сертификат"
-         title="Новый сертификат"
-@@ -32,6 +31,6 @@ export default async function NewCertificatePage(props: {
-           successHrefBase="/certificates"
-         />
-       </AgentR03Gate>
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/certificates/page.tsx b/src/app/(cabinet)/certificates/page.tsx
-similarity index 87%
+similarity index 100%
 rename from src/app/certificates/page.tsx
 rename to src/app/(cabinet)/certificates/page.tsx
-index c083b662..ed309991 100644
---- a/src/app/certificates/page.tsx
-+++ b/src/app/(cabinet)/certificates/page.tsx
-@@ -1,7 +1,6 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
- import { AgentCertificatesList } from "@/components/agent-r03/AgentCertificatesList";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -16,7 +15,7 @@ export default async function CertificatesPage() {
-   }
- 
-   return (
--    <CabinetShell returnTo={RETURN_PATH}>
-+    <>
-       <PageHeading
-         eyebrow="АГЕНТ"
-         title="Сертификаты"
-@@ -25,6 +24,6 @@ export default async function CertificatesPage() {
-       <AgentR03Gate>
-         <AgentCertificatesList />
-       </AgentR03Gate>
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/clients/[id]/loading.tsx b/src/app/(cabinet)/clients/[id]/loading.tsx
 new file mode 100644
 index 00000000..0f3c9845
@@ -250,30 +172,9 @@ index 00000000..0f3c9845
 +  return <CabinetPageDetailLoadingSkeleton />;
 +}
 diff --git a/src/app/clients/[id]/page.tsx b/src/app/(cabinet)/clients/[id]/page.tsx
-similarity index 75%
+similarity index 100%
 rename from src/app/clients/[id]/page.tsx
 rename to src/app/(cabinet)/clients/[id]/page.tsx
-index 22bad873..ce88825e 100644
---- a/src/app/clients/[id]/page.tsx
-+++ b/src/app/(cabinet)/clients/[id]/page.tsx
-@@ -1,6 +1,5 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { ClientDetailWorkspace } from "@/components/clients/ClientDetailWorkspace";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { requireProPageUser } from "@/lib/session";
- 
- export const dynamic = "force-dynamic";
-@@ -15,9 +14,5 @@ export default async function ClientDetailPage(props: PageProps) {
-     return <SessionGate reason="session" returnTo={returnPath} />;
-   }
- 
--  return (
--    <CabinetShell returnTo="/clients">
--      <ClientDetailWorkspace clientId={params.id} />
--    </CabinetShell>
--  );
-+  return <ClientDetailWorkspace clientId={params.id} />;
- }
 diff --git a/src/app/(cabinet)/clients/loading.tsx b/src/app/(cabinet)/clients/loading.tsx
 new file mode 100644
 index 00000000..dae73c3e
@@ -286,56 +187,13 @@ index 00000000..dae73c3e
 +  return <CabinetTabLoading routeKey="/clients" />;
 +}
 diff --git a/src/app/clients/page.tsx b/src/app/(cabinet)/clients/page.tsx
-similarity index 72%
+similarity index 100%
 rename from src/app/clients/page.tsx
 rename to src/app/(cabinet)/clients/page.tsx
-index 83e9db83..9e480c52 100644
---- a/src/app/clients/page.tsx
-+++ b/src/app/(cabinet)/clients/page.tsx
-@@ -1,6 +1,5 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { requireProPageUser } from "@/lib/session";
- 
- export const dynamic = "force-dynamic";
-@@ -13,9 +12,5 @@ export default async function ClientsPage() {
-     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
-   }
- 
--  return (
--    <CabinetShell returnTo={RETURN_PATH}>
--      <ClientsListWorkspace />
--    </CabinetShell>
--  );
-+  return <ClientsListWorkspace />;
- }
 diff --git a/src/app/history/accruals/[id]/page.tsx b/src/app/(cabinet)/history/accruals/[id]/page.tsx
-similarity index 89%
+similarity index 100%
 rename from src/app/history/accruals/[id]/page.tsx
 rename to src/app/(cabinet)/history/accruals/[id]/page.tsx
-index 50b6a72e..cbf3c9b4 100644
---- a/src/app/history/accruals/[id]/page.tsx
-+++ b/src/app/(cabinet)/history/accruals/[id]/page.tsx
-@@ -1,6 +1,5 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { AccrualDetail } from "@/components/history/AccrualDetail";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { accrualDetailHref, parseAccrualType } from "@/lib/accrual-type";
- import { requireProPageUser } from "@/lib/session";
-@@ -23,9 +22,9 @@ export default async function AccrualDetailPage(props: AccrualDetailPageProps) {
-   }
- 
-   return (
--    <CabinetShell returnTo={returnPath}>
-+    <>
-       <PageHeading eyebrow="RemCard PROF" title="Начисление" />
-       <AccrualDetail user={user} accrualId={params.id} accrualType={accrualType} />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/history/loading.tsx b/src/app/(cabinet)/history/loading.tsx
 new file mode 100644
 index 00000000..dcd4f696
@@ -348,65 +206,13 @@ index 00000000..dcd4f696
 +  return <CabinetTabLoading routeKey="/history" />;
 +}
 diff --git a/src/app/history/page.tsx b/src/app/(cabinet)/history/page.tsx
-similarity index 89%
+similarity index 100%
 rename from src/app/history/page.tsx
 rename to src/app/(cabinet)/history/page.tsx
-index 20557643..d6d0aa65 100644
---- a/src/app/history/page.tsx
-+++ b/src/app/(cabinet)/history/page.tsx
-@@ -1,6 +1,5 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { HistoryHub } from "@/components/history/HistoryHub";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -22,13 +21,13 @@ export default async function HistoryPage(props: HistoryPageProps) {
-   const initialPromoCode = searchParams?.search ?? "";
- 
-   return (
--    <CabinetShell returnTo={RETURN_PATH}>
-+    <>
-       <PageHeading
-         eyebrow="RemCard PROF"
-         title="История"
-         description="Покупки и начисления по данным сервера — без пересчёта по текущим условиям."
-       />
-       <HistoryHub user={user} initialPromoCode={initialPromoCode} />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/history/purchases/[id]/page.tsx b/src/app/(cabinet)/history/purchases/[id]/page.tsx
-similarity index 88%
+similarity index 100%
 rename from src/app/history/purchases/[id]/page.tsx
 rename to src/app/(cabinet)/history/purchases/[id]/page.tsx
-index 0d7775af..22362be2 100644
---- a/src/app/history/purchases/[id]/page.tsx
-+++ b/src/app/(cabinet)/history/purchases/[id]/page.tsx
-@@ -1,6 +1,5 @@
- import { SessionGate } from "@/components/auth/SessionGate";
- import { PurchaseDetail } from "@/components/history/PurchaseDetail";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -21,13 +20,13 @@ export default async function PurchaseDetailPage(props: PurchaseDetailPageProps)
-   }
- 
-   return (
--    <CabinetShell returnTo={returnPath}>
-+    <>
-       <PageHeading eyebrow="RemCard PROF" title="Покупка" />
-       <PurchaseDetail
-         user={user}
-         purchaseId={params.id}
-         promoHint={searchParams?.promo}
-       />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/layout.tsx b/src/app/(cabinet)/layout.tsx
 new file mode 100644
 index 00000000..3ec38d04
@@ -461,38 +267,18 @@ index 00000000..f067d7a6
 +  return <CabinetTabLoading routeKey="/notifications" />;
 +}
 diff --git a/src/app/notifications/page.tsx b/src/app/(cabinet)/notifications/page.tsx
-similarity index 84%
+similarity index 100%
 rename from src/app/notifications/page.tsx
 rename to src/app/(cabinet)/notifications/page.tsx
-index 41b4d3f0..42cb8627 100644
---- a/src/app/notifications/page.tsx
-+++ b/src/app/(cabinet)/notifications/page.tsx
-@@ -1,4 +1,3 @@
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { ProfNotificationCenter } from "@/components/notifications/ProfNotificationCenter";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { requireProPageUser } from "@/lib/session";
-@@ -14,9 +13,9 @@ export default async function NotificationsPage() {
-   }
- 
-   return (
--    <CabinetShell returnTo={returnPath}>
-+    <>
-       <PageHeading eyebrow="RemCard PROF" title="Уведомления" />
-       <ProfNotificationCenter />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
 new file mode 100644
-index 00000000..ed00515b
+index 00000000..8a255100
 --- /dev/null
 +++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
-@@ -0,0 +1,270 @@
+@@ -0,0 +1,266 @@
 +import { readFileSync } from "node:fs";
 +import path from "node:path";
-+import { Children, Fragment, isValidElement } from "react";
++import { Children, isValidElement } from "react";
 +import { beforeEach, describe, expect, it, vi } from "vitest";
 +import HomePage from "./page";
 +import { getSessionUser } from "@/lib/session";
@@ -501,6 +287,7 @@ index 00000000..ed00515b
 +import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
 +import { SessionGate } from "@/components/auth/SessionGate";
 +import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
++import { CabinetShell } from "@/components/layout/CabinetShell";
 +import { HomeDashboard } from "@/components/home/HomeDashboard";
 +import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
 +import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
@@ -527,6 +314,7 @@ index 00000000..ed00515b
 +}));
 +vi.mock("@/components/auth/SessionGate", () => ({ SessionGate: () => null }));
 +vi.mock("@/components/registration/PartnerWelcome", () => ({ PartnerWelcome: () => null }));
++vi.mock("@/components/layout/CabinetShell", () => ({ CabinetShell: () => null }));
 +vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null }));
 +vi.mock("@/components/home/SpecialistHomeDashboard", () => ({ SpecialistHomeDashboard: () => null }));
 +vi.mock("@/components/home/BusinessOwnerHomeDashboard", () => ({ BusinessOwnerHomeDashboard: () => null }));
@@ -584,12 +372,13 @@ index 00000000..ed00515b
 +  } as Awaited<ReturnType<typeof fetchRegistrationCapabilitiesServer>>);
 +});
 +
-+describe("server home-page staff redirect", () => {
-+  it("does not wrap content in CabinetShell (persistent (cabinet)/layout owns the shell)", () => {
-+    const src = readFileSync(path.join(import.meta.dirname, "page.tsx"), "utf8");
-+    expect(src).not.toMatch(/CabinetShell/);
-+  });
++function treeContainsType(node: unknown, type: unknown): boolean {
++  if (!isValidElement(node)) return false;
++  if (node.type === type) return true;
++  return Children.toArray(node.props.children).some((child) => treeContainsType(child, type));
++}
 +
++describe("server home-page staff redirect", () => {
 +  it.each(["OWNER", "ADMIN"])("redirects %s before partner readiness/profile/consent fetches", async (staffRole) => {
 +    vi.mocked(getSessionUser).mockResolvedValue({
 +      id: "synthetic-staff", role: "CLIENT", staffRole, isBlocked: false,
@@ -711,17 +500,14 @@ index 00000000..ed00515b
 +    expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
 +  });
 +
-+  it("ordinary eligible PRO renders default dashboard branch", async () => {
++  it("keeps ready ordinary and delegated test partners in their cabinet", async () => {
 +    vi.mocked(getSessionUser).mockResolvedValue({
 +      id: "synthetic-test-partner", role: "PRO", staffRole: null, isProfTestUser: true,
 +    });
 +    mockCabinetReadyUpstream();
 +    const element = await HomePage({});
-+    expect(element.type).toBe(Fragment);
-+    const kids = Children.toArray(element.props.children);
-+    expect(
-+      kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
-+    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, HomeDashboard)).toBe(true);
 +    expect(redirect).not.toHaveBeenCalled();
 +  });
 +
@@ -732,10 +518,8 @@ index 00000000..ed00515b
 +    mockCabinetReadyUpstream();
 +    homeBranchFixtures.specialistHome = true;
 +    const element = await HomePage({});
-+    const kids = Children.toArray(element.props.children);
-+    expect(
-+      kids.some((child) => isValidElement(child) && child.type === SpecialistHomeDashboard),
-+    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, SpecialistHomeDashboard)).toBe(true);
 +    expect(redirect).not.toHaveBeenCalled();
 +  });
 +
@@ -747,10 +531,8 @@ index 00000000..ed00515b
 +    homeBranchFixtures.businessOwnerHome = true;
 +    homeBranchFixtures.businessPartnerType = "STORE";
 +    const element = await HomePage({});
-+    const kids = Children.toArray(element.props.children);
-+    expect(
-+      kids.some((child) => isValidElement(child) && child.type === BusinessOwnerHomeDashboard),
-+    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, BusinessOwnerHomeDashboard)).toBe(true);
 +    expect(redirect).not.toHaveBeenCalled();
 +  });
 +
@@ -761,17 +543,19 @@ index 00000000..ed00515b
 +  });
 +});
 diff --git a/src/app/page.tsx b/src/app/(cabinet)/page.tsx
-similarity index 81%
+similarity index 82%
 rename from src/app/page.tsx
 rename to src/app/(cabinet)/page.tsx
-index aff23b45..2953bdb9 100644
+index aff23b45..c91b3b1a 100644
 --- a/src/app/page.tsx
 +++ b/src/app/(cabinet)/page.tsx
-@@ -5,13 +5,15 @@ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+@@ -4,14 +4,17 @@ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
  import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
  import { HomeDashboard } from "@/components/home/HomeDashboard";
- import { PageHeading } from "@/components/ui/PageHeading";
--import { CabinetShell } from "@/components/layout/CabinetShell";
+-import { PageHeading } from "@/components/ui/PageHeading";
+ import { CabinetShell } from "@/components/layout/CabinetShell";
++import { PageHeading } from "@/components/ui/PageHeading";
  import { countNeedsMyResponse } from "@/lib/partnership-rules";
 -import { fetchRemcardUpstream } from "@/lib/remcard-server";
 -import type { CabinetReadiness } from "@/lib/cabinet-readiness";
@@ -789,7 +573,7 @@ index aff23b45..2953bdb9 100644
  import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
  import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
  import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
-@@ -25,6 +27,13 @@ import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeD
+@@ -25,6 +28,13 @@ import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeD
  
  export const dynamic = "force-dynamic";
  
@@ -803,7 +587,7 @@ index aff23b45..2953bdb9 100644
  export default async function HomePage(
    props: {
      searchParams?: Promise<{ reason?: string; invite?: string; returnTo?: string }>;
-@@ -53,16 +62,11 @@ export default async function HomePage(
+@@ -53,16 +63,11 @@ export default async function HomePage(
    if (user.staffRole === "OWNER" || user.staffRole === "ADMIN") {
      redirect("/admin/overview");
    }
@@ -823,7 +607,7 @@ index aff23b45..2953bdb9 100644
    if (hasPendingLoginConsents(readiness)) {
      redirect("/login?step=consents&returnTo=%2F");
    }
-@@ -73,10 +77,7 @@ export default async function HomePage(
+@@ -73,10 +78,7 @@ export default async function HomePage(
      return <SessionGate returnTo="/" />;
    }
  
@@ -835,44 +619,23 @@ index aff23b45..2953bdb9 100644
    const prefsData = prefsResult.ok ? prefsResult.data : null;
    const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
    if (agentRoot) {
-@@ -89,8 +90,9 @@ export default async function HomePage(
+@@ -89,6 +91,7 @@ export default async function HomePage(
    const specialistHome = shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
  
    if (specialistHome) {
 +    redirectIfProfCabinetRoleDenied(readiness, user);
      return (
--      <CabinetShell returnTo="/">
-+      <>
+       <CabinetShell returnTo="/">
          <PageHeading
-           eyebrow="Специалист"
-           title="Ваш кабинет"
-@@ -100,7 +102,7 @@ export default async function HomePage(
-           needsProfileCompletion={readiness.needsProfileCompletion}
-           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-         />
--      </CabinetShell>
-+      </>
-     );
-   }
- 
-@@ -108,9 +110,10 @@ export default async function HomePage(
+@@ -108,6 +111,7 @@ export default async function HomePage(
    const businessPartnerType = businessOwnerHome ? businessOwnerHomePartnerType(user) : null;
  
    if (businessOwnerHome && businessPartnerType) {
 +    redirectIfProfCabinetRoleDenied(readiness, user);
      const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
      return (
--      <CabinetShell returnTo="/">
-+      <>
-         <PageHeading
-           eyebrow={eyebrow}
-           title="Ваш кабинет"
-@@ -121,19 +124,19 @@ export default async function HomePage(
-           needsProfileCompletion={readiness.needsProfileCompletion}
-           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-         />
--      </CabinetShell>
-+      </>
+       <CabinetShell returnTo="/">
+@@ -125,13 +129,13 @@ export default async function HomePage(
      );
    }
  
@@ -887,51 +650,12 @@ index aff23b45..2953bdb9 100644
 +  redirectIfProfCabinetRoleDenied(readiness, user);
 +
    return (
--    <CabinetShell returnTo="/">
-+    <>
+     <CabinetShell returnTo="/">
        <PageHeading
-         eyebrow="RemCard PROF"
-         title="Моя главная"
-@@ -146,6 +149,6 @@ export default async function HomePage(
-         needsProfileCompletion={readiness.needsProfileCompletion}
-         catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-       />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/partners/agent-terms/page.tsx b/src/app/(cabinet)/partners/agent-terms/page.tsx
-similarity index 94%
+similarity index 100%
 rename from src/app/partners/agent-terms/page.tsx
 rename to src/app/(cabinet)/partners/agent-terms/page.tsx
-index 98ee16f9..02dceac7 100644
---- a/src/app/partners/agent-terms/page.tsx
-+++ b/src/app/(cabinet)/partners/agent-terms/page.tsx
-@@ -2,7 +2,6 @@ import Link from "next/link";
- import { headers } from "next/headers";
- import { SessionGate } from "@/components/auth/SessionGate";
- import { PartnerAgentGeneralTermsEditor } from "@/components/partners/PartnerAgentGeneralTermsEditor";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { fetchRemcardUpstream } from "@/lib/remcard-server";
- import { requireProPageUser } from "@/lib/session";
-@@ -34,7 +33,7 @@ export default async function PartnerAgentTermsPage() {
-           : undefined;
- 
-   return (
--    <CabinetShell returnTo="/partners">
-+    <>
-       <PageHeading
-         eyebrow="Партнёры"
-         title="Мои условия для агентов"
-@@ -44,6 +43,6 @@ export default async function PartnerAgentTermsPage() {
-         <Link href="/partners">← К партнёрам</Link>
-       </p>
-       <PartnerAgentGeneralTermsEditor canEdit={canEdit} readOnlyReason={readOnlyReason} />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/partners/loading.tsx b/src/app/(cabinet)/partners/loading.tsx
 new file mode 100644
 index 00000000..27196215
@@ -944,37 +668,9 @@ index 00000000..27196215
 +  return <CabinetTabLoading routeKey="/partners" />;
 +}
 diff --git a/src/app/partners/page.tsx b/src/app/(cabinet)/partners/page.tsx
-similarity index 96%
+similarity index 100%
 rename from src/app/partners/page.tsx
 rename to src/app/(cabinet)/partners/page.tsx
-index d8362570..844a00a5 100644
---- a/src/app/partners/page.tsx
-+++ b/src/app/(cabinet)/partners/page.tsx
-@@ -2,7 +2,6 @@ import { headers } from "next/headers";
- import { SessionGate } from "@/components/auth/SessionGate";
- import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
- import { PartnersHub } from "@/components/partners/PartnersHub";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { fetchRemcardUpstream } from "@/lib/remcard-server";
- import { requireProPageUser } from "@/lib/session";
-@@ -61,7 +60,7 @@ export default async function PartnersPage(props: {
-   });
- 
-   return (
--    <CabinetShell returnTo={returnPath}>
-+    <>
-       <PageHeading
-         eyebrow={presentation.heading.eyebrow}
-         title={presentation.heading.title}
-@@ -77,6 +76,6 @@ export default async function PartnersPage(props: {
-       ) : (
-         <PartnersHub meId={user.id} initialProfile={profileResult.data} />
-       )}
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/profile/loading.tsx b/src/app/(cabinet)/profile/loading.tsx
 new file mode 100644
 index 00000000..c4728c21
@@ -987,27 +683,9 @@ index 00000000..c4728c21
 +  return <CabinetTabLoading routeKey="/profile" />;
 +}
 diff --git a/src/app/profile/page.tsx b/src/app/(cabinet)/profile/page.tsx
-similarity index 96%
+similarity index 100%
 rename from src/app/profile/page.tsx
 rename to src/app/(cabinet)/profile/page.tsx
-index 82d17eec..ba631152 100644
---- a/src/app/profile/page.tsx
-+++ b/src/app/(cabinet)/profile/page.tsx
-@@ -1,7 +1,6 @@
- import { headers } from "next/headers";
- import { SessionGate } from "@/components/auth/SessionGate";
- import { ProfileEditor } from "@/components/profile/ProfileEditor";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { sanitizeReturnTo } from "@/lib/auth-flow";
- import {
-@@ -122,5 +121,5 @@ export default async function ProfilePage(props: {
-     profileChrome
-   );
- 
--  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
-+  return body;
- }
 diff --git a/src/app/profile/pureAgentProfilePage.module.css b/src/app/(cabinet)/profile/pureAgentProfilePage.module.css
 similarity index 100%
 rename from src/app/profile/pureAgentProfilePage.module.css
@@ -1024,29 +702,9 @@ index 00000000..b5289718
 +  return <CabinetPageDetailLoadingSkeleton />;
 +}
 diff --git a/src/app/recommendations/[id]/page.tsx b/src/app/(cabinet)/recommendations/[id]/page.tsx
-similarity index 76%
+similarity index 100%
 rename from src/app/recommendations/[id]/page.tsx
 rename to src/app/(cabinet)/recommendations/[id]/page.tsx
-index 8a78009c..e9cef3af 100644
---- a/src/app/recommendations/[id]/page.tsx
-+++ b/src/app/(cabinet)/recommendations/[id]/page.tsx
-@@ -1,5 +1,4 @@
- import { SessionGate } from "@/components/auth/SessionGate";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { RecommendationsDetailRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -17,9 +16,5 @@ export default async function RecommendationDetailPage(props: RecommendationDeta
-     return <SessionGate reason="session" returnTo={returnPath} />;
-   }
- 
--  return (
--    <CabinetShell returnTo={returnPath}>
--      <RecommendationsDetailRouteBody certificateId={params.id} />
--    </CabinetShell>
--  );
-+  return <RecommendationsDetailRouteBody certificateId={params.id} />;
- }
 diff --git a/src/app/(cabinet)/recommendations/loading.tsx b/src/app/(cabinet)/recommendations/loading.tsx
 new file mode 100644
 index 00000000..a2d350aa
@@ -1070,57 +728,13 @@ index 00000000..ddecca73
 +  return <CabinetPageDetailLoadingSkeleton />;
 +}
 diff --git a/src/app/recommendations/new/page.tsx b/src/app/(cabinet)/recommendations/new/page.tsx
-similarity index 68%
+similarity index 100%
 rename from src/app/recommendations/new/page.tsx
 rename to src/app/(cabinet)/recommendations/new/page.tsx
-index 6778b82c..b4524cb5 100644
---- a/src/app/recommendations/new/page.tsx
-+++ b/src/app/(cabinet)/recommendations/new/page.tsx
-@@ -1,6 +1,5 @@
- import { Suspense } from "react";
- import { SessionGate } from "@/components/auth/SessionGate";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { RecommendationsCreateRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -15,10 +14,8 @@ export default async function NewRecommendationPage() {
-   }
- 
-   return (
--    <CabinetShell returnTo={RETURN_PATH}>
--      <Suspense fallback={<p>Загрузка формы…</p>}>
--        <RecommendationsCreateRouteBody />
--      </Suspense>
--    </CabinetShell>
-+    <Suspense fallback={<p>Загрузка формы…</p>}>
-+      <RecommendationsCreateRouteBody />
-+    </Suspense>
-   );
- }
 diff --git a/src/app/recommendations/page.tsx b/src/app/(cabinet)/recommendations/page.tsx
-similarity index 73%
+similarity index 100%
 rename from src/app/recommendations/page.tsx
 rename to src/app/(cabinet)/recommendations/page.tsx
-index 22fe64ee..6b415191 100644
---- a/src/app/recommendations/page.tsx
-+++ b/src/app/(cabinet)/recommendations/page.tsx
-@@ -1,5 +1,4 @@
- import { SessionGate } from "@/components/auth/SessionGate";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { RecommendationsListRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
- import { requireProPageUser } from "@/lib/session";
- 
-@@ -13,9 +12,5 @@ export default async function RecommendationsPage() {
-     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
-   }
- 
--  return (
--    <CabinetShell returnTo={RETURN_PATH}>
--      <RecommendationsListRouteBody />
--    </CabinetShell>
--  );
-+  return <RecommendationsListRouteBody />;
- }
 diff --git a/src/app/(cabinet)/scanner/loading.tsx b/src/app/(cabinet)/scanner/loading.tsx
 new file mode 100644
 index 00000000..1c17c31f
@@ -1133,34 +747,9 @@ index 00000000..1c17c31f
 +  return <CabinetTabLoading routeKey="/scanner" />;
 +}
 diff --git a/src/app/scanner/page.tsx b/src/app/(cabinet)/scanner/page.tsx
-similarity index 86%
+similarity index 100%
 rename from src/app/scanner/page.tsx
 rename to src/app/(cabinet)/scanner/page.tsx
-index 34d3304e..14672d7a 100644
---- a/src/app/scanner/page.tsx
-+++ b/src/app/(cabinet)/scanner/page.tsx
-@@ -1,5 +1,4 @@
- import { SessionGate } from "@/components/auth/SessionGate";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { ScannerHub } from "@/components/scanner/ScannerHub";
- import { requireProPageUser } from "@/lib/session";
-@@ -15,13 +14,13 @@ export default async function ScannerPage() {
-   }
- 
-   return (
--    <CabinetShell returnTo={RETURN_PATH}>
-+    <>
-       <PageHeading
-         eyebrow="RemCard PROF"
-         title="Сканер"
-         description="Сканируйте QR или введите код, проверьте документ и подтвердите покупку."
-       />
-       <ScannerHub userId={user.id} />
--    </CabinetShell>
-+    </>
-   );
- }
 diff --git a/src/app/(cabinet)/settlements/loading.tsx b/src/app/(cabinet)/settlements/loading.tsx
 new file mode 100644
 index 00000000..029dca12
@@ -1173,61 +762,9 @@ index 00000000..029dca12
 +  return <CabinetTabLoading routeKey="/settlements" />;
 +}
 diff --git a/src/app/settlements/page.tsx b/src/app/(cabinet)/settlements/page.tsx
-similarity index 96%
+similarity index 100%
 rename from src/app/settlements/page.tsx
 rename to src/app/(cabinet)/settlements/page.tsx
-index 05034e40..0e97140e 100644
---- a/src/app/settlements/page.tsx
-+++ b/src/app/(cabinet)/settlements/page.tsx
-@@ -4,7 +4,6 @@ import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesW
- import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
- import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
- import { SettlementsHub } from "@/components/settlements/SettlementsHub";
--import { CabinetShell } from "@/components/layout/CabinetShell";
- import { PageHeading } from "@/components/ui/PageHeading";
- import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
- import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
-@@ -71,7 +70,7 @@ export default async function SettlementsPage() {
-     }) ?? "specialist";
- 
-   return (
--    <CabinetShell returnTo={RETURN_PATH}>
-+    <>
-       <PageHeading eyebrow={eyebrow} title={title} description={description} />
-       {shell === "agent-r05" ? (
-         <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
-@@ -86,6 +85,6 @@ export default async function SettlementsPage() {
-       ) : (
-         <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
-       )}
--    </CabinetShell>
-+    </>
-   );
- }
-diff --git a/src/app/(cabinet)/template.tsx b/src/app/(cabinet)/template.tsx
-new file mode 100644
-index 00000000..aeaaaf65
---- /dev/null
-+++ b/src/app/(cabinet)/template.tsx
-@@ -0,0 +1,18 @@
-+import { peekCabinetSession } from "@/lib/session";
-+import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
-+import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
-+
-+export default async function CabinetRouteGroupTemplate({
-+  children,
-+}: {
-+  children: React.ReactNode;
-+}) {
-+  const user = await peekCabinetSession();
-+  const freshShellContextToken = await computeCabinetShellContextToken(user);
-+
-+  return (
-+    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
-+      {children}
-+    </CabinetShellTemplateReconciler>
-+  );
-+}
 diff --git a/src/app/page.admin-root-redirect.test.tsx b/src/app/page.admin-root-redirect.test.tsx
 deleted file mode 100644
 index c8cb7be2..00000000
@@ -1984,28 +1521,99 @@ index 00000000..a6298939
 +    </div>
 +  );
 +}
+diff --git a/src/components/layout/CabinetShell.test.tsx b/src/components/layout/CabinetShell.test.tsx
+new file mode 100644
+index 00000000..aaf6cac6
+--- /dev/null
++++ b/src/components/layout/CabinetShell.test.tsx
+@@ -0,0 +1,62 @@
++import React from "react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++vi.mock("@/lib/session", () => ({
++  peekCabinetSession: vi.fn(),
++}));
++
++vi.mock("@/lib/cabinet-shell-context-token", () => ({
++  computeCabinetShellContextToken: vi.fn(),
++}));
++
++vi.mock("@/components/layout/CabinetShellTemplateReconciler", () => ({
++  CabinetShellTemplateReconciler: ({
++    freshShellContextToken,
++    children,
++  }: {
++    freshShellContextToken: string;
++    children: React.ReactNode;
++  }) => (
++    <div data-testid="reconciler" data-token={freshShellContextToken}>
++      {children}
++    </div>
++  ),
++}));
++
++import { peekCabinetSession } from "@/lib/session";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
++import { CabinetShell } from "@/components/layout/CabinetShell";
++
++beforeEach(() => {
++  vi.clearAllMocks();
++});
++
++describe("CabinetShell page wrapper", () => {
++  it("computes a fresh token from peek without redirecting", async () => {
++    vi.mocked(peekCabinetSession).mockResolvedValue({
++      id: "u1",
++      role: "PRO",
++    });
++    vi.mocked(computeCabinetShellContextToken).mockResolvedValue("hash-u1");
++
++    const element = await CabinetShell({
++      returnTo: "/clients",
++      children: <span>body</span>,
++    });
++
++    expect(peekCabinetSession).toHaveBeenCalledTimes(1);
++    expect(computeCabinetShellContextToken).toHaveBeenCalledWith({
++      id: "u1",
++      role: "PRO",
++    });
++    expect(element.props.freshShellContextToken).toBe("hash-u1");
++  });
++
++  it('uses "none" when peek is null', async () => {
++    vi.mocked(peekCabinetSession).mockResolvedValue(null);
++    vi.mocked(computeCabinetShellContextToken).mockResolvedValue("none");
++
++    const element = await CabinetShell({ children: <span>body</span> });
++    expect(element.props.freshShellContextToken).toBe("none");
++  });
++});
 diff --git a/src/components/layout/CabinetShell.tsx b/src/components/layout/CabinetShell.tsx
-index 58464e9e..2af3324e 100644
+index 58464e9e..5622306f 100644
 --- a/src/components/layout/CabinetShell.tsx
 +++ b/src/components/layout/CabinetShell.tsx
-@@ -1,11 +1,7 @@
+@@ -1,64 +1,21 @@
 -import { headers } from "next/headers";
- import { requireProSession } from "@/lib/session";
+-import { requireProSession } from "@/lib/session";
 -import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
 -import { countNeedsMyResponse } from "@/lib/partnership-rules";
-+import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
-+import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
- import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
+-import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
 -import type { PartnershipListResponse } from "@/lib/types";
 -import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 -import { defaultAgentMobileNavKeys } from "@/lib/agent-nav/sections";
++import { peekCabinetSession } from "@/lib/session";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
++import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
  
  type CabinetShellProps = {
    children: React.ReactNode;
-@@ -14,50 +10,13 @@ type CabinetShellProps = {
++  /** Preserved for page parity; guards run on the page before this wrapper. */
+   returnTo?: string;
+ };
  
- export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
-   const user = await requireProSession(returnTo);
+-export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
+-  const user = await requireProSession(returnTo);
 -  const cookieHeader = (await headers()).get("cookie");
 -  const authMe = await getAuthMeServer(cookieHeader);
 -  const profTestSession = authMe.ok ? authMe.data.profTestSession ?? null : null;
@@ -2042,10 +1650,10 @@ index 58464e9e..2af3324e 100644
 -          mobileNavKeys: defaultAgentMobileNavKeys(loaded.permittedKeys),
 -        }
 -      : loaded;
-+  const [shellProps, shellContextToken] = await Promise.all([
-+    loadCabinetShellClientProps(user),
-+    computeCabinetShellContextToken(user),
-+  ]);
++/** Per-page fresh shell identity (soft nav re-runs the page segment, not route-group template). */
++export async function CabinetShell({ children }: CabinetShellProps) {
++  const user = await peekCabinetSession();
++  const freshShellContextToken = await computeCabinetShellContextToken(user);
  
    return (
 -    <CabinetAppShellClient
@@ -2054,16 +1662,18 @@ index 58464e9e..2af3324e 100644
 -      uiPrefs={uiPrefs}
 -      profTestSession={profTestSession}
 -    >
-+    <CabinetAppShellClient {...shellProps} shellContextToken={shellContextToken}>
++    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
        {children}
-     </CabinetAppShellClient>
+-    </CabinetAppShellClient>
++    </CabinetShellTemplateReconciler>
    );
+ }
 diff --git a/src/components/layout/CabinetShellTemplateReconciler.test.tsx b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
 new file mode 100644
-index 00000000..b3ccf38b
+index 00000000..fd884768
 --- /dev/null
 +++ b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
-@@ -0,0 +1,72 @@
+@@ -0,0 +1,90 @@
 +import { beforeEach, describe, expect, it, vi } from "vitest";
 +import { render, screen } from "@testing-library/react";
 +import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
@@ -2121,7 +1731,25 @@ index 00000000..b3ccf38b
 +        </CabinetShellTemplateReconciler>
 +      </CabinetShellContextProvider>,
 +    );
-+    expect(refresh).toHaveBeenCalledTimes(1);
++    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
++    const capped = refresh.mock.calls.length;
++    rerender(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh.mock.calls.length).toBeLessThanOrEqual(capped + 1);
++    const cappedAgain = refresh.mock.calls.length;
++    rerender(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh.mock.calls.length).toBe(cappedAgain);
 +  });
 +
 +  it("refreshes when fresh token is none but shell still mounted", () => {
@@ -2138,10 +1766,10 @@ index 00000000..b3ccf38b
 +});
 diff --git a/src/components/layout/CabinetShellTemplateReconciler.tsx b/src/components/layout/CabinetShellTemplateReconciler.tsx
 new file mode 100644
-index 00000000..1f5f5023
+index 00000000..6cc399e4
 --- /dev/null
 +++ b/src/components/layout/CabinetShellTemplateReconciler.tsx
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,39 @@
 +"use client";
 +
 +import type { ReactNode } from "react";
@@ -2165,6 +1793,7 @@ index 00000000..1f5f5023
 +      return;
 +    }
 +    if (shell.shellContextToken === freshShellContextToken) {
++      shell.acknowledgeShellContextMatch();
 +      return;
 +    }
 +    shell.requestShellRefreshIfStale(freshShellContextToken);
@@ -2856,6 +2485,86 @@ index 00000000..1e173cad
 +    expect(screen.queryByRole("dialog")).toBeNull();
 +  });
 +});
+diff --git a/src/components/layout/cabinet-shell-context-loop-guard.test.tsx b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+new file mode 100644
+index 00000000..ef959da9
+--- /dev/null
++++ b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+@@ -0,0 +1,74 @@
++import { act, render, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import {
++  CabinetShellContextProvider,
++  useCabinetShellContext,
++} from "@/components/layout/cabinet-shell-context";
++
++const refresh = vi.fn();
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ refresh }),
++}));
++
++function RefreshProbe({ fresh }: { fresh: string }) {
++  const shell = useCabinetShellContext();
++  if (!shell) return null;
++  if (shell.shellContextToken === fresh) {
++    shell.acknowledgeShellContextMatch();
++    return <div data-testid="matched">ok</div>;
++  }
++  shell.requestShellRefreshIfStale(fresh);
++  return <div data-testid="stale">stale</div>;
++}
++
++describe("cabinet shell refresh loop guard", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("allows A->B->A->B refresh cycles without skipping the second stale pair", async () => {
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="A" />
++      </CabinetShellContextProvider>,
++    );
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
++
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
++  });
++
++  it("retries once when shell token unchanged after refresh", () => {
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(2);
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
++    expect(refresh.mock.calls.length).toBeLessThanOrEqual(3);
++  });
++});
 diff --git a/src/components/layout/cabinet-shell-context-remount.test.tsx b/src/components/layout/cabinet-shell-context-remount.test.tsx
 new file mode 100644
 index 00000000..24ac17ba
@@ -3023,16 +2732,17 @@ index 00000000..24ac17ba
 +});
 diff --git a/src/components/layout/cabinet-shell-context.tsx b/src/components/layout/cabinet-shell-context.tsx
 new file mode 100644
-index 00000000..ed01c366
+index 00000000..a7dc0b6b
 --- /dev/null
 +++ b/src/components/layout/cabinet-shell-context.tsx
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,89 @@
 +"use client";
 +
 +import {
 +  createContext,
 +  useCallback,
 +  useContext,
++  useEffect,
 +  useMemo,
 +  useRef,
 +  useState,
@@ -3045,6 +2755,7 @@ index 00000000..ed01c366
 +  authFailureEpoch: number;
 +  notifyAuthFailure: () => void;
 +  requestShellRefreshIfStale: (freshShellContextToken: string) => void;
++  acknowledgeShellContextMatch: () => void;
 +};
 +
 +const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
@@ -3064,22 +2775,32 @@ index 00000000..ed01c366
 +}: CabinetShellContextProviderProps) {
 +  const router = useRouter();
 +  const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
-+  const refreshedPairsRef = useRef<Set<string>>(new Set());
++  const refreshedPairsRef = useRef<Map<string, number>>(new Map());
++
++  useEffect(() => {
++    refreshedPairsRef.current.clear();
++  }, [shellContextToken]);
 +
 +  const notifyAuthFailure = useCallback(() => {
 +    setAuthFailureEpoch((n) => n + 1);
 +  }, []);
 +
++  const acknowledgeShellContextMatch = useCallback(() => {
++    refreshedPairsRef.current.clear();
++  }, []);
++
 +  const requestShellRefreshIfStale = useCallback(
 +    (freshShellContextToken: string) => {
 +      if (shellContextToken === freshShellContextToken) {
++        refreshedPairsRef.current.clear();
 +        return;
 +      }
 +      const pair = `${shellContextToken}|${freshShellContextToken}`;
-+      if (refreshedPairsRef.current.has(pair)) {
++      const attempts = refreshedPairsRef.current.get(pair) ?? 0;
++      if (attempts >= 2) {
 +        return;
 +      }
-+      refreshedPairsRef.current.add(pair);
++      refreshedPairsRef.current.set(pair, attempts + 1);
 +      router.refresh();
 +    },
 +    [router, shellContextToken],
@@ -3091,8 +2812,15 @@ index 00000000..ed01c366
 +      authFailureEpoch,
 +      notifyAuthFailure,
 +      requestShellRefreshIfStale,
++      acknowledgeShellContextMatch,
 +    }),
-+    [shellContextToken, authFailureEpoch, notifyAuthFailure, requestShellRefreshIfStale],
++    [
++      shellContextToken,
++      authFailureEpoch,
++      notifyAuthFailure,
++      requestShellRefreshIfStale,
++      acknowledgeShellContextMatch,
++    ],
 +  );
 +
 +  return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;

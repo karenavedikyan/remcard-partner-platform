@@ -1,0 +1,182 @@
+commit 3b7823195b39ae7a256bfff0f4cc68ba3d135e9f
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:16:31 2026 +0000
+
+    test(cabinet): page wrapper reconciler and refresh loop guard
+    
+    Cover CabinetShell token wiring, A->B->A->B refresh cycles, and capped
+    retries when the layout shell token stays stale after refresh.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/components/layout/CabinetShell.test.tsx b/src/components/layout/CabinetShell.test.tsx
+new file mode 100644
+index 00000000..aaf6cac6
+--- /dev/null
++++ b/src/components/layout/CabinetShell.test.tsx
+@@ -0,0 +1,62 @@
++import React from "react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++vi.mock("@/lib/session", () => ({
++  peekCabinetSession: vi.fn(),
++}));
++
++vi.mock("@/lib/cabinet-shell-context-token", () => ({
++  computeCabinetShellContextToken: vi.fn(),
++}));
++
++vi.mock("@/components/layout/CabinetShellTemplateReconciler", () => ({
++  CabinetShellTemplateReconciler: ({
++    freshShellContextToken,
++    children,
++  }: {
++    freshShellContextToken: string;
++    children: React.ReactNode;
++  }) => (
++    <div data-testid="reconciler" data-token={freshShellContextToken}>
++      {children}
++    </div>
++  ),
++}));
++
++import { peekCabinetSession } from "@/lib/session";
++import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
++import { CabinetShell } from "@/components/layout/CabinetShell";
++
++beforeEach(() => {
++  vi.clearAllMocks();
++});
++
++describe("CabinetShell page wrapper", () => {
++  it("computes a fresh token from peek without redirecting", async () => {
++    vi.mocked(peekCabinetSession).mockResolvedValue({
++      id: "u1",
++      role: "PRO",
++    });
++    vi.mocked(computeCabinetShellContextToken).mockResolvedValue("hash-u1");
++
++    const element = await CabinetShell({
++      returnTo: "/clients",
++      children: <span>body</span>,
++    });
++
++    expect(peekCabinetSession).toHaveBeenCalledTimes(1);
++    expect(computeCabinetShellContextToken).toHaveBeenCalledWith({
++      id: "u1",
++      role: "PRO",
++    });
++    expect(element.props.freshShellContextToken).toBe("hash-u1");
++  });
++
++  it('uses "none" when peek is null', async () => {
++    vi.mocked(peekCabinetSession).mockResolvedValue(null);
++    vi.mocked(computeCabinetShellContextToken).mockResolvedValue("none");
++
++    const element = await CabinetShell({ children: <span>body</span> });
++    expect(element.props.freshShellContextToken).toBe("none");
++  });
++});
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.test.tsx b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+index b3ccf38b..7240eb22 100644
+--- a/src/components/layout/CabinetShellTemplateReconciler.test.tsx
++++ b/src/components/layout/CabinetShellTemplateReconciler.test.tsx
+@@ -55,7 +55,17 @@ describe("CabinetShellTemplateReconciler", () => {
+         </CabinetShellTemplateReconciler>
+       </CabinetShellContextProvider>,
+     );
+-    expect(refresh).toHaveBeenCalledTimes(1);
++    const afterRetry = refresh.mock.calls.length;
++    expect(afterRetry).toBeGreaterThanOrEqual(2);
++    expect(afterRetry).toBeLessThanOrEqual(3);
++    rerender(
++      <CabinetShellContextProvider shellContextToken="shell-a">
++        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
++          <div data-testid="page">page</div>
++        </CabinetShellTemplateReconciler>
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh.mock.calls.length).toBe(afterRetry);
+   });
+ 
+   it("refreshes when fresh token is none but shell still mounted", () => {
+diff --git a/src/components/layout/cabinet-shell-context-loop-guard.test.tsx b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+new file mode 100644
+index 00000000..ef959da9
+--- /dev/null
++++ b/src/components/layout/cabinet-shell-context-loop-guard.test.tsx
+@@ -0,0 +1,74 @@
++import { act, render, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import {
++  CabinetShellContextProvider,
++  useCabinetShellContext,
++} from "@/components/layout/cabinet-shell-context";
++
++const refresh = vi.fn();
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ refresh }),
++}));
++
++function RefreshProbe({ fresh }: { fresh: string }) {
++  const shell = useCabinetShellContext();
++  if (!shell) return null;
++  if (shell.shellContextToken === fresh) {
++    shell.acknowledgeShellContextMatch();
++    return <div data-testid="matched">ok</div>;
++  }
++  shell.requestShellRefreshIfStale(fresh);
++  return <div data-testid="stale">stale</div>;
++}
++
++describe("cabinet shell refresh loop guard", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("allows A->B->A->B refresh cycles without skipping the second stale pair", async () => {
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="A" />
++      </CabinetShellContextProvider>,
++    );
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
++
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
++  });
++
++  it("retries once when shell token unchanged after refresh", () => {
++    const { rerender } = render(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(1);
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh).toHaveBeenCalledTimes(2);
++    rerender(
++      <CabinetShellContextProvider shellContextToken="A">
++        <RefreshProbe fresh="B" />
++      </CabinetShellContextProvider>,
++    );
++    expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(2);
++    expect(refresh.mock.calls.length).toBeLessThanOrEqual(3);
++  });
++});

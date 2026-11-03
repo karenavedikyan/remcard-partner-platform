@@ -1,0 +1,771 @@
+commit 88bc8c137e2d1714d98a3157c7c6f33bf9f12388
+Author: Cursor Agent <cursoragent@cursor.com>
+Date:   Tue Nov 3 15:16:26 2026 +0000
+
+    fix(cabinet): fresh identity via per-page CabinetShell wrapper
+    
+    Next 15 does not re-run route-group template on sibling soft nav, so each
+    page again wraps content in a thin CabinetShell that computes the token and
+    reconciles against the persistent layout shell.
+    
+    Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>
+
+diff --git a/src/app/(cabinet)/cabinet-routing-contract.test.tsx b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
+index 02f49b66..15085f31 100644
+--- a/src/app/(cabinet)/cabinet-routing-contract.test.tsx
++++ b/src/app/(cabinet)/cabinet-routing-contract.test.tsx
+@@ -48,13 +48,19 @@ describe("(cabinet) routing contract", () => {
+     expect(pages).toEqual([...EXPECTED_ROUTE_FILES].sort());
+   });
+ 
+-  it("does not import CabinetShell from any moved page", () => {
++  it("wraps every page body in CabinetShell (fresh identity on soft nav)", () => {
+     for (const rel of EXPECTED_ROUTE_FILES) {
+       const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
+-      expect(src, rel).not.toMatch(/CabinetShell/);
++      expect(src, rel).toMatch(/CabinetShell/);
++      expect(src, rel).toMatch(/returnTo=/);
+     }
+   });
+ 
++  it("does not define a route-group template (Next skips it on sibling soft nav)", () => {
++    const templatePath = path.join(CABINET_ROOT, "template.tsx");
++    expect(() => readFileSync(templatePath)).toThrow();
++  });
++
+   it("keeps a server guard on every page except home (custom guest flow)", () => {
+     for (const rel of EXPECTED_ROUTE_FILES) {
+       const src = readFileSync(path.join(CABINET_ROOT, rel), "utf8");
+diff --git a/src/app/(cabinet)/certificates/[id]/page.tsx b/src/app/(cabinet)/certificates/[id]/page.tsx
+index 1eddaf41..b96f7100 100644
+--- a/src/app/(cabinet)/certificates/[id]/page.tsx
++++ b/src/app/(cabinet)/certificates/[id]/page.tsx
+@@ -1,6 +1,7 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { AgentCertificateDetail } from "@/components/agent-r03/AgentCertificateDetail";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -17,7 +18,7 @@ export default async function CertificateDetailPage(props: PageProps) {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo="/certificates">
+       <PageHeading
+         eyebrow="Сертификат"
+         title="Сертификат Ремкард"
+@@ -26,6 +27,6 @@ export default async function CertificateDetailPage(props: PageProps) {
+       <AgentR03Gate>
+         <AgentCertificateDetail certificateId={params.id} />
+       </AgentR03Gate>
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/certificates/new/page.tsx b/src/app/(cabinet)/certificates/new/page.tsx
+index 39517def..35e0f2e3 100644
+--- a/src/app/(cabinet)/certificates/new/page.tsx
++++ b/src/app/(cabinet)/certificates/new/page.tsx
+@@ -1,6 +1,7 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { CertificateCreateForm } from "@/components/recommendations/CertificateCreateForm";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -18,7 +19,7 @@ export default async function NewCertificatePage(props: {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo="/certificates">
+       <PageHeading
+         eyebrow="Сертификат"
+         title="Новый сертификат"
+@@ -31,6 +32,6 @@ export default async function NewCertificatePage(props: {
+           successHrefBase="/certificates"
+         />
+       </AgentR03Gate>
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/certificates/page.tsx b/src/app/(cabinet)/certificates/page.tsx
+index ed309991..c083b662 100644
+--- a/src/app/(cabinet)/certificates/page.tsx
++++ b/src/app/(cabinet)/certificates/page.tsx
+@@ -1,6 +1,7 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentR03Gate } from "@/components/agent-r03/AgentR03Gate";
+ import { AgentCertificatesList } from "@/components/agent-r03/AgentCertificatesList";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -15,7 +16,7 @@ export default async function CertificatesPage() {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={RETURN_PATH}>
+       <PageHeading
+         eyebrow="АГЕНТ"
+         title="Сертификаты"
+@@ -24,6 +25,6 @@ export default async function CertificatesPage() {
+       <AgentR03Gate>
+         <AgentCertificatesList />
+       </AgentR03Gate>
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/clients/[id]/page.tsx b/src/app/(cabinet)/clients/[id]/page.tsx
+index ce88825e..22bad873 100644
+--- a/src/app/(cabinet)/clients/[id]/page.tsx
++++ b/src/app/(cabinet)/clients/[id]/page.tsx
+@@ -1,5 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ClientDetailWorkspace } from "@/components/clients/ClientDetailWorkspace";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { requireProPageUser } from "@/lib/session";
+ 
+ export const dynamic = "force-dynamic";
+@@ -14,5 +15,9 @@ export default async function ClientDetailPage(props: PageProps) {
+     return <SessionGate reason="session" returnTo={returnPath} />;
+   }
+ 
+-  return <ClientDetailWorkspace clientId={params.id} />;
++  return (
++    <CabinetShell returnTo="/clients">
++      <ClientDetailWorkspace clientId={params.id} />
++    </CabinetShell>
++  );
+ }
+diff --git a/src/app/(cabinet)/clients/page.tsx b/src/app/(cabinet)/clients/page.tsx
+index 9e480c52..83e9db83 100644
+--- a/src/app/(cabinet)/clients/page.tsx
++++ b/src/app/(cabinet)/clients/page.tsx
+@@ -1,5 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { requireProPageUser } from "@/lib/session";
+ 
+ export const dynamic = "force-dynamic";
+@@ -12,5 +13,9 @@ export default async function ClientsPage() {
+     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+   }
+ 
+-  return <ClientsListWorkspace />;
++  return (
++    <CabinetShell returnTo={RETURN_PATH}>
++      <ClientsListWorkspace />
++    </CabinetShell>
++  );
+ }
+diff --git a/src/app/(cabinet)/history/accruals/[id]/page.tsx b/src/app/(cabinet)/history/accruals/[id]/page.tsx
+index cbf3c9b4..50b6a72e 100644
+--- a/src/app/(cabinet)/history/accruals/[id]/page.tsx
++++ b/src/app/(cabinet)/history/accruals/[id]/page.tsx
+@@ -1,5 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AccrualDetail } from "@/components/history/AccrualDetail";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { accrualDetailHref, parseAccrualType } from "@/lib/accrual-type";
+ import { requireProPageUser } from "@/lib/session";
+@@ -22,9 +23,9 @@ export default async function AccrualDetailPage(props: AccrualDetailPageProps) {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={returnPath}>
+       <PageHeading eyebrow="RemCard PROF" title="Начисление" />
+       <AccrualDetail user={user} accrualId={params.id} accrualType={accrualType} />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/history/page.tsx b/src/app/(cabinet)/history/page.tsx
+index d6d0aa65..20557643 100644
+--- a/src/app/(cabinet)/history/page.tsx
++++ b/src/app/(cabinet)/history/page.tsx
+@@ -1,5 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { HistoryHub } from "@/components/history/HistoryHub";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -21,13 +22,13 @@ export default async function HistoryPage(props: HistoryPageProps) {
+   const initialPromoCode = searchParams?.search ?? "";
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={RETURN_PATH}>
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="История"
+         description="Покупки и начисления по данным сервера — без пересчёта по текущим условиям."
+       />
+       <HistoryHub user={user} initialPromoCode={initialPromoCode} />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/history/purchases/[id]/page.tsx b/src/app/(cabinet)/history/purchases/[id]/page.tsx
+index 22362be2..0d7775af 100644
+--- a/src/app/(cabinet)/history/purchases/[id]/page.tsx
++++ b/src/app/(cabinet)/history/purchases/[id]/page.tsx
+@@ -1,5 +1,6 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PurchaseDetail } from "@/components/history/PurchaseDetail";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -20,13 +21,13 @@ export default async function PurchaseDetailPage(props: PurchaseDetailPageProps)
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={returnPath}>
+       <PageHeading eyebrow="RemCard PROF" title="Покупка" />
+       <PurchaseDetail
+         user={user}
+         purchaseId={params.id}
+         promoHint={searchParams?.promo}
+       />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/notifications/page.tsx b/src/app/(cabinet)/notifications/page.tsx
+index 42cb8627..41b4d3f0 100644
+--- a/src/app/(cabinet)/notifications/page.tsx
++++ b/src/app/(cabinet)/notifications/page.tsx
+@@ -1,3 +1,4 @@
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { ProfNotificationCenter } from "@/components/notifications/ProfNotificationCenter";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { requireProPageUser } from "@/lib/session";
+@@ -13,9 +14,9 @@ export default async function NotificationsPage() {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={returnPath}>
+       <PageHeading eyebrow="RemCard PROF" title="Уведомления" />
+       <ProfNotificationCenter />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+index ed00515b..8a255100 100644
+--- a/src/app/(cabinet)/page.admin-root-redirect.test.tsx
++++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+@@ -1,6 +1,6 @@
+ import { readFileSync } from "node:fs";
+ import path from "node:path";
+-import { Children, Fragment, isValidElement } from "react";
++import { Children, isValidElement } from "react";
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+ import HomePage from "./page";
+ import { getSessionUser } from "@/lib/session";
+@@ -9,6 +9,7 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
+ import { resolveActiveAgentRootRedirect } from "@/lib/agent-nav/root-destination";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
+ import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
+ import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
+@@ -35,6 +36,7 @@ vi.mock("@/lib/registration/capabilities-server", () => ({
+ }));
+ vi.mock("@/components/auth/SessionGate", () => ({ SessionGate: () => null }));
+ vi.mock("@/components/registration/PartnerWelcome", () => ({ PartnerWelcome: () => null }));
++vi.mock("@/components/layout/CabinetShell", () => ({ CabinetShell: () => null }));
+ vi.mock("@/components/home/HomeDashboard", () => ({ HomeDashboard: () => null }));
+ vi.mock("@/components/home/SpecialistHomeDashboard", () => ({ SpecialistHomeDashboard: () => null }));
+ vi.mock("@/components/home/BusinessOwnerHomeDashboard", () => ({ BusinessOwnerHomeDashboard: () => null }));
+@@ -92,12 +94,13 @@ beforeEach(() => {
+   } as Awaited<ReturnType<typeof fetchRegistrationCapabilitiesServer>>);
+ });
+ 
+-describe("server home-page staff redirect", () => {
+-  it("does not wrap content in CabinetShell (persistent (cabinet)/layout owns the shell)", () => {
+-    const src = readFileSync(path.join(import.meta.dirname, "page.tsx"), "utf8");
+-    expect(src).not.toMatch(/CabinetShell/);
+-  });
++function treeContainsType(node: unknown, type: unknown): boolean {
++  if (!isValidElement(node)) return false;
++  if (node.type === type) return true;
++  return Children.toArray(node.props.children).some((child) => treeContainsType(child, type));
++}
+ 
++describe("server home-page staff redirect", () => {
+   it.each(["OWNER", "ADMIN"])("redirects %s before partner readiness/profile/consent fetches", async (staffRole) => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+       id: "synthetic-staff", role: "CLIENT", staffRole, isBlocked: false,
+@@ -219,17 +222,14 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
+     expect(fetchRemcardUpstream).not.toHaveBeenCalledWith("/api/partnership/list", expect.any(Object));
+   });
+ 
+-  it("ordinary eligible PRO renders default dashboard branch", async () => {
++  it("keeps ready ordinary and delegated test partners in their cabinet", async () => {
+     vi.mocked(getSessionUser).mockResolvedValue({
+       id: "synthetic-test-partner", role: "PRO", staffRole: null, isProfTestUser: true,
+     });
+     mockCabinetReadyUpstream();
+     const element = await HomePage({});
+-    expect(element.type).toBe(Fragment);
+-    const kids = Children.toArray(element.props.children);
+-    expect(
+-      kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
+-    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, HomeDashboard)).toBe(true);
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+@@ -240,10 +240,8 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
+     mockCabinetReadyUpstream();
+     homeBranchFixtures.specialistHome = true;
+     const element = await HomePage({});
+-    const kids = Children.toArray(element.props.children);
+-    expect(
+-      kids.some((child) => isValidElement(child) && child.type === SpecialistHomeDashboard),
+-    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, SpecialistHomeDashboard)).toBe(true);
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+@@ -255,10 +253,8 @@ describe("role parity at layout-shell-equivalent branch returns", () => {
+     homeBranchFixtures.businessOwnerHome = true;
+     homeBranchFixtures.businessPartnerType = "STORE";
+     const element = await HomePage({});
+-    const kids = Children.toArray(element.props.children);
+-    expect(
+-      kids.some((child) => isValidElement(child) && child.type === BusinessOwnerHomeDashboard),
+-    ).toBe(true);
++    expect(element.type).toBe(CabinetShell);
++    expect(treeContainsType(element, BusinessOwnerHomeDashboard)).toBe(true);
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
+diff --git a/src/app/(cabinet)/page.tsx b/src/app/(cabinet)/page.tsx
+index 2953bdb9..c91b3b1a 100644
+--- a/src/app/(cabinet)/page.tsx
++++ b/src/app/(cabinet)/page.tsx
+@@ -4,6 +4,7 @@ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerWelcome } from "@/components/registration/PartnerWelcome";
+ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabilities-server";
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+ import { hasPendingLoginConsents, type CabinetReadiness } from "@/lib/cabinet-readiness";
+@@ -92,7 +93,7 @@ export default async function HomePage(
+   if (specialistHome) {
+     redirectIfProfCabinetRoleDenied(readiness, user);
+     return (
+-      <>
++      <CabinetShell returnTo="/">
+         <PageHeading
+           eyebrow="Специалист"
+           title="Ваш кабинет"
+@@ -102,7 +103,7 @@ export default async function HomePage(
+           needsProfileCompletion={readiness.needsProfileCompletion}
+           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+         />
+-      </>
++      </CabinetShell>
+     );
+   }
+ 
+@@ -113,7 +114,7 @@ export default async function HomePage(
+     redirectIfProfCabinetRoleDenied(readiness, user);
+     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
+     return (
+-      <>
++      <CabinetShell returnTo="/">
+         <PageHeading
+           eyebrow={eyebrow}
+           title="Ваш кабинет"
+@@ -124,7 +125,7 @@ export default async function HomePage(
+           needsProfileCompletion={readiness.needsProfileCompletion}
+           catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+         />
+-      </>
++      </CabinetShell>
+     );
+   }
+ 
+@@ -136,7 +137,7 @@ export default async function HomePage(
+   redirectIfProfCabinetRoleDenied(readiness, user);
+ 
+   return (
+-    <>
++    <CabinetShell returnTo="/">
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="Моя главная"
+@@ -149,6 +150,6 @@ export default async function HomePage(
+         needsProfileCompletion={readiness.needsProfileCompletion}
+         catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+       />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/partners/agent-terms/page.tsx b/src/app/(cabinet)/partners/agent-terms/page.tsx
+index 02dceac7..98ee16f9 100644
+--- a/src/app/(cabinet)/partners/agent-terms/page.tsx
++++ b/src/app/(cabinet)/partners/agent-terms/page.tsx
+@@ -2,6 +2,7 @@ import Link from "next/link";
+ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { PartnerAgentGeneralTermsEditor } from "@/components/partners/PartnerAgentGeneralTermsEditor";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import { requireProPageUser } from "@/lib/session";
+@@ -33,7 +34,7 @@ export default async function PartnerAgentTermsPage() {
+           : undefined;
+ 
+   return (
+-    <>
++    <CabinetShell returnTo="/partners">
+       <PageHeading
+         eyebrow="Партнёры"
+         title="Мои условия для агентов"
+@@ -43,6 +44,6 @@ export default async function PartnerAgentTermsPage() {
+         <Link href="/partners">← К партнёрам</Link>
+       </p>
+       <PartnerAgentGeneralTermsEditor canEdit={canEdit} readOnlyReason={readOnlyReason} />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/partners/page.tsx b/src/app/(cabinet)/partners/page.tsx
+index 844a00a5..d8362570 100644
+--- a/src/app/(cabinet)/partners/page.tsx
++++ b/src/app/(cabinet)/partners/page.tsx
+@@ -2,6 +2,7 @@ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
+ import { PartnersHub } from "@/components/partners/PartnersHub";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { fetchRemcardUpstream } from "@/lib/remcard-server";
+ import { requireProPageUser } from "@/lib/session";
+@@ -60,7 +61,7 @@ export default async function PartnersPage(props: {
+   });
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={returnPath}>
+       <PageHeading
+         eyebrow={presentation.heading.eyebrow}
+         title={presentation.heading.title}
+@@ -76,6 +77,6 @@ export default async function PartnersPage(props: {
+       ) : (
+         <PartnersHub meId={user.id} initialProfile={profileResult.data} />
+       )}
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/profile/page.tsx b/src/app/(cabinet)/profile/page.tsx
+index ba631152..82d17eec 100644
+--- a/src/app/(cabinet)/profile/page.tsx
++++ b/src/app/(cabinet)/profile/page.tsx
+@@ -1,6 +1,7 @@
+ import { headers } from "next/headers";
+ import { SessionGate } from "@/components/auth/SessionGate";
+ import { ProfileEditor } from "@/components/profile/ProfileEditor";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { sanitizeReturnTo } from "@/lib/auth-flow";
+ import {
+@@ -121,5 +122,5 @@ export default async function ProfilePage(props: {
+     profileChrome
+   );
+ 
+-  return body;
++  return <CabinetShell returnTo={safeReturnTo}>{body}</CabinetShell>;
+ }
+diff --git a/src/app/(cabinet)/recommendations/[id]/page.tsx b/src/app/(cabinet)/recommendations/[id]/page.tsx
+index e9cef3af..8a78009c 100644
+--- a/src/app/(cabinet)/recommendations/[id]/page.tsx
++++ b/src/app/(cabinet)/recommendations/[id]/page.tsx
+@@ -1,4 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsDetailRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -16,5 +17,9 @@ export default async function RecommendationDetailPage(props: RecommendationDeta
+     return <SessionGate reason="session" returnTo={returnPath} />;
+   }
+ 
+-  return <RecommendationsDetailRouteBody certificateId={params.id} />;
++  return (
++    <CabinetShell returnTo={returnPath}>
++      <RecommendationsDetailRouteBody certificateId={params.id} />
++    </CabinetShell>
++  );
+ }
+diff --git a/src/app/(cabinet)/recommendations/new/page.tsx b/src/app/(cabinet)/recommendations/new/page.tsx
+index b4524cb5..6778b82c 100644
+--- a/src/app/(cabinet)/recommendations/new/page.tsx
++++ b/src/app/(cabinet)/recommendations/new/page.tsx
+@@ -1,5 +1,6 @@
+ import { Suspense } from "react";
+ import { SessionGate } from "@/components/auth/SessionGate";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsCreateRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -14,8 +15,10 @@ export default async function NewRecommendationPage() {
+   }
+ 
+   return (
+-    <Suspense fallback={<p>Загрузка формы…</p>}>
+-      <RecommendationsCreateRouteBody />
+-    </Suspense>
++    <CabinetShell returnTo={RETURN_PATH}>
++      <Suspense fallback={<p>Загрузка формы…</p>}>
++        <RecommendationsCreateRouteBody />
++      </Suspense>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/recommendations/page.tsx b/src/app/(cabinet)/recommendations/page.tsx
+index 6b415191..22fe64ee 100644
+--- a/src/app/(cabinet)/recommendations/page.tsx
++++ b/src/app/(cabinet)/recommendations/page.tsx
+@@ -1,4 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { RecommendationsListRouteBody } from "@/components/specialist-certificates/RecommendationsRouteBody";
+ import { requireProPageUser } from "@/lib/session";
+ 
+@@ -12,5 +13,9 @@ export default async function RecommendationsPage() {
+     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+   }
+ 
+-  return <RecommendationsListRouteBody />;
++  return (
++    <CabinetShell returnTo={RETURN_PATH}>
++      <RecommendationsListRouteBody />
++    </CabinetShell>
++  );
+ }
+diff --git a/src/app/(cabinet)/scanner/page.tsx b/src/app/(cabinet)/scanner/page.tsx
+index 14672d7a..34d3304e 100644
+--- a/src/app/(cabinet)/scanner/page.tsx
++++ b/src/app/(cabinet)/scanner/page.tsx
+@@ -1,4 +1,5 @@
+ import { SessionGate } from "@/components/auth/SessionGate";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { ScannerHub } from "@/components/scanner/ScannerHub";
+ import { requireProPageUser } from "@/lib/session";
+@@ -14,13 +15,13 @@ export default async function ScannerPage() {
+   }
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={RETURN_PATH}>
+       <PageHeading
+         eyebrow="RemCard PROF"
+         title="Сканер"
+         description="Сканируйте QR или введите код, проверьте документ и подтвердите покупку."
+       />
+       <ScannerHub userId={user.id} />
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/settlements/page.tsx b/src/app/(cabinet)/settlements/page.tsx
+index 0e97140e..05034e40 100644
+--- a/src/app/(cabinet)/settlements/page.tsx
++++ b/src/app/(cabinet)/settlements/page.tsx
+@@ -4,6 +4,7 @@ import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesW
+ import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
+ import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
+ import { SettlementsHub } from "@/components/settlements/SettlementsHub";
++import { CabinetShell } from "@/components/layout/CabinetShell";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
+ import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
+@@ -70,7 +71,7 @@ export default async function SettlementsPage() {
+     }) ?? "specialist";
+ 
+   return (
+-    <>
++    <CabinetShell returnTo={RETURN_PATH}>
+       <PageHeading eyebrow={eyebrow} title={title} description={description} />
+       {shell === "agent-r05" ? (
+         <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+@@ -85,6 +86,6 @@ export default async function SettlementsPage() {
+       ) : (
+         <SettlementsHub walletEmptyViewerRole={walletEmptyViewerRole} />
+       )}
+-    </>
++    </CabinetShell>
+   );
+ }
+diff --git a/src/app/(cabinet)/template.tsx b/src/app/(cabinet)/template.tsx
+deleted file mode 100644
+index aeaaaf65..00000000
+--- a/src/app/(cabinet)/template.tsx
++++ /dev/null
+@@ -1,18 +0,0 @@
+-import { peekCabinetSession } from "@/lib/session";
+-import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
+-import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
+-
+-export default async function CabinetRouteGroupTemplate({
+-  children,
+-}: {
+-  children: React.ReactNode;
+-}) {
+-  const user = await peekCabinetSession();
+-  const freshShellContextToken = await computeCabinetShellContextToken(user);
+-
+-  return (
+-    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
+-      {children}
+-    </CabinetShellTemplateReconciler>
+-  );
+-}
+diff --git a/src/components/layout/CabinetShell.tsx b/src/components/layout/CabinetShell.tsx
+index 2af3324e..5622306f 100644
+--- a/src/components/layout/CabinetShell.tsx
++++ b/src/components/layout/CabinetShell.tsx
+@@ -1,23 +1,21 @@
+-import { requireProSession } from "@/lib/session";
+-import { loadCabinetShellClientProps } from "@/lib/cabinet-shell-data";
++import { peekCabinetSession } from "@/lib/session";
+ import { computeCabinetShellContextToken } from "@/lib/cabinet-shell-context-token";
+-import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
++import { CabinetShellTemplateReconciler } from "@/components/layout/CabinetShellTemplateReconciler";
+ 
+ type CabinetShellProps = {
+   children: React.ReactNode;
++  /** Preserved for page parity; guards run on the page before this wrapper. */
+   returnTo?: string;
+ };
+ 
+-export async function CabinetShell({ children, returnTo = "/" }: CabinetShellProps) {
+-  const user = await requireProSession(returnTo);
+-  const [shellProps, shellContextToken] = await Promise.all([
+-    loadCabinetShellClientProps(user),
+-    computeCabinetShellContextToken(user),
+-  ]);
++/** Per-page fresh shell identity (soft nav re-runs the page segment, not route-group template). */
++export async function CabinetShell({ children }: CabinetShellProps) {
++  const user = await peekCabinetSession();
++  const freshShellContextToken = await computeCabinetShellContextToken(user);
+ 
+   return (
+-    <CabinetAppShellClient {...shellProps} shellContextToken={shellContextToken}>
++    <CabinetShellTemplateReconciler freshShellContextToken={freshShellContextToken}>
+       {children}
+-    </CabinetAppShellClient>
++    </CabinetShellTemplateReconciler>
+   );
+ }
+diff --git a/src/components/layout/CabinetShellTemplateReconciler.tsx b/src/components/layout/CabinetShellTemplateReconciler.tsx
+index 1f5f5023..6cc399e4 100644
+--- a/src/components/layout/CabinetShellTemplateReconciler.tsx
++++ b/src/components/layout/CabinetShellTemplateReconciler.tsx
+@@ -21,6 +21,7 @@ export function CabinetShellTemplateReconciler({
+       return;
+     }
+     if (shell.shellContextToken === freshShellContextToken) {
++      shell.acknowledgeShellContextMatch();
+       return;
+     }
+     shell.requestShellRefreshIfStale(freshShellContextToken);
+diff --git a/src/components/layout/cabinet-shell-context.tsx b/src/components/layout/cabinet-shell-context.tsx
+index ed01c366..a7dc0b6b 100644
+--- a/src/components/layout/cabinet-shell-context.tsx
++++ b/src/components/layout/cabinet-shell-context.tsx
+@@ -4,6 +4,7 @@ import {
+   createContext,
+   useCallback,
+   useContext,
++  useEffect,
+   useMemo,
+   useRef,
+   useState,
+@@ -16,6 +17,7 @@ export type CabinetShellContextValue = {
+   authFailureEpoch: number;
+   notifyAuthFailure: () => void;
+   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
++  acknowledgeShellContextMatch: () => void;
+ };
+ 
+ const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
+@@ -35,22 +37,32 @@ export function CabinetShellContextProvider({
+ }: CabinetShellContextProviderProps) {
+   const router = useRouter();
+   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
+-  const refreshedPairsRef = useRef<Set<string>>(new Set());
++  const refreshedPairsRef = useRef<Map<string, number>>(new Map());
++
++  useEffect(() => {
++    refreshedPairsRef.current.clear();
++  }, [shellContextToken]);
+ 
+   const notifyAuthFailure = useCallback(() => {
+     setAuthFailureEpoch((n) => n + 1);
+   }, []);
+ 
++  const acknowledgeShellContextMatch = useCallback(() => {
++    refreshedPairsRef.current.clear();
++  }, []);
++
+   const requestShellRefreshIfStale = useCallback(
+     (freshShellContextToken: string) => {
+       if (shellContextToken === freshShellContextToken) {
++        refreshedPairsRef.current.clear();
+         return;
+       }
+       const pair = `${shellContextToken}|${freshShellContextToken}`;
+-      if (refreshedPairsRef.current.has(pair)) {
++      const attempts = refreshedPairsRef.current.get(pair) ?? 0;
++      if (attempts >= 2) {
+         return;
+       }
+-      refreshedPairsRef.current.add(pair);
++      refreshedPairsRef.current.set(pair, attempts + 1);
+       router.refresh();
+     },
+     [router, shellContextToken],
+@@ -62,8 +74,15 @@ export function CabinetShellContextProvider({
+       authFailureEpoch,
+       notifyAuthFailure,
+       requestShellRefreshIfStale,
++      acknowledgeShellContextMatch,
+     }),
+-    [shellContextToken, authFailureEpoch, notifyAuthFailure, requestShellRefreshIfStale],
++    [
++      shellContextToken,
++      authFailureEpoch,
++      notifyAuthFailure,
++      requestShellRefreshIfStale,
++      acknowledgeShellContextMatch,
++    ],
+   );
+ 
+   return <CabinetShellContext.Provider value={value}>{children}</CabinetShellContext.Provider>;
