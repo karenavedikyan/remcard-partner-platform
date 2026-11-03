@@ -10,89 +10,79 @@
 | Commit 1 — request dedupe | `a9a269e77db3328c6d90dcd181b4111a42da0cde` |
 | Commit 2 — persistent shell | `a057025501c8d03a54d679c833b9a855659ecddd` |
 | Commit 3 — stable loading | `62b887f51b2b1c152b9decc49fa7e2fe4c2f2080` |
+| Commit 4 — review round 2 fix | `9c98c0ae8e0e3c754c0b3c5db402ac639bbda808` |
 
 ## Moved routes (git rename)
 
-See `moved-files.txt` — 18 `page.tsx` routes under `src/app/(cabinet)/` plus `pureAgentProfilePage.module.css`. `src/app/partners/dev-fixture/` intentionally left outside the group. `src/app/settlements/dev-fixture/` unchanged.
-
-## Edited files (non-move highlights)
-
-- `src/lib/request-cache.ts`, `src/lib/cabinet-upstream-cache.ts`, `src/lib/cabinet-shell-data.ts`, `src/lib/session.ts` (`peekCabinetSession`)
-- `src/components/layout/CabinetShell.tsx` (still used by dev-fixtures / non-group callers)
-- `src/app/(cabinet)/layout.tsx`
-- `src/components/layout/AppShell.tsx`, `AgentAppShell.tsx`, `ProfPartnerSessionVisitOnPathname.tsx`
-- `src/hooks/useIncomingPartnersCount.ts`
-- `src/components/layout/CabinetPageLoadingSkeleton.tsx` + tab `loading.tsx` files
-- Nav gates: `OwnerClientsGate`, `AgentR03Gate`, `OwnerIssuerGate`, `AgentR04Gate` (unused route gate, aligned for consistency)
-
-## Upstream calls per navigation (typical guarded tab, e.g. `/clients`)
-
-| Upstream | Before (serial, no dedupe) | After |
-| --- | ---: | ---: |
-| `/api/auth/me` | 3 | 1 |
-| `/api/account/cabinet-readiness` | 2 | 1 |
-| `/api/partnership/list` | 1 | 1 (layout initial); +1 client refresh per pathname via `useIncomingPartnersCount` |
-| `/api/pro/cabinet-ui-preferences` | 1 | 1 |
-
-Shell path after commit 1: auth/me + list + prefs load in one `Promise.all` wave once guards have run.
-
-**Note:** `/` home still calls `fetchRemcardUpstream` for readiness directly (unchanged page logic); dedupe applies wherever `getSessionUser` / cached readiness / layout shell loaders participate.
+See `moved-files.txt` — 18 `page.tsx` routes under `src/app/(cabinet)/` plus `pureAgentProfilePage.module.css`. `src/app/partners/dev-fixture/` and `src/app/settlements/dev-fixture/` stay outside the group.
 
 ## Auth nuance (layout peek vs page guards)
 
-- `peekCabinetSession` never calls `redirect` and never throws; when not allowed it returns `null` and `(cabinet)/layout.tsx` renders bare `{children}`.
-- **No session / missing readiness:** same as `requireProPageUser` → `null` → page `SessionGate` (not a layout redirect). Verified in `session-peek.test.tsx` (readiness 503 → peek null + `requireProPageUser` null, no redirect).
-- **Blocked / consents / onboarding / role:** peek returns `null` (layout bare children); pages still run their existing redirects or gates (`/` home redirects consents/onboarding; guarded tabs use `requireProPageUser` redirects). Peek does not bypass stricter page behavior.
+- `peekCabinetSession` never redirects; layout renders bare `{children}` when not allowed.
+- **No session / missing readiness:** `requireProPageUser` → `null` → `SessionGate`; peek → `null` (no shell).
+- **Home role drift (commit 4):** after readiness gates, `page.tsx` calls `isProfCabinetAllowed` and `redirect("/?reason=role")` before any home branch — restores pre–route-group `requireProSession` outcome when layout peek is null but user had `canAccessCabinet`.
 
-## Stale badge / UI prefs
+## Stale badge / UI prefs (corrected)
 
-- **Partners badge:** `useIncomingPartnersCount` refetches `/api/partnership/list` on `pathname` change with `AbortController` + cancelled flag. On **401/403**, badge clears to `0` and `router.refresh()` re-runs server peek/layout so stale user/shell data is not kept.
-- **Agent UI prefs:** `useAgentCabinetPrefsPathRefresh` refetches `/api/pro/cabinet-ui-preferences` on pathname change (abortable). On **401/403**, applies `neutralCabinetUiPreferencesFallback` and `router.refresh()`.
-- **`router.refresh()`** still replaces layout `initialPrefs` after explicit refresh (unchanged).
+- **`router.refresh()` does not replace agent prefs by itself:** `useAgentCabinetUiPrefs` holds client state; layout `initialPrefs` only rehydrate through monotonic `applyIncoming(..., "initial")` when version/keys change.
+- **Monotonic rules (commit 4):** `shouldApplyIncomingCabinetUiPrefs` — PATCH always wins; GET/initial blocked while `saveInFlightCount > 0`; GET/initial only if `incoming.version >= versionRef.current`.
+- **Path refresh:** `useAgentCabinetPrefsPathRefresh` + `useIncomingPartnersCount` use abort + cancelled flags; **401/403** → neutral state (badge `0` / `neutralCabinetUiPreferencesFallback`) + `router.refresh()`.
 
 ## Analytics cadence
 
-`ProfPartnerSessionVisitOnPathname` wraps `ProfPartnerSessionVisit` with `key={usePathname()}` inside the persistent shell so consent-gated `recordProfSessionVisit` fires once per eligible pathname change (not on query-only changes). Consent rules unchanged.
+`ProfPartnerSessionVisitOnPathname` — `key={pathname}` only (no query/PII); consent rules unchanged.
 
-## Nav gates changed
+## Skeleton / gate loading (commit 4)
 
-| Gate | Loading UI |
-| --- | --- |
-| `OwnerClientsGate` | `CabinetPageLoadingSkeleton` (`/clients` copy) |
-| `AgentR03Gate` | certificates copy |
-| `OwnerIssuerGate` | recommendations copy |
-| `AgentR04Gate` | partners copy (component only; no route usage today) |
+- **`AgentR03Gate`:** body-only shimmer (`CabinetPageLoadingSkeletonBody`) — page `PageHeading` stays single h1.
+- **`OwnerClientsGate` / `OwnerIssuerGate`:** full heading skeleton (heading rendered inside gate children).
+- **Detail/new `loading.tsx`:** `CabinetPageDetailLoadingSkeleton` — neutral heading bars + body (clients/[id], certificates/new|/[id], recommendations/new|/[id]).
 
-**Left unchanged:** wallet/history/partners hub internal loaders, `OwnerIssuerGate` logic, certificate card components, empty-state trees.
+## Pathname dismiss (commit 4)
 
-## Risks
+On pathname change (not query-only): `AppShell` closes mobile menu + more sheet; `AgentAppShell` closes more + editor; `AccountSessionMenu` and `ProfNotificationBell` close open panels.
 
-- Layout peek uses the same allow rules as cabinet access but never redirects; pages must keep guards (verified by contract test).
-- Client badge refresh adds a client fetch on pathname change; aborted on rapid switching to avoid stale writes.
-- Home readiness double-fetch (page + peek/layout) remains possible on `/` for allowed users — out of scope for page-specific dedupe.
+## Upstream calls (typical guarded tab)
 
-## Test files touched for route move / layout ownership
+| Upstream | Before | After (commits 1–2) |
+| --- | ---: | ---: |
+| `/api/auth/me` | 3 | 1 |
+| `/api/account/cabinet-readiness` | 2 | 1 |
+| `/api/partnership/list` | 1/server nav | 1 layout + 1 client refresh per pathname |
+| `/api/pro/cabinet-ui-preferences` | 1 | 1 layout + 1 client refresh per pathname (agent shell) |
 
-| File | Change |
-| --- | --- |
-| `src/app/(cabinet)/page.admin-root-redirect.test.tsx` | Moved with `page.tsx`; import `./page`; expect Fragment + `HomeDashboard` (not `CabinetShell`); `PartnerWelcome` coverage; static assert page has no `CabinetShell` |
-| `src/lib/clients-rsc-boundary.test.ts` | `clientsAppDir` → `src/app/(cabinet)/clients` |
-| `src/app/(cabinet)/cabinet-routing-contract.test.tsx` | New — fs reads under `(cabinet)` |
-| `src/lib/session-peek.test.tsx` | New/extended — peek never redirects |
-| `src/hooks/useIncomingPartnersCount.test.tsx` | New — auth failure + abort |
-| (unchanged paths) | All other vitest files — no references to pre-move `app/page.tsx` or moved colocated assets |
+Home `/` uses cached readiness/prefs/list helpers (commit 4) — dedupes with layout/peek on same request.
+
+## Test files touched (route move / layout / review)
+
+| File |
+| --- |
+| `src/app/(cabinet)/page.admin-root-redirect.test.tsx` |
+| `src/lib/clients-rsc-boundary.test.ts` |
+| `src/app/(cabinet)/cabinet-routing-contract.test.tsx` |
+| `src/lib/session-peek.test.tsx` |
+| `src/lib/cabinet-shell-request-dedupe.test.tsx` |
+| `src/hooks/useIncomingPartnersCount.test.tsx` |
+| `src/lib/agent-cabinet-ui-prefs-apply.test.tsx` |
+| `src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx` |
+| `src/components/layout/cabinet-pathname-dismiss.test.tsx` |
+| `src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx` |
+| `src/components/agent-r03/AgentR03Gate.stale-route.test.tsx` |
+| (+ existing shell/analytics/skeleton tests unchanged paths) |
 
 ## Tests — unit vs native
 
 | Area | Unit / vitest | Native / manual |
 | --- | --- | --- |
-| Request dedupe | `cabinet-shell-request-dedupe.test.tsx` exercises **call plumbing** via test-only `__setRequestCacheForTests` (Map memo simulating per-request dedupe). Production uses `React.cache` only. | **Auditor:** upstream call counts per real navigation on a running server |
-| Peek / no redirect | `session-peek.test.tsx` | — |
-| Routing contract | `cabinet-routing-contract.test.tsx` | — |
-| Analytics cadence | `ProfPartnerSessionVisitOnPathname.test.tsx` | — |
-| Sidebar DOM identity | Harness: same `aside` node on pathname rerender (`cabinet-shell-persistence.test.tsx`) | Cold/warm Next client navigation node identity |
-| Skeleton geometry | Static heading text + grid min-heights; `role=status` | Delayed network: shimmer after ~130ms vs final layout |
-| Stale route data | `AgentR03Gate.stale-route.test.tsx`, `useIncomingPartnersCount.test.tsx` | Rapid tab switching, back/forward |
-| Badge auth failure | `useIncomingPartnersCount.test.tsx` | Session expiry mid-navigation |
+| Request dedupe | Injectable `__setRequestCacheForTests` — **plumbing only**, not production `React.cache` | Auditor: upstream counts per navigation on live server |
+| Prefs monotonic | `agent-cabinet-ui-prefs-apply.test.tsx`, `useAgentCabinetUiPrefs.monotonic.test.tsx` | PATCH/GET race under real latency |
+| Pathname dismiss | `cabinet-pathname-dismiss.test.tsx` | Back/forward, mobile more sheet |
+| Skeleton headings | `CabinetPageLoadingSkeleton.heading.test.tsx` | Visual geometry vs final content |
+| Home role guard | `page.admin-root-redirect.test.tsx` | — |
+| Sidebar identity | `cabinet-shell-persistence.test.tsx` | Cold/warm DOM identity |
 
-Logs: `logs/vitest-focused.log` (**39** tests), `logs/tsc-noEmit.log` (**exit 0**, no diagnostics).
+Logs: `logs/vitest-focused.log` (**54** tests, `maxWorkers=1`), `logs/tsc-noEmit.log` (command + exit **0**).
+
+## Artifact checksums
+
+From `artifacts/cabinet-nav-persistent-shell/`: `sha256sum -c SHA256SUMS.txt` (includes `partner-nav.tar.gz`).

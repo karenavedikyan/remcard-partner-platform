@@ -1,0 +1,942 @@
+diff --git a/src/app/(cabinet)/CabinetTabLoading.tsx b/src/app/(cabinet)/CabinetTabLoading.tsx
+index 00940c1c..cb0c22b1 100644
+--- a/src/app/(cabinet)/CabinetTabLoading.tsx
++++ b/src/app/(cabinet)/CabinetTabLoading.tsx
+@@ -1,10 +1,22 @@
+-import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++import {
++  CabinetPageDetailLoadingSkeleton,
++  CabinetPageLoadingSkeleton,
++} from "@/components/layout/CabinetPageLoadingSkeleton";
+ import {
+   CABINET_TAB_LOADING_HEADINGS,
+   type CabinetLoadingHeading,
+ } from "@/lib/cabinet-loading-copy";
+ 
+-export function CabinetTabLoading({ routeKey }: { routeKey: keyof typeof CABINET_TAB_LOADING_HEADINGS }) {
++export function CabinetTabLoading({
++  routeKey,
++  variant = "list",
++}: {
++  routeKey: keyof typeof CABINET_TAB_LOADING_HEADINGS;
++  variant?: "list" | "detail";
++}) {
++  if (variant === "detail") {
++    return <CabinetPageDetailLoadingSkeleton />;
++  }
+   return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS[routeKey]} />;
+ }
+ 
+diff --git a/src/app/(cabinet)/certificates/[id]/loading.tsx b/src/app/(cabinet)/certificates/[id]/loading.tsx
+new file mode 100644
+index 00000000..68e5514b
+--- /dev/null
++++ b/src/app/(cabinet)/certificates/[id]/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export default function CertificateDetailLoading() {
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/app/(cabinet)/certificates/new/loading.tsx b/src/app/(cabinet)/certificates/new/loading.tsx
+new file mode 100644
+index 00000000..3b07b2d4
+--- /dev/null
++++ b/src/app/(cabinet)/certificates/new/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export default function NewCertificateLoading() {
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/app/(cabinet)/clients/[id]/loading.tsx b/src/app/(cabinet)/clients/[id]/loading.tsx
+new file mode 100644
+index 00000000..0f3c9845
+--- /dev/null
++++ b/src/app/(cabinet)/clients/[id]/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export default function ClientDetailLoading() {
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/app/(cabinet)/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+index 26036080..4c9ab197 100644
+--- a/src/app/(cabinet)/page.admin-root-redirect.test.tsx
++++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+@@ -16,7 +16,10 @@ const redirect = vi.hoisted(() => vi.fn((path: string) => {
+ 
+ vi.mock("next/navigation", () => ({ redirect }));
+ vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+-vi.mock("@/lib/session", () => ({ getSessionUser: vi.fn() }));
++vi.mock("@/lib/session", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/session")>();
++  return { ...actual, getSessionUser: vi.fn() };
++});
+ vi.mock("@/lib/remcard-server", () => ({ fetchRemcardUpstream: vi.fn() }));
+ vi.mock("@/lib/registration/capabilities-server", () => ({
+   fetchRegistrationCapabilitiesServer: vi.fn(),
+@@ -153,6 +156,17 @@ describe("server home-page staff redirect", () => {
+     expect(redirect).not.toHaveBeenCalled();
+   });
+ 
++  it("redirects authenticated non-PRO non-employee users with cabinet access to /?reason=role", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue({
++      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
++    });
++    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
++      ok: true,
++      data: { ...denied, canAccessCabinet: true, isEmployee: false },
++    });
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
++  });
++
+   it("preserves the existing active-agent destination", async () => {
+     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+       ok: true, data: { ...denied, canAccessCabinet: true },
+diff --git a/src/app/(cabinet)/page.tsx b/src/app/(cabinet)/page.tsx
+index 569615e8..596d4368 100644
+--- a/src/app/(cabinet)/page.tsx
++++ b/src/app/(cabinet)/page.tsx
+@@ -6,11 +6,13 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
+ import { HomeDashboard } from "@/components/home/HomeDashboard";
+ import { PageHeading } from "@/components/ui/PageHeading";
+ import { countNeedsMyResponse } from "@/lib/partnership-rules";
+-import { fetchRemcardUpstream } from "@/lib/remcard-server";
+-import type { CabinetReadiness } from "@/lib/cabinet-readiness";
+ import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
+-import { getSessionUser } from "@/lib/session";
+-import type { PartnershipListResponse } from "@/lib/types";
++import {
++  fetchCabinetUiPreferencesServerCached,
++  fetchPartnershipListServerCached,
++  getCabinetReadinessServerCached,
++} from "@/lib/cabinet-upstream-cache";
++import { getSessionUser, isProfCabinetAllowed } from "@/lib/session";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+ import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
+@@ -52,16 +54,11 @@ export default async function HomePage(
+   if (user.staffRole === "OWNER" || user.staffRole === "ADMIN") {
+     redirect("/admin/overview");
+   }
+-  const readinessResult = await fetchRemcardUpstream<CabinetReadiness>(
+-    "/api/account/cabinet-readiness",
+-    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
+-  );
+-
+-  if (!readinessResult.ok) {
++  const cookieKey = cookieHeader ?? "";
++  const readiness = await getCabinetReadinessServerCached(cookieKey);
++  if (!readiness) {
+     return <SessionGate returnTo="/" />;
+   }
+-
+-  const readiness = readinessResult.data;
+   if (hasPendingLoginConsents(readiness)) {
+     redirect("/login?step=consents&returnTo=%2F");
+   }
+@@ -72,10 +69,11 @@ export default async function HomePage(
+     return <SessionGate returnTo="/" />;
+   }
+ 
+-  const prefsResult = await fetchRemcardUpstream<CabinetUiPreferencesResponse>(
+-    "/api/pro/cabinet-ui-preferences",
+-    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
+-  );
++  if (!isProfCabinetAllowed(readiness, user)) {
++    redirect("/?reason=role");
++  }
++
++  const prefsResult = await fetchCabinetUiPreferencesServerCached(cookieKey);
+   const prefsData = prefsResult.ok ? prefsResult.data : null;
+   const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
+   if (agentRoot) {
+@@ -124,9 +122,7 @@ export default async function HomePage(
+     );
+   }
+ 
+-  const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
+-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+-  });
++  const listResult = await fetchPartnershipListServerCached(cookieKey);
+ 
+   const partnerships = listResult.ok ? listResult.data.partnerships : [];
+   const incomingCount = countNeedsMyResponse(partnerships, user.id);
+diff --git a/src/app/(cabinet)/recommendations/[id]/loading.tsx b/src/app/(cabinet)/recommendations/[id]/loading.tsx
+new file mode 100644
+index 00000000..b5289718
+--- /dev/null
++++ b/src/app/(cabinet)/recommendations/[id]/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export default function RecommendationDetailLoading() {
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/app/(cabinet)/recommendations/new/loading.tsx b/src/app/(cabinet)/recommendations/new/loading.tsx
+new file mode 100644
+index 00000000..ddecca73
+--- /dev/null
++++ b/src/app/(cabinet)/recommendations/new/loading.tsx
+@@ -0,0 +1,5 @@
++import { CabinetPageDetailLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
++
++export default function NewRecommendationLoading() {
++  return <CabinetPageDetailLoadingSkeleton />;
++}
+diff --git a/src/components/account-session/AccountSessionMenu.tsx b/src/components/account-session/AccountSessionMenu.tsx
+index 7965d555..4117f1f5 100644
+--- a/src/components/account-session/AccountSessionMenu.tsx
++++ b/src/components/account-session/AccountSessionMenu.tsx
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import { usePathname } from "next/navigation";
+ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+ import {
+   IconChevronDown,
+@@ -27,6 +28,7 @@ type AccountSessionMenuProps = {
+ };
+ 
+ export function AccountSessionMenu({ displayName, roleLabel, signInMode }: AccountSessionMenuProps) {
++  const pathname = usePathname();
+   const menuId = useId();
+   const triggerRef = useRef<HTMLButtonElement>(null);
+   const menuRef = useRef<HTMLDivElement>(null);
+@@ -50,6 +52,10 @@ export function AccountSessionMenu({ displayName, roleLabel, signInMode }: Accou
+     [],
+   );
+ 
++  useEffect(() => {
++    closeMenu();
++  }, [pathname, closeMenu]);
++
+   useEffect(() => {
+     if (!open) return;
+     const onDocClick = (event: MouseEvent) => {
+diff --git a/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx b/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx
+index a704a38c..736cfd10 100644
+--- a/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx
++++ b/src/components/agent-r03/AgentR03Gate.stale-route.test.tsx
+@@ -27,7 +27,7 @@ describe("AgentR03Gate stale route protection", () => {
+       </AgentR03Gate>,
+     );
+ 
+-    expect(screen.getByTestId("cabinet-page-loading-skeleton")).toBeInTheDocument();
++    expect(screen.getByTestId("cabinet-gate-loading-body")).toBeInTheDocument();
+     unmount();
+ 
+     resolve({ featureEnabled: true, eligible: true });
+diff --git a/src/components/agent-r03/AgentR03Gate.tsx b/src/components/agent-r03/AgentR03Gate.tsx
+index e9b00e1b..ee00b91d 100644
+--- a/src/components/agent-r03/AgentR03Gate.tsx
++++ b/src/components/agent-r03/AgentR03Gate.tsx
+@@ -5,8 +5,7 @@ import { RemcardApiError } from "@/lib/api-client";
+ import { fetchAgentR03Status } from "@/lib/agent-r03/api";
+ import type { AgentR03Status } from "@/lib/agent-r03/types";
+ import { Button } from "@/components/ui/Button";
+-import { CabinetPageLoadingSkeleton } from "@/components/layout/CabinetPageLoadingSkeleton";
+-import { CABINET_TAB_LOADING_HEADINGS } from "@/lib/cabinet-loading-copy";
++import { CabinetPageLoadingSkeletonBody } from "@/components/layout/CabinetPageLoadingSkeleton";
+ import styles from "./agent-r03.module.css";
+ 
+ export function AgentR03Gate({ children }: { children: React.ReactNode }) {
+@@ -36,7 +35,16 @@ export function AgentR03Gate({ children }: { children: React.ReactNode }) {
+   }, []);
+ 
+   if (loading) {
+-    return <CabinetPageLoadingSkeleton {...CABINET_TAB_LOADING_HEADINGS["/certificates"]} />;
++    return (
++      <div
++        role="status"
++        aria-busy="true"
++        aria-label="Загрузка раздела"
++        data-testid="cabinet-gate-loading-body"
++      >
++        <CabinetPageLoadingSkeletonBody />
++      </div>
++    );
+   }
+   if (error) {
+     return (
+diff --git a/src/components/layout/AppShell.tsx b/src/components/layout/AppShell.tsx
+index 5a04931e..a8cfd516 100644
+--- a/src/components/layout/AppShell.tsx
++++ b/src/components/layout/AppShell.tsx
+@@ -158,6 +158,7 @@ export function AppShell({
+ 
+   useEffect(() => {
+     setMobileMenuOpen(false);
++    setMobileMoreOpen(false);
+   }, [pathname]);
+ 
+   useEffect(() => {
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx b/src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx
+new file mode 100644
+index 00000000..fda16e94
+--- /dev/null
++++ b/src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx
+@@ -0,0 +1,27 @@
++import { describe, expect, it } from "vitest";
++import { render, screen } from "@testing-library/react";
++import { PageHeading } from "@/components/ui/PageHeading";
++import {
++  CabinetPageDetailLoadingSkeleton,
++  CabinetPageLoadingSkeletonBody,
++} from "@/components/layout/CabinetPageLoadingSkeleton";
++
++describe("cabinet loading heading geometry", () => {
++  it("gate body skeleton does not render an h1 (avoids duplicate with page PageHeading)", () => {
++    render(
++      <>
++        <PageHeading eyebrow="АГЕНТ" title="Сертификаты" description="Desc" />
++        <CabinetPageLoadingSkeletonBody />
++      </>,
++    );
++    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
++    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Сертификаты");
++  });
++
++  it("detail route skeleton reserves heading block height without list title text", () => {
++    render(<CabinetPageDetailLoadingSkeleton />);
++    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
++    expect(screen.getByTestId("cabinet-page-heading-placeholder")).toBeInTheDocument();
++    expect(screen.getByTestId("cabinet-page-loading-body")).toBeInTheDocument();
++  });
++});
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.module.css b/src/components/layout/CabinetPageLoadingSkeleton.module.css
+index 76afa32c..e0264a49 100644
+--- a/src/components/layout/CabinetPageLoadingSkeleton.module.css
++++ b/src/components/layout/CabinetPageLoadingSkeleton.module.css
+@@ -42,6 +42,32 @@
+   min-height: 1.5em;
+ }
+ 
++.headingBarEyebrow {
++  display: block;
++  width: 6.5rem;
++  height: 0.75rem;
++  border-radius: 4px;
++  background: var(--offset);
++  margin-bottom: var(--space-3);
++}
++
++.headingBarTitle {
++  display: block;
++  width: min(18rem, 70%);
++  height: clamp(1.65rem, 3vw, 2.15rem);
++  border-radius: 6px;
++  background: var(--offset);
++}
++
++.headingBarDescription {
++  display: block;
++  width: min(28rem, 90%);
++  height: 1.5em;
++  margin-top: var(--space-3);
++  border-radius: 4px;
++  background: var(--offset);
++}
++
+ .grid {
+   display: grid;
+   gap: var(--space-4);
+diff --git a/src/components/layout/CabinetPageLoadingSkeleton.tsx b/src/components/layout/CabinetPageLoadingSkeleton.tsx
+index 506dd074..a6298939 100644
+--- a/src/components/layout/CabinetPageLoadingSkeleton.tsx
++++ b/src/components/layout/CabinetPageLoadingSkeleton.tsx
+@@ -3,6 +3,31 @@ import styles from "./CabinetPageLoadingSkeleton.module.css";
+ 
+ type CabinetPageLoadingSkeletonProps = CabinetLoadingHeading;
+ 
++export function CabinetPageHeadingPlaceholder() {
++  return (
++    <header
++      className={styles.heading}
++      aria-hidden
++      data-testid="cabinet-page-heading-placeholder"
++    >
++      <span className={styles.headingBarEyebrow} />
++      <span className={styles.headingBarTitle} />
++      <span className={styles.headingBarDescription} />
++    </header>
++  );
++}
++
++export function CabinetPageLoadingSkeletonBody() {
++  return (
++    <div className={styles.grid} aria-hidden data-testid="cabinet-page-loading-body">
++      <div className={`${styles.block} ${styles.blockWide} ${styles.blockShimmer}`} />
++      <div className={`${styles.block} ${styles.blockShimmer}`} />
++      <div className={`${styles.block} ${styles.blockShimmer}`} />
++      <div className={`${styles.block} ${styles.blockShimmer}`} />
++    </div>
++  );
++}
++
+ export function CabinetPageLoadingSkeleton({
+   eyebrow,
+   title,
+@@ -27,12 +52,23 @@ export function CabinetPageLoadingSkeleton({
+           </p>
+         )}
+       </header>
+-      <div className={styles.grid} aria-hidden>
+-        <div className={`${styles.block} ${styles.blockWide} ${styles.blockShimmer}`} />
+-        <div className={`${styles.block} ${styles.blockShimmer}`} />
+-        <div className={`${styles.block} ${styles.blockShimmer}`} />
+-        <div className={`${styles.block} ${styles.blockShimmer}`} />
+-      </div>
++      <CabinetPageLoadingSkeletonBody />
++    </div>
++  );
++}
++
++/** Detail/new routes: reserved heading block + body shimmer (no list-page title). */
++export function CabinetPageDetailLoadingSkeleton() {
++  return (
++    <div
++      className={styles.root}
++      role="status"
++      aria-busy="true"
++      aria-label="Загрузка страницы"
++      data-testid="cabinet-page-detail-loading-skeleton"
++    >
++      <CabinetPageHeadingPlaceholder />
++      <CabinetPageLoadingSkeletonBody />
+     </div>
+   );
+ }
+diff --git a/src/components/layout/agent/AgentAppShell.tsx b/src/components/layout/agent/AgentAppShell.tsx
+index e45445e6..75a15ea0 100644
+--- a/src/components/layout/agent/AgentAppShell.tsx
++++ b/src/components/layout/agent/AgentAppShell.tsx
+@@ -3,7 +3,7 @@
+ import Link from "next/link";
+ import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
+ import { usePathname } from "next/navigation";
+-import { useCallback, useMemo, useState } from "react";
++import { useCallback, useEffect, useMemo, useState } from "react";
+ import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
+ import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
+ import type { AuthUser } from "@/lib/types";
+@@ -54,6 +54,10 @@ export function AgentAppShell({
+   const pathname = usePathname();
+   const activePathname = fixturePathname ?? pathname;
+   const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
++  useEffect(() => {
++    setMoreOpen(false);
++    setEditorOpen(false);
++  }, [pathname]);
+   const displayName = user.displayName?.trim() || "Партнёр RemCard";
+   const initials = userInitials(displayName);
+   const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =
+diff --git a/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx b/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx
+new file mode 100644
+index 00000000..dad45212
+--- /dev/null
++++ b/src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx
+@@ -0,0 +1,104 @@
++import { act, renderHook, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++const remcardFetch = vi.hoisted(() => vi.fn());
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch,
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
++}));
++
++import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
++
++const v3: CabinetUiPreferencesResponse = {
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: true,
++  pilotActive: true,
++  contextKey: "a",
++  version: 3,
++  theme: "system",
++  mobileNavKeys: ["home"],
++  permittedKeys: ["home"],
++  defaultMobileNavKeys: null,
++};
++
++const v4: CabinetUiPreferencesResponse = {
++  ...v3,
++  version: 4,
++  mobileNavKeys: ["home", "clients"],
++  permittedKeys: ["home", "clients"],
++};
++
++const v5: CabinetUiPreferencesResponse = {
++  ...v4,
++  version: 5,
++  theme: "dark",
++};
++
++beforeEach(() => {
++  vi.clearAllMocks();
++});
++
++describe("useAgentCabinetUiPrefs monotonic apply", () => {
++  it("does not regress when GET resolves after PATCH success", async () => {
++    remcardFetch.mockResolvedValueOnce(v4);
++    const { result } = renderHook(() => useAgentCabinetUiPrefs(v3));
++
++    await act(async () => {
++      await result.current.saveMobileNavKeys(["home", "clients"]);
++    });
++    expect(result.current.prefs.version).toBe(4);
++
++    act(() => {
++      result.current.applyServerPrefs(v3);
++    });
++    expect(result.current.prefs.version).toBe(4);
++    expect(result.current.prefs.mobileNavKeys).toEqual(["home", "clients"]);
++  });
++
++  it("applies GET with higher version", async () => {
++    const { result } = renderHook(() => useAgentCabinetUiPrefs(v3));
++    act(() => {
++      result.current.applyServerPrefs(v4);
++    });
++    expect(result.current.prefs.permittedKeys).toEqual(["home", "clients"]);
++  });
++
++  it("rehydrates from newer initial prop after refresh", async () => {
++    const { result, rerender } = renderHook(
++      ({ initial }) => useAgentCabinetUiPrefs(initial),
++      { initialProps: { initial: v3 } },
++    );
++    rerender({ initial: v4 });
++    await waitFor(() => expect(result.current.prefs.version).toBe(4));
++  });
++
++  it("does not override theme PATCH with stale GET", async () => {
++    let resolvePatch!: (value: CabinetUiPreferencesResponse) => void;
++    remcardFetch.mockReturnValueOnce(
++      new Promise((res) => {
++        resolvePatch = res;
++      }),
++    );
++    const { result } = renderHook(() => useAgentCabinetUiPrefs(v3));
++
++    const patchPromise = act(async () => result.current.saveTheme("dark"));
++    act(() => {
++      result.current.applyServerPrefs(v3);
++    });
++
++    await act(async () => {
++      resolvePatch(v5);
++      await patchPromise;
++    });
++    expect(result.current.prefs.theme).toBe("dark");
++    expect(result.current.prefs.version).toBe(5);
++  });
++});
+diff --git a/src/components/layout/agent/useAgentCabinetUiPrefs.ts b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+index 6f540872..45dadf5e 100644
+--- a/src/components/layout/agent/useAgentCabinetUiPrefs.ts
++++ b/src/components/layout/agent/useAgentCabinetUiPrefs.ts
+@@ -1,7 +1,11 @@
+ "use client";
+ 
+-import { useCallback, useRef, useState } from "react";
++import { useCallback, useEffect, useRef, useState } from "react";
+ import { remcardFetch, RemcardApiError } from "@/lib/api-client";
++import {
++  shouldApplyIncomingCabinetUiPrefs,
++  type CabinetUiPrefsApplySource,
++} from "@/lib/agent-cabinet-ui-prefs-apply";
+ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+ import type { AgentNavSectionKey } from "@/lib/agent-nav/sections";
+ import type { ThemePreference } from "@/lib/theme-preference";
+@@ -35,43 +39,89 @@ function wrapSaveError(error: unknown): CabinetUiPrefsSaveError {
+ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
+   const [prefs, setPrefs] = useState(initial);
+   const versionRef = useRef(initial.version);
++  const saveInFlightRef = useRef(0);
+ 
+-  const applyServerPrefs = useCallback((next: CabinetUiPreferencesResponse) => {
+-    versionRef.current = next.version;
+-    setPrefs(next);
+-  }, []);
++  const applyIncoming = useCallback(
++    (next: CabinetUiPreferencesResponse, source: CabinetUiPrefsApplySource) => {
++      if (
++        !shouldApplyIncomingCabinetUiPrefs(
++          versionRef.current,
++          next,
++          saveInFlightRef.current,
++          source,
++        )
++      ) {
++        return;
++      }
++      versionRef.current = next.version;
++      setPrefs(next);
++    },
++    [],
++  );
++
++  useEffect(() => {
++    applyIncoming(initial, "initial");
++  }, [
++    applyIncoming,
++    initial,
++    initial.version,
++    initial.permittedKeys,
++    initial.mobileNavKeys,
++    initial.theme,
++    initial.pilotActive,
++    initial.contextKey,
++  ]);
++
++  const saveMobileNavKeys = useCallback(
++    async (mobileNavKeys: AgentNavSectionKey[]) => {
++      saveInFlightRef.current += 1;
++      try {
++        const next = await remcardFetch<CabinetUiPreferencesResponse>(
++          "/api/pro/cabinet-ui-preferences",
++          {
++            method: "PATCH",
++            body: { mobileNavKeys, expectedVersion: versionRef.current },
++          },
++        );
++        applyIncoming(next, "patch");
++        return next;
++      } catch (error) {
++        throw wrapSaveError(error);
++      } finally {
++        saveInFlightRef.current -= 1;
++      }
++    },
++    [applyIncoming],
++  );
+ 
+-  const saveMobileNavKeys = useCallback(async (mobileNavKeys: AgentNavSectionKey[]) => {
+-    try {
+-      const next = await remcardFetch<CabinetUiPreferencesResponse>(
+-        "/api/pro/cabinet-ui-preferences",
+-        {
+-          method: "PATCH",
+-          body: { mobileNavKeys, expectedVersion: versionRef.current },
+-        },
+-      );
+-      applyServerPrefs(next);
+-      return next;
+-    } catch (error) {
+-      throw wrapSaveError(error);
+-    }
+-  }, [applyServerPrefs]);
++  const saveTheme = useCallback(
++    async (theme: ThemePreference) => {
++      saveInFlightRef.current += 1;
++      try {
++        const next = await remcardFetch<CabinetUiPreferencesResponse>(
++          "/api/pro/cabinet-ui-preferences",
++          {
++            method: "PATCH",
++            body: { theme, expectedVersion: versionRef.current },
++          },
++        );
++        applyIncoming(next, "patch");
++        return next;
++      } catch (error) {
++        throw wrapSaveError(error);
++      } finally {
++        saveInFlightRef.current -= 1;
++      }
++    },
++    [applyIncoming],
++  );
+ 
+-  const saveTheme = useCallback(async (theme: ThemePreference) => {
+-    try {
+-      const next = await remcardFetch<CabinetUiPreferencesResponse>(
+-        "/api/pro/cabinet-ui-preferences",
+-        {
+-          method: "PATCH",
+-          body: { theme, expectedVersion: versionRef.current },
+-        },
+-      );
+-      applyServerPrefs(next);
+-      return next;
+-    } catch (error) {
+-      throw wrapSaveError(error);
+-    }
+-  }, [applyServerPrefs]);
++  const applyServerPrefs = useCallback(
++    (next: CabinetUiPreferencesResponse) => {
++      applyIncoming(next, "get");
++    },
++    [applyIncoming],
++  );
+ 
+   return { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme };
+ }
+diff --git a/src/components/layout/cabinet-pathname-dismiss.test.tsx b/src/components/layout/cabinet-pathname-dismiss.test.tsx
+new file mode 100644
+index 00000000..1e173cad
+--- /dev/null
++++ b/src/components/layout/cabinet-pathname-dismiss.test.tsx
+@@ -0,0 +1,148 @@
++import { describe, expect, it, vi } from "vitest";
++import { fireEvent, render, screen } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
++import { ThemeProvider } from "@/contexts/ThemeContext";
++import { AppShell } from "@/components/layout/AppShell";
++import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
++import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
++import { ProfNotificationBell } from "@/components/notifications/ProfNotificationBell";
++
++const pathnameState = vi.hoisted(() => ({ value: "/" }));
++
++vi.mock("next/navigation", () => ({
++  usePathname: () => pathnameState.value,
++  useSearchParams: () => new URLSearchParams(""),
++  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
++}));
++
++vi.mock("@/lib/prof-admin-management-api", () => ({
++  recordProfSessionVisit: vi.fn(),
++  fetchManagementOverview: vi.fn(),
++}));
++
++vi.mock("@/hooks/useProfNotifications", () => ({
++  useProfNotifications: () => ({
++    unreadCount: 0,
++    refreshList: vi.fn(),
++    items: [],
++    loading: false,
++    markRead: vi.fn(),
++  }),
++}));
++
++vi.mock("@/components/account-session/useAccountSessionExit", () => ({
++  useAccountSessionExit: () => ({
++    pending: false,
++    error: null,
++    confirmAllOpen: false,
++    exitCurrent: vi.fn(),
++    openConfirmAll: vi.fn(),
++    closeConfirmAll: vi.fn(),
++    confirmExitAll: vi.fn(),
++    clearError: vi.fn(),
++  }),
++}));
++
++const agentInitialPrefs = {
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: true,
++  pilotActive: true,
++  contextKey: "ctx",
++  version: 1,
++  theme: null,
++  mobileNavKeys: ["home"],
++  permittedKeys: ["home", "clients", "certificates"],
++  defaultMobileNavKeys: null,
++} as const;
++
++describe("pathname change dismisses transient shell UI", () => {
++  it("closes AppShell mobile menu and more sheet on pathname change", () => {
++    pathnameState.value = "/";
++    const { rerender } = render(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <AppShell user={{ id: "u1", displayName: "Test", role: "PRO" }}>
++            <div>content</div>
++          </AppShell>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++    const menuButton = screen.getByRole("button", { name: /Открыть меню/i });
++    fireEvent.click(menuButton);
++    expect(menuButton).toHaveAttribute("aria-expanded", "true");
++
++    pathnameState.value = "/clients";
++    rerender(
++      <ThemeProvider>
++        <CookieConsentProvider>
++          <AppShell user={{ id: "u1", displayName: "Test", role: "PRO" }}>
++            <div>content</div>
++          </AppShell>
++        </CookieConsentProvider>
++      </ThemeProvider>,
++    );
++    expect(screen.getByRole("button", { name: /Открыть меню/i })).toHaveAttribute("aria-expanded", "false");
++  });
++
++  it("closes AgentAppShell more and editor on pathname change", async () => {
++    pathnameState.value = "/";
++    const ui = userEvent.setup();
++    const { rerender } = render(
++      <ThemeProvider>
++        <AgentAppShell user={{ id: "u1", displayName: "Test", role: "PRO" }} initialPrefs={agentInitialPrefs}>
++          <div>content</div>
++        </AgentAppShell>
++      </ThemeProvider>,
++    );
++    await ui.click(screen.getByTestId("mobile-nav-more"));
++    expect(screen.getByRole("dialog")).toBeInTheDocument();
++
++    pathnameState.value = "/clients";
++    rerender(
++      <ThemeProvider>
++        <AgentAppShell user={{ id: "u1", displayName: "Test", role: "PRO" }} initialPrefs={agentInitialPrefs}>
++          <div>content</div>
++        </AgentAppShell>
++      </ThemeProvider>,
++    );
++    expect(screen.queryByRole("dialog")).toBeNull();
++  });
++
++  it("closes AccountSessionMenu on pathname change", async () => {
++    pathnameState.value = "/";
++    const ui = userEvent.setup();
++    const { rerender } = render(
++      <AccountSessionMenu displayName="Test User" roleLabel="Партнёр" />,
++    );
++    await ui.click(screen.getByTestId("account-menu-trigger"));
++    expect(screen.getByTestId("account-menu-trigger")).toHaveAttribute("aria-expanded", "true");
++
++    pathnameState.value = "/profile";
++    rerender(<AccountSessionMenu displayName="Test User" roleLabel="Партнёр" />);
++    expect(screen.getByTestId("account-menu-trigger")).toHaveAttribute("aria-expanded", "false");
++  });
++
++  it("closes ProfNotificationBell panel on pathname change", async () => {
++    pathnameState.value = "/";
++    const ui = userEvent.setup();
++    const { rerender } = render(<ProfNotificationBell />);
++    await ui.click(screen.getByRole("button", { name: /Уведомления/i }));
++    expect(screen.getByRole("dialog")).toBeInTheDocument();
++
++    pathnameState.value = "/history";
++    rerender(<ProfNotificationBell />);
++    expect(screen.queryByRole("dialog")).toBeNull();
++  });
++});
+diff --git a/src/components/notifications/ProfNotificationBell.tsx b/src/components/notifications/ProfNotificationBell.tsx
+index 0587ea17..c35f0eac 100644
+--- a/src/components/notifications/ProfNotificationBell.tsx
++++ b/src/components/notifications/ProfNotificationBell.tsx
+@@ -1,6 +1,7 @@
+ "use client";
+ 
+ import Link from "next/link";
++import { usePathname } from "next/navigation";
+ import { useCallback, useEffect, useId, useRef, useState } from "react";
+ import { Button } from "@/components/ui/Button";
+ import { useProfNotifications } from "@/hooks/useProfNotifications";
+@@ -58,6 +59,7 @@ function NotificationRow({
+ }
+ 
+ export function ProfNotificationBell() {
++  const pathname = usePathname();
+   const listId = useId();
+   const wrapRef = useRef<HTMLDivElement>(null);
+   const [open, setOpen] = useState(false);
+@@ -83,6 +85,10 @@ export function ProfNotificationBell() {
+     });
+   }, [notifications]);
+ 
++  useEffect(() => {
++    setOpen(false);
++  }, [pathname]);
++
+   useEffect(() => {
+     if (!open) return;
+     const onKey = (e: KeyboardEvent) => {
+diff --git a/src/lib/agent-cabinet-ui-prefs-apply.test.tsx b/src/lib/agent-cabinet-ui-prefs-apply.test.tsx
+new file mode 100644
+index 00000000..a3e14455
+--- /dev/null
++++ b/src/lib/agent-cabinet-ui-prefs-apply.test.tsx
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from "vitest";
++import { shouldApplyIncomingCabinetUiPrefs } from "@/lib/agent-cabinet-ui-prefs-apply";
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++const base = (version: number): CabinetUiPreferencesResponse => ({
++  contractVersion: "2026-10-14.r01",
++  pilotEnabled: true,
++  pilotActive: true,
++  contextKey: "ctx",
++  version,
++  theme: "system",
++  mobileNavKeys: ["home"],
++  permittedKeys: ["home", "clients"],
++  defaultMobileNavKeys: null,
++});
++
++describe("shouldApplyIncomingCabinetUiPrefs", () => {
++  it("always applies PATCH results", () => {
++    expect(shouldApplyIncomingCabinetUiPrefs(5, base(3), 1, "patch")).toBe(true);
++  });
++
++  it("ignores GET with lower version", () => {
++    expect(shouldApplyIncomingCabinetUiPrefs(5, base(4), 0, "get")).toBe(false);
++  });
++
++  it("applies GET with higher version", () => {
++    expect(shouldApplyIncomingCabinetUiPrefs(5, base(6), 0, "get")).toBe(true);
++  });
++
++  it("blocks GET while save is in flight", () => {
++    expect(shouldApplyIncomingCabinetUiPrefs(5, base(6), 1, "get")).toBe(false);
++  });
++});
+diff --git a/src/lib/agent-cabinet-ui-prefs-apply.ts b/src/lib/agent-cabinet-ui-prefs-apply.ts
+new file mode 100644
+index 00000000..701df474
+--- /dev/null
++++ b/src/lib/agent-cabinet-ui-prefs-apply.ts
+@@ -0,0 +1,14 @@
++import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
++
++export type CabinetUiPrefsApplySource = "patch" | "get" | "initial";
++
++export function shouldApplyIncomingCabinetUiPrefs(
++  currentVersion: number,
++  incoming: CabinetUiPreferencesResponse,
++  saveInFlightCount: number,
++  source: CabinetUiPrefsApplySource,
++): boolean {
++  if (source === "patch") return true;
++  if (saveInFlightCount > 0) return false;
++  return incoming.version >= currentVersion;
++}
+diff --git a/src/lib/session.ts b/src/lib/session.ts
+index 0b5e2fd3..98760f3e 100644
+--- a/src/lib/session.ts
++++ b/src/lib/session.ts
+@@ -38,7 +38,7 @@ export function redirectToOnboarding(returnTo: string): never {
+   redirect(`/onboarding?returnTo=${encodeURIComponent(returnTo)}`);
+ }
+ 
+-function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): boolean {
++export function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): boolean {
+   if (user.isBlocked) return false;
+   if (hasPendingLoginConsents(readiness)) return false;
+   if (readiness.needsProfileOnboarding) return false;
