@@ -11,6 +11,12 @@ import {
   CabinetShellContextProvider,
   useCabinetShellContext,
 } from "@/components/layout/cabinet-shell-context";
+import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
+import { useCabinetShellPrefsPathRefresh } from "@/hooks/useCabinetShellPrefsPathRefresh";
+import {
+  enrichCabinetUiPreferencesForShell,
+  isActiveAgentCabinetContext,
+} from "@/lib/agent-nav/root-destination";
 
 type CabinetAppShellClientProps = {
   user: AuthUser;
@@ -21,49 +27,85 @@ type CabinetAppShellClientProps = {
   children: React.ReactNode;
 };
 
-export function CabinetAppShellClient({
-  user,
-  incomingCount,
-  uiPrefs,
-  profTestSession,
-  shellContextToken,
-  children,
-}: CabinetAppShellClientProps) {
-  const banner =
-    profTestSession?.active ? <ProfTestModeBanner session={profTestSession} /> : null;
-
-  const agentShellKey = `${shellContextToken}:${uiPrefs.contextKey ?? "none"}:${user.id}`;
-  const legacyShellKey = shellContextToken;
-
-  if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
-    return (
-      <CabinetShellContextProvider shellContextToken={shellContextToken}>
-        {banner}
-        <AgentAppShell
-          key={agentShellKey}
-          user={user}
-          incomingCount={incomingCount}
-          notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
-          initialPrefs={uiPrefs}
-        >
-          {children}
-        </AgentAppShell>
-      </CabinetShellContextProvider>
-    );
-  }
+export function CabinetAppShellClient(props: CabinetAppShellClientProps) {
+  const layoutPrefs = enrichCabinetUiPreferencesForShell(props.uiPrefs);
+  const agentBranch = isActiveAgentCabinetContext(layoutPrefs);
 
   return (
-    <CabinetShellContextProvider shellContextToken={shellContextToken}>
-      {banner}
-      <AppShell
-        key={legacyShellKey}
-        user={user}
-        incomingCount={incomingCount}
-        notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
-      >
-        {children}
-      </AppShell>
+    <CabinetShellContextProvider shellContextToken={props.shellContextToken}>
+      {props.profTestSession?.active ? (
+        <ProfTestModeBanner session={props.profTestSession} />
+      ) : null}
+      {agentBranch ? (
+        <AgentCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
+      ) : (
+        <LegacyCabinetShellBranch {...props} layoutPrefs={layoutPrefs} />
+      )}
     </CabinetShellContextProvider>
+  );
+}
+
+type ShellBranchProps = CabinetAppShellClientProps & {
+  layoutPrefs: CabinetUiPreferencesResponse;
+};
+
+function LegacyCabinetShellBranch({
+  user,
+  incomingCount,
+  layoutPrefs,
+  shellContextToken,
+  children,
+}: ShellBranchProps) {
+  const shell = useCabinetShellContext();
+  useCabinetShellPrefsPathRefresh({
+    layoutPrefs,
+    onAuthFailure: shell?.notifyAuthFailure,
+  });
+
+  return (
+    <AppShell
+      key={shellContextToken}
+      user={user}
+      incomingCount={incomingCount}
+      notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
+    >
+      {children}
+    </AppShell>
+  );
+}
+
+function AgentCabinetShellBranch({
+  user,
+  incomingCount,
+  layoutPrefs,
+  uiPrefs,
+  shellContextToken,
+  children,
+}: ShellBranchProps) {
+  const shell = useCabinetShellContext();
+  const agentPrefs = useAgentCabinetUiPrefs(uiPrefs);
+  useCabinetShellPrefsPathRefresh({
+    layoutPrefs,
+    applyServerPrefs: agentPrefs.applyServerPrefs,
+    applyAuthFailureClear: agentPrefs.applyAuthFailureClear,
+    getApplyGeneration: agentPrefs.getApplyGeneration,
+    onAuthFailure: shell?.notifyAuthFailure,
+  });
+
+  const agentShellKey = `${shellContextToken}:${layoutPrefs.contextKey ?? "none"}:${user.id}`;
+
+  return (
+    <AgentAppShell
+      key={agentShellKey}
+      user={user}
+      incomingCount={incomingCount}
+      notificationBell={user.id ? <CabinetShellNotificationBell /> : null}
+      prefs={agentPrefs.prefs}
+      saveMobileNavKeys={agentPrefs.saveMobileNavKeys}
+      saveTheme={agentPrefs.saveTheme}
+    >
+      {children}
+    </AgentAppShell>
   );
 }
 

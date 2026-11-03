@@ -42,6 +42,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
   const versionRef = useRef(initial.version);
   const saveInFlightRef = useRef(0);
   const applyGenerationRef = useRef(0);
+  const blockInitialFromLayoutRef = useRef(false);
 
   const applyIncoming = useCallback(
     (
@@ -52,6 +53,7 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
       if (source === "auth-failure") {
         applyGenerationRef.current += 1;
         versionRef.current = 0;
+        blockInitialFromLayoutRef.current = true;
         setPrefs(next);
         return;
       }
@@ -78,6 +80,13 @@ export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
   );
 
   useEffect(() => {
+    blockInitialFromLayoutRef.current = false;
+  }, [initial.version, initial.pilotActive, initial.contextKey]);
+
+  useEffect(() => {
+    if (blockInitialFromLayoutRef.current) {
+      return;
+    }
     applyIncoming(initial, "initial");
   }, [
     applyIncoming,

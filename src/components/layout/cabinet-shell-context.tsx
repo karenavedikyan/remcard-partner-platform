@@ -18,6 +18,11 @@ export type CabinetShellContextValue = {
   notifyAuthFailure: () => void;
   requestShellRefreshIfStale: (freshShellContextToken: string) => void;
   acknowledgeShellContextMatch: () => void;
+  requestShellRefreshIfPrefsBranchMismatch: (
+    layoutPrefsSignature: string,
+    freshPrefsSignature: string,
+  ) => void;
+  acknowledgeShellPrefsLayoutMatch: () => void;
 };
 
 const CabinetShellContext = createContext<CabinetShellContextValue | null>(null);
@@ -38,9 +43,11 @@ export function CabinetShellContextProvider({
   const router = useRouter();
   const [authFailureEpoch, setAuthFailureEpoch] = useState(0);
   const refreshedPairsRef = useRef<Map<string, number>>(new Map());
+  const prefsRefreshPairsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     refreshedPairsRef.current.clear();
+    prefsRefreshPairsRef.current.clear();
   }, [shellContextToken]);
 
   const notifyAuthFailure = useCallback(() => {
@@ -50,6 +57,26 @@ export function CabinetShellContextProvider({
   const acknowledgeShellContextMatch = useCallback(() => {
     refreshedPairsRef.current.clear();
   }, []);
+
+  const acknowledgeShellPrefsLayoutMatch = useCallback(() => {
+    prefsRefreshPairsRef.current.clear();
+  }, []);
+
+  const requestShellRefreshIfPrefsBranchMismatch = useCallback(
+    (layoutPrefsSignature: string, freshPrefsSignature: string) => {
+      if (layoutPrefsSignature === freshPrefsSignature) {
+        prefsRefreshPairsRef.current.clear();
+        return;
+      }
+      const pair = `${layoutPrefsSignature}|${freshPrefsSignature}`;
+      if (prefsRefreshPairsRef.current.has(pair)) {
+        return;
+      }
+      prefsRefreshPairsRef.current.add(pair);
+      router.refresh();
+    },
+    [router],
+  );
 
   const requestShellRefreshIfStale = useCallback(
     (freshShellContextToken: string) => {
@@ -75,6 +102,8 @@ export function CabinetShellContextProvider({
       notifyAuthFailure,
       requestShellRefreshIfStale,
       acknowledgeShellContextMatch,
+      requestShellRefreshIfPrefsBranchMismatch,
+      acknowledgeShellPrefsLayoutMatch,
     }),
     [
       shellContextToken,
@@ -82,6 +111,8 @@ export function CabinetShellContextProvider({
       notifyAuthFailure,
       requestShellRefreshIfStale,
       acknowledgeShellContextMatch,
+      requestShellRefreshIfPrefsBranchMismatch,
+      acknowledgeShellPrefsLayoutMatch,
     ],
   );
 

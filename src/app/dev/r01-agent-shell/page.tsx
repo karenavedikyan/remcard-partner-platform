@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
+import { AgentAppShellFixtureClient } from "@/app/dev/r01-agent-shell/AgentAppShellFixtureClient";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { defaultAgentMobileNavKeys } from "@/lib/agent-nav/sections";
 import type { AuthUser } from "@/lib/types";
@@ -52,7 +52,7 @@ export default async function R01AgentShellFixturePage(props: {
   };
 
   return (
-    <AgentAppShell
+    <AgentAppShellFixtureClient
       user={FIXTURE_USER}
       incomingCount={2}
       initialPrefs={FIXTURE_PREFS}
@@ -80,6 +80,6 @@ export default async function R01AgentShellFixturePage(props: {
           Fixture shell для R01 (без live auth). Контент страницы вне scope сравнения.
         </p>
       </section>
-    </AgentAppShell>
+    </AgentAppShellFixtureClient>
   );
 }

@@ -5,7 +5,6 @@ import { AccountSessionMenu } from "@/components/account-session/AccountSessionM
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
-import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
 import type { AuthUser } from "@/lib/types";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBellSlot";
@@ -14,8 +13,6 @@ import { NAV_ICONS } from "@/components/layout/NavIcons";
 import { AgentNavIcon } from "@/components/layout/agent/AgentNavIcon";
 import { MobileNavEditorDialog } from "@/components/layout/agent/MobileNavEditorDialog";
 import { MobileNavMoreSheet } from "@/components/layout/agent/MobileNavMoreSheet";
-import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
-import { useCabinetShellContext } from "@/components/layout/cabinet-shell-context";
 import { useAgentThemeSync } from "@/components/layout/agent/useAgentThemeSync";
 import {
   resolveAgentDesktopNavKeys,
@@ -25,6 +22,7 @@ import {
   type AgentNavSectionKey,
 } from "@/lib/agent-nav/sections";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+import type { ThemePreference } from "@/lib/theme-preference";
 import styles from "./AgentAppShell.module.css";
 
 function userInitials(displayName: string): string {
@@ -38,7 +36,9 @@ type AgentAppShellProps = {
   user: AuthUser;
   incomingCount?: number;
   notificationBell?: React.ReactNode;
-  initialPrefs: CabinetUiPreferencesResponse;
+  prefs: CabinetUiPreferencesResponse;
+  saveMobileNavKeys: (mobileNavKeys: AgentNavSectionKey[]) => Promise<CabinetUiPreferencesResponse>;
+  saveTheme: (theme: ThemePreference) => Promise<CabinetUiPreferencesResponse>;
   /** Dev/screenshot fixture: pretend pathname without changing the route. */
   fixturePathname?: string;
   children: React.ReactNode;
@@ -48,7 +48,9 @@ export function AgentAppShell({
   user,
   incomingCount = 0,
   notificationBell,
-  initialPrefs,
+  prefs,
+  saveMobileNavKeys,
+  saveTheme,
   fixturePathname,
   children,
 }: AgentAppShellProps) {
@@ -61,16 +63,6 @@ export function AgentAppShell({
   }, [pathname]);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
-  const shell = useCabinetShellContext();
-  const { prefs, applyServerPrefs, applyAuthFailureClear, getApplyGeneration, saveMobileNavKeys, saveTheme } =
-    useAgentCabinetUiPrefs(initialPrefs);
-  useAgentCabinetPrefsPathRefresh(
-    applyServerPrefs,
-    applyAuthFailureClear,
-    getApplyGeneration,
-    shell?.notifyAuthFailure,
-  );
-
   const permittedKeys = useMemo(
     () => prefs.permittedKeys ?? [],
     [prefs.permittedKeys],
