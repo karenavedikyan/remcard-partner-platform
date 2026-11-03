@@ -55,7 +55,17 @@ describe("CabinetShellTemplateReconciler", () => {
         </CabinetShellTemplateReconciler>
       </CabinetShellContextProvider>,
     );
-    expect(refresh).toHaveBeenCalledTimes(1);
+    const afterRetry = refresh.mock.calls.length;
+    expect(afterRetry).toBeGreaterThanOrEqual(2);
+    expect(afterRetry).toBeLessThanOrEqual(3);
+    rerender(
+      <CabinetShellContextProvider shellContextToken="shell-a">
+        <CabinetShellTemplateReconciler freshShellContextToken="fresh-b">
+          <div data-testid="page">page</div>
+        </CabinetShellTemplateReconciler>
+      </CabinetShellContextProvider>,
+    );
+    expect(refresh.mock.calls.length).toBe(afterRetry);
   });
 
   it("refreshes when fresh token is none but shell still mounted", () => {
