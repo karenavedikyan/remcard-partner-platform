@@ -25,6 +25,15 @@ export const initialSpecialistHomeMetrics: SpecialistHomeMetrics = {
   received: { state: "loading" },
 };
 
+const walletMoneyFieldUnavailable = "Недоступно";
+
+function specialistHomeWalletMoneySlice(value: unknown): SpecialistHomeMoneySlice {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return { state: "ok", rub: value };
+  }
+  return { state: "error", message: walletMoneyFieldUnavailable };
+}
+
 export function specialistHomeMetricsFromWallet(
   wallet: WalletBalanceResponse | null,
   walletError: string | null,
@@ -41,8 +50,8 @@ export function specialistHomeMetricsFromWallet(
     return { accrued: slice, received: slice };
   }
   return {
-    accrued: { state: "ok", rub: wallet.totalRub },
-    received: { state: "ok", rub: wallet.paidRub },
+    accrued: specialistHomeWalletMoneySlice(wallet.totalRub),
+    received: specialistHomeWalletMoneySlice(wallet.paidRub),
   };
 }
 
