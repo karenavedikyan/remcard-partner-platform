@@ -390,7 +390,7 @@
 
 .isEmpty small {
   background: none;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .navSection {
@@ -465,7 +465,7 @@
 
 .navigator button:focus-visible,
 .navigator summary:focus-visible {
-  outline: 2px solid var(--accent, #bb3035);
+  outline: 2px solid var(--accent, var(--primary, #bb3035));
   outline-offset: 2px;
 }
 

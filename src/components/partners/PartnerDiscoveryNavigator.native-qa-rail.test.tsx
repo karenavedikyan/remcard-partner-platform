@@ -30,10 +30,26 @@ function contrastRatio(fg: string, bg: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function compositeHex(fg: string, bg: string, fgAlpha: number): string {
+  const [fr, fgG, fb] = hexToRgb(fg);
+  const [br, bgG, bb] = hexToRgb(bg);
+  const mix = (f: number, b: number) => Math.round(f * fgAlpha + b * (1 - fgAlpha));
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${toHex(mix(fr, br))}${toHex(mix(fgG, bgG))}${toHex(mix(fb, bb))}`;
+}
+
 /** Approved cabinet tokens from globals.css (native QA reference). */
 const TOKENS = {
-  light: { ink: "#252923", muted: "#6c706a", offset: "#f2f1ee" },
-  dark: { ink: "#f0f1ec", accentLegacy: "#bb3035", soft: "#3c2928", offset: "#2b312b" },
+  light: { ink: "#252923", muted: "#6c706a", offset: "#f2f1ee", surface: "#ffffff", primary: "#c12b2f" },
+  dark: {
+    ink: "#f0f1ec",
+    accentLegacy: "#bb3035",
+    soft: "#3c2928",
+    offset: "#2b312b",
+    surface: "#202520",
+    railMid: "#353b34",
+    primary: "#fda4af",
+  },
 };
 
 describe("PartnerDiscoveryNavigator native QA rail CSS (scoped)", () => {
@@ -83,5 +99,25 @@ describe("PartnerDiscoveryNavigator native QA rail CSS (scoped)", () => {
       /@media\s*\(min-width:\s*761px\)\s*and\s*\(max-width:\s*1000px\)[\s\S]*\.isEmpty\s+\.stepText\s+em\s*\{[^}]*white-space:\s*normal/s,
     );
     expect(css).toMatch(/\.isEmpty\s+\.stepText\s+em\s*\{[^}]*text-overflow:\s*ellipsis/s);
+  });
+
+  it("routes focus rings through primary fallback for dark contrast (F3a)", () => {
+    expect(css).toMatch(
+      /\.navigator button:focus-visible,\s*\n\.navigator summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--accent,\s*var\(--primary,\s*#bb3035\)\)/s,
+    );
+    expect(css).not.toMatch(/focus-visible[\s\S]{0,120}outline:[^;]*var\(--accent,\s*#bb3035\)/);
+    expect(contrastRatio(TOKENS.dark.primary, TOKENS.dark.surface)).toBeGreaterThanOrEqual(8);
+    expect(contrastRatio(TOKENS.dark.primary, TOKENS.dark.railMid)).toBeGreaterThanOrEqual(5);
+    expect(contrastRatio(TOKENS.dark.primary, TOKENS.dark.soft)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(TOKENS.light.primary, TOKENS.light.surface)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(TOKENS.light.primary, TOKENS.light.offset)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("raises empty path placeholder count contrast without changing role (F3b)", () => {
+    expect(css).toMatch(/\.isEmpty\s+small\s*\{[^}]*opacity:\s*0\.8/s);
+    const lightCount = compositeHex(TOKENS.light.ink, TOKENS.light.surface, 0.8);
+    const darkCount = compositeHex(TOKENS.dark.ink, TOKENS.dark.surface, 0.8);
+    expect(contrastRatio(lightCount, TOKENS.light.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkCount, TOKENS.dark.surface)).toBeGreaterThanOrEqual(4.5);
   });
 });
