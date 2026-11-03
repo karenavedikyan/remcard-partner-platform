@@ -12,6 +12,7 @@
 | Commit 3 — stable loading | `62b887f51b2b1c152b9decc49fa7e2fe4c2f2080` |
 | Commit 4 — review round 2 fix | `9c98c0ae8e0e3c754c0b3c5db402ac639bbda808` |
 | Commit 5 — requestCache runtime | `48f04b9d8b93730a5439a13baf24bddcedd9b74b` |
+| Commit 6 — review round 3 (mocks + home order) | `f231e5031d1085526811363b64c6523aebf227aa` |
 
 ## Moved routes (git rename)
 
@@ -21,7 +22,7 @@ See `moved-files.txt` — 18 `page.tsx` routes under `src/app/(cabinet)/` plus `
 
 - `peekCabinetSession` never redirects; layout renders bare `{children}` when not allowed.
 - **No session / missing readiness:** `requireProPageUser` → `null` → `SessionGate`; peek → `null` (no shell).
-- **Home role drift (commit 4):** after readiness gates, `page.tsx` calls `isProfCabinetAllowed` and `redirect("/?reason=role")` before any home branch — restores pre–route-group `requireProSession` outcome when layout peek is null but user had `canAccessCabinet`.
+- **Home redirect order (commits 4–6):** after readiness gates, `resolveActiveAgentRootRedirect` runs first (prefs load + agent root), then `isProfCabinetAllowed` → `redirect("/?reason=role")`, then home branches — same precedence as pre–route-group page before shell extraction. Covered by `page.admin-root-redirect.test.tsx` (“applies active-agent root redirect before the role gate”).
 
 ## Stale badge / UI prefs (corrected)
 
@@ -69,6 +70,9 @@ Home `/` uses cached readiness/prefs/list helpers (commit 4) — dedupes with la
 | `src/components/layout/cabinet-pathname-dismiss.test.tsx` |
 | `src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx` |
 | `src/components/agent-r03/AgentR03Gate.stale-route.test.tsx` |
+| `src/components/layout/AppShell.nav.test.tsx` |
+| `src/components/layout/AppShell.test.tsx` |
+| `src/components/account-session/AccountSessionMenu.acceptance.test.tsx` |
 | (+ existing shell/analytics/skeleton tests unchanged paths) |
 
 ## Tests — unit vs native
@@ -82,7 +86,7 @@ Home `/` uses cached readiness/prefs/list helpers (commit 4) — dedupes with la
 | Home role guard | `page.admin-root-redirect.test.tsx` | — |
 | Sidebar identity | `cabinet-shell-persistence.test.tsx` | Cold/warm DOM identity |
 
-Logs: `logs/vitest-focused.log` (**54** tests, `maxWorkers=1`), `logs/tsc-noEmit.log` (command + exit **0**).
+Logs: `logs/vitest-full-suite.log` (454 files, `maxWorkers=1`, **7** failed files — base-only set in `logs/vitest-full-failures.txt`), `logs/vitest-focused.log` (**54** tests), `logs/tsc-noEmit.log` (command + exit **0**).
 
 ## Artifact checksums
 

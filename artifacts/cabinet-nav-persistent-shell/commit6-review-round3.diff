@@ -1,0 +1,141 @@
+diff --git a/artifacts/cabinet-nav-persistent-shell/logs/vitest-full-failures.txt b/artifacts/cabinet-nav-persistent-shell/logs/vitest-full-failures.txt
+new file mode 100644
+index 00000000..882ffe47
+--- /dev/null
++++ b/artifacts/cabinet-nav-persistent-shell/logs/vitest-full-failures.txt
+@@ -0,0 +1,7 @@
++ FAIL  src/app/admin/AdminShellA17bPresentation.test.tsx
++ FAIL  src/components/profile/ProfileEditor.business-catalog.test.tsx
++ FAIL  src/components/profile/ProfileEditor.business-wizard-dirty.test.tsx
++ FAIL  src/components/profile/ProfileEditor.catalog-prefill-transition.test.tsx
++ FAIL  src/components/profile/ProfileEditor.test.tsx
++ FAIL  src/lib/category-display.test.ts [ src/lib/category-display.test.ts ]
++ FAIL  src/lib/profile-overview-display.test.tsx
+diff --git a/src/app/(cabinet)/page.admin-root-redirect.test.tsx b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+index 4c9ab197..ad0dd45e 100644
+--- a/src/app/(cabinet)/page.admin-root-redirect.test.tsx
++++ b/src/app/(cabinet)/page.admin-root-redirect.test.tsx
+@@ -164,9 +164,40 @@ describe("server home-page staff redirect", () => {
+       ok: true,
+       data: { ...denied, canAccessCabinet: true, isEmployee: false },
+     });
++    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue(null);
+     await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
+   });
+ 
++  it("applies active-agent root redirect before the role gate when prefs qualify", async () => {
++    vi.mocked(getSessionUser).mockResolvedValue({
++      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
++    });
++    vi.mocked(fetchRemcardUpstream).mockImplementation(async (path: string) => {
++      if (path === "/api/account/cabinet-readiness") {
++        return { ok: true, data: { ...denied, canAccessCabinet: true, isEmployee: false } };
++      }
++      if (path === "/api/pro/cabinet-ui-preferences") {
++        return {
++          ok: true,
++          data: {
++            contractVersion: "2026-10-14.r01",
++            pilotEnabled: true,
++            pilotActive: true,
++            contextKey: "agent",
++            version: 1,
++            theme: null,
++            mobileNavKeys: ["certificates"],
++            permittedKeys: ["certificates", "home"],
++            defaultMobileNavKeys: null,
++          },
++        };
++      }
++      return { ok: true, data: denied };
++    });
++    vi.mocked(resolveActiveAgentRootRedirect).mockReturnValue("/certificates");
++    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/certificates");
++  });
++
+   it("preserves the existing active-agent destination", async () => {
+     vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+       ok: true, data: { ...denied, canAccessCabinet: true },
+diff --git a/src/app/(cabinet)/page.tsx b/src/app/(cabinet)/page.tsx
+index 596d4368..57b71fb5 100644
+--- a/src/app/(cabinet)/page.tsx
++++ b/src/app/(cabinet)/page.tsx
+@@ -69,10 +69,6 @@ export default async function HomePage(
+     return <SessionGate returnTo="/" />;
+   }
+ 
+-  if (!isProfCabinetAllowed(readiness, user)) {
+-    redirect("/?reason=role");
+-  }
+-
+   const prefsResult = await fetchCabinetUiPreferencesServerCached(cookieKey);
+   const prefsData = prefsResult.ok ? prefsResult.data : null;
+   const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
+@@ -80,6 +76,10 @@ export default async function HomePage(
+     redirect(agentRoot);
+   }
+ 
++  if (!isProfCabinetAllowed(readiness, user)) {
++    redirect("/?reason=role");
++  }
++
+   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
+   const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
+   const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
+diff --git a/src/components/account-session/AccountSessionMenu.acceptance.test.tsx b/src/components/account-session/AccountSessionMenu.acceptance.test.tsx
+index 6937f5e4..dcad2188 100644
+--- a/src/components/account-session/AccountSessionMenu.acceptance.test.tsx
++++ b/src/components/account-session/AccountSessionMenu.acceptance.test.tsx
+@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
+ 
+ const mocks = vi.hoisted(() => ({ current: vi.fn(), all: vi.fn(), push: vi.fn() }));
+ vi.mock("next/navigation", () => ({
++  usePathname: () => "/",
+   useRouter: () => ({ push: mocks.push, refresh: vi.fn() }),
+ }));
+ vi.mock("@/lib/account-session-exit", () => ({
+diff --git a/src/components/layout/AppShell.nav.test.tsx b/src/components/layout/AppShell.nav.test.tsx
+index b18fd82e..a1d9895c 100644
+--- a/src/components/layout/AppShell.nav.test.tsx
++++ b/src/components/layout/AppShell.nav.test.tsx
+@@ -16,6 +16,18 @@ vi.mock("next/navigation", () => ({
+       return params.get(name);
+     },
+   }),
++  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
+ }));
+ 
+ vi.mock("@/components/account-session/AccountSessionMenu", () => ({
+diff --git a/src/components/layout/AppShell.test.tsx b/src/components/layout/AppShell.test.tsx
+index ca8549eb..9c89d6f9 100644
+--- a/src/components/layout/AppShell.test.tsx
++++ b/src/components/layout/AppShell.test.tsx
+@@ -15,6 +15,17 @@ vi.mock("next/navigation", () => ({
+   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+ }));
+ 
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn().mockResolvedValue({ partnerships: [] }),
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++    }
++  },
++}));
++
+ vi.mock("@/components/account-session/AccountSessionMenu", () => ({
+   AccountSessionMenu: ({ displayName, roleLabel }: { displayName: string; roleLabel: string }) => (
+     <div data-testid="account-session-menu-fixture">
