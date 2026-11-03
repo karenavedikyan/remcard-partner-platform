@@ -30,4 +30,9 @@ describe("shouldApplyIncomingCabinetUiPrefs", () => {
   it("blocks GET while save is in flight", () => {
     expect(shouldApplyIncomingCabinetUiPrefs(5, base(6), 1, "get")).toBe(false);
   });
+
+  it("force-clears via auth-failure regardless of version or save in flight", () => {
+    const neutral = base(0);
+    expect(shouldApplyIncomingCabinetUiPrefs(9, neutral, 3, "auth-failure")).toBe(true);
+  });
 });

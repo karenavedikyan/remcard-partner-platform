@@ -16,9 +16,11 @@ vi.mock("@/lib/prof-admin-management-api", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
   useSearchParams: () => new URLSearchParams(mocks.search),
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }));
 
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { CabinetShellContextProvider } from "@/components/layout/cabinet-shell-context";
 import { ProfPartnerSessionVisitOnPathname } from "@/components/layout/ProfPartnerSessionVisitOnPathname";
 
 beforeEach(() => {
@@ -65,6 +67,26 @@ describe("ProfPartnerSessionVisitOnPathname cadence", () => {
       </CookieConsentProvider>,
     );
     await waitFor(() => expect(mocks.visit).not.toHaveBeenCalled());
+  });
+
+  it("re-keys analytics when shell identity changes on the same pathname", async () => {
+    const { rerender } = render(
+      <CookieConsentProvider>
+        <CabinetShellContextProvider shellContextToken="identity-a">
+          <ProfPartnerSessionVisitOnPathname />
+        </CabinetShellContextProvider>
+      </CookieConsentProvider>,
+    );
+    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <CookieConsentProvider>
+        <CabinetShellContextProvider shellContextToken="identity-b">
+          <ProfPartnerSessionVisitOnPathname />
+        </CabinetShellContextProvider>
+      </CookieConsentProvider>,
+    );
+    await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(2));
   });
 
   it("fires again on pathname change but not on query-only change", async () => {

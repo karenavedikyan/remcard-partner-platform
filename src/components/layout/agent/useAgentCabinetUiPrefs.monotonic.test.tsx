@@ -16,6 +16,7 @@ vi.mock("@/lib/api-client", () => ({
 }));
 
 import { useAgentCabinetUiPrefs } from "@/components/layout/agent/useAgentCabinetUiPrefs";
+import { neutralCabinetUiPreferencesFallback } from "@/lib/cabinet-ui-preferences-fallback";
 
 const v3: CabinetUiPreferencesResponse = {
   contractVersion: "2026-10-14.r01",
@@ -78,6 +79,44 @@ describe("useAgentCabinetUiPrefs monotonic apply", () => {
     );
     rerender({ initial: v4 });
     await waitFor(() => expect(result.current.prefs.version).toBe(4));
+  });
+
+  it("force-clears private prefs on auth failure even with version>=1 and save in flight", async () => {
+    let resolvePatch!: (value: CabinetUiPreferencesResponse) => void;
+    remcardFetch.mockReturnValueOnce(
+      new Promise((res) => {
+        resolvePatch = res;
+      }),
+    );
+    const { result } = renderHook(() => useAgentCabinetUiPrefs(v4));
+
+    let patchPromise!: Promise<unknown>;
+    await act(async () => {
+      patchPromise = result.current.saveMobileNavKeys(["home"]);
+      result.current.applyAuthFailureClear();
+    });
+    await waitFor(() =>
+      expect(result.current.prefs).toEqual(neutralCabinetUiPreferencesFallback),
+    );
+
+    await act(async () => {
+      resolvePatch(v5);
+      await patchPromise;
+    });
+    expect(result.current.prefs).toEqual(neutralCabinetUiPreferencesFallback);
+  });
+
+  it("drops stale GET after auth failure clear", async () => {
+    const { result } = renderHook(() => useAgentCabinetUiPrefs(v4));
+    const gen = result.current.getApplyGeneration();
+    act(() => {
+      result.current.applyAuthFailureClear();
+    });
+    act(() => {
+      result.current.applyServerPrefs(v5, gen);
+    });
+    expect(result.current.prefs.version).toBe(0);
+    expect(result.current.prefs.pilotActive).toBe(false);
   });
 
   it("does not override theme PATCH with stale GET", async () => {
