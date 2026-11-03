@@ -27,7 +27,7 @@ describe("AgentR03Gate stale route protection", () => {
       </AgentR03Gate>,
     );
 
-    expect(screen.getByTestId("cabinet-page-loading-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("cabinet-gate-loading-body")).toBeInTheDocument();
     unmount();
 
     resolve({ featureEnabled: true, eligible: true });

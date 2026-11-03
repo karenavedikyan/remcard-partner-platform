@@ -158,6 +158,7 @@ export function AppShell({
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setMobileMoreOpen(false);
   }, [pathname]);
 
   useEffect(() => {

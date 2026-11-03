@@ -38,7 +38,7 @@ export function redirectToOnboarding(returnTo: string): never {
   redirect(`/onboarding?returnTo=${encodeURIComponent(returnTo)}`);
 }
 
-function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): boolean {
+export function isProfCabinetAllowed(readiness: CabinetReadiness, user: AuthUser): boolean {
   if (user.isBlocked) return false;
   if (hasPendingLoginConsents(readiness)) return false;
   if (readiness.needsProfileOnboarding) return false;

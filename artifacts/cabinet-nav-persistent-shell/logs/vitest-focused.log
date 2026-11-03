@@ -1,23 +1,33 @@
 
 > remcard-partner-platform@0.1.0 test:component
-> vitest run src/lib/cabinet-shell-request-dedupe.test.tsx src/lib/session-peek.test.tsx src/app/(cabinet)/cabinet-routing-contract.test.tsx src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx src/components/layout/cabinet-shell-persistence.test.tsx src/app/(cabinet)/page.admin-root-redirect.test.tsx src/components/layout/CabinetPageLoadingSkeleton.test.tsx src/components/agent-r03/AgentR03Gate.stale-route.test.tsx src/hooks/useIncomingPartnersCount.test.tsx src/lib/clients-rsc-boundary.test.ts --maxWorkers=1
+> vitest run src/lib/cabinet-shell-request-dedupe.test.tsx src/lib/session-peek.test.tsx src/app/(cabinet)/cabinet-routing-contract.test.tsx src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx src/components/layout/cabinet-shell-persistence.test.tsx src/app/(cabinet)/page.admin-root-redirect.test.tsx src/components/layout/CabinetPageLoadingSkeleton.test.tsx src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx src/components/agent-r03/AgentR03Gate.stale-route.test.tsx src/hooks/useIncomingPartnersCount.test.tsx src/lib/clients-rsc-boundary.test.ts src/lib/agent-cabinet-ui-prefs-apply.test.tsx src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx src/components/layout/cabinet-pathname-dismiss.test.tsx --maxWorkers=1
 
 
  RUN  v3.2.7 /agent/repos/remcard-partner-platform
 
- ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 98ms
- ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 72ms
- ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 57ms
- ✓ src/lib/session-peek.test.tsx (7 tests) 29ms
+ ✓ src/components/layout/cabinet-pathname-dismiss.test.tsx (4 tests) 240ms
+ ✓ src/lib/cabinet-shell-request-dedupe.test.tsx (2 tests) 93ms
+ ✓ src/components/layout/CabinetPageLoadingSkeleton.heading.test.tsx (2 tests) 81ms
+ ✓ src/components/layout/CabinetPageLoadingSkeleton.test.tsx (1 test) 54ms
+ ✓ src/components/layout/cabinet-shell-persistence.test.tsx (2 tests) 66ms
  ✓ src/components/layout/ProfPartnerSessionVisitOnPathname.test.tsx (3 tests) 35ms
- ✓ src/hooks/useIncomingPartnersCount.test.tsx (2 tests) 31ms
- ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 25ms
- ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (15 tests) 14ms
- ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (4 tests) 5ms
+ ✓ src/hooks/useIncomingPartnersCount.test.tsx (2 tests) 32ms
+ ✓ src/lib/session-peek.test.tsx (7 tests) 30ms
+ ✓ src/components/agent-r03/AgentR03Gate.stale-route.test.tsx (1 test) 21ms
+stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
+Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
+
+stderr | src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx > useAgentCabinetUiPrefs monotonic apply > does not override theme PATCH with stale GET
+Warning: You seem to have overlapping act() calls, this is not supported. Be sure to await previous act() calls before making a new one. 
+
+ ✓ src/components/layout/agent/useAgentCabinetUiPrefs.monotonic.test.tsx (4 tests) 21ms
+ ✓ src/app/(cabinet)/page.admin-root-redirect.test.tsx (16 tests) 16ms
+ ✓ src/app/(cabinet)/cabinet-routing-contract.test.tsx (4 tests) 7ms
+ ✓ src/lib/agent-cabinet-ui-prefs-apply.test.tsx (4 tests) 2ms
  ✓ src/lib/clients-rsc-boundary.test.ts (2 tests) 3ms
 
- Test Files  10 passed (10)
-      Tests  39 passed (39)
-   Start at  14:01:32
-   Duration  6.67s (transform 399ms, setup 1.18s, collect 480ms, tests 369ms, environment 2.90s, prepare 517ms)
+ Test Files  14 passed (14)
+      Tests  54 passed (54)
+   Start at  14:05:46
+   Duration  9.41s (transform 628ms, setup 1.56s, collect 937ms, tests 703ms, environment 3.85s, prepare 676ms)
 

@@ -6,11 +6,13 @@ import { fetchRegistrationCapabilitiesServer } from "@/lib/registration/capabili
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
-import { fetchRemcardUpstream } from "@/lib/remcard-server";
-import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import { hasPendingLoginConsents } from "@/lib/cabinet-readiness";
-import { getSessionUser } from "@/lib/session";
-import type { PartnershipListResponse } from "@/lib/types";
+import {
+  fetchCabinetUiPreferencesServerCached,
+  fetchPartnershipListServerCached,
+  getCabinetReadinessServerCached,
+} from "@/lib/cabinet-upstream-cache";
+import { getSessionUser, isProfCabinetAllowed } from "@/lib/session";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
 import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
@@ -52,16 +54,11 @@ export default async function HomePage(
   if (user.staffRole === "OWNER" || user.staffRole === "ADMIN") {
     redirect("/admin/overview");
   }
-  const readinessResult = await fetchRemcardUpstream<CabinetReadiness>(
-    "/api/account/cabinet-readiness",
-    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
-  );
-
-  if (!readinessResult.ok) {
+  const cookieKey = cookieHeader ?? "";
+  const readiness = await getCabinetReadinessServerCached(cookieKey);
+  if (!readiness) {
     return <SessionGate returnTo="/" />;
   }
-
-  const readiness = readinessResult.data;
   if (hasPendingLoginConsents(readiness)) {
     redirect("/login?step=consents&returnTo=%2F");
   }
@@ -72,10 +69,11 @@ export default async function HomePage(
     return <SessionGate returnTo="/" />;
   }
 
-  const prefsResult = await fetchRemcardUpstream<CabinetUiPreferencesResponse>(
-    "/api/pro/cabinet-ui-preferences",
-    { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
-  );
+  if (!isProfCabinetAllowed(readiness, user)) {
+    redirect("/?reason=role");
+  }
+
+  const prefsResult = await fetchCabinetUiPreferencesServerCached(cookieKey);
   const prefsData = prefsResult.ok ? prefsResult.data : null;
   const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
   if (agentRoot) {
@@ -124,9 +122,7 @@ export default async function HomePage(
     );
   }
 
-  const listResult = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-  });
+  const listResult = await fetchPartnershipListServerCached(cookieKey);
 
   const partnerships = listResult.ok ? listResult.data.partnerships : [];
   const incomingCount = countNeedsMyResponse(partnerships, user.id);

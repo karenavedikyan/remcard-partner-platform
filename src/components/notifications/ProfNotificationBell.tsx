@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useProfNotifications } from "@/hooks/useProfNotifications";
@@ -58,6 +59,7 @@ function NotificationRow({
 }
 
 export function ProfNotificationBell() {
+  const pathname = usePathname();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -82,6 +84,10 @@ export function ProfNotificationBell() {
       return next;
     });
   }, [notifications]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;

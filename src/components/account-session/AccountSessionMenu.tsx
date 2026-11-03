@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import {
   IconChevronDown,
@@ -27,6 +28,7 @@ type AccountSessionMenuProps = {
 };
 
 export function AccountSessionMenu({ displayName, roleLabel, signInMode }: AccountSessionMenuProps) {
+  const pathname = usePathname();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -49,6 +51,10 @@ export function AccountSessionMenu({ displayName, roleLabel, signInMode }: Accou
     },
     [],
   );
+
+  useEffect(() => {
+    closeMenu();
+  }, [pathname, closeMenu]);
 
   useEffect(() => {
     if (!open) return;

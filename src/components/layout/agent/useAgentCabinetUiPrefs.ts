@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+import {
+  shouldApplyIncomingCabinetUiPrefs,
+  type CabinetUiPrefsApplySource,
+} from "@/lib/agent-cabinet-ui-prefs-apply";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import type { AgentNavSectionKey } from "@/lib/agent-nav/sections";
 import type { ThemePreference } from "@/lib/theme-preference";
@@ -35,43 +39,89 @@ function wrapSaveError(error: unknown): CabinetUiPrefsSaveError {
 export function useAgentCabinetUiPrefs(initial: CabinetUiPreferencesResponse) {
   const [prefs, setPrefs] = useState(initial);
   const versionRef = useRef(initial.version);
+  const saveInFlightRef = useRef(0);
 
-  const applyServerPrefs = useCallback((next: CabinetUiPreferencesResponse) => {
-    versionRef.current = next.version;
-    setPrefs(next);
-  }, []);
+  const applyIncoming = useCallback(
+    (next: CabinetUiPreferencesResponse, source: CabinetUiPrefsApplySource) => {
+      if (
+        !shouldApplyIncomingCabinetUiPrefs(
+          versionRef.current,
+          next,
+          saveInFlightRef.current,
+          source,
+        )
+      ) {
+        return;
+      }
+      versionRef.current = next.version;
+      setPrefs(next);
+    },
+    [],
+  );
 
-  const saveMobileNavKeys = useCallback(async (mobileNavKeys: AgentNavSectionKey[]) => {
-    try {
-      const next = await remcardFetch<CabinetUiPreferencesResponse>(
-        "/api/pro/cabinet-ui-preferences",
-        {
-          method: "PATCH",
-          body: { mobileNavKeys, expectedVersion: versionRef.current },
-        },
-      );
-      applyServerPrefs(next);
-      return next;
-    } catch (error) {
-      throw wrapSaveError(error);
-    }
-  }, [applyServerPrefs]);
+  useEffect(() => {
+    applyIncoming(initial, "initial");
+  }, [
+    applyIncoming,
+    initial,
+    initial.version,
+    initial.permittedKeys,
+    initial.mobileNavKeys,
+    initial.theme,
+    initial.pilotActive,
+    initial.contextKey,
+  ]);
 
-  const saveTheme = useCallback(async (theme: ThemePreference) => {
-    try {
-      const next = await remcardFetch<CabinetUiPreferencesResponse>(
-        "/api/pro/cabinet-ui-preferences",
-        {
-          method: "PATCH",
-          body: { theme, expectedVersion: versionRef.current },
-        },
-      );
-      applyServerPrefs(next);
-      return next;
-    } catch (error) {
-      throw wrapSaveError(error);
-    }
-  }, [applyServerPrefs]);
+  const saveMobileNavKeys = useCallback(
+    async (mobileNavKeys: AgentNavSectionKey[]) => {
+      saveInFlightRef.current += 1;
+      try {
+        const next = await remcardFetch<CabinetUiPreferencesResponse>(
+          "/api/pro/cabinet-ui-preferences",
+          {
+            method: "PATCH",
+            body: { mobileNavKeys, expectedVersion: versionRef.current },
+          },
+        );
+        applyIncoming(next, "patch");
+        return next;
+      } catch (error) {
+        throw wrapSaveError(error);
+      } finally {
+        saveInFlightRef.current -= 1;
+      }
+    },
+    [applyIncoming],
+  );
+
+  const saveTheme = useCallback(
+    async (theme: ThemePreference) => {
+      saveInFlightRef.current += 1;
+      try {
+        const next = await remcardFetch<CabinetUiPreferencesResponse>(
+          "/api/pro/cabinet-ui-preferences",
+          {
+            method: "PATCH",
+            body: { theme, expectedVersion: versionRef.current },
+          },
+        );
+        applyIncoming(next, "patch");
+        return next;
+      } catch (error) {
+        throw wrapSaveError(error);
+      } finally {
+        saveInFlightRef.current -= 1;
+      }
+    },
+    [applyIncoming],
+  );
+
+  const applyServerPrefs = useCallback(
+    (next: CabinetUiPreferencesResponse) => {
+      applyIncoming(next, "get");
+    },
+    [applyIncoming],
+  );
 
   return { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme };
 }

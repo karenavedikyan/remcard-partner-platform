@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AccountSessionMenu } from "@/components/account-session/AccountSessionMenu";
 import { usePathname } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIncomingPartnersCount } from "@/hooks/useIncomingPartnersCount";
 import { useAgentCabinetPrefsPathRefresh } from "@/hooks/useAgentCabinetPrefsPathRefresh";
 import type { AuthUser } from "@/lib/types";
@@ -54,6 +54,10 @@ export function AgentAppShell({
   const pathname = usePathname();
   const activePathname = fixturePathname ?? pathname;
   const liveIncomingCount = useIncomingPartnersCount(incomingCount, user.id);
+  useEffect(() => {
+    setMoreOpen(false);
+    setEditorOpen(false);
+  }, [pathname]);
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
   const initials = userInitials(displayName);
   const { prefs, applyServerPrefs, saveMobileNavKeys, saveTheme } =

@@ -16,7 +16,10 @@ const redirect = vi.hoisted(() => vi.fn((path: string) => {
 
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("@/lib/session", () => ({ getSessionUser: vi.fn() }));
+vi.mock("@/lib/session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/session")>();
+  return { ...actual, getSessionUser: vi.fn() };
+});
 vi.mock("@/lib/remcard-server", () => ({ fetchRemcardUpstream: vi.fn() }));
 vi.mock("@/lib/registration/capabilities-server", () => ({
   fetchRegistrationCapabilitiesServer: vi.fn(),
@@ -151,6 +154,17 @@ describe("server home-page staff redirect", () => {
       kids.some((child) => isValidElement(child) && child.type === HomeDashboard),
     ).toBe(true);
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects authenticated non-PRO non-employee users with cabinet access to /?reason=role", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      id: "synthetic-client", role: "CLIENT", staffRole: null, isBlocked: false,
+    });
+    vi.mocked(fetchRemcardUpstream).mockResolvedValue({
+      ok: true,
+      data: { ...denied, canAccessCabinet: true, isEmployee: false },
+    });
+    await expect(HomePage({})).rejects.toThrow("NEXT_REDIRECT:/?reason=role");
   });
 
   it("preserves the existing active-agent destination", async () => {
