@@ -206,7 +206,7 @@ describe("AgentClientsList new-partner empty flows", () => {
     expect(createAgentClient).not.toHaveBeenCalled();
   });
 
-  it("loading keeps legacy shell without onboarding", async () => {
+  it("loading shows accessible pending shell without legacy chrome or onboarding", async () => {
     let resolve!: (v: typeof emptyList) => void;
     vi.mocked(fetchAgentClients).mockImplementation(
       () =>
@@ -215,10 +215,14 @@ describe("AgentClientsList new-partner empty flows", () => {
         }),
     );
     renderList("agent");
-    expect(screen.getByText("Загрузка…")).toBeInTheDocument();
+    expect(screen.getByTestId("clients-welcome-decision-pending")).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: /Загрузка раздела/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("clients-page-add")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("agent-r03-collection-toolbar")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     resolve(emptyList);
     await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(screen.queryByTestId("clients-welcome-decision-pending")).not.toBeInTheDocument();
   });
 
   it("error keeps legacy shell without onboarding", async () => {

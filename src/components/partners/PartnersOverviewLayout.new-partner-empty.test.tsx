@@ -395,7 +395,10 @@ describe("Partners overview greeting (current empty)", () => {
   it("shows loading without greeting", () => {
     mockListRoutes([], "pending");
     renderOverviewHub("agent-r04");
-    expect(screen.getByTestId("partners-overview-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("partners-welcome-decision-pending")).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: /Загрузка раздела/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("partners-overview-cta-find")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("partners-overview-tiles")).not.toBeInTheDocument();
     expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
   });
 
