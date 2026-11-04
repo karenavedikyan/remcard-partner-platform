@@ -1,32 +1,196 @@
+diff --git a/artifacts/empty-state-first-paint-20261104/REPORT.md b/artifacts/empty-state-first-paint-20261104/REPORT.md
+new file mode 100644
+index 00000000..bb26f9d0
+--- /dev/null
++++ b/artifacts/empty-state-first-paint-20261104/REPORT.md
+@@ -0,0 +1,80 @@
++# Empty-state first-paint (2026-11-04)
++
++## Branch / SHAs
++
++| Item | SHA |
++|------|-----|
++| Parent (deployed frontend) | `f434708132ce9a4334cb500e129b87d02588ea29` |
++| Product branch | `cursor/remcard-empty-state-first-paint-20261104` |
++| Product tip | _(set after push)_ |
++| Backend (unchanged) | `bb7db4ca` |
++| Nav branch preserved | `cursor/remcard-cabinet-nav-r4-template-20261103` @ `c2ab37436c478ab2fd9739eafa941cd41114bb59` |
++
++## Blocker revision (partners error-aware pending)
++
++**Issue in `24e1e2d2`:** `isPartnersOverviewPresentationPending` used `loading || !listReady`. After `loadList()` errors, Hub sets `listReady=false`, `loading=false`, and `error` — but `!listReady` kept the overview in infinite skeleton and hid `partners-overview-error` / retry.
++
++**Fix:** Pending only when there is no `error`, no prior successful `listReady`, and the initial fetch is still in flight (`loading` or unresolved pre-response). Errors (HTTP, network, malformed payload) exit pending immediately. `listReady && loading` (same-user refresh) is not pending; legacy tiles stay mounted (`showFullLegacyOverview` no longer requires `!loading` when already ready).
++
++## Allowlist (product)
++
++- `src/lib/welcome-first-paint/welcomeFirstPaintPending.ts`
++- `src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx`
++- `src/components/welcome-first-paint/WelcomeContentAreaPending.tsx`
++- `src/components/welcome-first-paint/WelcomeContentAreaPending.module.css`
++- `src/components/agent-r03/AgentClientsList.tsx`
++- `src/components/agent-r03/AgentCertificatesList.tsx`
++- `src/components/partners/PartnersOverviewLayout.tsx`
++- `src/components/scanner/ScannerHub.tsx`
++- `src/components/profile/ProfileTeamSection.tsx`
++- `src/components/home/SpecialistHomeDashboard.tsx`
++- `src/components/home/BusinessOwnerHomeDashboard.tsx`
++- `src/components/recommendations/RecommendationsList.tsx`
++- Tests: `*.first-paint.test.tsx`, `PartnersHub.first-paint.test.tsx`, `ScannerHub.empty-state.test.tsx`, `BusinessOwnerHomeDashboard.presentation.test.tsx`
++- `artifacts/empty-state-first-paint-20261104/*`
++
++## Eight welcome consumers audit
++
++| Site | Status | Notes |
++|------|--------|-------|
++| Home (specialist / store / company) | **Fixed** | Skeleton while metrics and/or supplemental probes pending; greeting still requires `!loading` |
++| Clients | **Fixed** | Pending only on baseline load; `loadState=error` not pending; rows kept on filter refetch |
++| Certificates | **Fixed** | Same pattern as clients |
++| Partners | **Fixed (revised)** | Error-aware pending + refetch keeps tiles when `listReady` |
++| Scanner | **Fixed** | Pending replaces hero flash; workbench without hero per f434 |
++| Wallet (settlements) | **Not affected** | Existing loading gates in `WalletAccrualsWorkspace` |
++| Team (profile) | **Fixed** | `isTeamWelcomeDecisionPending`: errors not pending (already error-aware) |
++| Profile empty wizards | **Not affected** | Draft-driven gate |
++| Agent home (server) | **Not affected** | Server `HomeDashboard` |
++| Recommendations | **Fixed** | `loadState=error` not pending |
++
++**Cross-callsite audit:** No other helper used the partners `!listReady`-without-error trap. Team/clients/certs/recs already treat errors as settled.
++
++## Commands / results
++
++```bash
++npx vitest run \
++  src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx \
++  src/components/partners/PartnersOverviewLayout.first-paint.test.tsx \
++  src/components/partners/PartnersHub.first-paint.test.tsx \
++  src/components/agent-r03/AgentClientsList.first-paint.test.tsx \
++  src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx \
++  src/components/scanner/ScannerHub.empty-state.test.tsx \
++  src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx
++# 7 files, 28 passed
++
++npx tsc --noEmit
++# exit 0
++```
++
++Prior report claim of partners error coverage in layout-only tests was **inaccurate** until `PartnersHub.first-paint.test.tsx` and layout error/refetch cases were added.
++
++## Native Next transition proof
++
++Deferred-promise RTL tests cover pending → error/retry → welcome and populated refetch. Coordinator native comparison (850ms collection baseline) runs separately after this revision.
++
++## Status
++
++**READY — NOT DEPLOYED**
++
++Mechanical integrator: apply `source.diff` vs `f4347081` on branch `cursor/remcard-empty-state-first-paint-20261104`.
 diff --git a/artifacts/empty-state-first-paint-20261104/diff-stat.txt b/artifacts/empty-state-first-paint-20261104/diff-stat.txt
 new file mode 100644
-index 00000000..b6546154
+index 00000000..32f1ca6f
 --- /dev/null
 +++ b/artifacts/empty-state-first-paint-20261104/diff-stat.txt
-@@ -0,0 +1,20 @@
-+ .../empty-state-first-paint-20261104/diff-stat.txt |   0
-+ .../empty-state-first-paint-20261104/source.diff   | 553 +++++++++++++++++++++
-+ .../AgentCertificatesList.first-paint.test.tsx     |  66 +++
-+ src/components/agent-r03/AgentCertificatesList.tsx |  35 +-
-+ .../AgentClientsList.first-paint.test.tsx          | 125 +++++
-+ src/components/agent-r03/AgentClientsList.tsx      |  33 +-
-+ ...usinessOwnerHomeDashboard.presentation.test.tsx |  45 +-
-+ src/components/home/BusinessOwnerHomeDashboard.tsx |  10 +-
-+ src/components/home/SpecialistHomeDashboard.tsx    |   5 +-
-+ .../PartnersOverviewLayout.first-paint.test.tsx    |  59 +++
-+ src/components/partners/PartnersOverviewLayout.tsx |  20 +-
-+ src/components/profile/ProfileTeamSection.tsx      |  12 +-
-+ .../recommendations/RecommendationsList.tsx        |  20 +-
-+ .../scanner/ScannerHub.empty-state.test.tsx        |  19 +
-+ src/components/scanner/ScannerHub.tsx              |  10 +-
-+ .../WelcomeContentAreaPending.module.css           |  46 ++
-+ .../WelcomeContentAreaPending.tsx                  |  30 ++
-+ .../welcomeFirstPaintPending.test.tsx              |  95 ++++
-+ .../welcomeFirstPaintPending.ts                    |  62 +++
-+ 19 files changed, 1182 insertions(+), 63 deletions(-)
+@@ -0,0 +1,22 @@
++ .../empty-state-first-paint-20261104/REPORT.md     |   80 ++
++ .../empty-state-first-paint-20261104/diff-stat.txt |    0
++ .../empty-state-first-paint-20261104/source.diff   | 1176 ++++++++++++++++++++
++ .../AgentCertificatesList.first-paint.test.tsx     |   66 ++
++ src/components/agent-r03/AgentCertificatesList.tsx |   35 +-
++ .../AgentClientsList.first-paint.test.tsx          |  125 +++
++ src/components/agent-r03/AgentClientsList.tsx      |   33 +-
++ ...usinessOwnerHomeDashboard.presentation.test.tsx |   45 +-
++ src/components/home/BusinessOwnerHomeDashboard.tsx |   10 +-
++ src/components/home/SpecialistHomeDashboard.tsx    |    5 +-
++ .../partners/PartnersHub.first-paint.test.tsx      |  163 +++
++ .../PartnersOverviewLayout.first-paint.test.tsx    |   89 ++
++ src/components/partners/PartnersOverviewLayout.tsx |   26 +-
++ src/components/profile/ProfileTeamSection.tsx      |   12 +-
++ .../recommendations/RecommendationsList.tsx        |   20 +-
++ .../scanner/ScannerHub.empty-state.test.tsx        |   19 +
++ src/components/scanner/ScannerHub.tsx              |   10 +-
++ .../WelcomeContentAreaPending.module.css           |   46 +
++ .../WelcomeContentAreaPending.tsx                  |   30 +
++ .../welcomeFirstPaintPending.test.tsx              |  125 +++
++ .../welcomeFirstPaintPending.ts                    |   68 ++
++ 21 files changed, 2119 insertions(+), 64 deletions(-)
 diff --git a/artifacts/empty-state-first-paint-20261104/source.diff b/artifacts/empty-state-first-paint-20261104/source.diff
 new file mode 100644
-index 00000000..e69de29b
+index 00000000..d3d43bb5
+--- /dev/null
++++ b/artifacts/empty-state-first-paint-20261104/source.diff
+@@ -0,0 +1,72 @@
++diff --git a/artifacts/empty-state-first-paint-20261104/REPORT.md b/artifacts/empty-state-first-paint-20261104/REPORT.md
++new file mode 100644
++index 00000000..bb26f9d0
++--- /dev/null
+++++ b/artifacts/empty-state-first-paint-20261104/REPORT.md
++@@ -0,0 +1,80 @@
+++# Empty-state first-paint (2026-11-04)
+++
+++## Branch / SHAs
+++
+++| Item | SHA |
+++|------|-----|
+++| Parent (deployed frontend) | `f434708132ce9a4334cb500e129b87d02588ea29` |
+++| Product branch | `cursor/remcard-empty-state-first-paint-20261104` |
+++| Product tip | _(set after push)_ |
+++| Backend (unchanged) | `bb7db4ca` |
+++| Nav branch preserved | `cursor/remcard-cabinet-nav-r4-template-20261103` @ `c2ab37436c478ab2fd9739eafa941cd41114bb59` |
+++
+++## Blocker revision (partners error-aware pending)
+++
+++**Issue in `24e1e2d2`:** `isPartnersOverviewPresentationPending` used `loading || !listReady`. After `loadList()` errors, Hub sets `listReady=false`, `loading=false`, and `error` — but `!listReady` kept the overview in infinite skeleton and hid `partners-overview-error` / retry.
+++
+++**Fix:** Pending only when there is no `error`, no prior successful `listReady`, and the initial fetch is still in flight (`loading` or unresolved pre-response). Errors (HTTP, network, malformed payload) exit pending immediately. `listReady && loading` (same-user refresh) is not pending; legacy tiles stay mounted (`showFullLegacyOverview` no longer requires `!loading` when already ready).
+++
+++## Allowlist (product)
+++
+++- `src/lib/welcome-first-paint/welcomeFirstPaintPending.ts`
+++- `src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx`
+++- `src/components/welcome-first-paint/WelcomeContentAreaPending.tsx`
+++- `src/components/welcome-first-paint/WelcomeContentAreaPending.module.css`
+++- `src/components/agent-r03/AgentClientsList.tsx`
+++- `src/components/agent-r03/AgentCertificatesList.tsx`
+++- `src/components/partners/PartnersOverviewLayout.tsx`
+++- `src/components/scanner/ScannerHub.tsx`
+++- `src/components/profile/ProfileTeamSection.tsx`
+++- `src/components/home/SpecialistHomeDashboard.tsx`
+++- `src/components/home/BusinessOwnerHomeDashboard.tsx`
+++- `src/components/recommendations/RecommendationsList.tsx`
+++- Tests: `*.first-paint.test.tsx`, `PartnersHub.first-paint.test.tsx`, `ScannerHub.empty-state.test.tsx`, `BusinessOwnerHomeDashboard.presentation.test.tsx`
+++- `artifacts/empty-state-first-paint-20261104/*`
+++
+++## Eight welcome consumers audit
+++
+++| Site | Status | Notes |
+++|------|--------|-------|
+++| Home (specialist / store / company) | **Fixed** | Skeleton while metrics and/or supplemental probes pending; greeting still requires `!loading` |
+++| Clients | **Fixed** | Pending only on baseline load; `loadState=error` not pending; rows kept on filter refetch |
+++| Certificates | **Fixed** | Same pattern as clients |
+++| Partners | **Fixed (revised)** | Error-aware pending + refetch keeps tiles when `listReady` |
+++| Scanner | **Fixed** | Pending replaces hero flash; workbench without hero per f434 |
+++| Wallet (settlements) | **Not affected** | Existing loading gates in `WalletAccrualsWorkspace` |
+++| Team (profile) | **Fixed** | `isTeamWelcomeDecisionPending`: errors not pending (already error-aware) |
+++| Profile empty wizards | **Not affected** | Draft-driven gate |
+++| Agent home (server) | **Not affected** | Server `HomeDashboard` |
+++| Recommendations | **Fixed** | `loadState=error` not pending |
+++
+++**Cross-callsite audit:** No other helper used the partners `!listReady`-without-error trap. Team/clients/certs/recs already treat errors as settled.
+++
+++## Commands / results
+++
+++```bash
+++npx vitest run \
+++  src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx \
+++  src/components/partners/PartnersOverviewLayout.first-paint.test.tsx \
+++  src/components/partners/PartnersHub.first-paint.test.tsx \
+++  src/components/agent-r03/AgentClientsList.first-paint.test.tsx \
+++  src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx \
+++  src/components/scanner/ScannerHub.empty-state.test.tsx \
+++  src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx
+++# 7 files, 28 passed
+++
+++npx tsc --noEm
+\ No newline at end of file
 diff --git a/src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx b/src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx
 new file mode 100644
 index 00000000..4cef3c85
@@ -592,12 +756,181 @@ index da4b6c62..9b835bee 100644
          <HomeSupplementalProbeSkeleton
            statLabels={["Сертификаты", "Начислено", "Получено"]}
          />
+diff --git a/src/components/partners/PartnersHub.first-paint.test.tsx b/src/components/partners/PartnersHub.first-paint.test.tsx
+new file mode 100644
+index 00000000..a7ddb526
+--- /dev/null
++++ b/src/components/partners/PartnersHub.first-paint.test.tsx
+@@ -0,0 +1,163 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { PartnersHub } from "./PartnersHub";
++import type { Partnership, ProProfileResponse } from "@/lib/types";
++import { remcardFetch, RemcardApiError } from "@/lib/api-client";
++
++vi.mock("next/navigation", () => ({
++  useSearchParams: () => new URLSearchParams(),
++}));
++
++vi.mock("@/lib/partner-taxonomy", () => ({
++  fetchPartnerTaxonomy: vi.fn().mockResolvedValue({ products: [], services: [], stages: [] }),
++}));
++
++vi.mock("@/lib/api-client", () => ({
++  remcardFetch: vi.fn(),
++  RemcardApiError: class RemcardApiError extends Error {
++    status: number;
++    constructor(status: number, message: string) {
++      super(message);
++      this.status = status;
++      this.name = "RemcardApiError";
++    }
++  },
++}));
++
++const agentProfile: ProProfileResponse = {
++  organization: null,
++  programs: [],
++  user: {
++    id: "agent-me",
++    publicId: "RC-AGENT",
++    displayName: "Agent",
++    city: "Краснодар",
++    specializations: [],
++    role: "PRO",
++    partnerType: "COMPANY",
++    partnerActivities: ["AGENT"],
++    description: null,
++    catalogStatus: "APPROVED",
++    isPublic: true,
++    rejectionReason: null,
++    badges: [],
++    photoUrl: null,
++    storeCategories: [],
++    areas: [],
++    website: null,
++    telegram: null,
++    whatsapp: null,
++    instagram: null,
++    vk: null,
++    max: null,
++    yandex: null,
++    publicEmail: null,
++    publicPhone: null,
++    showFullName: false,
++  },
++};
++
++function renderOverviewHub() {
++  return render(
++    <PartnersHub
++      meId="agent-me"
++      initialProfile={agentProfile}
++      variant="agent-r04"
++      agentPresentation="overview"
++      partnersAudience="agent-r04"
++      onOpenPartnerHub={vi.fn()}
++    />,
++  );
++}
++
++function stubListSideRoutes() {
++  return {
++    async side(path: string) {
++      if (path.startsWith("/api/partnership/search")) {
++        return { partners: [], nextCursor: null };
++      }
++      if (path === "/api/partnership/link-invite") {
++        return { invites: [] };
++      }
++      throw new Error(`unexpected ${path}`);
++    },
++  };
++}
++
++describe("PartnersHub overview first paint", () => {
++  beforeEach(() => {
++    vi.mocked(remcardFetch).mockReset();
++  });
++
++  it("pending -> rejected list -> alert+retry -> retry pending -> empty welcome", async () => {
++    const user = userEvent.setup();
++    const releaseWaiters: Array<() => void> = [];
++    let listMode: "hold" | "fail" | "ok" = "hold";
++    const side = stubListSideRoutes();
++    const releaseHeldListFetches = () => {
++      releaseWaiters.splice(0).forEach((release) => release());
++    };
++
++    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
++      if (path === "/api/partnership/list") {
++        if (listMode === "hold") {
++          await new Promise<void>((resolve) => {
++            releaseWaiters.push(resolve);
++          });
++        }
++        if (listMode === "fail") {
++          throw new RemcardApiError(500, "Список недоступен");
++        }
++        return { partnerships: [] };
++      }
++      return side.side(path);
++    });
++
++    renderOverviewHub();
++    await waitFor(() =>
++      expect(screen.getByTestId("partners-welcome-decision-pending")).toBeInTheDocument(),
++    );
++    expect(screen.queryByTestId("partners-overview-error")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
++
++    listMode = "fail";
++    releaseHeldListFetches();
++    await waitFor(() => expect(screen.getByTestId("partners-overview-error")).toBeInTheDocument());
++    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
++
++    listMode = "hold";
++    await user.click(screen.getByRole("button", { name: /Повторить/i }));
++    await waitFor(() =>
++      expect(screen.getByTestId("partners-welcome-decision-pending")).toBeInTheDocument(),
++    );
++
++    listMode = "ok";
++    releaseHeldListFetches();
++    await waitFor(() => expect(screen.getByTestId("partners-empty")).toBeInTheDocument());
++    expect(screen.queryByTestId("partners-overview-error")).not.toBeInTheDocument();
++  });
++
++  it("pending -> malformed payload -> alert without welcome", async () => {
++    let resolveList!: (value: unknown) => void;
++    const side = stubListSideRoutes();
++
++    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
++      if (path === "/api/partnership/list") {
++        return new Promise((resolve) => {
++          resolveList = resolve;
++        });
++      }
++      return side.side(path);
++    });
++
++    renderOverviewHub();
++    expect(screen.getByTestId("partners-welcome-decision-pending")).toBeInTheDocument();
++
++    resolveList({ partnerships: null });
++    await waitFor(() => expect(screen.getByTestId("partners-overview-error")).toBeInTheDocument());
++    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
++  });
++});
 diff --git a/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx b/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx
 new file mode 100644
-index 00000000..3fd948f0
+index 00000000..29a4ef7a
 --- /dev/null
 +++ b/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,89 @@
 +import { createRef } from "react";
 +import { render, screen } from "@testing-library/react";
 +import { describe, expect, it, vi } from "vitest";
@@ -656,9 +989,39 @@ index 00000000..3fd948f0
 +    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
 +    expect(screen.getByTestId("partners-empty")).toBeInTheDocument();
 +  });
++
++  it("shows error and retry when list failed (not infinite skeleton)", () => {
++    render(
++      <PartnersOverviewLayout
++        {...baseProps}
++        loading={false}
++        listReady={false}
++        error="Не удалось загрузить список"
++      />,
++    );
++    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.getByTestId("partners-overview-error")).toBeInTheDocument();
++    expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
++  });
++
++  it("keeps settled overview visible during same-user refetch", () => {
++    render(
++      <PartnersOverviewLayout
++        {...baseProps}
++        loading
++        listReady
++        error=""
++        counts={{ active: 2, decisions: 0, outgoing: 0 }}
++        collectionIsEmpty={false}
++        collectionCount={2}
++      />,
++    );
++    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.getByTestId("partners-overview-tiles")).toBeInTheDocument();
++  });
 +});
 diff --git a/src/components/partners/PartnersOverviewLayout.tsx b/src/components/partners/PartnersOverviewLayout.tsx
-index cf7ccdd8..e3e9fda2 100644
+index cf7ccdd8..d9d2da42 100644
 --- a/src/components/partners/PartnersOverviewLayout.tsx
 +++ b/src/components/partners/PartnersOverviewLayout.tsx
 @@ -12,6 +12,8 @@ import {
@@ -670,16 +1033,29 @@ index cf7ccdd8..e3e9fda2 100644
  
  export type PartnersOverviewLayoutProps = {
    lead: string;
-@@ -93,6 +95,8 @@ export function PartnersOverviewLayout({
+@@ -85,7 +87,7 @@ export function PartnersOverviewLayout({
+     counts,
+   });
+   const showFullLegacyOverview =
+-    listReady && !loading && !error && !isOverviewCurrentEmpty(counts);
++    listReady && !error && !isOverviewCurrentEmpty(counts);
+   const inGreetingZeroOverview = showGreetingBase && !showFullLegacyOverview;
+ 
+   const effectiveDisclosureOpen = legacyDisclosureOpen || legacyChromePinned;
+@@ -93,6 +95,12 @@ export function PartnersOverviewLayout({
    const showGreetingHero =
      showGreetingBase && !(legacyChromePinned && legacyBulkOutcomeVisible);
  
-+  const presentationPending = isPartnersOverviewPresentationPending({ loading, listReady });
++  const presentationPending = isPartnersOverviewPresentationPending({
++    loading,
++    listReady,
++    error,
++  });
 +
    const legacyPanelVisible =
      showFullLegacyOverview ||
      (inGreetingZeroOverview &&
-@@ -244,7 +248,7 @@ export function PartnersOverviewLayout({
+@@ -244,7 +252,7 @@ export function PartnersOverviewLayout({
  
    return (
      <div className={styles.root} data-testid="partners-overview">
@@ -688,7 +1064,7 @@ index cf7ccdd8..e3e9fda2 100644
          <div className={styles.head}>
            <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
            <button
-@@ -258,13 +262,11 @@ export function PartnersOverviewLayout({
+@@ -258,13 +266,11 @@ export function PartnersOverviewLayout({
          </div>
        ) : null}
  
@@ -705,7 +1081,7 @@ index cf7ccdd8..e3e9fda2 100644
          <div role="alert" data-testid="partners-overview-error">
            <p className={styles.errorBanner}>{error}</p>
            <button type="button" className={styles.ghostBtn} onClick={onRetry}>
-@@ -273,7 +275,7 @@ export function PartnersOverviewLayout({
+@@ -273,7 +279,7 @@ export function PartnersOverviewLayout({
          </div>
        ) : null}
  
@@ -714,7 +1090,7 @@ index cf7ccdd8..e3e9fda2 100644
          <PartnersNewPartnerEmpty
            audience={partnersAudience ?? "agent-r04"}
            variant={greetingVariant}
-@@ -283,7 +285,7 @@ export function PartnersOverviewLayout({
+@@ -283,7 +289,7 @@ export function PartnersOverviewLayout({
          />
        ) : null}
  
@@ -723,7 +1099,7 @@ index cf7ccdd8..e3e9fda2 100644
          <>
            <PartnersOverviewLegacyDisclosure
              open={effectiveDisclosureOpen}
-@@ -302,7 +304,7 @@ export function PartnersOverviewLayout({
+@@ -302,7 +308,7 @@ export function PartnersOverviewLayout({
              {legacyPanelVisible ? legacyOverviewPanel : null}
            </div>
          </>
@@ -1007,10 +1383,10 @@ index 00000000..840fe749
 +}
 diff --git a/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx b/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx
 new file mode 100644
-index 00000000..a6086ed1
+index 00000000..28657739
 --- /dev/null
 +++ b/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,125 @@
 +import { describe, expect, it } from "vitest";
 +import {
 +  isCertificatesWelcomeDecisionPending,
@@ -1075,10 +1451,40 @@ index 00000000..a6086ed1
 +    ).toBe(false);
 +  });
 +
-+  it("partners pending until listReady", () => {
-+    expect(isPartnersOverviewPresentationPending({ loading: true, listReady: false })).toBe(true);
-+    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: false })).toBe(true);
-+    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: true })).toBe(false);
++  it("partners pending only for unresolved initial load", () => {
++    expect(
++      isPartnersOverviewPresentationPending({ loading: true, listReady: false, error: "" }),
++    ).toBe(true);
++    expect(
++      isPartnersOverviewPresentationPending({ loading: false, listReady: false, error: "" }),
++    ).toBe(true);
++    expect(
++      isPartnersOverviewPresentationPending({ loading: false, listReady: true, error: "" }),
++    ).toBe(false);
++    expect(
++      isPartnersOverviewPresentationPending({
++        loading: true,
++        listReady: true,
++        error: "",
++      }),
++    ).toBe(false);
++  });
++
++  it("partners errors and malformed outcomes are not pending", () => {
++    expect(
++      isPartnersOverviewPresentationPending({
++        loading: false,
++        listReady: false,
++        error: "Не удалось загрузить список",
++      }),
++    ).toBe(false);
++    expect(
++      isPartnersOverviewPresentationPending({
++        loading: false,
++        listReady: false,
++        error: "Forbidden",
++      }),
++    ).toBe(false);
 +  });
 +
 +  it("scanner pending for idle and loading probes", () => {
@@ -1108,10 +1514,10 @@ index 00000000..a6086ed1
 +});
 diff --git a/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts b/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts
 new file mode 100644
-index 00000000..9c81d9e1
+index 00000000..3f2e23cf
 --- /dev/null
 +++ b/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,68 @@
 +import type { AgentR03ListSort } from "@/lib/agent-r03/types";
 +import type { ScannerEmptyActivityProbe } from "@/lib/scanner-empty/eligibility";
 +
@@ -1146,11 +1552,17 @@ index 00000000..9c81d9e1
 +  return true;
 +}
 +
++/** Initial overview list decision — not refetch while a prior successful list is ready. */
 +export function isPartnersOverviewPresentationPending(input: {
 +  loading: boolean;
 +  listReady: boolean;
++  error: string;
 +}): boolean {
-+  return input.loading || !input.listReady;
++  if (input.error.trim()) return false;
++  if (input.listReady) return false;
++  if (input.loading) return true;
++  // Pre-first-response / unresolved without error payload (Hub starts loadingList true).
++  return true;
 +}
 +
 +export function isScannerWelcomeDecisionPending(probe: ScannerEmptyActivityProbe): boolean {
