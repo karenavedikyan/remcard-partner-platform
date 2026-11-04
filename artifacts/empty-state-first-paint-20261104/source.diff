@@ -1,3 +1,104 @@
+diff --git a/artifacts/empty-state-first-paint-20261104/diff-stat.txt b/artifacts/empty-state-first-paint-20261104/diff-stat.txt
+new file mode 100644
+index 00000000..b6546154
+--- /dev/null
++++ b/artifacts/empty-state-first-paint-20261104/diff-stat.txt
+@@ -0,0 +1,20 @@
++ .../empty-state-first-paint-20261104/diff-stat.txt |   0
++ .../empty-state-first-paint-20261104/source.diff   | 553 +++++++++++++++++++++
++ .../AgentCertificatesList.first-paint.test.tsx     |  66 +++
++ src/components/agent-r03/AgentCertificatesList.tsx |  35 +-
++ .../AgentClientsList.first-paint.test.tsx          | 125 +++++
++ src/components/agent-r03/AgentClientsList.tsx      |  33 +-
++ ...usinessOwnerHomeDashboard.presentation.test.tsx |  45 +-
++ src/components/home/BusinessOwnerHomeDashboard.tsx |  10 +-
++ src/components/home/SpecialistHomeDashboard.tsx    |   5 +-
++ .../PartnersOverviewLayout.first-paint.test.tsx    |  59 +++
++ src/components/partners/PartnersOverviewLayout.tsx |  20 +-
++ src/components/profile/ProfileTeamSection.tsx      |  12 +-
++ .../recommendations/RecommendationsList.tsx        |  20 +-
++ .../scanner/ScannerHub.empty-state.test.tsx        |  19 +
++ src/components/scanner/ScannerHub.tsx              |  10 +-
++ .../WelcomeContentAreaPending.module.css           |  46 ++
++ .../WelcomeContentAreaPending.tsx                  |  30 ++
++ .../welcomeFirstPaintPending.test.tsx              |  95 ++++
++ .../welcomeFirstPaintPending.ts                    |  62 +++
++ 19 files changed, 1182 insertions(+), 63 deletions(-)
+diff --git a/artifacts/empty-state-first-paint-20261104/source.diff b/artifacts/empty-state-first-paint-20261104/source.diff
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx b/src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx
+new file mode 100644
+index 00000000..4cef3c85
+--- /dev/null
++++ b/src/components/agent-r03/AgentCertificatesList.first-paint.test.tsx
+@@ -0,0 +1,66 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { AgentCertificatesList } from "./AgentCertificatesList";
++import { fetchAgentCertificates } from "@/lib/agent-r03/api";
++
++vi.mock("qrcode", () => ({
++  default: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,test") },
++}));
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
++  useSearchParams: () => new URLSearchParams(),
++}));
++
++vi.mock("@/lib/agent-r03/viewModeStorage", () => ({
++  readAgentR03ViewMode: () => "list" as const,
++  writeAgentR03ViewMode: vi.fn(),
++}));
++
++vi.mock("@/lib/agent-r03/api", () => ({
++  fetchAgentCertificates: vi.fn(),
++  patchAgentCertificate: vi.fn(),
++  deleteAgentCertificate: vi.fn(),
++  batchAgentCertificates: vi.fn(),
++}));
++
++function trueZeroResponse() {
++  return {
++    certificates: [] as const,
++    page: 1,
++    pageSize: 25,
++    totalCount: 0,
++    totalPages: 1,
++    activeCount: 0,
++    archivedCount: 0,
++    hasNextPage: false,
++    hasPrevPage: false,
++    sort: "created_desc" as const,
++  };
++}
++
++describe("AgentCertificatesList first paint", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("pending: no intro, toolbar, or welcome until empty resolves", async () => {
++    let resolveFetch!: (value: ReturnType<typeof trueZeroResponse>) => void;
++    vi.mocked(fetchAgentCertificates).mockImplementation(
++      () =>
++        new Promise((resolve) => {
++          resolveFetch = resolve;
++        }),
++    );
++
++    render(<AgentCertificatesList accessMode="agent" />);
++
++    expect(screen.getByTestId("certificates-welcome-decision-pending")).toBeInTheDocument();
++    expect(screen.queryByTestId("agent-r03-collection-toolbar")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++
++    resolveFetch(trueZeroResponse());
++    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
++    expect(screen.queryByTestId("certificates-welcome-decision-pending")).not.toBeInTheDocument();
++  });
++});
 diff --git a/src/components/agent-r03/AgentCertificatesList.tsx b/src/components/agent-r03/AgentCertificatesList.tsx
 index 514c79c5..9a41d7aa 100644
 --- a/src/components/agent-r03/AgentCertificatesList.tsx
@@ -117,6 +218,137 @@ index 514c79c5..9a41d7aa 100644
          <AgentR03Pagination
            page={currentPage}
            totalPages={totalPages}
+diff --git a/src/components/agent-r03/AgentClientsList.first-paint.test.tsx b/src/components/agent-r03/AgentClientsList.first-paint.test.tsx
+new file mode 100644
+index 00000000..90217a63
+--- /dev/null
++++ b/src/components/agent-r03/AgentClientsList.first-paint.test.tsx
+@@ -0,0 +1,125 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { AgentClientsList } from "./AgentClientsList";
++import { OwnerClientsModeProvider } from "@/components/clients/OwnerClientsModeContext";
++import { fetchAgentClients } from "@/lib/agent-r03/api";
++
++vi.mock("next/navigation", () => ({
++  useSearchParams: () => new URLSearchParams(),
++  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
++}));
++
++vi.mock("@/lib/agent-r03/viewModeStorage", () => ({
++  readAgentR03ViewMode: () => "list" as const,
++  writeAgentR03ViewMode: vi.fn(),
++}));
++
++vi.mock("@/lib/agent-r03/api", () => ({
++  fetchAgentClients: vi.fn(),
++  createAgentClient: vi.fn(),
++  patchAgentClient: vi.fn(),
++  batchAgentClients: vi.fn(),
++  deleteAgentClient: vi.fn(),
++}));
++
++const emptyList = {
++  clients: [],
++  page: 1,
++  pageSize: 25,
++  totalCount: 0,
++  totalPages: 1,
++  activeCount: 0,
++  archivedCount: 0,
++  hasNextPage: false,
++  hasPrevPage: false,
++  sort: "updated_desc" as const,
++};
++
++describe("AgentClientsList first paint", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("shows pending shell with no legacy chrome or welcome until fetch resolves empty", async () => {
++    let resolveFetch!: (value: typeof emptyList) => void;
++    vi.mocked(fetchAgentClients).mockImplementation(
++      () =>
++        new Promise((resolve) => {
++          resolveFetch = resolve;
++        }),
++    );
++
++    render(
++      <OwnerClientsModeProvider mode="agent">
++        <AgentClientsList accessMode="agent" />
++      </OwnerClientsModeProvider>,
++    );
++
++    expect(screen.getByTestId("clients-welcome-decision-pending")).toBeInTheDocument();
++    expect(screen.queryByTestId("clients-page-add")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("agent-r03-collection-toolbar")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++
++    resolveFetch(emptyList);
++    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
++    expect(screen.queryByTestId("clients-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("clients-page-add")).not.toBeInTheDocument();
++  });
++
++  it("resolves to ordinary list chrome when data is populated", async () => {
++    let resolveFetch!: (value: typeof emptyList & { clients: { id: string }[] }) => void;
++    vi.mocked(fetchAgentClients).mockImplementation(
++      () =>
++        new Promise((resolve) => {
++          resolveFetch = resolve;
++        }),
++    );
++
++    render(
++      <OwnerClientsModeProvider mode="agent">
++        <AgentClientsList accessMode="agent" />
++      </OwnerClientsModeProvider>,
++    );
++
++    expect(screen.getByTestId("clients-welcome-decision-pending")).toBeInTheDocument();
++
++    resolveFetch({
++      ...emptyList,
++      activeCount: 1,
++      totalCount: 1,
++      clients: [
++        {
++          id: "c1",
++          displayName: "Client",
++          phone: null,
++          email: null,
++          city: null,
++          need: null,
++          note: null,
++          archivedAt: null,
++          createdAt: new Date().toISOString(),
++          updatedAt: new Date().toISOString(),
++          certificateCount: 0,
++        },
++      ],
++    });
++
++    await waitFor(() => expect(screen.getByTestId("clients-page-add")).toBeInTheDocument());
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++  });
++
++  it("shows error and retry without welcome when fetch rejects", async () => {
++    vi.mocked(fetchAgentClients).mockRejectedValue(new Error("network"));
++
++    render(
++      <OwnerClientsModeProvider mode="agent">
++        <AgentClientsList accessMode="agent" />
++      </OwnerClientsModeProvider>,
++    );
++
++    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
++    expect(screen.getByRole("button", { name: "Повторить" })).toBeInTheDocument();
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("clients-welcome-decision-pending")).not.toBeInTheDocument();
++  });
++});
 diff --git a/src/components/agent-r03/AgentClientsList.tsx b/src/components/agent-r03/AgentClientsList.tsx
 index 7f5830d4..51331bf2 100644
 --- a/src/components/agent-r03/AgentClientsList.tsx
@@ -219,6 +451,75 @@ index 7f5830d4..51331bf2 100644
          <AgentR03Pagination
            page={currentPage}
            totalPages={totalPages}
+diff --git a/src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx b/src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx
+index 630a459a..e55d9de5 100644
+--- a/src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx
++++ b/src/components/home/BusinessOwnerHomeDashboard.presentation.test.tsx
+@@ -34,35 +34,48 @@ describe("BusinessOwnerHomeDashboard", () => {
+ 
+     render(<BusinessOwnerHomeDashboard partnerType="STORE" />);
+ 
+-    expect(
+-      screen.getByRole("heading", { level: 2, name: /Начните с продажи по рекомендации/ }),
+-    ).toBeTruthy();
++    expect(screen.getByTestId("home-supplemental-skeleton")).toBeInTheDocument();
++
++    await waitFor(() =>
++      expect(
++        screen.getByRole("heading", { level: 2, name: /Начните с продажи по рекомендации/ }),
++      ).toBeTruthy(),
++    );
+     expect(screen.getByRole("link", { name: /Проверить сертификат/ })).toHaveAttribute(
+       "href",
+       "/scanner",
+     );
+-    await waitFor(() => expect(screen.getByText("3")).toBeTruthy());
++    expect(screen.getByText("3")).toBeTruthy();
+     expect(screen.getByText("ул. 1, Краснодар")).toBeTruthy();
+   });
+ 
+   it("renders company hero and invite CTA", async () => {
+-    vi.mocked(remcardFetch).mockResolvedValue({
+-      partnerType: "COMPANY",
+-      activeBranchLabel: null,
+-      metrics: {
+-        primary: { state: "empty" },
+-        secondary: { state: "ok", value: 4 },
+-        tertiary: { state: "ok", value: 1 },
+-      },
++    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
++      if (String(path).includes("/api/partnership/list")) {
++        return { partnerships: [] };
++      }
++      return {
++        partnerType: "COMPANY",
++        activeBranchLabel: null,
++        metrics: {
++          primary: { state: "empty" },
++          secondary: { state: "ok", value: 4 },
++          tertiary: { state: "ok", value: 1 },
++        },
++      };
+     });
+ 
+     render(<BusinessOwnerHomeDashboard partnerType="COMPANY" />);
+ 
+-    expect(screen.getByRole("link", { name: /Пригласить сотрудника/ })).toHaveAttribute(
+-      "href",
+-      "/profile?section=team",
++    expect(screen.getByTestId("home-supplemental-skeleton")).toBeInTheDocument();
++
++    await waitFor(() =>
++      expect(screen.getByRole("link", { name: /Пригласить сотрудника/ })).toHaveAttribute(
++        "href",
++        "/profile?section=team",
++      ),
+     );
+-    await waitFor(() => expect(screen.getByText("4")).toBeTruthy());
++    expect(screen.getByText("4")).toBeTruthy();
+     expect(screen.getByText(/Активных партнёрств: 1/)).toBeTruthy();
+   });
+ 
 diff --git a/src/components/home/BusinessOwnerHomeDashboard.tsx b/src/components/home/BusinessOwnerHomeDashboard.tsx
 index 794c1fe9..f4b3ee58 100644
 --- a/src/components/home/BusinessOwnerHomeDashboard.tsx
@@ -291,6 +592,71 @@ index da4b6c62..9b835bee 100644
          <HomeSupplementalProbeSkeleton
            statLabels={["Сертификаты", "Начислено", "Получено"]}
          />
+diff --git a/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx b/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx
+new file mode 100644
+index 00000000..3fd948f0
+--- /dev/null
++++ b/src/components/partners/PartnersOverviewLayout.first-paint.test.tsx
+@@ -0,0 +1,59 @@
++import { createRef } from "react";
++import { render, screen } from "@testing-library/react";
++import { describe, expect, it, vi } from "vitest";
++import { PartnersOverviewLayout } from "./PartnersOverviewLayout";
++
++const zoneRefs = {
++  active: createRef<HTMLDivElement>(),
++  decide: createRef<HTMLDivElement>(),
++  waiting: createRef<HTMLDetailsElement>(),
++};
++
++const baseProps = {
++  lead: "Lead",
++  counts: { active: 0, decisions: 0, outgoing: 0 },
++  loading: true,
++  error: "",
++  listReady: false,
++  onRetry: vi.fn(),
++  onOpenFind: vi.fn(),
++  onOpenLink: vi.fn(),
++  onTileNavigate: vi.fn(),
++  waitingOpen: false,
++  onWaitingOpenChange: vi.fn(),
++  decisionSlot: null,
++  activeSlot: null,
++  waitingSlot: null,
++  zoneRefs,
++  collectionIsEmpty: true,
++  greetingVariant: "true-empty" as const,
++  hasArchivedOrHiddenActive: false,
++  collectionCount: 0,
++  legacyDisclosureOpen: false,
++  onLegacyDisclosureOpenChange: vi.fn(),
++  legacyChromePinned: false,
++  legacyBulkOutcomeVisible: false,
++};
++
++describe("PartnersOverviewLayout first paint", () => {
++  it("shows pending shell without head CTA, tiles, or welcome while loading", () => {
++    render(<PartnersOverviewLayout {...baseProps} />);
++    expect(screen.getByTestId("partners-welcome-decision-pending")).toBeInTheDocument();
++    expect(screen.queryByTestId("partners-overview-cta-find")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("partners-overview-tiles")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++  });
++
++  it("shows welcome only after listReady with zero counts", () => {
++    render(
++      <PartnersOverviewLayout
++        {...baseProps}
++        loading={false}
++        listReady
++        counts={{ active: 0, decisions: 0, outgoing: 0 }}
++      />,
++    );
++    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
++    expect(screen.getByTestId("partners-empty")).toBeInTheDocument();
++  });
++});
 diff --git a/src/components/partners/PartnersOverviewLayout.tsx b/src/components/partners/PartnersOverviewLayout.tsx
 index cf7ccdd8..e3e9fda2 100644
 --- a/src/components/partners/PartnersOverviewLayout.tsx
@@ -551,3 +917,260 @@ index 42f44070..cf237eb0 100644
            <div className={styles.scannerHero}>
              <span className={styles.scannerIcon} aria-hidden>
                ▣
+diff --git a/src/components/welcome-first-paint/WelcomeContentAreaPending.module.css b/src/components/welcome-first-paint/WelcomeContentAreaPending.module.css
+new file mode 100644
+index 00000000..f664acb7
+--- /dev/null
++++ b/src/components/welcome-first-paint/WelcomeContentAreaPending.module.css
+@@ -0,0 +1,46 @@
++.root {
++  display: grid;
++  gap: var(--space-4);
++  min-width: 0;
++  max-width: 100%;
++  padding: var(--space-2) 0 var(--space-6);
++}
++
++.barWide,
++.barMedium,
++.block {
++  display: block;
++  border-radius: var(--radius-md);
++  background: color-mix(in srgb, var(--muted) 22%, transparent);
++  min-height: 12px;
++}
++
++.barWide {
++  width: min(100%, 28rem);
++  height: 14px;
++}
++
++.barMedium {
++  width: min(100%, 18rem);
++  height: 12px;
++}
++
++.blockRow {
++  display: grid;
++  gap: var(--space-3);
++  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
++  margin-top: var(--space-2);
++}
++
++.block {
++  height: 5.5rem;
++  border-radius: 14px;
++}
++
++@media (prefers-color-scheme: dark) {
++  .barWide,
++  .barMedium,
++  .block {
++    background: color-mix(in srgb, var(--muted) 28%, transparent);
++  }
++}
+diff --git a/src/components/welcome-first-paint/WelcomeContentAreaPending.tsx b/src/components/welcome-first-paint/WelcomeContentAreaPending.tsx
+new file mode 100644
+index 00000000..840fe749
+--- /dev/null
++++ b/src/components/welcome-first-paint/WelcomeContentAreaPending.tsx
+@@ -0,0 +1,30 @@
++import styles from "./WelcomeContentAreaPending.module.css";
++
++type WelcomeContentAreaPendingProps = {
++  testId?: string;
++  label?: string;
++};
++
++/** Neutral compact placeholder until welcome vs list eligibility is known. */
++export function WelcomeContentAreaPending({
++  testId = "welcome-content-area-pending",
++  label = "Загрузка раздела",
++}: WelcomeContentAreaPendingProps) {
++  return (
++    <div
++      className={styles.root}
++      role="status"
++      aria-live="polite"
++      aria-busy="true"
++      aria-label={label}
++      data-testid={testId}
++    >
++      <span className={styles.barWide} aria-hidden />
++      <span className={styles.barMedium} aria-hidden />
++      <div className={styles.blockRow} aria-hidden>
++        <span className={styles.block} />
++        <span className={styles.block} />
++      </div>
++    </div>
++  );
++}
+diff --git a/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx b/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx
+new file mode 100644
+index 00000000..a6086ed1
+--- /dev/null
++++ b/src/lib/welcome-first-paint/welcomeFirstPaintPending.test.tsx
+@@ -0,0 +1,95 @@
++import { describe, expect, it } from "vitest";
++import {
++  isCertificatesWelcomeDecisionPending,
++  isClientsWelcomeDecisionPending,
++  isHomeMetricsPresentationPending,
++  isPartnersOverviewPresentationPending,
++  isRecommendationsWelcomeDecisionPending,
++  isScannerWelcomeDecisionPending,
++  isTeamWelcomeDecisionPending,
++} from "./welcomeFirstPaintPending";
++
++describe("welcomeFirstPaintPending helpers", () => {
++  it("clients pending only on baseline initial load", () => {
++    expect(
++      isClientsWelcomeDecisionPending({
++        loadState: "loading",
++        page: 1,
++        appliedQ: "",
++        archived: false,
++        sort: "updated_desc",
++        itemsLength: 0,
++      }),
++    ).toBe(true);
++    expect(
++      isClientsWelcomeDecisionPending({
++        loadState: "loading",
++        page: 1,
++        appliedQ: "x",
++        archived: false,
++        sort: "updated_desc",
++        itemsLength: 0,
++      }),
++    ).toBe(false);
++    expect(
++      isClientsWelcomeDecisionPending({
++        loadState: "loading",
++        page: 1,
++        appliedQ: "",
++        archived: false,
++        sort: "updated_desc",
++        itemsLength: 2,
++      }),
++    ).toBe(false);
++  });
++
++  it("certificates pending respects filters and retained rows", () => {
++    expect(
++      isCertificatesWelcomeDecisionPending({
++        loadState: "loading",
++        itemsLength: 0,
++        archived: false,
++        filtersActive: false,
++      }),
++    ).toBe(true);
++    expect(
++      isCertificatesWelcomeDecisionPending({
++        loadState: "loading",
++        itemsLength: 0,
++        archived: true,
++        filtersActive: false,
++      }),
++    ).toBe(false);
++  });
++
++  it("partners pending until listReady", () => {
++    expect(isPartnersOverviewPresentationPending({ loading: true, listReady: false })).toBe(true);
++    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: false })).toBe(true);
++    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: true })).toBe(false);
++  });
++
++  it("scanner pending for idle and loading probes", () => {
++    expect(isScannerWelcomeDecisionPending({ status: "loading" })).toBe(true);
++    expect(isScannerWelcomeDecisionPending({ status: "idle" })).toBe(true);
++    expect(isScannerWelcomeDecisionPending({ status: "empty_confirmed" })).toBe(false);
++  });
++
++  it("team pending while loading without error", () => {
++    expect(isTeamWelcomeDecisionPending({ loading: true, error: "" })).toBe(true);
++    expect(isTeamWelcomeDecisionPending({ loading: true, error: "fail" })).toBe(false);
++  });
++
++  it("home metrics pending while loadState loading", () => {
++    expect(isHomeMetricsPresentationPending("loading")).toBe(true);
++    expect(isHomeMetricsPresentationPending("loaded")).toBe(false);
++  });
++
++  it("recommendations pending on initial fetch", () => {
++    expect(
++      isRecommendationsWelcomeDecisionPending({ loadState: "loading", itemsLength: 0 }),
++    ).toBe(true);
++    expect(
++      isRecommendationsWelcomeDecisionPending({ loadState: "loading", itemsLength: 1 }),
++    ).toBe(false);
++  });
++});
+diff --git a/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts b/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts
+new file mode 100644
+index 00000000..9c81d9e1
+--- /dev/null
++++ b/src/lib/welcome-first-paint/welcomeFirstPaintPending.ts
+@@ -0,0 +1,62 @@
++import type { AgentR03ListSort } from "@/lib/agent-r03/types";
++import type { ScannerEmptyActivityProbe } from "@/lib/scanner-empty/eligibility";
++
++/** Initial baseline list fetch — hide legacy chrome until load settles (not filter refetch). */
++export function isClientsWelcomeDecisionPending(input: {
++  loadState: "loading" | "loaded" | "error";
++  page: number;
++  appliedQ: string;
++  archived: boolean;
++  sort: AgentR03ListSort;
++  itemsLength: number;
++}): boolean {
++  if (input.loadState !== "loading") return false;
++  if (input.itemsLength > 0) return false;
++  if (input.page !== 1) return false;
++  if (input.archived) return false;
++  if (input.appliedQ.trim()) return false;
++  if (input.sort !== "updated_desc") return false;
++  return true;
++}
++
++export function isCertificatesWelcomeDecisionPending(input: {
++  loadState: "loading" | "loaded" | "error";
++  itemsLength: number;
++  archived: boolean;
++  filtersActive: boolean;
++}): boolean {
++  if (input.loadState !== "loading") return false;
++  if (input.itemsLength > 0) return false;
++  if (input.archived) return false;
++  if (input.filtersActive) return false;
++  return true;
++}
++
++export function isPartnersOverviewPresentationPending(input: {
++  loading: boolean;
++  listReady: boolean;
++}): boolean {
++  return input.loading || !input.listReady;
++}
++
++export function isScannerWelcomeDecisionPending(probe: ScannerEmptyActivityProbe): boolean {
++  return probe.status === "idle" || probe.status === "loading";
++}
++
++export function isTeamWelcomeDecisionPending(input: {
++  loading: boolean;
++  error: string;
++}): boolean {
++  return input.loading && !input.error.trim();
++}
++
++export function isRecommendationsWelcomeDecisionPending(input: {
++  loadState: "loading" | "loaded" | "error";
++  itemsLength: number;
++}): boolean {
++  return input.loadState === "loading" && input.itemsLength === 0;
++}
++
++export function isHomeMetricsPresentationPending(loadState: "loading" | "loaded"): boolean {
++  return loadState === "loading";
++}
