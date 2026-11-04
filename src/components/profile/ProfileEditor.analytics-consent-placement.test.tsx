@@ -1,9 +1,15 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ProfileEditor } from "./ProfileEditor";
 import { ownerProfileCabinetAccess } from "@/lib/profile-cabinet-access";
 import type { ProProfileResponse } from "@/lib/types";
+
+const backgroundMocks = vi.hoisted(() => ({
+  remcardFetch: vi.fn(),
+  fetchSpecialistR06Status: vi.fn(),
+  fetchAgentProfileStatus: vi.fn(),
+}));
 
 let mockSearchParams = new URLSearchParams("section=overview");
 
@@ -33,7 +39,7 @@ vi.mock("@/lib/profile-save", () => ({
 }));
 
 vi.mock("@/lib/api-client", () => ({
-  remcardFetch: vi.fn().mockResolvedValue({ notes: [] }),
+  remcardFetch: backgroundMocks.remcardFetch,
   RemcardApiError: class RemcardApiError extends Error {
     status: number;
     constructor(status: number, message: string) {
@@ -58,13 +64,14 @@ vi.mock("./ProfileOverviewSection", () => ({ ProfileOverviewSection: () => null 
 vi.mock("./ProfileBranchContextSwitcher", () => ({ ProfileBranchContextSwitcher: () => null }));
 vi.mock("./PartnerTypeSettings", () => ({ PartnerTypeSettings: () => null }));
 vi.mock("./ProfileSessionActions", () => ({ ProfileSessionActions: () => null }));
+vi.mock("./ProfileDirectionsPicker", () => ({
+  ProfileDirectionsPicker: () => <div data-testid="profile-directions-picker" />,
+}));
 vi.mock("@/lib/specialist-r06/api", () => ({
-  fetchSpecialistR06Status: () =>
-    Promise.resolve({ enabled: false, eligible: false, hasSpecialistActivity: false }),
+  fetchSpecialistR06Status: backgroundMocks.fetchSpecialistR06Status,
 }));
 vi.mock("@/lib/agent-profile/api", () => ({
-  fetchAgentProfileStatus: () =>
-    Promise.resolve({ featureEnabled: false, hasAgentActivity: false, eligible: false }),
+  fetchAgentProfileStatus: backgroundMocks.fetchAgentProfileStatus,
 }));
 
 const profile: ProProfileResponse = {
@@ -99,6 +106,21 @@ const profile: ProProfileResponse = {
   },
 };
 
+async function drainMockResults(fn: ReturnType<typeof vi.fn>) {
+  await Promise.all(fn.mock.results.map((result) => result.value));
+}
+
+async function drainProfileEditorBackgroundWork() {
+  await waitFor(() => {
+    expect(backgroundMocks.remcardFetch).toHaveBeenCalledWith("/api/pro/moderation-notes");
+  });
+  await act(async () => {
+    await drainMockResults(backgroundMocks.remcardFetch);
+    await drainMockResults(backgroundMocks.fetchSpecialistR06Status);
+    await drainMockResults(backgroundMocks.fetchAgentProfileStatus);
+  });
+}
+
 function mount(section: string) {
   mockSearchParams = new URLSearchParams(`section=${section}`);
   return render(
@@ -111,19 +133,62 @@ function mount(section: string) {
 describe("ProfileEditor analytics consent placement", () => {
   beforeEach(() => {
     localStorage.clear();
+    backgroundMocks.remcardFetch.mockReset();
+    backgroundMocks.fetchSpecialistR06Status.mockReset();
+    backgroundMocks.fetchAgentProfileStatus.mockReset();
+    backgroundMocks.remcardFetch.mockImplementation(async (path: string) => {
+      if (path === "/api/pro/moderation-notes") {
+        return { notes: [] };
+      }
+      throw new Error(`unexpected remcardFetch path in placement test: ${path}`);
+    });
+    backgroundMocks.fetchSpecialistR06Status.mockResolvedValue({
+      featureEnabled: false,
+      eligible: false,
+      profileComplete: false,
+    });
+    backgroundMocks.fetchAgentProfileStatus.mockResolvedValue({
+      featureEnabled: false,
+      eligible: false,
+      hasAgentActivity: false,
+      profileComplete: false,
+    });
   });
 
-  it("shows a single inset on overview and basics, not on catalog", () => {
-    const { unmount } = mount("overview");
-    expect(screen.getAllByTestId("analytics-consent-profile")).toHaveLength(1);
-    unmount();
+  afterEach(async () => {
+    await act(async () => {
+      await drainMockResults(backgroundMocks.remcardFetch);
+      await drainMockResults(backgroundMocks.fetchSpecialistR06Status);
+      await drainMockResults(backgroundMocks.fetchAgentProfileStatus);
+    });
+  });
+
+  it("shows a single inset on overview and basics, not on catalog", async () => {
+    const first = mount("overview");
+    await waitFor(() => {
+      expect(screen.getAllByTestId("analytics-consent-profile")).toHaveLength(1);
+    });
+    expect(
+      screen.getByRole("checkbox", { name: /разрешить учёт посещений/i }),
+    ).toBeInTheDocument();
+    await drainProfileEditorBackgroundWork();
+    first.unmount();
 
     mount("basics");
-    expect(screen.getAllByTestId("analytics-consent-profile")).toHaveLength(1);
+    await waitFor(() => {
+      expect(screen.getAllByTestId("analytics-consent-profile")).toHaveLength(1);
+    });
+    expect(
+      screen.getByRole("checkbox", { name: /разрешить учёт посещений/i }),
+    ).toBeChecked();
+    await drainProfileEditorBackgroundWork();
   });
 
-  it("hides analytics consent on unrelated profile tabs", () => {
-    mount("catalog");
+  it("hides analytics consent on unrelated profile tabs", async () => {
+    const view = mount("catalog");
+    await drainProfileEditorBackgroundWork();
     expect(screen.queryByTestId("analytics-consent-profile")).toBeNull();
+    view.unmount();
+    await drainProfileEditorBackgroundWork();
   });
 });
