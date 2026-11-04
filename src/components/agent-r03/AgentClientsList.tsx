@@ -37,6 +37,8 @@ import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-em
 import { isClientsNewPartnerEmptyEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
 import { mapClientsAccessToEmptyRole } from "@/components/clients/new-partner-empty/clientsEmptyCopy";
 import { listCountsFromApi } from "@/components/clients/new-partner-empty/listCountsFromApi";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isClientsWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -302,6 +304,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       knownListCounts,
     }) && mapClientsAccessToEmptyRole(accessMode, businessPartnerType) !== null;
 
+  const welcomeDecisionPending = isClientsWelcomeDecisionPending({
+    loadState,
+    page: currentPage,
+    appliedQ,
+    archived,
+    sort,
+    itemsLength: items.length,
+  });
+
   return (
     <div
       className={styles.r03Root}
@@ -313,10 +324,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
             : undefined
       }
     >
-      {accessMode === "agent" && !showNewPartnerEmpty ? (
+      {accessMode === "agent" && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <AgentR03PageIntro variant="clients" />
       ) : null}
-      {!showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
         <div className={styles.pageActions}>
           <Button data-testid="clients-page-add" onClick={openCreate}>
             Добавить клиента
@@ -324,7 +335,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         </div>
       ) : null}
       <div data-testid="agent-r03-capture-body">
-      {!showNewPartnerEmpty ? (
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="clients-welcome-decision-pending" />
+      ) : null}
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
       <AgentR03ListToolbar
         searchPlaceholder="Имя, контакт, город или задача"
         q={qDraft}
@@ -366,10 +380,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       />
       ) : null}
 
-      {loadState === "loading" && items.length === 0 ? (
-        <p className={styles.loading}>Загрузка…</p>
-      ) : null}
-      {loadState === "error" ? (
+      {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
           <Button variant="secondary" onClick={() => void load()}>
@@ -378,7 +389,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length === 0 ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length === 0 ? (
         showNewPartnerEmpty ? (
           <ClientsNewPartnerEmptyState
             accessMode={accessMode}
@@ -391,7 +402,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         )
       ) : null}
 
-      {items.length > 0 && viewMode === "cards" ? (
+      {!welcomeDecisionPending && items.length > 0 && viewMode === "cards" ? (
         <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((client) => (
             <div
@@ -439,7 +450,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         </div>
       ) : null}
 
-      {items.length > 0 && viewMode === "list" ? (
+      {!welcomeDecisionPending && items.length > 0 && viewMode === "list" ? (
         <>
           <div className={`${styles.collectionPanel} ${styles.mobileOnly}`}>
             {items.map((client) => (
@@ -508,7 +519,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
         </>
       ) : null}
 
-      {items.length > 0 ? (
+      {!welcomeDecisionPending && items.length > 0 ? (
         <AgentR03Pagination
           page={currentPage}
           totalPages={totalPages}

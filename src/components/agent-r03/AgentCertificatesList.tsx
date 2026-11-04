@@ -54,6 +54,8 @@ import { shouldShowCertificatesNewPartnerEmpty } from "@/components/certificates
 import { certificatesListKnownCountsFromApi } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
 import type { CertificatesListKnownCounts } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
 import type { CertificatesNewPartnerRole } from "@/components/certificates-new-partner-empty/copy";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isCertificatesWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
@@ -277,6 +279,13 @@ export function AgentCertificatesList({
     filtersActive,
   });
 
+  const welcomeDecisionPending = isCertificatesWelcomeDecisionPending({
+    loadState,
+    itemsLength: items.length,
+    archived,
+    filtersActive,
+  });
+
   const newPartnerRole: CertificatesNewPartnerRole = isBusiness
     ? ownerMode?.businessPartnerType === "COMPANY"
       ? "company"
@@ -489,7 +498,7 @@ export function AgentCertificatesList({
             : undefined
       }
     >
-      {isBusiness && !showNewPartnerEmpty ? (
+      {isBusiness && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
           <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
@@ -509,19 +518,22 @@ export function AgentCertificatesList({
             </Link>
           </details>
         </section>
-      ) : isIssuerShell && !showNewPartnerEmpty ? (
+      ) : isIssuerShell && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
             {issuerPageCopy.createCta}
           </Button>
         </section>
-      ) : !showNewPartnerEmpty ? (
+      ) : !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
       ) : null}
 
       <div data-testid="agent-r03-capture-body">
-      {!showNewPartnerEmpty ? (
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="certificates-welcome-decision-pending" />
+      ) : null}
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
       <AgentR03ListToolbar
         searchPlaceholder={
           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
@@ -571,7 +583,7 @@ export function AgentCertificatesList({
       />
       ) : null}
 
-      {showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && showNewPartnerEmpty ? (
         <CertificatesNewPartnerEmpty
           role={newPartnerRole}
           onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
@@ -580,10 +592,7 @@ export function AgentCertificatesList({
         />
       ) : null}
 
-      {loadState === "loading" && items.length === 0 ? (
-        <p className={styles.loading}>Загрузка…</p>
-      ) : null}
-      {loadState === "error" ? (
+      {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
           <Button variant="secondary" onClick={() => void load()}>
@@ -592,7 +601,7 @@ export function AgentCertificatesList({
         </div>
       ) : null}
 
-      {!showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>
@@ -608,7 +617,7 @@ export function AgentCertificatesList({
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
         <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((cert) => (
             <AgentCertificateCard
@@ -624,7 +633,7 @@ export function AgentCertificatesList({
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
         <>
           <div className={`${styles.collectionPanel} ${styles.mobileOnly}`}>
             {items.map((cert) => (
@@ -695,7 +704,7 @@ export function AgentCertificatesList({
         </>
       ) : null}
 
-      {items.length > 0 ? (
+      {!welcomeDecisionPending && items.length > 0 ? (
         <AgentR03Pagination
           page={currentPage}
           totalPages={totalPages}

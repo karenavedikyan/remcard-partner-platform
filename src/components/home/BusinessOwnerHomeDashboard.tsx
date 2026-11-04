@@ -26,6 +26,7 @@ import {
   businessOwnerHomePendingSupplementalProbe,
   shouldShowBusinessOwnerHomeEmpty,
 } from "@/lib/home-empty/gate";
+import { isHomeMetricsPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import {
   initialCompanyLifetimeProbe,
   initialStoreLifetimeProbe,
@@ -275,6 +276,8 @@ export function BusinessOwnerHomeDashboard({
     companyProbe,
   });
 
+  const metricsPresentationPending = isHomeMetricsPresentationPending(loadState);
+
   const displaySlices = loadState === "loading" ? initialBusinessHomeMetricSlices : slices;
 
   const hints = statHints(partnerType, displaySlices, activeBranchLabel);
@@ -307,7 +310,10 @@ export function BusinessOwnerHomeDashboard({
         </section>
       ) : null}
 
-      {partnerType === "STORE" && !showEmptyState && !pendingSupplementalProbe ? (
+      {partnerType === "STORE" &&
+      !showEmptyState &&
+      !metricsPresentationPending &&
+      !pendingSupplementalProbe ? (
         <BusinessHomeBranchPicker
           selectedBranchId={selectedBranchId}
           branchSelectionRequired={branchSelectionRequired}
@@ -317,7 +323,7 @@ export function BusinessOwnerHomeDashboard({
 
       {showEmptyState ? (
         <PartnerHomeEmptyState role={emptyRole} />
-      ) : pendingSupplementalProbe ? (
+      ) : metricsPresentationPending || pendingSupplementalProbe ? (
         <HomeSupplementalProbeSkeleton statLabels={copy.stats} />
       ) : (
         <>

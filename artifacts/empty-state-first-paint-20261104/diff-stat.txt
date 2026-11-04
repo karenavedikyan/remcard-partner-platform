@@ -1,0 +1,10 @@
+ src/components/agent-r03/AgentCertificatesList.tsx | 35 ++++++++++++++--------
+ src/components/agent-r03/AgentClientsList.tsx      | 33 +++++++++++++-------
+ src/components/home/BusinessOwnerHomeDashboard.tsx | 10 +++++--
+ src/components/home/SpecialistHomeDashboard.tsx    |  5 +++-
+ src/components/partners/PartnersOverviewLayout.tsx | 20 +++++++------
+ src/components/profile/ProfileTeamSection.tsx      | 12 ++++++--
+ .../recommendations/RecommendationsList.tsx        | 20 +++++++++----
+ .../scanner/ScannerHub.empty-state.test.tsx        | 19 ++++++++++++
+ src/components/scanner/ScannerHub.tsx              | 10 +++++--
+ 9 files changed, 117 insertions(+), 47 deletions(-)

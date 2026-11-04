@@ -1,0 +1,553 @@
+diff --git a/src/components/agent-r03/AgentCertificatesList.tsx b/src/components/agent-r03/AgentCertificatesList.tsx
+index 514c79c5..9a41d7aa 100644
+--- a/src/components/agent-r03/AgentCertificatesList.tsx
++++ b/src/components/agent-r03/AgentCertificatesList.tsx
+@@ -54,6 +54,8 @@ import { shouldShowCertificatesNewPartnerEmpty } from "@/components/certificates
+ import { certificatesListKnownCountsFromApi } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
+ import type { CertificatesListKnownCounts } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
+ import type { CertificatesNewPartnerRole } from "@/components/certificates-new-partner-empty/copy";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isCertificatesWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ import styles from "./agent-r03.module.css";
+ 
+ const emptyMeta: AgentR03ListMeta = {
+@@ -277,6 +279,13 @@ export function AgentCertificatesList({
+     filtersActive,
+   });
+ 
++  const welcomeDecisionPending = isCertificatesWelcomeDecisionPending({
++    loadState,
++    itemsLength: items.length,
++    archived,
++    filtersActive,
++  });
++
+   const newPartnerRole: CertificatesNewPartnerRole = isBusiness
+     ? ownerMode?.businessPartnerType === "COMPANY"
+       ? "company"
+@@ -489,7 +498,7 @@ export function AgentCertificatesList({
+             : undefined
+       }
+     >
+-      {isBusiness && !showNewPartnerEmpty ? (
++      {isBusiness && !welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
+           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
+           <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
+@@ -509,19 +518,22 @@ export function AgentCertificatesList({
+             </Link>
+           </details>
+         </section>
+-      ) : isIssuerShell && !showNewPartnerEmpty ? (
++      ) : isIssuerShell && !welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <section className={styles.pageIntroBlock}>
+           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
+           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
+             {issuerPageCopy.createCta}
+           </Button>
+         </section>
+-      ) : !showNewPartnerEmpty ? (
++      ) : !welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
+       ) : null}
+ 
+       <div data-testid="agent-r03-capture-body">
+-      {!showNewPartnerEmpty ? (
++      {welcomeDecisionPending ? (
++        <WelcomeContentAreaPending testId="certificates-welcome-decision-pending" />
++      ) : null}
++      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+       <AgentR03ListToolbar
+         searchPlaceholder={
+           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
+@@ -571,7 +583,7 @@ export function AgentCertificatesList({
+       />
+       ) : null}
+ 
+-      {showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && showNewPartnerEmpty ? (
+         <CertificatesNewPartnerEmpty
+           role={newPartnerRole}
+           onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
+@@ -580,10 +592,7 @@ export function AgentCertificatesList({
+         />
+       ) : null}
+ 
+-      {loadState === "loading" && items.length === 0 ? (
+-        <p className={styles.loading}>Загрузка…</p>
+-      ) : null}
+-      {loadState === "error" ? (
++      {!welcomeDecisionPending && loadState === "error" ? (
+         <div className={styles.errorBlock}>
+           <p role="alert">{error}</p>
+           <Button variant="secondary" onClick={() => void load()}>
+@@ -592,7 +601,7 @@ export function AgentCertificatesList({
+         </div>
+       ) : null}
+ 
+-      {!showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
++      {!welcomeDecisionPending && !showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
+         <div className={styles.empty} data-testid="business-certificates-empty">
+           {isBusiness && !archived ? (
+             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>
+@@ -608,7 +617,7 @@ export function AgentCertificatesList({
+         </div>
+       ) : null}
+ 
+-      {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
++      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
+         <div className={styles.list} data-testid="agent-r03-cards-grid">
+           {items.map((cert) => (
+             <AgentCertificateCard
+@@ -624,7 +633,7 @@ export function AgentCertificatesList({
+         </div>
+       ) : null}
+ 
+-      {loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
++      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
+         <>
+           <div className={`${styles.collectionPanel} ${styles.mobileOnly}`}>
+             {items.map((cert) => (
+@@ -695,7 +704,7 @@ export function AgentCertificatesList({
+         </>
+       ) : null}
+ 
+-      {items.length > 0 ? (
++      {!welcomeDecisionPending && items.length > 0 ? (
+         <AgentR03Pagination
+           page={currentPage}
+           totalPages={totalPages}
+diff --git a/src/components/agent-r03/AgentClientsList.tsx b/src/components/agent-r03/AgentClientsList.tsx
+index 7f5830d4..51331bf2 100644
+--- a/src/components/agent-r03/AgentClientsList.tsx
++++ b/src/components/agent-r03/AgentClientsList.tsx
+@@ -37,6 +37,8 @@ import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-em
+ import { isClientsNewPartnerEmptyEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+ import { mapClientsAccessToEmptyRole } from "@/components/clients/new-partner-empty/clientsEmptyCopy";
+ import { listCountsFromApi } from "@/components/clients/new-partner-empty/listCountsFromApi";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isClientsWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ import styles from "./agent-r03.module.css";
+ 
+ const emptyMeta: AgentR03ListMeta = {
+@@ -302,6 +304,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+       knownListCounts,
+     }) && mapClientsAccessToEmptyRole(accessMode, businessPartnerType) !== null;
+ 
++  const welcomeDecisionPending = isClientsWelcomeDecisionPending({
++    loadState,
++    page: currentPage,
++    appliedQ,
++    archived,
++    sort,
++    itemsLength: items.length,
++  });
++
+   return (
+     <div
+       className={styles.r03Root}
+@@ -313,10 +324,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+             : undefined
+       }
+     >
+-      {accessMode === "agent" && !showNewPartnerEmpty ? (
++      {accessMode === "agent" && !welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <AgentR03PageIntro variant="clients" />
+       ) : null}
+-      {!showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <div className={styles.pageActions}>
+           <Button data-testid="clients-page-add" onClick={openCreate}>
+             Добавить клиента
+@@ -324,7 +335,10 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+         </div>
+       ) : null}
+       <div data-testid="agent-r03-capture-body">
+-      {!showNewPartnerEmpty ? (
++      {welcomeDecisionPending ? (
++        <WelcomeContentAreaPending testId="clients-welcome-decision-pending" />
++      ) : null}
++      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+       <AgentR03ListToolbar
+         searchPlaceholder="Имя, контакт, город или задача"
+         q={qDraft}
+@@ -366,10 +380,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+       />
+       ) : null}
+ 
+-      {loadState === "loading" && items.length === 0 ? (
+-        <p className={styles.loading}>Загрузка…</p>
+-      ) : null}
+-      {loadState === "error" ? (
++      {!welcomeDecisionPending && loadState === "error" ? (
+         <div className={styles.errorBlock}>
+           <p role="alert">{error}</p>
+           <Button variant="secondary" onClick={() => void load()}>
+@@ -378,7 +389,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+         </div>
+       ) : null}
+ 
+-      {loadState === "loaded" && items.length === 0 ? (
++      {!welcomeDecisionPending && loadState === "loaded" && items.length === 0 ? (
+         showNewPartnerEmpty ? (
+           <ClientsNewPartnerEmptyState
+             accessMode={accessMode}
+@@ -391,7 +402,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+         )
+       ) : null}
+ 
+-      {items.length > 0 && viewMode === "cards" ? (
++      {!welcomeDecisionPending && items.length > 0 && viewMode === "cards" ? (
+         <div className={styles.list} data-testid="agent-r03-cards-grid">
+           {items.map((client) => (
+             <div
+@@ -439,7 +450,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+         </div>
+       ) : null}
+ 
+-      {items.length > 0 && viewMode === "list" ? (
++      {!welcomeDecisionPending && items.length > 0 && viewMode === "list" ? (
+         <>
+           <div className={`${styles.collectionPanel} ${styles.mobileOnly}`}>
+             {items.map((client) => (
+@@ -508,7 +519,7 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
+         </>
+       ) : null}
+ 
+-      {items.length > 0 ? (
++      {!welcomeDecisionPending && items.length > 0 ? (
+         <AgentR03Pagination
+           page={currentPage}
+           totalPages={totalPages}
+diff --git a/src/components/home/BusinessOwnerHomeDashboard.tsx b/src/components/home/BusinessOwnerHomeDashboard.tsx
+index 794c1fe9..f4b3ee58 100644
+--- a/src/components/home/BusinessOwnerHomeDashboard.tsx
++++ b/src/components/home/BusinessOwnerHomeDashboard.tsx
+@@ -26,6 +26,7 @@ import {
+   businessOwnerHomePendingSupplementalProbe,
+   shouldShowBusinessOwnerHomeEmpty,
+ } from "@/lib/home-empty/gate";
++import { isHomeMetricsPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ import {
+   initialCompanyLifetimeProbe,
+   initialStoreLifetimeProbe,
+@@ -275,6 +276,8 @@ export function BusinessOwnerHomeDashboard({
+     companyProbe,
+   });
+ 
++  const metricsPresentationPending = isHomeMetricsPresentationPending(loadState);
++
+   const displaySlices = loadState === "loading" ? initialBusinessHomeMetricSlices : slices;
+ 
+   const hints = statHints(partnerType, displaySlices, activeBranchLabel);
+@@ -307,7 +310,10 @@ export function BusinessOwnerHomeDashboard({
+         </section>
+       ) : null}
+ 
+-      {partnerType === "STORE" && !showEmptyState && !pendingSupplementalProbe ? (
++      {partnerType === "STORE" &&
++      !showEmptyState &&
++      !metricsPresentationPending &&
++      !pendingSupplementalProbe ? (
+         <BusinessHomeBranchPicker
+           selectedBranchId={selectedBranchId}
+           branchSelectionRequired={branchSelectionRequired}
+@@ -317,7 +323,7 @@ export function BusinessOwnerHomeDashboard({
+ 
+       {showEmptyState ? (
+         <PartnerHomeEmptyState role={emptyRole} />
+-      ) : pendingSupplementalProbe ? (
++      ) : metricsPresentationPending || pendingSupplementalProbe ? (
+         <HomeSupplementalProbeSkeleton statLabels={copy.stats} />
+       ) : (
+         <>
+diff --git a/src/components/home/SpecialistHomeDashboard.tsx b/src/components/home/SpecialistHomeDashboard.tsx
+index da4b6c62..9b835bee 100644
+--- a/src/components/home/SpecialistHomeDashboard.tsx
++++ b/src/components/home/SpecialistHomeDashboard.tsx
+@@ -20,6 +20,7 @@ import {
+   specialistHomeMetricsEligibleForEmptyCheck,
+   specialistHomePendingSupplementalProbe,
+ } from "@/lib/home-empty/gate";
++import { isHomeMetricsPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ import {
+   specialistWalletEmptyProof,
+   type WalletEmptyProof,
+@@ -205,6 +206,8 @@ export function SpecialistHomeDashboard({
+     partnershipProbeState,
+   });
+ 
++  const metricsPresentationPending = isHomeMetricsPresentationPending(loadState);
++
+   const metricsFailed =
+     loadState === "loaded" &&
+     !pendingSupplementalProbe &&
+@@ -232,7 +235,7 @@ export function SpecialistHomeDashboard({
+ 
+       {showEmptyState ? (
+         <PartnerHomeEmptyState role="specialist" />
+-      ) : pendingSupplementalProbe ? (
++      ) : metricsPresentationPending || pendingSupplementalProbe ? (
+         <HomeSupplementalProbeSkeleton
+           statLabels={["Сертификаты", "Начислено", "Получено"]}
+         />
+diff --git a/src/components/partners/PartnersOverviewLayout.tsx b/src/components/partners/PartnersOverviewLayout.tsx
+index cf7ccdd8..e3e9fda2 100644
+--- a/src/components/partners/PartnersOverviewLayout.tsx
++++ b/src/components/partners/PartnersOverviewLayout.tsx
+@@ -12,6 +12,8 @@ import {
+ } from "@/components/partners/partners-overview-greeting";
+ import styles from "./PartnersOverviewLayout.module.css";
+ import disclosureStyles from "./PartnersOverviewLegacyDisclosure.module.css";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isPartnersOverviewPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ 
+ export type PartnersOverviewLayoutProps = {
+   lead: string;
+@@ -93,6 +95,8 @@ export function PartnersOverviewLayout({
+   const showGreetingHero =
+     showGreetingBase && !(legacyChromePinned && legacyBulkOutcomeVisible);
+ 
++  const presentationPending = isPartnersOverviewPresentationPending({ loading, listReady });
++
+   const legacyPanelVisible =
+     showFullLegacyOverview ||
+     (inGreetingZeroOverview &&
+@@ -244,7 +248,7 @@ export function PartnersOverviewLayout({
+ 
+   return (
+     <div className={styles.root} data-testid="partners-overview">
+-      {!hideOverviewHead ? (
++      {!presentationPending && !hideOverviewHead ? (
+         <div className={styles.head}>
+           <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
+           <button
+@@ -258,13 +262,11 @@ export function PartnersOverviewLayout({
+         </div>
+       ) : null}
+ 
+-      {loading ? (
+-        <p className={styles.statusBanner} data-testid="partners-overview-loading">
+-          Загрузка партнёрств…
+-        </p>
++      {presentationPending ? (
++        <WelcomeContentAreaPending testId="partners-welcome-decision-pending" />
+       ) : null}
+ 
+-      {error ? (
++      {!presentationPending && error ? (
+         <div role="alert" data-testid="partners-overview-error">
+           <p className={styles.errorBanner}>{error}</p>
+           <button type="button" className={styles.ghostBtn} onClick={onRetry}>
+@@ -273,7 +275,7 @@ export function PartnersOverviewLayout({
+         </div>
+       ) : null}
+ 
+-      {showGreetingHero ? (
++      {!presentationPending && showGreetingHero ? (
+         <PartnersNewPartnerEmpty
+           audience={partnersAudience ?? "agent-r04"}
+           variant={greetingVariant}
+@@ -283,7 +285,7 @@ export function PartnersOverviewLayout({
+         />
+       ) : null}
+ 
+-      {showDisclosureSummary ? (
++      {!presentationPending && showDisclosureSummary ? (
+         <>
+           <PartnersOverviewLegacyDisclosure
+             open={effectiveDisclosureOpen}
+@@ -302,7 +304,7 @@ export function PartnersOverviewLayout({
+             {legacyPanelVisible ? legacyOverviewPanel : null}
+           </div>
+         </>
+-      ) : legacyPanelVisible ? (
++      ) : !presentationPending && legacyPanelVisible ? (
+         <div
+           key="partners-overview-legacy-stable"
+           id={OVERVIEW_LEGACY_DISCLOSURE_PANEL_ID}
+diff --git a/src/components/profile/ProfileTeamSection.tsx b/src/components/profile/ProfileTeamSection.tsx
+index 553411e9..aa482eff 100644
+--- a/src/components/profile/ProfileTeamSection.tsx
++++ b/src/components/profile/ProfileTeamSection.tsx
+@@ -49,6 +49,8 @@ import {
+   TeamIconShieldCheck,
+   TeamIconUserPlus,
+ } from "./team-section-icons";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isTeamWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ 
+ type StaffInviteRow = {
+   id: string;
+@@ -279,6 +281,8 @@ export function ProfileTeamSection({
+     canManage,
+   });
+ 
++  const welcomeDecisionPending = isTeamWelcomeDecisionPending({ loading, error });
++
+   function openWizard(scope?: InviteWizardScope, branchId?: string) {
+     setWizardScope(scope);
+     setWizardBranchId(branchId);
+@@ -549,7 +553,9 @@ export function ProfileTeamSection({
+ 
+   return (
+     <div className={styles.root} data-testid="team-section-root">
+-      {loading ? <p className={formStyles.hint}>Загружаем…</p> : null}
++      {welcomeDecisionPending ? (
++        <WelcomeContentAreaPending testId="team-welcome-decision-pending" />
++      ) : null}
+       {error ? (
+         <div className={styles.errorRow} role="alert">
+           <span>{error}</span>
+@@ -585,7 +591,7 @@ export function ProfileTeamSection({
+         </div>
+       ) : null}
+ 
+-      {showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && showNewPartnerEmpty ? (
+         <TeamSectionNewPartnerEmpty
+           onInvite={
+             canManage
+@@ -596,7 +602,7 @@ export function ProfileTeamSection({
+         />
+       ) : null}
+ 
+-      {!showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+         <>
+       <div className={styles.heading}>
+         <div>
+diff --git a/src/components/recommendations/RecommendationsList.tsx b/src/components/recommendations/RecommendationsList.tsx
+index 4d7a6719..4a1cc2e7 100644
+--- a/src/components/recommendations/RecommendationsList.tsx
++++ b/src/components/recommendations/RecommendationsList.tsx
+@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/Button";
+ import { StatusBadge } from "@/components/ui/StatusBadge";
+ import { CertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/CertificatesNewPartnerEmpty";
+ import styles from "./recommendations.module.css";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isRecommendationsWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ 
+ function formatDate(iso: string) {
+   const date = new Date(iso);
+@@ -52,10 +54,14 @@ export function RecommendationsList() {
+   }, [load]);
+ 
+   const showNewPartnerEmpty = loadState === "loaded" && !error && items.length === 0;
++  const welcomeDecisionPending = isRecommendationsWelcomeDecisionPending({
++    loadState,
++    itemsLength: items.length,
++  });
+ 
+   return (
+     <>
+-      {!showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+       <div className={styles.pageActions}>
+         <Link href="/recommendations/new">
+           <Button>Создать рекомендацию</Button>
+@@ -63,9 +69,11 @@ export function RecommendationsList() {
+       </div>
+       ) : null}
+ 
+-      {loadState === "loading" ? <p className={styles.loading}>Загрузка…</p> : null}
++      {welcomeDecisionPending ? (
++        <WelcomeContentAreaPending testId="recommendations-welcome-decision-pending" />
++      ) : null}
+ 
+-      {loadState === "error" ? (
++      {!welcomeDecisionPending && loadState === "error" ? (
+         <div className={styles.errorBlock}>
+           <p role="alert">{error}</p>
+           <Button variant="secondary" onClick={() => void load()}>
+@@ -74,11 +82,11 @@ export function RecommendationsList() {
+         </div>
+       ) : null}
+ 
+-      {showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && showNewPartnerEmpty ? (
+         <CertificatesNewPartnerEmpty role="specialist" createHref="/recommendations/new" />
+       ) : null}
+ 
+-      {loadState === "loaded" && items.length === 0 && !showNewPartnerEmpty ? (
++      {!welcomeDecisionPending && loadState === "loaded" && items.length === 0 && !showNewPartnerEmpty ? (
+         <div className={styles.empty}>
+           <p>Пока нет созданных рекомендаций.</p>
+           <Link href="/recommendations/new">
+@@ -87,7 +95,7 @@ export function RecommendationsList() {
+         </div>
+       ) : null}
+ 
+-      {loadState === "loaded" && items.length > 0 ? (
++      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 ? (
+         <div className={styles.list}>
+           {items.map((cert) => (
+             <article key={cert.id} className={styles.card}>
+diff --git a/src/components/scanner/ScannerHub.empty-state.test.tsx b/src/components/scanner/ScannerHub.empty-state.test.tsx
+index fe890e74..dea92927 100644
+--- a/src/components/scanner/ScannerHub.empty-state.test.tsx
++++ b/src/components/scanner/ScannerHub.empty-state.test.tsx
+@@ -63,6 +63,25 @@ describe("ScannerHub new-partner empty state", () => {
+     );
+   });
+ 
++  it("shows pending shell before probe resolves (no hero or welcome)", async () => {
++    let resolveProbe!: (probe: ScannerEmptyActivityProbe) => void;
++    vi.spyOn(loadActivity, "loadScannerEmptyActivityProbe").mockImplementation(
++      () =>
++        new Promise((resolve) => {
++          resolveProbe = resolve;
++        }),
++    );
++
++    render(<ScannerHub userId={USER_ID} />);
++    expect(screen.getByTestId("scanner-welcome-decision-pending")).toBeInTheDocument();
++    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
++    expect(screen.queryByText(/Сканируйте QR-код документа/i)).not.toBeInTheDocument();
++
++    resolveProbe({ status: "empty_confirmed" });
++    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeInTheDocument());
++    expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
++  });
++
+   it("shows onboarding and keeps workbench when store has no purchases", async () => {
+     render(<ScannerHub userId={USER_ID} />);
+     await waitFor(() => {
+diff --git a/src/components/scanner/ScannerHub.tsx b/src/components/scanner/ScannerHub.tsx
+index 42f44070..cf237eb0 100644
+--- a/src/components/scanner/ScannerHub.tsx
++++ b/src/components/scanner/ScannerHub.tsx
+@@ -59,6 +59,8 @@ import {
+ } from "@/lib/scanner-empty/eligibility";
+ import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
+ import styles from "./scanner.module.css";
++import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
++import { isScannerWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
+ 
+ const SCANNER_WORKBENCH_ID = "scanner-workbench";
+ 
+@@ -212,6 +214,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
+   const sessionOrderCompletedRef = useRef(false);
+ 
+   const showNewPartnerEmpty = shouldShowScannerNewPartnerEmpty(activityProbe);
++  const welcomeDecisionPending = isScannerWelcomeDecisionPending(activityProbe);
+ 
+   useEffect(() => {
+     let cancelled = false;
+@@ -806,11 +809,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
+ 
+   return (
+     <>
+-      {showNewPartnerEmpty ? (
++      {welcomeDecisionPending ? (
++        <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
++      ) : null}
++      {!welcomeDecisionPending && showNewPartnerEmpty ? (
+         <ScannerNewPartnerEmpty onOpenScanner={focusScannerWorkbench} />
+       ) : null}
+       <div id={SCANNER_WORKBENCH_ID} ref={workbenchRef}>
+-        {!showNewPartnerEmpty ? (
++        {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+           <div className={styles.scannerHero}>
+             <span className={styles.scannerIcon} aria-hidden>
+               ▣

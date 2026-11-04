@@ -12,6 +12,8 @@ import {
 } from "@/components/partners/partners-overview-greeting";
 import styles from "./PartnersOverviewLayout.module.css";
 import disclosureStyles from "./PartnersOverviewLegacyDisclosure.module.css";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isPartnersOverviewPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 
 export type PartnersOverviewLayoutProps = {
   lead: string;
@@ -92,6 +94,8 @@ export function PartnersOverviewLayout({
 
   const showGreetingHero =
     showGreetingBase && !(legacyChromePinned && legacyBulkOutcomeVisible);
+
+  const presentationPending = isPartnersOverviewPresentationPending({ loading, listReady });
 
   const legacyPanelVisible =
     showFullLegacyOverview ||
@@ -244,7 +248,7 @@ export function PartnersOverviewLayout({
 
   return (
     <div className={styles.root} data-testid="partners-overview">
-      {!hideOverviewHead ? (
+      {!presentationPending && !hideOverviewHead ? (
         <div className={styles.head}>
           <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
           <button
@@ -258,13 +262,11 @@ export function PartnersOverviewLayout({
         </div>
       ) : null}
 
-      {loading ? (
-        <p className={styles.statusBanner} data-testid="partners-overview-loading">
-          Загрузка партнёрств…
-        </p>
+      {presentationPending ? (
+        <WelcomeContentAreaPending testId="partners-welcome-decision-pending" />
       ) : null}
 
-      {error ? (
+      {!presentationPending && error ? (
         <div role="alert" data-testid="partners-overview-error">
           <p className={styles.errorBanner}>{error}</p>
           <button type="button" className={styles.ghostBtn} onClick={onRetry}>
@@ -273,7 +275,7 @@ export function PartnersOverviewLayout({
         </div>
       ) : null}
 
-      {showGreetingHero ? (
+      {!presentationPending && showGreetingHero ? (
         <PartnersNewPartnerEmpty
           audience={partnersAudience ?? "agent-r04"}
           variant={greetingVariant}
@@ -283,7 +285,7 @@ export function PartnersOverviewLayout({
         />
       ) : null}
 
-      {showDisclosureSummary ? (
+      {!presentationPending && showDisclosureSummary ? (
         <>
           <PartnersOverviewLegacyDisclosure
             open={effectiveDisclosureOpen}
@@ -302,7 +304,7 @@ export function PartnersOverviewLayout({
             {legacyPanelVisible ? legacyOverviewPanel : null}
           </div>
         </>
-      ) : legacyPanelVisible ? (
+      ) : !presentationPending && legacyPanelVisible ? (
         <div
           key="partners-overview-legacy-stable"
           id={OVERVIEW_LEGACY_DISCLOSURE_PANEL_ID}

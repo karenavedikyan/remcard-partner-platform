@@ -63,6 +63,25 @@ describe("ScannerHub new-partner empty state", () => {
     );
   });
 
+  it("shows pending shell before probe resolves (no hero or welcome)", async () => {
+    let resolveProbe!: (probe: ScannerEmptyActivityProbe) => void;
+    vi.spyOn(loadActivity, "loadScannerEmptyActivityProbe").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProbe = resolve;
+        }),
+    );
+
+    render(<ScannerHub userId={USER_ID} />);
+    expect(screen.getByTestId("scanner-welcome-decision-pending")).toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Сканируйте QR-код документа/i)).not.toBeInTheDocument();
+
+    resolveProbe({ status: "empty_confirmed" });
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeInTheDocument());
+    expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
+  });
+
   it("shows onboarding and keeps workbench when store has no purchases", async () => {
     render(<ScannerHub userId={USER_ID} />);
     await waitFor(() => {
