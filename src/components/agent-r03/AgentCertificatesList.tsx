@@ -174,7 +174,7 @@ export function AgentCertificatesList({
 
   const load = useCallback(async () => {
     const fetchId = ++listFetchGenerationRef.current;
-    const preserveItemsOnError = isIssuerShell;
+    const preserveItemsOnError = isIssuerShell && items.length > 0;
     setLoadState("loading");
     setError("");
     try {
@@ -222,7 +222,19 @@ export function AgentCertificatesList({
         setKnownListCounts(null);
       }
     }
-  }, [appliedQ, archived, isBusiness, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
+  }, [
+    appliedQ,
+    archived,
+    isBusiness,
+    isIssuerShell,
+    isSpecialist,
+    items.length,
+    page,
+    pageSize,
+    sort,
+    statusFilter,
+    searchRevision,
+  ]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
