@@ -6,7 +6,7 @@
 |------|-----|
 | Parent (deployed frontend) | `f434708132ce9a4334cb500e129b87d02588ea29` |
 | Product branch | `cursor/remcard-empty-state-first-paint-20261104` |
-| Product tip | `24e1e2d2` |
+| Product tip | `981bc305aede15fcaa6d019642f2e88a3f415aa2` |
 | Backend (unchanged) | `bb7db4ca` |
 | Nav branch preserved | `cursor/remcard-cabinet-nav-r4-template-20261103` @ `c2ab37436c478ab2fd9739eafa941cd41114bb59` |
 

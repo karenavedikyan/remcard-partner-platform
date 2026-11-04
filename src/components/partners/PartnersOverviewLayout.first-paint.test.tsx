@@ -56,4 +56,34 @@ describe("PartnersOverviewLayout first paint", () => {
     expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
     expect(screen.getByTestId("partners-empty")).toBeInTheDocument();
   });
+
+  it("shows error and retry when list failed (not infinite skeleton)", () => {
+    render(
+      <PartnersOverviewLayout
+        {...baseProps}
+        loading={false}
+        listReady={false}
+        error="Не удалось загрузить список"
+      />,
+    );
+    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("partners-overview-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
+  });
+
+  it("keeps settled overview visible during same-user refetch", () => {
+    render(
+      <PartnersOverviewLayout
+        {...baseProps}
+        loading
+        listReady
+        error=""
+        counts={{ active: 2, decisions: 0, outgoing: 0 }}
+        collectionIsEmpty={false}
+        collectionCount={2}
+      />,
+    );
+    expect(screen.queryByTestId("partners-welcome-decision-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("partners-overview-tiles")).toBeInTheDocument();
+  });
 });

@@ -62,10 +62,40 @@ describe("welcomeFirstPaintPending helpers", () => {
     ).toBe(false);
   });
 
-  it("partners pending until listReady", () => {
-    expect(isPartnersOverviewPresentationPending({ loading: true, listReady: false })).toBe(true);
-    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: false })).toBe(true);
-    expect(isPartnersOverviewPresentationPending({ loading: false, listReady: true })).toBe(false);
+  it("partners pending only for unresolved initial load", () => {
+    expect(
+      isPartnersOverviewPresentationPending({ loading: true, listReady: false, error: "" }),
+    ).toBe(true);
+    expect(
+      isPartnersOverviewPresentationPending({ loading: false, listReady: false, error: "" }),
+    ).toBe(true);
+    expect(
+      isPartnersOverviewPresentationPending({ loading: false, listReady: true, error: "" }),
+    ).toBe(false);
+    expect(
+      isPartnersOverviewPresentationPending({
+        loading: true,
+        listReady: true,
+        error: "",
+      }),
+    ).toBe(false);
+  });
+
+  it("partners errors and malformed outcomes are not pending", () => {
+    expect(
+      isPartnersOverviewPresentationPending({
+        loading: false,
+        listReady: false,
+        error: "Не удалось загрузить список",
+      }),
+    ).toBe(false);
+    expect(
+      isPartnersOverviewPresentationPending({
+        loading: false,
+        listReady: false,
+        error: "Forbidden",
+      }),
+    ).toBe(false);
   });
 
   it("scanner pending for idle and loading probes", () => {

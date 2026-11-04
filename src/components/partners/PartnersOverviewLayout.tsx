@@ -87,7 +87,7 @@ export function PartnersOverviewLayout({
     counts,
   });
   const showFullLegacyOverview =
-    listReady && !loading && !error && !isOverviewCurrentEmpty(counts);
+    listReady && !error && !isOverviewCurrentEmpty(counts);
   const inGreetingZeroOverview = showGreetingBase && !showFullLegacyOverview;
 
   const effectiveDisclosureOpen = legacyDisclosureOpen || legacyChromePinned;
@@ -95,7 +95,11 @@ export function PartnersOverviewLayout({
   const showGreetingHero =
     showGreetingBase && !(legacyChromePinned && legacyBulkOutcomeVisible);
 
-  const presentationPending = isPartnersOverviewPresentationPending({ loading, listReady });
+  const presentationPending = isPartnersOverviewPresentationPending({
+    loading,
+    listReady,
+    error,
+  });
 
   const legacyPanelVisible =
     showFullLegacyOverview ||

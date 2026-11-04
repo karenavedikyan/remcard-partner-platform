@@ -32,11 +32,17 @@ export function isCertificatesWelcomeDecisionPending(input: {
   return true;
 }
 
+/** Initial overview list decision — not refetch while a prior successful list is ready. */
 export function isPartnersOverviewPresentationPending(input: {
   loading: boolean;
   listReady: boolean;
+  error: string;
 }): boolean {
-  return input.loading || !input.listReady;
+  if (input.error.trim()) return false;
+  if (input.listReady) return false;
+  if (input.loading) return true;
+  // Pre-first-response / unresolved without error payload (Hub starts loadingList true).
+  return true;
 }
 
 export function isScannerWelcomeDecisionPending(probe: ScannerEmptyActivityProbe): boolean {
