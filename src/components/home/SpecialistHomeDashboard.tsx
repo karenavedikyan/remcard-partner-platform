@@ -20,6 +20,7 @@ import {
   specialistHomeMetricsEligibleForEmptyCheck,
   specialistHomePendingSupplementalProbe,
 } from "@/lib/home-empty/gate";
+import { isHomeMetricsPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import {
   specialistWalletEmptyProof,
   type WalletEmptyProof,
@@ -205,6 +206,8 @@ export function SpecialistHomeDashboard({
     partnershipProbeState,
   });
 
+  const metricsPresentationPending = isHomeMetricsPresentationPending(loadState);
+
   const metricsFailed =
     loadState === "loaded" &&
     !pendingSupplementalProbe &&
@@ -232,7 +235,7 @@ export function SpecialistHomeDashboard({
 
       {showEmptyState ? (
         <PartnerHomeEmptyState role="specialist" />
-      ) : pendingSupplementalProbe ? (
+      ) : metricsPresentationPending || pendingSupplementalProbe ? (
         <HomeSupplementalProbeSkeleton
           statLabels={["Сертификаты", "Начислено", "Получено"]}
         />

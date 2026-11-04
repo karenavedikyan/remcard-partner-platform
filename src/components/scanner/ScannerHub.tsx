@@ -59,6 +59,8 @@ import {
 } from "@/lib/scanner-empty/eligibility";
 import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
 import styles from "./scanner.module.css";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isScannerWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 
 const SCANNER_WORKBENCH_ID = "scanner-workbench";
 
@@ -212,6 +214,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const sessionOrderCompletedRef = useRef(false);
 
   const showNewPartnerEmpty = shouldShowScannerNewPartnerEmpty(activityProbe);
+  const welcomeDecisionPending = isScannerWelcomeDecisionPending(activityProbe);
 
   useEffect(() => {
     let cancelled = false;
@@ -806,11 +809,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   return (
     <>
-      {showNewPartnerEmpty ? (
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
+      ) : null}
+      {!welcomeDecisionPending && showNewPartnerEmpty ? (
         <ScannerNewPartnerEmpty onOpenScanner={focusScannerWorkbench} />
       ) : null}
       <div id={SCANNER_WORKBENCH_ID} ref={workbenchRef}>
-        {!showNewPartnerEmpty ? (
+        {!welcomeDecisionPending && !showNewPartnerEmpty ? (
           <div className={styles.scannerHero}>
             <span className={styles.scannerIcon} aria-hidden>
               ▣

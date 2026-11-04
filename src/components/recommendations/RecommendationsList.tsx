@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CertificatesNewPartnerEmpty } from "@/components/certificates-new-partner-empty/CertificatesNewPartnerEmpty";
 import styles from "./recommendations.module.css";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isRecommendationsWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 
 function formatDate(iso: string) {
   const date = new Date(iso);
@@ -52,10 +54,14 @@ export function RecommendationsList() {
   }, [load]);
 
   const showNewPartnerEmpty = loadState === "loaded" && !error && items.length === 0;
+  const welcomeDecisionPending = isRecommendationsWelcomeDecisionPending({
+    loadState,
+    itemsLength: items.length,
+  });
 
   return (
     <>
-      {!showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
       <div className={styles.pageActions}>
         <Link href="/recommendations/new">
           <Button>Создать рекомендацию</Button>
@@ -63,9 +69,11 @@ export function RecommendationsList() {
       </div>
       ) : null}
 
-      {loadState === "loading" ? <p className={styles.loading}>Загрузка…</p> : null}
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="recommendations-welcome-decision-pending" />
+      ) : null}
 
-      {loadState === "error" ? (
+      {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
           <Button variant="secondary" onClick={() => void load()}>
@@ -74,11 +82,11 @@ export function RecommendationsList() {
         </div>
       ) : null}
 
-      {showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && showNewPartnerEmpty ? (
         <CertificatesNewPartnerEmpty role="specialist" createHref="/recommendations/new" />
       ) : null}
 
-      {loadState === "loaded" && items.length === 0 && !showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length === 0 && !showNewPartnerEmpty ? (
         <div className={styles.empty}>
           <p>Пока нет созданных рекомендаций.</p>
           <Link href="/recommendations/new">
@@ -87,7 +95,7 @@ export function RecommendationsList() {
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 ? (
         <div className={styles.list}>
           {items.map((cert) => (
             <article key={cert.id} className={styles.card}>

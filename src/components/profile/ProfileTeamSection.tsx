@@ -49,6 +49,8 @@ import {
   TeamIconShieldCheck,
   TeamIconUserPlus,
 } from "./team-section-icons";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isTeamWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 
 type StaffInviteRow = {
   id: string;
@@ -278,6 +280,8 @@ export function ProfileTeamSection({
     invitesLoadError: Boolean(invitesLoadError),
     canManage,
   });
+
+  const welcomeDecisionPending = isTeamWelcomeDecisionPending({ loading, error });
 
   function openWizard(scope?: InviteWizardScope, branchId?: string) {
     setWizardScope(scope);
@@ -549,7 +553,9 @@ export function ProfileTeamSection({
 
   return (
     <div className={styles.root} data-testid="team-section-root">
-      {loading ? <p className={formStyles.hint}>Загружаем…</p> : null}
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="team-welcome-decision-pending" />
+      ) : null}
       {error ? (
         <div className={styles.errorRow} role="alert">
           <span>{error}</span>
@@ -585,7 +591,7 @@ export function ProfileTeamSection({
         </div>
       ) : null}
 
-      {showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && showNewPartnerEmpty ? (
         <TeamSectionNewPartnerEmpty
           onInvite={
             canManage
@@ -596,7 +602,7 @@ export function ProfileTeamSection({
         />
       ) : null}
 
-      {!showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
         <>
       <div className={styles.heading}>
         <div>

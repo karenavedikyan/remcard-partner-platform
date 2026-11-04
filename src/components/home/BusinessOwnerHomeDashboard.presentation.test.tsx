@@ -34,35 +34,48 @@ describe("BusinessOwnerHomeDashboard", () => {
 
     render(<BusinessOwnerHomeDashboard partnerType="STORE" />);
 
-    expect(
-      screen.getByRole("heading", { level: 2, name: /Начните с продажи по рекомендации/ }),
-    ).toBeTruthy();
+    expect(screen.getByTestId("home-supplemental-skeleton")).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { level: 2, name: /Начните с продажи по рекомендации/ }),
+      ).toBeTruthy(),
+    );
     expect(screen.getByRole("link", { name: /Проверить сертификат/ })).toHaveAttribute(
       "href",
       "/scanner",
     );
-    await waitFor(() => expect(screen.getByText("3")).toBeTruthy());
+    expect(screen.getByText("3")).toBeTruthy();
     expect(screen.getByText("ул. 1, Краснодар")).toBeTruthy();
   });
 
   it("renders company hero and invite CTA", async () => {
-    vi.mocked(remcardFetch).mockResolvedValue({
-      partnerType: "COMPANY",
-      activeBranchLabel: null,
-      metrics: {
-        primary: { state: "empty" },
-        secondary: { state: "ok", value: 4 },
-        tertiary: { state: "ok", value: 1 },
-      },
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (String(path).includes("/api/partnership/list")) {
+        return { partnerships: [] };
+      }
+      return {
+        partnerType: "COMPANY",
+        activeBranchLabel: null,
+        metrics: {
+          primary: { state: "empty" },
+          secondary: { state: "ok", value: 4 },
+          tertiary: { state: "ok", value: 1 },
+        },
+      };
     });
 
     render(<BusinessOwnerHomeDashboard partnerType="COMPANY" />);
 
-    expect(screen.getByRole("link", { name: /Пригласить сотрудника/ })).toHaveAttribute(
-      "href",
-      "/profile?section=team",
+    expect(screen.getByTestId("home-supplemental-skeleton")).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Пригласить сотрудника/ })).toHaveAttribute(
+        "href",
+        "/profile?section=team",
+      ),
     );
-    await waitFor(() => expect(screen.getByText("4")).toBeTruthy());
+    expect(screen.getByText("4")).toBeTruthy();
     expect(screen.getByText(/Активных партнёрств: 1/)).toBeTruthy();
   });
 
