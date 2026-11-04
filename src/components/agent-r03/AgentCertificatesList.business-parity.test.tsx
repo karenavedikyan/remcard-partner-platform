@@ -150,18 +150,22 @@ describe.each(["STORE", "COMPANY"] as const)("AgentCertificatesList business par
         }),
     );
     renderBusiness(partnerType);
-    expect(screen.getByTestId("business-certificates-create-cta")).toBeInTheDocument();
+    expect(screen.getByTestId("certificates-welcome-decision-pending")).toBeInTheDocument();
+    expect(screen.queryByTestId("business-certificates-create-cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     resolveFetch(listMeta(0));
     await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(screen.queryByTestId("certificates-welcome-decision-pending")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-certificates-create-cta")).not.toBeInTheDocument();
   });
 
-  it("fetch error with empty list: keeps single intro create CTA (issuer shell preserves view)", async () => {
+  it("fetch error with empty list: shows alert and retry (no welcome or legacy empty)", async () => {
     vi.mocked(fetchBusinessOwnerCertificates).mockRejectedValue(new Error("network"));
     renderBusiness(partnerType);
-    await waitFor(() => expect(fetchBusinessOwnerCertificates).toHaveBeenCalled());
-    expect(createButtons()).toHaveLength(1);
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Повторить/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-certificates-empty")).not.toBeInTheDocument();
   });
 
   it("opens existing create dialog from secondary CTA", async () => {
