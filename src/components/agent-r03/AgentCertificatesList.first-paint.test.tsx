@@ -183,27 +183,54 @@ describe("AgentCertificatesList first paint", () => {
     expect(listCalls).toBe(2);
   });
 
-  it("specialist: failed refetch keeps loaded rows", async () => {
-    const user = userEvent.setup();
-    let listCalls = 0;
-    vi.mocked(fetchSpecialistIssuerCertificates).mockImplementation(async () => {
-      listCalls += 1;
-      if (listCalls === 1) {
-        return listMeta(1);
-      }
-      throw new RemcardApiError(500, "Сервер недоступен");
-    });
+  it.each([
+    [
+      "specialist",
+      fetchSpecialistIssuerCertificates,
+      () => render(<AgentCertificatesList accessMode="specialist" />),
+    ] as const,
+    [
+      "business",
+      fetchBusinessOwnerCertificates,
+      () =>
+        render(
+          <OwnerIssuerModeProvider mode="business" businessPartnerType="STORE">
+            <AgentCertificatesList accessMode="business" />
+          </OwnerIssuerModeProvider>,
+        ),
+    ] as const,
+  ])(
+    "issuer (%s): one GET after nonempty load settles; explicit sort is second GET on failure keeps row",
+    async (_mode, mockFetch, renderList) => {
+      const user = userEvent.setup();
+      let listCalls = 0;
+      vi.mocked(mockFetch).mockImplementation(async () => {
+        listCalls += 1;
+        if (listCalls === 1) {
+          return listMeta(1);
+        }
+        throw new RemcardApiError(500, "Сервер недоступен");
+      });
 
-    render(<AgentCertificatesList accessMode="specialist" />);
-    await waitFor(() => expect(screen.getByRole("table")).toBeVisible());
-    expect(screen.getByTestId("agent-r03-found-count")).toHaveTextContent("Найдено: 1");
+      renderList();
+      await waitFor(() => expect(screen.getByRole("table")).toBeVisible());
+      await waitFor(() => expect(listCalls).toBe(1));
+      expect(screen.getByTestId("agent-r03-found-count")).toHaveTextContent("Найдено: 1");
 
-    await user.selectOptions(screen.getByTestId("agent-r03-sort"), "name_asc");
+      await user.selectOptions(screen.getByTestId("agent-r03-sort"), "name_asc");
 
-    await waitFor(() => expect(listCalls).toBeGreaterThanOrEqual(2));
-    expect(screen.getByRole("table")).toBeVisible();
-    expect(screen.getByTestId("agent-r03-found-count")).toHaveTextContent("Найдено: 1");
-    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("certificates-welcome-decision-pending")).not.toBeInTheDocument();
+      await waitFor(() => expect(listCalls).toBe(2));
+      expect(screen.getByRole("table")).toBeVisible();
+      expect(screen.getByTestId("agent-r03-found-count")).toHaveTextContent("Найдено: 1");
+      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("certificates-welcome-decision-pending")).not.toBeInTheDocument();
+    },
+  );
+
+  it("agent: empty welcome resolves with exactly one list GET", async () => {
+    vi.mocked(fetchAgentCertificates).mockResolvedValue(trueZeroResponse());
+    render(<AgentCertificatesList accessMode="agent" />);
+    await waitFor(() => expect(screen.getByTestId("empty-state")).toBeVisible());
+    expect(vi.mocked(fetchAgentCertificates)).toHaveBeenCalledTimes(1);
   });
 });

@@ -171,10 +171,12 @@ export function AgentCertificatesList({
   } | null>(null);
   const [editDiscountsCert, setEditDiscountsCert] = useState<AgentCertificateRow | null>(null);
   const listFetchGenerationRef = useRef(0);
+  /** Last accepted issuer list response had real rows (stable; not tied to load deps). */
+  const issuerListHadSuccessfulRowsRef = useRef(false);
 
   const load = useCallback(async () => {
     const fetchId = ++listFetchGenerationRef.current;
-    const preserveItemsOnError = isIssuerShell && items.length > 0;
+    const preserveItemsOnError = isIssuerShell && issuerListHadSuccessfulRowsRef.current;
     setLoadState("loading");
     setError("");
     try {
@@ -194,7 +196,11 @@ export function AgentCertificatesList({
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
-      setItems(data.certificates ?? []);
+      const nextCertificates = data.certificates ?? [];
+      setItems(nextCertificates);
+      if (isIssuerShell) {
+        issuerListHadSuccessfulRowsRef.current = nextCertificates.length > 0;
+      }
       setKnownListCounts(certificatesListKnownCountsFromApi(data));
       setMeta({
         page: data.page ?? page,
@@ -222,19 +228,7 @@ export function AgentCertificatesList({
         setKnownListCounts(null);
       }
     }
-  }, [
-    appliedQ,
-    archived,
-    isBusiness,
-    isIssuerShell,
-    isSpecialist,
-    items.length,
-    page,
-    pageSize,
-    sort,
-    statusFilter,
-    searchRevision,
-  ]);
+  }, [appliedQ, archived, isBusiness, isIssuerShell, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
