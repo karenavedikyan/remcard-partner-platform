@@ -109,10 +109,9 @@ describe("ScannerHub new-partner empty state", () => {
       }),
     );
     render(<ScannerHub userId={USER_ID} />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
   it("does not show onboarding on 403 store orders", async () => {
@@ -127,9 +126,9 @@ describe("ScannerHub new-partner empty state", () => {
       }),
     );
     render(<ScannerHub userId={USER_ID} />);
-    await waitFor(() => {
-      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
   it("CTA focuses manual scanner without extra POST", async () => {
@@ -202,9 +201,7 @@ describe("ScannerHub new-partner empty state", () => {
     resolveProbe({ status: "empty_confirmed" });
     await user.click(screen.getByRole("button", { name: /новая покупка/i }));
 
-    await waitFor(() => {
-      expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    });
-    expect(screen.getByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 });
