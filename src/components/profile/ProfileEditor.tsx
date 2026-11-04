@@ -296,6 +296,7 @@ function ProfileEditorInner({
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const basicsEditable = profileBasicsEditable(profile);
+
   const [agentR02Gate, setAgentR02Gate] = useState<{
     featureEnabled: boolean;
     eligible: boolean;
@@ -356,6 +357,11 @@ function ProfileEditorInner({
       Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible));
   const agentNavPending =
     pureAgentActivities && !initialPureAgentCompact && agentR02Gate === null;
+  const showAnalyticsConsentInset =
+    !agentNavPending && (activeSection === "overview" || activeSection === "basics");
+  const analyticsConsentInset = showAnalyticsConsentInset ? (
+    <ProfAnalyticsConsentProfileSetting />
+  ) : null;
   const sectionNavItems = useMemo(
     () => profileSectionNav({ pureAgentCompact: pureAgentCompactUi }),
     [pureAgentCompactUi],
@@ -855,21 +861,24 @@ function ProfileEditorInner({
           <ProfileBranchContextSwitcher />
         ) : null}
         {showBusinessProfileSurface ? (
-          <BusinessProfileSection
-            profile={profile}
-            partnerType={businessPartnerType!}
-            basicsEditable={basicsEditable}
-            onWorkingProfileSaved={applyProfile}
-            onBasicsDirtyChange={setBusinessWizardDirty}
-            forceEditing={
-              isProfileDevFixture && searchParams.get("wizard") === "1"
-            }
-            forceStep={
-              isProfileDevFixture && searchParams.get("wizard") === "1"
-                ? Number.parseInt(searchParams.get("wizardStep") ?? "0", 10)
-                : undefined
-            }
-          />
+          <>
+            <BusinessProfileSection
+              profile={profile}
+              partnerType={businessPartnerType!}
+              basicsEditable={basicsEditable}
+              onWorkingProfileSaved={applyProfile}
+              onBasicsDirtyChange={setBusinessWizardDirty}
+              forceEditing={
+                isProfileDevFixture && searchParams.get("wizard") === "1"
+              }
+              forceStep={
+                isProfileDevFixture && searchParams.get("wizard") === "1"
+                  ? Number.parseInt(searchParams.get("wizardStep") ?? "0", 10)
+                  : undefined
+              }
+            />
+            {analyticsConsentInset}
+          </>
         ) : null}
         {activeSection === "overview" && !agentNavPending && !showBusinessProfileSurface ? (
           <>
@@ -898,6 +907,7 @@ function ProfileEditorInner({
                 />
               )
             ) : null}
+            {!showBusinessProfileSurface ? analyticsConsentInset : null}
           </>
         ) : null}
         {revisionBanner && activeSection === "catalog" ? (
@@ -925,6 +935,7 @@ function ProfileEditorInner({
                 layout="default"
               />
             ) : null}
+            {!showBusinessProfileSurface ? analyticsConsentInset : null}
           </>
         ) : showBusinessProfileSurface ? null : (
           <>
@@ -937,6 +948,7 @@ function ProfileEditorInner({
             pureAgentCompactUi ? () => navigateSection("overview") : undefined
           }
         />
+        {pureAgentCompactUi && !showBusinessProfileSurface ? analyticsConsentInset : null}
         {!pureAgentCompactUi ? (
         <form onSubmit={saveProfile}>
         <Panel title="Основные данные" hint="Эти данные нужны для работы с партнёрами. Их сохранение не публикует вас в каталоге RemCard и не требует модерации.">
@@ -990,6 +1002,8 @@ function ProfileEditorInner({
             </div>
           </fieldset>
         </Panel>
+
+        {!showBusinessProfileSurface ? analyticsConsentInset : null}
 
         <Panel title="Чем вы занимаетесь">
           <div data-profile-focus="directions">
@@ -1417,7 +1431,6 @@ function ProfileEditorInner({
           />
         ) : null}
 
-        <ProfAnalyticsConsentProfileSetting />
         <ProfileSessionActions />
       </div>
 

@@ -156,13 +156,12 @@ export function ConsentStep({
                   </label>
                 );
               })}
+              <ProfAnalyticsConsentAgreementChoice
+                enabled={analyticsEnabled}
+                onChange={setAnalyticsEnabled}
+                disabled={loading}
+              />
             </fieldset>
-
-            <ProfAnalyticsConsentAgreementChoice
-              enabled={analyticsEnabled}
-              onChange={setAnalyticsEnabled}
-              disabled={loading}
-            />
 
             <Button type="submit" disabled={loading || !allChecked}>
               {loading ? "Сохраняем…" : "Продолжить"}

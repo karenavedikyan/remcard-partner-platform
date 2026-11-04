@@ -123,12 +123,12 @@ describe("PROF analytics consent user path", () => {
         <ProfPartnerSessionVisit />
       </CookieConsentProvider>,
     );
-    fireEvent.click(await screen.findByRole("button", { name: "Сохранить настройку" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Сохранить" }));
     await waitFor(() => expect(mocks.visit).toHaveBeenCalledTimes(1));
     mocks.visit.mockClear();
     const ui = userEvent.setup();
     await ui.click(screen.getByRole("checkbox", { name: /разрешить учёт посещений/i }));
-    await ui.click(screen.getByRole("button", { name: "Сохранить настройку" }));
+    await ui.click(screen.getByRole("button", { name: "Сохранить" }));
     await waitFor(() =>
       expect(localStorage.getItem(COOKIE_CONSENT_KEY)).toMatch(/"analytics":false/),
     );

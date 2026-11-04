@@ -7,6 +7,12 @@ import styles from "./ProfAnalyticsConsentUi.module.css";
 const CHECKBOX_LABEL =
   "Разрешить учёт посещений кабинета для статистики сервиса";
 
+const OPTIONAL_SCOPE_NOTE =
+  "Необязательно. Сохраняется только в этом браузере, между устройствами не синхронизируется.";
+
+const AGREEMENT_SCOPE_NOTE =
+  "Сохраняется только в этом браузере, между устройствами не синхронизируется.";
+
 function AnalyticsConsentCopy({ idPrefix }: { idPrefix: string }) {
   return (
     <p id={`${idPrefix}-desc`} className={styles.desc}>
@@ -17,22 +23,31 @@ function AnalyticsConsentCopy({ idPrefix }: { idPrefix: string }) {
   );
 }
 
-function AnalyticsConsentControls({
+function AnalyticsConsentDetails({ idPrefix }: { idPrefix: string }) {
+  return (
+    <details className={styles.details}>
+      <summary className={styles.detailsSummary}>Подробнее</summary>
+      <AnalyticsConsentCopy idPrefix={idPrefix} />
+    </details>
+  );
+}
+
+function AnalyticsConsentProfileControls({
   draftEnabled,
   onDraftChange,
   onConfirm,
-  confirmLabel,
   statusNote,
+  showSave,
 }: {
   draftEnabled: boolean;
   onDraftChange: (next: boolean) => void;
   onConfirm: () => void;
-  confirmLabel: string;
   statusNote?: string | null;
+  showSave: boolean;
 }) {
   const checkboxId = useId();
   return (
-    <>
+    <div className={styles.profileControls}>
       <label className={styles.checkboxRow} htmlFor={checkboxId}>
         <input
           id={checkboxId}
@@ -43,17 +58,21 @@ function AnalyticsConsentControls({
         />
         <span className={styles.checkboxLabel}>{CHECKBOX_LABEL}</span>
       </label>
+      <p className={styles.scopeNote}>{OPTIONAL_SCOPE_NOTE}</p>
+      <AnalyticsConsentDetails idPrefix="prof-analytics-profile" />
       {statusNote ? (
         <p className={styles.statusNote} role="status">
           {statusNote}
         </p>
       ) : null}
-      <div className={styles.actions}>
-        <button type="button" className={styles.primary} onClick={onConfirm}>
-          {confirmLabel}
-        </button>
-      </div>
-    </>
+      {showSave ? (
+        <div className={styles.actions}>
+          <button type="button" className={styles.secondarySave} onClick={onConfirm}>
+            Сохранить
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -69,16 +88,11 @@ export function ProfAnalyticsConsentAgreementChoice({
 }) {
   const checkboxId = useId();
   return (
-    <section
-      className={styles.agreementBlock}
-      aria-labelledby="prof-analytics-agreement-title"
-      aria-describedby="prof-analytics-agreement-desc"
+    <div
+      className={styles.agreementInset}
       data-testid="analytics-consent-agreements"
+      aria-describedby="prof-analytics-agreement-scope"
     >
-      <h2 id="prof-analytics-agreement-title" className={styles.title}>
-        Аналитика кабинета
-      </h2>
-      <AnalyticsConsentCopy idPrefix="prof-analytics-agreement" />
       <label className={styles.checkboxRow} htmlFor={checkboxId}>
         <input
           id={checkboxId}
@@ -88,9 +102,15 @@ export function ProfAnalyticsConsentAgreementChoice({
           disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
         />
-        <span className={styles.checkboxLabel}>{CHECKBOX_LABEL} (необязательно)</span>
+        <span className={styles.checkboxLabel}>
+          {CHECKBOX_LABEL} (необязательно)
+        </span>
       </label>
-    </section>
+      <p id="prof-analytics-agreement-scope" className={styles.scopeNote}>
+        {AGREEMENT_SCOPE_NOTE}
+      </p>
+      <AnalyticsConsentDetails idPrefix="prof-analytics-agreement" />
+    </div>
   );
 }
 
@@ -98,16 +118,20 @@ export function ProfAnalyticsConsentAgreementChoice({
 export function ProfAnalyticsConsentProfileSetting() {
   const { state, needsDecision, confirmAnalyticsChoice } = useCookieConsent();
   const savedEnabled = state?.analytics;
-  const [draftEnabled, setDraftEnabled] = useState(savedEnabled ?? true);
+  const baselineDraft = savedEnabled ?? true;
+  const [draftEnabled, setDraftEnabled] = useState(baselineDraft);
   const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
     setDraftEnabled(savedEnabled ?? true);
+    setSavedFlash(false);
   }, [savedEnabled, state?.decidedAt]);
+
+  const isDirty = draftEnabled !== baselineDraft;
 
   const statusNote = needsDecision
     ? "Решение ещё не сохранено в этом браузере."
-    : state?.analytics
+    : savedEnabled
       ? "Учёт посещений включён."
       : "Учёт посещений выключен.";
 
@@ -117,30 +141,22 @@ export function ProfAnalyticsConsentProfileSetting() {
   }
 
   return (
-    <section
-      className={styles.profileBlock}
-      aria-labelledby="prof-analytics-profile-title"
-      data-testid="analytics-consent-profile"
-    >
-      <h2 id="prof-analytics-profile-title" className={styles.title}>
-        Аналитика кабинета
-      </h2>
-      <AnalyticsConsentCopy idPrefix="prof-analytics-profile" />
-      <AnalyticsConsentControls
+    <div className={styles.profileInset} data-testid="analytics-consent-profile">
+      <AnalyticsConsentProfileControls
         draftEnabled={draftEnabled}
         onDraftChange={(next) => {
           setDraftEnabled(next);
           setSavedFlash(false);
         }}
         onConfirm={save}
-        confirmLabel="Сохранить настройку"
         statusNote={statusNote}
+        showSave={isDirty || needsDecision}
       />
-      {savedFlash && !needsDecision ? (
+      {savedFlash && !needsDecision && !isDirty ? (
         <p className={styles.savedOk} role="status">
           Настройка сохранена.
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }
