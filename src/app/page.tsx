@@ -23,7 +23,10 @@ import {
 } from "@/lib/business-home/gate";
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
-import { employeeRequiresWorkplaceContext } from "@/lib/cabinet-presentation/resolve";
+import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/access-block";
+import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
+import { resolveBusinessHomeSurfaceMode } from "@/lib/business-home/access";
+import { BusinessOrgStaffHomeTemplate } from "@/components/home/BusinessOrgStaffHomeTemplate";
 
 export const dynamic = "force-dynamic";
 
@@ -107,10 +110,13 @@ export default async function HomePage(
   }
 
   const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
-  if (
-    employeeRequiresWorkplaceContext({ isEmployee: readiness.isEmployee, presentation })
-  ) {
-    return <SessionGate returnTo="/" />;
+  const homePresentationBlock = resolveCabinetPresentationBlock({
+    isEmployee: readiness.isEmployee,
+    presentation,
+    returnTo: "/",
+  });
+  if (homePresentationBlock.blocked) {
+    return <CabinetPresentationBlockView block={homePresentationBlock} />;
   }
 
   const businessOwnerHome = shouldRenderBusinessOwnerHome(user, presentation.workplacePartnerType);
@@ -120,6 +126,7 @@ export default async function HomePage(
 
   if (businessOwnerHome && businessPartnerType) {
     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";
+    const homeSurface = resolveBusinessHomeSurfaceMode(presentation);
     return (
       <CabinetShell returnTo="/">
         <PageHeading
@@ -127,11 +134,15 @@ export default async function HomePage(
           title="Ваш кабинет"
           description="Начните с того, что нужно вам сегодня."
         />
-        <BusinessOwnerHomeDashboard
-          partnerType={businessPartnerType}
-          needsProfileCompletion={readiness.needsProfileCompletion}
-          catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-        />
+        {homeSurface === "org-staff-template" ? (
+          <BusinessOrgStaffHomeTemplate partnerType={businessPartnerType} />
+        ) : (
+          <BusinessOwnerHomeDashboard
+            partnerType={businessPartnerType}
+            needsProfileCompletion={readiness.needsProfileCompletion}
+            catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+          />
+        )}
       </CabinetShell>
     );
   }

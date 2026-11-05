@@ -45,6 +45,12 @@ describe("resolveCabinetNavMode", () => {
   it("maps org employees to business nav via trusted workplacePartnerType", () => {
     expect(
       resolveCabinetNavMode(
+        { partnerType: "MASTER", role: "PRO", partnerActivities: ["AGENT"] },
+        { workplacePartnerType: "STORE", workplaceNavFromOrgContext: true },
+      ),
+    ).toBe("business-store");
+    expect(
+      resolveCabinetNavMode(
         { partnerType: null, role: "CLIENT", partnerActivities: [] },
         { workplacePartnerType: "STORE" },
       ),

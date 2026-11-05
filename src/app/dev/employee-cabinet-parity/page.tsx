@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
+import { BusinessOrgStaffHomeTemplate } from "@/components/home/BusinessOrgStaffHomeTemplate";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -9,6 +9,7 @@ import {
   companyOrgEmployeeContext,
   storeOrgEmployeeContext,
 } from "@/lib/cabinet-presentation/test-fixtures";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 
 const FIXTURES = {
@@ -32,9 +33,28 @@ const FIXTURES = {
     } satisfies AuthUser,
     proContext: companyOrgEmployeeContext,
   },
-} as const;
+  proMasterStoreOrg: {
+    user: {
+      id: "fixture-pro-master-org",
+      displayName: "Синтетический PRO MASTER",
+      role: "PRO",
+      partnerType: "MASTER",
+      partnerActivities: ["MASTER", "AGENT"],
+    } satisfies AuthUser,
+    proContext: {
+      role: "ORG_EMPLOYEE",
+      organization: {
+        id: "org-store-2",
+        name: "Синтетический магазин (PRO staff)",
+        partnerType: "STORE",
+      },
+      branches: [],
+      activeBranch: null,
+    } satisfies ProContextSnapshot,
+  },
+};
 
-/** Native smoke: employee vs owner shell parity with strictly synthetic GET /api/pro/context shapes. */
+/** Static chrome preview only — no live upstream metrics/API (coordinator uses SSR synthetic upstream). */
 export default async function EmployeeCabinetParityDevPage(props: {
   searchParams?: Promise<{ fixture?: string }>;
 }) {
@@ -44,7 +64,11 @@ export default async function EmployeeCabinetParityDevPage(props: {
 
   const fixtureKey = (await props.searchParams)?.fixture ?? "storeEmployee";
   const fixture =
-    fixtureKey === "companyTeamMember" ? FIXTURES.companyTeamMember : FIXTURES.storeEmployee;
+    fixtureKey === "companyTeamMember"
+      ? FIXTURES.companyTeamMember
+      : fixtureKey === "proMasterStoreOrg"
+        ? FIXTURES.proMasterStoreOrg
+        : FIXTURES.storeEmployee;
 
   const presentation = resolveCabinetPresentation({
     user: fixture.user,
@@ -62,9 +86,9 @@ export default async function EmployeeCabinetParityDevPage(props: {
           <PageHeading
             eyebrow={eyebrow}
             title="Ваш кабинет"
-            description="Синтетический превью: сотрудник организации с тем же каркасом, что у владельца."
+            description="Статический превью каркаса (без live API)."
           />
-          <BusinessOwnerHomeDashboard partnerType={partnerType} />
+          <BusinessOrgStaffHomeTemplate partnerType={partnerType} />
         </AppShell>
       </CookieConsentProvider>
     </ThemeProvider>

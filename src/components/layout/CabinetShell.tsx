@@ -3,9 +3,9 @@ import { requireProSession } from "@/lib/session";
 import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
-import { SessionGate } from "@/components/auth/SessionGate";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
-import { employeeRequiresWorkplaceContext } from "@/lib/cabinet-presentation/resolve";
+import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/access-block";
+import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
 import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import type { PartnershipListResponse } from "@/lib/types";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
@@ -52,14 +52,15 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
   ]);
   const { presentation } = presentationResult;
 
-  if (
-    readinessResult.ok &&
-    employeeRequiresWorkplaceContext({
-      isEmployee: readinessResult.data.isEmployee,
-      presentation,
-    })
-  ) {
-    return <SessionGate returnTo={returnTo} />;
+  const presentationBlock = readinessResult.ok
+    ? resolveCabinetPresentationBlock({
+        isEmployee: readinessResult.data.isEmployee,
+        presentation,
+        returnTo,
+      })
+    : { blocked: false as const };
+  if (presentationBlock.blocked) {
+    return <CabinetPresentationBlockView block={presentationBlock} />;
   }
 
   const loaded = prefsResult.ok && prefsResult.data ? prefsResult.data : fallbackPrefs;

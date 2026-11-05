@@ -5,63 +5,63 @@
 - **Branch:** `cursor/remcard-employee-cabinet-parity-20261105`
 - **Frontend base (production app266285):** `5d85aebe61b0284a2e8e36bf640cde29fd74e1e2`
 - **Backend reference (read-only):** `bb7db4ca7165836f9165f9f851a5fffc5ba96b52`
-- **Deliver commits:** `02bd1751` (shell/presentation), `b1b63e5d` (audit dispatch/wallet)
+- **Deliver commit (R2):** see `git rev-parse HEAD` on branch after push
+
+## R2 fixes (review 02bd175)
+
+1. **Org-first workplace:** `resolveWorkplacePartnerTypeResolution` validates context, prefers org member roles (incl. PRO personal STORE/COMPANY/MASTER/AGENT) before personal profile; personal fallback only when not org staff employee.
+2. **Nav:** `resolveCabinetNavMode({ workplaceNavFromOrgContext: true })` overrides personal MASTER / pure-agent legacy for org workplace.
+3. **Gates / dispatch:** org workplace members (any account role) eligible for business clients/partners shell; `resolveBusinessSectionDispatch` routes org staff before R03/R06; ORG_OWNER keeps R03 first.
+4. **Home:** `BusinessOrgStaffHomeTemplate` for org staff (no owner metrics / onboarding API); owner keeps `BusinessOwnerHomeDashboard`.
+5. **Employee blocks:** `resolveCabinetPresentationBlock` — 401 → SessionGate; 503 → transient retry UI; suspended/invalid context → workplace block (not logout).
+6. **Presentation provider:** gates use `useCabinetPresentation` + shared dispatch hook; branch switch dispatches `remcard:cabinet-presentation-changed` + `router.refresh()` (no full reload loop).
+7. **Dev fixture:** static template only (`/dev/employee-cabinet-parity`) — not for live-API native acceptance.
 
 ## Security boundary
 
-- **Actor identity** stays on `GET /api/auth/me` (`AuthUser`: id, role, displayName, staffRole). Never substituted with `organization.ownerId`.
-- **Presentation / workplace identity** comes only from `GET /api/pro/context` (`organization.partnerType`, `organization.name`, `role`, `teamCapabilities`). No `GET /api/pro/organization`, no admin APIs, no impersonation cookies.
-- **Nav mode & templates** use `resolveCabinetPresentation` → `workplacePartnerType` + `resolveCabinetNavMode`. Owner PRO profile still wins for the authenticated owner; employees use org context only.
-- **Fail-closed for org employees** (`readiness.isEmployee`): 401/403/missing context, unknown `proContext.role`, or org-member role without resolvable `partnerType` → `SessionGate` in `CabinetShell` / home.
-- **PARTNER_EMPLOYEE** (employer-only, no `partnerType`): no invented type; legacy shell allowed when context is valid (documented gap below).
-- **Section gates** (`business-clients`, `business-partners`, issuer/clients gates): eligibility still requires real context role + CLIENT staff vs PRO owner rules; manage actions remain behind existing `teamCapabilities` / API 403.
+- Actor = `/api/auth/me` only. Workplace = validated `/api/pro/context`. Never `organization.ownerId` in wallet scope.
+- No owner-only API unlock (`/api/pro/organization`, R03 owner mutations, requisites panel blocked for staff in UI; server 403 remains authority).
+- Wallet settlements: session `fetchSettlements()`; errors surface as blocked text, not fake zeros.
 
-## Known limitations / gaps
+## Backend gaps (unchanged)
 
-- **PARTNER_EMPLOYEE / employer-only context:** no `organization.partnerType`; UI stays legacy (no store/company prototype parity) until backend exposes a trusted workplace type.
-- **Org employee wallet read:** settlements use session-scoped `fetchSettlements()`; if backend returns 403 for staff, UI shows «Раздел недоступен…» (not zero balances). There is no separate `teamCapabilities` flag for wallet read — coordinator must confirm backend allows scoped read for ORG_EMPLOYEE or accept blocked state.
-- **Wallet requisites / mutations:** frontend blocks requisites tab for non–ORG_OWNER PRO (`canManageBusinessWalletRequisites`); no call to owner-only mutation APIs from that tab.
-- **Ledger scope key:** `businessWalletLedgerScopeKey` uses `actorUserId` + `organization.id`, never `organization.ownerId`.
-- **Section dispatch:** `resolveBusinessSectionDispatch` routes org staff (CLIENT / non-owner org roles) to business clients/issuer before personal R03/R06; PRO owner + R03 unchanged.
-- **Double fetch:** `CabinetShell` and some pages each call `/api/pro/context` (acceptable; no caching layer in this change).
-- **Agent pilot shell:** presentation provider wraps agent shell; agent nav unchanged.
+- `PARTNER_EMPLOYEE` employer-only: no trusted `partnerType` → legacy shell.
+- Org employee wallet **read**: no explicit `teamCapabilities` wallet flag; 403 → honest empty/error in UI.
 
-## Tests
+## Verification (executed on branch)
 
-```bash
-npm test -- --run \
-  src/lib/cabinet-presentation/resolve.test.ts \
-  src/lib/cabinet-nav/mode.test.ts \
-  src/lib/business-home/gate.test.ts \
-  src/lib/business-partners/gate.test.ts \
-  src/lib/business-clients/gate.test.ts \
-  src/lib/business-workplace/dispatch-priority.test.ts \
-  src/lib/business-wallet/access.test.ts \
-  src/components/layout/AppShell.nav.test.tsx \
-  src/components/layout/AppShell.test.tsx \
-  src/components/business-wallet/BusinessOwnerWallet.history-prop.test.tsx
+### Focused parity suite (49 tests)
 
-npm run build
+```text
+$ npx vitest run src/lib/cabinet-presentation src/lib/business-workplace \
+  src/lib/business-home/access.test.ts src/lib/business-clients/gate.test.ts \
+  src/lib/business-partners/gate.test.ts src/lib/cabinet-nav/mode.test.ts \
+  src/components/layout/AppShell.test.tsx src/components/layout/AppShell.nav.test.tsx \
+  src/components/home/BusinessOrgStaffHomeTemplate.test.tsx src/components/business-wallet
+
+ Test Files  13 passed (13)
+      Tests  49 passed (49)
+   Duration  ~3.2s
 ```
 
-**Smoke (dev only):** `/dev/employee-cabinet-parity?fixture=storeEmployee|companyTeamMember` — synthetic actor + pro context, no live API.
+### Stock Next build
 
-## Changed files (product)
+```text
+$ npm run build
+✓ Compiled successfully
+✓ Generating static pages — exit 0
+```
 
-- `src/lib/cabinet-presentation/*` (types, resolve, server, test-fixtures, resolve.test.ts)
-- `src/lib/cabinet-nav/mode.ts`, `mode.test.ts`
-- `src/lib/profile-cabinet-access.ts`
-- `src/lib/business-home/gate.ts`, `gate.test.ts`
-- `src/lib/business-clients/gate.ts`, `gate.test.ts`
-- `src/lib/business-partners/gate.ts`, `gate.test.ts`
-- `src/lib/settlements-page-shell.ts`
-- `src/components/layout/CabinetShell.tsx`, `CabinetAppShellClient.tsx`, `CabinetPresentationContext.tsx`, `AppShell.tsx`
-- `src/components/layout/AppShell.nav.test.tsx`, `AppShell.test.tsx`
-- `src/components/clients/OwnerClientsGate.tsx`
-- `src/components/specialist-certificates/OwnerIssuerGate.tsx`
-- `src/lib/business-workplace/dispatch-priority.ts`, `dispatch-priority.test.ts`
-- `src/lib/business-wallet/access.ts`, `access.test.ts`
-- `src/app/page.tsx`, `settlements/page.tsx`, `partners/page.tsx`
-- `src/components/clients/OwnerClientsGate.tsx`, `OwnerIssuerGate.tsx`, `BusinessOwnerWallet.tsx`
-- `src/app/dev/employee-cabinet-parity/page.tsx`
-- `src/app/profile/dev-fixture/DevProfileFixtureChrome.tsx`
+### Full repo test (stock regression signal)
+
+```text
+$ npm test
+ Test Files  11 failed | 461 passed | 1 skipped (473)
+      Tests  31 failed | 2128 passed | 2 skipped (2161)
+```
+
+Failures are in unrelated areas (e.g. `ProfileEditor.*`, `AgentPartnersHub.specialist-prototype-link`, `category-display.test.ts`, `BusinessOwnerHomeDashboard.load` timing) — not modified in this parity diff; coordinator should triage separately. Parity-focused suite above is green.
+
+## Changed files (product + tests)
+
+See `git diff 5d85aebe..HEAD --stat`. Key additions: `cabinet-presentation/validate.ts`, `access-block.ts`, `business-workplace/dispatch-priority.ts`, `BusinessOrgStaffHomeTemplate.tsx`, `CabinetPresentationBlock.tsx`, `CabinetPresentationRefreshListener.tsx`.

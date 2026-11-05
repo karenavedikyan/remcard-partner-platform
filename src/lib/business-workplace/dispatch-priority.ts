@@ -1,5 +1,5 @@
 import {
-  resolveWorkplacePartnerType,
+  resolveWorkplacePartnerTypeResolution,
   shouldPreferBusinessWorkplaceDispatch,
 } from "@/lib/cabinet-presentation/resolve";
 import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
@@ -25,24 +25,24 @@ export function resolveBusinessSectionDispatch(input: {
   r06Eligible: boolean;
   surface: "clients" | "issuer";
 }): BusinessSectionDispatchDecision {
-  const workplacePartnerType = resolveWorkplacePartnerType({
+  const workplace = resolveWorkplacePartnerTypeResolution({
     user: input.user,
     proContext: input.proContext,
     contextReady: input.contextReady,
   });
   const proContextRole = input.proContext?.role ?? null;
 
-  const preferWorkplace = shouldPreferBusinessWorkplaceDispatch({
-    user: input.user,
-    proContextRole,
-    workplacePartnerType,
-  });
-
   const businessFromContext = resolveBusinessOwnerClientsEligibility({
     user: input.user,
     proContextRole,
     proContext: input.proContext,
     contextReady: input.contextReady,
+  });
+
+  const preferWorkplace = shouldPreferBusinessWorkplaceDispatch({
+    proContextRole,
+    workplacePartnerType: workplace.partnerType,
+    workplacePartnerTypeSource: workplace.source,
   });
 
   if (preferWorkplace && businessFromContext.eligible) {
@@ -62,9 +62,9 @@ export function resolveBusinessSectionDispatch(input: {
 
   if (
     input.surface === "issuer" &&
-    shouldRenderBusinessOwnerHome(input.user, workplacePartnerType)
+    shouldRenderBusinessOwnerHome(input.user, workplace.partnerType)
   ) {
-    const partnerType = businessOwnerHomePartnerType(input.user, workplacePartnerType);
+    const partnerType = businessOwnerHomePartnerType(input.user, workplace.partnerType);
     if (partnerType) {
       return { kind: "business", partnerType };
     }

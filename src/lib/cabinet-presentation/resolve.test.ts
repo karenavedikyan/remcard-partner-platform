@@ -9,29 +9,29 @@ import {
 import { companyOrgEmployeeContext, storeOrgEmployeeContext } from "./test-fixtures";
 
 describe("shouldPreferBusinessWorkplaceDispatch", () => {
-  it("is true for CLIENT with workplace type", () => {
+  it("is true for org-context staff (incl. PRO personal MASTER)", () => {
     expect(
       shouldPreferBusinessWorkplaceDispatch({
-        user: { role: "CLIENT" },
         proContextRole: "ORG_EMPLOYEE",
         workplacePartnerType: "STORE",
+        workplacePartnerTypeSource: "org-context",
       }),
     ).toBe(true);
   });
 
-  it("is false for PRO org owner even with workplace", () => {
+  it("is false for PRO org owner even with org workplace", () => {
     expect(
       shouldPreferBusinessWorkplaceDispatch({
-        user: { role: "PRO" },
         proContextRole: "ORG_OWNER",
         workplacePartnerType: "STORE",
+        workplacePartnerTypeSource: "org-context",
       }),
     ).toBe(false);
   });
 });
 
 describe("resolveWorkplacePartnerType", () => {
-  it("uses owner profile for PRO store owner", () => {
+  it("uses owner profile for PRO store owner without org context", () => {
     expect(
       resolveWorkplacePartnerType({
         user: { role: "PRO", partnerType: "STORE", partnerActivities: ["STORE"] },
@@ -39,6 +39,19 @@ describe("resolveWorkplacePartnerType", () => {
         contextReady: false,
       }),
     ).toBe("STORE");
+  });
+
+  it("prefers org COMPANY over personal PRO STORE for org employee", () => {
+    expect(
+      resolveWorkplacePartnerType({
+        user: { role: "PRO", partnerType: "STORE", partnerActivities: ["STORE"] },
+        proContext: {
+          role: "ORG_EMPLOYEE",
+          organization: { id: "o-co", name: "Co", partnerType: "COMPANY" },
+        },
+        contextReady: true,
+      }),
+    ).toBe("COMPANY");
   });
 
   it("uses org partnerType for CLIENT org employee", () => {

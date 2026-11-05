@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { RemcardApiError, remcardFetch } from "@/lib/api-client";
-import { fetchAgentR03Status } from "@/lib/agent-r03/api";
-import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
-import { resolveBusinessSectionDispatch } from "@/lib/business-workplace/dispatch-priority";
-import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
-import type { AuthUser } from "@/lib/types";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import { useBusinessSectionDispatch } from "@/lib/business-workplace/use-business-section-dispatch";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
 import {
@@ -22,70 +17,11 @@ export function OwnerClientsGate({
   children: React.ReactNode;
   canLinkOnboardingHistory?: boolean;
 }) {
-  const [mode, setMode] = useState<OwnerClientsAccessMode | null>(null);
-  const [businessPartnerType, setBusinessPartnerType] = useState<
-    "STORE" | "COMPANY" | undefined
-  >(undefined);
-  const [canLinkOnboardingHistory, setCanLinkOnboardingHistory] = useState<
-    boolean | undefined
-  >(undefined);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [r03, r06, mePayload, proCtxResult] = await Promise.all([
-          fetchAgentR03Status(),
-          fetchSpecialistR06Status(),
-          remcardFetch<{ user: AuthUser }>("/api/auth/me"),
-          remcardFetch<ProContextSnapshot>("/api/pro/context").catch(() => null),
-        ]);
-        if (cancelled) return;
-
-        const contextReady = proCtxResult != null;
-        const decision = resolveBusinessSectionDispatch({
-          user: mePayload.user,
-          proContext: proCtxResult,
-          contextReady,
-          r03Eligible: Boolean(r03.featureEnabled && r03.eligible),
-          r06Eligible: Boolean(r06.featureEnabled && r06.eligible),
-          surface: "clients",
-        });
-
-        if (decision.kind === "agent-r03") {
-          setMode("agent");
-          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
-          return;
-        }
-        if (decision.kind === "specialist-r06") {
-          setMode("specialist");
-          setCanLinkOnboardingHistory(false);
-          return;
-        }
-        if (decision.kind === "business") {
-          setMode("business");
-          setBusinessPartnerType(decision.partnerType);
-          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
-          return;
-        }
-      } catch (caught) {
-        if (!cancelled) {
-          setError(
-            caught instanceof RemcardApiError ? caught.message : "Не удалось проверить доступ",
-          );
-        }
-        return;
-      }
-      if (!cancelled) setMode(null);
-    })().finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [canLinkOnboardingHistoryFromPage]);
+  const presentation = useCabinetPresentation();
+  const { loading, error, decision } = useBusinessSectionDispatch({
+    surface: "clients",
+    presentation,
+  });
 
   if (loading) return <p className={styles.loading}>Загрузка…</p>;
   if (error) {
@@ -98,6 +34,21 @@ export function OwnerClientsGate({
       </div>
     );
   }
+
+  let mode: OwnerClientsAccessMode | null = null;
+  let businessPartnerType: "STORE" | "COMPANY" | undefined;
+  let canLinkOnboardingHistory: boolean | undefined = canLinkOnboardingHistoryFromPage;
+
+  if (decision?.kind === "agent-r03") {
+    mode = "agent";
+  } else if (decision?.kind === "specialist-r06") {
+    mode = "specialist";
+    canLinkOnboardingHistory = false;
+  } else if (decision?.kind === "business") {
+    mode = "business";
+    businessPartnerType = decision.partnerType;
+  }
+
   if (!mode) {
     return (
       <p className={styles.empty}>

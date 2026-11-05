@@ -1,7 +1,8 @@
 import {
   isOrgWorkplaceMemberRole,
-  resolveWorkplacePartnerType,
+  resolveWorkplacePartnerTypeResolution,
 } from "@/lib/cabinet-presentation/resolve";
+import { validateProContextSnapshot } from "@/lib/cabinet-presentation/validate";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 
@@ -14,21 +15,16 @@ export function resolveBusinessOwnerClientsEligibility(input: {
   contextReady?: boolean;
 }): { eligible: false } | { eligible: true; partnerType: BusinessClientsPartnerType } {
   const contextReady = input.contextReady ?? Boolean(input.proContextRole);
-  const workplacePartnerType = resolveWorkplacePartnerType({
+  const proContext = input.proContext ?? null;
+  if (contextReady && proContext && !validateProContextSnapshot(proContext).ok) {
+    return { eligible: false };
+  }
+  const { partnerType: workplacePartnerType } = resolveWorkplacePartnerTypeResolution({
     user: input.user,
-    proContext: input.proContext ?? null,
+    proContext,
     contextReady,
   });
   if (!workplacePartnerType) return { eligible: false };
   if (!isOrgWorkplaceMemberRole(input.proContextRole)) return { eligible: false };
-  if (input.proContextRole === "ORG_OWNER" && input.user.role === "PRO") {
-    return { eligible: true, partnerType: workplacePartnerType };
-  }
-  if (input.user.role === "CLIENT" && input.proContextRole !== "ORG_OWNER") {
-    return { eligible: true, partnerType: workplacePartnerType };
-  }
-  if (input.proContextRole === "ORG_OWNER") {
-    return { eligible: true, partnerType: workplacePartnerType };
-  }
-  return { eligible: false };
+  return { eligible: true, partnerType: workplacePartnerType };
 }

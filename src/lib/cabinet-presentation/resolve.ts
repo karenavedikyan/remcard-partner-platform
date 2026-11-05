@@ -4,6 +4,8 @@ import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import type { CabinetPresentationSnapshot, WorkplacePartnerType } from "./types";
 import { proContextRoleLabelRu } from "./role-labels";
+import { validateProContextSnapshot } from "./validate";
+import type { WorkplacePartnerTypeSource } from "./types";
 
 const ORG_WORKPLACE_MEMBER_ROLES = new Set([
   "ORG_OWNER",
@@ -34,14 +36,15 @@ export function isOrgWorkplaceMemberRole(role: string | null | undefined): boole
   return Boolean(role && ORG_WORKPLACE_MEMBER_ROLES.has(role));
 }
 
-/** Org staff personal accounts: business workplace shell before personal agent/specialist gates. */
+/** Org staff (not org owner): business section shell before personal R03/R06. */
 export function shouldPreferBusinessWorkplaceDispatch(input: {
-  user: Pick<AuthUser, "role">;
   proContextRole: string | null | undefined;
   workplacePartnerType: WorkplacePartnerType | null;
+  workplacePartnerTypeSource: WorkplacePartnerTypeSource;
 }): boolean {
-  if (!input.workplacePartnerType) return false;
-  if (input.user.role === "CLIENT") return true;
+  if (!input.workplacePartnerType || input.workplacePartnerTypeSource !== "org-context") {
+    return false;
+  }
   const role = input.proContextRole;
   return Boolean(role && isOrgWorkplaceMemberRole(role) && role !== "ORG_OWNER");
 }
@@ -51,23 +54,64 @@ function normalizeOrgPartnerType(value: unknown): WorkplacePartnerType | null {
   return null;
 }
 
-/** Workplace store/company type from owner profile or trusted org context (not employer-only partner employee). */
+export type WorkplacePartnerTypeResolution = {
+  partnerType: WorkplacePartnerType | null;
+  source: WorkplacePartnerTypeSource;
+};
+
+function resolvePersonalWorkplacePartnerType(
+  user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">,
+): WorkplacePartnerType | null {
+  if (user.role !== "PRO" || isPureAgentActivities(user.partnerActivities)) return null;
+  return normalizeOrgPartnerType(user.partnerType);
+}
+
+/** Trusted active org context first; personal profile only for solo / org owner (not org staff employee). */
+export function resolveWorkplacePartnerTypeResolution(input: {
+  user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">;
+  proContext: ProContextSnapshot | null;
+  contextReady: boolean;
+}): WorkplacePartnerTypeResolution {
+  const { user, proContext, contextReady } = input;
+  const role = proContext?.role?.trim() ?? null;
+
+  if (contextReady && proContext && validateProContextSnapshot(proContext).ok) {
+    const orgPt = normalizeOrgPartnerType(proContext.organization?.partnerType);
+    if (orgPt && isOrgWorkplaceMemberRole(role)) {
+      return { partnerType: orgPt, source: "org-context" };
+    }
+  }
+
+  const orgStaffEmployee =
+    contextReady &&
+    proContext &&
+    validateProContextSnapshot(proContext).ok &&
+    isOrgWorkplaceMemberRole(role) &&
+    role !== "ORG_OWNER";
+
+  if (orgStaffEmployee) {
+    return { partnerType: null, source: null };
+  }
+
+  const personal = resolvePersonalWorkplacePartnerType(user);
+  if (personal) {
+    return { partnerType: personal, source: "personal-profile" };
+  }
+
+  if (role === "SOLO_PARTNER") {
+    const soloPt = normalizeOrgPartnerType(proContext?.organization?.partnerType);
+    if (soloPt) return { partnerType: soloPt, source: "org-context" };
+  }
+
+  return { partnerType: null, source: null };
+}
+
 export function resolveWorkplacePartnerType(input: {
   user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">;
   proContext: ProContextSnapshot | null;
   contextReady: boolean;
 }): WorkplacePartnerType | null {
-  const { user, proContext, contextReady } = input;
-  if (user.role === "PRO" && !isPureAgentActivities(user.partnerActivities)) {
-    const ownerPt = normalizeOrgPartnerType(user.partnerType);
-    if (ownerPt) return ownerPt;
-  }
-  if (!contextReady || !proContext) return null;
-  const orgPt = normalizeOrgPartnerType(proContext.organization?.partnerType);
-  if (orgPt && isOrgWorkplaceMemberRole(proContext.role)) {
-    return orgPt;
-  }
-  return null;
+  return resolveWorkplacePartnerTypeResolution(input).partnerType;
 }
 
 export function resolveCabinetSessionRoleLabel(input: {
@@ -106,13 +150,15 @@ export function resolveCabinetPresentation(input: {
   contextReady: boolean;
   contextHttpStatus: number | null;
 }): CabinetPresentationSnapshot {
-  const workplacePartnerType = resolveWorkplacePartnerType({
+  const workplace = resolveWorkplacePartnerTypeResolution({
     user: input.user,
     proContext: input.proContext,
     contextReady: input.contextReady,
   });
+  const workplacePartnerType = workplace.partnerType;
   const navMode: CabinetNavMode = resolveCabinetNavMode(input.user, {
     workplacePartnerType,
+    workplaceNavFromOrgContext: workplace.source === "org-context",
   });
   const actorDisplayName = input.user.displayName?.trim() || "Партнёр RemCard";
 
@@ -121,6 +167,7 @@ export function resolveCabinetPresentation(input: {
     contextHttpStatus: input.contextHttpStatus,
     proContext: input.proContext,
     workplacePartnerType,
+    workplacePartnerTypeSource: workplace.source,
     actorDisplayName,
     workspaceOrganizationName: resolveWorkspaceOrganizationName(input.proContext),
     sessionRoleLabel: resolveCabinetSessionRoleLabel({
@@ -139,6 +186,8 @@ export function employeeRequiresWorkplaceContext(input: {
 }): boolean {
   if (!input.isEmployee) return false;
   if (!input.presentation.contextReady) return true;
+  const validation = validateProContextSnapshot(input.presentation.proContext);
+  if (!validation.ok) return true;
   const role = input.presentation.proContext?.role;
   if (role && !isKnownProContextRole(role)) return true;
   if (isOrgWorkplaceMemberRole(role) && !input.presentation.workplacePartnerType) {

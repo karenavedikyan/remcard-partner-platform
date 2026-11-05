@@ -54,7 +54,7 @@ export function ProfileBranchContextSwitcher() {
     try {
       await remcardFetch("/api/pro/context", { method: "PATCH", body: { branchId } });
       await load();
-      window.location.reload();
+      window.dispatchEvent(new Event("remcard:cabinet-presentation-changed"));
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось переключить филиал");
     } finally {

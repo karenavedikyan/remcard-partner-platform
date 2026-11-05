@@ -11,6 +11,20 @@ describe("resolveBusinessOwnerClientsEligibility", () => {
     ).toEqual({ eligible: true, partnerType: "STORE" });
   });
 
+  it("allows PRO MASTER org employee with store context", () => {
+    expect(
+      resolveBusinessOwnerClientsEligibility({
+        user: { role: "PRO", partnerType: "MASTER", partnerActivities: ["AGENT"] },
+        proContextRole: "ORG_EMPLOYEE",
+        proContext: {
+          role: "ORG_EMPLOYEE",
+          organization: { id: "o1", name: "Store", partnerType: "STORE" },
+        },
+        contextReady: true,
+      }),
+    ).toEqual({ eligible: true, partnerType: "STORE" });
+  });
+
   it("allows CLIENT org employee with store context", () => {
     expect(
       resolveBusinessOwnerClientsEligibility({

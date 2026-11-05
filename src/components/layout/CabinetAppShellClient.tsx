@@ -9,6 +9,7 @@ import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
 import type { ProfTestSessionInfo } from "@/lib/types";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
+import { CabinetPresentationRefreshListener } from "@/components/layout/CabinetPresentationRefreshListener";
 
 type CabinetAppShellClientProps = {
   user: AuthUser;
@@ -32,7 +33,10 @@ export function CabinetAppShellClient({
     profTestSession?.active ? <ProfTestModeBanner session={profTestSession} /> : null;
 
   const wrapped = (node: React.ReactNode) => (
-    <CabinetPresentationProvider value={presentation}>{node}</CabinetPresentationProvider>
+    <CabinetPresentationProvider value={presentation}>
+      <CabinetPresentationRefreshListener />
+      {node}
+    </CabinetPresentationProvider>
   );
 
   if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
