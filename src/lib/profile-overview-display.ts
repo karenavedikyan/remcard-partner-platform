@@ -4,6 +4,7 @@ import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProProfileResponse } from "@/lib/types";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
+import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
 import { isOrganizationStaffEmployee, staffAccessScopeLabel } from "@/lib/profile-staff-cabinet";
 import { workingProfileCabinetReady } from "@/lib/profile-working-save";
 
@@ -12,6 +13,19 @@ const PARTNER_TYPE_LABELS: Record<string, string> = {
   COMPANY: "Компания",
   STORE: "Магазин",
 };
+
+/** Trusted org workplace overview (server dispatch), not inferred from personal /pro/profile. */
+export function isTrustedOrgWorkplaceOverview(
+  orgStaffWorkplacePartnerType: BusinessProfilePartnerType | null | undefined,
+): boolean {
+  return orgStaffWorkplacePartnerType === "STORE" || orgStaffWorkplacePartnerType === "COMPANY";
+}
+
+export function trustedWorkplaceOverviewTitle(
+  proContext: ProContextSnapshot | null,
+): string {
+  return proContext?.organization?.name?.trim() || "—";
+}
 
 export function partnerTypeLabel(partnerType: string | null | undefined): string {
   if (!partnerType) return "Сотрудник";
@@ -32,7 +46,11 @@ export function principalPartnerKindLabel(
 export function overviewRoleLabel(
   profile: ProProfileResponse,
   proContext: ProContextSnapshot | null,
+  orgStaffWorkplacePartnerType?: BusinessProfilePartnerType | null,
 ): string {
+  if (isTrustedOrgWorkplaceOverview(orgStaffWorkplacePartnerType)) {
+    return staffAccessScopeLabel(proContext) ?? "Сотрудник организации";
+  }
   if (isOrganizationStaffEmployee(profile, proContext)) {
     return staffAccessScopeLabel(proContext) ?? "Сотрудник организации";
   }
@@ -43,9 +61,13 @@ export function overviewRoleLabel(
 export function savedWorkingProfileTitle(
   profile: ProProfileResponse,
   proContext: ProContextSnapshot | null = null,
+  orgStaffWorkplacePartnerType?: BusinessProfilePartnerType | null,
 ): string {
+  if (isTrustedOrgWorkplaceOverview(orgStaffWorkplacePartnerType)) {
+    return trustedWorkplaceOverviewTitle(proContext);
+  }
   if (isOrganizationStaffEmployee(profile, proContext)) {
-    return profile.organization?.name?.trim() || proContext?.organization?.name?.trim() || "—";
+    return proContext?.organization?.name?.trim() || "—";
   }
   const kind = resolvePartnerKindUi({
     partnerType: profile.user.partnerType,
@@ -62,11 +84,15 @@ export function savedWorkingProfileTitle(
 export function savedWorkingProfileReadyLabel(
   profile: ProProfileResponse,
   proContext: ProContextSnapshot | null = null,
+  orgStaffWorkplacePartnerType?: BusinessProfilePartnerType | null,
 ): {
   label: string;
   ready: boolean;
 } {
-  if (isOrganizationStaffEmployee(profile, proContext)) {
+  if (
+    isTrustedOrgWorkplaceOverview(orgStaffWorkplacePartnerType) ||
+    isOrganizationStaffEmployee(profile, proContext)
+  ) {
     return { label: "Доступ по приглашению", ready: true };
   }
   const saved = profileDraftFromProfile(profile);

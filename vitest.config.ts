@@ -42,6 +42,7 @@ export default defineConfig({
       "src/lib/contact-phone-display.test.ts",
       "src/lib/profile-cabinet-access.test.ts",
       "src/lib/profile-section-access.test.ts",
+      "src/components/profile/ProfileEditor.org-staff-workplace-guards.test.tsx",
       "src/lib/agent-nav/pilot-workplace-gate.test.ts",
       "src/components/layout/CabinetAppShellClient.test.tsx",
       "src/app/page.org-workplace-agent-pilot.test.tsx",

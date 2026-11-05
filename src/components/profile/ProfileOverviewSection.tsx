@@ -7,7 +7,9 @@ import {
   effectiveCatalogStatus,
   showRevisionBanner,
 } from "@/lib/profile-catalog-state";
+import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
 import {
+  isTrustedOrgWorkplaceOverview,
   overviewRoleLabel,
   savedCity,
   savedDirectionLabels,
@@ -38,6 +40,8 @@ type ProfileOverviewSectionProps = {
   hasUnsavedBasicsChanges?: boolean;
   /** Dev/screenshot fixture only — skips live fetch. */
   fixtureOverview?: EmployeesOverviewResponse | null;
+  /** Trusted org workplace from presentation dispatch (ignores personal partner profile). */
+  orgStaffWorkplacePartnerType?: BusinessProfilePartnerType | null;
 };
 
 type SoloEmployeesState =
@@ -63,8 +67,10 @@ export function ProfileOverviewSection({
   onNavigateSection,
   hasUnsavedBasicsChanges = false,
   fixtureOverview,
+  orgStaffWorkplacePartnerType = null,
 }: ProfileOverviewSectionProps) {
   const { canFetchEmployeesOverview, contextReady, proContext } = useProfileCabinetAccess();
+  const trustedWorkplaceOverview = isTrustedOrgWorkplaceOverview(orgStaffWorkplacePartnerType);
   const [teamOverview, setTeamOverview] = useState<EmployeesOverviewResponse | null>(
     fixtureOverview ?? null,
   );
@@ -74,12 +80,14 @@ export function ProfileOverviewSection({
   const [overviewError, setOverviewError] = useState("");
   const [soloEmployees, setSoloEmployees] = useState<SoloEmployeesState>({ status: "idle" });
 
-  const isStaffEmployee = isOrganizationStaffEmployee(profile, proContext);
+  const isStaffEmployee =
+    trustedWorkplaceOverview || isOrganizationStaffEmployee(profile, proContext);
   const partnerType = profile.user.partnerType;
   const hasOrganization = Boolean(profile.organization);
-  const showBranchesTools =
-    hasOrganization &&
-    (partnerType === "STORE" || partnerType === "COMPANY" || isStaffEmployee);
+  const showBranchesTools = trustedWorkplaceOverview
+    ? Boolean(proContext?.organization?.id)
+    : hasOrganization &&
+      (partnerType === "STORE" || partnerType === "COMPANY" || isStaffEmployee);
 
   const loadSoloEmployees = useCallback(async () => {
     setSoloEmployees({ status: "loading" });
@@ -115,7 +123,7 @@ export function ProfileOverviewSection({
       setSoloEmployees({ status: "idle" });
       return;
     }
-    if (!showBranchesTools && partnerType !== "MASTER" && !isStaffEmployee) {
+    if (!showBranchesTools && partnerType !== "MASTER" && !isStaffEmployee && !trustedWorkplaceOverview) {
       return;
     }
     const generation = fetchGenerationRef.current;
@@ -170,13 +178,13 @@ export function ProfileOverviewSection({
     void loadTeamSummary();
   }, [loadTeamSummary]);
 
-  const title = savedWorkingProfileTitle(profile, proContext);
-  const ready = savedWorkingProfileReadyLabel(profile, proContext);
+  const title = savedWorkingProfileTitle(profile, proContext, orgStaffWorkplacePartnerType);
+  const ready = savedWorkingProfileReadyLabel(profile, proContext, orgStaffWorkplacePartnerType);
   const directions = savedDirectionLabels(profile);
   const catalogStatus = effectiveCatalogStatus(profile);
   const catalogLabel = CATALOG_STATUS_LABELS[catalogStatus] ?? catalogStatus;
   const published = isPubliclyVisible(profile);
-  const needsRevision = showRevisionBanner(profile);
+  const needsRevision = trustedWorkplaceOverview ? false : showRevisionBanner(profile);
   const staffPosition = staffPositionLabel(proContext);
   const staffScopeHeadline = staffAccessScopeHeadline(proContext);
   const staffScopeBranches = staffAccessScopeBranchLines(proContext);
@@ -221,7 +229,7 @@ export function ProfileOverviewSection({
 
   const showTeamTools =
     showBranchesTools ||
-    partnerType === "MASTER" ||
+    (!trustedWorkplaceOverview && partnerType === "MASTER") ||
     overviewLoading ||
     Boolean(teamOverview) ||
     Boolean(overviewError) ||
@@ -269,7 +277,7 @@ export function ProfileOverviewSection({
             <h2>{title}</h2>
             <p className={styles.subline}>
               <span data-testid="profile-overview-role">
-                {overviewRoleLabel(profile, proContext)}
+                {overviewRoleLabel(profile, proContext, orgStaffWorkplacePartnerType)}
               </span>{" "}
               · {savedCity(profile)}
             </p>

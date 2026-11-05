@@ -251,7 +251,8 @@ function ProfileEditorInner({
       : null,
   );
   const specialistR06Ui = Boolean(
-    specialistR06Gate?.featureEnabled &&
+    !isOrgStaffWorkplaceUi &&
+      specialistR06Gate?.featureEnabled &&
       specialistR06Gate?.eligible &&
       profile.user.partnerType === "MASTER",
   );
@@ -315,7 +316,7 @@ function ProfileEditorInner({
   }, [focusField, activeSection]);
 
   const catalogStatus = effectiveCatalogStatus(profile);
-  const basicsEditable = profileBasicsEditable(profile);
+  const basicsEditable = isOrgStaffWorkplaceUi ? false : profileBasicsEditable(profile);
 
   const [agentR02Gate, setAgentR02Gate] = useState<{
     featureEnabled: boolean;
@@ -374,11 +375,15 @@ function ProfileEditorInner({
 
   const pureAgentActivities = isPureAgentActivities(partnerActivities);
   const pureAgentCompactUi =
+    !isOrgStaffWorkplaceUi &&
     pureAgentActivities &&
     (initialPureAgentCompact ||
       Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible));
   const agentNavPending =
-    pureAgentActivities && !initialPureAgentCompact && agentR02Gate === null;
+    !isOrgStaffWorkplaceUi &&
+    pureAgentActivities &&
+    !initialPureAgentCompact &&
+    agentR02Gate === null;
   const showAnalyticsConsentInset =
     !isOrgStaffWorkplaceUi &&
     !agentNavPending &&
@@ -390,8 +395,8 @@ function ProfileEditorInner({
     if (isOrgStaffWorkplaceUi) return businessOrgProfileSectionNav();
     return profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
   }, [isOrgStaffWorkplaceUi, pureAgentCompactUi]);
-  const catalogEditable = catalogPublicationEditable(profile);
-  const revisionBanner = showRevisionBanner(profile);
+  const catalogEditable = isOrgStaffWorkplaceUi ? false : catalogPublicationEditable(profile);
+  const revisionBanner = isOrgStaffWorkplaceUi ? false : showRevisionBanner(profile);
 
   const needsBranchFields =
     (partnerType === "STORE" || partnerType === "COMPANY") &&
@@ -928,6 +933,7 @@ function ProfileEditorInner({
                     onNavigateSection={navigateSection}
                     hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
                     fixtureOverview={fixtureOverview}
+                    orgStaffWorkplacePartnerType={orgStaffWorkplacePartnerType}
                   />
                 </SpecialistOverviewEmptyGate>
               ) : (
@@ -936,6 +942,7 @@ function ProfileEditorInner({
                   onNavigateSection={navigateSection}
                   hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
                   fixtureOverview={fixtureOverview}
+                  orgStaffWorkplacePartnerType={orgStaffWorkplacePartnerType}
                 />
               )
             ) : null}
@@ -1475,7 +1482,9 @@ function ProfileEditorInner({
           </Panel>
         )}
 
-        {(activeSection === "overview" || activeSection === "basics") && basicsEditable ? (
+        {(activeSection === "overview" || activeSection === "basics") &&
+        basicsEditable &&
+        !isOrgStaffWorkplaceUi ? (
           <PartnerTypeSettings
             profile={profile}
             hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
@@ -1487,32 +1496,53 @@ function ProfileEditorInner({
         <ProfileSessionActions />
       </div>
 
-      {showAside ? (
-        <aside className={styles.aside}>
-          <Panel title="Подсказка" compact>
-            <p>
-              Рабочие данные сохраняются без модерации. Публикация в каталоге — добровольно, в
-              разделе «Каталог RemCard».
-            </p>
-            <p className={styles.hint}>Каталог: {statusLabel}</p>
-          </Panel>
-          {profile.organization ? (
-            <Panel title="Организация" compact>
-              <p className={styles.orgName}>{profile.organization.name}</p>
-              <p>
-                Статус витрины:{" "}
-                {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ??
-                  profile.organization.catalogStatus}
-              </p>
-              <p className={styles.hint}>
-                {profile.organization.catalogPublished
-                  ? "Организация видна в каталоге (опубликованная версия)."
-                  : "Организация не опубликована для посетителей."}
-                {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
-              </p>
-              <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
-            </Panel>
-          ) : null}
+      {showAside || (isOrgStaffWorkplaceUi && activeSection === "overview") ? (
+        <aside className={styles.aside} data-testid="profile-editor-aside">
+          {isOrgStaffWorkplaceUi ? (
+            <>
+              <Panel title="Подсказка" compact>
+                <p>
+                  Рабочий профиль организации берётся из контекста кабинета. Личный профиль
+                  партнёра и публикация в каталоге здесь не редактируются.
+                </p>
+              </Panel>
+              <Panel title="Организация" compact>
+                <p className={styles.orgName} data-testid="workplace-aside-org-name">
+                  {cabinetAccess.proContext?.organization?.name?.trim() || "—"}
+                </p>
+                <p className={styles.hint} role="status">
+                  Каталог и регистрация юрлица доступны владельцу организации.
+                </p>
+              </Panel>
+            </>
+          ) : (
+            <>
+              <Panel title="Подсказка" compact>
+                <p>
+                  Рабочие данные сохраняются без модерации. Публикация в каталоге — добровольно, в
+                  разделе «Каталог RemCard».
+                </p>
+                <p className={styles.hint}>Каталог: {statusLabel}</p>
+              </Panel>
+              {profile.organization ? (
+                <Panel title="Организация" compact>
+                  <p className={styles.orgName}>{profile.organization.name}</p>
+                  <p>
+                    Статус витрины:{" "}
+                    {CATALOG_STATUS_LABELS[profile.organization.catalogStatus] ??
+                      profile.organization.catalogStatus}
+                  </p>
+                  <p className={styles.hint}>
+                    {profile.organization.catalogPublished
+                      ? "Организация видна в каталоге (опубликованная версия)."
+                      : "Организация не опубликована для посетителей."}
+                    {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
+                  </p>
+                  <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
+                </Panel>
+              ) : null}
+            </>
+          )}
         </aside>
       ) : null}
       </div>
