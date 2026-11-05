@@ -1,7 +1,7 @@
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import { isOrgStaffWorkplaceViewer } from "@/lib/cabinet-presentation/access-block";
 import type { AuthUser } from "@/lib/types";
-import { shouldRenderBusinessOwnerHome } from "./gate";
+import { businessHomeNavContextFromPresentation, shouldRenderBusinessOwnerHome } from "./gate";
 
 /** Personal MASTER/R06 home must not win over active org workplace cabinet. */
 export function shouldDeferPersonalSpecialistHome(
@@ -11,7 +11,7 @@ export function shouldDeferPersonalSpecialistHome(
     "workplacePartnerType" | "workplacePartnerTypeSource" | "proContext"
   >,
 ): boolean {
-  if (shouldRenderBusinessOwnerHome(user, presentation.workplacePartnerType)) {
+  if (shouldRenderBusinessOwnerHome(user, businessHomeNavContextFromPresentation(presentation))) {
     return true;
   }
   if (

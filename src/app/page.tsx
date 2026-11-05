@@ -19,6 +19,7 @@ import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
 import { shouldRenderSpecialistHome } from "@/lib/specialist-home/gate";
 import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
 import {
+  businessHomeNavContextFromPresentation,
   businessOwnerHomePartnerType,
   shouldRenderBusinessOwnerHome,
 } from "@/lib/business-home/gate";
@@ -111,7 +112,10 @@ export default async function HomePage(
       !shouldDeferPersonalAgentPilotForOrgWorkplace(presentation),
   );
 
-  const businessOwnerHome = shouldRenderBusinessOwnerHome(user, presentation.workplacePartnerType);
+  const businessOwnerHome = shouldRenderBusinessOwnerHome(
+    user,
+    businessHomeNavContextFromPresentation(presentation),
+  );
   const businessPartnerType = businessOwnerHome
     ? businessOwnerHomePartnerType(user, presentation.workplacePartnerType)
     : null;

@@ -1,13 +1,31 @@
-import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
-import type { WorkplacePartnerType } from "@/lib/cabinet-presentation/types";
+import {
+  resolveCabinetNavMode,
+  type ResolveCabinetNavModeOptions,
+} from "@/lib/cabinet-nav/mode";
+import type {
+  CabinetPresentationSnapshot,
+  WorkplacePartnerType,
+} from "@/lib/cabinet-presentation/types";
 import type { AuthUser } from "@/lib/types";
+
+export function businessHomeNavContextFromPresentation(
+  presentation: Pick<
+    CabinetPresentationSnapshot,
+    "workplacePartnerType" | "workplacePartnerTypeSource"
+  >,
+): ResolveCabinetNavModeOptions {
+  return {
+    workplacePartnerType: presentation.workplacePartnerType,
+    workplaceNavFromOrgContext: presentation.workplacePartnerTypeSource === "org-context",
+  };
+}
 
 /** Store/company prototype home (owner or org workplace member with trusted context). */
 export function shouldRenderBusinessOwnerHome(
   user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">,
-  workplacePartnerType?: WorkplacePartnerType | null,
+  navContext?: ResolveCabinetNavModeOptions,
 ): boolean {
-  const mode = resolveCabinetNavMode(user, { workplacePartnerType });
+  const mode = resolveCabinetNavMode(user, navContext);
   return mode === "business-store" || mode === "business-company";
 }
 

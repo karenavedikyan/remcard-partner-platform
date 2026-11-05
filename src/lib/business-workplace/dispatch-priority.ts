@@ -62,7 +62,10 @@ export function resolveBusinessSectionDispatch(input: {
 
   if (
     input.surface === "issuer" &&
-    shouldRenderBusinessOwnerHome(input.user, workplace.partnerType)
+    shouldRenderBusinessOwnerHome(input.user, {
+      workplacePartnerType: workplace.partnerType,
+      workplaceNavFromOrgContext: workplace.source === "org-context",
+    })
   ) {
     const partnerType = businessOwnerHomePartnerType(input.user, workplace.partnerType);
     if (partnerType) {
