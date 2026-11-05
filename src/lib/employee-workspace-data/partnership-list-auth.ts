@@ -42,6 +42,9 @@ export function authorizePartnershipListRead(input: {
     actorUserId: input.user.id,
   });
   if (orgRead) {
+    if (input.proContext?.role === "ORG_OWNER") {
+      return { allowed: true, mode: "organization", readContext: orgRead };
+    }
     const activeOrgBranchIds = input.proContext?.organizationActiveBranchIds ?? [];
     const grants =
       input.proContext?.branchAssignments?.filter((row) => row.status === "ACTIVE") ?? [];

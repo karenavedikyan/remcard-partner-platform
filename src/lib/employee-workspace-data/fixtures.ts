@@ -35,11 +35,12 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
   canManageLeads?: boolean;
   canManageCertificates?: boolean;
   branchId?: string;
+  organizationActiveBranchIds?: string[];
   /** When false, simulates bb7db4ca branchEmployee.count===0 — must deny wallet/clients. */
   includeActiveBranchGrant?: boolean;
 }): ProContextSnapshot {
   const canViewWallet = input?.canViewWallet ?? false;
-  const canManagePartnerships = input?.canManagePartnerships ?? false;
+  const canManagePartnerships = input?.canManagePartnerships ?? true;
   const canManageLeads = input?.canManageLeads ?? false;
   const canManageCertificates = input?.canManageCertificates ?? false;
   const includeGrant = input?.includeActiveBranchGrant ?? true;
@@ -66,6 +67,8 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
     branchAssignments: includeGrant
       ? [{ branchId, status: "ACTIVE", effectivePermissions }]
       : [],
+    organizationActiveBranchIds:
+      input?.organizationActiveBranchIds ?? (includeGrant ? [branchId] : []),
   };
 }
 
