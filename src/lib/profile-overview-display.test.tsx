@@ -167,7 +167,7 @@ describe("profile-overview-display", () => {
     };
     expect(savedWorkingProfileTitle(profile, ctx)).toBe("ОПТОВИК");
     expect(savedWorkingProfileReadyLabel(profile, ctx).label).toBe("Доступ по приглашению");
-    expect(overviewRoleLabel(profile, ctx)).toContain("Штаб");
+    expect(overviewRoleLabel(profile, ctx)).toContain("Головной офис");
     expect(isOrganizationStaffEmployee(profile, ctx)).toBe(true);
   });
 
