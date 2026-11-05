@@ -66,7 +66,7 @@ describe("ProfileOrgStaffWorkplace", () => {
       />,
     );
     expect(screen.getByTestId("profile-org-staff-workplace")).toBeTruthy();
-    expect(screen.getByText("Синтетическая org")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Синтетическая org" })).toBeTruthy();
     expect(screen.getByText(/не из личного профиля владельца/i)).toBeTruthy();
   });
 });
