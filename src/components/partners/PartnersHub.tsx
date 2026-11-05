@@ -2392,6 +2392,7 @@ export function PartnersHub({
               <AgentPartnerCollection
                 partnerships={pagedOverviewDecisions}
                 meId={meId}
+                listSubjectUserId={subjectUserId}
                 viewMode={decideInvitationViewMode}
                 busyId={busyId}
                 onRunAction={(id, action) => {
@@ -2497,6 +2498,7 @@ export function PartnersHub({
                 <AgentPartnerCollection
                   partnerships={pagedPartnerships}
                   meId={meId}
+                  listSubjectUserId={subjectUserId}
                   viewMode={listViewMode}
                   busyId={busyId}
                   onRunAction={(id, action) => {
@@ -2545,6 +2547,7 @@ export function PartnersHub({
                 <AgentPartnerCollection
                   partnerships={pagedOverviewWaiting}
                   meId={meId}
+                  listSubjectUserId={subjectUserId}
                   viewMode={waitingInvitationViewMode}
                   busyId={busyId}
                   onRunAction={(id, action) => {
@@ -2679,6 +2682,7 @@ export function PartnersHub({
             <AgentPartnerCollection
               partnerships={pagedPartnerships}
               meId={meId}
+              listSubjectUserId={subjectUserId}
               viewMode={listViewMode}
               busyId={busyId}
               onRunAction={(id, action) => {

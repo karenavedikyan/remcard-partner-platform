@@ -71,7 +71,10 @@ type TermRequestState = {
 
 type Props = {
   partnerships: Partnership[];
+  /** Signed-in actor (mutations, aliases, preferences). */
   meId: string;
+  /** Org owner / list principal for counterparty display and action direction (defaults to meId). */
+  listSubjectUserId?: string;
   viewMode: AgentListViewMode;
   busyId: string | null;
   onRunAction: (partnershipId: string, action: string) => void;
@@ -144,16 +147,16 @@ function CompactCooperationActions({
 
 function PartnerRowNameButton({
   partnership,
-  meId,
+  listPrincipalId,
   onOpenDetails,
   className,
 }: {
   partnership: Partnership;
-  meId: string;
+  listPrincipalId: string;
   onOpenDetails: (trigger: HTMLButtonElement) => void;
   className?: string;
 }) {
-  const title = partnerRowTitle(partnership, meId);
+  const title = partnerRowTitle(partnership, listPrincipalId);
   return (
     <button
       type="button"
@@ -183,8 +186,8 @@ function PartnerCollectionStatusBadge({ status }: { status: string }) {
   );
 }
 
-function rowShowsInlineWorkflow(partnership: Partnership, meId: string): boolean {
-  const actions = getPartnershipUiActions(partnership, meId);
+function rowShowsInlineWorkflow(partnership: Partnership, listPrincipalId: string): boolean {
+  const actions = getPartnershipUiActions(partnership, listPrincipalId);
   return (
     partnership.status === "ACTIVE" ||
     actions.some((a) => a.kind === "waiting") ||
@@ -194,20 +197,20 @@ function rowShowsInlineWorkflow(partnership: Partnership, meId: string): boolean
 
 function PartnerRowInlineWorkflow({
   partnership,
-  meId,
+  listPrincipalId,
   busyId,
   onRunAction,
   onLoadTermRequests,
   termExpanded,
 }: {
   partnership: Partnership;
-  meId: string;
+  listPrincipalId: string;
   busyId: string | null;
   onRunAction: (partnershipId: string, action: string) => void;
   onLoadTermRequests: (partnershipId: string, trigger?: HTMLElement | null) => void;
   termExpanded: boolean;
 }) {
-  const actions = getPartnershipUiActions(partnership, meId);
+  const actions = getPartnershipUiActions(partnership, listPrincipalId);
   const waiting = actions.filter((a) => a.kind === "waiting");
   const buttons = actions.filter((a) => a.kind !== "waiting");
   const disabled = busyId === partnership.id;
@@ -260,6 +263,7 @@ export function AgentPartnerCollection(props: Props) {
   const {
     partnerships,
     meId,
+    listSubjectUserId,
     viewMode,
     busyId,
     onRunAction,
@@ -282,6 +286,8 @@ export function AgentPartnerCollection(props: Props) {
     invitationFlowHint = null,
     compactCooperation = false,
   } = props;
+
+  const listPrincipalId = listSubjectUserId?.trim() || meId;
 
   const isInvitations = presentationVariant === "invitations";
   const isActiveSkin = resolveActivePartnerPresentation(presentationVariant, partnerships);
@@ -374,6 +380,7 @@ export function AgentPartnerCollection(props: Props) {
       partnership={detailPartnership}
       compactCooperation={isCompact}
       meId={meId}
+      listSubjectUserId={listPrincipalId}
       open={detailPartnershipId !== null}
       onClose={closeDetails}
       returnFocusRef={detailNameButtonRef}
@@ -500,13 +507,13 @@ export function AgentPartnerCollection(props: Props) {
           data-partner-surface="cards"
         >
           {partnerships.map((partnership) => {
-            const partner = partnershipPartnerProfile(partnership, meId);
-            const officialLine = partnerCollectionOfficialLine(partnership, meId);
+            const partner = partnershipPartnerProfile(partnership, listPrincipalId);
+            const officialLine = partnerCollectionOfficialLine(partnership, listPrincipalId);
             const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
             const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
             const detail = activeMeta
               ? activeMeta.specLine
-              : partnerCollectionListDetail(partnership, meId);
+              : partnerCollectionListDetail(partnership, listPrincipalId);
             const avatarUrl = isActiveSkin ? partnerCollectionAvatarUrl(partner) : null;
             const isSelected = selectedIds.has(partnership.id);
             return (
@@ -548,7 +555,7 @@ export function AgentPartnerCollection(props: Props) {
                   ) : null}
                   <PartnerRowNameButton
                     partnership={partnership}
-                    meId={meId}
+                    listPrincipalId={listPrincipalId}
                     onOpenDetails={(el) => openDetails(partnership.id, el)}
                     className={cardTitleClass}
                   />
@@ -591,7 +598,7 @@ export function AgentPartnerCollection(props: Props) {
                       onLoadTermRequests={onLoadTermRequests} />
                   ) : <PartnerRowInlineWorkflow
                     partnership={partnership}
-                    meId={meId}
+                    listPrincipalId={listPrincipalId}
                     busyId={busyId}
                     onRunAction={onRunAction}
                     onLoadTermRequests={onLoadTermRequests}
@@ -620,14 +627,14 @@ export function AgentPartnerCollection(props: Props) {
           data-partner-surface="mobile"
         >
           {partnerships.map((partnership) => {
-            const partner = partnershipPartnerProfile(partnership, meId);
-            const needsResponse = partnershipNeedsMyResponse(partnership, meId);
-            const officialLine = partnerCollectionOfficialLine(partnership, meId);
+            const partner = partnershipPartnerProfile(partnership, listPrincipalId);
+            const needsResponse = partnershipNeedsMyResponse(partnership, listPrincipalId);
+            const officialLine = partnerCollectionOfficialLine(partnership, listPrincipalId);
             const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
             const typeCaption = activeMeta ? activeMeta.typeCityLine : partnerTypeLabel(partner);
             const detail = activeMeta
               ? activeMeta.specLine
-              : partnerCollectionListDetail(partnership, meId);
+              : partnerCollectionListDetail(partnership, listPrincipalId);
             return (
               <article
                 key={partnership.id}
@@ -644,7 +651,7 @@ export function AgentPartnerCollection(props: Props) {
                   <div className={r03.mobileRecordMain}>
                     <PartnerRowNameButton
                       partnership={partnership}
-                      meId={meId}
+                      listPrincipalId={listPrincipalId}
                       onOpenDetails={(el) => openDetails(partnership.id, el)}
                       className={
                         isInvitations ? inviteStyles.mobileTitle : r03.mobileRecordTitle
@@ -683,7 +690,7 @@ export function AgentPartnerCollection(props: Props) {
                       onLoadTermRequests={onLoadTermRequests} />
                   ) : <PartnerRowInlineWorkflow
                   partnership={partnership}
-                  meId={meId}
+                  listPrincipalId={listPrincipalId}
                   busyId={busyId}
                   onRunAction={onRunAction}
                   onLoadTermRequests={onLoadTermRequests}
@@ -731,15 +738,15 @@ export function AgentPartnerCollection(props: Props) {
             </thead>
             <tbody>
               {partnerships.map((partnership) => {
-                const partner = partnershipPartnerProfile(partnership, meId);
-                const officialLine = partnerCollectionOfficialLine(partnership, meId);
+                const partner = partnershipPartnerProfile(partnership, listPrincipalId);
+                const officialLine = partnerCollectionOfficialLine(partnership, listPrincipalId);
                 const activeMeta = isActiveSkin ? partnerCollectionActiveRowLines(partner) : null;
                 const typeCaption = activeMeta && !isCompact ? activeMeta.typeCityLine : partnerTypeLabel(partner);
                 const detail = isCompact
                   ? [partner.city, partnerSpecializationHint(partner)].filter(Boolean).join(" · ") || "Нет дополнительных данных"
                   : activeMeta
                   ? activeMeta.specLine
-                  : partnerCollectionListDetail(partnership, meId);
+                  : partnerCollectionListDetail(partnership, listPrincipalId);
                 return (
                   <Fragment key={partnership.id}>
                     <tr
@@ -751,13 +758,13 @@ export function AgentPartnerCollection(props: Props) {
                           type="checkbox"
                           checked={selectedIds.has(partnership.id)}
                           onChange={() => onToggleSelect(partnership.id)}
-                          aria-label={`Выбрать ${partnerRowTitle(partnership, meId)}`}
+                          aria-label={`Выбрать ${partnerRowTitle(partnership, listPrincipalId)}`}
                         />
                       </td>
                       <td className={titleCellClass}>
                         <PartnerRowNameButton
                           partnership={partnership}
-                          meId={meId}
+                          listPrincipalId={listPrincipalId}
                           onOpenDetails={(el) => openDetails(partnership.id, el)}
                         />
                         {officialLine ? (
@@ -806,12 +813,12 @@ export function AgentPartnerCollection(props: Props) {
                         />}
                       </td>
                     </tr>
-                    {!isCompact && rowShowsInlineWorkflow(partnership, meId) ? (
+                    {!isCompact && rowShowsInlineWorkflow(partnership, listPrincipalId) ? (
                       <tr className={styles.workflowRow}>
                         <td colSpan={5} className={workflowCellClass}>
                           <PartnerRowInlineWorkflow
                             partnership={partnership}
-                            meId={meId}
+                            listPrincipalId={listPrincipalId}
                             busyId={busyId}
                             onRunAction={onRunAction}
                             onLoadTermRequests={onLoadTermRequests}
@@ -845,6 +852,7 @@ export function AgentPartnerCollection(props: Props) {
         isInvitations ? "invitations" : isActiveSkin ? "active" : presentationVariant
       }
       data-invitation-flow={isInvitations ? invitationFlowHint ?? undefined : undefined}
+      data-list-principal-id={listPrincipalId}
     >
       {listBody}
       {detailDialog}

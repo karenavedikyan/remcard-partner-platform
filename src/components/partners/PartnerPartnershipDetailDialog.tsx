@@ -35,6 +35,8 @@ import styles from "./PartnerPartnershipDetailDialog.module.css";
 type Props = {
   partnership: Partnership | null;
   meId: string;
+  /** List principal for counterparty display (defaults to meId). */
+  listSubjectUserId?: string;
   open: boolean;
   onClose: () => void;
   returnFocusRef?: React.RefObject<HTMLElement | null>;
@@ -65,6 +67,7 @@ function isEmptyAgentInviteRequest(partnership: Partnership, meId: string): bool
 export function PartnerPartnershipDetailDialog({
   partnership,
   meId,
+  listSubjectUserId,
   open,
   onClose,
   returnFocusRef,
@@ -143,15 +146,16 @@ export function PartnerPartnershipDetailDialog({
 
   if (!open || !partnership) return null;
 
-  const partner = partnershipPartnerProfile(partnership, meId);
+  const listPrincipalId = listSubjectUserId?.trim() || meId;
+  const partner = partnershipPartnerProfile(partnership, listPrincipalId);
   const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-  const actions = getPartnershipUiActions(partnership, meId);
+  const actions = getPartnershipUiActions(partnership, listPrincipalId);
   const waiting = actions.filter((a) => a.kind === "waiting");
   const runnable = actions.filter((a) => a.kind !== "waiting");
   const hasActionCallbacks = Boolean(onRunAction || onOpenTermChange);
   const termsLines = partnerTermsFullDetail(partnership);
   const specFull = partnerSpecializationFull(partner);
-  const official = partnerRowOfficialLine(partnership, meId);
+  const official = partnerRowOfficialLine(partnership, listPrincipalId);
   const showAgentEmptyExplain = isEmptyAgentInviteRequest(partnership, meId);
 
   return (
@@ -181,7 +185,7 @@ export function PartnerPartnershipDetailDialog({
           }}
         />
         <div className={styles.headerRow}>
-          <h2 id={titleId}>{partnerRowTitle(partnership, meId)}</h2>
+          <h2 id={titleId}>{partnerRowTitle(partnership, listPrincipalId)}</h2>
           <Button
             ref={closeRef}
             type="button"

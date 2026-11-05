@@ -44,10 +44,10 @@ import styles from "./agent-r03.module.css";
 const emptyMeta: AgentR03ListMeta = {
   page: 1,
   pageSize: 25,
-  totalCount: 0,
+  totalCount: null,
   totalPages: 1,
-  activeCount: 0,
-  archivedCount: 0,
+  activeCount: null,
+  archivedCount: null,
   hasNextPage: false,
   hasPrevPage: false,
 };
@@ -354,15 +354,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
           setArchived(v);
           resetFiltersAndPage();
         }}
-        activeCount={meta.activeCount}
-        archivedCount={meta.archivedCount}
+        activeCount={loadState === "loading" ? null : meta.activeCount}
+        archivedCount={loadState === "loading" ? null : meta.archivedCount}
         viewMode={viewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);
           writeAgentR03ViewMode("clients", mode);
           setSelected(new Set());
         }}
-        foundCount={meta.totalCount}
+        foundCount={loadState === "loading" || loadState === "error" ? null : meta.totalCount}
         selectableIds={visibleIds}
         selectedIds={selected}
         onSelectPage={(checked) => {
