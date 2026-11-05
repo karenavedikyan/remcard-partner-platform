@@ -8,6 +8,7 @@ import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
 import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
+import { businessHomeNavContextFromPresentation } from "@/lib/business-home/gate";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
@@ -21,6 +22,8 @@ import { resolveWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 import {
   businessWalletLedgerScopeKey,
   canManageBusinessWalletRequisites,
+  resolveSettlementWalletReadAccess,
+  settlementWalletReadBlockedMessage,
 } from "@/lib/business-wallet/access";
 
 export const dynamic = "force-dynamic";
@@ -40,15 +43,15 @@ export default async function SettlementsPage() {
   const r05Eligible =
     r05Result.ok && r05Result.data.featureEnabled && r05Result.data.eligible;
   const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
-  const navMode = resolveCabinetNavMode(user, {
-    workplacePartnerType: presentation.workplacePartnerType,
-  });
+  const navContext = businessHomeNavContextFromPresentation(presentation);
+  const navMode = resolveCabinetNavMode(user, navContext);
   const shell = resolveSettlementsPageShell({
     partnerType: user.partnerType,
     partnerActivities: user.partnerActivities,
     role: user.role,
     r05Eligible,
     workplacePartnerType: presentation.workplacePartnerType,
+    navContext,
   });
   const businessPartnerType = businessWalletPartnerTypeFromUser(
     user,
@@ -95,6 +98,15 @@ export default async function SettlementsPage() {
     user,
     proContext: presentation.proContext,
   });
+  const walletReadAuth = resolveSettlementWalletReadAccess({
+    user,
+    proContext: presentation.proContext,
+    contextReady: presentation.contextReady,
+  });
+  const settlementsAccessBlockedMessage =
+    walletReadAuth.allowed === false
+      ? settlementWalletReadBlockedMessage(walletReadAuth)
+      : null;
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
@@ -108,6 +120,7 @@ export default async function SettlementsPage() {
           canManageRequisites={canManageRequisites}
           walletEmptyViewerRole={walletEmptyViewerRole}
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
+          settlementsAccessBlockedMessage={settlementsAccessBlockedMessage}
         />
       ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />

@@ -41,6 +41,7 @@ type Props = {
   agentRegistry?: boolean;
   walletEmptyViewerRole?: WalletEmptyViewerProps["walletEmptyViewerRole"];
   canLinkOnboardingHistory?: boolean;
+  accessBlockedMessage?: string | null;
 };
 
 type Subview = "shell" | "master-ledger" | "agent-registry";
@@ -72,6 +73,7 @@ export function WalletAccrualsWorkspace({
   agentRegistry = false,
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
+  accessBlockedMessage = null,
 }: Props) {
   const masterLedgerEnabled = Boolean(masterLedger);
   const ledgerOptions =
@@ -171,6 +173,14 @@ export function WalletAccrualsWorkspace({
   );
 
   const load = useCallback(async () => {
+    if (accessBlockedMessage?.trim()) {
+      setError(accessBlockedMessage.trim());
+      setLoading(false);
+      setResponse(null);
+      setData(null);
+      hasLoadedDataRef.current = false;
+      return;
+    }
     if (previewData) {
       applyResponseState(previewData, incomingOnly, setResponse, setData);
       setLoading(false);
@@ -178,13 +188,13 @@ export function WalletAccrualsWorkspace({
     }
     setLoading(true);
     await fetchAndApplySettlements();
-  }, [fetchAndApplySettlements, incomingOnly, previewData]);
+  }, [accessBlockedMessage, fetchAndApplySettlements, incomingOnly, previewData]);
 
   useEffect(() => {
     if (previewData) return;
     setLoading(true);
     void load();
-  }, [load, scopeKey, previewData]);
+  }, [accessBlockedMessage, load, scopeKey, previewData]);
 
   useEffect(() => {
     setSubview("shell");

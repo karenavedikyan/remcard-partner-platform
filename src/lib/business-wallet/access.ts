@@ -1,3 +1,8 @@
+import {
+  authorizeSettlementWalletRead,
+  settlementWalletAccessDeniedCopy,
+  type SettlementWalletReadAuthResult,
+} from "@/lib/employee-workspace-data/settlement-wallet-read-auth";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import type { WorkplacePartnerType } from "@/lib/cabinet-presentation/types";
@@ -19,4 +24,18 @@ export function canManageBusinessWalletRequisites(input: {
 }): boolean {
   if (input.user.role !== "PRO") return false;
   return input.proContext?.role === "ORG_OWNER";
+}
+
+export function resolveSettlementWalletReadAccess(input: {
+  user: Pick<AuthUser, "role">;
+  proContext: ProContextSnapshot | null;
+  contextReady: boolean;
+}): SettlementWalletReadAuthResult {
+  return authorizeSettlementWalletRead(input);
+}
+
+export function settlementWalletReadBlockedMessage(
+  auth: Extract<SettlementWalletReadAuthResult, { allowed: false }>,
+): string {
+  return settlementWalletAccessDeniedCopy(auth.reason);
 }

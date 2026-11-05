@@ -1,4 +1,7 @@
-import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
+import {
+  resolveCabinetNavMode,
+  type ResolveCabinetNavModeOptions,
+} from "@/lib/cabinet-nav/mode";
 import type { WorkplacePartnerType } from "@/lib/cabinet-presentation/types";
 import type { AuthUser } from "@/lib/types";
 
@@ -11,6 +14,7 @@ export function resolveSettlementsPageShell(input: {
   role?: string | null;
   r05Eligible: boolean;
   workplacePartnerType?: WorkplacePartnerType | null;
+  navContext?: ResolveCabinetNavModeOptions;
 }): SettlementsPageShell {
   if (input.partnerType === "MASTER") return "master-wallet";
   const mode = resolveCabinetNavMode(
@@ -19,7 +23,7 @@ export function resolveSettlementsPageShell(input: {
       role: input.role ?? "PRO",
       partnerActivities: input.partnerActivities ?? [],
     },
-    { workplacePartnerType: input.workplacePartnerType ?? null },
+    input.navContext ?? { workplacePartnerType: input.workplacePartnerType ?? null },
   );
   if (mode === "business-store" || mode === "business-company") return "master-wallet";
   if (input.r05Eligible) return "agent-r05";

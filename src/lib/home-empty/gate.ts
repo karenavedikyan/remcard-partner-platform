@@ -191,6 +191,22 @@ export function shouldShowCompanyOwnerHomeEmpty(params: {
   return true;
 }
 
+/** Org staff home: partnership list probe only (403/error ≠ empty welcome). */
+export function shouldShowOrgStaffBusinessHomeEmpty(params: {
+  loadState: "loading" | "loaded";
+  partnerType: BusinessHomePartnerType;
+  companyProbe: CompanyLifetimeActivityProbe;
+  storeProbe: StoreLifetimeActivityProbe;
+}): boolean {
+  if (params.loadState !== "loaded") return false;
+  if (params.partnerType === "COMPANY") {
+    if (params.companyProbe.state !== "ok") return false;
+    return params.companyProbe.partnershipsOk && params.companyProbe.partnershipCount === 0;
+  }
+  if (params.storeProbe.state !== "ok") return false;
+  return params.storeProbe.partnershipsOk && params.storeProbe.partnershipCount === 0;
+}
+
 export function shouldShowBusinessOwnerHomeEmpty(params: {
   loadState: "loading" | "loaded";
   partnerType: BusinessHomePartnerType;

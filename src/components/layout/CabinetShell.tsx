@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { requireProSession } from "@/lib/session";
 import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
+import { authorizePartnershipListRead } from "@/lib/employee-workspace-data/partnership-list-auth";
+import { resolvePartnershipListPrincipalUserId } from "@/lib/employee-workspace-data/organization-partnership-read";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
@@ -21,12 +23,6 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
   const cookieHeader = (await headers()).get("cookie");
   const authMe = await getAuthMeServer(cookieHeader);
   const profTestSession = authMe.ok ? authMe.data.profTestSession ?? null : null;
-  const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
-    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-  });
-  const attentionCount =
-    list.ok && user.id ? countNeedsMyResponse(list.data.partnerships ?? [], user.id) : 0;
-
   const prefsResult = await fetchRemcardUpstream<CabinetUiPreferencesResponse>(
     "/api/pro/cabinet-ui-preferences",
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
@@ -51,6 +47,26 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
     }),
   ]);
   const { presentation } = presentationResult;
+
+  const partnershipListAuth = authorizePartnershipListRead({
+    user,
+    proContext: presentation.proContext,
+    contextReady: presentation.contextReady,
+  });
+  let attentionCount = 0;
+  if (partnershipListAuth.allowed) {
+    const list = await fetchRemcardUpstream<PartnershipListResponse>("/api/partnership/list", {
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    });
+    const principalUserId = resolvePartnershipListPrincipalUserId({
+      actorUserId: user.id,
+      organizationReadContext:
+        partnershipListAuth.mode === "organization" ? partnershipListAuth.readContext : null,
+    });
+    if (list.ok) {
+      attentionCount = countNeedsMyResponse(list.data.partnerships ?? [], principalUserId);
+    }
+  }
 
   const presentationBlock = readinessResult.ok
     ? resolveCabinetPresentationBlock({

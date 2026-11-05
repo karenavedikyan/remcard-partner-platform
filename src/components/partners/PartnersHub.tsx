@@ -128,10 +128,19 @@ import {
   resolvePartnersEmptyPresentation,
   shouldPinOverviewLegacyChrome,
 } from "@/components/partners/partners-overview-greeting";
+import type { OrganizationPartnershipReadContext } from "@/lib/employee-workspace-data/organization-partnership-read";
+import {
+  filterPartnershipUiActionsForOrgRead,
+  orgStaffCanMutatePartnerships,
+  partnerSideFromOrganizationReadContext,
+} from "@/lib/employee-workspace-data/organization-partnership-read";
 import styles from "./PartnersHub.module.css";
 
 export type PartnersHubProps = {
   meId: string;
+  /** Org list subject for counterparty/terms (defaults to meId). */
+  partnershipSubjectUserId?: string;
+  organizationReadContext?: OrganizationPartnershipReadContext | null;
   initialProfile: ProProfileResponse;
   onAttentionCountChange?: (count: number) => void;
   variant?: "legacy" | "agent-r04";
@@ -183,6 +192,8 @@ export function findMainResultsWideEnough(mainWidthPx: number): boolean {
 
 export function PartnersHub({
   meId,
+  partnershipSubjectUserId,
+  organizationReadContext = null,
   initialProfile,
   onAttentionCountChange,
   variant = "legacy",
@@ -201,6 +212,8 @@ export function PartnersHub({
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
 }: PartnersHubProps) {
+  const subjectUserId = partnershipSubjectUserId?.trim() || meId;
+  const canMutatePartnerships = orgStaffCanMutatePartnerships(organizationReadContext);
   const isAgentR04 = variant === "agent-r04";
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const isOverview = isAgentR04 && agentPresentation === "overview" && !agentModalSurface;
@@ -785,10 +798,12 @@ export function PartnersHub({
     }
   }, [defaultSearchRoleProp, isAgentR04]);
 
-  const inviterSide = useMemo(
-    () => profileUserToPartnerSide(meProfile.user, meProfile.organization),
-    [meProfile],
-  );
+  const inviterSide = useMemo(() => {
+    if (organizationReadContext) {
+      return partnerSideFromOrganizationReadContext(organizationReadContext);
+    }
+    return profileUserToPartnerSide(meProfile.user, meProfile.organization);
+  }, [meProfile, organizationReadContext]);
   const defaultSearchRole = useMemo(() => defaultSearchRoleForUser(inviterSide), [inviterSide]);
   const searchMeta = SEARCH_ROLE_OPTIONS.find((item) => item.value === searchRole)!;
   const hasCustomFilters = hasCustomPartnershipSearchFilters(
@@ -940,13 +955,13 @@ export function PartnersHub({
   );
 
   const overviewGroups = useMemo(
-    () => (isOverview ? partitionPartnerOverview(partnerships, meId) : null),
-    [isOverview, partnerships, meId],
+    () => (isOverview ? partitionPartnerOverview(partnerships, subjectUserId) : null),
+    [isOverview, partnerships, subjectUserId],
   );
 
   const applyActiveListFilters = useCallback(
     (rows: Partnership[]): Partnership[] =>
-      filterActivePartnershipRows(rows, meId, {
+      filterActivePartnershipRows(rows, subjectUserId, {
         searchQuery: listSearch,
         partnerType: listPartnerType,
         specialization: listSpecialization,
@@ -965,7 +980,7 @@ export function PartnersHub({
       listStage,
       listStatus,
       listTaxonomyLabels,
-      meId,
+      subjectUserId,
     ],
   );
 
@@ -991,8 +1006,8 @@ export function PartnersHub({
   }, [isAgentR04, listArchiveView, overviewGroups, partnerships]);
 
   const activeListCityOptions = useMemo(
-    () => collectActiveListCityOptions(activeVisibilityRows, meId),
-    [activeVisibilityRows, meId],
+    () => collectActiveListCityOptions(activeVisibilityRows, subjectUserId),
+    [activeVisibilityRows, subjectUserId],
   );
 
   const overviewActiveRows = useMemo(() => {
@@ -1010,7 +1025,7 @@ export function PartnersHub({
     }
     if (isAgentR04 && agentSegment === "invitations" && agentInvitationFlow) {
       rows = rows.filter((p) => {
-        const outgoing = p.initiatedBy === meId;
+        const outgoing = p.initiatedBy === subjectUserId;
         return agentInvitationFlow === "outgoing" ? outgoing : !outgoing;
       });
     }
@@ -1025,7 +1040,7 @@ export function PartnersHub({
     applyActiveListFilters,
     isAgentR04,
     isOverview,
-    meId,
+    subjectUserId,
     overviewActiveRows,
     partnerships,
   ]);
@@ -1322,8 +1337,8 @@ export function PartnersHub({
   ]);
 
   const attentionCount = useMemo(
-    () => countNeedsMyResponse(partnerships, meId),
-    [meId, partnerships],
+    () => countNeedsMyResponse(partnerships, subjectUserId),
+    [subjectUserId, partnerships],
   );
 
   useEffect(() => {
@@ -1408,7 +1423,7 @@ export function PartnersHub({
       actionKind === "cancel" ||
       actionKind === "withdraw_counter"
     ) {
-      if (!partnershipAllowsUiAction(partnership, meId, actionKind)) {
+      if (!canMutatePartnerships || !partnershipAllowsUiAction(partnership, subjectUserId, actionKind)) {
         setActionError("Действие недоступно для текущего контекста");
         return;
       }
@@ -1438,7 +1453,8 @@ export function PartnersHub({
     const current = findPartnershipById(partnerships, partnershipId);
     if (
       !current ||
-      !partnershipAllowsUiAction(current, meId, action)
+      !canMutatePartnerships ||
+      !partnershipAllowsUiAction(current, subjectUserId, action)
     ) {
       // Keep confirm open — surface error inside the active workflow, not under the modal.
       setLifecycleConfirmError("Действие недоступно: партнёр или права изменились");
@@ -1528,7 +1544,7 @@ export function PartnersHub({
 
   function forceOpenTermChange(partnershipId: string) {
     const current = findPartnershipById(partnerships, partnershipId);
-    if (!current || !isPartnershipParticipant(current, meId)) {
+    if (!current || !isPartnershipParticipant(current, subjectUserId)) {
       setActionError("Нельзя открыть условия: партнёр недоступен в текущем контексте");
       return;
     }
@@ -1607,7 +1623,7 @@ export function PartnersHub({
   ) {
     const { expand = true } = options;
     const current = findPartnershipById(partnerships, partnershipId);
-    if (current && !isPartnershipParticipant(current, meId)) {
+    if (current && !isPartnershipParticipant(current, subjectUserId)) {
       setActionError("Запросы условий недоступны вне участия в партнёрстве");
       return;
     }
@@ -1682,7 +1698,7 @@ export function PartnersHub({
           <TermChangePanel
             partnership={partnership}
             meId={meId}
-            partnerTitle={cooperationPartnerTitle(partnership, meId)}
+            partnerTitle={cooperationPartnerTitle(partnership, subjectUserId)}
             requests={termState.state === "loaded" ? termState.requests : null}
             loadState={
               termState.state === "idle"
@@ -1797,7 +1813,7 @@ export function PartnersHub({
       }
       return;
     }
-    const zone = overviewZoneForPartnership(match, meId);
+    const zone = overviewZoneForPartnership(match, subjectUserId);
     if (zone === "active") {
       const idx = overviewActiveRows.findIndex((p) => p.id === termsPartnershipId);
       if (idx < 0) return;
@@ -1822,7 +1838,7 @@ export function PartnersHub({
     overviewActiveRows,
     loadingList,
     partnerships,
-    meId,
+    subjectUserId,
     listPageSize,
   ]);
 
@@ -2705,14 +2721,19 @@ export function PartnersHub({
             <div className={styles.list}>
             {visiblePartnerships.map((partnership) => {
               const partner =
-                partnership.storeUserId === meId ? partnership.proUser : partnership.storeUser;
+                partnership.storeUserId === subjectUserId
+                  ? partnership.proUser
+                  : partnership.storeUser;
               const titles = isAgentR04
-                ? partnerDisplayTitle(partnership, meId)
+                ? partnerDisplayTitle(partnership, subjectUserId)
                 : { official: partnerTitle(partner), alias: null };
               const statusLabel =
                 PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
-              const needsResponse = partnershipNeedsMyResponse(partnership, meId);
-              const actions = getPartnershipUiActions(partnership, meId);
+              const needsResponse = partnershipNeedsMyResponse(partnership, subjectUserId);
+              const actions = filterPartnershipUiActionsForOrgRead(
+                getPartnershipUiActions(partnership, subjectUserId),
+                organizationReadContext,
+              );
               const termState = termRequests[partnership.id] ?? {
                 state: "idle" as const,
                 requests: [],
@@ -2850,7 +2871,7 @@ export function PartnersHub({
                     <TermChangePanel
                       partnership={partnership}
                       meId={meId}
-                      partnerTitle={cooperationPartnerTitle(partnership, meId)}
+                      partnerTitle={cooperationPartnerTitle(partnership, subjectUserId)}
                       requests={termState.state === "loaded" ? termState.requests : null}
                       loadState={
                         termState.state === "idle"
@@ -3117,7 +3138,7 @@ export function PartnersHub({
       {lifecycleConfirm
         ? (() => {
             const row = findPartnershipById(partnerships, lifecycleConfirm.partnershipId);
-            const partnerName = row ? partnerProfileName(row, meId) : "партнёром";
+            const partnerName = row ? partnerProfileName(row, subjectUserId) : "партнёром";
             let title: string;
             let body: string;
             let confirmLabel: string;

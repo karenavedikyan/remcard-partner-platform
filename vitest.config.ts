@@ -71,6 +71,7 @@ export default defineConfig({
       "src/lib/business-home/home-dispatch.test.ts",
       "src/lib/business-profile/workplace-profile.test.ts",
       "src/lib/business-partners/gate.test.ts",
+      "src/lib/employee-workspace-data/**/*.test.ts",
       "src/lib/business-clients/gate.test.ts",
       "src/lib/business-workplace/**/*.test.ts",
       "src/lib/business-wallet/**/*.test.ts",

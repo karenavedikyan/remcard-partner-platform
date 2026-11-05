@@ -27,6 +27,7 @@ import {
   businessOwnerHomeMetricsEligibleForEmptyCheck,
   businessOwnerHomePendingSupplementalProbe,
   shouldShowBusinessOwnerHomeEmpty,
+  shouldShowOrgStaffBusinessHomeEmpty,
 } from "@/lib/home-empty/gate";
 import { isHomeMetricsPresentationPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import {
@@ -167,8 +168,8 @@ export function BusinessOwnerHomeDashboard({
       setLoadState("loaded");
       setSlices(orgStaffBusinessHomeMetricSlices);
       setActiveBranchLabel(null);
-      setStoreProbe(initialStoreLifetimeProbe());
-      setCompanyProbe(initialCompanyLifetimeProbe());
+      setStoreProbe({ ...initialStoreLifetimeProbe(), state: "loading" });
+      setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "loading" });
       return;
     }
     void loadMetrics();
@@ -176,6 +177,51 @@ export function BusinessOwnerHomeDashboard({
       loadGenerationRef.current += 1;
     };
   }, [isStaffView, loadMetrics]);
+
+  useEffect(() => {
+    if (!isStaffView) return;
+    const generation = ++supplementalGenerationRef.current;
+    let cancelled = false;
+    void remcardFetch<PartnershipListResponse>("/api/partnership/list")
+      .then((list) => {
+        if (cancelled || generation !== supplementalGenerationRef.current) return;
+        const parsed = parsePartnershipCollectionProbe(list);
+        if (!parsed.ok) {
+          if (partnerType === "STORE") {
+            setStoreProbe({ ...initialStoreLifetimeProbe(), state: "error" });
+          } else {
+            setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "error" });
+          }
+          return;
+        }
+        if (partnerType === "STORE") {
+          setStoreProbe({
+            state: "ok",
+            ordersOk: true,
+            hasLifetimeOrders: null,
+            partnershipsOk: true,
+            partnershipCount: parsed.count,
+          });
+        } else {
+          setCompanyProbe({
+            state: "ok",
+            partnershipsOk: true,
+            partnershipCount: parsed.count,
+          });
+        }
+      })
+      .catch(() => {
+        if (cancelled || generation !== supplementalGenerationRef.current) return;
+        if (partnerType === "STORE") {
+          setStoreProbe({ ...initialStoreLifetimeProbe(), state: "error" });
+        } else {
+          setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "error" });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isStaffView, partnerType]);
 
   useEffect(() => {
     if (isStaffView) return;
@@ -277,21 +323,25 @@ export function BusinessOwnerHomeDashboard({
     };
   }, [isStaffView, loadState, partnerType, branchSelectionRequired, slices]);
 
-  const showEmptyState =
-    !isStaffView &&
-    shouldShowBusinessOwnerHomeEmpty({
-    loadState,
-    partnerType,
-    branchSelectionRequired,
-    slices,
-    storeProbe,
-    companyProbe,
-    });
+  const showEmptyState = isStaffView
+    ? shouldShowOrgStaffBusinessHomeEmpty({
+        loadState,
+        partnerType,
+        storeProbe,
+        companyProbe,
+      })
+    : shouldShowBusinessOwnerHomeEmpty({
+        loadState,
+        partnerType,
+        branchSelectionRequired,
+        slices,
+        storeProbe,
+        companyProbe,
+      });
 
-  const pendingSupplementalProbe =
-    isStaffView
-      ? false
-      : businessOwnerHomePendingSupplementalProbe({
+  const pendingSupplementalProbe = isStaffView
+    ? storeProbe.state === "loading" || companyProbe.state === "loading"
+    : businessOwnerHomePendingSupplementalProbe({
     loadState,
     partnerType,
     branchSelectionRequired,

@@ -13,6 +13,7 @@ import { resolvePartnersHubPresentation } from "@/lib/partners-hub-presentation"
 import { resolveBusinessOwnerPartnersEligibility } from "@/lib/business-partners/gate";
 import type { SpecialistR06Status } from "@/lib/specialist-r06/types";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
+import { organizationPartnershipReadContextFromProContext } from "@/lib/employee-workspace-data/organization-partnership-read";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,14 @@ export default async function PartnersPage(props: {
     contextReady: proContextResult.ok,
   });
 
+  const organizationReadContext = organizationPartnershipReadContextFromProContext({
+    proContext,
+    contextReady: proContextResult.ok,
+    actorUserId: user.id,
+  });
+  const partnershipSubjectUserId =
+    organizationReadContext?.principalProUserId ?? user.id;
+
   const presentation = resolvePartnersHubPresentation({
     r04: r04Result.ok ? r04Result.data : null,
     r06: r06Result.ok ? r06Result.data : null,
@@ -74,12 +83,19 @@ export default async function PartnersPage(props: {
       {presentation.shell === "shared-r04" ? (
         <AgentPartnersHub
           meId={user.id}
+          partnershipSubjectUserId={partnershipSubjectUserId}
+          organizationReadContext={organizationReadContext}
           initialProfile={profileResult.data}
           defaultSearchRole={presentation.defaultSearchRole}
           presentationAudience={presentation.audience}
         />
       ) : (
-        <PartnersHub meId={user.id} initialProfile={profileResult.data} />
+        <PartnersHub
+          meId={user.id}
+          partnershipSubjectUserId={partnershipSubjectUserId}
+          organizationReadContext={organizationReadContext}
+          initialProfile={profileResult.data}
+        />
       )}
     </CabinetShell>
   );

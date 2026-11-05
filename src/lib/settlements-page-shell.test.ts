@@ -39,6 +39,22 @@ describe("resolveSettlementsPageShell", () => {
     ).toBe("master-wallet");
   });
 
+  it("routes PRO MASTER org staff to business wallet when workplaceNavFromOrgContext", () => {
+    expect(
+      resolveSettlementsPageShell({
+        partnerType: "MASTER",
+        role: "PRO",
+        partnerActivities: ["MASTER", "AGENT"],
+        r05Eligible: true,
+        workplacePartnerType: "COMPANY",
+        navContext: {
+          workplacePartnerType: "COMPANY",
+          workplaceNavFromOrgContext: true,
+        },
+      }),
+    ).toBe("master-wallet");
+  });
+
   it("routes other PRO users to hub", () => {
     expect(
       resolveSettlementsPageShell({ partnerType: "PROF", r05Eligible: false }),

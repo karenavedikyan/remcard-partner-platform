@@ -17,6 +17,8 @@ type Props = WalletEmptyViewerProps & {
   canManageRequisites?: boolean;
   settlementsSlot?: ReactNode;
   canLinkOnboardingHistory?: boolean;
+  /** When set, skip ledger fetch and show access explanation (no fake zeros). */
+  settlementsAccessBlockedMessage?: string | null;
 };
 
 export function BusinessOwnerWallet({
@@ -26,6 +28,7 @@ export function BusinessOwnerWallet({
   settlementsSlot,
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
+  settlementsAccessBlockedMessage = null,
 }: Props) {
   const copy = businessWalletPageCopy(partnerType);
 
@@ -35,6 +38,7 @@ export function BusinessOwnerWallet({
         scopeKey={ledgerScopeKey}
         walletEmptyViewerRole={walletEmptyViewerRole}
         canLinkOnboardingHistory={canLinkOnboardingHistory}
+        accessBlockedMessage={settlementsAccessBlockedMessage}
         fallbackRibbon={copy.eyebrow}
         masterLedger={{
           ledgerScopeKey: `${ledgerScopeKey}:ledger`,

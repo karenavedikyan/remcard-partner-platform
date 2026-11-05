@@ -1,3 +1,4 @@
+import type { ProfIPermissionFlags } from "@/lib/prof-i-permissions";
 import type { ProProfileResponse } from "@/lib/types";
 
 /** Subset of GET /api/pro/context used for profile UI gates (no privileged fetches before ready). */
@@ -26,6 +27,8 @@ export type ProContextSnapshot = {
   membershipKind?: string | null;
   membershipPosition?: string | null;
   teamCapabilities?: TeamCapabilitiesSnapshot;
+  /** Branch/org effective permissions from trusted GET /api/pro/context (additive). */
+  effectivePermissions?: ProfIPermissionFlags;
 };
 
 export type ProfileCabinetAccess = {
