@@ -34,6 +34,18 @@ export function isOrgWorkplaceMemberRole(role: string | null | undefined): boole
   return Boolean(role && ORG_WORKPLACE_MEMBER_ROLES.has(role));
 }
 
+/** Org staff personal accounts: business workplace shell before personal agent/specialist gates. */
+export function shouldPreferBusinessWorkplaceDispatch(input: {
+  user: Pick<AuthUser, "role">;
+  proContextRole: string | null | undefined;
+  workplacePartnerType: WorkplacePartnerType | null;
+}): boolean {
+  if (!input.workplacePartnerType) return false;
+  if (input.user.role === "CLIENT") return true;
+  const role = input.proContextRole;
+  return Boolean(role && isOrgWorkplaceMemberRole(role) && role !== "ORG_OWNER");
+}
+
 function normalizeOrgPartnerType(value: unknown): WorkplacePartnerType | null {
   if (value === "STORE" || value === "COMPANY") return value;
   return null;

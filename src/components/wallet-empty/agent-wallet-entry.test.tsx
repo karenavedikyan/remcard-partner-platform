@@ -259,7 +259,7 @@ describe("wallet entry empty gates", () => {
     render(
       <BusinessOwnerWallet
         partnerType="STORE"
-        ownerUserId="owner-1"
+        ledgerScopeKey="STORE:org-1:actor-1"
         walletEmptyViewerRole="store"
       />,
     );

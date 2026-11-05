@@ -18,6 +18,10 @@ import {
 } from "@/lib/settlements-page-shell";
 import { canLinkOnboardingHistoryFromUserRole } from "@/lib/onboarding-step/history-link-eligibility";
 import { resolveWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
+import {
+  businessWalletLedgerScopeKey,
+  canManageBusinessWalletRequisites,
+} from "@/lib/business-wallet/access";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +83,19 @@ export default async function SettlementsPage() {
       navMode,
     }) ?? "specialist";
 
+  const ledgerScopeKey =
+    businessPartnerType && presentation.workplacePartnerType
+      ? businessWalletLedgerScopeKey({
+          actorUserId: user.id,
+          organizationId: presentation.proContext?.organization?.id,
+          partnerType: businessPartnerType,
+        })
+      : null;
+  const canManageRequisites = canManageBusinessWalletRequisites({
+    user,
+    proContext: presentation.proContext,
+  });
+
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
@@ -87,7 +104,8 @@ export default async function SettlementsPage() {
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
         <BusinessOwnerWallet
           partnerType={businessPartnerType}
-          ownerUserId={user.id}
+          ledgerScopeKey={ledgerScopeKey ?? `${businessPartnerType}:${user.id}`}
+          canManageRequisites={canManageRequisites}
           walletEmptyViewerRole={walletEmptyViewerRole}
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
         />

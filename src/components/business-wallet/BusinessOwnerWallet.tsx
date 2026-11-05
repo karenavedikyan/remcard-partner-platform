@@ -12,15 +12,17 @@ import walletStyles from "@/components/specialist-wallet/specialist-wallet.modul
 
 type Props = WalletEmptyViewerProps & {
   partnerType: BusinessClientsPartnerType;
-  /** Stable owner id for settlements load / modal cleanup (not only STORE vs COMPANY). */
-  ownerUserId: string;
+  /** Cache/remount scope (includes actor session id, never organization.ownerId). */
+  ledgerScopeKey: string;
+  canManageRequisites?: boolean;
   settlementsSlot?: ReactNode;
   canLinkOnboardingHistory?: boolean;
 };
 
 export function BusinessOwnerWallet({
   partnerType,
-  ownerUserId,
+  ledgerScopeKey,
+  canManageRequisites = true,
   settlementsSlot,
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
@@ -30,12 +32,12 @@ export function BusinessOwnerWallet({
   const workspace =
     settlementsSlot ?? (
       <WalletAccrualsWorkspace
-        scopeKey={`${partnerType}:${ownerUserId}`}
+        scopeKey={ledgerScopeKey}
         walletEmptyViewerRole={walletEmptyViewerRole}
         canLinkOnboardingHistory={canLinkOnboardingHistory}
         fallbackRibbon={copy.eyebrow}
         masterLedger={{
-          ledgerScopeKey: `${partnerType}:${ownerUserId}:ledger`,
+          ledgerScopeKey: `${ledgerScopeKey}:ledger`,
           payableSummaryLabel: copy.payableSummaryLabel,
           payableDirectionLabel: copy.payableDirectionLabel,
           payableHint: copy.payableHint,
@@ -51,9 +53,15 @@ export function BusinessOwnerWallet({
       requisitesScopeTestId="business-wallet-requisites-scope"
       settlements={workspace}
       requisites={
-        <div className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}>
-          <AgentPayoutRequisitesPanel variant="wallet" />
-        </div>
+        canManageRequisites ? (
+          <div className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}>
+            <AgentPayoutRequisitesPanel variant="wallet" />
+          </div>
+        ) : (
+          <p className="pw-muted" data-testid="business-wallet-requisites-blocked" role="status">
+            Реквизиты и выплаты настраивает владелец организации. У вас нет прав на изменение.
+          </p>
+        )
       }
     />
   );

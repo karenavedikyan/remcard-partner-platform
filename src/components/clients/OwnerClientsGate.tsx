@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
-import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
+import { resolveBusinessSectionDispatch } from "@/lib/business-workplace/dispatch-priority";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -36,54 +36,44 @@ export function OwnerClientsGate({
     let cancelled = false;
     void (async () => {
       try {
-        const [r03, r06] = await Promise.all([
+        const [r03, r06, mePayload, proCtxResult] = await Promise.all([
           fetchAgentR03Status(),
           fetchSpecialistR06Status(),
+          remcardFetch<{ user: AuthUser }>("/api/auth/me"),
+          remcardFetch<ProContextSnapshot>("/api/pro/context").catch(() => null),
         ]);
         if (cancelled) return;
-        if (r03.featureEnabled && r03.eligible) {
+
+        const contextReady = proCtxResult != null;
+        const decision = resolveBusinessSectionDispatch({
+          user: mePayload.user,
+          proContext: proCtxResult,
+          contextReady,
+          r03Eligible: Boolean(r03.featureEnabled && r03.eligible),
+          r06Eligible: Boolean(r06.featureEnabled && r06.eligible),
+          surface: "clients",
+        });
+
+        if (decision.kind === "agent-r03") {
           setMode("agent");
           setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }
-        if (r06.featureEnabled && r06.eligible) {
+        if (decision.kind === "specialist-r06") {
           setMode("specialist");
           setCanLinkOnboardingHistory(false);
+          return;
+        }
+        if (decision.kind === "business") {
+          setMode("business");
+          setBusinessPartnerType(decision.partnerType);
+          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }
       } catch (caught) {
         if (!cancelled) {
           setError(
             caught instanceof RemcardApiError ? caught.message : "Не удалось проверить доступ",
-          );
-        }
-        return;
-      }
-
-      try {
-        const [mePayload, proCtx] = await Promise.all([
-          remcardFetch<{ user: AuthUser }>("/api/auth/me"),
-          remcardFetch<ProContextSnapshot>("/api/pro/context"),
-        ]);
-        if (cancelled) return;
-        const business = resolveBusinessOwnerClientsEligibility({
-          user: mePayload.user,
-          proContextRole: proCtx.role,
-          proContext: proCtx,
-          contextReady: true,
-        });
-        if (business.eligible) {
-          setMode("business");
-          setBusinessPartnerType(business.partnerType);
-          setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
-          return;
-        }
-      } catch (caught) {
-        if (!cancelled) {
-          setError(
-            caught instanceof RemcardApiError
-              ? caught.message
-              : "Не удалось проверить доступ к клиентам организации",
           );
         }
         return;

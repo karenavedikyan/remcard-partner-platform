@@ -4,8 +4,31 @@ import {
   isKnownProContextRole,
   resolveCabinetPresentation,
   resolveWorkplacePartnerType,
+  shouldPreferBusinessWorkplaceDispatch,
 } from "./resolve";
 import { companyOrgEmployeeContext, storeOrgEmployeeContext } from "./test-fixtures";
+
+describe("shouldPreferBusinessWorkplaceDispatch", () => {
+  it("is true for CLIENT with workplace type", () => {
+    expect(
+      shouldPreferBusinessWorkplaceDispatch({
+        user: { role: "CLIENT" },
+        proContextRole: "ORG_EMPLOYEE",
+        workplacePartnerType: "STORE",
+      }),
+    ).toBe(true);
+  });
+
+  it("is false for PRO org owner even with workplace", () => {
+    expect(
+      shouldPreferBusinessWorkplaceDispatch({
+        user: { role: "PRO" },
+        proContextRole: "ORG_OWNER",
+        workplacePartnerType: "STORE",
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("resolveWorkplacePartnerType", () => {
   it("uses owner profile for PRO store owner", () => {
