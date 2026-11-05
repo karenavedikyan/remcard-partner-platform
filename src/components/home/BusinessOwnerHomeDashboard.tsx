@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { businessHomeCopy, type BusinessHomePartnerType } from "@/lib/business-home/copy";
+import { ProfileBranchContextSwitcher } from "@/components/profile/ProfileBranchContextSwitcher";
 import {
   initialBusinessHomeMetricSlices,
+  orgStaffBusinessHomeMetricSlices,
   metricCountLabel,
   metricHintForStorePrimary,
   metricHintForStoreTertiary,
@@ -41,10 +43,15 @@ import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
 import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
 import styles from "./SpecialistHomeDashboard.module.css";
 
+export type BusinessHomeAccessMode = "owner-operating" | "org-staff-view";
+
 type Props = {
   partnerType: BusinessHomePartnerType;
   needsProfileCompletion?: boolean;
   catalogStatus?: string | null;
+  homeAccessMode?: BusinessHomeAccessMode;
+  /** When false in org-staff-view, company hero CTA stays visible but inactive. */
+  teamActionsEnabled?: boolean;
 };
 
 function statHints(
@@ -78,7 +85,10 @@ export function BusinessOwnerHomeDashboard({
   partnerType,
   needsProfileCompletion,
   catalogStatus,
+  homeAccessMode = "owner-operating",
+  teamActionsEnabled = true,
 }: Props) {
+  const isStaffView = homeAccessMode === "org-staff-view";
   const copy = businessHomeCopy(partnerType);
   const [slices, setSlices] = useState(initialBusinessHomeMetricSlices);
   const [activeBranchLabel, setActiveBranchLabel] = useState<string | null>(null);
@@ -153,13 +163,22 @@ export function BusinessOwnerHomeDashboard({
   }, []);
 
   useEffect(() => {
+    if (isStaffView) {
+      setLoadState("loaded");
+      setSlices(orgStaffBusinessHomeMetricSlices);
+      setActiveBranchLabel(null);
+      setStoreProbe(initialStoreLifetimeProbe());
+      setCompanyProbe(initialCompanyLifetimeProbe());
+      return;
+    }
     void loadMetrics();
     return () => {
       loadGenerationRef.current += 1;
     };
-  }, [loadMetrics]);
+  }, [isStaffView, loadMetrics]);
 
   useEffect(() => {
+    if (isStaffView) return;
     if (loadState !== "loaded") return;
     if (branchSelectionRequired) {
       setStoreProbe(initialStoreLifetimeProbe());
@@ -256,32 +275,40 @@ export function BusinessOwnerHomeDashboard({
     return () => {
       cancelled = true;
     };
-  }, [loadState, partnerType, branchSelectionRequired, slices]);
+  }, [isStaffView, loadState, partnerType, branchSelectionRequired, slices]);
 
-  const showEmptyState = shouldShowBusinessOwnerHomeEmpty({
+  const showEmptyState =
+    !isStaffView &&
+    shouldShowBusinessOwnerHomeEmpty({
     loadState,
     partnerType,
     branchSelectionRequired,
     slices,
     storeProbe,
     companyProbe,
-  });
+    });
 
-  const pendingSupplementalProbe = businessOwnerHomePendingSupplementalProbe({
+  const pendingSupplementalProbe =
+    isStaffView
+      ? false
+      : businessOwnerHomePendingSupplementalProbe({
     loadState,
     partnerType,
     branchSelectionRequired,
     slices,
     storeProbe,
     companyProbe,
-  });
+        });
 
-  const metricsPresentationPending = isHomeMetricsPresentationPending(loadState);
+  const metricsPresentationPending = isStaffView
+    ? false
+    : isHomeMetricsPresentationPending(loadState);
 
   const displaySlices = loadState === "loading" ? initialBusinessHomeMetricSlices : slices;
 
   const hints = statHints(partnerType, displaySlices, activeBranchLabel);
   const metricsFailed =
+    !isStaffView &&
     loadState === "loaded" &&
     !pendingSupplementalProbe &&
     slices.some(
@@ -296,13 +323,13 @@ export function BusinessOwnerHomeDashboard({
 
   return (
     <div className={styles.grid}>
-      {catalogStatus === "NEEDS_REVISION" ? (
+      {!isStaffView && catalogStatus === "NEEDS_REVISION" ? (
         <section className={styles.alertBanner} role="status">
           <strong>Нужно исправить профиль</strong>
           <p>Есть замечания модератора — откройте профиль, внесите правки и отправьте повторно.</p>
           <Link href="/profile?section=moderation">Исправить профиль →</Link>
         </section>
-      ) : needsProfileCompletion ? (
+      ) : !isStaffView && needsProfileCompletion ? (
         <section className={styles.alertBanner} role="status">
           <strong>Дополните профиль</strong>
           <p>Укажите имя представителя, город и направления работы, чтобы отправить карточку на проверку.</p>
@@ -314,11 +341,15 @@ export function BusinessOwnerHomeDashboard({
       !showEmptyState &&
       !metricsPresentationPending &&
       !pendingSupplementalProbe ? (
-        <BusinessHomeBranchPicker
-          selectedBranchId={selectedBranchId}
-          branchSelectionRequired={branchSelectionRequired}
-          onBranchSelected={handleBranchSelected}
-        />
+        isStaffView ? (
+          <ProfileBranchContextSwitcher />
+        ) : (
+          <BusinessHomeBranchPicker
+            selectedBranchId={selectedBranchId}
+            branchSelectionRequired={branchSelectionRequired}
+            onBranchSelected={handleBranchSelected}
+          />
+        )
       ) : null}
 
       {showEmptyState ? (
@@ -332,10 +363,21 @@ export function BusinessOwnerHomeDashboard({
           <h2 id="business-home-hero">{copy.heroTitle}</h2>
           <p className={styles.heroLead}>{copy.heroLead}</p>
         </div>
-        <Link href={copy.heroHref} className={styles.primaryCtaLink}>
-          {copy.heroCta}
-          <IconArrowUpRight width={20} height={20} />
-        </Link>
+        {isStaffView && partnerType === "COMPANY" && !teamActionsEnabled ? (
+          <span
+            className={styles.primaryCtaLink}
+            aria-disabled="true"
+            style={{ opacity: 0.55, pointerEvents: "none" }}
+          >
+            {copy.heroCta}
+            <IconArrowUpRight width={20} height={20} />
+          </span>
+        ) : (
+          <Link href={copy.heroHref} className={styles.primaryCtaLink}>
+            {copy.heroCta}
+            <IconArrowUpRight width={20} height={20} />
+          </Link>
+        )}
       </section>
 
       <div className={styles.stats} aria-live="polite">
@@ -347,7 +389,7 @@ export function BusinessOwnerHomeDashboard({
               <span className={styles.statLabel}>{label}</span>
               <strong className={styles.statValue}>{metricCountLabel(slice)}</strong>
               <span className={styles.statHint}>{hints[index]}</span>
-              {err ? (
+              {err && !isStaffView ? (
                 <p className={styles.statError} role="alert">
                   {err}
                 </p>
@@ -391,13 +433,15 @@ export function BusinessOwnerHomeDashboard({
         <section className={styles.panel}>
           <h2>Ничего лишнего на старте</h2>
           <p className={styles.deferredCopy}>
-            {catalogStatus === "APPROVED"
-              ? "Дополнительные программы и детали карточки настраиваются в профиле по мере необходимости. Начните с одного нужного действия."
-              : "Публикация в каталоге, дополнительные программы и подробное описание доступны позже. Начните с одного нужного действия."}
+            {isStaffView
+              ? "Дополнительные программы и настройки организации доступны владельцу. Откройте нужный раздел из меню."
+              : catalogStatus === "APPROVED"
+                ? "Дополнительные программы и детали карточки настраиваются в профиле по мере необходимости. Начните с одного нужного действия."
+                : "Публикация в каталоге, дополнительные программы и подробное описание доступны позже. Начните с одного нужного действия."}
           </p>
           <div className={styles.divider} />
           <Link href="/profile" className={styles.ghostCtaLink}>
-            Настроить профиль
+            {isStaffView ? "Открыть профиль" : "Настроить профиль"}
           </Link>
         </section>
       </div>

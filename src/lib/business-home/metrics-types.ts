@@ -24,6 +24,17 @@ export const initialBusinessHomeMetricSlices: [
   BusinessHomeMetricSlice,
 ] = [{ state: "loading" }, { state: "loading" }, { state: "loading" }];
 
+/** Shared business home chrome for org staff without owner metrics API. */
+export const orgStaffBusinessHomeMetricSlices: [
+  BusinessHomeMetricSlice,
+  BusinessHomeMetricSlice,
+  BusinessHomeMetricSlice,
+] = [
+  { state: "unavailable", message: "Недоступно" },
+  { state: "unavailable", message: "Недоступно" },
+  { state: "unavailable", message: "Недоступно" },
+];
+
 export function metricCountLabel(slice: BusinessHomeMetricSlice): string {
   if (slice.state === "loading") return "…";
   if (slice.state === "error" || slice.state === "unavailable") return "—";

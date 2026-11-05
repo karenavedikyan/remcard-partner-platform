@@ -27,7 +27,6 @@ import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/acce
 import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
 import { resolveBusinessHomeSurfaceMode } from "@/lib/business-home/access";
 import { shouldDeferPersonalSpecialistHome } from "@/lib/business-home/home-dispatch";
-import { BusinessOrgStaffHomeTemplate } from "@/components/home/BusinessOrgStaffHomeTemplate";
 
 export const dynamic = "force-dynamic";
 
@@ -117,15 +116,24 @@ export default async function HomePage(
           title="Ваш кабинет"
           description="Начните с того, что нужно вам сегодня."
         />
-        {homeSurface === "org-staff-template" ? (
-          <BusinessOrgStaffHomeTemplate partnerType={businessPartnerType} />
-        ) : (
-          <BusinessOwnerHomeDashboard
-            partnerType={businessPartnerType}
-            needsProfileCompletion={readiness.needsProfileCompletion}
-            catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-          />
-        )}
+        <BusinessOwnerHomeDashboard
+          partnerType={businessPartnerType}
+          homeAccessMode={
+            homeSurface === "org-staff-template" ? "org-staff-view" : "owner-operating"
+          }
+          teamActionsEnabled={
+            homeSurface !== "org-staff-template" ||
+            Boolean(presentation.proContext?.teamCapabilities?.canOpenTeamSection)
+          }
+          needsProfileCompletion={
+            homeSurface === "org-staff-template" ? false : readiness.needsProfileCompletion
+          }
+          catalogStatus={
+            homeSurface === "org-staff-template"
+              ? null
+              : readiness.catalogStatus ?? user.catalogStatus
+          }
+        />
       </CabinetShell>
     );
   }

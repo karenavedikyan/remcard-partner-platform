@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { BusinessOrgStaffHomeTemplate } from "@/components/home/BusinessOrgStaffHomeTemplate";
+import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -88,7 +88,7 @@ export default async function EmployeeCabinetParityDevPage(props: {
             title="Ваш кабинет"
             description="Статический превью каркаса (без live API)."
           />
-          <BusinessOrgStaffHomeTemplate partnerType={partnerType} />
+          <BusinessOwnerHomeDashboard partnerType={partnerType} homeAccessMode="org-staff-view" />
         </AppShell>
       </CookieConsentProvider>
     </ThemeProvider>

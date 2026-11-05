@@ -12,7 +12,7 @@
 1. **Org-first workplace:** `resolveWorkplacePartnerTypeResolution` validates context, prefers org member roles (incl. PRO personal STORE/COMPANY/MASTER/AGENT) before personal profile; personal fallback only when not org staff employee.
 2. **Nav:** `resolveCabinetNavMode({ workplaceNavFromOrgContext: true })` overrides personal MASTER / pure-agent legacy for org workplace.
 3. **Gates / dispatch:** org workplace members (any account role) eligible for business clients/partners shell; `resolveBusinessSectionDispatch` routes org staff before R03/R06; ORG_OWNER keeps R03 first.
-4. **Home:** `BusinessOrgStaffHomeTemplate` for org staff (no owner metrics / onboarding API); owner keeps `BusinessOwnerHomeDashboard`.
+4. **Home:** one `BusinessOwnerHomeDashboard` for owner and org staff (`homeAccessMode`: `owner-operating` | `org-staff-view`). Staff skips owner metrics / supplemental probes / onboarding banners; metrics show `—` with unavailable slices; company hero CTA can stay disabled via `teamActionsEnabled`; store staff uses `ProfileBranchContextSwitcher` in the branch-picker slot.
 5. **Employee blocks:** `resolveCabinetPresentationBlock` — 401 → SessionGate; 503 → transient retry UI; suspended/invalid context → workplace block (not logout).
 6. **Presentation provider:** gates use `useCabinetPresentation` + shared dispatch hook; branch switch dispatches `remcard:cabinet-presentation-changed` + `router.refresh()` (no full reload loop).
 7. **Dev fixture:** static template only (`/dev/employee-cabinet-parity`) — not for live-API native acceptance.
@@ -50,12 +50,12 @@ $ npx vitest run \
   src/lib/settlements-page-shell.test.ts \
   src/components/layout/AppShell.test.tsx \
   src/components/layout/AppShell.nav.test.tsx \
-  src/components/home/BusinessOrgStaffHomeTemplate.test.tsx \
+  src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx \
   src/components/business-wallet/BusinessOwnerWallet.history-prop.test.tsx \
   src/components/clients/OwnerClientsGate.test.tsx \
   src/components/specialist-certificates/OwnerIssuerGate.test.tsx
 
- ✓ src/components/home/BusinessOrgStaffHomeTemplate.test.tsx
+ ✓ src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
  ✓ src/components/clients/OwnerClientsGate.test.tsx
  ✓ src/components/layout/AppShell.nav.test.tsx
  ✓ src/components/layout/AppShell.test.tsx
@@ -102,4 +102,4 @@ Failures are in unrelated areas (e.g. `ProfileEditor.*`, `AgentPartnersHub.speci
 
 ## Changed files (product + tests)
 
-See `git diff 5d85aebe..HEAD --stat`. Key additions: `cabinet-presentation/validate.ts`, `access-block.ts`, `business-workplace/dispatch-priority.ts`, `BusinessOrgStaffHomeTemplate.tsx`, `CabinetPresentationBlock.tsx`, `CabinetPresentationRefreshListener.tsx`.
+See `git diff 5d85aebe..HEAD --stat`. Key additions: `cabinet-presentation/validate.ts`, `access-block.ts`, `business-workplace/dispatch-priority.ts`, `BusinessOwnerHomeDashboard` org-staff mode, `CabinetPresentationBlock.tsx`, `CabinetPresentationRefreshListener.tsx`. **Queued:** profile still uses `ProfileOrgStaffWorkplace` instead of shared owner profile chrome.
