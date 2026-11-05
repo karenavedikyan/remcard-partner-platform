@@ -88,6 +88,12 @@ import {
   resolveProfileSectionFromQuery,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
+import {
+  businessOrgProfileSectionNav,
+  orgStaffWorkplaceSectionAllowed,
+} from "@/lib/profile-section-access";
+import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
+import { ProfileSectionAccessGate } from "./ProfileSectionAccessGate";
 import styles from "./ProfileEditor.module.css";
 import { resolveFocusableElement } from "@/lib/recommendation-profile-focus";
 
@@ -140,6 +146,8 @@ type ProfileEditorProps = {
     ineligibleReason?: string | null;
   } | null;
   initialPureAgentCompact?: boolean;
+  /** Org workplace staff: same tab chrome as STORE/COMPANY owner; section access from context. */
+  orgStaffWorkplacePartnerType?: BusinessProfilePartnerType | null;
 };
 
 type ExtendedUser = ProProfileResponse["user"] & {
@@ -166,8 +174,10 @@ function ProfileEditorInner({
   initialAgentR02Gate = null,
   initialSpecialistR06Gate = null,
   initialPureAgentCompact = false,
+  orgStaffWorkplacePartnerType = null,
 }: ProfileEditorProps) {
   const cabinetAccess = useProfileCabinetAccess();
+  const isOrgStaffWorkplaceUi = Boolean(orgStaffWorkplacePartnerType);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -246,9 +256,19 @@ function ProfileEditorInner({
       profile.user.partnerType === "MASTER",
   );
   const businessPartnerType = businessProfilePartnerType(profile);
+  const effectiveBusinessPartnerType = isOrgStaffWorkplaceUi
+    ? orgStaffWorkplacePartnerType
+    : businessPartnerType;
   const businessProfileWizardUi = Boolean(
-    businessPartnerType &&
+    !isOrgStaffWorkplaceUi &&
+      businessPartnerType &&
       businessProfileWizardEligible(profile, cabinetAccess.proContext),
+  );
+  const orgStaffSectionOpen = useCallback(
+    (sectionId: ProfileSectionId) =>
+      !isOrgStaffWorkplaceUi ||
+      orgStaffWorkplaceSectionAllowed(sectionId, cabinetAccess),
+    [cabinetAccess, isOrgStaffWorkplaceUi],
   );
   const [catalogNavigatorStageIds, setCatalogNavigatorStageIds] = useState<string[]>(() =>
     catalogNavigatorStageIdsFromUser(initial.user),
@@ -310,6 +330,7 @@ function ProfileEditorInner({
   );
 
   useEffect(() => {
+    if (isOrgStaffWorkplaceUi) return;
     let cancelled = false;
     void fetchSpecialistR06Status()
       .then((status) => {
@@ -327,9 +348,10 @@ function ProfileEditorInner({
     return () => {
       cancelled = true;
     };
-  }, [profile.user.partnerType]);
+  }, [isOrgStaffWorkplaceUi, profile.user.partnerType]);
 
   useEffect(() => {
+    if (isOrgStaffWorkplaceUi) return;
     let cancelled = false;
     void fetchAgentProfileStatus()
       .then((status) => {
@@ -348,7 +370,7 @@ function ProfileEditorInner({
     return () => {
       cancelled = true;
     };
-  }, [partnerActivities.join(","), initialAgentR02Gate]);
+  }, [isOrgStaffWorkplaceUi, partnerActivities.join(","), initialAgentR02Gate]);
 
   const pureAgentActivities = isPureAgentActivities(partnerActivities);
   const pureAgentCompactUi =
@@ -358,14 +380,16 @@ function ProfileEditorInner({
   const agentNavPending =
     pureAgentActivities && !initialPureAgentCompact && agentR02Gate === null;
   const showAnalyticsConsentInset =
-    !agentNavPending && (activeSection === "overview" || activeSection === "basics");
+    !isOrgStaffWorkplaceUi &&
+    !agentNavPending &&
+    (activeSection === "overview" || activeSection === "basics");
   const analyticsConsentInset = showAnalyticsConsentInset ? (
     <ProfAnalyticsConsentProfileSetting />
   ) : null;
-  const sectionNavItems = useMemo(
-    () => profileSectionNav({ pureAgentCompact: pureAgentCompactUi }),
-    [pureAgentCompactUi],
-  );
+  const sectionNavItems = useMemo(() => {
+    if (isOrgStaffWorkplaceUi) return businessOrgProfileSectionNav();
+    return profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
+  }, [isOrgStaffWorkplaceUi, pureAgentCompactUi]);
   const catalogEditable = catalogPublicationEditable(profile);
   const revisionBanner = showRevisionBanner(profile);
 
@@ -804,6 +828,7 @@ function ProfileEditorInner({
     <div
       className={`${styles.shell} ${pureAgentCompactUi ? styles.pureAgentProduction : ""}`}
       id={moderationSection ? "moderation-remarks" : undefined}
+      data-testid={isOrgStaffWorkplaceUi ? "profile-org-staff-editor" : undefined}
     >
       {showBack ? (
         <p className={styles.hint}>
@@ -836,19 +861,24 @@ function ProfileEditorInner({
           hidden={agentNavPending}
           aria-hidden={agentNavPending}
         >
-          {sectionNavItems.map((item) => (
+          {sectionNavItems.map((item) => {
+            const tabLocked =
+              isOrgStaffWorkplaceUi && !orgStaffWorkplaceSectionAllowed(item.id, cabinetAccess);
+            return (
             <li key={item.id} role="presentation">
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeSection === item.id}
-                className={`${styles.tabButton} ${activeSection === item.id ? styles.tabButtonActive : ""}`}
+                aria-disabled={tabLocked || undefined}
+                className={`${styles.tabButton} ${activeSection === item.id ? styles.tabButtonActive : ""} ${tabLocked ? styles.tabButtonLocked : ""}`}
                 onClick={() => navigateSection(item.id)}
               >
                 {item.label}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </nav>
 
@@ -882,12 +912,14 @@ function ProfileEditorInner({
         ) : null}
         {activeSection === "overview" && !agentNavPending && !showBusinessProfileSurface ? (
           <>
+            {!isOrgStaffWorkplaceUi ? (
             <AgentProfileSection
               userId={profile.user.id}
               partnerActivities={partnerActivities}
               basicsEditable={basicsEditable}
               layout={pureAgentCompactUi ? "parity-overview" : "default"}
             />
+            ) : null}
             {!pureAgentCompactUi ? (
               specialistR06Ui ? (
                 <SpecialistOverviewEmptyGate onStartFill={startSpecialistProfileFromOverview}>
@@ -910,7 +942,7 @@ function ProfileEditorInner({
             {!showBusinessProfileSurface ? analyticsConsentInset : null}
           </>
         ) : null}
-        {revisionBanner && activeSection === "catalog" ? (
+        {revisionBanner && activeSection === "catalog" && !isOrgStaffWorkplaceUi ? (
           <div className={styles.bannerWarn} role="status">
             <strong>Нужно исправить публикацию в каталоге</strong>
             <p>Внесите правки в разделе «Каталог RemCard», сохраните черновик и отправьте повторно.</p>
@@ -920,7 +952,9 @@ function ProfileEditorInner({
 
         {activeSection === "basics" && !agentNavPending ? (
         <>
-        {specialistR06Ui ? (
+        {isOrgStaffWorkplaceUi && !orgStaffSectionOpen("basics") ? (
+          <ProfileSectionAccessGate sectionId="basics" />
+        ) : specialistR06Ui ? (
           <>
             <SpecialistProfileSection
               onWorkingProfileSaved={applyProfile}
@@ -1120,7 +1154,11 @@ function ProfileEditorInner({
         </>
         ) : null}
 
-        {activeSection === "catalog" && !pureAgentCompactUi && specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg ? (
+        {activeSection === "catalog" && isOrgStaffWorkplaceUi && !orgStaffSectionOpen("catalog") ? (
+          <ProfileSectionAccessGate sectionId="catalog" />
+        ) : null}
+
+        {activeSection === "catalog" && !isOrgStaffWorkplaceUi && !pureAgentCompactUi && specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg ? (
           <SpecialistCatalogSection
             profile={profile}
             draft={buildCatalogDraft()}
@@ -1166,6 +1204,7 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "catalog" &&
+        !isOrgStaffWorkplaceUi &&
         !pureAgentCompactUi &&
         businessOrgCatalogUi &&
         !profile.organization ? (
@@ -1176,6 +1215,7 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "catalog" &&
+        !isOrgStaffWorkplaceUi &&
         !pureAgentCompactUi &&
         businessOrgCatalogUi &&
         profile.organization ? (
@@ -1266,6 +1306,7 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "catalog" &&
+        !isOrgStaffWorkplaceUi &&
         !pureAgentCompactUi &&
         !(specialistR06Ui && partnerType === "MASTER" && !catalogOnOrg) &&
         !businessOrgCatalogUi ? (
@@ -1341,26 +1382,37 @@ function ProfileEditorInner({
         ) : null}
 
         {activeSection === "branches" && !pureAgentCompactUi ? (
+          isOrgStaffWorkplaceUi && !orgStaffSectionOpen("branches") ? (
+            <ProfileSectionAccessGate sectionId="branches" />
+          ) : (
           <ProfileBranchesSection
             defaultCity={city}
             hasOrganization={Boolean(profile.organization)}
             partnerType={partnerType}
             initialBranchId={focusBranchId}
           />
+          )
         ) : null}
 
         {activeSection === "team" && !pureAgentCompactUi ? (
+          isOrgStaffWorkplaceUi && !orgStaffSectionOpen("team") ? (
+            <ProfileSectionAccessGate sectionId="team" />
+          ) : (
           <ProfileTeamSection
             fixtureOverview={fixtureOverview}
             businessOwnerWithoutOrg={Boolean(
               businessProfileWizardUi && businessPartnerType && !profile.organization,
             )}
-            businessPartnerType={businessPartnerType ?? undefined}
+            businessPartnerType={effectiveBusinessPartnerType ?? undefined}
             onGoToBasics={() => navigateSection("basics")}
           />
+          )
         ) : null}
 
         {activeSection === "notifications" ? (
+          isOrgStaffWorkplaceUi && !orgStaffSectionOpen("notifications") ? (
+            <ProfileSectionAccessGate sectionId="notifications" />
+          ) : (
           <NotificationSettingsPanel
             telegramLinked={Boolean(user.telegramLinked)}
             maxLinked={Boolean(user.maxLinked)}
@@ -1376,9 +1428,10 @@ function ProfileEditorInner({
               }));
             }}
           />
+          )
         ) : null}
 
-        {(revisionBanner || moderationSection) && activeSection === "catalog" && (
+        {(revisionBanner || moderationSection) && activeSection === "catalog" && !isOrgStaffWorkplaceUi && (
           <Panel title="Замечания модератора" hint="Только ваши комментарии — без внутренних записей штаба.">
             {notesLoading ? (
               <p className={styles.hint}>Загружаем…</p>

@@ -41,6 +41,7 @@ export default defineConfig({
       "src/lib/api-client.errors.test.ts",
       "src/lib/contact-phone-display.test.ts",
       "src/lib/profile-cabinet-access.test.ts",
+      "src/lib/profile-section-access.test.ts",
       "src/lib/profile-staff-cabinet.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",

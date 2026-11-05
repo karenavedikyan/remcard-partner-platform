@@ -121,6 +121,6 @@ describe("deriveProfileCabinetAccess", () => {
   });
 
   it("exposes stable team-block copy", () => {
-    expect(blockedTeamSectionMessage()).toMatch(/Сотрудники/i);
+    expect(blockedTeamSectionMessage()).toMatch(/Нет доступа/i);
   });
 });

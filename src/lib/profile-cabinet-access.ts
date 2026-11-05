@@ -119,5 +119,5 @@ export function ownerProfileCabinetAccess(
 }
 
 export function blockedTeamSectionMessage(): string {
-  return "Раздел «Сотрудники» недоступен для вашей роли или набора прав.";
+  return "Нет доступа. Обратитесь к владельцу.";
 }

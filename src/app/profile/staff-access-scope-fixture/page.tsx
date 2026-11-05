@@ -97,6 +97,7 @@ export default async function StaffAccessScopeFixturePage(props: {
         section={section}
         moderationSection={false}
         returnTo="/profile/staff-access-scope-fixture"
+        orgStaffWorkplacePartnerType="STORE"
       />
     </main>
   );

@@ -13,6 +13,7 @@
 2. **Nav:** `resolveCabinetNavMode({ workplaceNavFromOrgContext: true })` overrides personal MASTER / pure-agent legacy for org workplace.
 3. **Gates / dispatch:** org workplace members (any account role) eligible for business clients/partners shell; `resolveBusinessSectionDispatch` routes org staff before R03/R06; ORG_OWNER keeps R03 first.
 4. **Home:** one `BusinessOwnerHomeDashboard` for owner and org staff (`homeAccessMode`: `owner-operating` | `org-staff-view`). Staff skips owner metrics / supplemental probes / onboarding banners; metrics show `—` with unavailable slices; company hero CTA can stay disabled via `teamActionsEnabled`; store staff uses `ProfileBranchContextSwitcher` in the branch-picker slot.
+5. **Profile:** org staff use shared `ProfileEditor` with `businessOrgProfileSectionNav()` (same tab labels/order as STORE/COMPANY owner). Locked sections stay visible with `ProfileSectionAccessGate`; team follows `canOpenTeamSection` without privileged fetches when blocked.
 5. **Employee blocks:** `resolveCabinetPresentationBlock` — 401 → SessionGate; 503 → transient retry UI; suspended/invalid context → workplace block (not logout).
 6. **Presentation provider:** gates use `useCabinetPresentation` + shared dispatch hook; branch switch dispatches `remcard:cabinet-presentation-changed` + `router.refresh()` (no full reload loop).
 7. **Dev fixture:** static template only (`/dev/employee-cabinet-parity`) — not for live-API native acceptance.
@@ -51,6 +52,8 @@ $ npx vitest run \
   src/components/layout/AppShell.test.tsx \
   src/components/layout/AppShell.nav.test.tsx \
   src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx \
+  src/lib/profile-section-access.test.ts \
+  src/components/profile/ProfileEditor.org-staff-tab-parity.test.tsx \
   src/components/business-wallet/BusinessOwnerWallet.history-prop.test.tsx \
   src/components/clients/OwnerClientsGate.test.tsx \
   src/components/specialist-certificates/OwnerIssuerGate.test.tsx
@@ -102,4 +105,4 @@ Failures are in unrelated areas (e.g. `ProfileEditor.*`, `AgentPartnersHub.speci
 
 ## Changed files (product + tests)
 
-See `git diff 5d85aebe..HEAD --stat`. Key additions: `cabinet-presentation/validate.ts`, `access-block.ts`, `business-workplace/dispatch-priority.ts`, `BusinessOwnerHomeDashboard` org-staff mode, `CabinetPresentationBlock.tsx`, `CabinetPresentationRefreshListener.tsx`. **Queued:** profile still uses `ProfileOrgStaffWorkplace` instead of shared owner profile chrome.
+See `git diff 5d85aebe..HEAD --stat`. Key additions: `cabinet-presentation/validate.ts`, `access-block.ts`, `business-workplace/dispatch-priority.ts`, unified business home/profile chrome for org staff, `CabinetPresentationBlock.tsx`, `CabinetPresentationRefreshListener.tsx`.

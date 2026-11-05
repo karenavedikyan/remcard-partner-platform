@@ -18,7 +18,6 @@ import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/serve
 import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/access-block";
 import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
 import { resolveOrgStaffWorkplaceProfile } from "@/lib/business-profile/workplace-profile";
-import { ProfileOrgStaffWorkplace } from "@/components/profile/ProfileOrgStaffWorkplace";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import { deriveProfileCabinetAccess } from "@/lib/profile-cabinet-access";
@@ -115,25 +114,6 @@ export default async function ProfilePage(props: {
     { pureAgentCompact },
   );
 
-  if (orgStaffWorkplace) {
-    const eyebrow = orgStaffWorkplace.partnerType === "STORE" ? "Магазин" : "Компания";
-    return (
-      <CabinetShell returnTo={safeReturnTo}>
-        <PageHeading
-          eyebrow={eyebrow}
-          title="Профиль"
-          description="Рабочий контекст организации. Личные шаблоны MASTER/AGENT и кабинет владельца здесь не используются."
-        />
-        <ProfileOrgStaffWorkplace
-          initial={profileResult.data}
-          cabinetAccess={cabinetAccess}
-          partnerType={orgStaffWorkplace.partnerType}
-          section={section}
-        />
-      </CabinetShell>
-    );
-  }
-
   const profileChrome = (
     <>
       <PageHeading
@@ -156,6 +136,7 @@ export default async function ProfilePage(props: {
         initialAgentR02Gate={initialAgentR02Gate}
         initialSpecialistR06Gate={initialSpecialistR06Gate}
         initialPureAgentCompact={pureAgentCompact}
+        orgStaffWorkplacePartnerType={orgStaffWorkplace?.partnerType ?? null}
       />
     </>
   );
