@@ -5,7 +5,7 @@
 - **Branch:** `cursor/remcard-employee-cabinet-parity-20261105`
 - **Frontend base (production app266285):** `5d85aebe61b0284a2e8e36bf640cde29fd74e1e2`
 - **Backend reference (read-only):** `bb7db4ca7165836f9165f9f851a5fffc5ba96b52`
-- **Deliver commit:** `02bd1751`
+- **Deliver commits:** `02bd1751` (shell/presentation), `b1b63e5d` (audit dispatch/wallet)
 
 ## Security boundary
 
