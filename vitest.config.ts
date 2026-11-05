@@ -61,6 +61,8 @@ export default defineConfig({
       "src/lib/prof-admin-moderation-public-preview.test.ts",
       "src/lib/business-home/gate.test.ts",
       "src/lib/business-home/access.test.ts",
+      "src/lib/business-home/home-dispatch.test.ts",
+      "src/lib/business-profile/workplace-profile.test.ts",
       "src/lib/business-partners/gate.test.ts",
       "src/lib/business-clients/gate.test.ts",
       "src/lib/business-workplace/**/*.test.ts",

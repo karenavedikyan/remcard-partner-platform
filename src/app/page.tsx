@@ -26,6 +26,7 @@ import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/serve
 import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/access-block";
 import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
 import { resolveBusinessHomeSurfaceMode } from "@/lib/business-home/access";
+import { shouldDeferPersonalSpecialistHome } from "@/lib/business-home/home-dispatch";
 import { BusinessOrgStaffHomeTemplate } from "@/components/home/BusinessOrgStaffHomeTemplate";
 
 export const dynamic = "force-dynamic";
@@ -90,24 +91,6 @@ export default async function HomePage(
 
   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
   const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
-  const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
-  const specialistHome = shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
-
-  if (specialistHome) {
-    return (
-      <CabinetShell returnTo="/">
-        <PageHeading
-          eyebrow="Специалист"
-          title="Ваш кабинет"
-          description="Начните с того, что нужно вам сегодня."
-        />
-        <SpecialistHomeDashboard
-          needsProfileCompletion={readiness.needsProfileCompletion}
-          catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
-        />
-      </CabinetShell>
-    );
-  }
 
   const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
   const homePresentationBlock = resolveCabinetPresentationBlock({
@@ -143,6 +126,27 @@ export default async function HomePage(
             catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
           />
         )}
+      </CabinetShell>
+    );
+  }
+
+  const specialistR06Gate = await fetchSpecialistR06GateServer(cookieHeader);
+  const specialistHome =
+    !shouldDeferPersonalSpecialistHome(user, presentation) &&
+    shouldRenderSpecialistHome(user, specialistR06Gate, { isAgentCabinet });
+
+  if (specialistHome) {
+    return (
+      <CabinetShell returnTo="/">
+        <PageHeading
+          eyebrow="Специалист"
+          title="Ваш кабинет"
+          description="Начните с того, что нужно вам сегодня."
+        />
+        <SpecialistHomeDashboard
+          needsProfileCompletion={readiness.needsProfileCompletion}
+          catalogStatus={readiness.catalogStatus ?? user.catalogStatus}
+        />
       </CabinetShell>
     );
   }
