@@ -6,7 +6,12 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-certificates/recommendationsRedirect";
-import { shouldRenderBusinessOwnerHome } from "@/lib/business-home/gate";
+import {
+  businessOwnerHomePartnerType,
+  shouldRenderBusinessOwnerHome,
+} from "@/lib/business-home/gate";
+import { resolveWorkplacePartnerType } from "@/lib/cabinet-presentation/resolve";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
@@ -38,13 +43,19 @@ export function OwnerIssuerGate({
     let cancelled = false;
     void (async () => {
       try {
-        const [r03, r06, mePayload] = await Promise.all([
+        const [r03, r06, mePayload, proCtx] = await Promise.all([
           fetchAgentR03Status(),
           fetchSpecialistR06Status(),
           remcardFetch<{ user: AuthUser }>("/api/auth/me"),
+          remcardFetch<ProContextSnapshot>("/api/pro/context").catch(() => null),
         ]);
         if (cancelled) return;
         const me = mePayload.user;
+        const workplacePartnerType = resolveWorkplacePartnerType({
+          user: me,
+          proContext: proCtx,
+          contextReady: proCtx != null,
+        });
         const r03Eligible = Boolean(r03.featureEnabled && r03.eligible);
         const r06Eligible = Boolean(r06.featureEnabled && r06.eligible);
         if (r03Eligible) {
@@ -58,11 +69,10 @@ export function OwnerIssuerGate({
           setCanLinkOnboardingHistory(false);
           return;
         }
-        if (shouldRenderBusinessOwnerHome(me)) {
+        if (shouldRenderBusinessOwnerHome(me, workplacePartnerType)) {
           setMode("business");
-          if (me.partnerType === "STORE" || me.partnerType === "COMPANY") {
-            setBusinessPartnerType(me.partnerType);
-          }
+          const partnerType = businessOwnerHomePartnerType(me, workplacePartnerType);
+          if (partnerType) setBusinessPartnerType(partnerType);
           setCanLinkOnboardingHistory(canLinkOnboardingHistoryFromPage);
           return;
         }

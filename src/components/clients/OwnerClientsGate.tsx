@@ -5,6 +5,7 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
 import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
@@ -62,12 +63,14 @@ export function OwnerClientsGate({
       try {
         const [mePayload, proCtx] = await Promise.all([
           remcardFetch<{ user: AuthUser }>("/api/auth/me"),
-          remcardFetch<{ role: string }>("/api/pro/context"),
+          remcardFetch<ProContextSnapshot>("/api/pro/context"),
         ]);
         if (cancelled) return;
         const business = resolveBusinessOwnerClientsEligibility({
           user: mePayload.user,
           proContextRole: proCtx.role,
+          proContext: proCtx,
+          contextReady: true,
         });
         if (business.eligible) {
           setMode("business");

@@ -7,9 +7,12 @@ import { AgentAppShell } from "@/components/layout/agent/AgentAppShell";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
 import type { ProfTestSessionInfo } from "@/lib/types";
+import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
 
 type CabinetAppShellClientProps = {
   user: AuthUser;
+  presentation: CabinetPresentationSnapshot;
   incomingCount: number;
   uiPrefs: CabinetUiPreferencesResponse;
   profTestSession?: ProfTestSessionInfo | null;
@@ -18,6 +21,7 @@ type CabinetAppShellClientProps = {
 
 export function CabinetAppShellClient({
   user,
+  presentation,
   incomingCount,
   uiPrefs,
   profTestSession,
@@ -27,8 +31,12 @@ export function CabinetAppShellClient({
   const banner =
     profTestSession?.active ? <ProfTestModeBanner session={profTestSession} /> : null;
 
+  const wrapped = (node: React.ReactNode) => (
+    <CabinetPresentationProvider value={presentation}>{node}</CabinetPresentationProvider>
+  );
+
   if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
-    return (
+    return wrapped(
       <>
         {banner}
         <AgentAppShell
@@ -40,16 +48,21 @@ export function CabinetAppShellClient({
         >
           {children}
         </AgentAppShell>
-      </>
+      </>,
     );
   }
 
-  return (
+  return wrapped(
     <>
       {banner}
-      <AppShell user={user} incomingCount={incomingCount} notificationBell={bell}>
+      <AppShell
+        user={user}
+        presentation={presentation}
+        incomingCount={incomingCount}
+        notificationBell={bell}
+      >
         {children}
       </AppShell>
-    </>
+    </>,
   );
 }

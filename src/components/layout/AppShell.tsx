@@ -14,7 +14,8 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
 import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
 import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
-import { resolveCabinetNavMode, usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
+import { usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
+import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import type { MasterNavItem } from "@/lib/master-nav/sections";
 import styles from "./AppShell.module.css";
 
@@ -73,6 +74,7 @@ function userInitials(displayName: string): string {
 
 type AppShellProps = {
   user: AuthUser;
+  presentation: CabinetPresentationSnapshot;
   incomingCount?: number;
   /** Stream B: ProfNotificationBell */
   notificationBell?: React.ReactNode;
@@ -123,13 +125,14 @@ function NavLinks({
 
 export function AppShell({
   user,
+  presentation,
   incomingCount = 0,
   notificationBell,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const navMode = resolveCabinetNavMode(user);
+  const navMode = presentation.navMode;
   const prototypeShell = usesCabinetPrototypeShell(navMode);
   const prototypeConfig = useMemo(
     () => (prototypeShell ? cabinetNavConfig(navMode) : null),
@@ -143,8 +146,10 @@ export function AppShell({
     ? prototypeConfig.pageTitle(pathname, section)
     : legacyPageTitle(pathname, BASE_NAV);
 
-  const displayName = user.displayName?.trim() || "Партнёр RemCard";
-  const initials = userInitials(displayName);
+  const actorName = presentation.actorDisplayName.trim() || "Партнёр RemCard";
+  const workspaceTitle = presentation.workspaceOrganizationName?.trim() || actorName;
+  const workspaceHint = presentation.workspaceOrganizationName ? "Организация" : "Рабочее пространство";
+  const initials = userInitials(actorName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const moreItems = prototypeConfig?.moreItems() ?? [];
@@ -194,8 +199,8 @@ export function AppShell({
             {initials}
           </span>
           <div className={styles.workspaceText}>
-            <div className={styles.workspaceName}>{displayName}</div>
-            <small className={styles.workspaceHint}>Рабочее пространство</small>
+            <div className={styles.workspaceName}>{workspaceTitle}</div>
+            <small className={styles.workspaceHint}>{workspaceHint}</small>
           </div>
         </div>
 
@@ -253,14 +258,14 @@ export function AppShell({
           <div className={styles.topbarActions}>
             <ThemeToggle />
             <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
-            <AccountSessionMenu displayName={displayName} roleLabel="Владелец профиля" />
+            <AccountSessionMenu displayName={actorName} roleLabel={presentation.sessionRoleLabel} />
           </div>
         </header>
 
         <main className={styles.content}>{children}</main>
 
         <footer className={styles.shellFooter}>
-          <span>Вы работаете от имени {displayName}</span>
+          <span>Вы работаете от имени {actorName}</span>
           <span className={styles.shellFooterMuted}>RemCard PROF</span>
         </footer>
       </div>

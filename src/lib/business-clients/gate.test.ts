@@ -11,12 +11,17 @@ describe("resolveBusinessOwnerClientsEligibility", () => {
     ).toEqual({ eligible: true, partnerType: "STORE" });
   });
 
-  it("rejects employee", () => {
+  it("allows CLIENT org employee with store context", () => {
     expect(
       resolveBusinessOwnerClientsEligibility({
-        user: { role: "PRO", partnerType: "STORE", partnerActivities: [] },
+        user: { role: "CLIENT", partnerType: null, partnerActivities: [] },
         proContextRole: "ORG_EMPLOYEE",
+        proContext: {
+          role: "ORG_EMPLOYEE",
+          organization: { id: "o1", name: "Store", partnerType: "STORE" },
+        },
+        contextReady: true,
       }),
-    ).toEqual({ eligible: false });
+    ).toEqual({ eligible: true, partnerType: "STORE" });
   });
 });

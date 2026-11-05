@@ -4,6 +4,11 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import type { AuthUser } from "@/lib/types";
 import { AppShell } from "./AppShell";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
+import {
+  companyOrgEmployeeContext,
+  storeOrgEmployeeContext,
+} from "@/lib/cabinet-presentation/test-fixtures";
 
 let mockPathname = "/";
 let mockSearch = "";
@@ -22,11 +27,15 @@ vi.mock("@/components/account-session/AccountSessionMenu", () => ({
   AccountSessionMenu: () => <div data-testid="account-session-menu-fixture" />,
 }));
 
-function renderNav(user: AuthUser) {
+function renderNav(
+  user: AuthUser,
+  proContext: Parameters<typeof cabinetPresentationFixture>[1] = null,
+) {
+  const presentation = cabinetPresentationFixture(user, proContext);
   return render(
     <ThemeProvider>
       <CookieConsentProvider>
-      <AppShell user={user}>
+      <AppShell user={user} presentation={presentation}>
         <div>content</div>
       </AppShell>
       </CookieConsentProvider>
@@ -96,6 +105,47 @@ describe("AppShell business nav matrix", () => {
       "Профиль",
     ]);
     expect(screen.queryByTestId("cabinet-mobile-nav-more")).toBeNull();
+  });
+
+  it("matches store owner nav for CLIENT org employee via presentation context", () => {
+    mockPathname = "/";
+    mockSearch = "";
+    renderNav(
+      {
+        id: "emp-1",
+        displayName: "Сергей Ж.",
+        role: "CLIENT",
+        partnerType: null,
+        partnerActivities: [],
+      },
+      storeOrgEmployeeContext,
+    );
+    expect(sidebarLabels()).toEqual([
+      "Главная",
+      "Клиенты",
+      "Сертификаты",
+      "Сканер",
+      "Партнёры",
+      "Кошелёк",
+      "Профиль",
+    ]);
+    expect(screen.getByText("Синтетический магазин")).toBeTruthy();
+  });
+
+  it("shows actor name in session chrome for org employee", () => {
+    mockPathname = "/";
+    renderNav(
+      {
+        id: "emp-2",
+        displayName: "Анна К.",
+        role: "CLIENT",
+        partnerType: null,
+        partnerActivities: [],
+      },
+      companyOrgEmployeeContext,
+    );
+    expect(screen.getByText("Синтетическая компания")).toBeTruthy();
+    expect(screen.getByText("Вы работаете от имени Анна К.")).toBeTruthy();
   });
 
   it("marks only team nav active on profile?section=team", () => {

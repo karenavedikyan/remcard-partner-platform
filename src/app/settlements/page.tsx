@@ -8,6 +8,7 @@ import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { businessWalletPageCopy } from "@/lib/business-wallet/copy";
 import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
+import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { AgentR05Status } from "@/lib/agent-r05/api";
@@ -34,14 +35,21 @@ export default async function SettlementsPage() {
   });
   const r05Eligible =
     r05Result.ok && r05Result.data.featureEnabled && r05Result.data.eligible;
-  const navMode = resolveCabinetNavMode(user);
+  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
+  const navMode = resolveCabinetNavMode(user, {
+    workplacePartnerType: presentation.workplacePartnerType,
+  });
   const shell = resolveSettlementsPageShell({
     partnerType: user.partnerType,
     partnerActivities: user.partnerActivities,
     role: user.role,
     r05Eligible,
+    workplacePartnerType: presentation.workplacePartnerType,
   });
-  const businessPartnerType = businessWalletPartnerTypeFromUser(user);
+  const businessPartnerType = businessWalletPartnerTypeFromUser(
+    user,
+    presentation.workplacePartnerType,
+  );
   const businessCopy =
     businessPartnerType && (navMode === "business-store" || navMode === "business-company")
       ? businessWalletPageCopy(businessPartnerType)

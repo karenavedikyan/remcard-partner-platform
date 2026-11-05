@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import type { AuthUser } from "@/lib/types";
 
@@ -22,7 +23,12 @@ export function DevProfileFixtureChrome({ partnerType, children }: Props) {
 
   return (
     <ThemeProvider>
-      <AppShell user={user} incomingCount={0} notificationBell={null}>
+      <AppShell
+        user={user}
+        presentation={cabinetPresentationFixture(user)}
+        incomingCount={0}
+        notificationBell={null}
+      >
         {children}
       </AppShell>
     </ThemeProvider>

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppShell } from "./AppShell";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
 
 vi.mock("@/lib/prof-admin-management-api", () => ({
   recordProfSessionVisit: vi.fn().mockResolvedValue({ ok: true, recorded: false }),
@@ -27,7 +28,22 @@ function renderShell() {
   return render(
     <ThemeProvider>
       <CookieConsentProvider>
-        <AppShell user={{ id: "user-1", displayName: "Тестовый партнёр", role: "PRO" }}>
+        <AppShell
+          user={{
+            id: "user-1",
+            displayName: "Тестовый партнёр",
+            role: "PRO",
+            partnerType: "STORE",
+            partnerActivities: ["STORE"],
+          }}
+          presentation={cabinetPresentationFixture({
+            id: "user-1",
+            displayName: "Тестовый партнёр",
+            role: "PRO",
+            partnerType: "STORE",
+            partnerActivities: ["STORE"],
+          })}
+        >
           <div>content</div>
         </AppShell>
       </CookieConsentProvider>

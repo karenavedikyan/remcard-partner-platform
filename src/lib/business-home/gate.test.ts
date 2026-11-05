@@ -29,7 +29,19 @@ describe("business owner home gate", () => {
     ).toBe(false);
   });
 
-  it("keeps legacy home for non-pro and master", () => {
+  it("enables business home for org employee via workplace partner type", () => {
+    expect(
+      shouldRenderBusinessOwnerHome(
+        { role: "CLIENT", partnerType: null, partnerActivities: [] },
+        "STORE",
+      ),
+    ).toBe(true);
+    expect(
+      businessOwnerHomePartnerType({ partnerType: null }, "COMPANY"),
+    ).toBe("COMPANY");
+  });
+
+  it("keeps legacy home for non-pro without workplace context and master", () => {
     expect(
       shouldRenderBusinessOwnerHome({
         role: "CLIENT",

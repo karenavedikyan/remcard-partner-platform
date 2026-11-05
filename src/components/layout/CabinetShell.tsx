@@ -3,6 +3,10 @@ import { requireProSession } from "@/lib/session";
 import { fetchRemcardUpstream, getAuthMeServer } from "@/lib/remcard-server";
 import { countNeedsMyResponse } from "@/lib/partnership-rules";
 import { CabinetAppShellClient } from "@/components/layout/CabinetAppShellClient";
+import { SessionGate } from "@/components/auth/SessionGate";
+import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
+import { employeeRequiresWorkplaceContext } from "@/lib/cabinet-presentation/resolve";
+import type { CabinetReadiness } from "@/lib/cabinet-readiness";
 import type { PartnershipListResponse } from "@/lib/types";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { defaultAgentMobileNavKeys } from "@/lib/agent-nav/sections";
@@ -40,6 +44,24 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
     defaultMobileNavKeys: null,
   };
 
+  const [presentationResult, readinessResult] = await Promise.all([
+    fetchCabinetPresentationServer({ user, cookieHeader }),
+    fetchRemcardUpstream<CabinetReadiness>("/api/account/cabinet-readiness", {
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    }),
+  ]);
+  const { presentation } = presentationResult;
+
+  if (
+    readinessResult.ok &&
+    employeeRequiresWorkplaceContext({
+      isEmployee: readinessResult.data.isEmployee,
+      presentation,
+    })
+  ) {
+    return <SessionGate returnTo={returnTo} />;
+  }
+
   const loaded = prefsResult.ok && prefsResult.data ? prefsResult.data : fallbackPrefs;
   const uiPrefs: CabinetUiPreferencesResponse =
     loaded.pilotActive &&
@@ -51,9 +73,15 @@ export async function CabinetShell({ children, returnTo = "/" }: CabinetShellPro
         }
       : loaded;
 
+  const presentationScopeKey = `${presentation.proContext?.organization?.id ?? "none"}:${
+    presentation.proContext?.activeBranch?.id ?? "none"
+  }:${presentation.navMode}`;
+
   return (
     <CabinetAppShellClient
+      key={`${user.id}:${presentationScopeKey}`}
       user={user}
+      presentation={presentation}
       incomingCount={attentionCount}
       uiPrefs={uiPrefs}
       profTestSession={profTestSession}

@@ -17,11 +17,30 @@ describe("resolveBusinessOwnerPartnersEligibility", () => {
     ).toEqual({ eligible: true, partnerType: "STORE" });
   });
 
-  it("rejects org employee", () => {
+  it("allows org employee CLIENT with store context", () => {
     expect(
       resolveBusinessOwnerPartnersEligibility({
-        user: storeOwnerUser,
+        user: { role: "CLIENT", partnerType: null, partnerActivities: [] },
         proContextRole: "ORG_EMPLOYEE",
+        proContext: {
+          role: "ORG_EMPLOYEE",
+          organization: { id: "o1", name: "Store", partnerType: "STORE" },
+        },
+        contextReady: true,
+      }),
+    ).toEqual({ eligible: true, partnerType: "STORE" });
+  });
+
+  it("rejects org employee without resolvable workplace type", () => {
+    expect(
+      resolveBusinessOwnerPartnersEligibility({
+        user: { role: "CLIENT", partnerType: null, partnerActivities: [] },
+        proContextRole: "ORG_EMPLOYEE",
+        proContext: {
+          role: "ORG_EMPLOYEE",
+          organization: { id: "o1", name: "Store" },
+        },
+        contextReady: true,
       }),
     ).toEqual({ eligible: false });
   });

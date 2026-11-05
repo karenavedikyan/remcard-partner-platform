@@ -22,6 +22,8 @@ import {
   shouldRenderBusinessOwnerHome,
 } from "@/lib/business-home/gate";
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
+import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
+import { employeeRequiresWorkplaceContext } from "@/lib/cabinet-presentation/resolve";
 
 export const dynamic = "force-dynamic";
 
@@ -104,8 +106,17 @@ export default async function HomePage(
     );
   }
 
-  const businessOwnerHome = shouldRenderBusinessOwnerHome(user);
-  const businessPartnerType = businessOwnerHome ? businessOwnerHomePartnerType(user) : null;
+  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
+  if (
+    employeeRequiresWorkplaceContext({ isEmployee: readiness.isEmployee, presentation })
+  ) {
+    return <SessionGate returnTo="/" />;
+  }
+
+  const businessOwnerHome = shouldRenderBusinessOwnerHome(user, presentation.workplacePartnerType);
+  const businessPartnerType = businessOwnerHome
+    ? businessOwnerHomePartnerType(user, presentation.workplacePartnerType)
+    : null;
 
   if (businessOwnerHome && businessPartnerType) {
     const eyebrow = businessPartnerType === "STORE" ? "Магазин" : "Компания";

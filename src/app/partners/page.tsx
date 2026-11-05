@@ -12,6 +12,7 @@ import type { AgentR04Status } from "@/lib/agent-r04/api";
 import { resolvePartnersHubPresentation } from "@/lib/partners-hub-presentation";
 import { resolveBusinessOwnerPartnersEligibility } from "@/lib/business-partners/gate";
 import type { SpecialistR06Status } from "@/lib/specialist-r06/types";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 
 export const dynamic = "force-dynamic";
 
@@ -44,12 +45,15 @@ export default async function PartnersPage(props: {
   const [r04Result, r06Result, proContextResult] = await Promise.all([
     fetchRemcardUpstream<AgentR04Status>("/api/pro/r04/status", { headers: upstreamHeaders }),
     fetchRemcardUpstream<SpecialistR06Status>("/api/pro/r06/status", { headers: upstreamHeaders }),
-    fetchRemcardUpstream<{ role: string }>("/api/pro/context", { headers: upstreamHeaders }),
+    fetchRemcardUpstream<ProContextSnapshot>("/api/pro/context", { headers: upstreamHeaders }),
   ]);
 
+  const proContext = proContextResult.ok ? proContextResult.data : null;
   const businessPartners = resolveBusinessOwnerPartnersEligibility({
     user,
-    proContextRole: proContextResult.ok ? proContextResult.data.role : null,
+    proContextRole: proContext?.role ?? null,
+    proContext,
+    contextReady: proContextResult.ok,
   });
 
   const presentation = resolvePartnersHubPresentation({

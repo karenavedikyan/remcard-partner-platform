@@ -11,7 +11,17 @@ export type ProContextSnapshot = {
   role: string;
   branches?: Array<{ id: string; name: string; city: string; address?: string | null }>;
   activeBranch?: { id: string; name: string; city: string; address?: string | null } | null;
-  organization?: { id: string; name: string } | null;
+  organization?: {
+    id: string;
+    name: string;
+    partnerType?: "STORE" | "COMPANY" | string | null;
+    ownerId?: string | null;
+  } | null;
+  employer?: {
+    id: string;
+    displayName: string;
+    companyKind?: string | null;
+  } | null;
   branchRole?: string | null;
   membershipKind?: string | null;
   membershipPosition?: string | null;

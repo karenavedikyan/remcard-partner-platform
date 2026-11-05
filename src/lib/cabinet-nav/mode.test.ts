@@ -32,7 +32,7 @@ describe("resolveCabinetNavMode", () => {
     ).toBe("legacy");
   });
 
-  it("keeps organization employees on legacy nav", () => {
+  it("keeps organization employees on legacy nav without workplace context", () => {
     expect(
       resolveCabinetNavMode({
         partnerType: "STORE",
@@ -40,5 +40,20 @@ describe("resolveCabinetNavMode", () => {
         partnerActivities: [],
       }),
     ).toBe("legacy");
+  });
+
+  it("maps org employees to business nav via trusted workplacePartnerType", () => {
+    expect(
+      resolveCabinetNavMode(
+        { partnerType: null, role: "CLIENT", partnerActivities: [] },
+        { workplacePartnerType: "STORE" },
+      ),
+    ).toBe("business-store");
+    expect(
+      resolveCabinetNavMode(
+        { partnerType: null, role: "CLIENT", partnerActivities: [] },
+        { workplacePartnerType: "COMPANY" },
+      ),
+    ).toBe("business-company");
   });
 });
