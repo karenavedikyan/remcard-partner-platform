@@ -20,14 +20,31 @@ describe("authorizeSettlementWalletRead", () => {
     ).toEqual({ allowed: false, reason: "missing_wallet_permission" });
   });
 
-  it("allows CLIENT employee with canViewWallet", () => {
+  it("denies when no ACTIVE branch grants (bb7db4ca count===0 must not allow)", () => {
+    expect(
+      authorizeSettlementWalletRead({
+        user: fixtureSergeyAuthUser(),
+        proContext: fixtureSergeyOrgEmployeeContext({
+          canViewWallet: true,
+          includeActiveBranchGrant: false,
+        }),
+        contextReady: true,
+      }),
+    ).toEqual({ allowed: false, reason: "no_active_branch_grant" });
+  });
+
+  it("allows CLIENT employee with canViewWallet on ACTIVE branch only", () => {
     expect(
       authorizeSettlementWalletRead({
         user: fixtureSergeyAuthUser(),
         proContext: fixtureSergeyOrgEmployeeContext({ canViewWallet: true }),
         contextReady: true,
       }),
-    ).toEqual({ allowed: true, mode: "org-member-with-ledger" });
+    ).toEqual({
+      allowed: true,
+      mode: "org-member-with-ledger",
+      branchIds: ["branch-optovik-main"],
+    });
   });
 
   it("allows PRO org owner without explicit ledger flag", () => {

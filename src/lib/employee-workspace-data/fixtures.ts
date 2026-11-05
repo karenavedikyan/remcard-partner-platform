@@ -32,12 +32,24 @@ export function fixtureOptovikOwnerProContext(): ProContextSnapshot {
 export function fixtureSergeyOrgEmployeeContext(input?: {
   canViewWallet?: boolean;
   canManagePartnerships?: boolean;
+  canManageLeads?: boolean;
+  canManageCertificates?: boolean;
+  branchId?: string;
+  /** When false, simulates bb7db4ca branchEmployee.count===0 — must deny wallet/clients. */
+  includeActiveBranchGrant?: boolean;
 }): ProContextSnapshot {
   const canViewWallet = input?.canViewWallet ?? false;
   const canManagePartnerships = input?.canManagePartnerships ?? false;
+  const canManageLeads = input?.canManageLeads ?? false;
+  const canManageCertificates = input?.canManageCertificates ?? false;
+  const includeGrant = input?.includeActiveBranchGrant ?? true;
+  const branchId = input?.branchId ?? "branch-optovik-main";
   const actionIds: import("@/lib/prof-i-permissions").ProfIActionId[] = ["own"];
   if (canViewWallet) actionIds.push("ledger");
   if (canManagePartnerships) actionIds.push("terms");
+  if (canManageLeads) actionIds.push("clients");
+  if (canManageCertificates) actionIds.push("scan");
+  const effectivePermissions = flagsFromActionIds(actionIds);
   return {
     role: "ORG_EMPLOYEE",
     membershipPosition: "Руководитель отдела розничных продаж",
@@ -47,7 +59,13 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
       partnerType: "COMPANY",
       ownerId: FIXTURE_OPTOVIK_OWNER_PRO_ID,
     },
-    effectivePermissions: flagsFromActionIds(actionIds),
+    activeBranch: includeGrant
+      ? { id: branchId, name: "Главный", city: "Москва" }
+      : null,
+    effectivePermissions: includeGrant ? effectivePermissions : undefined,
+    branchAssignments: includeGrant
+      ? [{ branchId, status: "ACTIVE", effectivePermissions }]
+      : [],
   };
 }
 

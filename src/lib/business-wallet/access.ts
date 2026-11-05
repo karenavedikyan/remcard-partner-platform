@@ -27,7 +27,7 @@ export function canManageBusinessWalletRequisites(input: {
 }
 
 export function resolveSettlementWalletReadAccess(input: {
-  user: Pick<AuthUser, "role">;
+  user: Pick<AuthUser, "id" | "role">;
   proContext: ProContextSnapshot | null;
   contextReady: boolean;
 }): SettlementWalletReadAuthResult {

@@ -1,6 +1,12 @@
 import type { ProfIPermissionFlags } from "@/lib/prof-i-permissions";
 import type { ProProfileResponse } from "@/lib/types";
 
+export type BranchAssignmentSnapshot = {
+  branchId: string;
+  status: "ACTIVE" | "SUSPENDED" | "REVOKED";
+  effectivePermissions?: ProfIPermissionFlags;
+};
+
 /** Subset of GET /api/pro/context used for profile UI gates (no privileged fetches before ready). */
 export type TeamCapabilitiesSnapshot = {
   canOpenTeamSection: boolean;
@@ -29,6 +35,8 @@ export type ProContextSnapshot = {
   teamCapabilities?: TeamCapabilitiesSnapshot;
   /** Branch/org effective permissions from trusted GET /api/pro/context (additive). */
   effectivePermissions?: ProfIPermissionFlags;
+  /** ACTIVE branch assignments with per-branch flags (preferred over implicit allow). */
+  branchAssignments?: BranchAssignmentSnapshot[];
 };
 
 export type ProfileCabinetAccess = {
