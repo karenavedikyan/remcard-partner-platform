@@ -87,6 +87,15 @@ export default async function HomePage(
 
   const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
 
+  const homePresentationBlock = resolveCabinetPresentationBlock({
+    isEmployee: readiness.isEmployee,
+    presentation,
+    returnTo: "/",
+  });
+  if (homePresentationBlock.blocked) {
+    return <CabinetPresentationBlockView block={homePresentationBlock} />;
+  }
+
   const agentRoot = resolveActiveAgentRootRedirect(prefsData, {
     prefsLoadOk: prefsResult.ok,
     presentation,
@@ -101,14 +110,6 @@ export default async function HomePage(
       isActiveAgentCabinetContext(enrichedPrefs) &&
       !shouldDeferPersonalAgentPilotForOrgWorkplace(presentation),
   );
-  const homePresentationBlock = resolveCabinetPresentationBlock({
-    isEmployee: readiness.isEmployee,
-    presentation,
-    returnTo: "/",
-  });
-  if (homePresentationBlock.blocked) {
-    return <CabinetPresentationBlockView block={homePresentationBlock} />;
-  }
 
   const businessOwnerHome = shouldRenderBusinessOwnerHome(user, presentation.workplacePartnerType);
   const businessPartnerType = businessOwnerHome

@@ -46,6 +46,7 @@ export default defineConfig({
       "src/lib/agent-nav/pilot-workplace-gate.test.ts",
       "src/components/layout/CabinetAppShellClient.test.tsx",
       "src/app/page.org-workplace-agent-pilot.test.tsx",
+      "src/app/page.employee-context-block.test.tsx",
       "src/lib/profile-staff-cabinet.test.ts",
       "src/lib/yandex-address-geocoder.test.ts",
       "src/components/profile/ProfileDirectionsPicker.test.tsx",

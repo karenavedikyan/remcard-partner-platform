@@ -18,5 +18,8 @@ describe("profile-section-access", () => {
     expect(orgStaffWorkplaceSectionAllowed("team", { canOpenTeamSection: false })).toBe(false);
     expect(orgStaffWorkplaceSectionAllowed("team", { canOpenTeamSection: true })).toBe(true);
     expect(orgStaffWorkplaceSectionAllowed("catalog", { canOpenTeamSection: true })).toBe(false);
+    expect(orgStaffWorkplaceSectionAllowed("notifications", { canOpenTeamSection: false })).toBe(
+      true,
+    );
   });
 });

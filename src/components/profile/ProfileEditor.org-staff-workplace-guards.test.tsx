@@ -141,6 +141,62 @@ describe("ProfileEditor org staff workplace guards", () => {
     expect(screen.queryByText(/Пусть новые клиенты найдут вас/i)).toBeNull();
   });
 
+  it("allows personal notification settings tab for org workplace employee", () => {
+    const profile: ProProfileResponse = {
+      organization: null,
+      programs: [],
+      user: {
+        id: "staff-notify",
+        publicId: "RC-N",
+        displayName: "Staff",
+        city: "City",
+        specializations: [],
+        role: "CLIENT",
+        partnerType: null,
+        partnerActivities: [],
+        description: null,
+        catalogStatus: "DRAFT",
+        isPublic: false,
+        rejectionReason: null,
+        badges: [],
+        photoUrl: null,
+        storeCategories: [],
+        areas: [],
+        website: null,
+        telegram: null,
+        whatsapp: null,
+        instagram: null,
+        vk: null,
+        max: null,
+        yandex: null,
+        publicEmail: null,
+        publicPhone: null,
+        showFullName: false,
+      },
+    };
+
+    const access = deriveProfileCabinetAccess({
+      profile,
+      proContext: companyOrgEmployeeContext,
+      contextReady: true,
+    });
+
+    mockSearchParams = new URLSearchParams("section=notifications");
+    render(
+      <ProfileEditor
+        initial={profile}
+        cabinetAccess={access}
+        section="notifications"
+        orgStaffWorkplacePartnerType="COMPANY"
+      />,
+    );
+
+    const notificationsTab = screen.getByRole("tab", { name: "Уведомления" });
+    expect(notificationsTab.getAttribute("aria-disabled")).not.toBe("true");
+    expect(screen.getByTestId("notif-panel")).toBeTruthy();
+    expect(screen.queryByTestId("profile-section-access-denied")).toBeNull();
+  });
+
   it("never surfaces personal organization in overview or aside for workplace employee", () => {
     const profile: ProProfileResponse = {
       organization: {

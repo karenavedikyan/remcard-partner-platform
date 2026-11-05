@@ -30,6 +30,8 @@ export function orgStaffWorkplaceSectionAllowed(
   access: Pick<ProfileCabinetAccess, "canOpenTeamSection">,
 ): boolean {
   if (sectionId === "overview") return true;
+  /** Actor-scoped GET/PATCH /api/pro/notification-settings (user.id), not org owner. */
+  if (sectionId === "notifications") return true;
   if (sectionId === "team") return access.canOpenTeamSection;
   return false;
 }
