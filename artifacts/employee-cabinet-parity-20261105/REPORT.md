@@ -5,7 +5,7 @@
 - **Branch:** `cursor/remcard-employee-cabinet-parity-20261105`
 - **Frontend base (production app266285):** `5d85aebe61b0284a2e8e36bf640cde29fd74e1e2`
 - **Backend reference (read-only):** `bb7db4ca7165836f9165f9f851a5fffc5ba96b52`
-- **Deliver commit (R2):** `dc66615c5e03266844729bdff522e41efcb7f425`
+- **Deliver commit (R2 + vitest R1):** `cb795341822f50fe7a9c0b80ca766d9c0fe9f483`
 
 ## R2 fixes (review 02bd175)
 
