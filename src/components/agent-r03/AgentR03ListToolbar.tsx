@@ -9,11 +9,11 @@ type Props = {
   onQChange: (value: string) => void;
   archived: boolean;
   onShowChange: (archived: boolean) => void;
-  activeCount: number;
-  archivedCount: number;
+  activeCount: number | null;
+  archivedCount: number | null;
   viewMode: "cards" | "list";
   onViewModeChange: (mode: "cards" | "list") => void;
-  foundCount: number;
+  foundCount: number | null;
   selectableIds: string[];
   selectedIds: Set<string>;
   onSelectPage: (checked: boolean) => void;
@@ -81,8 +81,12 @@ export function AgentR03ListToolbar({
               onChange={(e) => onShowChange(e.target.value === "archived")}
               data-testid="agent-r03-show-filter"
             >
-              <option value="active">Активные ({activeCount})</option>
-              <option value="archived">Архив ({archivedCount})</option>
+              <option value="active">
+                Активные ({activeCount == null ? "—" : activeCount})
+              </option>
+              <option value="archived">
+                Архив ({archivedCount == null ? "—" : archivedCount})
+              </option>
             </select>
           </label>
           <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
@@ -148,7 +152,9 @@ export function AgentR03ListToolbar({
       </div>
 
       <div className={styles.collectionCountRow}>
-        <span data-testid="agent-r03-found-count">Найдено: {foundCount}</span>
+        <span data-testid="agent-r03-found-count">
+          Найдено: {foundCount == null ? "—" : foundCount}
+        </span>
         {filtersActive && onResetFilters ? (
           <button type="button" className={styles.resetFiltersBtn} onClick={onResetFilters}>
             Сбросить фильтры

@@ -191,14 +191,41 @@ export function shouldShowCompanyOwnerHomeEmpty(params: {
   return true;
 }
 
-/** Org staff home: partnership list probe only (403/error ≠ empty welcome). */
+function orgStaffHomeMetricsConfirmCompleteEmptiness(
+  partnerType: BusinessHomePartnerType,
+  branchSelectionRequired: boolean,
+  slices: [BusinessHomeMetricSlice, BusinessHomeMetricSlice, BusinessHomeMetricSlice],
+): boolean {
+  if (branchSelectionRequired) return false;
+  if (businessMetricsBlockEmpty(slices)) return false;
+  if (partnerType === "STORE") {
+    return slices.every((s) => s.state === "empty");
+  }
+  const [primary, secondary, tertiary] = slices;
+  if (secondary.state !== "empty") return false;
+  if (tertiary.state !== "empty") return false;
+  return companyBranchAllowsEmptyHome(primary);
+}
+
+/** Org staff home: confirmed empty metrics + partnership probe (403/error ≠ empty welcome). */
 export function shouldShowOrgStaffBusinessHomeEmpty(params: {
   loadState: "loading" | "loaded";
   partnerType: BusinessHomePartnerType;
+  branchSelectionRequired?: boolean;
+  slices: [BusinessHomeMetricSlice, BusinessHomeMetricSlice, BusinessHomeMetricSlice];
   companyProbe: CompanyLifetimeActivityProbe;
   storeProbe: StoreLifetimeActivityProbe;
 }): boolean {
   if (params.loadState !== "loaded") return false;
+  if (
+    !orgStaffHomeMetricsConfirmCompleteEmptiness(
+      params.partnerType,
+      params.branchSelectionRequired ?? false,
+      params.slices,
+    )
+  ) {
+    return false;
+  }
   if (params.partnerType === "COMPANY") {
     if (params.companyProbe.state !== "ok") return false;
     return params.companyProbe.partnershipsOk && params.companyProbe.partnershipCount === 0;

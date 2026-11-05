@@ -12,7 +12,7 @@ type Stat = {
 
 type Props = {
   variant: "certificates" | "clients";
-  certificateActiveCount?: number;
+  certificateActiveCount?: number | null;
   clientsIntro?: boolean;
 };
 

@@ -96,20 +96,18 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       });
       if (generation !== loadGeneration.current) return;
       setItems(data.clients ?? []);
-      setKnownListCounts(listCountsFromApi(data));
+      const knownCounts = listCountsFromApi(data);
+      setKnownListCounts(knownCounts);
       setMeta({
         page: data.page ?? page,
         pageSize: data.pageSize ?? pageSize,
-        totalCount: data.totalCount ?? 0,
+        totalCount:
+          typeof data.totalCount === "number" && Number.isFinite(data.totalCount)
+            ? data.totalCount
+            : 0,
         totalPages: data.totalPages ?? 1,
-        activeCount:
-          typeof data.activeCount === "number" && Number.isFinite(data.activeCount)
-            ? data.activeCount
-            : 0,
-        archivedCount:
-          typeof data.archivedCount === "number" && Number.isFinite(data.archivedCount)
-            ? data.archivedCount
-            : 0,
+        activeCount: knownCounts?.active ?? null,
+        archivedCount: knownCounts?.archived ?? null,
         hasNextPage: data.hasNextPage ?? false,
         hasPrevPage: data.hasPrevPage ?? false,
         sort: data.sort,
@@ -119,6 +117,12 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
       if (generation !== loadGeneration.current) return;
       setItems([]);
       setKnownListCounts(null);
+      setMeta((prev) => ({
+        ...prev,
+        totalCount: null,
+        activeCount: null,
+        archivedCount: null,
+      }));
       setLoadState("error");
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить клиентов");
     }

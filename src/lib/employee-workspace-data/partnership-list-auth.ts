@@ -42,6 +42,18 @@ export function authorizePartnershipListRead(input: {
     actorUserId: input.user.id,
   });
   if (orgRead) {
+    const activeOrgBranchIds = input.proContext?.organizationActiveBranchIds ?? [];
+    const grants =
+      input.proContext?.branchAssignments?.filter((row) => row.status === "ACTIVE") ?? [];
+    const partnershipBranches = grants
+      .filter((g) => g.effectivePermissions?.canManagePartnerships === true)
+      .map((g) => g.branchId);
+    const fullCoverage =
+      activeOrgBranchIds.length > 0 &&
+      activeOrgBranchIds.every((id) => partnershipBranches.includes(id));
+    if (!fullCoverage) {
+      return { allowed: false, reason: "pro_gate" };
+    }
     return { allowed: true, mode: "organization", readContext: orgRead };
   }
 

@@ -7,7 +7,6 @@ import { businessHomeCopy, type BusinessHomePartnerType } from "@/lib/business-h
 import { ProfileBranchContextSwitcher } from "@/components/profile/ProfileBranchContextSwitcher";
 import {
   initialBusinessHomeMetricSlices,
-  orgStaffBusinessHomeMetricSlices,
   metricCountLabel,
   metricHintForStorePrimary,
   metricHintForStoreTertiary,
@@ -164,19 +163,11 @@ export function BusinessOwnerHomeDashboard({
   }, []);
 
   useEffect(() => {
-    if (isStaffView) {
-      setLoadState("loaded");
-      setSlices(orgStaffBusinessHomeMetricSlices);
-      setActiveBranchLabel(null);
-      setStoreProbe({ ...initialStoreLifetimeProbe(), state: "loading" });
-      setCompanyProbe({ ...initialCompanyLifetimeProbe(), state: "loading" });
-      return;
-    }
     void loadMetrics();
     return () => {
       loadGenerationRef.current += 1;
     };
-  }, [isStaffView, loadMetrics]);
+  }, [loadMetrics]);
 
   useEffect(() => {
     if (!isStaffView) return;
@@ -327,6 +318,8 @@ export function BusinessOwnerHomeDashboard({
     ? shouldShowOrgStaffBusinessHomeEmpty({
         loadState,
         partnerType,
+        branchSelectionRequired,
+        slices,
         storeProbe,
         companyProbe,
       })

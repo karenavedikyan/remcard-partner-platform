@@ -75,10 +75,10 @@ export type AgentCertificateRow = {
 export type AgentR03ListMeta = {
   page: number | null;
   pageSize: number;
-  totalCount: number;
+  totalCount: number | null;
   totalPages: number;
-  activeCount: number;
-  archivedCount: number;
+  activeCount: number | null;
+  archivedCount: number | null;
   hasNextPage: boolean;
   hasPrevPage: boolean;
   sort?: string;

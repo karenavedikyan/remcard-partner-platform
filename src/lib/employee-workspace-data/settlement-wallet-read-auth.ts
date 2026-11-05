@@ -6,7 +6,6 @@ import {
   activeBranchPermissionGrants,
   branchIdsWithPermission,
 } from "./branch-assignment-auth";
-import { resolveOrganizationSettlementWalletSubjects } from "./settlement-wallet-subjects";
 
 export type SettlementWalletReadDenyReason =
   | "raw_pro_gate"
@@ -69,18 +68,15 @@ export function authorizeSettlementWalletRead(input: {
       return { allowed: false, reason: "missing_wallet_permission" };
     }
 
-    const subjects = resolveOrganizationSettlementWalletSubjects({
-      proContext,
-      actorUserId: input.user.id,
-    });
-    if (!subjects) {
+    const ownerId = proContext.organization?.ownerId?.trim();
+    if (!ownerId) {
       return { allowed: false, reason: "foreign_or_revoked_membership" };
     }
 
     return {
       allowed: true,
       mode: "org-member-with-ledger",
-      branchIds: subjects.branchIds,
+      branchIds: walletBranchIds,
     };
   }
 

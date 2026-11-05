@@ -37,6 +37,8 @@ export type ProContextSnapshot = {
   effectivePermissions?: ProfIPermissionFlags;
   /** ACTIVE branch assignments with per-branch flags (preferred over implicit allow). */
   branchAssignments?: BranchAssignmentSnapshot[];
+  /** All active branch ids in organization (trusted server list for coverage checks). */
+  organizationActiveBranchIds?: string[];
 };
 
 export type ProfileCabinetAccess = {

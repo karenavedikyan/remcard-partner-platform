@@ -201,14 +201,18 @@ export function AgentCertificatesList({
       if (isIssuerShell) {
         issuerListHadSuccessfulRowsRef.current = nextCertificates.length > 0;
       }
-      setKnownListCounts(certificatesListKnownCountsFromApi(data));
+      const knownCounts = certificatesListKnownCountsFromApi(data);
+      setKnownListCounts(knownCounts);
       setMeta({
         page: data.page ?? page,
         pageSize: data.pageSize ?? pageSize,
-        totalCount: data.totalCount ?? 0,
+        totalCount:
+          typeof data.totalCount === "number" && Number.isFinite(data.totalCount)
+            ? data.totalCount
+            : 0,
         totalPages: data.totalPages ?? 1,
-        activeCount: data.activeCount ?? 0,
-        archivedCount: data.archivedCount ?? 0,
+        activeCount: knownCounts?.activeCount ?? null,
+        archivedCount: knownCounts?.archivedCount ?? null,
         hasNextPage: data.hasNextPage ?? false,
         hasPrevPage: data.hasPrevPage ?? false,
         sort: data.sort,
@@ -226,6 +230,12 @@ export function AgentCertificatesList({
       } else {
         setLoadState("error");
         setKnownListCounts(null);
+        setMeta((prev) => ({
+          ...prev,
+          totalCount: null,
+          activeCount: null,
+          archivedCount: null,
+        }));
       }
     }
   }, [appliedQ, archived, isBusiness, isIssuerShell, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
