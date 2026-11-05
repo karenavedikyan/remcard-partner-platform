@@ -30,18 +30,56 @@
 
 ## Verification (executed on branch)
 
-### Focused parity suite (49 tests)
+### Focused parity suite (stock vitest whitelist + explicit CLI paths)
+
+Vitest `include` uses globs `src/lib/cabinet-presentation/**/*.test.ts`, `business-workplace/**`, `business-wallet/**`, plus `settlements-page-shell.test.ts`. Gate components: `OwnerClientsGate.test.tsx`, `OwnerIssuerGate.test.tsx` (auto via `src/**/*.test.tsx`).
 
 ```text
-$ npx vitest run src/lib/cabinet-presentation src/lib/business-workplace \
-  src/lib/business-home/access.test.ts src/lib/business-clients/gate.test.ts \
-  src/lib/business-partners/gate.test.ts src/lib/cabinet-nav/mode.test.ts \
-  src/components/layout/AppShell.test.tsx src/components/layout/AppShell.nav.test.tsx \
-  src/components/home/BusinessOrgStaffHomeTemplate.test.tsx src/components/business-wallet
+$ npx vitest run \
+  src/lib/cabinet-presentation/resolve.test.ts \
+  src/lib/cabinet-presentation/validate.test.ts \
+  src/lib/cabinet-presentation/access-block.test.ts \
+  src/lib/cabinet-presentation/workplace-matrix.test.ts \
+  src/lib/business-workplace/dispatch-priority.test.ts \
+  src/lib/business-home/access.test.ts \
+  src/lib/business-home/gate.test.ts \
+  src/lib/business-clients/gate.test.ts \
+  src/lib/business-partners/gate.test.ts \
+  src/lib/business-wallet/access.test.ts \
+  src/lib/cabinet-nav/mode.test.ts \
+  src/lib/settlements-page-shell.test.ts \
+  src/components/layout/AppShell.test.tsx \
+  src/components/layout/AppShell.nav.test.tsx \
+  src/components/home/BusinessOrgStaffHomeTemplate.test.tsx \
+  src/components/business-wallet/BusinessOwnerWallet.history-prop.test.tsx \
+  src/components/clients/OwnerClientsGate.test.tsx \
+  src/components/specialist-certificates/OwnerIssuerGate.test.tsx
 
- Test Files  13 passed (13)
-      Tests  49 passed (49)
-   Duration  ~3.2s
+ ✓ src/components/home/BusinessOrgStaffHomeTemplate.test.tsx
+ ✓ src/components/clients/OwnerClientsGate.test.tsx
+ ✓ src/components/layout/AppShell.nav.test.tsx
+ ✓ src/components/layout/AppShell.test.tsx
+ ✓ src/components/specialist-certificates/OwnerIssuerGate.test.tsx
+ ✓ src/components/business-wallet/BusinessOwnerWallet.history-prop.test.tsx
+ ✓ src/lib/cabinet-presentation/resolve.test.ts
+ ✓ src/lib/business-clients/gate.test.ts
+ ✓ src/lib/business-workplace/dispatch-priority.test.ts
+ ✓ src/lib/cabinet-nav/mode.test.ts
+ ✓ src/lib/business-partners/gate.test.ts
+ ✓ src/lib/business-home/gate.test.ts
+ ✓ src/lib/cabinet-presentation/workplace-matrix.test.ts
+ ✓ src/lib/cabinet-presentation/access-block.test.ts
+ ✓ src/lib/settlements-page-shell.test.ts
+ ✓ src/lib/cabinet-presentation/validate.test.ts
+ ✓ src/lib/business-home/access.test.ts
+ ✓ src/lib/business-wallet/access.test.ts
+
+ Test Files  18 passed (18)
+      Tests  68 passed (68)
+   Duration  ~3.4s
+```
+
+Full log: `/opt/cursor/artifacts/employee-cabinet-parity-vitest-focused.log` (on agent VM).
 ```
 
 ### Stock Next build

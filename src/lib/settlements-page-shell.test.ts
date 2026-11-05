@@ -1,41 +1,47 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, expect, it } from "vitest";
 import { resolveSettlementsPageShell } from "./settlements-page-shell";
 
 describe("resolveSettlementsPageShell", () => {
   it("keeps MASTER wallet when R05 is eligible (MASTER+AGENT)", () => {
-    assert.equal(
+    expect(
       resolveSettlementsPageShell({ partnerType: "MASTER", r05Eligible: true }),
-      "master-wallet",
-    );
+    ).toBe("master-wallet");
   });
 
   it("routes pure R05 agent to agent shell", () => {
-    assert.equal(
+    expect(
       resolveSettlementsPageShell({
         partnerType: "STORE",
         partnerActivities: ["AGENT"],
         r05Eligible: true,
       }),
-      "agent-r05",
-    );
+    ).toBe("agent-r05");
   });
 
   it("routes business store owner to master wallet even when R05 eligible", () => {
-    assert.equal(
+    expect(
       resolveSettlementsPageShell({
         partnerType: "STORE",
         partnerActivities: ["STORE"],
         r05Eligible: true,
       }),
-      "master-wallet",
-    );
+    ).toBe("master-wallet");
+  });
+
+  it("routes org workplace employee CLIENT to business wallet via workplacePartnerType", () => {
+    expect(
+      resolveSettlementsPageShell({
+        partnerType: null,
+        role: "CLIENT",
+        r05Eligible: true,
+        workplacePartnerType: "STORE",
+      }),
+    ).toBe("master-wallet");
   });
 
   it("routes other PRO users to hub", () => {
-    assert.equal(
+    expect(
       resolveSettlementsPageShell({ partnerType: "PROF", r05Eligible: false }),
-      "hub",
-    );
+    ).toBe("hub");
   });
 });
