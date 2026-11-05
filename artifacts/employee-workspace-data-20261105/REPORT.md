@@ -4,7 +4,7 @@
 
 | Repo | Branch | Commit | Notes |
 |------|--------|--------|-------|
-| remcard-partner-platform | `cursor/remcard-employee-workspace-data-20261105` | **`3aca58eb`** | Base **`02eedc35b5135b1f7ada8a103218ce36b72cd637`** |
+| remcard-partner-platform | `cursor/remcard-employee-workspace-data-20261105` | **`95935ef6`** | Base **`02eedc35b5135b1f7ada8a103218ce36b72cd637`** |
 | remcard-navigator | `cursor/remcard-employee-workspace-data-20261105` | **not pushed** | Base **`bb7db4ca`** — repo inaccessible from agent VM |
 
 ## What changed (frontend)
