@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { CabinetUiPreferencesResponse } from "../cabinet-ui-preferences-types.ts";
+import { cabinetPresentationFixture } from "../cabinet-presentation/test-fixtures.ts";
+import { companyOrgEmployeeContext } from "../cabinet-presentation/test-fixtures.ts";
 import {
   isActiveAgentCabinetContext,
   resolveActiveAgentRootRedirect,
 } from "./root-destination.ts";
+import type { AuthUser } from "../types.ts";
 
 const basePrefs = (): CabinetUiPreferencesResponse => ({
   contractVersion: "2026-10-14.r01",
@@ -67,5 +70,20 @@ describe("resolveActiveAgentRootRedirect", () => {
     };
     assert.equal(resolveActiveAgentRootRedirect(prefs, { prefsLoadOk: true }), null);
     assert.equal(isActiveAgentCabinetContext(prefs), false);
+  });
+
+  it("does not redirect org team member with stale agent pilot prefs", () => {
+    const user = {
+      id: "org-team",
+      role: "PRO",
+      partnerType: "AGENT",
+      partnerActivities: ["AGENT"],
+    } as AuthUser;
+    const presentation = cabinetPresentationFixture(user, companyOrgEmployeeContext);
+    const prefs = { ...basePrefs(), contextKey: "agent-wallet:actor" };
+    assert.equal(
+      resolveActiveAgentRootRedirect(prefs, { prefsLoadOk: true, presentation }),
+      null,
+    );
   });
 });

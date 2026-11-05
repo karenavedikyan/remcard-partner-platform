@@ -14,6 +14,7 @@ import { getSessionUser } from "@/lib/session";
 import type { PartnershipListResponse } from "@/lib/types";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
 import { resolveActiveAgentRootRedirect, isActiveAgentCabinetContext, enrichCabinetUiPreferencesForShell } from "@/lib/agent-nav/root-destination";
+import { shouldDeferPersonalAgentPilotForOrgWorkplace } from "@/lib/agent-nav/pilot-workplace-gate";
 import { fetchSpecialistR06GateServer } from "@/lib/specialist-r06/serverGate";
 import { shouldRenderSpecialistHome } from "@/lib/specialist-home/gate";
 import { SpecialistHomeDashboard } from "@/components/home/SpecialistHomeDashboard";
@@ -83,15 +84,23 @@ export default async function HomePage(
     { headers: cookieHeader ? { cookie: cookieHeader } : undefined },
   );
   const prefsData = prefsResult.ok ? prefsResult.data : null;
-  const agentRoot = resolveActiveAgentRootRedirect(prefsData, { prefsLoadOk: prefsResult.ok });
+
+  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
+
+  const agentRoot = resolveActiveAgentRootRedirect(prefsData, {
+    prefsLoadOk: prefsResult.ok,
+    presentation,
+  });
   if (agentRoot) {
     redirect(agentRoot);
   }
 
   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
-  const isAgentCabinet = Boolean(enrichedPrefs && isActiveAgentCabinetContext(enrichedPrefs));
-
-  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
+  const isAgentCabinet = Boolean(
+    enrichedPrefs &&
+      isActiveAgentCabinetContext(enrichedPrefs) &&
+      !shouldDeferPersonalAgentPilotForOrgWorkplace(presentation),
+  );
   const homePresentationBlock = resolveCabinetPresentationBlock({
     isEmployee: readiness.isEmployee,
     presentation,

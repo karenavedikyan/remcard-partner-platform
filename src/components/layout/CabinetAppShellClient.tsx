@@ -10,6 +10,7 @@ import type { ProfTestSessionInfo } from "@/lib/types";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
 import { CabinetPresentationRefreshListener } from "@/components/layout/CabinetPresentationRefreshListener";
+import { shouldUseAgentPilotCabinetShell } from "@/lib/agent-nav/root-destination";
 
 type CabinetAppShellClientProps = {
   user: AuthUser;
@@ -39,7 +40,7 @@ export function CabinetAppShellClient({
     </CabinetPresentationProvider>
   );
 
-  if (uiPrefs.pilotActive && uiPrefs.permittedKeys && uiPrefs.mobileNavKeys) {
+  if (shouldUseAgentPilotCabinetShell(uiPrefs, presentation)) {
     return wrapped(
       <>
         {banner}
