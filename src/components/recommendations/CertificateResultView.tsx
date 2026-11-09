@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
+import { useMemo, useState } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { RemcardApiError, remcardFetchBlob } from "@/lib/api-client";
-import { certificateStatusLabel } from "@/lib/certificate-labels";
 import {
   clientVisibleDiscountSummary,
   getCertificateCodeForApi,
-  certificateDisplayTitle,
   isTestCertificateUrl,
   resolveCertificatePageUrl,
 } from "@/lib/certificate-url";
 import type { StoreCertificate } from "@/lib/certificate-types";
+import { buildStoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
 import { Button } from "@/components/ui/Button";
+import { PartnerClientCertificateCard } from "./PartnerClientCertificateCard";
 import styles from "./recommendations.module.css";
 
 type CertificateResultViewProps = {
@@ -38,19 +37,6 @@ function collectOfferLines(certificate: StoreCertificate) {
   );
 }
 
-function RemcardBrandMark() {
-  return (
-    <div className={styles.specialistCertBrand} aria-hidden>
-      <span className={styles.specialistCertLogo}>
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 26V12l10-7 10 7v14H20v-8h-8v8H6z" fill="currentColor" />
-        </svg>
-      </span>
-      <strong>RemCard</strong>
-    </div>
-  );
-}
-
 export function CertificateResultView({
   certificate,
   displayCode,
@@ -59,7 +45,6 @@ export function CertificateResultView({
   privateAlias = null,
 }: CertificateResultViewProps) {
   const shownCode = displayCode?.trim() || certificate.promoCode;
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [linkCopyState, setLinkCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [codeCopyState, setCodeCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
@@ -68,38 +53,11 @@ export function CertificateResultView({
   const pageUrl = useMemo(() => resolveCertificatePageUrl(certificate), [certificate]);
   const testOnlyLink = isTestCertificateUrl(pageUrl);
   const offerLines = useMemo(() => collectOfferLines(certificate), [certificate]);
-  const partnerHeadline = useMemo(() => {
-    const names = [
-      ...new Set((certificate.partners ?? []).map((p) => p.storeName).filter(Boolean)),
-    ];
-    if (names.length > 0) return names.join(", ");
-    return certificateDisplayTitle(certificate);
-  }, [certificate]);
 
-  const offerCount = offerLines.length;
-  const offerCountLabel =
-    offerCount === 1
-      ? "1 предложение"
-      : offerCount >= 2 && offerCount <= 4
-        ? `${offerCount} предложения`
-        : `${offerCount} предложений`;
-  const statusLabel = certificateStatusLabel(certificate.status);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!pageUrl) {
-      setQrDataUrl(null);
-      return;
-    }
-    void QRCode.toDataURL(pageUrl, { margin: 1, width: 220 }).then((url) => {
-      if (!cancelled) {
-        setQrDataUrl(url);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [pageUrl]);
+  const cardModel = useMemo(
+    () => buildStoreCertificateClientCardModel(certificate, shownCode, pageUrl),
+    [certificate, shownCode, pageUrl],
+  );
 
   async function copyText(value: string, kind: "link" | "code") {
     const setState = kind === "link" ? setLinkCopyState : setCodeCopyState;
@@ -177,48 +135,14 @@ export function CertificateResultView({
           <div className={styles.successBanner}>Готово — документ создан</div>
         ) : null}
 
-        <article className={styles.specialistCertCard}>
-          <RemcardBrandMark />
-          <span className={styles.specialistCertBadge}>{statusLabel}</span>
-          <h2 className={styles.specialistCertTitle}>Скидочный сертификат RemCard</h2>
-          <p className={styles.specialistCertPartner}>{partnerHeadline}</p>
-          <div className={styles.specialistCertOffers}>
-            {offerCount > 0 ? (
-              <>
-                <strong>{offerCountLabel}</strong>
-                <span>{[...new Set(offerLines.map((o) => o.partnerName))].join(" · ")}</span>
-              </>
-            ) : (
-              <span>Уточните предложение у партнёра</span>
-            )}
+        <PartnerClientCertificateCard model={cardModel} />
+
+        {privateAlias?.trim() ? (
+          <div className={styles.specialistCertManagement}>
+            <span className={styles.specialistCertManagementLabel}>Название для себя</span>
+            <strong>{privateAlias.trim()}</strong>
           </div>
-          <div className={styles.specialistCertQr}>
-            {qrDataUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={qrDataUrl}
-                alt={`QR-код документа ${shownCode}`}
-                data-testid="specialist-certificate-preview-qr"
-              />
-            ) : null}
-          </div>
-          <div className={styles.specialistCertCode} data-testid="certificate-code">
-            {shownCode}
-          </div>
-          <button
-            type="button"
-            className={styles.specialistCopyCodeBtn}
-            onClick={() => void copyCode()}
-          >
-            Скопировать код
-          </button>
-          {privateAlias?.trim() ? (
-            <div className={styles.specialistCertManagement}>
-              <span className={styles.specialistCertManagementLabel}>Название для себя</span>
-              <strong>{privateAlias.trim()}</strong>
-            </div>
-          ) : null}
-        </article>
+        ) : null}
 
         {pageUrl ? (
           <a
@@ -257,6 +181,7 @@ export function CertificateResultView({
       </div>
 
       <div className={styles.specialistCertActionRow}>
+        <Button onClick={() => void copyCode()}>{codeCopyState === "ok" ? "Код скопирован" : "Скопировать код"}</Button>
         <Button onClick={() => void copyLink()} disabled={!pageUrl}>
           Скопировать ссылку
         </Button>
@@ -268,7 +193,6 @@ export function CertificateResultView({
         </Button>
       </div>
 
-      {codeCopyState === "ok" ? <p className={styles.copyOk}>Код скопирован</p> : null}
       {codeCopyState === "error" ? (
         <p className={styles.errorText} role="alert">
           Не удалось скопировать код

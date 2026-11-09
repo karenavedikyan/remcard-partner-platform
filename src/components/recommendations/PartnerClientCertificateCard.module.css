@@ -1,0 +1,215 @@
+/* Client public certificate card (v2 card variant) — partner preview parity */
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #8e1f23 0%, #bb3035 55%, #bf403c 100%);
+  box-shadow: 0 4px 24px rgb(27 31 26 / 12%);
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+}
+
+.cardGlowA,
+.cardGlowB {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 10%);
+}
+
+.cardGlowA {
+  right: -40px;
+  top: -40px;
+  width: 160px;
+  height: 160px;
+}
+
+.cardGlowB {
+  left: -32px;
+  bottom: -64px;
+  width: 192px;
+  height: 192px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wordmark {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.wordmarkDot {
+  color: #f28b8d;
+}
+
+.titlePill {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(38 14 16 / 72%);
+  color: #fff;
+}
+
+.pctValue {
+  position: relative;
+  margin: 16px 0 0;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #fff;
+}
+
+.pctSubtitle {
+  position: relative;
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #fff;
+}
+
+.qrTile {
+  position: relative;
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff;
+  color: #1b1f1a;
+}
+
+.qrBox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.qrBoxInactive img {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.qrBox img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qrPlaceholder {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c635c;
+}
+
+.codeCol {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.codeColWithStamp {
+  padding-right: 4.5rem;
+}
+
+.codeLabel {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5c635c;
+}
+
+.codeValue {
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-all;
+  color: #1b1f1a;
+}
+
+.stamp {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid rgb(27 31 26 / 15%);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1b1f1a;
+}
+
+.footer {
+  position: relative;
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.termText,
+.statusText {
+  color: #fff;
+}
+
+.statusText {
+  text-align: right;
+}
+
+@media (max-width: 390px) {
+  .qrTile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .qrBox {
+    width: 110px;
+    height: 110px;
+    margin: 0 auto;
+  }
+
+  .codeColWithStamp {
+    padding-right: 0;
+    padding-bottom: 2rem;
+  }
+
+  .stamp {
+    right: 12px;
+    bottom: 12px;
+  }
+}

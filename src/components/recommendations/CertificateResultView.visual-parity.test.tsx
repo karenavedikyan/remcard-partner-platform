@@ -29,10 +29,14 @@ function storeStyleCert(overrides: Partial<StoreCertificate> = {}): StoreCertifi
     usageCount: 0,
     createdAt: new Date().toISOString(),
     certificateUrl: pageUrl,
+    discountPercent: 5,
     partners: [
       {
+        id: "cp1",
         storeUserId: "s1",
         storeName: "Дом материалов",
+        partnershipId: "pt1",
+        isSelfScan: false,
         categories: [
           { category: "floors", categoryLabel: "Напольные покрытия", discountPercent: 5 },
           { category: "doors", categoryLabel: "Двери", discountPercent: 5 },
@@ -58,33 +62,39 @@ async function renderCard(
     />,
   );
   await waitFor(() => {
-    expect(screen.getByTestId("specialist-certificate-preview-qr")).toBeInTheDocument();
+    expect(screen.getByTestId("client-certificate-card")).toBeInTheDocument();
   });
 }
 
-describe("CertificateResultView shared rc-cert card", () => {
+describe("CertificateResultView client public card parity", () => {
   beforeEach(() => {
     vi.mocked(remcardFetchBlob).mockReset();
     vi.mocked(QRCode.toDataURL).mockResolvedValue("data:image/png;base64,test");
   });
 
   it.each(["default", "specialist"] as const)(
-    "renders dark card structure for presentation=%s",
+    "renders v2 red gradient card for presentation=%s",
     async (presentation) => {
       await renderCard(presentation);
 
       expect(screen.getByTestId("recommendation-create-success")).toBeInTheDocument();
-      expect(screen.getByTestId("specialist-certificate-preview")).toBeInTheDocument();
-      expect(screen.getByText("RemCard")).toBeInTheDocument();
-      expect(screen.getByText("Активен")).toBeInTheDocument();
-      expect(screen.queryByText(/Демонстрационный/i)).toBeNull();
-      expect(screen.getByRole("heading", { name: "Скидочный сертификат RemCard" })).toBeInTheDocument();
-      const card = screen.getByRole("article");
-      expect(within(card).getByRole("paragraph")).toHaveTextContent("Дом материалов");
-      expect(within(card).getByText("3 предложения")).toBeInTheDocument();
+      expect(screen.getByTestId("client-certificate-card")).toBeInTheDocument();
+      expect(screen.getByTestId("client-certificate-card")).toHaveTextContent(/remcard\./i);
+      expect(screen.getByText("Скидочный сертификат")).toBeInTheDocument();
+      expect(screen.queryByText("Скидочный сертификат RemCard")).toBeNull();
+      expect(screen.queryByRole("heading", { name: /Скидочный сертификат RemCard/i })).toBeNull();
+      const card = screen.getByTestId("client-certificate-card");
+      expect(within(card).getByText("КОД")).toBeInTheDocument();
       expect(screen.getByTestId("certificate-code")).toHaveTextContent("М-RC-STORE01");
       expect(screen.getByRole("button", { name: "Скопировать код" })).toBeInTheDocument();
-      expect(QRCode.toDataURL).toHaveBeenCalledWith(pageUrl, { margin: 1, width: 220 });
+      expect(QRCode.toDataURL).toHaveBeenCalledWith(
+        pageUrl,
+        expect.objectContaining({
+          margin: 0,
+          width: 128,
+          color: { dark: "#1b1f1a", light: "#ffffff" },
+        }),
+      );
     },
   );
 
@@ -113,7 +123,7 @@ describe("CertificateResultView shared rc-cert card", () => {
     const user = userEvent.setup();
     await renderCard("default", { displayCode: "А-RC-STORE01" });
     await user.click(screen.getByRole("button", { name: "Скопировать код" }));
-    expect(await screen.findByText("Код скопирован")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Код скопирован" })).toBeInTheDocument();
     expect(screen.getByTestId("certificate-code")).toHaveTextContent("А-RC-STORE01");
   });
 
@@ -140,13 +150,10 @@ describe("CertificateResultView shared rc-cert card", () => {
       />,
     );
     await waitFor(() => {
-      expect(screen.getByTestId("specialist-certificate-preview-qr")).toBeInTheDocument();
+      expect(screen.getByTestId("client-certificate-card-qr")).toBeInTheDocument();
     });
 
-    expect(QRCode.toDataURL).toHaveBeenCalledWith(
-      pageUrl,
-      expect.objectContaining({ width: 220 }),
-    );
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(pageUrl, expect.objectContaining({ width: 128 }));
     const qrArg = vi.mocked(QRCode.toDataURL).mock.calls.at(-1)?.[0] as string;
     expect(qrArg).not.toContain(alias);
     expect(qrArg).not.toContain(encodedAlias);
