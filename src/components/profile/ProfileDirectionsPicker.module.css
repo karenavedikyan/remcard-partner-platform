@@ -602,6 +602,20 @@
   padding: 0.5rem 0.75rem;
 }
 
+.partnerTypeSetupPick .chip:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: var(--ink);
+  background: var(--offset);
+  border-color: var(--line);
+}
+
+.partnerTypeSetupPick .tileOption {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .partnerTypeSetupPick .selectionHeading small,
 .partnerTypeSetupPick .hint {
   font-size: 12px;
