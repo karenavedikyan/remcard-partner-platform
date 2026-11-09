@@ -62,6 +62,14 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
       storeCategories: ["doors", "handles"],
       specializations: [],
     },
+    partnershipPrincipalSide: {
+      principalUserId: FIXTURE_OPTOVIK_OWNER_PRO_ID,
+      partnerType: "COMPANY",
+      partnerActivities: ["STORE", "AGENT"],
+      storeCategories: ["doors", "flooring", "handles"],
+      specializations: ["L1-9"],
+      tradeTermCategories: ["doors", "flooring", "handles"],
+    },
     activeBranch: includeGrant
       ? { id: branchId, name: "Главный", city: "Москва" }
       : null,

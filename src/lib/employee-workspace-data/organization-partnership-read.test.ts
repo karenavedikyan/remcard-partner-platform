@@ -22,10 +22,14 @@ describe("organization partnership read subject", () => {
     });
     expect(ctx?.principalProUserId).toBe(FIXTURE_OPTOVIK_OWNER_PRO_ID);
     expect(ctx?.readOnlyActor).toBe(true);
+    const proContext = fixtureSergeyOrgEmployeeContext();
+    expect(proContext.organization?.storeCategories).toEqual(["doors", "handles"]);
     const side = partnerSideFromOrganizationReadContext(ctx!);
     expect(side.partnerType).toBe("COMPANY");
     expect(side.id).toBe(FIXTURE_OPTOVIK_OWNER_PRO_ID);
-    expect(side.storeCategories).toEqual(["doors", "handles"]);
+    expect(side.storeCategories).toEqual(["doors", "flooring", "handles"]);
+    expect(side.partnerActivities).toEqual(["STORE", "AGENT"]);
+    expect(ctx?.storeCategories).toEqual(["doors", "flooring", "handles"]);
   });
 
   it("shows counterparty labels relative to org principal, not employee id", () => {

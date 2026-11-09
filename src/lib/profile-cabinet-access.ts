@@ -41,6 +41,15 @@ export type ProContextSnapshot = {
   branchAssignments?: BranchAssignmentSnapshot[];
   /** All active branch ids in organization (trusted server list for coverage checks). */
   organizationActiveBranchIds?: string[];
+  /** Additive: owner USER trade profile for partnership flows only (GET /api/pro/context). */
+  partnershipPrincipalSide?: {
+    principalUserId: string;
+    partnerType?: string | null;
+    partnerActivities?: string[];
+    storeCategories?: string[];
+    specializations?: string[];
+    tradeTermCategories?: string[];
+  } | null;
 };
 
 export type ProfileCabinetAccess = {

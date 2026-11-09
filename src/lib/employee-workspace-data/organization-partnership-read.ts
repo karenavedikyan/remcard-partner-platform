@@ -17,6 +17,8 @@ export type OrganizationPartnershipReadContext = {
   effectivePermissions?: ProfIPermissionFlags;
   /** True when the signed-in user is not the org owner principal. */
   readOnlyActor: boolean;
+  /** From partnershipPrincipalSide when present (owner USER partnerActivities). */
+  principalPartnerActivities?: string[];
 };
 
 export function organizationPartnershipReadContextFromProContext(input: {
@@ -37,10 +39,18 @@ export function organizationPartnershipReadContextFromProContext(input: {
   if (!organizationId || !organizationName || !ownerId) return null;
   if (partnerType !== "STORE" && partnerType !== "COMPANY") return null;
 
-  // Canonical trade directions: organization record on GET /api/pro/context only.
-  // Never derive from branch.storeCategories or client-supplied ids.
-  const orgCategories = org?.storeCategories;
-  const orgSpecs = org?.specializations;
+  const principalSide = input.proContext.partnershipPrincipalSide;
+  const canonicalFromSide =
+    principalSide?.principalUserId?.trim() === ownerId
+      ? {
+          storeCategories: principalSide.storeCategories,
+          specializations: principalSide.specializations,
+        }
+      : null;
+
+  // Partnership canonical source: additive partnershipPrincipalSide (owner USER), not Organization row.
+  const orgCategories = canonicalFromSide?.storeCategories ?? org?.storeCategories;
+  const orgSpecs = canonicalFromSide?.specializations ?? org?.specializations;
 
   return {
     organizationId,
@@ -51,16 +61,25 @@ export function organizationPartnershipReadContextFromProContext(input: {
     specializations: Array.isArray(orgSpecs) ? [...orgSpecs] : [],
     effectivePermissions: input.proContext.effectivePermissions,
     readOnlyActor: ownerId !== input.actorUserId.trim(),
+    ...(principalSide?.partnerActivities?.length
+      ? { principalPartnerActivities: [...principalSide.partnerActivities] }
+      : {}),
   };
 }
 
 export function partnerSideFromOrganizationReadContext(
   ctx: OrganizationPartnershipReadContext,
 ): PartnerSideProfile {
+  const activities =
+    ctx.principalPartnerActivities?.length
+      ? [...ctx.principalPartnerActivities]
+      : ctx.partnerType === "STORE"
+        ? ["STORE"]
+        : ["COMPANY"];
   return {
     id: ctx.principalProUserId,
     partnerType: ctx.partnerType,
-    partnerActivities: ctx.partnerType === "STORE" ? ["STORE"] : ["COMPANY"],
+    partnerActivities: activities,
     storeCategories: ctx.storeCategories,
     specializations: ctx.specializations,
     isStoreOwner: ctx.partnerType === "STORE",
