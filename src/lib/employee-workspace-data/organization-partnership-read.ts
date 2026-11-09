@@ -37,13 +37,18 @@ export function organizationPartnershipReadContextFromProContext(input: {
   if (!organizationId || !organizationName || !ownerId) return null;
   if (partnerType !== "STORE" && partnerType !== "COMPANY") return null;
 
+  // Canonical trade directions: organization record on GET /api/pro/context only.
+  // Never derive from branch.storeCategories or client-supplied ids.
+  const orgCategories = org?.storeCategories;
+  const orgSpecs = org?.specializations;
+
   return {
     organizationId,
     organizationName,
     partnerType,
     principalProUserId: ownerId,
-    storeCategories: [...(org?.storeCategories ?? [])],
-    specializations: [...(org?.specializations ?? [])],
+    storeCategories: Array.isArray(orgCategories) ? [...orgCategories] : [],
+    specializations: Array.isArray(orgSpecs) ? [...orgSpecs] : [],
     effectivePermissions: input.proContext.effectivePermissions,
     readOnlyActor: ownerId !== input.actorUserId.trim(),
   };

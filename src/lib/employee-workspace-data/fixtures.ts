@@ -52,7 +52,7 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
   if (canManageCertificates) actionIds.push("scan");
   const effectivePermissions = flagsFromActionIds(actionIds);
   return {
-    role: "ORG_EMPLOYEE",
+    role: "BRANCH_EMPLOYEE",
     membershipPosition: "Руководитель отдела розничных продаж",
     organization: {
       id: FIXTURE_OPTOVIK_ORG_ID,
