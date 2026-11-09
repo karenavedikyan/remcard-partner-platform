@@ -154,6 +154,12 @@
   color: var(--ink);
 }
 
+/* Invite accept/join banner only: beat `.settings p { color: var(--muted) }` on offset. */
+.settings p.inviteAcceptedContextText {
+  color: var(--ink);
+  margin: 0;
+}
+
 .setupFields {
   display: grid;
   gap: var(--space-4);

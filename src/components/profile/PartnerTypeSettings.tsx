@@ -363,7 +363,7 @@ export function PartnerTypeSettings({
               data-testid="profile-invite-accepted-context"
               role="status"
             >
-              <p>
+              <p className={styles.inviteAcceptedContextText}>
                 {inviteAcceptedContext === "discussion"
                   ? state?.setupRecovery?.needed
                     ? "Вы присоединились к обсуждению. Заполните обязательные данные профиля, чтобы связанные функции работали — это не отменяет присоединение."

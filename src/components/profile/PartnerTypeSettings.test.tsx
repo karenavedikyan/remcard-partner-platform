@@ -506,6 +506,7 @@ describe("PartnerTypeSettings", () => {
     const banner = await screen.findByTestId("profile-invite-accepted-context");
     expect(banner).toHaveTextContent("Приглашение принято");
     expect(banner).not.toHaveTextContent("Заполните обязательные");
+    expect(banner.querySelector("p")).toHaveClass(/inviteAcceptedContextText/);
   });
 
   it("invite context banner asks for missing fields when setup recovery is needed", async () => {
