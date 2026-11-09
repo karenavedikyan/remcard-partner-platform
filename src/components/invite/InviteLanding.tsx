@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
@@ -31,6 +31,16 @@ import {
 } from "@/lib/link-invite-public";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
+import {
+  buildInviteProfileCompletionHref,
+  extractAuthContinuationFromPayload,
+  extractAuthContinuationRedirect,
+  fetchInviteProfileReadiness,
+  isStrictPostOk,
+  planRouteAfterInviteSuccess,
+  sanitizeInternalPath,
+} from "@/lib/invite-profile-completion";
+import { InviteAcceptedProfilePrompt } from "./InviteAcceptedProfilePrompt";
 import styles from "./InviteLanding.module.css";
 
 type PreviewTerm = {
@@ -122,6 +132,14 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const [declinedLocally, setDeclinedLocally] = useState(false);
   const [switchingAccount, setSwitchingAccount] = useState(false);
   const [existingPartnershipId, setExistingPartnershipId] = useState<string | null>(null);
+  const [acceptConfirmed, setAcceptConfirmed] = useState(false);
+  const [postAcceptDestination, setPostAcceptDestination] = useState<string | null>(null);
+  const [postAcceptCheckError, setPostAcceptCheckError] = useState("");
+  const [postAcceptChecking, setPostAcceptChecking] = useState(false);
+  const acceptInFlightRef = useRef(false);
+  const acceptCompletedRef = useRef(false);
+  const mountedRef = useRef(true);
+  const routeGeneration = useRef(0);
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -166,47 +184,123 @@ export function InviteLanding({ token }: InviteLandingProps) {
     void refreshSession();
   }, [refreshSession]);
 
+  const isRequestActive = useCallback((generation: number) => {
+    return mountedRef.current && generation === routeGeneration.current;
+  }, []);
+
+  const completeAcceptedInvite = useCallback(
+    async (destinationRaw: string, requestGeneration: number) => {
+      const destination = sanitizeInternalPath(destinationRaw, "/partners");
+      if (!isRequestActive(requestGeneration)) return;
+      setAcceptConfirmed(true);
+      setPostAcceptDestination(destination);
+      setPostAcceptCheckError("");
+      setPostAcceptChecking(true);
+      const readiness = await fetchInviteProfileReadiness();
+      if (!isRequestActive(requestGeneration)) return;
+      setPostAcceptChecking(false);
+      const plan = planRouteAfterInviteSuccess(readiness, destination, "partnership");
+      if (readiness.status === "error") {
+        setPostAcceptCheckError(
+          "Не удалось проверить профиль. Это не значит, что данных точно не хватает.",
+        );
+        return;
+      }
+      router.replace(plan.href);
+      router.refresh();
+    },
+    [isRequestActive, router],
+  );
+
+  async function retryPostAcceptProfileCheck() {
+    if (!postAcceptDestination || postAcceptChecking || !acceptConfirmed) return;
+    const requestGeneration = routeGeneration.current;
+    setPostAcceptCheckError("");
+    setPostAcceptChecking(true);
+    const readiness = await fetchInviteProfileReadiness();
+    if (!isRequestActive(requestGeneration)) return;
+    setPostAcceptChecking(false);
+    const plan = planRouteAfterInviteSuccess(
+      readiness,
+      postAcceptDestination,
+      "partnership",
+    );
+    if (readiness.status === "error") {
+      setPostAcceptCheckError(
+        "Не удалось проверить профиль. Это не значит, что данных точно не хватает.",
+      );
+      return;
+    }
+    router.replace(plan.href);
+    router.refresh();
+  }
+
   async function acceptInvite() {
     if (
+      acceptInFlightRef.current ||
       accepting ||
+      acceptCompletedRef.current ||
       profileBlocksPrivateAccept(authUser, readiness) ||
       !preview ||
       !linkInvitePreviewHasAcceptableTerms(preview)
     ) {
       return;
     }
+    acceptInFlightRef.current = true;
+    const requestGeneration = ++routeGeneration.current;
     setAccepting(true);
     setAcceptError("");
     setExistingPartnershipId(null);
     setDeclinedLocally(false);
+    setPostAcceptCheckError("");
     try {
-      const result = await remcardFetch<{ ok: boolean; redirect?: string; code?: string }>(
+      const result = await remcardFetch<{ ok?: boolean; redirect?: string }>(
         "/api/partnership/link-invite/accept",
         { method: "POST", body: { token } },
       );
-      if (result.redirect) {
-        router.replace(result.redirect);
-        router.refresh();
+      if (!isRequestActive(requestGeneration)) return;
+      if (!isStrictPostOk(result)) {
+        const continuation = extractAuthContinuationFromPayload(result);
+        if (continuation) {
+          router.replace(continuation);
+          router.refresh();
+          return;
+        }
+        setAcceptError("Не удалось принять приглашение. Попробуйте обновить страницу.");
+        return;
       }
+      acceptCompletedRef.current = true;
+      const destination = sanitizeInternalPath(result.redirect ?? "/partners", "/partners");
+      await completeAcceptedInvite(destination, requestGeneration);
     } catch (caught) {
+      if (!isRequestActive(requestGeneration)) return;
       if (caught instanceof RemcardApiError && caught.status === 401) {
         setAcceptError("Сессия завершилась. Войдите снова.");
         setAuthUser(null);
         setReadiness(null);
       } else if (caught instanceof RemcardApiError) {
-        setAcceptError(caught.message);
         const body = caught.body as { code?: string; partnershipId?: string } | undefined;
+        const continuation = extractAuthContinuationRedirect(caught);
+        if (continuation) {
+          router.replace(continuation);
+          router.refresh();
+          return;
+        }
         if (
           body?.partnershipId &&
           (body.code === "PARTNERSHIP_ALREADY_ACTIVE" || body.code === "PARTNERSHIP_EXISTS")
         ) {
           setExistingPartnershipId(body.partnershipId);
         }
+        setAcceptError(caught.message);
       } else {
         setAcceptError("Не удалось принять");
       }
     } finally {
-      setAccepting(false);
+      acceptInFlightRef.current = false;
+      if (isRequestActive(requestGeneration)) {
+        setAccepting(false);
+      }
     }
   }
 
@@ -253,6 +347,32 @@ export function InviteLanding({ token }: InviteLandingProps) {
     isAuthFlowComplete(readiness) &&
     !profileIncomplete &&
     termsAcceptable;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      routeGeneration.current += 1;
+    };
+  }, []);
+
+  if (acceptConfirmed && postAcceptDestination && (postAcceptChecking || postAcceptCheckError)) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.wrap}>
+          <BrandMark />
+          <InviteAcceptedProfilePrompt
+            variant="partnership"
+            profileHref={buildInviteProfileCompletionHref(postAcceptDestination, "partnership")}
+            continueHref={postAcceptDestination}
+            checkError={postAcceptCheckError}
+            checking={postAcceptChecking}
+            onRetryCheck={() => void retryPostAcceptProfileCheck()}
+          />
+        </div>
+      </main>
+    );
+  }
 
   if (loadState === "loading" || !sessionChecked) {
     return (
@@ -465,9 +585,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
                 </p>
               </div>
               <div className={styles.actions}>
-                <Link
-                  href={`/profile?returnTo=${encodeURIComponent(returnTo)}&section=basics`}
-                >
+                <Link href={buildInviteProfileCompletionHref(returnTo)}>
                   <Button>Заполнить профиль</Button>
                 </Link>
                 <Button variant="secondary" disabled>

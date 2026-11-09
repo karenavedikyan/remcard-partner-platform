@@ -28,6 +28,8 @@ type PartnerTypeSettingsProps = {
   onProfileUpdated: (next: ProProfileResponse) => void;
   onRequestRefresh: () => void;
   autoOpenSetupRecovery?: boolean;
+  /** Presentation-only reminder after invite accept/join (query inviteAcceptedContext). */
+  inviteAcceptedContext?: "partnership" | "discussion";
 };
 
 function emptySetup(): PartnerTypeSetupFormValue {
@@ -75,6 +77,7 @@ export function PartnerTypeSettings({
   onProfileUpdated,
   onRequestRefresh,
   autoOpenSetupRecovery = false,
+  inviteAcceptedContext,
 }: PartnerTypeSettingsProps) {
   const titleId = useId();
   const [step, setStep] = useState<Step>("closed");
@@ -354,6 +357,27 @@ export function PartnerTypeSettings({
             {currentLabel}
           </p>
           <p>Выбрали другой путь? Измените тип в этом аккаунте, без повторной регистрации.</p>
+          {inviteAcceptedContext ? (
+            <div
+              className={styles.recoveryBanner}
+              data-testid="profile-invite-accepted-context"
+              role="status"
+            >
+              <p>
+                {inviteAcceptedContext === "discussion"
+                  ? state?.setupRecovery?.needed
+                    ? "Вы присоединились к обсуждению. Заполните обязательные данные профиля, чтобы связанные функции работали — это не отменяет присоединение."
+                    : state
+                      ? "Вы присоединились к обсуждению. Присоединение сохранено — при необходимости вы можете вернуться к обсуждению и партнёрским разделам из кабинета."
+                      : "Вы присоединились к обсуждению. Это не отменяет присоединение."
+                  : state?.setupRecovery?.needed
+                    ? "Приглашение принято. Заполните обязательные данные профиля, чтобы партнёрство и связанные функции работали."
+                    : state
+                      ? "Приглашение принято. Партнёрство сохранено в кабинете — при необходимости проверьте настройки типа партнёра ниже."
+                      : "Приглашение принято."}
+              </p>
+            </div>
+          ) : null}
           {state?.setupRecovery?.needed ? (
             <div className={styles.recoveryBanner} data-testid="partner-type-setup-recovery">
               <p>Для текущего типа не хватает данных — часть действий недоступна.</p>

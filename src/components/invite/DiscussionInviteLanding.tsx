@@ -1,12 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RemcardApiError, remcardFetch, getAuthMe } from "@/lib/api-client";
 import { buildSessionRecoveryLoginHref } from "@/lib/auth-flow";
+import {
+  buildInviteProfileCompletionHref,
+  discussionPartnersHref,
+  extractAuthContinuationFromPayload,
+  extractAuthContinuationRedirect,
+  fetchInviteProfileReadiness,
+  isStrictPostOk,
+  planRouteAfterInviteSuccess,
+} from "@/lib/invite-profile-completion";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
+import { InviteAcceptedProfilePrompt } from "./InviteAcceptedProfilePrompt";
 import styles from "./InviteLanding.module.css";
 
 type Preview = {
@@ -46,22 +56,48 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [joined, setJoined] = useState(false);
+  const [joinConfirmed, setJoinConfirmed] = useState(false);
   const [redirectInviteId, setRedirectInviteId] = useState<string | null>(null);
+  const [continueDestination, setContinueDestination] = useState<string | null>(null);
+  const [profileCheckError, setProfileCheckError] = useState("");
+  const [profileChecking, setProfileChecking] = useState(false);
+  const joinInFlightRef = useRef(false);
+  const joinCompletedRef = useRef(false);
+  const mountedRef = useRef(true);
+  const routeGeneration = useRef(0);
 
-  const reloadPreview = useCallback(async () => {
-    try {
-      const data = await remcardFetch<Preview>(
-        `/api/partnership/discussion-invite/public/${encodeURIComponent(token)}`,
-      );
-      setPreview(data);
-      return data;
-    } catch {
-      setPreview({ status: "NOT_FOUND" });
-      return null;
-    }
-  }, [token]);
+  const isRequestActive = useCallback((generation: number) => {
+    return mountedRef.current && generation === routeGeneration.current;
+  }, []);
+
+  const reloadPreview = useCallback(
+    async (requestGeneration?: number) => {
+      try {
+        const data = await remcardFetch<Preview>(
+          `/api/partnership/discussion-invite/public/${encodeURIComponent(token)}`,
+        );
+        const active =
+          requestGeneration === undefined
+            ? mountedRef.current
+            : isRequestActive(requestGeneration);
+        if (active) setPreview(data);
+        return data;
+      } catch {
+        if (
+          requestGeneration === undefined
+            ? mountedRef.current
+            : isRequestActive(requestGeneration)
+        ) {
+          setPreview({ status: "NOT_FOUND" });
+        }
+        return null;
+      }
+    },
+    [isRequestActive, token],
+  );
 
   useEffect(() => {
+    mountedRef.current = true;
     let cancelled = false;
     (async () => {
       const data = await reloadPreview();
@@ -72,43 +108,141 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
     })();
     return () => {
       cancelled = true;
+      mountedRef.current = false;
+      routeGeneration.current += 1;
     };
   }, [reloadPreview]);
 
+  const resolveDiscussionDestination = useCallback(
+    (inviteId: string | null | undefined) => {
+      const id = inviteId ?? preview?.inviteId ?? redirectInviteId;
+      return discussionPartnersHref(id ?? "");
+    },
+    [preview?.inviteId, redirectInviteId],
+  );
+
+  const routeAfterJoinSuccess = useCallback(
+    async (inviteId: string | null | undefined, requestGeneration: number) => {
+      const destination = resolveDiscussionDestination(inviteId);
+      if (!isRequestActive(requestGeneration)) return;
+      setJoinConfirmed(true);
+      setContinueDestination(destination);
+      setProfileCheckError("");
+      setProfileChecking(true);
+      const readiness = await fetchInviteProfileReadiness();
+      if (!isRequestActive(requestGeneration)) return;
+      setProfileChecking(false);
+      const plan = planRouteAfterInviteSuccess(readiness, destination, "discussion");
+      if (readiness.status === "error") {
+        setProfileCheckError(
+          "Не удалось проверить профиль. Это не значит, что данных точно не хватает.",
+        );
+        return;
+      }
+      router.replace(plan.href);
+      router.refresh();
+    },
+    [isRequestActive, resolveDiscussionDestination, router],
+  );
+
   const join = useCallback(async () => {
+    if (busy || joinInFlightRef.current || joinCompletedRef.current) return;
+    joinInFlightRef.current = true;
+    const requestGeneration = ++routeGeneration.current;
     setBusy(true);
     setError("");
     try {
       const me = await getAuthMe();
+      if (!isRequestActive(requestGeneration)) return;
       if (!me?.user) {
         const returnTo = `/invite/discussion/${encodeURIComponent(token)}`;
         router.push(buildSessionRecoveryLoginHref(returnTo));
         return;
       }
       const result = await remcardFetch<{
-        ok: boolean;
-        alreadyJoined?: boolean;
+        ok?: boolean;
         inviteId?: string;
         redirectPath?: string;
       }>("/api/partnership/discussion-invite/join", { method: "POST", body: { token } });
-      setJoined(true);
-      const inviteId = result.inviteId ?? preview?.inviteId ?? null;
+      if (!isRequestActive(requestGeneration)) return;
+      if (!isStrictPostOk(result)) {
+        const continuation = extractAuthContinuationFromPayload(result);
+        if (continuation) {
+          router.replace(continuation);
+          router.refresh();
+          return;
+        }
+        setError("Не удалось присоединиться. Обновите страницу и повторите.");
+        return;
+      }
+      joinCompletedRef.current = true;
+      const inviteId =
+        (result as { inviteId?: string }).inviteId ?? preview?.inviteId ?? null;
       setRedirectInviteId(inviteId);
-      await reloadPreview();
+      await reloadPreview(requestGeneration);
+      if (!isRequestActive(requestGeneration)) return;
+      await routeAfterJoinSuccess(inviteId, requestGeneration);
     } catch (caught) {
+      if (!isRequestActive(requestGeneration)) return;
+      if (caught instanceof RemcardApiError) {
+        const continuation = extractAuthContinuationRedirect(caught);
+        if (continuation) {
+          router.replace(continuation);
+          router.refresh();
+          return;
+        }
+      }
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось присоединиться");
     } finally {
-      setBusy(false);
+      joinInFlightRef.current = false;
+      if (isRequestActive(requestGeneration)) {
+        setBusy(false);
+      }
     }
-  }, [preview?.inviteId, reloadPreview, router, token]);
+  }, [busy, isRequestActive, preview?.inviteId, reloadPreview, routeAfterJoinSuccess, router, token]);
 
-  function openDiscussionContext() {
-    const id = redirectInviteId ?? preview?.inviteId;
-    if (id) {
-      router.push(`/partners?discussion=${encodeURIComponent(id)}`);
+  const openDiscussionContext = useCallback(async () => {
+    const destination = continueDestination ?? resolveDiscussionDestination(redirectInviteId);
+    const requestGeneration = ++routeGeneration.current;
+    setProfileChecking(true);
+    setProfileCheckError("");
+    const readiness = await fetchInviteProfileReadiness();
+    if (!isRequestActive(requestGeneration)) return;
+    setProfileChecking(false);
+    const plan = planRouteAfterInviteSuccess(readiness, destination, "discussion");
+    if (readiness.status === "error") {
+      setProfileCheckError(
+        "Не удалось проверить профиль. Это не значит, что данных точно не хватает.",
+      );
+      setContinueDestination(destination);
+      setJoinConfirmed(true);
       return;
     }
-    router.push("/partners");
+    router.replace(plan.href);
+    router.refresh();
+  }, [continueDestination, isRequestActive, redirectInviteId, resolveDiscussionDestination, router]);
+
+  async function retryProfileCheck() {
+    if (!continueDestination || profileChecking || !joinConfirmed) return;
+    const requestGeneration = routeGeneration.current;
+    setProfileCheckError("");
+    setProfileChecking(true);
+    const readiness = await fetchInviteProfileReadiness();
+    if (!isRequestActive(requestGeneration)) return;
+    setProfileChecking(false);
+    const plan = planRouteAfterInviteSuccess(
+      readiness,
+      continueDestination,
+      "discussion",
+    );
+    if (readiness.status === "error") {
+      setProfileCheckError(
+        "Не удалось проверить профиль. Это не значит, что данных точно не хватает.",
+      );
+      return;
+    }
+    router.replace(plan.href);
+    router.refresh();
   }
 
   if (loading) {
@@ -126,6 +260,24 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
   const showParticipantContinue =
     joined ||
     (status === "JOINED" && (viewerRole === "participant" || viewerRole === "inviter"));
+
+  if (joinConfirmed && continueDestination && (profileChecking || profileCheckError)) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.wrap}>
+          <BrandMark />
+          <InviteAcceptedProfilePrompt
+            variant="discussion"
+            profileHref={buildInviteProfileCompletionHref(continueDestination, "discussion")}
+            continueHref={continueDestination}
+            checkError={profileCheckError}
+            checking={profileChecking}
+            onRetryCheck={() => void retryProfileCheck()}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (!canShowJoinForm && !showParticipantContinue) {
     const title = statusTitle(preview, joined);
@@ -165,7 +317,14 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
               Дальше можно предложить условия сотрудничества штатным приглашением — партнёрство создаётся
               только после согласования.
             </p>
-            <Button onClick={openDiscussionContext}>Перейти к обсуждению</Button>
+            {profileCheckError ? (
+              <p className={styles.error} role="alert">
+                {profileCheckError}
+              </p>
+            ) : null}
+            <Button disabled={profileChecking} onClick={() => void openDiscussionContext()}>
+              {profileChecking ? "Проверяем профиль…" : "Перейти к обсуждению"}
+            </Button>
           </div>
         </div>
       </div>
@@ -202,7 +361,9 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
           {joined ? (
             <>
               <p className={styles.notice}>Вы присоединились к обсуждению.</p>
-              <Button onClick={openDiscussionContext}>Перейти к обсуждению</Button>
+              <Button disabled={profileChecking} onClick={() => void openDiscussionContext()}>
+                {profileChecking ? "Проверяем профиль…" : "Перейти к обсуждению"}
+              </Button>
             </>
           ) : (
             <div className={styles.actions}>

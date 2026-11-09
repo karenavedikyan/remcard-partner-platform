@@ -181,6 +181,12 @@ function ProfileEditorInner({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const inviteAcceptedContext =
+    searchParams.get("inviteAcceptedContext") === "discussion"
+      ? "discussion"
+      : searchParams.get("inviteAcceptedContext") === "partnership"
+        ? "partnership"
+        : undefined;
   const isProfileDevFixture = pathname.startsWith("/profile/dev-fixture");
   const profileBasePath = isProfileDevFixture
     ? "/profile/dev-fixture"
@@ -1491,6 +1497,7 @@ function ProfileEditorInner({
             onProfileUpdated={applyProfile}
             onRequestRefresh={() => router.refresh()}
             autoOpenSetupRecovery={focusField === "partnerType"}
+            inviteAcceptedContext={inviteAcceptedContext}
           />
         ) : null}
 

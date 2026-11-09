@@ -487,4 +487,48 @@ describe("PartnerTypeSettings", () => {
     await waitFor(() => expect(onRefresh).toHaveBeenCalled());
     expect(await screen.findByTestId("partner-type-recovery")).toBeInTheDocument();
   });
+
+  it("invite context banner confirms without fill imperative when setup is complete", async () => {
+    remcardFetch.mockResolvedValue(
+      switchState({
+        setupRecovery: { needed: false, targetKind: "agent", requiredFields: [], prefill: null },
+      }),
+    );
+    render(
+      <PartnerTypeSettings
+        profile={baseProfile}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        inviteAcceptedContext="partnership"
+      />,
+    );
+    const banner = await screen.findByTestId("profile-invite-accepted-context");
+    expect(banner).toHaveTextContent("Приглашение принято");
+    expect(banner).not.toHaveTextContent("Заполните обязательные");
+  });
+
+  it("invite context banner asks for missing fields when setup recovery is needed", async () => {
+    remcardFetch.mockResolvedValue(
+      switchState({
+        setupRecovery: {
+          needed: true,
+          targetKind: "agent",
+          requiredFields: ["publicName"],
+          prefill: { publicName: "", city: "", serviceSpecializationIds: [], productCategoryIds: [], organizationName: "" },
+        },
+      }),
+    );
+    render(
+      <PartnerTypeSettings
+        profile={baseProfile}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        inviteAcceptedContext="partnership"
+      />,
+    );
+    const banner = await screen.findByTestId("profile-invite-accepted-context");
+    expect(banner).toHaveTextContent("Заполните обязательные данные профиля");
+  });
 });
