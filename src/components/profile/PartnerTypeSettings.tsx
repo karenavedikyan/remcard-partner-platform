@@ -139,6 +139,7 @@ export function PartnerTypeSettings({
 
   const dialogTrapRef = usePartnerTypeSettingsDialogTrap(
     step !== "closed",
+    step === "closed" ? null : step,
     closeDialog,
     pending,
   );
@@ -412,6 +413,7 @@ export function PartnerTypeSettings({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
+            tabIndex={-1}
             data-testid={
               step === "unsaved"
                 ? "partner-type-unsaved"

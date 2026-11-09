@@ -590,3 +590,29 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Partner type setup modal — scoped touch/readability; shared picker unchanged elsewhere. */
+.partnerTypeSetupPick .chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+}
+
+.partnerTypeSetupPick .selectionHeading small,
+.partnerTypeSetupPick .hint {
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--ink) 62%, var(--muted));
+}
+
+.partnerTypeSetupPick .focusSearchLink:disabled,
+.partnerTypeSetupPick .groupTab:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--ink) 55%, var(--muted));
+}

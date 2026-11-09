@@ -115,6 +115,7 @@ export function PartnerTypeSetupFields({
             businessTabbedPick={showOrg}
             omitLead
             omitNavigatorStagesAndPrimary
+            partnerTypeSetupPick
             disabled={disabled}
             tileLayout={targetKind === "specialist"}
             onChangeProducts={(ids) => onChange({ ...value, productCategoryIds: ids })}

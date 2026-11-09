@@ -79,4 +79,17 @@ describe("dialog-focus", () => {
     expect(list).toHaveLength(1);
     expect(list[0]?.id).toBe("ok");
   });
+
+  it("excludes controls inside a disabled fieldset", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <fieldset disabled>
+        <input type="text" id="in-fieldset" />
+      </fieldset>
+      <button type="button" id="footer">Footer</button>
+    `;
+    document.body.appendChild(root);
+    const list = getFocusableElements(root);
+    expect(list.map((el) => el.id)).toEqual(["footer"]);
+  });
 });

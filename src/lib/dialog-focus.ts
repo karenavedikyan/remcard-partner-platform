@@ -1,8 +1,30 @@
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+function isInsideDisabledFieldset(el: HTMLElement): boolean {
+  let node: HTMLElement | null = el.parentElement;
+  while (node) {
+    if (node instanceof HTMLFieldSetElement && node.disabled) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+function isEffectivelyDisabled(el: HTMLElement): boolean {
+  if (
+    el instanceof HTMLButtonElement ||
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement
+  ) {
+    if (el.disabled) return true;
+  }
+  return isInsideDisabledFieldset(el);
+}
+
 function isFocusableVisible(el: HTMLElement): boolean {
   if (el.getAttribute("aria-hidden") === "true") return false;
+  if (isEffectivelyDisabled(el)) return false;
   if (el.tabIndex < 0) return false;
   const style = window.getComputedStyle(el);
   if (style.visibility === "hidden" || style.display === "none") return false;

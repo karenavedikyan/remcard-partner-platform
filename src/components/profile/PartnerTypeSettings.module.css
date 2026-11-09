@@ -280,3 +280,18 @@
   color: var(--ink);
   border: 1px solid var(--line);
 }
+
+.setupDialogPanel .actions :global(.btn:disabled) {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.setupDialogPanel .actions :global(.btn.secondary:disabled) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.setupDialogPanel :global(.btn:disabled) {
+  opacity: 1;
+}

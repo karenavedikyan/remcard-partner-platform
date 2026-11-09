@@ -42,6 +42,8 @@ type ProfileDirectionsPickerProps = {
   afterSelectionNote?: string;
   /** Partner type setup: products/services only; do not show stages/primary editors. */
   omitNavigatorStagesAndPrimary?: boolean;
+  /** Partner type setup modal: 44px chips + legible selection summary helper. */
+  partnerTypeSetupPick?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -100,6 +102,7 @@ export function ProfileDirectionsPicker({
   leadText,
   afterSelectionNote,
   omitNavigatorStagesAndPrimary = false,
+  partnerTypeSetupPick = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -260,6 +263,7 @@ export function ProfileDirectionsPicker({
     specialistMode && compactSpecialistGrid ? styles.specialistCompact : "",
     presentationVariant === "specialistWorkingProfile" ? styles.specialistWorkingProfile : "",
     businessTabbedPick ? styles.businessWizardPick : "",
+    partnerTypeSetupPick ? styles.partnerTypeSetupPick : "",
   ]
     .filter(Boolean)
     .join(" ");

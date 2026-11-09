@@ -188,6 +188,147 @@ describe("PartnerTypeSettings", () => {
     ).toBe(false);
   });
 
+  it("keeps keyboard focus inside dialog while save is pending", async () => {
+    let resolvePost: (() => void) | undefined;
+    remcardFetch.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === "POST") {
+        return new Promise((resolve) => {
+          resolvePost = () => resolve({ ok: true });
+        });
+      }
+      if (url === "/api/pro/profile") return Promise.resolve(baseProfile);
+      return Promise.resolve(
+        switchState({
+          currentKind: "specialist",
+          setupRecovery: {
+            needed: true,
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Мастер",
+              city: "Краснодар",
+              serviceSpecializationIds: ["doors"],
+              productCategoryIds: [],
+              organizationName: "",
+            },
+          },
+        }),
+      );
+    });
+    render(
+      <PartnerTypeSettings
+        profile={{
+          ...baseProfile,
+          user: { ...baseProfile.user, partnerType: "MASTER", partnerActivities: ["SERVICE"] },
+        }}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        autoOpenSetupRecovery
+      />,
+    );
+    const dialog = await screen.findByRole("dialog");
+    await screen.findByTestId("partner-type-setup");
+    fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
+    fireEvent.click(screen.getByTestId("partner-type-apply"));
+    const outside = document.createElement("button");
+    outside.type = "button";
+    outside.textContent = "Вне диалога";
+    document.body.appendChild(outside);
+    outside.focus();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.keyDown(outside, { key: "Tab", code: "Tab", bubbles: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    resolvePost?.();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    outside.remove();
+  });
+
+  it("focuses setup and closes on Escape after choose → setup", async () => {
+    remcardFetch.mockImplementation(async (url: string) => {
+      if (url.includes("target=specialist")) {
+        return switchState({
+          setupForTarget: {
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Агент",
+              city: "Краснодар",
+              serviceSpecializationIds: [],
+              productCategoryIds: [],
+              organizationName: "",
+            },
+          },
+          preview: { changes: "c", preservedSummary: "p" },
+        });
+      }
+      return switchState();
+    });
+    render(
+      <PartnerTypeSettings
+        profile={baseProfile}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+      />,
+    );
+    fireEvent.click(await screen.findByTestId("partner-type-open"));
+    await screen.findByTestId("partner-type-choose");
+    fireEvent.click(
+      document.querySelector('input[name="partner-type"][value="specialist"]') as HTMLInputElement,
+    );
+    fireEvent.click(document.querySelector('[data-partner-type-action="setup"]')!);
+    const dialog = await screen.findByTestId("partner-type-setup");
+    await waitFor(() => {
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape", bubbles: true });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("blocks Escape close while switch POST is pending", async () => {
+    remcardFetch.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === "POST") {
+        return new Promise(() => {});
+      }
+      if (url === "/api/pro/profile") return Promise.resolve(baseProfile);
+      return Promise.resolve(
+        switchState({
+          currentKind: "specialist",
+          setupRecovery: {
+            needed: true,
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Мастер",
+              city: "Краснодар",
+              serviceSpecializationIds: ["doors"],
+              productCategoryIds: [],
+              organizationName: "",
+            },
+          },
+        }),
+      );
+    });
+    render(
+      <PartnerTypeSettings
+        profile={{
+          ...baseProfile,
+          user: { ...baseProfile.user, partnerType: "MASTER", partnerActivities: ["SERVICE"] },
+        }}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        autoOpenSetupRecovery
+      />,
+    );
+    await screen.findByTestId("partner-type-setup");
+    fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
+    fireEvent.click(screen.getByTestId("partner-type-apply"));
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape", bubbles: true });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("disables setup fields while save is pending", async () => {
     let resolvePost: (() => void) | undefined;
     remcardFetch.mockImplementation((url: string, init?: { method?: string }) => {
