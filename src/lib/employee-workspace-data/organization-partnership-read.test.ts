@@ -25,6 +25,7 @@ describe("organization partnership read subject", () => {
     const side = partnerSideFromOrganizationReadContext(ctx!);
     expect(side.partnerType).toBe("COMPANY");
     expect(side.id).toBe(FIXTURE_OPTOVIK_OWNER_PRO_ID);
+    expect(side.storeCategories).toEqual(["doors", "handles"]);
   });
 
   it("shows counterparty labels relative to org principal, not employee id", () => {

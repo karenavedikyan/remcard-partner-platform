@@ -25,6 +25,7 @@ import {
   profileUserToPartnerSide,
   resolveLinkInviteCreateCategories,
   validateInviteRows,
+  type PartnerSideProfile,
 } from "@/lib/partnership-rules";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +49,8 @@ type LinkInviteRow = {
 
 type PartnerLinkInvitePanelProps = {
   meProfile: ProProfileResponse;
+  /** Trusted inviter business side (org principal); falls back to personal profile. */
+  inviterSide?: PartnerSideProfile;
   /** When the hub modal already shows the title, omit the inner section heading. */
   showSectionTitle?: boolean;
   wizard?: boolean;
@@ -114,6 +117,7 @@ function formatExpiry(iso: string) {
 
 export function PartnerLinkInvitePanel({
   meProfile,
+  inviterSide: inviterSideProp,
   showSectionTitle = true,
   wizard = false,
   onDirtyChange,
@@ -125,7 +129,8 @@ export function PartnerLinkInvitePanel({
   const [recipientName, setRecipientName] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [tone, setTone] = useState("short");
-  const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
+  const inviterSide =
+    inviterSideProp ?? profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const [intendedType, setIntendedType] = useState<IntendedType>("");
   const resolved = useMemo(
     () => resolveLinkInviteCreateCategories(inviterSide, intendedType),
@@ -406,11 +411,23 @@ export function PartnerLinkInvitePanel({
         </> : null}
         {(!wizard || (step === 3 && !createdUrl)) ? <>
         <details open className={wizardStyles.terms}>
-          <summary>Условия сотрудничества · {resolved.categories.length || 1} {resolved.categories.length === 1 ? "направление" : "направления"}</summary>
+          <summary>
+            {resolved.categories.length > 0
+              ? `Условия сотрудничества · ${resolved.categories.length} ${
+                  resolved.categories.length === 1 ? "направление" : "направления"
+                }`
+              : "Условия сотрудничества"}
+          </summary>
         <p className={styles.hint}>
           Общий процент по категории — это условие между вами и партнёром. При рекомендации клиенту
           часть идёт на скидку, остальное — ваше вознаграждение PROF.
         </p>
+
+        {resolved.error ? (
+          <p className={styles.error} role="alert" data-testid="link-invite-terms-blocked">
+            {resolved.error}
+          </p>
+        ) : null}
 
         {!resolved.error && resolved.categories.length === 0 && !form.useGeneralFallback ? (
           <p className={styles.hint}>Выберите тип партнёра, чтобы указать категории.</p>

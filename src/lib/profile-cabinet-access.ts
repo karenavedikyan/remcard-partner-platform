@@ -23,6 +23,8 @@ export type ProContextSnapshot = {
     name: string;
     partnerType?: "STORE" | "COMPANY" | string | null;
     ownerId?: string | null;
+    storeCategories?: string[];
+    specializations?: string[];
   } | null;
   employer?: {
     id: string;

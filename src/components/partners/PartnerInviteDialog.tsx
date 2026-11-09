@@ -25,6 +25,7 @@ import {
   resolveInviteTradeSideCategories,
   searchResultToPartnerSide,
   validateInviteRows,
+  type PartnerSideProfile,
 } from "@/lib/partnership-rules";
 import type { PartnerSearchResult, ProProfileResponse } from "@/lib/types";
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
@@ -37,6 +38,7 @@ import styles from "./PartnerInviteDialog.module.css";
 type PartnerInviteDialogProps = {
   target: PartnerSearchResult;
   meProfile: ProProfileResponse;
+  inviterSide?: PartnerSideProfile;
   busy: boolean;
   onClose: () => void;
   onSent: () => void;
@@ -92,6 +94,7 @@ function inviteFormReducer(state: InviteFormSnapshot, action: InviteFormAction):
 export function PartnerInviteDialog({
   target,
   meProfile,
+  inviterSide: inviterSideProp,
   busy,
   onClose,
   onSent,
@@ -99,7 +102,8 @@ export function PartnerInviteDialog({
   showPublishedTerms = false,
   publishedTermsSnapshot,
 }: PartnerInviteDialogProps) {
-  const inviterSide = profileUserToPartnerSide(meProfile.user, meProfile.organization);
+  const inviterSide =
+    inviterSideProp ?? profileUserToPartnerSide(meProfile.user, meProfile.organization);
   const targetSide = searchResultToPartnerSide(target);
   const agentCooperationRequest = isAgentCooperationInviter(inviterSide);
   const resolved = resolveInviteTradeSideCategories(inviterSide, targetSide);

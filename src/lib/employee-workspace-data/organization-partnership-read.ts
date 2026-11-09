@@ -11,6 +11,9 @@ export type OrganizationPartnershipReadContext = {
   partnerType: "STORE" | "COMPANY";
   /** Organization owner's PRO user id from trusted GET /api/pro/context (never from query/body). */
   principalProUserId: string;
+  /** Canonical trade directions from trusted org record in GET /api/pro/context. */
+  storeCategories: string[];
+  specializations: string[];
   effectivePermissions?: ProfIPermissionFlags;
   /** True when the signed-in user is not the org owner principal. */
   readOnlyActor: boolean;
@@ -39,6 +42,8 @@ export function organizationPartnershipReadContextFromProContext(input: {
     organizationName,
     partnerType,
     principalProUserId: ownerId,
+    storeCategories: [...(org?.storeCategories ?? [])],
+    specializations: [...(org?.specializations ?? [])],
     effectivePermissions: input.proContext.effectivePermissions,
     readOnlyActor: ownerId !== input.actorUserId.trim(),
   };
@@ -51,8 +56,8 @@ export function partnerSideFromOrganizationReadContext(
     id: ctx.principalProUserId,
     partnerType: ctx.partnerType,
     partnerActivities: ctx.partnerType === "STORE" ? ["STORE"] : ["COMPANY"],
-    storeCategories: [],
-    specializations: [],
+    storeCategories: ctx.storeCategories,
+    specializations: ctx.specializations,
     isStoreOwner: ctx.partnerType === "STORE",
     organizationName: ctx.organizationName,
   };

@@ -59,6 +59,8 @@ export function fixtureSergeyOrgEmployeeContext(input?: {
       name: "ОПТОВИК",
       partnerType: "COMPANY",
       ownerId: FIXTURE_OPTOVIK_OWNER_PRO_ID,
+      storeCategories: ["doors", "handles"],
+      specializations: [],
     },
     activeBranch: includeGrant
       ? { id: branchId, name: "Главный", city: "Москва" }

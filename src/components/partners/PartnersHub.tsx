@@ -2172,7 +2172,7 @@ export function PartnersHub({
                     onSubmittingChange={setLinkInviteSubmitting}
                   />
                 ) : (
-          <PartnerLinkInvitePanel key={`link-${discussionInvitePanelKey}`} meProfile={meProfile} showSectionTitle={false} wizard
+          <PartnerLinkInvitePanel key={`link-${discussionInvitePanelKey}`} meProfile={meProfile} inviterSide={inviterSide} showSectionTitle={false} wizard
             onDirtyChange={reportLinkModeDirty} onReadyChange={onDiscussionInviteReadyChange}
             onSubmittingChange={setLinkInviteSubmitting}
             onAnotherWay={() => onOpenPartnerHub?.("find")} />
@@ -2231,6 +2231,7 @@ export function PartnersHub({
                 key={`${meId}:${inviteTarget.id}`}
                 target={inviteTarget}
                 meProfile={meProfile}
+                inviterSide={inviterSide}
                 busy={Boolean(busyId)}
                 showSentState
                 showPublishedTerms={showAgentPublishedTerms}
@@ -2902,7 +2903,7 @@ export function PartnersHub({
           )}
         </>
       ) : tab === "link" ? (
-        <PartnerLinkInvitePanel meProfile={meProfile} />
+        <PartnerLinkInvitePanel meProfile={meProfile} inviterSide={inviterSide} />
       ) : (
         <>
           <Panel compact>
@@ -3115,6 +3116,7 @@ export function PartnersHub({
         <PartnerInviteDialog
           target={inviteTarget}
           meProfile={meProfile}
+          inviterSide={inviterSide}
           busy={busyId === inviteTarget.id}
           onClose={() => setInviteTarget(null)}
           onSent={() => {
