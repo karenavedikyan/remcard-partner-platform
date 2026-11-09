@@ -30,10 +30,12 @@ export function usePurchaseReviewDialogTrap(active: boolean, onEscape: () => voi
   const focusWithinDialog = () => {
     const root = containerRef.current;
     if (!root) return;
-    const back = root.querySelector<HTMLElement>('[data-testid="purchase-review-back"]');
+    const scrollBody = root.querySelector<HTMLElement>("#purchase-review-body");
     const focusables = getFocusableElements(root);
     const target =
-      back && focusables.includes(back) ? back : focusables[0] ?? root.querySelector<HTMLElement>("#purchase-review-body");
+      scrollBody && focusables.includes(scrollBody)
+        ? scrollBody
+        : focusables[0] ?? scrollBody;
     if (target) {
       target.focus();
       return;

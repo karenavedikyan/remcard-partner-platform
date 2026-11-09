@@ -1,7 +1,7 @@
 # Scanner approved design handoff (2026-11-09)
 
-Branch: `handoff/scanner-approved-design-20261109`  
-Baseline parent: `30f77db7cacae998a310e6271da3c3f79da640b6`  
+Branch: `handoff/scanner-approved-design-20261109`
+Baseline parent: `30f77db7cacae998a310e6271da3c3f79da640b6`
 Prototype reference: `remcard-navigator` `b9844c0f` (presentation only; not monetary logic).
 
 ## Money (production, not prototype)
@@ -22,7 +22,8 @@ Deploy order: backend first, then frontend handoff branch.
 
 - **`POST /api/store/order/preview` mutates state** (e.g. can set certificate `EXPIRED`). **Do not** run certificate search against production in browser regression.
 - Allowed: load `/scanner` shell, theme/layout, static components.
-- Component checks: `npx vitest run src/components/scanner/PurchaseReviewModal.harness.test.tsx` (mocked data only).
+- Browser component harness (mocked, no preview POST): `node scripts/scanner-approved-design-browser-harness.mjs` → `artifacts/scanner-approved-design-harness/*.png`
+- Unit layout: `npx vitest run src/components/scanner/PurchaseReviewModal.harness.test.tsx`
 
 ## Tests
 

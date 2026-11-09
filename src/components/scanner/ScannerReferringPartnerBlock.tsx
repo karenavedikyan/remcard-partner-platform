@@ -20,17 +20,17 @@ export function ScannerReferringPartnerBlock({ referringPartner }: Props) {
       data-testid="scanner-referrer-block"
     >
       <h3 id="scanner-referrer-heading" className={styles.referrerHeading}>
-        Партнёр, который рекомендовал документ
+        Клиент от партнёра
       </h3>
       {hasPartner ? (
         <div className={styles.referrerBody}>
-          <p className={styles.referrerLead}>
+          <div className={styles.referrerRow}>
             <span className={styles.referrerType}>{referringPartner.typeLabel}</span>
             <span className={styles.referrerName}>{referringPartner.displayName}</span>
-            {referringPartner.city ? (
-              <span className={styles.referrerCity}>{referringPartner.city}</span>
-            ) : null}
-          </p>
+          </div>
+          {referringPartner.city ? (
+            <p className={styles.referrerCity}>{referringPartner.city}</p>
+          ) : null}
           {referringPartner.contacts.length > 0 ? (
             <ul className={styles.referrerContacts}>
               {referringPartner.contacts.map((contact) => (
@@ -52,8 +52,7 @@ export function ScannerReferringPartnerBlock({ referringPartner }: Props) {
         </div>
       ) : (
         <p className={styles.meta} data-testid="scanner-referrer-unavailable">
-          Сведения о рекомендовавшем партнёре недоступны. Эмитент документа и партнёр приёма указаны
-          отдельно.
+          Данные партнёра недоступны.
         </p>
       )}
     </section>

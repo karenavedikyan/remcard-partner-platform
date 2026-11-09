@@ -22,6 +22,7 @@ describe("ScannerReferringPartnerBlock", () => {
         }}
       />,
     );
+    expect(screen.getByText("Клиент от партнёра")).toBeInTheDocument();
     expect(screen.getByText("Мастер")).toBeInTheDocument();
     expect(screen.getByText("Агент Публичный")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /telegram/i })).toHaveAttribute(

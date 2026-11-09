@@ -94,7 +94,9 @@ describe("PurchaseReviewModal visual harness", () => {
     );
 
     const dialog = screen.getByTestId("purchase-review-dialog");
+    expect(screen.getByText("К оплате клиентом")).toBeInTheDocument();
     expect(screen.getByTestId("purchase-review-due")).toHaveTextContent("15 837");
+    expect(screen.getAllByText("До скидки").length).toBeGreaterThan(0);
     expect(dialog).toHaveTextContent("17 406");
     expect(dialog).toHaveTextContent("1 569");
     expect(screen.getByTestId("purchase-review-body")).toHaveTextContent("1 075");

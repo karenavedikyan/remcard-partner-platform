@@ -74,66 +74,84 @@ export function PurchaseReviewModal({
         aria-labelledby={titleId}
         data-testid="purchase-review-dialog"
       >
-        <header className={styles.header}>
-          <h2 id={titleId} className={styles.title}>
-            Проверьте покупку
-          </h2>
-          <div className={styles.totalsHero}>
-            <p className={styles.heroDue} data-testid="purchase-review-due">
-              К оплате: {formatRub(totals.payableAmount)}
-            </p>
-            <p className={styles.heroMeta}>
-              Сумма покупки {formatRub(totals.totalAmount)} · скидка клиенту{" "}
-              {formatRub(totals.totalDiscount)}
-            </p>
-          </div>
-        </header>
+        <h2 id={titleId} className={styles.title}>
+          Проверьте покупку
+        </h2>
 
         <div
           id="purchase-review-body"
           className={styles.body}
           tabIndex={0}
+          role="region"
+          aria-label="Детали покупки перед подтверждением"
           data-testid="purchase-review-body"
         >
-          <ul className={styles.categoryList}>
-            {items.map((item) => {
-              const category = preview.availableCategories.find((c) => c.category === item.category);
-              const discount = category
-                ? lineDiscountRub(item.amount, category.discountPercent)
-                : 0;
-              const draft = rewardDrafts[item.category] ?? defaultRewardDraft;
-              const kindLabel = draft.kind === "SERVICE" ? "услуга" : "товар";
-              const handoff =
-                draft.handedOver &&
-                (draft.kind === "SERVICE" ? "работы приняты" : "товар передан");
-              return (
-                <li key={item.category} className={styles.categoryCard}>
-                  <p className={styles.categoryTitle}>
-                    {displayCategoryLabel(item.category, item.categoryLabel)}
-                  </p>
-                  <p className={styles.categoryAmounts}>
-                    {formatRub(item.amount)} · скидка {formatRub(discount)}
-                  </p>
-                  {!isSelfScan ? (
-                    <p className={styles.categoryQuiet}>
-                      {kindLabel}, срок вознаграждения {formatDaysRu(draft.days)}
-                      {handoff ? ` · ${handoff}` : ""}
+          <div className={styles.review}>
+            <div className={styles.reviewDue}>
+              <p className={styles.reviewDueLabel}>К оплате клиентом</p>
+              <p className={styles.reviewDueValue} data-testid="purchase-review-due">
+                {formatRub(totals.payableAmount)}
+              </p>
+              <dl className={styles.reviewRollup}>
+                <div className={styles.rollupRow}>
+                  <dt>Сумма покупки</dt>
+                  <dd>{formatRub(totals.totalAmount)}</dd>
+                </div>
+                <div className={styles.rollupRow}>
+                  <dt>Скидка клиенту</dt>
+                  <dd>{formatRub(totals.totalDiscount)}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <ul className={styles.categoryList}>
+              {items.map((item) => {
+                const category = preview.availableCategories.find((c) => c.category === item.category);
+                const discount = category
+                  ? lineDiscountRub(item.amount, category.discountPercent)
+                  : 0;
+                const draft = rewardDrafts[item.category] ?? defaultRewardDraft;
+                const kindLabel = draft.kind === "SERVICE" ? "услуга" : "товар";
+                const handoff =
+                  draft.handedOver &&
+                  (draft.kind === "SERVICE" ? "работы приняты" : "товар передан");
+                return (
+                  <li key={item.category} className={styles.categoryCard}>
+                    <p className={styles.categoryTitle}>
+                      {displayCategoryLabel(item.category, item.categoryLabel)}
                     </p>
-                  ) : null}
-                  {!isSelfScan ? (
-                    <p className={styles.categoryQuiet}>{rewardDateHint(draft)}</p>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-          {branchLabel ? (
-            <p className={styles.branchFoot}>Филиал операции: {branchLabel}</p>
-          ) : null}
-          <p className={styles.branchFoot}>
-            Партнёр: {preview.partner.storeName}
-            {preview.partner.isSelfScan ? " · самосканирование" : ""}
-          </p>
+                    <dl className={styles.categoryNums}>
+                      <div className={styles.rollupRow}>
+                        <dt>До скидки</dt>
+                        <dd>{formatRub(item.amount)}</dd>
+                      </div>
+                      <div className={styles.rollupRow}>
+                        <dt>Скидка</dt>
+                        <dd>{formatRub(discount)}</dd>
+                      </div>
+                    </dl>
+                    {!isSelfScan ? (
+                      <ul className={styles.categoryMeta}>
+                        <li>
+                          {kindLabel}, срок вознаграждения {formatDaysRu(draft.days)}
+                          {handoff ? ` · ${handoff}` : ""}
+                        </li>
+                        <li>{rewardDateHint(draft)}</li>
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+
+            {branchLabel ? (
+              <p className={styles.branchFoot}>Филиал операции: {branchLabel}</p>
+            ) : null}
+            <p className={styles.branchFoot}>
+              Партнёр: {preview.partner.storeName}
+              {preview.partner.isSelfScan ? " · самосканирование" : ""}
+            </p>
+          </div>
         </div>
 
         <footer className={styles.footer}>
