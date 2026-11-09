@@ -17,6 +17,7 @@ import {
 } from "@/lib/reward-confirmation";
 import { Button } from "@/components/ui/Button";
 import styles from "./purchase-review-modal.module.css";
+import scannerButtonStyles from "./scanner-control-button.module.css";
 import { usePurchaseReviewDialogTrap } from "./usePurchaseReviewDialogTrap";
 
 function formatRub(value: number) {
@@ -158,6 +159,7 @@ export function PurchaseReviewModal({
           <Button
             type="button"
             variant="secondary"
+            className={scannerButtonStyles.controlButton}
             disabled={submitting}
             onClick={onClose}
             data-testid="purchase-review-back"
@@ -166,6 +168,7 @@ export function PurchaseReviewModal({
           </Button>
           <Button
             type="button"
+            className={scannerButtonStyles.controlButton}
             disabled={submitting || totals.totalAmount <= 0}
             onClick={onConfirm}
             data-testid="purchase-review-confirm"

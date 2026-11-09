@@ -25,6 +25,8 @@ describe("Scanner reward summary and expanded controls", () => {
     expect(scannerCss).toMatch(/\.rewardLabel select[\s\S]*?min-height:\s*44px/);
     expect(block(scannerCss, "rewardApply")).toMatch(/min-height:\s*44px/);
     expect(block(scannerCss, "rewardCheck")).toMatch(/min-height:\s*44px/);
-    expect(scannerCss).toMatch(/\.rewardTerms:disabled/);
+    expect(scannerCss).toMatch(/\.rewardTerms:disabled\s*\{[^}]*opacity:\s*1/);
+    expect(scannerCss).not.toMatch(/\.rewardTerms:disabled\s*\{[^}]*opacity:\s*0\.65/);
+    expect(scannerCss).toMatch(/\.rewardTerms:disabled select:disabled[\s\S]*?opacity:\s*1/);
   });
 });

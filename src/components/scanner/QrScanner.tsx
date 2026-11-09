@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { processQrDecode, type QrLastEmit } from "@/lib/qr-scanner-decode";
 import { Button } from "@/components/ui/Button";
+import scannerButtonStyles from "./scanner-control-button.module.css";
 import styles from "./scanner.module.css";
 
 type QrScannerProps = {
@@ -120,7 +121,11 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
       <div id={READER_ID} className={styles.qrReader} />
       {active ? (
         <div style={{ padding: "var(--space-3)" }}>
-          <Button variant="secondary" onClick={() => void stopCamera()}>
+          <Button
+            variant="secondary"
+            className={scannerButtonStyles.controlButton}
+            onClick={() => void stopCamera()}
+          >
             Остановить камеру
           </Button>
         </div>

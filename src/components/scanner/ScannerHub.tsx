@@ -66,6 +66,7 @@ import {
 } from "@/lib/store-order-attempt";
 import { validateOrderCreateResponse } from "@/lib/scanner-order-submit";
 import { Button } from "@/components/ui/Button";
+import scannerButtonStyles from "./scanner-control-button.module.css";
 import { TextField } from "@/components/ui/FormField";
 import { QrScanner } from "./QrScanner";
 import { ScannerNewPartnerEmpty } from "./ScannerNewPartnerEmpty";
@@ -205,11 +206,11 @@ function RestoredAttemptBlock({
         </p>
       ) : null}
       <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
-        <Button variant="secondary" onClick={onNewPurchase}>
+        <Button variant="secondary" className={scannerButtonStyles.controlButton} onClick={onNewPurchase}>
           Новая покупка
         </Button>
         {!orderConflict && !legacyBranchAttempt ? (
-          <Button disabled={submitting} onClick={onCheckResult}>
+          <Button className={scannerButtonStyles.controlButton} disabled={submitting} onClick={onCheckResult}>
             {submitting ? "Проверка…" : "Проверить результат"}
           </Button>
         ) : null}
@@ -1025,7 +1026,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           >
             Все операции по документу
           </Link>
-          <Button onClick={resetAll}>Новая покупка</Button>
+          <Button className={scannerButtonStyles.controlButton} onClick={resetAll}>
+            Новая покупка
+          </Button>
         </div>
       </div>
     );
@@ -1159,11 +1162,17 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
           {!showRestoredBlock ? (
             <div className={styles.actionsRow}>
-              <Button variant="secondary" disabled={submitting} onClick={startNewPurchase}>
+              <Button
+                variant="secondary"
+                className={scannerButtonStyles.controlButton}
+                disabled={submitting}
+                onClick={startNewPurchase}
+              >
                 Отмена
               </Button>
               <Button
                 ref={confirmPurchaseButtonRef}
+                className={scannerButtonStyles.controlButton}
                 disabled={
                   submitting ||
                   !totals ||
@@ -1240,7 +1249,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           {previewSession.preview.message}
         </p>
         <div style={{ marginTop: "var(--space-4)" }}>
-          <Button variant="secondary" onClick={resetAll}>
+          <Button variant="secondary" className={scannerButtonStyles.controlButton} onClick={resetAll}>
             Сканировать другой код
           </Button>
         </div>
@@ -1340,6 +1349,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             />
           </div>
           <Button
+            className={scannerButtonStyles.controlButton}
             disabled={previewLoading || branchContextBlocked || legacyBranchAttempt}
             onClick={() => void runPreview(manualCode)}
           >
@@ -1364,6 +1374,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           <div style={{ marginTop: "var(--space-3)" }}>
             <Button
               variant="secondary"
+              className={scannerButtonStyles.controlButton}
               onClick={() => {
                 invalidatePreviewRequest();
                 setPreviewLoading(false);
@@ -1384,6 +1395,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           {cameraError ? (
             <Button
               variant="secondary"
+              className={scannerButtonStyles.controlButton}
               onClick={() => {
                 setCameraError("");
                 setMode("manual");

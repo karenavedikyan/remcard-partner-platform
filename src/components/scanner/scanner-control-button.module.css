@@ -1,0 +1,14 @@
+/* Scanner-only disabled presentation; shared Button keeps opacity:0.55 globally. */
+button.controlButton:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--offset);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+button.controlButton:disabled:hover {
+  background: var(--offset);
+  color: var(--ink);
+}

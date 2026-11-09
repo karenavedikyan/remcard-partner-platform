@@ -554,4 +554,34 @@
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
-.rewardTerms:disabled { opacity: 0.65; }
+.rewardTerms:disabled {
+  opacity: 1;
+}
+
+.rewardTerms:disabled .rewardLabel,
+.rewardTerms:disabled .rewardCheck,
+.rewardTerms:disabled label {
+  color: var(--ink);
+  cursor: not-allowed;
+}
+
+.rewardTerms:disabled .meta {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.rewardTerms:disabled select:disabled,
+.rewardTerms:disabled input:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--offset);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.rewardTerms:disabled .rewardApply:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  color: var(--muted);
+  text-decoration: underline;
+}
