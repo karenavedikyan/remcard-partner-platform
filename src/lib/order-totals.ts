@@ -9,6 +9,14 @@ export type OrderTotals = {
   payableAmount: number;
 };
 
+/** Per-line client discount in whole rubles (must match server preview rounding). */
+export function lineDiscountRub(amount: number, discountPercent: number): number {
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(discountPercent)) {
+    return 0;
+  }
+  return Math.round((amount * discountPercent) / 100);
+}
+
 /**
  * Client-side preview of purchase totals. Server recalculates on POST /api/store/order.
  * Amounts are gross purchase sums in rubles (before discount), integer rounding per line.
@@ -31,7 +39,7 @@ export function computeOrderTotals(
       continue;
     }
     totalAmount += amount;
-    totalDiscount += Math.round((amount * category.discountPercent) / 100);
+    totalDiscount += lineDiscountRub(amount, category.discountPercent);
     totalIssuerBonus += Math.round((amount * category.issuerPercent) / 100);
   }
 

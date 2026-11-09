@@ -39,4 +39,20 @@ describe("order totals", () => {
     const result = validateOrderAmounts(categories, { doors: "" });
     assert.equal(result.ok, false);
   });
+
+  it("sums per-line rounded discounts in whole rubles (not kopeck arithmetic)", () => {
+    const multi = [
+      { category: "a", categoryLabel: "A", discountPercent: 10, issuerPercent: 0 },
+      { category: "b", categoryLabel: "B", discountPercent: 7, issuerPercent: 0 },
+      { category: "c", categoryLabel: "C", discountPercent: 10, issuerPercent: 0 },
+    ];
+    const totals = computeOrderTotals(multi, {
+      a: "10750",
+      b: "5750",
+      c: "906",
+    });
+    assert.equal(totals.totalAmount, 17406);
+    assert.equal(totals.totalDiscount, 1569);
+    assert.equal(totals.payableAmount, 15837);
+  });
 });

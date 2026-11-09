@@ -4,6 +4,7 @@ import { useId } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
   buildOrderItems,
+  lineDiscountRub,
   type CategoryAmountDraft,
   type OrderTotals,
 } from "@/lib/order-totals";
@@ -20,10 +21,6 @@ import { usePurchaseReviewDialogTrap } from "./usePurchaseReviewDialogTrap";
 
 function formatRub(value: number) {
   return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
-}
-
-function lineDiscount(amount: number, discountPercent: number) {
-  return Math.round((amount * discountPercent) / 100);
 }
 
 export type PurchaseReviewModalProps = {
@@ -102,7 +99,7 @@ export function PurchaseReviewModal({
             {items.map((item) => {
               const category = preview.availableCategories.find((c) => c.category === item.category);
               const discount = category
-                ? lineDiscount(item.amount, category.discountPercent)
+                ? lineDiscountRub(item.amount, category.discountPercent)
                 : 0;
               const draft = rewardDrafts[item.category] ?? defaultRewardDraft;
               const kindLabel = draft.kind === "SERVICE" ? "услуга" : "товар";

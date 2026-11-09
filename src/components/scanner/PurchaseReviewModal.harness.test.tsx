@@ -1,10 +1,14 @@
 /**
- * Lightweight layout harness for root visual review (jsdom, no backend).
+ * Lightweight layout harness for root visual review (jsdom only).
+ * Do not hit live `/api/store/order/preview` in browser checks: preview POST can
+ * mark expired certificates EXPIRED. Production manual QA = scanner shell only,
+ * no certificate search submit.
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PurchaseReviewModal } from "./PurchaseReviewModal";
 import { defaultRewardDraft } from "@/lib/reward-confirmation";
+import { computeOrderTotals } from "@/lib/order-totals";
 import type { OrderPreviewAllowed } from "@/lib/order-types";
 
 const preview: OrderPreviewAllowed = {
@@ -55,6 +59,47 @@ describe("PurchaseReviewModal visual harness", () => {
 
     expect(screen.getByTestId("purchase-review-due")).toHaveTextContent(/880/);
     expect(screen.getByTestId("purchase-review-body")).toHaveTextContent(/999/);
+  });
+
+  it("shows production integer-ruble totals (10750/5750/906 at 10/7/10%)", () => {
+    const categories = [
+      { category: "a", categoryLabel: "Кат. A", discountPercent: 10, issuerPercent: 0 },
+      { category: "b", categoryLabel: "Кат. B", discountPercent: 7, issuerPercent: 0 },
+      { category: "c", categoryLabel: "Кат. C", discountPercent: 10, issuerPercent: 0 },
+    ];
+    const amounts = { a: "10750", b: "5750", c: "906" };
+    const totals = computeOrderTotals(categories, amounts);
+    expect(totals.totalDiscount).toBe(1569);
+    expect(totals.payableAmount).toBe(15837);
+
+    render(
+      <PurchaseReviewModal
+        open
+        preview={{
+          ...preview,
+          availableCategories: categories,
+        }}
+        amountDrafts={amounts}
+        rewardDrafts={{
+          a: defaultRewardDraft,
+          b: defaultRewardDraft,
+          c: defaultRewardDraft,
+        }}
+        totals={totals}
+        branchLabel="Тестовый филиал"
+        submitting={false}
+        onClose={() => undefined}
+        onConfirm={() => undefined}
+      />,
+    );
+
+    const dialog = screen.getByTestId("purchase-review-dialog");
+    expect(screen.getByTestId("purchase-review-due")).toHaveTextContent("15 837");
+    expect(dialog).toHaveTextContent("17 406");
+    expect(dialog).toHaveTextContent("1 569");
+    expect(screen.getByTestId("purchase-review-body")).toHaveTextContent("1 075");
+    expect(screen.getByTestId("purchase-review-body")).toHaveTextContent("403");
+    expect(screen.getByTestId("purchase-review-body")).toHaveTextContent("91");
   });
 
   it("renders narrow mobile shell", () => {
