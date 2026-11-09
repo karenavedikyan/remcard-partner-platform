@@ -20,6 +20,7 @@ type Props = {
   fieldErrors?: Record<string, string>;
   organizationNameReadOnly?: boolean;
   copyMode?: PartnerTypeSetupCopyMode;
+  disabled?: boolean;
   onChange: (next: PartnerTypeSetupFormValue) => void;
 };
 
@@ -36,14 +37,17 @@ export function PartnerTypeSetupFields({
   fieldErrors,
   organizationNameReadOnly = false,
   copyMode = "switch",
+  disabled = false,
   onChange,
 }: Props) {
   const showOrg = targetKind === "store" || targetKind === "company";
   const showDirections = targetKind === "specialist" || showOrg;
 
   return (
-    <div
+    <fieldset
       className={styles.setupFields}
+      disabled={disabled}
+      aria-label="Данные профиля для выбранного типа"
       data-testid="partner-type-setup-fields"
       data-partner-type-setup-copy={copyMode}
     >
@@ -111,6 +115,7 @@ export function PartnerTypeSetupFields({
             businessTabbedPick={showOrg}
             omitLead
             omitNavigatorStagesAndPrimary
+            disabled={disabled}
             tileLayout={targetKind === "specialist"}
             onChangeProducts={(ids) => onChange({ ...value, productCategoryIds: ids })}
             onChangeServices={(ids) => onChange({ ...value, serviceSpecializationIds: ids })}
@@ -129,6 +134,6 @@ export function PartnerTypeSetupFields({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

@@ -157,6 +157,14 @@
 .setupFields {
   display: grid;
   gap: var(--space-4);
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.setupFields:disabled {
+  opacity: 1;
 }
 
 .setupLead {
@@ -254,11 +262,21 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .actions:has([data-partner-type-action="apply"]) > :global(.primary) {
+  .actions [data-partner-type-action="apply"] {
     grid-column: 1 / -1;
+    width: 100%;
+    white-space: nowrap;
   }
 
   .actions > :global(.btn) {
     min-width: 0;
   }
+}
+
+.setupApplyPrimary:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--offset);
+  color: var(--ink);
+  border: 1px solid var(--line);
 }

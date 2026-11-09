@@ -18,6 +18,7 @@ import {
   type PartnerTypeSetupFormValue,
 } from "./PartnerTypeSetupFields";
 import styles from "./PartnerTypeSettings.module.css";
+import { usePartnerTypeSettingsDialogTrap } from "./usePartnerTypeSettingsDialogTrap";
 
 type Step = "closed" | "unsaved" | "choose" | "setup";
 
@@ -107,7 +108,7 @@ export function PartnerTypeSettings({
     });
   }, [loadState, profile.user.id, profile.user.partnerType, profile.user.partnerActivities]);
 
-  const tryAutoRecovery = useCallback(() => {
+  useEffect(() => {
     if (!autoOpenSetupRecovery || autoRecoveryOpened.current) return;
     if (!state?.setupRecovery?.needed || !state.currentKind) return;
     autoRecoveryOpened.current = true;
@@ -115,26 +116,32 @@ export function PartnerTypeSettings({
       setStep("unsaved");
       return;
     }
-    const kind = state.currentKind;
-    const gen = ++flowGeneration.current;
-    void loadState(kind)
-      .then((data) => {
-        if (gen !== flowGeneration.current) return;
-        setSelected(kind);
-        setSetupForm(fromPrefill(data.setupRecovery?.prefill));
-        setAck(false);
-        setStep("setup");
-      })
-      .catch(() => {
-        if (gen === flowGeneration.current) {
-          setError("Не удалось открыть настройку профиля. Попробуйте ещё раз.");
-        }
-      });
-  }, [autoOpenSetupRecovery, state?.setupRecovery?.needed, state?.currentKind, hasUnsavedBasicsChanges, loadState]);
+    setSelected(state.currentKind);
+    setSetupForm(fromPrefill(state.setupRecovery.prefill));
+    setAck(false);
+    setStep("setup");
+  }, [
+    autoOpenSetupRecovery,
+    state?.setupRecovery?.needed,
+    state?.setupRecovery?.prefill,
+    state?.currentKind,
+    hasUnsavedBasicsChanges,
+  ]);
 
-  useEffect(() => {
-    tryAutoRecovery();
-  }, [tryAutoRecovery]);
+  const closeDialog = useCallback(() => {
+    flowGeneration.current += 1;
+    setStep("closed");
+    setAck(false);
+    setError("");
+    setFieldErrors({});
+    setPending(false);
+  }, []);
+
+  const dialogTrapRef = usePartnerTypeSettingsDialogTrap(
+    step !== "closed",
+    closeDialog,
+    pending,
+  );
 
   const currentKind = state?.currentKind ?? null;
   const profileKind = resolvePartnerKindUi({
@@ -154,15 +161,6 @@ export function PartnerTypeSettings({
 
   const organizationNameReadOnly =
     setupBundle?.organizationNameMutable === false && Boolean(setupForm.organizationName.trim());
-
-  function closeDialog() {
-    flowGeneration.current += 1;
-    setStep("closed");
-    setAck(false);
-    setError("");
-    setFieldErrors({});
-    setPending(false);
-  }
 
   function openFlow(target?: PartnerKindUi) {
     setSuccess("");
@@ -409,6 +407,7 @@ export function PartnerTypeSettings({
           }}
         >
           <div
+            ref={dialogTrapRef}
             className={`${dialogStyles.dialogPanel} ${step === "setup" ? styles.setupDialogPanel : ""}`}
             role="dialog"
             aria-modal="true"
@@ -538,6 +537,7 @@ export function PartnerTypeSettings({
                       fieldErrors={fieldErrors}
                       organizationNameReadOnly={organizationNameReadOnly}
                       copyMode={selected === currentKind ? "recovery" : "switch"}
+                      disabled={pending}
                       onChange={setSetupForm}
                     />
                     <p className={styles.optionDesc}>
@@ -556,6 +556,7 @@ export function PartnerTypeSettings({
                         type="checkbox"
                         data-partner-type-ack
                         checked={ack}
+                        disabled={pending}
                         onChange={(event) => setAck(event.target.checked)}
                       />
                       <span>
@@ -583,6 +584,7 @@ export function PartnerTypeSettings({
                       <Button
                         type="button"
                         variant="primary"
+                        className={styles.setupApplyPrimary}
                         data-partner-type-action="apply"
                         data-testid="partner-type-apply"
                         disabled={!ack || pending}

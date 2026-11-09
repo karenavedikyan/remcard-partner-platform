@@ -188,6 +188,54 @@ describe("PartnerTypeSettings", () => {
     ).toBe(false);
   });
 
+  it("disables setup fields while save is pending", async () => {
+    let resolvePost: (() => void) | undefined;
+    remcardFetch.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === "POST") {
+        return new Promise((resolve) => {
+          resolvePost = () => resolve({ ok: true });
+        });
+      }
+      if (url === "/api/pro/profile") return Promise.resolve(baseProfile);
+      return Promise.resolve(
+        switchState({
+          currentKind: "specialist",
+          setupRecovery: {
+            needed: true,
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Мастер",
+              city: "Краснодар",
+              serviceSpecializationIds: ["doors"],
+              productCategoryIds: [],
+              organizationName: "",
+            },
+          },
+        }),
+      );
+    });
+    render(
+      <PartnerTypeSettings
+        profile={{
+          ...baseProfile,
+          user: { ...baseProfile.user, partnerType: "MASTER", partnerActivities: ["SERVICE"] },
+        }}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        autoOpenSetupRecovery
+      />,
+    );
+    await screen.findByTestId("partner-type-setup");
+    fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
+    fireEvent.click(screen.getByTestId("partner-type-apply"));
+    const fieldset = screen.getByTestId("partner-type-setup-fields");
+    expect(fieldset).toBeDisabled();
+    resolvePost?.();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
   it("POST includes setupRevision and agent payload without directions", async () => {
     remcardFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
       if (url.includes("target=specialist")) {
