@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { RewardConfirmationFields } from "./RewardConfirmationFields";
 import { PurchaseReviewModal } from "./PurchaseReviewModal";
+import { ScannerReferringPartnerBlock } from "./ScannerReferringPartnerBlock";
 import { PartnerClientCertificateCard } from "@/components/recommendations/PartnerClientCertificateCard";
 import { buildStoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
@@ -1064,6 +1065,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             {clientCertificateModel ? (
               <PartnerClientCertificateCard model={clientCertificateModel} />
             ) : null}
+            <ScannerReferringPartnerBlock referringPartner={preview.referringPartner} />
             <details className={styles.issuerDetails}>
               <summary>Эмитент и где принимается документ</summary>
               <div className={styles.issuerDetailsBody}>

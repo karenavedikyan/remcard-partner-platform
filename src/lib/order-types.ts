@@ -5,6 +5,22 @@ export type PreviewCategory = {
   issuerPercent: number;
 };
 
+/** Creator/recommender (certificate proUser), not issuer org or redeeming store. */
+export type OrderPreviewReferringPartnerContact = {
+  kind: string;
+  label: string;
+  value: string;
+  href: string;
+};
+
+export type OrderPreviewReferringPartner = {
+  partnerType: string | null;
+  typeLabel: string;
+  displayName: string;
+  city: string | null;
+  contacts: OrderPreviewReferringPartnerContact[];
+};
+
 export type OrderPreviewAllowed = {
   allowed: true;
   certificate: {
@@ -28,6 +44,8 @@ export type OrderPreviewAllowed = {
     isSelfScan: boolean;
   };
   availableCategories: PreviewCategory[];
+  /** Present on newer backend; absent on older deployments. */
+  referringPartner?: OrderPreviewReferringPartner | null;
 };
 
 export type OrderPreviewDenied = {

@@ -10,44 +10,13 @@ Prototype reference: `remcard-navigator` `b9844c0f` (presentation only; not mone
 - Review modal receives the same `OrderTotals` object as the form; line rows use `lineDiscountRub` (shared helper).
 - Regression: amounts `10750` / `5750` / `906` at `10%` / `7%` / `10%` → discount **1569**, due **15837** (not kopeck-style 1568.10 / 15837.90).
 
-## Referring partner (gap — no UI in this delta)
+## Referring partner
 
-**Present in `OrderPreviewAllowed` today**
+**Frontend:** `ScannerReferringPartnerBlock` + optional `referringPartner` on `OrderPreviewAllowed`. Tolerates missing field (old backend). Shows unavailable copy when null/omitted — does not conflate issuer org, receiving store, or client alias.
 
-| Field | Meaning |
-|-------|---------|
-| `certificate.issuer.{label,name}` | Issuing organization (PROF/store/company snapshot) |
-| `partner.storeName` | **Recipient** store executing the purchase |
-| `certificate.partnerCards[]` | Where the document is accepted (publicName, city, categories) |
-| `certificate.userAlias` | Client display alias when provided (not a partner referrer) |
+**Backend (separate repo/branch):** `karenavedikyan/remcard-navigator` branch `handoff/scanner-referrer-preview-20261109`, SHA `0b42cd21` (parent `985cd487`). Adds `referringPartner` from `Certificate.proUserId` via `buildPublicPartnerProfile` filters only; public certificate/OG unchanged.
 
-**Not present:** referring person's type, public name, or contact (the prototype «реферер» block).
-
-**Existing authorized contracts checked (frontend types only):**
-
-- `OrderPreviewAllowed` / store order preview response — no referrer fields.
-- `StoreCertificate`, `PublicCertificatePayload`, certificate list/detail types — no store-scanner referrer snapshot.
-- `AvailablePartnersResponse.isAgentRecommender` applies to **certificate creation** partner picker, not order preview.
-
-**No safe reuse without backend:** pulling profile/phone/email via extra account APIs is out of scope for this frontend-only handoff.
-
-### Proposed minimal extension (separate backend review)
-
-Add optional read-only snapshot on **`OrderPreviewAllowed` only**, populated server-side from data already on the certificate row (no new client identity fetches):
-
-```ts
-referringPartner?: {
-  kind: "AGENT" | "SPECIALIST" | "STORE"; // or existing issuer-kind enum
-  displayName: string; // publicName / storeName already shown elsewhere in product
-  contactLine?: string | null; // only if already public in certificate context (e.g. city line), never private phone/email by default
-} | null;
-```
-
-Rules:
-
-- Do **not** map `issuer` → referrer or `partner` → referrer.
-- Omit block entirely when snapshot is null (current production behaviour).
-- Frontend can add a labelled «Рекомендовал» section only after this field exists.
+Deploy order: backend first, then frontend handoff branch.
 
 ## Root browser / production QA
 

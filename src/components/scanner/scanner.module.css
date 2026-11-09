@@ -337,6 +337,68 @@
   min-width: 0;
 }
 
+.referrerBlock {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--surface);
+}
+
+.referrerHeading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.referrerBody {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.referrerLead {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.referrerType {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.referrerName {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.referrerCity {
+  color: var(--muted);
+}
+
+.referrerContacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.referrerContactLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  word-break: break-word;
+}
+
 .issuerDetails {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
