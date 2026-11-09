@@ -40,6 +40,8 @@ type ProfileDirectionsPickerProps = {
   leadText?: string;
   /** Business working profile: navigator note after «Уже выбрано», before tabs. */
   afterSelectionNote?: string;
+  /** Partner type setup: products/services only; do not show stages/primary editors. */
+  omitNavigatorStagesAndPrimary?: boolean;
   onChangeProducts: (ids: string[]) => void;
   onChangeServices: (ids: string[]) => void;
   onChangeStages: (ids: string[]) => void;
@@ -97,6 +99,7 @@ export function ProfileDirectionsPicker({
   businessTabbedPick = false,
   leadText,
   afterSelectionNote,
+  omitNavigatorStagesAndPrimary = false,
   onChangeProducts,
   onChangeServices,
   onChangeStages,
@@ -559,7 +562,8 @@ export function ProfileDirectionsPicker({
 
       {(() => {
         const catalogStagesVisible =
-          specialistMode || (!catalogMode ? true : Boolean(businessTabbedPick));
+          !omitNavigatorStagesAndPrimary &&
+          (specialistMode || (!catalogMode ? true : Boolean(businessTabbedPick)));
         const stageBlock = catalogStagesVisible ? (
           <fieldset
             className={tileLayout ? styles.tileFieldset : styles.group}
@@ -597,7 +601,7 @@ export function ProfileDirectionsPicker({
         ) : null;
 
         const primaryBlock =
-          !catalogMode && primaryOptions.length > 0 ? (
+          !omitNavigatorStagesAndPrimary && !catalogMode && primaryOptions.length > 0 ? (
             <label className={styles.primary}>
               <span>Основное направление</span>
               <select
@@ -664,11 +668,13 @@ export function ProfileDirectionsPicker({
             scopeKey={`${taxonomyProposalScope}-category`}
             disabled={disabled}
           />
-          <TaxonomyProposalSection
-            kind="STAGE"
-            scopeKey={`${taxonomyProposalScope}-stage`}
-            disabled={disabled}
-          />
+          {!omitNavigatorStagesAndPrimary ? (
+            <TaxonomyProposalSection
+              kind="STAGE"
+              scopeKey={`${taxonomyProposalScope}-stage`}
+              disabled={disabled}
+            />
+          ) : null}
         </>
       ) : null}
     </div>

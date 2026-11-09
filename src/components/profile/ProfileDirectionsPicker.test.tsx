@@ -21,6 +21,27 @@ describe("ProfileDirectionsPicker", () => {
     }
   });
 
+  it("hides stage and primary editors when omitNavigatorStagesAndPrimary", async () => {
+    render(
+      <ProfileDirectionsPicker
+        productCategoryIds={[]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        specialistMode
+        tileLayout
+        omitNavigatorStagesAndPrimary
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText("Монтаж дверей")).toBeInTheDocument());
+    expect(screen.queryByText(/На каких этапах вы полезны/i)).toBeNull();
+    expect(screen.queryByLabelText(/Основное направление/i)).toBeNull();
+  });
+
   it("keeps Russian labels on chips when filter hides options", async () => {
     const onProducts = vi.fn();
     render(

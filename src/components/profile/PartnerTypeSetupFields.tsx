@@ -12,12 +12,22 @@ export type PartnerTypeSetupFormValue = {
   organizationName: string;
 };
 
+export type PartnerTypeSetupCopyMode = "switch" | "recovery";
+
 type Props = {
   targetKind: PartnerKindUi;
   value: PartnerTypeSetupFormValue;
   fieldErrors?: Record<string, string>;
   organizationNameReadOnly?: boolean;
+  copyMode?: PartnerTypeSetupCopyMode;
   onChange: (next: PartnerTypeSetupFormValue) => void;
+};
+
+const SETUP_LEAD: Record<PartnerTypeSetupCopyMode, string> = {
+  recovery:
+    "Проверьте данные профиля для текущего типа. Можно отредактировать — сохраним после подтверждения.",
+  switch:
+    "Проверьте данные нового профиля. Можно отредактировать — сохраним вместе со сменой типа.",
 };
 
 export function PartnerTypeSetupFields({
@@ -25,16 +35,19 @@ export function PartnerTypeSetupFields({
   value,
   fieldErrors,
   organizationNameReadOnly = false,
+  copyMode = "switch",
   onChange,
 }: Props) {
   const showOrg = targetKind === "store" || targetKind === "company";
   const showDirections = targetKind === "specialist" || showOrg;
 
   return (
-    <div className={styles.setupFields} data-testid="partner-type-setup-fields">
-      <p className={styles.setupLead}>
-        Проверьте данные нового профиля. Можно отредактировать — сохраним вместе со сменой типа.
-      </p>
+    <div
+      className={styles.setupFields}
+      data-testid="partner-type-setup-fields"
+      data-partner-type-setup-copy={copyMode}
+    >
+      <p className={styles.setupLead}>{SETUP_LEAD[copyMode]}</p>
       <label className={styles.setupField}>
         <span>{showOrg ? "Имя представителя" : "Публичное имя"}</span>
         <input
@@ -95,6 +108,7 @@ export function PartnerTypeSetupFields({
             specialistMode={targetKind === "specialist"}
             businessTabbedPick={showOrg}
             omitLead
+            omitNavigatorStagesAndPrimary
             tileLayout={targetKind === "specialist"}
             onChangeProducts={(ids) => onChange({ ...value, productCategoryIds: ids })}
             onChangeServices={(ids) => onChange({ ...value, serviceSpecializationIds: ids })}

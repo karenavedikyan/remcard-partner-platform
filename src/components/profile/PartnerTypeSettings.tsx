@@ -430,7 +430,9 @@ export function PartnerTypeSettings({
                 ? "Сначала сохраните изменения"
                 : step === "choose"
                   ? "Сменить тип партнёрства"
-                  : "Проверьте данные нового профиля"}
+                  : selected && currentKind && selected === currentKind
+                    ? "Проверьте данные профиля"
+                    : "Проверьте данные нового профиля"}
             </h2>
             <div className={`${dialogStyles.dialogBody} ${styles.dialogBody}`}>
               {step === "unsaved" ? (
@@ -522,6 +524,7 @@ export function PartnerTypeSettings({
                     value={setupForm}
                     fieldErrors={fieldErrors}
                     organizationNameReadOnly={organizationNameReadOnly}
+                    copyMode={selected === currentKind ? "recovery" : "switch"}
                     onChange={setSetupForm}
                   />
                   <p className={styles.optionDesc}>
