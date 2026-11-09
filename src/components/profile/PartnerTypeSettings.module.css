@@ -191,7 +191,55 @@
   min-width: 0;
 }
 
+.setupDialogPanel {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, calc(100vw - 2rem));
+  max-height: min(calc(100dvh - 2rem), 56rem);
+  min-height: min(12rem, 50dvh);
+  padding: 0;
+  overflow: hidden;
+}
+
+.setupDialogPanel :global(.dialogTitle),
+.setupDialogTitle {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  font-size: 1.125rem;
+}
+
+.setupDialogShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.setupDialogScroll {
+  display: grid;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--space-5) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.setupDialogFooter {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--space-3) var(--space-5) var(--space-5);
+}
+
 @media (max-width: 680px) {
+  .setupDialogPanel {
+    width: calc(100vw - 2rem);
+    max-height: calc(100dvh - 2rem);
+  }
+
   .settings {
     flex-direction: column;
     gap: var(--space-4);

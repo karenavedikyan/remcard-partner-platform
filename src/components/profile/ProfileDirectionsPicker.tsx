@@ -177,7 +177,9 @@ export function ProfileDirectionsPicker({
 
   const selectedChips = useMemo(() => {
     const chips: { key: string; label: string; remove: () => void }[] = [];
+    const showProductChips = !omitNavigatorStagesAndPrimary || !specialistMode;
     for (const id of productCategoryIds) {
+      if (!showProductChips) continue;
       chips.push({
         key: `p-${id}`,
         label: labelByKey.get(`product:${id}`) ?? `Товар: ${id}`,
@@ -200,6 +202,7 @@ export function ProfileDirectionsPicker({
       });
     }
     for (const id of navigatorStageIds) {
+      if (omitNavigatorStagesAndPrimary) continue;
       chips.push({
         key: `st-${id}`,
         label: labelByKey.get(`stage:${id}`) ?? `Этап: ${id}`,
@@ -210,11 +213,13 @@ export function ProfileDirectionsPicker({
   }, [
     labelByKey,
     navigatorStageIds,
+    omitNavigatorStagesAndPrimary,
     onChangeProducts,
     onChangeServices,
     onChangeStages,
     productCategoryIds,
     serviceSpecializationIds,
+    specialistMode,
     removePrimaryIfNeeded,
   ]);
 

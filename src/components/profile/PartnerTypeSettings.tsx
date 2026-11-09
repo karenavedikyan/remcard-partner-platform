@@ -413,7 +413,7 @@ export function PartnerTypeSettings({
           }}
         >
           <div
-            className={dialogStyles.dialogPanel}
+            className={`${dialogStyles.dialogPanel} ${step === "setup" ? styles.setupDialogPanel : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -425,7 +425,14 @@ export function PartnerTypeSettings({
                   : "partner-type-setup"
             }
           >
-            <h2 className={dialogStyles.dialogTitle} id={titleId}>
+            <h2
+              className={
+                step === "setup"
+                  ? styles.setupDialogTitle
+                  : dialogStyles.dialogTitle
+              }
+              id={titleId}
+            >
               {step === "unsaved"
                 ? "Сначала сохраните изменения"
                 : step === "choose"
@@ -434,7 +441,13 @@ export function PartnerTypeSettings({
                     ? "Проверьте данные профиля"
                     : "Проверьте данные нового профиля"}
             </h2>
-            <div className={`${dialogStyles.dialogBody} ${styles.dialogBody}`}>
+            <div
+              className={
+                step === "setup"
+                  ? styles.setupDialogShell
+                  : `${dialogStyles.dialogBody} ${styles.dialogBody}`
+              }
+            >
               {step === "unsaved" ? (
                 <>
                   <p>
@@ -505,33 +518,43 @@ export function PartnerTypeSettings({
 
               {step === "setup" && selected && currentKind ? (
                 <>
-                  {selected !== currentKind ? (
-                    <p className={styles.transition}>
-                      {PARTNER_KIND_UI_LABELS[currentKind]}{" "}
-                      <span aria-hidden="true">→</span> {targetLabel}
+                  <div
+                    className={styles.setupDialogScroll}
+                    data-testid="partner-type-setup-scroll"
+                  >
+                    {selected !== currentKind ? (
+                      <p className={styles.transition}>
+                        {PARTNER_KIND_UI_LABELS[currentKind]}{" "}
+                        <span aria-hidden="true">→</span> {targetLabel}
+                      </p>
+                    ) : (
+                      <p className={styles.transition}>Текущий тип: {targetLabel}</p>
+                    )}
+                    {preview ? (
+                      <section>
+                        <h3>Что изменится</h3>
+                        <p>{preview.changes}</p>
+                      </section>
+                    ) : null}
+                    <PartnerTypeSetupFields
+                      targetKind={selected}
+                      value={setupForm}
+                      fieldErrors={fieldErrors}
+                      organizationNameReadOnly={organizationNameReadOnly}
+                      copyMode={selected === currentKind ? "recovery" : "switch"}
+                      onChange={setSetupForm}
+                    />
+                    <p className={styles.optionDesc}>
+                      Каталог, реквизиты и права сотрудников не меняются автоматически — только
+                      подтверждённые поля.
                     </p>
-                  ) : (
-                    <p className={styles.transition}>Текущий тип: {targetLabel}</p>
-                  )}
-                  {preview ? (
-                    <section>
-                      <h3>Что изменится</h3>
-                      <p>{preview.changes}</p>
-                    </section>
-                  ) : null}
-                  <PartnerTypeSetupFields
-                    targetKind={selected}
-                    value={setupForm}
-                    fieldErrors={fieldErrors}
-                    organizationNameReadOnly={organizationNameReadOnly}
-                    copyMode={selected === currentKind ? "recovery" : "switch"}
-                    onChange={setSetupForm}
-                  />
-                  <p className={styles.optionDesc}>
-                    Каталог, реквизиты и права сотрудников не меняются автоматически — только
-                    подтверждённые поля.
-                  </p>
-                  <div className={styles.footer}>
+                    {error ? (
+                      <p className={styles.error} role="alert">
+                        {error}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className={`${styles.footer} ${styles.setupDialogFooter}`}>
                     <label className={styles.ack}>
                       <input
                         type="checkbox"
@@ -577,11 +600,6 @@ export function PartnerTypeSettings({
                       </Button>
                     </div>
                   </div>
-                  {error ? (
-                    <p className={styles.error} role="alert">
-                      {error}
-                    </p>
-                  ) : null}
                 </>
               ) : null}
             </div>

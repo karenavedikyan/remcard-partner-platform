@@ -41,6 +41,22 @@ describe("PartnerTypeSetupFields", () => {
     expect(screen.queryByLabelText(/Основное направление/i)).toBeNull();
   });
 
+  it("does not show removable product chips for specialist with saved products", async () => {
+    render(
+      <PartnerTypeSetupFields
+        targetKind="specialist"
+        value={{
+          ...baseValue,
+          productCategoryIds: ["doors"],
+        }}
+        onChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText("Двери")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Товар:/i })).toBeNull();
+    expect(screen.queryByText(/Товар: /)).toBeNull();
+  });
+
   it("updates services when a specialization is toggled", async () => {
     const onChange = vi.fn();
     render(

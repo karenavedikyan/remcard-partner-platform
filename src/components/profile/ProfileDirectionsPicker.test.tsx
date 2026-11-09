@@ -21,6 +21,26 @@ describe("ProfileDirectionsPicker", () => {
     }
   });
 
+  it("hides product chips in specialist setup pick mode", async () => {
+    render(
+      <ProfileDirectionsPicker
+        productCategoryIds={["doors"]}
+        serviceSpecializationIds={[]}
+        navigatorStageIds={[]}
+        primaryDirection={null}
+        specialistMode
+        tileLayout
+        omitNavigatorStagesAndPrimary
+        onChangeProducts={vi.fn()}
+        onChangeServices={vi.fn()}
+        onChangeStages={vi.fn()}
+        onChangePrimary={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText("Монтаж дверей")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Товар:/i })).toBeNull();
+  });
+
   it("hides stage and primary editors when omitNavigatorStagesAndPrimary", async () => {
     render(
       <ProfileDirectionsPicker

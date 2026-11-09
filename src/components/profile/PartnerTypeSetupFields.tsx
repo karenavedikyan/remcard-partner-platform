@@ -101,7 +101,9 @@ export function PartnerTypeSetupFields({
       {showDirections ? (
         <div className={styles.setupPicker}>
           <ProfileDirectionsPicker
-            productCategoryIds={value.productCategoryIds}
+            productCategoryIds={
+              targetKind === "specialist" ? [] : value.productCategoryIds
+            }
             serviceSpecializationIds={value.serviceSpecializationIds}
             navigatorStageIds={[]}
             primaryDirection={null}

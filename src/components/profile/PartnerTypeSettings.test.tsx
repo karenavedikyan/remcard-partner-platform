@@ -178,6 +178,8 @@ describe("PartnerTypeSettings", () => {
     );
     fireEvent.click(document.querySelector('[data-partner-type-action="setup"]')!);
     await screen.findByTestId("partner-type-setup-fields");
+    expect(screen.getByTestId("partner-type-setup-scroll")).toBeInTheDocument();
+    expect(screen.getByTestId("partner-type-apply")).toBeInTheDocument();
     expect(screen.getByTestId("partner-type-setup-publicName")).toHaveValue("Агент");
     fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
     fireEvent.click(screen.getByTestId("partner-type-apply"));
