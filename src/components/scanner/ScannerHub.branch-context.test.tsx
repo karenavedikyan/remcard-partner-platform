@@ -93,6 +93,8 @@ describe("ScannerHub branch operation context", () => {
     await user.click(screen.getByRole("button", { name: /найти/i }));
     await screen.findByText(/оформление покупки/i);
     expect(calls.some((u) => u.includes("branchId=br_krd_rostov"))).toBe(true);
+    expect(screen.getByTestId("scanner-confirmation-branch")).toHaveTextContent(/филиал операции/i);
+    expect(screen.getByTestId("scanner-confirmation-branch")).toHaveTextContent(/ростов/i);
   });
 
   it("sends the same branchId query on preview and order after operating branch change", async () => {

@@ -921,6 +921,11 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   if (previewSession && allowedPreview) {
     const { code } = previewSession;
     const preview = allowedPreview;
+    const confirmationBranchLabel =
+      operationBranchLabelFromResolution(
+        previewSession.branchId ?? orderBranchIdForRequest,
+        branchResolution,
+      ) ?? activeOperationBranchLabel;
     return (
       <div>
         {showRestoredBlock ? (
@@ -934,6 +939,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             onNewPurchase={startNewPurchase}
             onCheckResult={() => void checkStoredAttempt()}
           />
+        ) : null}
+
+        {branchResolution.kind === "ready" && confirmationBranchLabel ? (
+          <p className={styles.branchConfirmLabel} data-testid="scanner-confirmation-branch">
+            Филиал операции: {confirmationBranchLabel}
+          </p>
         ) : null}
 
         <div className={`${styles.card} ${styles.cardDark}`}>

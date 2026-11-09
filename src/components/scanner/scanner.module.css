@@ -115,6 +115,14 @@
   color: var(--ink);
 }
 
+.branchConfirmLabel {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
 .branchSelect {
   box-sizing: border-box;
   min-height: 44px;
