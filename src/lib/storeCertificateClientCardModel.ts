@@ -75,13 +75,9 @@ function resolveHeadlineDiscount(cert: StoreCertificate): number | null {
 function pctText(cert: StoreCertificate): string {
   const headline = resolveHeadlineDiscount(cert);
   if (headline == null) return "—";
-  const fromCert = cert.discountPercent;
-  if (fromCert != null && Number.isFinite(fromCert) && fromCert >= 0) {
-    return `−${headline} %`;
-  }
   const partnerPcts = partnerDiscountPercents(cert);
   const minPct = partnerPcts.length ? Math.min(...partnerPcts) : headline;
-  if (!partnerPcts.length || minPct === headline) {
+  if (!(cert.partners ?? []).length || minPct === headline) {
     return `−${headline} %`;
   }
   return `до −${headline} %`;

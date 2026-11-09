@@ -788,6 +788,14 @@
   min-height: 44px;
 }
 
+.specialistCertActionRow :global(button:disabled) {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
 @media (max-width: 650px) {
   .specialistCertCard {
     padding: 18px 12px;
@@ -797,6 +805,16 @@
 .specialistCertDetails summary {
   cursor: pointer;
   font-weight: 600;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding-block: 12px;
+  padding-inline: 2px 0;
+}
+
+.specialistCertDetails summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .specialistCertDetails ul {

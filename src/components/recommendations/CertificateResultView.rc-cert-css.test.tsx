@@ -101,6 +101,37 @@ describe("CertificateResultView partner chrome (theme-aware management)", () => 
     expect(block(wrapCss, "specialistCertPublicLink", ":focus-visible")).toMatch(/outline/);
     expect(block(wrapCss, "specialistCertPublicLink")).toMatch(/min-height:\s*44px/);
   });
+
+  it.each(["light", "dark"] as const)(
+    "disabled action buttons meet 4.5 contrast on surface in %s theme",
+    (theme) => {
+      const disabledRule =
+        wrapCss.match(/\.specialistCertActionRow :global\(button:disabled\)\s*\{[^}]+\}/s)?.[0] ?? "";
+      expect(disabledRule).toMatch(/opacity:\s*1/);
+      expect(disabledRule).toMatch(/background:\s*var\(--surface\)/);
+      expect(disabledRule).toMatch(/color:\s*var\(--muted\)/);
+      const tokens = parseThemeTokens(theme);
+      const muted = resolveCssColor("var(--muted)", tokens);
+      const surface = resolveCssColor("var(--surface)", tokens);
+      assertMinContrast(`disabled action ${theme}`, muted, surface);
+    },
+  );
+
+  it("details summary keeps 44px touch target and >=3:1 focus ring", () => {
+    const summaryRule = block(wrapCss, "specialistCertDetails summary");
+    expect(summaryRule).toMatch(/min-height:\s*44px/);
+    expect(summaryRule).toMatch(/box-sizing:\s*border-box/);
+    expect(summaryRule).not.toMatch(/display:\s*flex/);
+    expect(block(wrapCss, "specialistCertDetails summary", ":focus-visible")).toMatch(
+      /outline:\s*3px solid var\(--primary\)/,
+    );
+    for (const theme of ["light", "dark"] as const) {
+      const tokens = parseThemeTokens(theme);
+      const primary = resolveCssColor("var(--primary)", tokens);
+      const bg = resolveCssColor("var(--offset)", tokens);
+      assertMinContrast(`details summary focus ${theme}`, primary, bg, 3);
+    }
+  });
 });
 
 function assertMinContrast(label: string, fg: string, bg: string, min = 4.5): void {

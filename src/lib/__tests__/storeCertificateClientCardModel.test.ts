@@ -103,11 +103,41 @@ describe("storeCertificateClientCardModel", () => {
 
   it("shows explicit zero discount on certificate", () => {
     const model = buildStoreCertificateClientCardModel(
-      { ...base, discountPercent: 0 },
+      {
+        ...base,
+        discountPercent: 0,
+        partners: [
+          {
+            ...base.partners![0]!,
+            categories: [{ category: "wholesale", categoryLabel: "ОПТ", discountPercent: 0 }],
+          },
+        ],
+      },
       "RC-X",
       "https://x/c/qr",
     );
     expect(model.pctTextValue).toBe("−0 %");
+  });
+
+  it("shows range when cert 10 with category discounts 5 and 10", () => {
+    const model = buildStoreCertificateClientCardModel(
+      {
+        ...base,
+        discountPercent: 10,
+        partners: [
+          {
+            ...base.partners![0]!,
+            categories: [
+              { category: "a", categoryLabel: "A", discountPercent: 5 },
+              { category: "b", categoryLabel: "B", discountPercent: 10 },
+            ],
+          },
+        ],
+      },
+      "RC-X",
+      "https://x/c/qr",
+    );
+    expect(model.pctTextValue).toBe("до −10 %");
   });
 
   it("shows range when category discounts include 0 and 10", () => {
