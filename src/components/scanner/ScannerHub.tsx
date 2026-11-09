@@ -8,6 +8,7 @@ import { useCabinetPresentation } from "@/components/layout/CabinetPresentationC
 import {
   resolveScannerBranchContext,
   SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE,
+  scannerShowsOperationBranchControl,
   type ScannerBranchResolution,
   isStorePurchaseBranchScoped,
 } from "@/lib/scanner-branch-context";
@@ -250,9 +251,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const orderBranchIdForRequest = useMemo(() => {
     if (branchResolution.kind === "not_required") return undefined;
-    if (branchResolution.kind === "ready") return branchResolution.branchId;
-    if (branchResolution.kind === "pick") {
-      return operationBranchId.trim() || undefined;
+    if (branchResolution.kind === "ready") {
+      return operationBranchId.trim() || branchResolution.branchId;
     }
     return undefined;
   }, [branchResolution, operationBranchId]);
@@ -277,9 +277,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     previewAbortRef.current = null;
   }, []);
 
-  const branchPickRequired =
-    branchResolution.kind === "pick" && !orderBranchIdForRequest;
   const branchContextBlocked = branchResolution.kind === "blocked";
+  const showOperationBranchControl = scannerShowsOperationBranchControl(branchResolution);
   const legacyBranchAttempt =
     isStorePurchaseBranchScoped(presentation?.proContext ?? null) &&
     storedAttempt != null &&
@@ -468,17 +467,22 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         return;
       }
 
-      if (branchContextBlocked || branchPickRequired || legacyBranchAttempt) {
+      if (branchContextBlocked || legacyBranchAttempt) {
         if (!options?.optional) {
           setPreviewError(
             branchContextBlocked
               ? branchResolution.kind === "blocked"
                 ? branchResolution.message
-                : "Выберите филиал для операции"
-              : branchPickRequired
-                ? "Выберите филиал для операции"
-                : SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE,
+                : "Недоступен филиал для операции"
+              : SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE,
           );
+        }
+        return;
+      }
+
+      if (branchResolution.kind === "ready" && !orderBranchIdForRequest) {
+        if (!options?.optional) {
+          setPreviewError("Недоступен филиал для операции");
         }
         return;
       }
@@ -586,7 +590,6 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     [
       previewLoading,
       branchContextBlocked,
-      branchPickRequired,
       legacyBranchAttempt,
       branchResolution,
       orderBranchIdForRequest,
@@ -932,7 +935,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             {SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE}
           </div>
         ) : null}
-        {branchResolution.kind === "pick" ? (
+        {showOperationBranchControl && branchResolution.kind === "ready" ? (
           <ScannerBranchOperationField
             options={branchResolution.options}
             value={operationBranchId}
@@ -940,10 +943,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             onChange={handleOperationBranchChange}
           />
         ) : null}
-        {branchResolution.kind === "ready" ? (
+        {branchResolution.kind === "ready" && !showOperationBranchControl ? (
           <p className={styles.meta} style={{ marginBottom: "var(--space-4)" }}>
-            Филиал для операции:{" "}
-            {branchResolution.options.find((o) => o.id === branchResolution.branchId)?.label ??
+            Филиал операции:{" "}
+            {branchResolution.options.find((o) => o.id === operationBranchId)?.label ??
               branchResolution.branchId}
           </p>
         ) : null}
@@ -1005,9 +1008,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             />
           </div>
           <Button
-            disabled={
-              previewLoading || branchContextBlocked || branchPickRequired || legacyBranchAttempt
-            }
+            disabled={previewLoading || branchContextBlocked || legacyBranchAttempt}
             onClick={() => void runPreview(manualCode)}
           >
             {previewLoading ? "Проверка…" : "Найти"}

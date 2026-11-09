@@ -33,15 +33,31 @@ function sixBranchEmployeeContext(): ProContextSnapshot {
 }
 
 describe("scanner-branch-context", () => {
-  it("requires explicit pick for six accessible branches", () => {
+  it("defaults operating branch to active accessible branch for multi-branch staff", () => {
     const resolution = resolveScannerBranchContext({
       contextReady: true,
       proContext: sixBranchEmployeeContext(),
     });
-    expect(resolution.kind).toBe("pick");
-    if (resolution.kind === "pick") {
+    expect(resolution).toMatchObject({
+      kind: "ready",
+      branchId: "br_krd_rostov",
+      explicitChoice: false,
+    });
+    if (resolution.kind === "ready") {
       expect(resolution.options).toHaveLength(5);
     }
+  });
+
+  it("falls back to first permitted branch when active branch is not eligible", () => {
+    const ctx = sixBranchEmployeeContext();
+    const resolution = resolveScannerBranchContext({
+      contextReady: true,
+      proContext: {
+        ...ctx,
+        activeBranch: { id: "br_krd_rossiyskaya", name: "Российская", city: "Краснодар" },
+      },
+    });
+    expect(resolution).toMatchObject({ kind: "ready", branchId: "br_krd_rostov" });
   });
 
   it("auto-resolves single accessible branch", () => {

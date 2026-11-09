@@ -14,7 +14,7 @@ export function ScannerBranchOperationField({ options, value, disabled, onChange
   return (
     <div className={styles.branchField}>
       <label className={styles.branchLabel} htmlFor="scanner-operation-branch">
-        Филиал для операции
+        Филиал операции
       </label>
       <select
         id="scanner-operation-branch"
@@ -23,7 +23,6 @@ export function ScannerBranchOperationField({ options, value, disabled, onChange
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       >
-        <option value="">Выберите филиал</option>
         {options.map((opt) => (
           <option key={opt.id} value={opt.id}>
             {opt.label}

@@ -77,7 +77,25 @@ describe("ScannerHub branch operation context", () => {
     vi.stubGlobal("crypto", { randomUUID: () => "00000000-0000-4000-8000-000000000001" });
   });
 
-  it("sends the same branchId query on preview and order after explicit pick", async () => {
+  it("sends default active branch on search without manual pick", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      calls.push(url);
+      if (url.includes("/preview")) {
+        return new Response(JSON.stringify(previewAllowed), { status: 200 });
+      }
+      return new Response("{}", { status: 404 });
+    });
+
+    const user = userEvent.setup();
+    renderWithContext(staffContextSix());
+    await user.type(screen.getByLabelText(/код или промокод/i), CERT);
+    await user.click(screen.getByRole("button", { name: /найти/i }));
+    await screen.findByText(/оформление покупки/i);
+    expect(calls.some((u) => u.includes("branchId=br_krd_rostov"))).toBe(true);
+  });
+
+  it("sends the same branchId query on preview and order after operating branch change", async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
@@ -99,7 +117,7 @@ describe("ScannerHub branch operation context", () => {
     const user = userEvent.setup();
     renderWithContext(staffContextSix());
 
-    await user.selectOptions(screen.getByLabelText(/филиал для операции/i), "br_krd_partizan");
+    await user.selectOptions(screen.getByLabelText(/филиал операции/i), "br_krd_partizan");
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
 

@@ -22,8 +22,13 @@ export type ScannerBranchOption = {
 export type ScannerBranchResolution =
   | { kind: "not_required" }
   | { kind: "blocked"; message: string }
-  | { kind: "ready"; branchId: string; options: ScannerBranchOption[]; explicitChoice: boolean }
-  | { kind: "pick"; options: ScannerBranchOption[] };
+  | {
+      kind: "ready";
+      branchId: string;
+      options: ScannerBranchOption[];
+      /** True when user picked a branch different from implicit default (telemetry only). */
+      explicitChoice: boolean;
+    };
 
 export function isStorePurchaseBranchScoped(proContext: ProContextSnapshot | null): boolean {
   if (!proContext?.role) return false;
@@ -78,16 +83,22 @@ export function resolveScannerBranchContext(input: {
     };
   }
 
-  if (options.length === 1) {
-    return {
-      kind: "ready",
-      branchId: options[0]!.id,
-      options,
-      explicitChoice: false,
-    };
-  }
+  const activeId = proContext.activeBranch?.id;
+  const defaultBranchId =
+    activeId && options.some((option) => option.id === activeId)
+      ? activeId
+      : options[0]!.id;
 
-  return { kind: "pick", options };
+  return {
+    kind: "ready",
+    branchId: defaultBranchId,
+    options,
+    explicitChoice: false,
+  };
+}
+
+export function scannerShowsOperationBranchControl(resolution: ScannerBranchResolution): boolean {
+  return resolution.kind === "ready" && resolution.options.length > 1;
 }
 
 export function appendStoreOrderBranchQuery(path: string, branchId: string | null | undefined): string {
