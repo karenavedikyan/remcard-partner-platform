@@ -16,6 +16,11 @@ describe("shouldApplyPreviewResponse", () => {
     controller.abort();
     assert.equal(shouldApplyPreviewResponse(2, 2, controller.signal), false);
   });
+
+  it("rejects responses when operating branch changed", () => {
+    assert.equal(shouldApplyPreviewResponse(2, 2, undefined, "br_a", "br_b"), false);
+    assert.equal(shouldApplyPreviewResponse(2, 2, undefined, "br_a", "br_a"), true);
+  });
 });
 
 describe("isPreviewSessionAllowed", () => {

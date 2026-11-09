@@ -110,3 +110,28 @@ export function appendStoreOrderBranchQuery(path: string, branchId: string | nul
 
 export const SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE =
   "Сохранённая попытка создана до выбора филиала. Откройте историю операций или начните новую покупку после выбора филиала.";
+
+export const SCANNER_CAPTURED_BRANCH_INACCESSIBLE_MESSAGE =
+  "Филиал сохранённой попытки недоступен для оформления. Обратитесь к руководителю или начните новую покупку.";
+
+export function isOperationBranchAccessible(
+  branchId: string | undefined | null,
+  proContext: ProContextSnapshot | null,
+): boolean {
+  const id = branchId?.trim();
+  if (!id) {
+    return false;
+  }
+  return scannerAccessibleOperationBranches(proContext).some((option) => option.id === id);
+}
+
+export function operationBranchLabelFromResolution(
+  branchId: string | undefined | null,
+  resolution: ScannerBranchResolution,
+): string | null {
+  const id = branchId?.trim();
+  if (!id || resolution.kind !== "ready") {
+    return null;
+  }
+  return resolution.options.find((option) => option.id === id)?.label ?? id;
+}
