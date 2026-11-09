@@ -26,6 +26,8 @@ export type StoreOrderAttemptRecord = {
   body: StoreOrderAttemptBody;
   status: StoreOrderAttemptStatus;
   orderId?: string;
+  /** Store branch for scoped staff; not part of POST body or fingerprint. */
+  branchId?: string;
 };
 
 export type CreateAttemptResult =
@@ -140,6 +142,7 @@ export function clearStoreOrderAttempt(): void {
 export function createStoreOrderAttempt(params: {
   userId: string;
   body: StoreOrderAttemptBody;
+  branchId?: string;
 }): CreateAttemptResult {
   const normalizedBody = normalizeStoreOrderAttemptBody(params.body);
   if (!normalizedBody.certificateCode || normalizedBody.items.length === 0) {
@@ -165,6 +168,7 @@ export function createStoreOrderAttempt(params: {
     idempotencyKey: generateStoreOrderIdempotencyKey(),
     body: normalizedBody,
     status: "in_flight",
+    ...(params.branchId?.trim() ? { branchId: params.branchId.trim() } : {}),
   };
 
   if (!saveStoreOrderAttempt(record)) {

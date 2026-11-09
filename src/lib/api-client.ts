@@ -47,7 +47,18 @@ type FetchOptions = {
   idempotencyKey?: string;
   /** Logout mutations require CSRF (ACCOUNT-EXIT). */
   requireCsrf?: boolean;
+  /** Query string for store order branch scoping (?branchId=). */
+  searchParams?: Record<string, string>;
 };
+
+function pathWithSearch(path: string, searchParams?: Record<string, string>): string {
+  if (!searchParams || Object.keys(searchParams).length === 0) {
+    return path;
+  }
+  const qs = new URLSearchParams(searchParams);
+  const joiner = path.includes("?") ? "&" : "?";
+  return `${path}${joiner}${qs.toString()}`;
+}
 
 export type RemcardFetchMeta = {
   idempotentReplayed: boolean;
@@ -116,10 +127,11 @@ export async function remcardFetchWithMeta<T>(
   options: FetchOptions = {},
 ): Promise<{ payload: T; meta: RemcardFetchMeta }> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const urlPath = pathWithSearch(normalizedPath, options.searchParams);
 
   let response: Response;
   try {
-    response = await fetch(`/api/remcard${normalizedPath}`, {
+    response = await fetch(`/api/remcard${urlPath}`, {
       method: options.method ?? "GET",
       headers: await buildRemcardFetchHeaders(options),
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

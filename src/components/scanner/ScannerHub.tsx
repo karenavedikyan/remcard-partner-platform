@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { RewardConfirmationFields } from "./RewardConfirmationFields";
 import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import {
+  resolveScannerBranchContext,
+  SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE,
+  type ScannerBranchResolution,
+  isStorePurchaseBranchScoped,
+} from "@/lib/scanner-branch-context";
+import { ScannerBranchOperationField } from "./ScannerBranchOperationField";
 import { displayCategoryLabel, displayCategoryLabelFromStored } from "@/lib/category-display";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import { parseCertificateCode } from "@/lib/certificate-code";
@@ -140,6 +148,7 @@ function RestoredAttemptBlock({
   orderConflict,
   previewError,
   submitting,
+  legacyBranchAttempt,
   onNewPurchase,
   onCheckResult,
 }: {
@@ -147,6 +156,7 @@ function RestoredAttemptBlock({
   orderConflict: boolean;
   previewError: string;
   submitting: boolean;
+  legacyBranchAttempt?: boolean;
   onNewPurchase: () => void;
   onCheckResult: () => void;
 }) {
@@ -155,18 +165,23 @@ function RestoredAttemptBlock({
       <p className={styles.uncertainHeading}>Сохранённая попытка покупки</p>
       <p className={styles.meta}>Документ: {storedAttempt.body.certificateCode}</p>
       <p className={styles.meta}>{formatAttemptItemsSummary(storedAttempt.body)}</p>
+      {legacyBranchAttempt ? (
+        <p className={styles.errorText} role="alert">
+          {SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE}
+        </p>
+      ) : null}
       {orderConflict ? (
         <p className={styles.errorText} role="alert">
           {ATTEMPT_CONFLICT_MESSAGE}
         </p>
-      ) : (
+      ) : !legacyBranchAttempt ? (
         <>
           <p className={styles.uncertainHeading} style={{ marginTop: "var(--space-3)" }}>
             {UNCERTAIN_ORDER_HEADING}
           </p>
           <p className={styles.meta}>{UNCERTAIN_ORDER_DETAIL}</p>
         </>
-      )}
+      ) : null}
       {previewError ? (
         <p className={styles.meta} style={{ marginTop: "var(--space-2)" }}>
           Предпросмотр: {previewError} (не блокирует проверку)
@@ -176,7 +191,7 @@ function RestoredAttemptBlock({
         <Button variant="secondary" onClick={onNewPurchase}>
           Новая покупка
         </Button>
-        {!orderConflict ? (
+        {!orderConflict && !legacyBranchAttempt ? (
           <Button disabled={submitting} onClick={onCheckResult}>
             {submitting ? "Проверка…" : "Проверить результат"}
           </Button>
@@ -187,6 +202,17 @@ function RestoredAttemptBlock({
 }
 
 export function ScannerHub({ userId }: ScannerHubProps) {
+  const presentation = useCabinetPresentation();
+  const branchResolution: ScannerBranchResolution = useMemo(
+    () =>
+      resolveScannerBranchContext({
+        contextReady: presentation?.contextReady === true,
+        proContext: presentation?.proContext ?? null,
+      }),
+    [presentation?.contextReady, presentation?.proContext],
+  );
+  const [operationBranchId, setOperationBranchId] = useState("");
+
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
   const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
@@ -217,6 +243,21 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const welcomeDecisionPending = isScannerWelcomeDecisionPending(activityProbe);
 
   useEffect(() => {
+    if (branchResolution.kind === "ready") {
+      setOperationBranchId(branchResolution.branchId);
+    }
+  }, [branchResolution]);
+
+  const orderBranchIdForRequest = useMemo(() => {
+    if (branchResolution.kind === "not_required") return undefined;
+    if (branchResolution.kind === "ready") return branchResolution.branchId;
+    if (branchResolution.kind === "pick") {
+      return operationBranchId.trim() || undefined;
+    }
+    return undefined;
+  }, [branchResolution, operationBranchId]);
+
+  useEffect(() => {
     let cancelled = false;
     setActivityProbe({ status: "loading" });
     void loadScannerEmptyActivityProbe().then((probe) => {
@@ -235,6 +276,35 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     previewAbortRef.current?.abort();
     previewAbortRef.current = null;
   }, []);
+
+  const branchPickRequired =
+    branchResolution.kind === "pick" && !orderBranchIdForRequest;
+  const branchContextBlocked = branchResolution.kind === "blocked";
+  const legacyBranchAttempt =
+    isStorePurchaseBranchScoped(presentation?.proContext ?? null) &&
+    storedAttempt != null &&
+    !storedAttempt.branchId &&
+    (storedAttempt.status === "unknown" ||
+      storedAttempt.status === "in_flight" ||
+      storedAttempt.status === "conflict");
+
+  const handleOperationBranchChange = useCallback(
+    (branchId: string) => {
+      if (isStoreOrderAttemptLocked(storedAttempt)) {
+        return;
+      }
+      if (storedAttempt?.branchId && storedAttempt.branchId !== branchId) {
+        setSubmitError("Нельзя сменить филиал во время сохранённой попытки.");
+        return;
+      }
+      invalidatePreviewRequest();
+      setPreviewSession(null);
+      setPreviewError("");
+      setSubmitError("");
+      setOperationBranchId(branchId);
+    },
+    [invalidatePreviewRequest, storedAttempt],
+  );
 
   const focusScannerWorkbench = useCallback(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -353,6 +423,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           method: "POST",
           body: record.body,
           idempotencyKey: record.idempotencyKey,
+          searchParams: record.branchId ? { branchId: record.branchId } : undefined,
         });
 
         applyPostOutcome(
@@ -397,6 +468,21 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         return;
       }
 
+      if (branchContextBlocked || branchPickRequired || legacyBranchAttempt) {
+        if (!options?.optional) {
+          setPreviewError(
+            branchContextBlocked
+              ? branchResolution.kind === "blocked"
+                ? branchResolution.message
+                : "Выберите филиал для операции"
+              : branchPickRequired
+                ? "Выберите филиал для операции"
+                : SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE,
+          );
+        }
+        return;
+      }
+
       const parsed = parseCertificateCode(raw);
       if (!parsed.ok) {
         if (!options?.optional) {
@@ -430,6 +516,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           method: "POST",
           body: { certificateCode: parsed.code },
           signal: abortController.signal,
+          searchParams: orderBranchIdForRequest
+            ? { branchId: orderBranchIdForRequest }
+            : undefined,
         });
 
         if (
@@ -494,7 +583,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         }
       }
     },
-    [previewLoading],
+    [
+      previewLoading,
+      branchContextBlocked,
+      branchPickRequired,
+      legacyBranchAttempt,
+      branchResolution,
+      orderBranchIdForRequest,
+    ],
   );
 
   useEffect(() => {
@@ -507,10 +603,16 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       return;
     }
     setStoredAttempt(attempt);
+  if (attempt.branchId) {
+      setOperationBranchId(attempt.branchId);
+    }
     setOrderUncertain(isRestorableAttempt(attempt));
     setOrderConflict(isConflictAttempt(attempt));
+    if (!attempt.branchId && isStorePurchaseBranchScoped(presentation?.proContext ?? null)) {
+      return;
+    }
     void runPreview(attempt.body.certificateCode, { restoreAttempt: attempt, optional: true });
-  }, [attemptRestoreDone, runPreview, userId]);
+  }, [attemptRestoreDone, presentation?.proContext, runPreview, userId]);
 
   const checkStoredAttempt = useCallback(async () => {
     if (submitInFlightRef.current || submitting || orderConflict) {
@@ -564,6 +666,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     const created = createStoreOrderAttempt({
       userId,
       body: { certificateCode: previewSession.code, items },
+      branchId: orderBranchIdForRequest,
     });
 
     if (!created.ok) {
@@ -585,6 +688,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     orderUncertain,
     previewSession,
     submitting,
+    orderBranchIdForRequest,
     userId,
   ]);
 
@@ -656,6 +760,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             orderConflict={orderConflict}
             previewError={previewError}
             submitting={submitting}
+            legacyBranchAttempt={legacyBranchAttempt}
             onNewPurchase={startNewPurchase}
             onCheckResult={() => void checkStoredAttempt()}
           />
@@ -783,6 +888,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         orderConflict={orderConflict}
         previewError={previewError}
         submitting={submitting}
+        legacyBranchAttempt={legacyBranchAttempt}
         onNewPurchase={startNewPurchase}
         onCheckResult={() => void checkStoredAttempt()}
       />
@@ -816,6 +922,31 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         <ScannerNewPartnerEmpty onOpenScanner={focusScannerWorkbench} />
       ) : null}
       <div id={SCANNER_WORKBENCH_ID} ref={workbenchRef}>
+        {branchContextBlocked ? (
+          <div className={styles.branchBlocked} role="alert">
+            {branchResolution.kind === "blocked" ? branchResolution.message : null}
+          </div>
+        ) : null}
+        {legacyBranchAttempt ? (
+          <div className={styles.branchBlocked} role="alert">
+            {SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE}
+          </div>
+        ) : null}
+        {branchResolution.kind === "pick" ? (
+          <ScannerBranchOperationField
+            options={branchResolution.options}
+            value={operationBranchId}
+            disabled={isStoreOrderAttemptLocked(storedAttempt)}
+            onChange={handleOperationBranchChange}
+          />
+        ) : null}
+        {branchResolution.kind === "ready" ? (
+          <p className={styles.meta} style={{ marginBottom: "var(--space-4)" }}>
+            Филиал для операции:{" "}
+            {branchResolution.options.find((o) => o.id === branchResolution.branchId)?.label ??
+              branchResolution.branchId}
+          </p>
+        ) : null}
         {!welcomeDecisionPending && !showNewPartnerEmpty ? (
           <div className={styles.scannerHero}>
             <span className={styles.scannerIcon} aria-hidden>
@@ -873,7 +1004,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
               }}
             />
           </div>
-          <Button disabled={previewLoading} onClick={() => void runPreview(manualCode)}>
+          <Button
+            disabled={
+              previewLoading || branchContextBlocked || branchPickRequired || legacyBranchAttempt
+            }
+            onClick={() => void runPreview(manualCode)}
+          >
             {previewLoading ? "Проверка…" : "Найти"}
           </Button>
         </div>

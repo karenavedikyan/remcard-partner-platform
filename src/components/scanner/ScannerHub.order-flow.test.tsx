@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScannerHub } from "./ScannerHub";
+import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
 import {
   STORE_ORDER_ATTEMPT_STORAGE_KEY,
   loadStoreOrderAttempt,
@@ -84,6 +86,27 @@ async function runPreviewAndConfirm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
 }
 
+function renderScanner() {
+  const value = cabinetPresentationFixture(
+  {
+    id: USER_ID,
+    role: "PRO",
+    displayName: "Owner",
+    city: "C",
+    specializations: [],
+    publicId: "RC1",
+    partnerType: "STORE",
+  },
+    { role: "ORG_OWNER", organization: { id: "org", name: "Org" }, branches: [] },
+    true,
+  );
+  return render(
+    <CabinetPresentationProvider value={value}>
+      <ScannerHub userId={USER_ID} />
+    </CabinetPresentationProvider>,
+  );
+}
+
 describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -126,7 +149,7 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
     );
 
     const user = userEvent.setup();
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await runPreviewAndConfirm(user);
 
     await screen.findByText(/сохранённая попытка покупки/i);
@@ -170,7 +193,7 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
     );
 
     const user = userEvent.setup();
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await runPreviewAndConfirm(user);
 
     await screen.findByText(/сохранённая попытка покупки/i);
@@ -204,7 +227,7 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
     );
 
     const user = userEvent.setup();
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await runPreviewAndConfirm(user);
     await screen.findByRole("button", { name: /проверить результат/i });
 
@@ -236,7 +259,7 @@ describe("ScannerHub order flow (real api-client, mocked fetch)", () => {
     );
 
     const user = userEvent.setup();
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await runPreviewAndConfirm(user);
 
     await screen.findByText(/некорректная сумма/i);
