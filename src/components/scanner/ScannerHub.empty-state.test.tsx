@@ -4,6 +4,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import * as loadActivity from "@/lib/scanner-empty/load-activity";
 import type { ScannerEmptyActivityProbe } from "@/lib/scanner-empty/eligibility";
 import type { OrderCreateResponse, OrderPreviewAllowed } from "@/lib/order-types";
+import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
 import { ScannerHub } from "./ScannerHub";
 
 vi.mock("./QrScanner", () => ({
@@ -30,6 +32,27 @@ const previewAllowed: OrderPreviewAllowed = {
     { category: "doors", categoryLabel: "Двери", discountPercent: 10, issuerPercent: 5 },
   ],
 };
+
+function renderScanner() {
+  const value = cabinetPresentationFixture(
+    {
+      id: USER_ID,
+      role: "PRO",
+      displayName: "Owner",
+      city: "C",
+      specializations: [],
+      publicId: "RC1",
+      partnerType: "STORE",
+    },
+    { role: "ORG_OWNER", organization: { id: "org", name: "Org" }, branches: [] },
+    true,
+  );
+  return render(
+    <CabinetPresentationProvider value={value}>
+      <ScannerHub userId={USER_ID} />
+    </CabinetPresentationProvider>,
+  );
+}
 
 const orderSuccess: OrderCreateResponse = {
   order: { id: "ord-race-001" },
@@ -72,7 +95,7 @@ describe("ScannerHub new-partner empty state", () => {
         }),
     );
 
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     expect(screen.getByTestId("scanner-welcome-decision-pending")).toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     expect(screen.queryByText(/Сканируйте QR-код документа/i)).not.toBeInTheDocument();
@@ -83,7 +106,7 @@ describe("ScannerHub new-partner empty state", () => {
   });
 
   it("shows onboarding and keeps workbench when store has no purchases", async () => {
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await waitFor(() => {
       expect(screen.getByTestId("empty-state")).toBeInTheDocument();
     });
@@ -108,7 +131,7 @@ describe("ScannerHub new-partner empty state", () => {
         return new Response(JSON.stringify({ error: "unexpected" }), { status: 404 });
       }),
     );
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     expect(await screen.findByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
     expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
@@ -125,7 +148,7 @@ describe("ScannerHub new-partner empty state", () => {
         return new Response(JSON.stringify({ error: "unexpected" }), { status: 404 });
       }),
     );
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     expect(await screen.findByText(/Сканируйте QR-код документа/i)).toBeInTheDocument();
     expect(screen.queryByTestId("scanner-welcome-decision-pending")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
@@ -144,7 +167,7 @@ describe("ScannerHub new-partner empty state", () => {
       return new Response(JSON.stringify({ error: "unexpected" }), { status: 404 });
     });
     vi.stubGlobal("fetch", fetchMock);
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
     await waitFor(() => expect(screen.getByTestId("empty-state")).toBeInTheDocument());
     const postsBefore = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST").length;
     await user.click(screen.getByTestId("es-action-scan"));
@@ -187,7 +210,7 @@ describe("ScannerHub new-partner empty state", () => {
     );
 
     const user = userEvent.setup();
-    render(<ScannerHub userId={USER_ID} />);
+    renderScanner();
 
     await user.type(screen.getByLabelText(/код или промокод/i), "RC-RACE-001");
     await user.click(screen.getByRole("button", { name: /найти/i }));
