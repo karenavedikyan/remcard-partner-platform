@@ -35,6 +35,27 @@ import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
 
+type InviterBusinessSideDto = {
+  principalUserId: string;
+  partnerType: string | null;
+  storeCategories: string[];
+  specializations: string[];
+  tradeTermCategories: string[];
+};
+
+function partnerSideFromInviterBusinessSide(dto: InviterBusinessSideDto): PartnerSideProfile {
+  const partnerType = dto.partnerType?.trim() || null;
+  return {
+    id: dto.principalUserId,
+    partnerType,
+    partnerActivities:
+      partnerType === "STORE" ? ["STORE"] : partnerType === "COMPANY" ? ["COMPANY"] : dto.partnerType ? [dto.partnerType] : [],
+    storeCategories: [...(dto.storeCategories ?? [])],
+    specializations: [...(dto.specializations ?? [])],
+    isStoreOwner: partnerType === "STORE",
+  };
+}
+
 type LinkInviteRow = {
   id: string;
   status: string;
@@ -129,8 +150,14 @@ export function PartnerLinkInvitePanel({
   const [recipientName, setRecipientName] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [tone, setTone] = useState("short");
-  const inviterSide =
-    inviterSideProp ?? profileUserToPartnerSide(meProfile.user, meProfile.organization);
+  const [apiInviterSide, setApiInviterSide] = useState<PartnerSideProfile | null>(null);
+  const inviterSide = useMemo(
+    () =>
+      apiInviterSide ??
+      inviterSideProp ??
+      profileUserToPartnerSide(meProfile.user, meProfile.organization),
+    [apiInviterSide, inviterSideProp, meProfile],
+  );
   const [intendedType, setIntendedType] = useState<IntendedType>("");
   const resolved = useMemo(
     () => resolveLinkInviteCreateCategories(inviterSide, intendedType),
@@ -183,7 +210,13 @@ export function PartnerLinkInvitePanel({
   const loadInvites = useCallback(async () => {
     setListError("");
     try {
-      const data = await remcardFetch<{ invites: LinkInviteRow[] }>("/api/partnership/link-invite");
+      const data = await remcardFetch<{
+        invites: LinkInviteRow[];
+        inviterBusinessSide?: InviterBusinessSideDto;
+      }>("/api/partnership/link-invite");
+      if (data.inviterBusinessSide?.principalUserId) {
+        setApiInviterSide(partnerSideFromInviterBusinessSide(data.inviterBusinessSide));
+      }
       setInvites(data.invites ?? []);
     } catch (caught) {
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить ссылки");
