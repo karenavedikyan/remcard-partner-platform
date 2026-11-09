@@ -246,6 +246,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const previewRequestIdRef = useRef(0);
   const previewBranchByRequestIdRef = useRef(new Map<number, string | undefined>());
+  const orderBranchIdForRequestRef = useRef<string | undefined>(undefined);
   const operationBranchUserPickedRef = useRef(false);
   const workbenchRef = useRef<HTMLDivElement | null>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
@@ -262,6 +263,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     }
     return undefined;
   }, [branchResolution, operationBranchId]);
+
+  orderBranchIdForRequestRef.current = orderBranchIdForRequest;
 
   useEffect(() => {
     let cancelled = false;
@@ -285,9 +288,21 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   }, []);
 
   useEffect(() => {
-    if (branchResolution.kind !== "ready") {
-      return;
+  const branchScopeActive = isStorePurchaseBranchScoped(presentation?.proContext ?? null);
+
+  if (branchResolution.kind !== "ready") {
+    if (branchScopeActive) {
+      invalidatePreviewRequest();
+      setPreviewSession(null);
+      setSubmitError("");
+      if (branchResolution.kind === "blocked") {
+        setPreviewError(branchResolution.message);
+      } else {
+        setPreviewError("");
+      }
     }
+    return;
+  }
     const { branchId: defaultBranchId } = branchResolution;
     const proContext = presentation?.proContext ?? null;
 
@@ -326,8 +341,13 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     if (
       !operationBranchUserPickedRef.current &&
       !storedAttempt?.branchId &&
+      operationBranchId.trim() &&
       operationBranchId !== defaultBranchId
     ) {
+      invalidatePreviewRequest();
+      setPreviewSession(null);
+      setPreviewError("");
+      setSubmitError("");
       setOperationBranchId(defaultBranchId);
     }
   }, [
@@ -627,7 +647,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         const branchGate =
           options?.restoreAttempt != null
             ? branchAtRequest
-            : orderBranchIdForRequest;
+            : orderBranchIdForRequestRef.current;
         if (
           !shouldApplyPreviewResponse(
             requestId,
@@ -671,7 +691,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         const branchGate =
           options?.restoreAttempt != null
             ? branchAtRequest
-            : orderBranchIdForRequest;
+            : orderBranchIdForRequestRef.current;
         if (
           !shouldApplyPreviewResponse(
             requestId,
@@ -802,9 +822,32 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       return;
     }
 
-    if (branchResolution.kind === "ready") {
+    if (!presentation?.contextReady) {
+      setSubmitError("Контекст рабочего места ещё загружается. Повторите поиск.");
+      return;
+    }
+
+    if (branchContextBlocked) {
+      setSubmitError(
+        branchResolution.kind === "blocked"
+          ? branchResolution.message
+          : "Недоступен филиал для операции",
+      );
+      return;
+    }
+
+    const branchScoped = isStorePurchaseBranchScoped(presentation?.proContext ?? null);
+    if (branchScoped) {
+      if (branchResolution.kind !== "ready" || !orderBranchIdForRequest?.trim()) {
+        setSubmitError("Недоступен филиал для операции. Повторите поиск.");
+        return;
+      }
+      if (!isOperationBranchAccessible(orderBranchIdForRequest, presentation?.proContext ?? null)) {
+        setSubmitError(SCANNER_CAPTURED_BRANCH_INACCESSIBLE_MESSAGE);
+        return;
+      }
       const previewBranch = previewSession.branchId?.trim() || null;
-      const activeBranch = orderBranchIdForRequest?.trim() || null;
+      const activeBranch = orderBranchIdForRequest.trim();
       if (previewBranch !== activeBranch) {
         setSubmitError("Филиал операции изменился. Повторите поиск документа.");
         return;
@@ -856,8 +899,11 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     orderUncertain,
     previewSession,
     submitting,
-    branchResolution.kind,
+    branchContextBlocked,
+    branchResolution,
     orderBranchIdForRequest,
+    presentation?.contextReady,
+    presentation?.proContext,
     userId,
   ]);
 
@@ -1050,7 +1096,13 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                 Отмена
               </Button>
               <Button
-                disabled={submitting || !totals || totals.totalAmount <= 0 || orderConflict}
+                disabled={
+                  submitting ||
+                  !totals ||
+                  totals.totalAmount <= 0 ||
+                  orderConflict ||
+                  branchContextBlocked
+                }
                 onClick={() => void confirmNewPurchase()}
               >
                 {submitting ? "Подтверждение…" : "Подтвердить покупку"}
