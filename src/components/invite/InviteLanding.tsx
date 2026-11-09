@@ -16,6 +16,7 @@ import { displayCategoryLabel } from "@/lib/category-display";
 import {
   buildInviteHeroContent,
   formatInviteAudienceLabel,
+  INVITE_AUDIENCE_HINT,
   INVITE_GUEST_DISCLAIMER,
   INVITE_MODERATION_NOTE,
   INVITE_PERCENT_EXPLAINER,
@@ -386,6 +387,9 @@ export function InviteLanding({ token }: InviteLandingProps) {
           </p>
           {audienceLabel ? (
             <span className={styles.audienceBadge}>{audienceLabel}</span>
+          ) : null}
+          {audienceLabel ? (
+            <p className={styles.audienceHint}>{INVITE_AUDIENCE_HINT}</p>
           ) : null}
           <p className={styles.lead}>{hero.lead}</p>
           <ul className={styles.benefitList}>

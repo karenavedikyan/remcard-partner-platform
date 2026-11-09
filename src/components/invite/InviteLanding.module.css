@@ -64,6 +64,14 @@
   width: fit-content;
 }
 
+.audienceHint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
 .benefitList {
   margin: 0;
   padding-left: var(--space-5);

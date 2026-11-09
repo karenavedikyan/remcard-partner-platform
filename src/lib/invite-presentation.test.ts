@@ -5,6 +5,7 @@ import {
   buildInviteLinkMetadata,
   buildInviteShareMessage,
   formatInviteAudienceLabel,
+  INVITE_AUDIENCE_HINT,
   inviteOgDescription,
   inviterDisplayName,
   resolveInviteAudience,
@@ -88,5 +89,10 @@ describe("invite presentation", () => {
 
   it("falls back inviter display name", () => {
     assert.equal(inviterDisplayName({ status: "PENDING" }), "Партнёр RemCard");
+  });
+
+  it("documents that audience type is advisory for acceptance", () => {
+    assert.match(INVITE_AUDIENCE_HINT, /ориентир/);
+    assert.match(INVITE_AUDIENCE_HINT, /фактическим профилем/);
   });
 });

@@ -169,6 +169,10 @@ export const INVITE_GUEST_DISCLAIMER =
 export const INVITE_MODERATION_NOTE =
   "Завершите обязательные данные профиля в кабинете (имя, город, тип партнёра). Публикация в каталоге для принятия частного приглашения не требуется.";
 
+/** Shown next to audience badge; invitation type is not a hard eligibility gate. */
+export const INVITE_AUDIENCE_HINT =
+  "Тип в приглашении — ориентир для текста страницы. Принять ссылку можно с вашим фактическим профилем партнёра, если кабинет готов.";
+
 /** Advisory registration choice; never changes an existing account's role. */
 export function inviteRegistrationHref(intendedType: PartnerTypeCode, returnTo: string): string {
   const roles: Record<string, string> = {
