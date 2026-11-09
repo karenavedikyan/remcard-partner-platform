@@ -73,7 +73,7 @@
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 .reviewDueValue {
@@ -108,7 +108,7 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 .rollupRow dd {
