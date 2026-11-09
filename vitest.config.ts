@@ -121,6 +121,8 @@ export default defineConfig({
       "src/components/recommendations/CertificateResultView.rc-cert-css.test.tsx",
       "src/components/recommendations/PartnerClientCertificateCard.qr.test.tsx",
       "src/lib/__tests__/storeCertificateClientCardModel.test.ts",
+      "src/lib/__tests__/scanner-branch-context.test.ts",
+      "src/components/scanner/**/*.test.tsx",
       "src/lib/r03-theme-assert.test.ts",
       "src/components/auth/LoginExperience.test.tsx",
       "src/lib/agent-r04/partner-filters.test.ts",
