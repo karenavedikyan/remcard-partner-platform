@@ -133,7 +133,7 @@
   gap: var(--space-2);
   align-items: center;
   font-size: var(--text-xs);
-  color: var(--muted);
+  color: #5c605a;
   min-height: 44px;
   padding-block: var(--space-2);
   box-sizing: border-box;
