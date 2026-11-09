@@ -76,12 +76,14 @@ export type PartnerTypeSetupBundle = {
   prefill: PartnerTypeSetupPrefill;
   missing?: Array<{ field: string; message: string }>;
   missingIfEmpty?: Array<{ field: string; message: string }>;
+  organizationNameMutable?: boolean;
 };
 
 export type PartnerTypeSwitchStateResponse = {
   currentKind: PartnerKindUi | null;
   isEmployee: boolean;
   publicId: string;
+  setupRevision?: string;
   options: Array<{
     kind: PartnerKindUi;
     label: string;

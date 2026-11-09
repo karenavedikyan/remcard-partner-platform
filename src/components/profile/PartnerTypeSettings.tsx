@@ -50,6 +50,28 @@ function fromPrefill(prefill?: PartnerTypeSetupPrefill | null): PartnerTypeSetup
   };
 }
 
+function buildSetupPayload(
+  targetKind: PartnerKindUi,
+  form: PartnerTypeSetupFormValue,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    publicName: form.publicName.trim(),
+    city: form.city.trim(),
+  };
+  if (targetKind === "specialist") {
+    payload.serviceSpecializationIds = form.serviceSpecializationIds;
+  } else if (targetKind === "store" || targetKind === "company") {
+    payload.organizationName = form.organizationName.trim();
+    if (form.productCategoryIds.length > 0) {
+      payload.productCategoryIds = form.productCategoryIds;
+    }
+    if (form.serviceSpecializationIds.length > 0) {
+      payload.serviceSpecializationIds = form.serviceSpecializationIds;
+    }
+  }
+  return payload;
+}
+
 export function PartnerTypeSettings({
   profile,
   hasUnsavedBasicsChanges,
@@ -69,6 +91,9 @@ export function PartnerTypeSettings({
   const [success, setSuccess] = useState("");
   const [setupForm, setSetupForm] = useState<PartnerTypeSetupFormValue>(emptySetup);
   const autoRecoveryOpened = useRef(false);
+  const flowGeneration = useRef(0);
+  const stepRef = useRef<Step>("closed");
+  stepRef.current = step;
 
   const loadState = useCallback(async (previewTarget?: PartnerKindUi) => {
     const qs = previewTarget ? `?target=${encodeURIComponent(previewTarget)}` : "";
@@ -86,12 +111,34 @@ export function PartnerTypeSettings({
     });
   }, [loadState, profile.user.id, profile.user.partnerType, profile.user.partnerActivities]);
 
-  useEffect(() => {
+  const tryAutoRecovery = useCallback(() => {
     if (!autoOpenSetupRecovery || autoRecoveryOpened.current) return;
-    if (!state?.setupRecovery?.needed) return;
+    if (!state?.setupRecovery?.needed || !state.currentKind) return;
     autoRecoveryOpened.current = true;
-    openRecovery();
-  }, [autoOpenSetupRecovery, state?.setupRecovery?.needed]);
+    if (hasUnsavedBasicsChanges) {
+      setStep("unsaved");
+      return;
+    }
+    const kind = state.currentKind;
+    const gen = ++flowGeneration.current;
+    void loadState(kind)
+      .then((data) => {
+        if (gen !== flowGeneration.current || stepRef.current === "closed") return;
+        setSelected(kind);
+        setSetupForm(fromPrefill(data.setupRecovery?.prefill));
+        setAck(false);
+        setStep("setup");
+      })
+      .catch(() => {
+        if (gen === flowGeneration.current) {
+          setError("Не удалось открыть настройку профиля. Попробуйте ещё раз.");
+        }
+      });
+  }, [autoOpenSetupRecovery, state?.setupRecovery?.needed, state?.currentKind, hasUnsavedBasicsChanges, loadState]);
+
+  useEffect(() => {
+    tryAutoRecovery();
+  }, [tryAutoRecovery]);
 
   const currentKind = state?.currentKind ?? null;
   const profileKind = resolvePartnerKindUi({
@@ -109,11 +156,16 @@ export function PartnerTypeSettings({
     return state?.setupForTarget ?? null;
   }, [selected, currentKind, state?.setupRecovery, state?.setupForTarget]);
 
+  const organizationNameReadOnly =
+    setupBundle?.organizationNameMutable === false && Boolean(setupForm.organizationName.trim());
+
   function closeDialog() {
+    flowGeneration.current += 1;
     setStep("closed");
     setAck(false);
     setError("");
     setFieldErrors({});
+    setPending(false);
   }
 
   function openFlow(target?: PartnerKindUi) {
@@ -123,63 +175,90 @@ export function PartnerTypeSettings({
       setStep("unsaved");
       return;
     }
-    void loadState(target).then((data) => {
-      const kind = target ?? data.currentKind;
-      setSelected(kind);
-      const bundle =
-        kind === data.currentKind ? data.setupRecovery : data.setupForTarget;
-      setSetupForm(fromPrefill(bundle?.prefill));
-      setAck(false);
-      setStep(target && kind === data.currentKind ? "setup" : "choose");
-      if (target && kind === data.currentKind) {
+    const gen = ++flowGeneration.current;
+    void loadState(target)
+      .then((data) => {
+        if (gen !== flowGeneration.current) return;
+        const kind = target ?? data.currentKind;
+        if (!kind) return;
         setSelected(kind);
-      }
-    });
+        const bundle =
+          kind === data.currentKind ? data.setupRecovery : data.setupForTarget;
+        setSetupForm(fromPrefill(bundle?.prefill));
+        setAck(false);
+        setStep(target && kind === data.currentKind ? "setup" : "choose");
+      })
+      .catch(() => {
+        if (gen === flowGeneration.current) {
+          setError("Не удалось загрузить варианты смены типа.");
+        }
+      });
   }
 
   function openRecovery() {
     if (!state?.setupRecovery?.needed || !currentKind) return;
-    openFlow(currentKind);
-    setStep("setup");
+    if (hasUnsavedBasicsChanges) {
+      setStep("unsaved");
+      return;
+    }
+    const gen = ++flowGeneration.current;
+    void loadState(currentKind)
+      .then((data) => {
+        if (gen !== flowGeneration.current) return;
+        setSelected(currentKind);
+        setSetupForm(fromPrefill(data.setupRecovery?.prefill));
+        setAck(false);
+        setStep("setup");
+      })
+      .catch(() => {
+        if (gen === flowGeneration.current) {
+          setError("Не удалось открыть настройку профиля.");
+        }
+      });
   }
 
   async function goSetup() {
-    if (!selected || !currentKind) return;
+    if (!selected || !currentKind || pending) return;
     setError("");
     setFieldErrors({});
+    const gen = ++flowGeneration.current;
     const sameKind = selected === currentKind;
-    const data = await loadState(sameKind ? undefined : selected);
-    const bundle = sameKind ? data.setupRecovery : data.setupForTarget;
-    setSetupForm(fromPrefill(bundle?.prefill));
-    setAck(false);
-    setStep("setup");
-  }
-
-  function buildSetupPayload(): Record<string, unknown> {
-    return {
-      publicName: setupForm.publicName.trim(),
-      city: setupForm.city.trim(),
-      serviceSpecializationIds: setupForm.serviceSpecializationIds,
-      productCategoryIds: setupForm.productCategoryIds,
-      organizationName: setupForm.organizationName.trim() || undefined,
-    };
+    try {
+      const data = await loadState(sameKind ? undefined : selected);
+      if (gen !== flowGeneration.current || stepRef.current === "closed") return;
+      const bundle = sameKind ? data.setupRecovery : data.setupForTarget;
+      setSetupForm(fromPrefill(bundle?.prefill));
+      setAck(false);
+      setStep("setup");
+    } catch {
+      if (gen === flowGeneration.current) {
+        setError("Не удалось загрузить поля настройки.");
+      }
+    }
   }
 
   async function applySwitch() {
     if (!selected || !currentKind || !ack || pending) return;
+    if (!state?.setupRevision) {
+      setError("Данные устарели. Обновите страницу и повторите.");
+      return;
+    }
     setPending(true);
     setError("");
     setFieldErrors({});
+    const submitGen = flowGeneration.current;
     try {
       await remcardFetch("/api/pro/partner-type/switch", {
         method: "POST",
         body: {
           targetKind: selected,
           expectedSourceKind: currentKind,
-          setup: buildSetupPayload(),
+          setupRevision: state.setupRevision,
+          setup: buildSetupPayload(selected, setupForm),
         },
       });
     } catch (caught) {
+      if (submitGen !== flowGeneration.current) return;
       if (caught instanceof RemcardApiError) {
         setError(caught.message);
         const fe =
@@ -198,6 +277,11 @@ export function PartnerTypeSettings({
       return;
     }
 
+    if (submitGen !== flowGeneration.current) {
+      setPending(false);
+      return;
+    }
+
     try {
       const nextProfile = await remcardFetch<ProProfileResponse>("/api/pro/profile");
       onProfileUpdated(nextProfile);
@@ -206,16 +290,27 @@ export function PartnerTypeSettings({
         "Данные сохранены на сервере, но полный профиль не загрузился. Обновите страницу.",
       );
       onRequestRefresh();
-      await loadState().catch(() => {});
+      try {
+        await loadState();
+      } catch {
+        /* keep notice */
+      }
       setPending(false);
-      setStep("closed");
-      setAck(false);
-      setError("");
+      closeDialog();
       return;
     }
 
     onRequestRefresh();
-    await loadState();
+    try {
+      await loadState();
+    } catch {
+      setRecoveryNotice(
+        "Данные сохранены, но статус смены типа не обновился. Обновите страницу.",
+      );
+      setPending(false);
+      closeDialog();
+      return;
+    }
     const label = PARTNER_KIND_UI_LABELS[selected];
     setSuccess(
       selected === currentKind
@@ -296,6 +391,11 @@ export function PartnerTypeSettings({
               >
                 Обновить данные
               </Button>
+            </p>
+          ) : null}
+          {error && step === "closed" ? (
+            <p className={styles.error} role="alert">
+              {error}
             </p>
           ) : null}
         </div>
@@ -391,7 +491,7 @@ export function PartnerTypeSettings({
                         type="button"
                         variant="primary"
                         data-partner-type-action="setup"
-                        disabled={!selected}
+                        disabled={!selected || pending}
                         onClick={() => void goSetup()}
                       >
                         Продолжить
@@ -421,6 +521,7 @@ export function PartnerTypeSettings({
                     targetKind={selected}
                     value={setupForm}
                     fieldErrors={fieldErrors}
+                    organizationNameReadOnly={organizationNameReadOnly}
                     onChange={setSetupForm}
                   />
                   <p className={styles.optionDesc}>
@@ -446,6 +547,7 @@ export function PartnerTypeSettings({
                         type="button"
                         variant="secondary"
                         data-partner-type-action="choose"
+                        disabled={pending}
                         onClick={() => {
                           setAck(false);
                           setStep("choose");
@@ -453,7 +555,7 @@ export function PartnerTypeSettings({
                       >
                         Назад
                       </Button>
-                      <Button type="button" variant="secondary" onClick={closeDialog}>
+                      <Button type="button" variant="secondary" disabled={pending} onClick={closeDialog}>
                         Отмена
                       </Button>
                       <Button

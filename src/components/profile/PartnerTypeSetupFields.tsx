@@ -16,10 +16,17 @@ type Props = {
   targetKind: PartnerKindUi;
   value: PartnerTypeSetupFormValue;
   fieldErrors?: Record<string, string>;
+  organizationNameReadOnly?: boolean;
   onChange: (next: PartnerTypeSetupFormValue) => void;
 };
 
-export function PartnerTypeSetupFields({ targetKind, value, fieldErrors, onChange }: Props) {
+export function PartnerTypeSetupFields({
+  targetKind,
+  value,
+  fieldErrors,
+  organizationNameReadOnly = false,
+  onChange,
+}: Props) {
   const showOrg = targetKind === "store" || targetKind === "company";
   const showDirections = targetKind === "specialist" || showOrg;
 
@@ -48,8 +55,15 @@ export function PartnerTypeSetupFields({ targetKind, value, fieldErrors, onChang
           <input
             data-testid="partner-type-setup-organizationName"
             value={value.organizationName}
+            readOnly={organizationNameReadOnly}
+            aria-readonly={organizationNameReadOnly || undefined}
             onChange={(e) => onChange({ ...value, organizationName: e.target.value })}
           />
+          {organizationNameReadOnly ? (
+            <span className={styles.optionDesc}>
+              После публикации каталога название меняет только поддержка.
+            </span>
+          ) : null}
           {fieldErrors?.organizationName ? (
             <span className={styles.fieldError} role="alert">
               {fieldErrors.organizationName}
