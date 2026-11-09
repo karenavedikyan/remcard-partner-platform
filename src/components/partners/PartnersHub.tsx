@@ -1697,7 +1697,7 @@ export function PartnersHub({
         >
           <TermChangePanel
             partnership={partnership}
-            meId={meId}
+            meId={subjectUserId}
             partnerTitle={cooperationPartnerTitle(partnership, subjectUserId)}
             requests={termState.state === "loaded" ? termState.requests : null}
             loadState={
@@ -2875,7 +2875,7 @@ export function PartnersHub({
                   {expandedTermPartnershipId === partnership.id ? (
                     <TermChangePanel
                       partnership={partnership}
-                      meId={meId}
+                      meId={subjectUserId}
                       partnerTitle={cooperationPartnerTitle(partnership, subjectUserId)}
                       requests={termState.state === "loaded" ? termState.requests : null}
                       loadState={

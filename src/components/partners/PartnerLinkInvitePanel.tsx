@@ -427,6 +427,11 @@ export function PartnerLinkInvitePanel({
           <p className={styles.error} role="alert" data-testid="link-invite-terms-blocked">
             {resolved.error}
           </p>
+        ) : form.rows.length === 0 && !form.useGeneralFallback && intendedType ? (
+          <p className={styles.error} role="alert" data-testid="link-invite-terms-empty">
+            У организации не заданы направления для условий. Заполните категории в профиле
+            организации или выберите другой тип приглашения.
+          </p>
         ) : null}
 
         {!resolved.error && resolved.categories.length === 0 && !form.useGeneralFallback ? (
@@ -528,7 +533,14 @@ export function PartnerLinkInvitePanel({
               if (step === 1 && !form.note.trim()) dispatch({ type: "set_note", note: template(tone) });
               setStep(step + 1);
             }}>{step === 1 ? "Далее: сообщение" : "Далее: проверить"}</Button> : (
-          <Button disabled={creating || Boolean(resolved.error)} onClick={() => void createLink()}>
+          <Button
+            disabled={
+              creating ||
+              Boolean(resolved.error) ||
+              (form.rows.length === 0 && !form.useGeneralFallback && Boolean(intendedType))
+            }
+            onClick={() => void createLink()}
+          >
             {creating ? "Создаём…" : wizard ? "Создать приглашение" : "Создать ссылку"}
           </Button>
           )}
