@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
 import {
@@ -146,6 +146,7 @@ export function PartnerLinkInvitePanel({
   onSubmittingChange,
   onAnotherWay,
 }: PartnerLinkInvitePanelProps) {
+  const categoryPercentFieldIdPrefix = useId();
   const [step, setStep] = useState(1);
   const [recipientName, setRecipientName] = useState("");
   const [showHistory, setShowHistory] = useState(false);
@@ -513,6 +514,7 @@ export function PartnerLinkInvitePanel({
                 </div>
                 {!row.excluded ? (
                   <TextField
+                    id={`${categoryPercentFieldIdPrefix}-${row.category}`}
                     label="Общий процент по категории"
                     type="number"
                     min={0}

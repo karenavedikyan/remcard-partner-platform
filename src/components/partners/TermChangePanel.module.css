@@ -264,6 +264,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 44px;
   box-sizing: border-box;
   /* R1 .coop-percent-input: pad 0.45/0.55rem, radius 8, ~14px type */
   padding: 7.2px 8.8px;
