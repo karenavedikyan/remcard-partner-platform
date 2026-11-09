@@ -56,6 +56,14 @@ function blendOver(bg: string, fg: string, alpha: number): string {
 }
 
 describe("PartnerClientCertificateCard — client v2 card CSS", () => {
+  it("scanner variant uses white title pill and white wordmark dot", () => {
+    expect(cardCss).toMatch(/\.cardScanner \.titlePill[\s\S]*?background:\s*#fff/);
+    expect(cardCss).toMatch(/\.cardScanner \.titlePill[\s\S]*?color:\s*#1b1f1a/);
+    expect(cardCss).toMatch(/\.cardScanner \.wordmarkDot[\s\S]*?color:\s*#fff/);
+    expect(block(cardCss, "titlePill")).toMatch(/rgb\(38 14 16/);
+    expect(block(cardCss, "wordmarkDot")).toMatch(/#f28b8d/);
+  });
+
   it("uses production red gradient, 22px radius, client type scale", () => {
     const rule = block(cardCss, "card");
     expect(rule).toMatch(/border-radius:\s*22px/);

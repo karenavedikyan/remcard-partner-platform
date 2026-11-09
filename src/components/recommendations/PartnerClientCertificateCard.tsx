@@ -7,11 +7,13 @@ import styles from "./PartnerClientCertificateCard.module.css";
 
 type Props = {
   model: StoreCertificateClientCardModel;
+  /** Scanner confirmation uses prototype title pill / wordmark dot on red gradient. */
+  presentation?: "default" | "scanner";
 };
 
 type QrSlot = { url: string; dataUrl: string | null; failed: boolean };
 
-export function PartnerClientCertificateCard({ model }: Props) {
+export function PartnerClientCertificateCard({ model, presentation = "default" }: Props) {
   const [qrSlot, setQrSlot] = useState<QrSlot | null>(null);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export function PartnerClientCertificateCard({ model }: Props) {
 
   return (
     <article
-      className={styles.card}
+      className={`${styles.card} ${presentation === "scanner" ? styles.cardScanner : ""}`}
       data-testid="client-certificate-card"
       aria-label="Сертификат как видит клиент"
     >

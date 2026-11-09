@@ -1063,7 +1063,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         <div className={styles.confirmationLayout}>
           <div className={styles.certColumn}>
             {clientCertificateModel ? (
-              <PartnerClientCertificateCard model={clientCertificateModel} />
+              <PartnerClientCertificateCard
+                model={clientCertificateModel}
+                presentation="scanner"
+              />
             ) : null}
             <ScannerReferringPartnerBlock referringPartner={preview.referringPartner} />
             <details className={styles.issuerDetails}>

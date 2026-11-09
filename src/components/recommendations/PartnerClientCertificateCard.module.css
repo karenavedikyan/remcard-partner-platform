@@ -67,6 +67,17 @@
   color: #fff;
 }
 
+/* Approved scanner prototype: light pill + dot on gradient (other surfaces keep default). */
+.cardScanner .titlePill {
+  background: #fff;
+  color: #1b1f1a;
+  border-color: rgb(255 255 255 / 55%);
+}
+
+.cardScanner .wordmarkDot {
+  color: #fff;
+}
+
 .pctValue {
   position: relative;
   margin: 16px 0 0;

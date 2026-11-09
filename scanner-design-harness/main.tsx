@@ -68,7 +68,7 @@ function HarnessApp() {
         </button>
       </header>
       <div className="harness-canvas">
-        <PartnerClientCertificateCard model={cardModel} />
+        <PartnerClientCertificateCard model={cardModel} presentation="scanner" />
         <ScannerReferringPartnerBlock referringPartner={preview.referringPartner} />
         <PurchaseReviewModal
           open
