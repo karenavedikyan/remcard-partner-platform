@@ -33,18 +33,9 @@
   cursor: pointer;
   font-size: var(--text-sm);
   min-height: 44px;
-  display: flex;
-  align-items: center;
   box-sizing: border-box;
-}
-
-/* Step 3 exclude toggle: keep checkbox size, enlarge label hit target (>=44px). */
-.wizard :global(.exclude) {
-  min-height: 44px;
-  padding-block: var(--space-2);
-  box-sizing: border-box;
-  align-items: center;
-  cursor: pointer;
+  padding-block: 10px;
+  align-content: center;
 }
 .wizard textarea { min-height: 140px; }
 .historyToggle { justify-self: start; }
