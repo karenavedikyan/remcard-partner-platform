@@ -6,7 +6,17 @@ const remcardFetch = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: (...args: unknown[]) => remcardFetch(...args),
-  RemcardApiError: class RemcardApiError extends Error {},
+  RemcardApiError: class RemcardApiError extends Error {
+    body: Record<string, unknown> | null = null;
+    constructor(message: string, body: Record<string, unknown> | null = null) {
+      super(message);
+      this.body = body;
+    }
+  },
+}));
+
+vi.mock("./PartnerTypeSetupFields", () => ({
+  PartnerTypeSetupFields: () => <div data-testid="partner-type-setup-fields" />,
 }));
 
 const switchOptions = [
@@ -92,6 +102,17 @@ describe("PartnerTypeSettings", () => {
           publicId: "RC-TEST-1",
           options: switchOptions,
           preview: { changes: "c", preservedSummary: "p" },
+          setupForTarget: {
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Агент",
+              city: "Краснодар",
+              serviceSpecializationIds: [],
+              productCategoryIds: [],
+              organizationName: "",
+            },
+          },
         };
       }
       return {
@@ -117,15 +138,15 @@ describe("PartnerTypeSettings", () => {
     fireEvent.click(
       document.querySelector('input[name="partner-type"][value="specialist"]') as HTMLInputElement,
     );
-    fireEvent.click(document.querySelector('[data-partner-type-action="review"]')!);
-    await screen.findByTestId("partner-type-review");
+    fireEvent.click(document.querySelector('[data-partner-type-action="setup"]')!);
+    await screen.findByTestId("partner-type-setup");
     fireEvent.click(document.querySelector("[data-partner-type-ack]")!);
     fireEvent.click(screen.getByTestId("partner-type-apply"));
 
     await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     const recovery = await screen.findByTestId("partner-type-recovery");
-    expect(recovery.textContent).toMatch(/уже изменён на сервере/i);
+    expect(recovery.textContent).toMatch(/сохранены на сервере/i);
     const postCalls = remcardFetch.mock.calls.filter(
       (c) => c[0] === "/api/pro/partner-type/switch" && c[1]?.method === "POST",
     );
@@ -167,12 +188,13 @@ describe("PartnerTypeSettings", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Сменить тип партнёрства/ }));
     fireEvent.click(await screen.findByRole("radio", { name: /Специалист/ }));
     fireEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    await screen.findByTestId("partner-type-setup");
     fireEvent.click(await screen.findByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: /Сменить на/ }));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByTestId("partner-type-recovery").textContent).toMatch(
-      /уже изменён на сервере/i,
+      /сохранены на сервере/i,
     );
     expect(
       remcardFetch.mock.calls.filter(([, init]) => init?.method === "POST"),

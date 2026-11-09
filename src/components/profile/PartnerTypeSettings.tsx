@@ -1,33 +1,61 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { ProProfileResponse } from "@/lib/types";
 import {
   PARTNER_KIND_UI_LABELS,
   resolvePartnerKindUi,
   type PartnerKindUi,
+  type PartnerTypeSetupPrefill,
   type PartnerTypeSwitchStateResponse,
 } from "@/lib/partner-kind-ui";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import dialogStyles from "@/components/account-session/account-session.module.css";
+import {
+  PartnerTypeSetupFields,
+  type PartnerTypeSetupFormValue,
+} from "./PartnerTypeSetupFields";
 import styles from "./PartnerTypeSettings.module.css";
 
-type Step = "closed" | "unsaved" | "choose" | "review";
+type Step = "closed" | "unsaved" | "choose" | "setup";
 
 type PartnerTypeSettingsProps = {
   profile: ProProfileResponse;
   hasUnsavedBasicsChanges: boolean;
   onProfileUpdated: (next: ProProfileResponse) => void;
   onRequestRefresh: () => void;
+  autoOpenSetupRecovery?: boolean;
 };
+
+function emptySetup(): PartnerTypeSetupFormValue {
+  return {
+    publicName: "",
+    city: "",
+    serviceSpecializationIds: [],
+    productCategoryIds: [],
+    organizationName: "",
+  };
+}
+
+function fromPrefill(prefill?: PartnerTypeSetupPrefill | null): PartnerTypeSetupFormValue {
+  if (!prefill) return emptySetup();
+  return {
+    publicName: prefill.publicName ?? "",
+    city: prefill.city ?? "",
+    serviceSpecializationIds: [...(prefill.serviceSpecializationIds ?? [])],
+    productCategoryIds: [...(prefill.productCategoryIds ?? [])],
+    organizationName: prefill.organizationName ?? "",
+  };
+}
 
 export function PartnerTypeSettings({
   profile,
   hasUnsavedBasicsChanges,
   onProfileUpdated,
   onRequestRefresh,
+  autoOpenSetupRecovery = false,
 }: PartnerTypeSettingsProps) {
   const titleId = useId();
   const [step, setStep] = useState<Step>("closed");
@@ -36,8 +64,11 @@ export function PartnerTypeSettings({
   const [ack, setAck] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [recoveryNotice, setRecoveryNotice] = useState("");
   const [success, setSuccess] = useState("");
+  const [setupForm, setSetupForm] = useState<PartnerTypeSetupFormValue>(emptySetup);
+  const autoRecoveryOpened = useRef(false);
 
   const loadState = useCallback(async (previewTarget?: PartnerKindUi) => {
     const qs = previewTarget ? `?target=${encodeURIComponent(previewTarget)}` : "";
@@ -55,6 +86,13 @@ export function PartnerTypeSettings({
     });
   }, [loadState, profile.user.id, profile.user.partnerType, profile.user.partnerActivities]);
 
+  useEffect(() => {
+    if (!autoOpenSetupRecovery || autoRecoveryOpened.current) return;
+    if (!state?.setupRecovery?.needed) return;
+    autoRecoveryOpened.current = true;
+    openRecovery();
+  }, [autoOpenSetupRecovery, state?.setupRecovery?.needed]);
+
   const currentKind = state?.currentKind ?? null;
   const profileKind = resolvePartnerKindUi({
     partnerType: profile.user.partnerType,
@@ -65,51 +103,97 @@ export function PartnerTypeSettings({
     (profileKind && PARTNER_KIND_UI_LABELS[profileKind]) ||
     "Партнёр";
 
+  const setupBundle = useMemo(() => {
+    if (!selected) return null;
+    if (selected === currentKind) return state?.setupRecovery ?? null;
+    return state?.setupForTarget ?? null;
+  }, [selected, currentKind, state?.setupRecovery, state?.setupForTarget]);
+
   function closeDialog() {
     setStep("closed");
     setAck(false);
     setError("");
+    setFieldErrors({});
   }
 
-  function openFlow() {
+  function openFlow(target?: PartnerKindUi) {
     setSuccess("");
     setRecoveryNotice("");
     if (hasUnsavedBasicsChanges) {
       setStep("unsaved");
       return;
     }
-    void loadState().then((data) => {
-      setSelected(data.currentKind);
-      setStep("choose");
+    void loadState(target).then((data) => {
+      const kind = target ?? data.currentKind;
+      setSelected(kind);
+      const bundle =
+        kind === data.currentKind ? data.setupRecovery : data.setupForTarget;
+      setSetupForm(fromPrefill(bundle?.prefill));
+      setAck(false);
+      setStep(target && kind === data.currentKind ? "setup" : "choose");
+      if (target && kind === data.currentKind) {
+        setSelected(kind);
+      }
     });
   }
 
-  async function goReview() {
-    if (!selected || !currentKind || selected === currentKind) return;
+  function openRecovery() {
+    if (!state?.setupRecovery?.needed || !currentKind) return;
+    openFlow(currentKind);
+    setStep("setup");
+  }
+
+  async function goSetup() {
+    if (!selected || !currentKind) return;
     setError("");
-    await loadState(selected);
+    setFieldErrors({});
+    const sameKind = selected === currentKind;
+    const data = await loadState(sameKind ? undefined : selected);
+    const bundle = sameKind ? data.setupRecovery : data.setupForTarget;
+    setSetupForm(fromPrefill(bundle?.prefill));
     setAck(false);
-    setStep("review");
+    setStep("setup");
+  }
+
+  function buildSetupPayload(): Record<string, unknown> {
+    return {
+      publicName: setupForm.publicName.trim(),
+      city: setupForm.city.trim(),
+      serviceSpecializationIds: setupForm.serviceSpecializationIds,
+      productCategoryIds: setupForm.productCategoryIds,
+      organizationName: setupForm.organizationName.trim() || undefined,
+    };
   }
 
   async function applySwitch() {
     if (!selected || !currentKind || !ack || pending) return;
     setPending(true);
     setError("");
+    setFieldErrors({});
     try {
       await remcardFetch("/api/pro/partner-type/switch", {
         method: "POST",
         body: {
           targetKind: selected,
           expectedSourceKind: currentKind,
+          setup: buildSetupPayload(),
         },
       });
     } catch (caught) {
-      setError(
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось сменить тип. Попробуйте ещё раз.",
-      );
+      if (caught instanceof RemcardApiError) {
+        setError(caught.message);
+        const fe =
+          caught.body &&
+          typeof caught.body === "object" &&
+          "fieldErrors" in caught.body &&
+          caught.body.fieldErrors &&
+          typeof caught.body.fieldErrors === "object"
+            ? (caught.body.fieldErrors as Record<string, string>)
+            : undefined;
+        if (fe) setFieldErrors(fe);
+      } else {
+        setError("Не удалось сохранить. Попробуйте ещё раз.");
+      }
       setPending(false);
       return;
     }
@@ -119,7 +203,7 @@ export function PartnerTypeSettings({
       onProfileUpdated(nextProfile);
     } catch {
       setRecoveryNotice(
-        "Тип партнёрства уже изменён на сервере, но полный профиль не загрузился. Обновите страницу — повторная смена не нужна.",
+        "Данные сохранены на сервере, но полный профиль не загрузился. Обновите страницу.",
       );
       onRequestRefresh();
       await loadState().catch(() => {});
@@ -132,8 +216,11 @@ export function PartnerTypeSettings({
 
     onRequestRefresh();
     await loadState();
+    const label = PARTNER_KIND_UI_LABELS[selected];
     setSuccess(
-      `Тип изменён на «${PARTNER_KIND_UI_LABELS[selected]}». Аккаунт сохранён; проверьте профиль нового типа.`,
+      selected === currentKind
+        ? `Данные профиля «${label}» сохранены.`
+        : `Тип изменён на «${label}». Данные профиля сохранены.`,
     );
     closeDialog();
     setPending(false);
@@ -159,9 +246,9 @@ export function PartnerTypeSettings({
   const previewTarget = selected && selected !== currentKind ? selected : null;
   const preview = state?.preview;
   const targetLabel =
-    previewTarget && PARTNER_KIND_UI_LABELS[previewTarget]
-      ? PARTNER_KIND_UI_LABELS[previewTarget]
-      : "";
+    (selected && PARTNER_KIND_UI_LABELS[selected]) ||
+    (previewTarget && PARTNER_KIND_UI_LABELS[previewTarget]) ||
+    "";
 
   return (
     <>
@@ -169,6 +256,7 @@ export function PartnerTypeSettings({
         className={`${styles.settings} panel`}
         aria-labelledby="partner-type-title"
         data-testid="partner-type-settings"
+        data-profile-focus="partnerType"
       >
         <div>
           <h2 id="partner-type-title">Тип партнёрства</h2>
@@ -176,17 +264,26 @@ export function PartnerTypeSettings({
             {currentLabel}
           </p>
           <p>Выбрали другой путь? Измените тип в этом аккаунте, без повторной регистрации.</p>
+          {state?.setupRecovery?.needed ? (
+            <div className={styles.recoveryBanner} data-testid="partner-type-setup-recovery">
+              <p>Для текущего типа не хватает данных — часть действий недоступна.</p>
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="partner-type-setup-recovery-open"
+                onClick={openRecovery}
+              >
+                Проверьте данные профиля
+              </Button>
+            </div>
+          ) : null}
           {success ? (
             <p className={styles.success} role="status" data-testid="partner-type-success">
               {success}
             </p>
           ) : null}
           {recoveryNotice ? (
-            <p
-              className={styles.error}
-              role="alert"
-              data-testid="partner-type-recovery"
-            >
+            <p className={styles.error} role="alert" data-testid="partner-type-recovery">
               {recoveryNotice}{" "}
               <Button
                 type="button"
@@ -202,7 +299,7 @@ export function PartnerTypeSettings({
             </p>
           ) : null}
         </div>
-        <Button type="button" className={styles.openBtn} data-testid="partner-type-open" onClick={openFlow}>
+        <Button type="button" className={styles.openBtn} data-testid="partner-type-open" onClick={() => openFlow()}>
           Сменить тип партнёрства
         </Button>
       </section>
@@ -212,7 +309,7 @@ export function PartnerTypeSettings({
           className={dialogStyles.dialogBackdrop}
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget && step !== "review") closeDialog();
+            if (event.target === event.currentTarget && step !== "setup") closeDialog();
           }}
         >
           <div
@@ -225,7 +322,7 @@ export function PartnerTypeSettings({
                 ? "partner-type-unsaved"
                 : step === "choose"
                   ? "partner-type-choose"
-                  : "partner-type-review"
+                  : "partner-type-setup"
             }
           >
             <h2 className={dialogStyles.dialogTitle} id={titleId}>
@@ -233,7 +330,7 @@ export function PartnerTypeSettings({
                 ? "Сначала сохраните изменения"
                 : step === "choose"
                   ? "Сменить тип партнёрства"
-                  : "Подтвердите смену типа"}
+                  : "Проверьте данные нового профиля"}
             </h2>
             <div className={`${dialogStyles.dialogBody} ${styles.dialogBody}`}>
               {step === "unsaved" ? (
@@ -277,8 +374,8 @@ export function PartnerTypeSettings({
                     ))}
                   </fieldset>
                   <p className={styles.optionDesc}>
-                    «Сотрудник» подключается по приглашению организации. Эта настройка не выдаёт
-                    административные права.
+                    «Сотрудник» подключается по приглашению. Принятие приглашения не меняет ваш
+                    тип партнёрства.
                   </p>
                   {error ? (
                     <p className={styles.error} role="alert">
@@ -293,9 +390,9 @@ export function PartnerTypeSettings({
                       <Button
                         type="button"
                         variant="primary"
-                        data-partner-type-action="review"
-                        disabled={!selected || selected === currentKind}
-                        onClick={() => void goReview()}
+                        data-partner-type-action="setup"
+                        disabled={!selected}
+                        onClick={() => void goSetup()}
                       >
                         Продолжить
                       </Button>
@@ -304,26 +401,31 @@ export function PartnerTypeSettings({
                 </>
               ) : null}
 
-              {step === "review" && previewTarget && currentKind ? (
+              {step === "setup" && selected && currentKind ? (
                 <>
-                  <p className={styles.transition}>
-                    {PARTNER_KIND_UI_LABELS[currentKind]}{" "}
-                    <span aria-hidden="true">→</span> {targetLabel}
-                  </p>
-                  <section>
-                    <h3>Что изменится</h3>
-                    <p>{preview?.changes ?? ""}</p>
-                  </section>
-                  <section>
-                    <h3>Что сохраняется</h3>
-                    <p>
-                      {preview?.preservedSummary ??
-                        `Тот же аккаунт: ${state?.publicId ?? profile.user.publicId}. Личные контакты, клиенты, сертификаты и история не удаляются.`}
+                  {selected !== currentKind ? (
+                    <p className={styles.transition}>
+                      {PARTNER_KIND_UI_LABELS[currentKind]}{" "}
+                      <span aria-hidden="true">→</span> {targetLabel}
                     </p>
-                  </section>
+                  ) : (
+                    <p className={styles.transition}>Текущий тип: {targetLabel}</p>
+                  )}
+                  {preview ? (
+                    <section>
+                      <h3>Что изменится</h3>
+                      <p>{preview.changes}</p>
+                    </section>
+                  ) : null}
+                  <PartnerTypeSetupFields
+                    targetKind={selected}
+                    value={setupForm}
+                    fieldErrors={fieldErrors}
+                    onChange={setSetupForm}
+                  />
                   <p className={styles.optionDesc}>
-                    Публикация в каталоге, реквизиты и доступы сотрудников автоматически не
-                    меняются. Дополнительные данные нового типа можно заполнить в профиле.
+                    Каталог, реквизиты и права сотрудников не меняются автоматически — только
+                    подтверждённые поля.
                   </p>
                   <div className={styles.footer}>
                     <label className={styles.ack}>
@@ -333,7 +435,11 @@ export function PartnerTypeSettings({
                         checked={ack}
                         onChange={(event) => setAck(event.target.checked)}
                       />
-                      <span>Понимаю, что состав разделов и доступных действий изменится.</span>
+                      <span>
+                        {selected === currentKind
+                          ? "Подтверждаю сохранение данных профиля."
+                          : "Понимаю, что состав разделов изменится, и подтверждаю данные профиля."}
+                      </span>
                     </label>
                     <div className={styles.actions}>
                       <Button
@@ -358,7 +464,11 @@ export function PartnerTypeSettings({
                         disabled={!ack || pending}
                         onClick={() => void applySwitch()}
                       >
-                        {pending ? "Смена…" : `Сменить на «${targetLabel}»`}
+                        {pending
+                          ? "Сохранение…"
+                          : selected === currentKind
+                            ? "Сохранить данные"
+                            : `Сменить на «${targetLabel}»`}
                       </Button>
                     </div>
                   </div>

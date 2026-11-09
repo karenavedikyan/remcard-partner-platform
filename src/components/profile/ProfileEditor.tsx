@@ -1490,6 +1490,7 @@ function ProfileEditorInner({
             hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
             onProfileUpdated={applyProfile}
             onRequestRefresh={() => router.refresh()}
+            autoOpenSetupRecovery={focusField === "partnerType"}
           />
         ) : null}
 

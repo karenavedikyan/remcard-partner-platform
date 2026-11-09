@@ -62,6 +62,22 @@ export function resolvePartnerKindUi(input: {
   return null;
 }
 
+export type PartnerTypeSetupPrefill = {
+  publicName: string;
+  city: string;
+  serviceSpecializationIds: string[];
+  productCategoryIds: string[];
+  organizationName: string;
+};
+
+export type PartnerTypeSetupBundle = {
+  targetKind: PartnerKindUi;
+  requiredFields: string[];
+  prefill: PartnerTypeSetupPrefill;
+  missing?: Array<{ field: string; message: string }>;
+  missingIfEmpty?: Array<{ field: string; message: string }>;
+};
+
 export type PartnerTypeSwitchStateResponse = {
   currentKind: PartnerKindUi | null;
   isEmployee: boolean;
@@ -78,4 +94,6 @@ export type PartnerTypeSwitchStateResponse = {
     changes: string;
     preservedSummary: string;
   } | null;
+  setupRecovery?: (PartnerTypeSetupBundle & { needed: boolean }) | null;
+  setupForTarget?: PartnerTypeSetupBundle | null;
 };

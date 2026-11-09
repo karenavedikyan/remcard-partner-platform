@@ -11,7 +11,7 @@ import {
 describe("recommendation-profile-focus", () => {
   it("builds profile deep link with returnTo and focus", () => {
     expect(profileHrefForIssuerMissing("directionOrAgent", "/recommendations/new")).toBe(
-      "/profile?returnTo=%2Frecommendations%2Fnew&section=basics&focus=directions",
+      "/profile?returnTo=%2Frecommendations%2Fnew&section=basics&focus=partnerType",
     );
     expect(profileHrefForIssuerMissing("city", "/recommendations/new")).toContain("focus=city");
     expect(profileHrefForIssuerFocus("/recommendations/new", "agentActivity")).toContain(
@@ -26,7 +26,7 @@ describe("recommendation-profile-focus", () => {
   });
 
   it("uses choose vs fill CTA copy", () => {
-    expect(ctaLabelForIssuerCode("directionOrAgent")).toBe("Выбрать в профиле");
+    expect(ctaLabelForIssuerCode("directionOrAgent")).toBe("Заполнить данные специалиста");
     expect(ctaLabelForIssuerCode("publicName")).toBe("Заполнить в профиле");
     expect(ctaLabelForIssuerFocus("directions")).toBe("Выбрать специализацию");
     expect(ctaLabelForIssuerFocus("agentActivity")).toBe("Указать агента в профиле");

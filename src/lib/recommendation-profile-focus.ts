@@ -5,6 +5,7 @@ export const PROFILE_FOCUS_TARGETS = [
   "city",
   "agentActivity",
   "directions",
+  "partnerType",
 ] as const;
 
 export type ProfileFocusTarget = (typeof PROFILE_FOCUS_TARGETS)[number];
@@ -26,7 +27,7 @@ export function profileFocusForIssuerCode(
     case "city":
       return "city";
     case "directionOrAgent":
-      return "directions";
+      return "partnerType";
     default:
       return "directions";
   }
@@ -53,12 +54,13 @@ export function profileHrefForIssuerMissing(
 export function ctaLabelForIssuerCode(
   code: CertificateRecommendationIssuerMissingField["code"],
 ): string {
-  return code === "directionOrAgent" ? "Выбрать в профиле" : "Заполнить в профиле";
+  return code === "directionOrAgent" ? "Заполнить данные специалиста" : "Заполнить в профиле";
 }
 
 export function ctaLabelForIssuerFocus(focus: ProfileFocusTarget): string {
   if (focus === "agentActivity") return "Указать агента в профиле";
   if (focus === "directions") return "Выбрать специализацию";
+  if (focus === "partnerType") return "Заполнить данные профиля";
   return "Заполнить в профиле";
 }
 
