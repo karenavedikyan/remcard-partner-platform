@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { RewardConfirmationFields } from "./RewardConfirmationFields";
+import { PurchaseReviewModal } from "./PurchaseReviewModal";
+import { PartnerClientCertificateCard } from "@/components/recommendations/PartnerClientCertificateCard";
+import { buildStoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
+import { resolveCertificatePageUrl } from "@/lib/certificate-url";
+import { orderPreviewToStoreCertificate } from "@/lib/order-preview-certificate";
 import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
@@ -238,7 +243,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const [success, setSuccess] = useState<OrderCreateResponse | null>(null);
   const [confirmedCode, setConfirmedCode] = useState("");
   const [cameraError, setCameraError] = useState("");
+  const [purchaseReviewOpen, setPurchaseReviewOpen] = useState(false);
   const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
+  const confirmPurchaseButtonRef = useRef<HTMLButtonElement>(null);
   const [attemptRestoreDone, setAttemptRestoreDone] = useState(false);
   const [activityProbe, setActivityProbe] = useState<ScannerEmptyActivityProbe>(
     initialScannerEmptyActivityProbe,
@@ -430,6 +437,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     setConfirmedCode("");
     setCameraError("");
     setStoredAttempt(null);
+    setPurchaseReviewOpen(false);
     submitInFlightRef.current = false;
   }, [invalidatePreviewRequest]);
 
@@ -549,6 +557,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       } finally {
         submitInFlightRef.current = false;
         setSubmitting(false);
+        setPurchaseReviewOpen(false);
         setStoredAttempt(loadStoreOrderAttempt(userId));
       }
     },
@@ -811,6 +820,49 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     userId,
   ]);
 
+  const openPurchaseReview = useCallback(() => {
+    if (
+      submitting ||
+      orderConflict ||
+      !isPreviewSessionAllowed(previewSession) ||
+      branchContextBlocked
+    ) {
+      return;
+    }
+
+    const validation = validateOrderAmounts(
+      previewSession.preview.availableCategories,
+      amountDrafts,
+    );
+    if (!validation.ok) {
+      setSubmitError(validation.message);
+      return;
+    }
+
+    if (!previewSession.preview.partner.isSelfScan) {
+      try {
+        buildOrderItems(previewSession.preview.availableCategories, amountDrafts).forEach((item) => {
+          rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft);
+        });
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : "Проверьте сроки подтверждения",
+        );
+        return;
+      }
+    }
+
+    setSubmitError("");
+    setPurchaseReviewOpen(true);
+  }, [
+    amountDrafts,
+    branchContextBlocked,
+    orderConflict,
+    previewSession,
+    rewardDrafts,
+    submitting,
+  ]);
+
   const confirmNewPurchase = useCallback(async () => {
     if (
       submitInFlightRef.current ||
@@ -912,6 +964,20 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     allowedPreview && previewSession
       ? computeOrderTotals(allowedPreview.availableCategories, amountDrafts)
       : null;
+
+  const clientCertificateModel = useMemo(() => {
+    if (!allowedPreview || !previewSession) return null;
+    const cert = orderPreviewToStoreCertificate(allowedPreview, previewSession.code);
+    const pageUrl = resolveCertificatePageUrl(cert);
+    return buildStoreCertificateClientCardModel(cert, cert.promoCode, pageUrl);
+  }, [allowedPreview, previewSession]);
+
+  useEffect(() => {
+    if (!purchaseReviewOpen) return;
+    if (!isPreviewSessionAllowed(previewSession)) {
+      setPurchaseReviewOpen(false);
+    }
+  }, [previewSession, purchaseReviewOpen]);
   const amountsLocked = orderUncertain || orderConflict || isStoreOrderAttemptLocked(storedAttempt);
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
@@ -993,38 +1059,34 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           </p>
         ) : null}
 
-        <div className={`${styles.card} ${styles.cardDark}`}>
-          <p className={styles.meta}>Документ</p>
-          <p className={styles.previewTitle}>{preview.certificate.promoCode}</p>
-          <p className={styles.meta}>Код для операции: {code}</p>
-          <p className={styles.meta}>
-            {preview.certificate.issuer.label}: {preview.certificate.issuer.name}
-          </p>
-          <p className={styles.meta}>Статус: {preview.certificate.status}</p>
-          <p className={styles.meta}>
-            Действует до:{" "}
-            {preview.certificate.validUntil
-              ? new Date(preview.certificate.validUntil).toLocaleDateString("ru-RU")
-              : "без ограничения"}
-          </p>
-          <p className={styles.meta}>
-            Использований:{" "}
-            {formatUsage(preview.certificate.usageCount, preview.certificate.maxUsages)}
-          </p>
-          {preview.certificate.userAlias ? (
-            <p className={styles.meta}>Клиент: {preview.certificate.userAlias}</p>
-          ) : null}
-          <PartnerAcceptance preview={preview} />
-        </div>
+        <div className={styles.confirmationLayout}>
+          <div className={styles.certColumn}>
+            {clientCertificateModel ? (
+              <PartnerClientCertificateCard model={clientCertificateModel} />
+            ) : null}
+            <details className={styles.issuerDetails}>
+              <summary>Эмитент и где принимается документ</summary>
+              <div className={styles.issuerDetailsBody}>
+                <p className={styles.meta}>
+                  {preview.certificate.issuer.label}: {preview.certificate.issuer.name}
+                </p>
+                <p className={styles.meta}>Код для операции: {code}</p>
+                {preview.certificate.userAlias ? (
+                  <p className={styles.meta}>Клиент: {preview.certificate.userAlias}</p>
+                ) : null}
+                <PartnerAcceptance preview={preview} />
+              </div>
+            </details>
+          </div>
 
-        <div className={styles.card}>
-          <h3 className={styles.previewTitle}>Оформление покупки</h3>
+          <div className={styles.card} style={{ marginBottom: 0 }}>
+          <h2 className={styles.formLead}>Введите суммы покупки</h2>
+          <p className={styles.formHint}>
+            Суммы до скидки, в рублях. Окончательный расчёт выполняет сервер при подтверждении.
+          </p>
           <p className={styles.meta}>
             Партнёр: {preview.partner.storeName}
             {preview.partner.isSelfScan ? " · самосканирование" : ""}
-          </p>
-          <p className={styles.meta}>
-            Сумма указывается до скидки, в рублях. Скидка и итог рассчитывает сервер.
           </p>
 
           <div style={{ display: "grid", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
@@ -1096,6 +1158,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                 Отмена
               </Button>
               <Button
+                ref={confirmPurchaseButtonRef}
                 disabled={
                   submitting ||
                   !totals ||
@@ -1103,13 +1166,31 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                   orderConflict ||
                   branchContextBlocked
                 }
-                onClick={() => void confirmNewPurchase()}
+                onClick={openPurchaseReview}
               >
-                {submitting ? "Подтверждение…" : "Подтвердить покупку"}
+                Подтвердить покупку
               </Button>
             </div>
           ) : null}
+          </div>
         </div>
+
+        {totals ? (
+          <PurchaseReviewModal
+            open={purchaseReviewOpen}
+            preview={preview}
+            amountDrafts={amountDrafts}
+            rewardDrafts={rewardDrafts}
+            totals={totals}
+            branchLabel={confirmationBranchLabel}
+            submitting={submitting}
+            onClose={() => {
+              setPurchaseReviewOpen(false);
+              queueMicrotask(() => confirmPurchaseButtonRef.current?.focus());
+            }}
+            onConfirm={() => void confirmNewPurchase()}
+          />
+        ) : null}
       </div>
     );
   }

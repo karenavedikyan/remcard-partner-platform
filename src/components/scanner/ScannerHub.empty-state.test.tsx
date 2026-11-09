@@ -12,6 +12,14 @@ vi.mock("./QrScanner", () => ({
   QrScanner: () => null,
 }));
 
+vi.mock("qrcode", () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,MOCK"),
+  },
+}));
+
+import { confirmScannerPurchaseThroughReview } from "./scanner-test-flow";
+
 const USER_ID = "m1fix-store-000000000001";
 
 const previewAllowed: OrderPreviewAllowed = {
@@ -214,11 +222,7 @@ describe("ScannerHub new-partner empty state", () => {
 
     await user.type(screen.getByLabelText(/код или промокод/i), "RC-RACE-001");
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
-    const amountInput = screen.getByLabelText(/сумма покупки до скидки/i);
-    await user.clear(amountInput);
-    await user.type(amountInput, "1000");
-    await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
+    await confirmScannerPurchaseThroughReview(user, "1000");
     await screen.findByText(/покупка подтверждена/i);
 
     resolveProbe({ status: "empty_confirmed" });

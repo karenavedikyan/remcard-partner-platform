@@ -1,8 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, rewardDateHint } from "./reward-confirmation";
+import {
+  defaultRewardDraft,
+  formatDaysRu,
+  rewardDraftToTerms,
+  rewardTermsToDraft,
+  rewardDateHint,
+} from "./reward-confirmation";
 import { parseRubles } from "./reward-lifecycle-types";
 describe("per-category confirmation fields", () => {
+  it("pluralizes reward day summaries", () => {
+    assert.equal(formatDaysRu("1"), "1 день");
+    assert.equal(formatDaysRu("14"), "14 дней");
+    assert.equal(formatDaysRu("22"), "22 дня");
+    assert.equal(formatDaysRu("abc"), "Проверьте срок");
+  });
   it("defaults to 14 days without invented handover", () => {
     assert.deepEqual(rewardDraftToTerms(defaultRewardDraft), { days: 14, kind: "GOODS", fulfilledAt: null });
   });

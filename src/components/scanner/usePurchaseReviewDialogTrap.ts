@@ -1,0 +1,90 @@
+"use client";
+
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { getFocusableElements, handleDialogTabKey } from "@/lib/dialog-focus";
+
+export function usePurchaseReviewDialogTrap(active: boolean, onEscape: () => void) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const openedRef = useRef(false);
+  const onEscapeRef = useRef(onEscape);
+  onEscapeRef.current = onEscape;
+
+  useEffect(() => {
+    if (!active) {
+      openedRef.current = false;
+      return undefined;
+    }
+    if (!openedRef.current) {
+      restoreFocusRef.current = document.activeElement as HTMLElement | null;
+      openedRef.current = true;
+    }
+    return () => {
+      if (!openedRef.current) return;
+      openedRef.current = false;
+      const restore = restoreFocusRef.current;
+      queueMicrotask(() => restore?.focus?.());
+    };
+  }, [active]);
+
+  const focusWithinDialog = () => {
+    const root = containerRef.current;
+    if (!root) return;
+    const back = root.querySelector<HTMLElement>('[data-testid="purchase-review-back"]');
+    const focusables = getFocusableElements(root);
+    const target =
+      back && focusables.includes(back) ? back : focusables[0] ?? root.querySelector<HTMLElement>("#purchase-review-body");
+    if (target) {
+      target.focus();
+      return;
+    }
+    if (!root.hasAttribute("tabindex")) {
+      root.tabIndex = -1;
+    }
+    root.focus();
+  };
+
+  useLayoutEffect(() => {
+    if (!active) return;
+    queueMicrotask(() => focusWithinDialog());
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const root = containerRef.current;
+      if (!root) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onEscapeRef.current();
+        return;
+      }
+
+      if (event.key === "Tab") {
+        handleDialogTabKey(event, root);
+      }
+    };
+
+    const onFocusIn = (event: FocusEvent) => {
+      const root = containerRef.current;
+      if (!root) return;
+      const target = event.target;
+      if (target instanceof Node && root.contains(target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      focusWithinDialog();
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("focusin", onFocusIn, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("focusin", onFocusIn, true);
+    };
+  }, [active]);
+
+  return containerRef;
+}

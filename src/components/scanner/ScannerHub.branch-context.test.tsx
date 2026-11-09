@@ -16,6 +16,14 @@ vi.mock("./QrScanner", () => ({
   QrScanner: () => null,
 }));
 
+vi.mock("qrcode", () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,MOCK"),
+  },
+}));
+
+import { confirmScannerPurchaseThroughReview } from "./scanner-test-flow";
+
 const USER_ID = "staff-scanner-user-001";
 const CERT = "RC-BRANCH-FLOW";
 
@@ -91,7 +99,7 @@ describe("ScannerHub branch operation context", () => {
     renderWithContext(staffContextSix());
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     expect(calls.some((u) => u.includes("branchId=br_krd_rostov"))).toBe(true);
     expect(screen.getByTestId("scanner-confirmation-branch")).toHaveTextContent(/филиал операции/i);
     expect(screen.getByTestId("scanner-confirmation-branch")).toHaveTextContent(/ростов/i);
@@ -123,10 +131,7 @@ describe("ScannerHub branch operation context", () => {
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
 
-    await screen.findByText(/оформление покупки/i);
-    const amount = screen.getByLabelText(/сумма покупки до скидки/i);
-    await user.type(amount, "1000");
-    await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
+    await confirmScannerPurchaseThroughReview(user, "1000");
 
     await waitFor(() => {
       expect(calls.filter((c) => c.url.includes("branchId=br_krd_partizan"))).toHaveLength(2);
@@ -160,7 +165,7 @@ describe("ScannerHub branch operation context", () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     expect(calls.some((u) => u.includes(`branchId=${only.id}`))).toBe(true);
   });
 
@@ -181,7 +186,7 @@ describe("ScannerHub branch operation context", () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     expect(calls.some((u) => u.includes("branchId="))).toBe(false);
   });
 

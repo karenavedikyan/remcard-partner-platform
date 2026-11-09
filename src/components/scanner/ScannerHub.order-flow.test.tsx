@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScannerHub } from "./ScannerHub";
+import { confirmScannerPurchaseThroughReview } from "./scanner-test-flow";
 import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
 import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
 import {
@@ -12,6 +13,12 @@ import type { OrderCreateResponse, OrderPreviewAllowed } from "@/lib/order-types
 
 vi.mock("./QrScanner", () => ({
   QrScanner: () => null,
+}));
+
+vi.mock("qrcode", () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,MOCK"),
+  },
 }));
 
 const USER_ID = "m1fix-store-000000000001";
@@ -78,12 +85,7 @@ function idempotencyKey(init?: RequestInit): string | undefined {
 async function runPreviewAndConfirm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/код или промокод/i), CERT_CODE);
   await user.click(screen.getByRole("button", { name: /найти/i }));
-  await screen.findByText(/оформление покупки/i);
-
-  const amountInput = screen.getByLabelText(/сумма покупки до скидки/i);
-  await user.clear(amountInput);
-  await user.type(amountInput, "1000");
-  await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
+  await confirmScannerPurchaseThroughReview(user, "1000");
 }
 
 function renderScanner() {

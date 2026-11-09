@@ -14,6 +14,12 @@ vi.mock("./QrScanner", () => ({
   QrScanner: () => null,
 }));
 
+vi.mock("qrcode", () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,MOCK"),
+  },
+}));
+
 const USER_ID = "staff-safety-user-001";
 const CERT = "RC-SAFETY-FLOW";
 
@@ -138,7 +144,7 @@ describe("ScannerHub branch safety", () => {
     renderWithContext(staffContextSix());
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     expect(previews.some((u) => u.includes("branchId=br_krd_rostov"))).toBe(true);
   });
 
@@ -270,10 +276,10 @@ describe("ScannerHub branch safety", () => {
     render(<ScannerMutableContext initial={staffContextSix()} />);
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     await user.click(screen.getByTestId("ctx-revoke-all"));
     await waitFor(() => {
-      expect(screen.queryByText(/оформление покупки/i)).toBeNull();
+      expect(screen.queryByText(/введите суммы покупки/i)).toBeNull();
     });
     expect(screen.getByDisplayValue(CERT)).toBeInTheDocument();
     expect(orders).toHaveLength(0);
@@ -299,7 +305,7 @@ describe("ScannerHub branch safety", () => {
     await waitFor(() => {
       expect(screen.queryByText(`${CERT}-LATE`)).toBeNull();
     });
-    expect(screen.queryByText(/оформление покупки/i)).toBeNull();
+    expect(screen.queryByText(/введите суммы покупки/i)).toBeNull();
   });
 
   it("invalidates preview when default active branch shifts without user pick", async () => {
@@ -343,7 +349,7 @@ describe("ScannerHub branch safety", () => {
     renderWithContext({ role: "ORG_OWNER", organization: { id: "o", name: "O" }, branches: [] }, "PRO");
     await user.type(screen.getByLabelText(/код или промокод/i), CERT);
     await user.click(screen.getByRole("button", { name: /найти/i }));
-    await screen.findByText(/оформление покупки/i);
+    await screen.findByText(/введите суммы покупки/i);
     expect(calls.some((u) => u.includes("branchId="))).toBe(false);
   });
 });
