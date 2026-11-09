@@ -84,6 +84,58 @@ describe("PartnerTypeSettings", () => {
     expect(await screen.findByTestId("partner-type-unsaved")).toBeInTheDocument();
   });
 
+  it("auto-opens setup recovery from certificate focus", async () => {
+    remcardFetch.mockImplementation(async (url: string) => {
+      if (url.includes("target=specialist")) {
+        return switchState({
+          currentKind: "specialist",
+          setupRecovery: {
+            needed: true,
+            targetKind: "specialist",
+            requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+            prefill: {
+              publicName: "Мастер",
+              city: "Краснодар",
+              serviceSpecializationIds: [],
+              productCategoryIds: ["doors"],
+              organizationName: "",
+            },
+          },
+        });
+      }
+      return switchState({
+        currentKind: "specialist",
+        setupRecovery: {
+          needed: true,
+          targetKind: "specialist",
+          requiredFields: ["publicName", "city", "serviceSpecializationIds"],
+          prefill: {
+            publicName: "Мастер",
+            city: "Краснодар",
+            serviceSpecializationIds: [],
+            productCategoryIds: [],
+            organizationName: "",
+          },
+        },
+      });
+    });
+    render(
+      <PartnerTypeSettings
+        profile={{
+          ...baseProfile,
+          user: { ...baseProfile.user, partnerType: "MASTER", partnerActivities: ["SERVICE"] },
+        }}
+        hasUnsavedBasicsChanges={false}
+        onProfileUpdated={() => {}}
+        onRequestRefresh={() => {}}
+        autoOpenSetupRecovery
+      />,
+    );
+    expect(await screen.findByTestId("partner-type-setup")).toBeInTheDocument();
+    expect(screen.getByTestId("partner-type-setup-publicName")).toHaveValue("Мастер");
+    expect(screen.getByTestId("partner-type-setup-city")).toHaveValue("Краснодар");
+  });
+
   it("recovery open respects unsaved guard", async () => {
     remcardFetch.mockResolvedValue(
       switchState({

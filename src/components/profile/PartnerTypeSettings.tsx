@@ -62,12 +62,8 @@ function buildSetupPayload(
     payload.serviceSpecializationIds = form.serviceSpecializationIds;
   } else if (targetKind === "store" || targetKind === "company") {
     payload.organizationName = form.organizationName.trim();
-    if (form.productCategoryIds.length > 0) {
-      payload.productCategoryIds = form.productCategoryIds;
-    }
-    if (form.serviceSpecializationIds.length > 0) {
-      payload.serviceSpecializationIds = form.serviceSpecializationIds;
-    }
+    payload.productCategoryIds = [...form.productCategoryIds];
+    payload.serviceSpecializationIds = [...form.serviceSpecializationIds];
   }
   return payload;
 }
@@ -123,7 +119,7 @@ export function PartnerTypeSettings({
     const gen = ++flowGeneration.current;
     void loadState(kind)
       .then((data) => {
-        if (gen !== flowGeneration.current || stepRef.current === "closed") return;
+        if (gen !== flowGeneration.current) return;
         setSelected(kind);
         setSetupForm(fromPrefill(data.setupRecovery?.prefill));
         setAck(false);
@@ -225,7 +221,7 @@ export function PartnerTypeSettings({
     const sameKind = selected === currentKind;
     try {
       const data = await loadState(sameKind ? undefined : selected);
-      if (gen !== flowGeneration.current || stepRef.current === "closed") return;
+      if (gen !== flowGeneration.current) return;
       const bundle = sameKind ? data.setupRecovery : data.setupForTarget;
       setSetupForm(fromPrefill(bundle?.prefill));
       setAck(false);
