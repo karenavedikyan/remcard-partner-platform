@@ -7,6 +7,7 @@ import {
   isCancelledStatus,
   isPaidStatus,
   kopecksToRub,
+  paidHistoryRub as settlementPaidHistoryRub,
 } from "@/lib/wallet-accruals/amounts";
 
 export type AccrualPresentation = {
@@ -96,8 +97,8 @@ function buildOpenBreakdown(
   confirmedRub: number,
   suspendedRub: number,
   paidHistoryRub: number,
-): AccrualPresentation["breakdown"] {
-  const breakdown: AccrualPresentation["breakdown"] = [];
+): NonNullable<AccrualPresentation["breakdown"]> {
+  const breakdown: NonNullable<AccrualPresentation["breakdown"]> = [];
   if (buckets.hasWaitingRow) {
     breakdown.push({ label: "Ожидает подтверждения", value: formatMoneyRub(waitingRub) });
   }
@@ -129,7 +130,10 @@ export function presentAccrualRow(row: AccrualRow): AccrualPresentation {
     return cancelledPresentation(row);
   }
   if (isTerminalPaidRow(row)) {
-    return paidPresentation(row, 0);
+    const paidRub = hasSettlementLifecycle(row)
+      ? settlementPaidHistoryRub(obligationFromAccrual(row))
+      : Math.max(0, row.paidAmount ?? 0);
+    return paidPresentation(row, paidRub);
   }
 
   if (!hasSettlementLifecycle(row)) {
@@ -160,9 +164,7 @@ export function presentAccrualRow(row: AccrualRow): AccrualPresentation {
   );
 
   if (buckets.hasWaitingRow && !buckets.needsReview) {
-    const noteParts = [
-      "Ожидает подтверждения. В заголовке — сумма ожидания; ниже — подтверждённая часть по серверу.",
-    ];
+    const noteParts = ["Сумма ожидает подтверждения."];
     if (confirmedRub > 0) {
       noteParts.push(`Подтверждено к расчёту: ${formatMoneyRub(confirmedRub)}.`);
     } else if (row.amount === 0 || confirmedRub === 0) {
