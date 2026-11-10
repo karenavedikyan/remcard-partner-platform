@@ -1,0 +1,503 @@
+.page {
+  width: min(560px, 100%);
+  margin-inline: auto;
+  padding: 10px 0 16px;
+}
+
+.pageNav {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.backLink {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--primary);
+}
+
+.backLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.titleRow h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.document {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 9px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.document strong {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.documentSep {
+  color: var(--muted);
+}
+
+.receipt {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 28px 28px 22px;
+}
+
+.focus {
+  text-align: center;
+  padding: 12px 0 26px;
+}
+
+.focusLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.accrualAmount {
+  margin: 12px 0 0;
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -1.8px;
+  line-height: 1.2;
+  color: var(--primary-fill);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.accrualAmount span {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.accrualUnavailable {
+  margin: 12px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.focusNote {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.purchaseContext {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.payable {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: 1.5;
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.participants {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  padding: 16px 0 20px;
+  margin: 0;
+}
+
+.participants strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.participantsDot {
+  margin-inline: 8px;
+}
+
+.breakdown {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.breakdown > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 44px;
+  padding: 13px 0;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.breakdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.breakdown > summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.breakdownLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.breakdownHint {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.breakdown[open] > summary .chevron {
+  transform: rotate(180deg);
+}
+
+.breakdownBody {
+  padding: 0 0 18px;
+  font-size: 12px;
+}
+
+.metaBlock {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.metaBlock p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.metaInk {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.lifecycleSlot {
+  padding: 8px 0 12px;
+  border-top: 1px solid var(--line);
+}
+
+.totalLines {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 16px;
+  margin: 0;
+}
+
+.totalLines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.totalLines dt {
+  margin: 0;
+  color: var(--muted);
+}
+
+.totalLines dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.item {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.item h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.calcContent {
+  padding-bottom: 15px;
+}
+
+.calcContent dl {
+  margin: 0;
+}
+
+.calcContent dl > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 5px 0;
+}
+
+.calcContent dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.calcContent dd {
+  margin: 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.breakdownNote {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 15px 0 0;
+}
+
+.linkedSection {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.linkedSection h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.linkedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 6px;
+}
+
+.linkedRow:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.linkedMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.summaryActions {
+  display: flex;
+  justify-content: stretch;
+  margin-top: 20px;
+}
+
+.docLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+}
+
+.docLink:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.docLink:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.docLink svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--primary-fill);
+}
+
+.receivingSlot {
+  margin-top: 16px;
+}
+
+.warning {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.empty,
+.error,
+.loading {
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  max-width: min(560px, 100%);
+  margin-inline: auto;
+}
+
+.empty {
+  border-style: dashed;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.error {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  background: var(--soft);
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.loading {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty a,
+.error a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .receipt {
+    padding: 24px 20px 20px;
+    border-radius: 16px;
+  }
+
+  .focus {
+    padding: 10px 0 24px;
+  }
+
+  .accrualAmount {
+    font-size: 48px;
+  }
+
+  .accrualAmount span {
+    font-size: 32px;
+  }
+
+  .purchaseContext {
+    padding: 12px 10px;
+    font-size: 12px;
+    gap: 5px 9px;
+  }
+
+  .payable {
+    font-size: 15px;
+  }
+
+  .participants {
+    padding: 15px 0 18px;
+  }
+
+  .participantsDot {
+    margin-inline: 5px;
+  }
+}
+
+@media (max-width: 350px) {
+  .receipt {
+    padding: 22px 16px 18px;
+  }
+
+  .accrualAmount {
+    font-size: 46px;
+  }
+
+  .focusLabel {
+    font-size: 13px;
+  }
+
+  .purchaseContext {
+    gap: 4px 8px;
+  }
+
+  .payable {
+    font-size: 14px;
+  }
+
+  .participants {
+    max-width: 220px;
+    margin-inline: auto;
+  }
+}

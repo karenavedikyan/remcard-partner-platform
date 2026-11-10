@@ -14,13 +14,13 @@ import {
 } from "@/lib/history-labels";
 import { findAccrualsForPurchase } from "@/lib/history-links";
 import { fetchAccrualRows, fetchPurchaseByOrderId } from "@/lib/history-loader";
-import type { AccrualRow, PurchaseRow } from "@/lib/history-types";
+import type { AccrualRow, PurchaseItemRow, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PurchaseReceivingClientPanel } from "@/components/history/PurchaseReceivingClientPanel";
-import styles from "./history.module.css";
 import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
+import styles from "./PurchaseDetail.module.css";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -30,6 +30,70 @@ function formatDate(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatMoneyHero(value: number): { amount: string; symbol: string } {
+  const hasFraction = Math.abs(value - Math.round(value)) > 1e-9;
+  const amount = hasFraction
+    ? value.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : value.toLocaleString("ru-RU");
+  return { amount, symbol: "₽" };
+}
+
+function itemDiscountAmount(item: PurchaseItemRow): number {
+  const percent = item.discountPercent ?? 0;
+  if (!percent) return 0;
+  return (item.amount * percent) / 100;
+}
+
+function itemPayableAmount(item: PurchaseItemRow): number {
+  return item.amount - itemDiscountAmount(item);
+}
+
+function categoryBreakdownHint(items: PurchaseItemRow[]): string {
+  if (!items.length) return "";
+  const labels = items.map((item) => displayCategoryLabelFromStored(item.categoryLabel));
+  const visible = labels.slice(0, 3).join(", ");
+  return labels.length > 3 ? `${visible}…` : visible;
+}
+
+function directionLabel(purchase: PurchaseRow): string {
+  return purchase.direction === "accepted" ? "Принято у меня" : "По моей рекомендации";
+}
+
+function rewardHero(purchase: PurchaseRow): {
+  kind: "stored" | "zero" | "unavailable" | "selfScan";
+  value?: number;
+} {
+  if (purchase.isSelfScan) return { kind: "selfScan" };
+  if (purchase.proBonus == null || !Number.isFinite(purchase.proBonus)) {
+    return { kind: "unavailable" };
+  }
+  if (purchase.proBonus === 0) return { kind: "zero" };
+  return { kind: "stored", value: purchase.proBonus };
+}
+
+function ChevronDown() {
+  return (
+    <svg className={styles.chevron} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="m8 10 4 4 4-4" />
+    </svg>
+  );
+}
+
+function ArrowRight() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 12h14m-5-5 5 5-5 5"
+      />
+    </svg>
+  );
 }
 
 type PurchaseDetailProps = {
@@ -72,7 +136,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         setLinkedAccruals(findAccrualsForPurchase(row, accruals));
       } catch {
         if (version !== loadVersion.current) return;
-        setAccrualWarning("Покупка загружена, но связанные начисления сейчас недоступны. Суммы покупки не изменены.");
+        setAccrualWarning(
+          "Покупка загружена, но связанные начисления сейчас недоступны. Суммы покупки не изменены.",
+        );
       }
     } catch (caught) {
       if (version !== loadVersion.current) return;
@@ -92,7 +158,9 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
 
   useEffect(() => {
     void load();
-    return () => { loadVersion.current++; };
+    return () => {
+      loadVersion.current++;
+    };
   }, [load]);
 
   if (loading) {
@@ -127,134 +195,280 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
   }
 
   const orderStatus = purchaseOrderStatusLabel(purchase);
+  const hero = rewardHero(purchase);
+  const breakdownHint = categoryBreakdownHint(purchase.items);
+  const documentCode = purchase.promoCode ?? "Документ";
+  const hasIssuerLines = purchase.items.some(
+    (item) => item.issuerPercent != null || item.issuerAmount != null,
+  );
 
   return (
-    <div className={styles.detailCard}>
-      <div className={styles.rowHeader}>
-        <div>
-          {purchase.orderId ? (
-            <p className={styles.meta}>Заказ №{purchase.orderId}</p>
-          ) : (
-            <p className={styles.meta}>Номер заказа недоступен</p>
-          )}
-          <h2 className={styles.rowTitle}>{purchase.promoCode ?? "Документ"}</h2>
-          <p className={styles.meta}>
-            {purchaseRowDateLabel(purchase)}: {formatDate(purchase.createdAt)}
-          </p>
-        </div>
-        {orderStatus ? (
-          <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(purchase)} />
-        ) : null}
+    <section className={styles.page} aria-labelledby="purchase-detail-title">
+      <nav className={styles.pageNav} aria-label="Навигация по истории">
+        <Link className={styles.backLink} href="/history">
+          ← К истории
+        </Link>
+      </nav>
+
+      <div className={styles.titleRow}>
+        <h1 id="purchase-detail-title">Детали операции</h1>
       </div>
 
-      {purchase.source === "accepted-bonus" ? (
-        <p className={styles.note}>
-          Здесь показаны данные из старого формата начислений. Полный статус заказа доступен в
-          разделе «Принято у меня».
-        </p>
-      ) : null}
+      <p className={styles.document}>
+        <strong>{documentCode}</strong>
+        <span className={styles.documentSep} aria-hidden="true">
+          ·
+        </span>
+        <span>{directionLabel(purchase)}</span>
+        {orderStatus ? (
+          <>
+            <span className={styles.documentSep} aria-hidden="true">
+              ·
+            </span>
+            <span>{orderStatus}</span>
+          </>
+        ) : null}
+      </p>
 
-      <div className={styles.detailGrid}>
-        {purchase.orderId ? <RewardLifecyclePanel orderId={purchase.orderId} /> : null}
-        <p className={styles.meta}>
-          Направление:{" "}
-          {purchase.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}
-        </p>
-        <p className={styles.meta}>Партнёр: {purchase.partnerName}</p>
-        {purchase.clientName ? (
-          <p className={styles.meta}>Клиент документа: {purchase.clientName}</p>
-        ) : null}
-        {purchase.branchName ? <p className={styles.meta}>Филиал: {purchase.branchName}</p> : null}
-        {purchase.executorName ? (
-          <p className={styles.meta}>Исполнитель: {purchase.executorName}</p>
-        ) : null}
-        {purchase.isSelfScan ? <p className={styles.meta}>Самосканирование — без начисления</p> : null}
-        {purchase.source === "accepted-bonus" && purchase.bonusStatus ? (
-          <p className={styles.meta}>
-            Статус начисления профклиенту:{" "}
-            <StatusBadge
-              label={bonusStatusLabel(purchase.bonusStatus)}
-              tone={bonusStatusTone(purchase.bonusStatus)}
-            />
+      <div className={styles.receipt}>
+        <section className={styles.focus} aria-labelledby="purchase-reward-label">
+          <h2 id="purchase-reward-label" className={styles.focusLabel}>
+            Вознаграждение по операции
+          </h2>
+          {hero.kind === "stored" && hero.value != null ? (
+            <p className={styles.accrualAmount}>
+              {formatMoneyHero(hero.value).amount}{" "}
+              <span>{formatMoneyHero(hero.value).symbol}</span>
+            </p>
+          ) : (
+            <p className={styles.accrualUnavailable}>
+              {hero.kind === "selfScan"
+                ? "Начисление по операции не предусмотрено"
+                : hero.kind === "zero"
+                  ? "Сохранённое начисление: 0 ₽"
+                  : "Сохранённое начисление недоступно"}
+            </p>
+          )}
+          <p className={styles.focusNote}>
+            {hero.kind === "stored" ? (
+              <>
+                Начисление сохранено.
+                <br />
+                Статус выплаты здесь не указан.
+              </>
+            ) : hero.kind === "selfScan" ? (
+              "Самосканирование — без начисления профклиенту."
+            ) : hero.kind === "zero" ? (
+              "Статус выплаты здесь не указан."
+            ) : (
+              "Данные о сохранённом начислении не получены."
+            )}
           </p>
+        </section>
+
+        <p className={styles.purchaseContext}>
+          <span>К оплате за покупку</span>
+          <strong className={styles.payable}>{formatMoneyRub(purchase.payableAmount)}</strong>
+        </p>
+
+        <p className={styles.participants}>
+          Партнёр <strong>{purchase.partnerName}</strong>
+          {purchase.executorName ? (
+            <>
+              <span className={styles.participantsDot} aria-hidden="true">
+                ·
+              </span>
+              Исполнитель <strong>{purchase.executorName}</strong>
+            </>
+          ) : null}
+        </p>
+
+        <details className={styles.breakdown}>
+          <summary>
+            <span>
+              <span className={styles.breakdownLabel}>Состав и расчёт</span>
+              {breakdownHint ? (
+                <span className={styles.breakdownHint}>{breakdownHint}</span>
+              ) : null}
+            </span>
+            <ChevronDown />
+          </summary>
+          <div className={styles.breakdownBody}>
+            <div className={styles.metaBlock}>
+              {purchase.orderId ? (
+                <p>
+                  Заказ №<span className={styles.metaInk}>{purchase.orderId}</span>
+                </p>
+              ) : (
+                <p>Номер заказа недоступен</p>
+              )}
+              <p>
+                {purchaseRowDateLabel(purchase)}:{" "}
+                <span className={styles.metaInk}>{formatDate(purchase.createdAt)}</span>
+              </p>
+              {purchase.clientName ? (
+                <p>
+                  Клиент документа: <span className={styles.metaInk}>{purchase.clientName}</span>
+                </p>
+              ) : null}
+              {purchase.branchName ? (
+                <p>
+                  Филиал: <span className={styles.metaInk}>{purchase.branchName}</span>
+                </p>
+              ) : null}
+              {purchase.source === "accepted-bonus" ? (
+                <p>
+                  Данные из старого формата начислений. Полный статус заказа — в разделе «Принято
+                  у меня».
+                </p>
+              ) : null}
+              {orderStatus ? (
+                <p>
+                  Статус заказа:{" "}
+                  <StatusBadge
+                    label={orderStatus}
+                    tone={purchaseOrderStatusTone(purchase)}
+                  />
+                </p>
+              ) : null}
+              {purchase.source === "accepted-bonus" && purchase.bonusStatus ? (
+                <p>
+                  Статус начисления профклиенту:{" "}
+                  <StatusBadge
+                    label={bonusStatusLabel(purchase.bonusStatus)}
+                    tone={bonusStatusTone(purchase.bonusStatus)}
+                  />
+                </p>
+              ) : null}
+            </div>
+
+            {purchase.orderId ? (
+              <div className={styles.lifecycleSlot}>
+                <RewardLifecyclePanel orderId={purchase.orderId} />
+              </div>
+            ) : null}
+
+            <dl className={styles.totalLines}>
+              <div>
+                <dt>До скидки</dt>
+                <dd>{formatMoneyRub(purchase.totalAmount)}</dd>
+              </div>
+              <div>
+                <dt>Скидка клиенту</dt>
+                <dd>−{formatMoneyRub(purchase.discountAmount)}</dd>
+              </div>
+            </dl>
+
+            {purchase.items.map((item) => {
+              const label = displayCategoryLabelFromStored(item.categoryLabel);
+              const discountPct = item.discountPercent ?? 0;
+              const discountAmt = itemDiscountAmount(item);
+              const payableItem = itemPayableAmount(item);
+              return (
+                <article key={`${item.categoryLabel}-${item.amount}`} className={styles.item}>
+                  <h3>{label}</h3>
+                  <div className={styles.calcContent}>
+                    <dl>
+                      {discountPct > 0 ? (
+                        <div>
+                          <dt>Скидка</dt>
+                          <dd>
+                            {formatMoneyRub(item.amount)} × {discountPct}% ={" "}
+                            {formatMoneyRub(discountAmt)}
+                          </dd>
+                        </div>
+                      ) : null}
+                      <div>
+                        <dt>К оплате за позицию</dt>
+                        <dd>
+                          {discountPct > 0
+                            ? `${formatMoneyRub(item.amount)} − ${formatMoneyRub(discountAmt)} = ${formatMoneyRub(payableItem)}`
+                            : formatMoneyRub(payableItem)}
+                        </dd>
+                      </div>
+                      {item.issuerPercent != null ? (
+                        <div>
+                          <dt>Вознаграждение</dt>
+                          <dd>
+                            {formatMoneyRub(item.amount)} × {item.issuerPercent}% ={" "}
+                            {formatMoneyRub(item.issuerAmount ?? 0)}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </div>
+                </article>
+              );
+            })}
+
+            {hasIssuerLines ? (
+              <p className={styles.breakdownNote}>
+                Вознаграждение рассчитано от суммы до скидки. Общее начисление складывается из
+                вознаграждений по категориям и не подтверждает выплату.
+              </p>
+            ) : null}
+
+            {linkedAccruals.length ? (
+              <div className={styles.linkedSection}>
+                <h3>Связанные начисления</h3>
+                {linkedAccruals.map((accrual) => (
+                  <Link
+                    key={accrual.id}
+                    href={`/history/accruals/${encodeURIComponent(accrual.id)}`}
+                    className={styles.linkedRow}
+                  >
+                    <span>
+                      <span className={styles.metaInk}>{formatMoneyRub(accrual.amount)}</span>
+                      <p className={styles.linkedMeta}>{formatDate(accrual.createdAt)}</p>
+                    </span>
+                    <StatusBadge
+                      label={bonusStatusLabel(accrual.status)}
+                      tone={bonusStatusTone(accrual.status)}
+                    />
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </details>
+
+        {purchase.promoCode && !purchase.isSelfScan ? (
+          <div className={styles.summaryActions}>
+            <Link
+              className={styles.docLink}
+              href={documentOperationsHref(purchase.promoCode)}
+            >
+              Все операции по документу
+              <ArrowRight />
+            </Link>
+          </div>
         ) : null}
       </div>
 
       {purchase.direction === "accepted" && purchase.canManageReceivingClient ? (
-        <PurchaseReceivingClientPanel
-          purchase={purchase}
-          onReload={() => void load()}
-          onLinked={({ orderId: linkedOrderId, receivingClient, receivingLinkRevision }) => {
-            setPurchase((prev) => {
-              if (!prev || (prev.orderId ?? prev.id) !== linkedOrderId) return prev;
-              return {
-                ...prev,
-                receivingClient,
-                receivingLinkRevision,
-              };
-            });
-          }}
-        />
-      ) : null}
-
-      <div className={styles.amounts}>
-        <span>До скидки: {formatMoneyRub(purchase.totalAmount)}</span>
-        <span>Скидка: −{formatMoneyRub(purchase.discountAmount)}</span>
-        <strong>К оплате: {formatMoneyRub(purchase.payableAmount)}</strong>
-        {!purchase.isSelfScan && purchase.proBonus != null && purchase.proBonus > 0 ? (
-          <span>Сумма начисления (сохранена): {formatMoneyRub(purchase.proBonus)}</span>
-        ) : null}
-      </div>
-
-      {purchase.items.length ? (
-        <div>
-          <h3 className={styles.rowTitle}>Позиции</h3>
-          {purchase.items.map((item) => (
-            <div key={`${item.categoryLabel}-${item.amount}`} className={styles.itemRow}>
-              <strong>{displayCategoryLabelFromStored(item.categoryLabel)}</strong>
-              <span className={styles.meta}>Сумма до скидки: {formatMoneyRub(item.amount)}</span>
-              {item.discountPercent != null ? (
-                <span className={styles.meta}>Скидка: {item.discountPercent}%</span>
-              ) : null}
-              {item.issuerPercent != null ? (
-                <span className={styles.meta}>
-                  Вознаграждение: {item.issuerPercent}% ({formatMoneyRub(item.issuerAmount ?? 0)})
-                </span>
-              ) : null}
-            </div>
-          ))}
+        <div className={styles.receivingSlot}>
+          <PurchaseReceivingClientPanel
+            purchase={purchase}
+            onReload={() => void load()}
+            onLinked={({ orderId: linkedOrderId, receivingClient, receivingLinkRevision }) => {
+              setPurchase((prev) => {
+                if (!prev || (prev.orderId ?? prev.id) !== linkedOrderId) return prev;
+                return {
+                  ...prev,
+                  receivingClient,
+                  receivingLinkRevision,
+                };
+              });
+            }}
+          />
         </div>
       ) : null}
 
-      {linkedAccruals.length ? (
-        <div>
-          <h3 className={styles.rowTitle}>Связанные начисления</h3>
-          {linkedAccruals.map((accrual) => (
-            <Link
-              key={accrual.id}
-              href={`/history/accruals/${encodeURIComponent(accrual.id)}`}
-              className={styles.row}
-              style={{ marginTop: "var(--space-2)" }}
-            >
-              <div className={styles.rowHeader}>
-                <span>{formatMoneyRub(accrual.amount)}</span>
-                <StatusBadge
-                  label={bonusStatusLabel(accrual.status)}
-                  tone={bonusStatusTone(accrual.status)}
-                />
-              </div>
-              <p className={styles.meta}>{formatDate(accrual.createdAt)}</p>
-            </Link>
-          ))}
-        </div>
-      ) : purchase.promoCode && !purchase.isSelfScan ? (
-        <Link href={documentOperationsHref(purchase.promoCode)}>
-          Все операции по документу {purchase.promoCode}
-        </Link>
+      {accrualWarning ? (
+        <p className={styles.warning} role="status">
+          {accrualWarning}
+        </p>
       ) : null}
-
-      {accrualWarning ? <p role="status">{accrualWarning}</p> : null}
-      <Link href="/history">← К истории</Link>
-    </div>
+    </section>
   );
 }
