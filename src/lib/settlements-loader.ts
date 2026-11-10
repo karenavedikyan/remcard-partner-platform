@@ -1,4 +1,5 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { publicSettlementsCoverageNote } from "@/lib/wallet-accruals/settlements-display";
 import { mergeSettlementsResponses } from "./settlements-merge";
 import type { SettlementsResponse } from "./settlements-types";
 
@@ -25,12 +26,12 @@ function normalizeBranchIds(ids?: string[] | null): string[] {
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].sort();
 }
 
-function staffBranchMergedCoverageNote(branchIds: string[], upstreamNote: string): string {
-  const scope = `По филиалам с правом просмотра: ${branchIds.join(", ")}.`;
+function staffBranchMergedCoverageNote(branchCount: number, upstreamNote: string): string {
+  const scope = `Показаны расчёты по филиалам с правом просмотра (${branchCount}).`;
   const caveat =
-    "Начисления без привязки к филиалу (исторические) в этот обзор не входят и могут отличаться от кошелька владельца.";
-  const base = upstreamNote.trim();
-  return [scope, caveat, base].filter(Boolean).join(" ");
+    "Исторические начисления без привязки к филиалу не включены. Итог может отличаться от общего баланса владельца.";
+  const publicUpstream = publicSettlementsCoverageNote(upstreamNote);
+  return [scope, caveat, publicUpstream].filter(Boolean).join(" ");
 }
 
 async function fetchSettlementsForGrantedBranches(
@@ -42,7 +43,7 @@ async function fetchSettlementsForGrantedBranches(
   const merged = mergeSettlementsResponses(responses);
   return {
     ...merged,
-    coverageNote: staffBranchMergedCoverageNote(branchIds, merged.coverageNote),
+    coverageNote: staffBranchMergedCoverageNote(branchIds.length, merged.coverageNote),
   };
 }
 
