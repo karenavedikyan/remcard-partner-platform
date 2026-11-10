@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { RewardLifecyclePanel } from "./RewardLifecyclePanel";
-import { remcardFetch } from "@/lib/api-client";
+import {
+  REWARD_DETAILS_ACCESS_DENIED_HINT,
+  REWARD_DETAILS_ACCESS_DENIED_TITLE,
+  RewardLifecyclePanel,
+} from "./RewardLifecyclePanel";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { RewardResponse } from "@/lib/reward-lifecycle-types";
 vi.mock("@/lib/api-client", async importOriginal => ({
   ...await importOriginal<typeof import("@/lib/api-client")>(), remcardFetch: vi.fn(),
@@ -68,5 +72,30 @@ describe("reward lifecycle controls", () => {
     expect(control).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent("Действия заблокированы");
     expect(vi.mocked(remcardFetch)).toHaveBeenCalledTimes(1);
+  });
+
+  it("403 GET shows Russian access message, not raw Forbidden or zero-reward success", async () => {
+    vi.mocked(remcardFetch).mockRejectedValue(new RemcardApiError(403, "Forbidden"));
+    render(<RewardLifecyclePanel orderId="qa-order" />);
+    const denied = await screen.findByTestId("reward-lifecycle-access-denied");
+    expect(denied).toHaveTextContent(REWARD_DETAILS_ACCESS_DENIED_TITLE);
+    expect(denied).toHaveTextContent(REWARD_DETAILS_ACCESS_DENIED_HINT);
+    expect(denied).not.toHaveTextContent(/Forbidden/i);
+    expect(screen.queryByRole("button", { name: "Повторить" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reward-confirmed")).toBeNull();
+    expect(screen.queryByTestId("reward-pending")).toBeNull();
+  });
+
+  it("non-403 load error keeps retry and does not use access-denied copy", async () => {
+    const user = userEvent.setup();
+    vi.mocked(remcardFetch)
+      .mockRejectedValueOnce(new RemcardApiError(500, "Сервер недоступен"))
+      .mockResolvedValueOnce(fixture());
+    render(<RewardLifecyclePanel orderId="qa-order" />);
+    const alert = await screen.findByTestId("reward-lifecycle-load-error");
+    expect(alert).toHaveTextContent("Сервер недоступен");
+    expect(screen.queryByTestId("reward-lifecycle-access-denied")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(await screen.findByTestId("reward-pending")).toHaveTextContent(/11\s700,00/);
   });
 });

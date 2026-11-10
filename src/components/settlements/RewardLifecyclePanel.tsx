@@ -9,9 +9,23 @@ import styles from "./reward-lifecycle.module.css";
 const money = (k: number) => `${(k / 100).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
 const date = (at: string) => `${new Date(at).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} МСК`;
 
+/** Read-only copy when GET order-rewards is 403 — not a zero reward and not a layout/amount rewrite. */
+export const REWARD_DETAILS_ACCESS_DENIED_TITLE =
+  "Детали вознаграждения недоступны для просмотра";
+export const REWARD_DETAILS_ACCESS_DENIED_HINT =
+  "Это ограничение доступа к подробностям вознаграждения, а не нулевая сумма. Суммы в карточке покупки не пересчитаны.";
+
+function rewardRequestErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof RemcardApiError && error.status === 403) {
+    return REWARD_DETAILS_ACCESS_DENIED_TITLE;
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function RewardLifecyclePanel({ orderId, onChanged }: { orderId: string; onChanged?: () => void }) {
   const [data, setData] = useState<RewardResponse | null>(null);
   const [error, setError] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storageFault, setStorageFault] = useState(false);
@@ -23,7 +37,7 @@ export function RewardLifecyclePanel({ orderId, onChanged }: { orderId: string; 
   const endpoint = `/api/pro/wallet/order-rewards/${encodeURIComponent(orderId)}`;
   const storageKey = data ? `remcard:reward-attempt:${data.actorId}:${orderId}` : null;
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setAccessDenied(false);
     try {
       const response = await remcardFetch<RewardResponse>(endpoint);
       setData(response);
@@ -37,7 +51,16 @@ export function RewardLifecyclePanel({ orderId, onChanged }: { orderId: string; 
         setStorageFault(true);
         setError("Не удалось прочитать сохранённую операцию. Действия заблокированы, чтобы не отправить её повторно. Проверьте хранилище браузера.");
       }
-    } catch (e) { setError(e instanceof Error ? e.message : "Не удалось загрузить начисление"); }
+    } catch (e) {
+      setData(null);
+      if (e instanceof RemcardApiError && e.status === 403) {
+        setAccessDenied(true);
+        setError(REWARD_DETAILS_ACCESS_DENIED_TITLE);
+      } else {
+        setAccessDenied(false);
+        setError(rewardRequestErrorMessage(e, "Не удалось загрузить начисление"));
+      }
+    }
     finally { setLoading(false); }
   }, [endpoint, orderId]);
   useEffect(() => { void load(); }, [load]);
@@ -67,7 +90,9 @@ export function RewardLifecyclePanel({ orderId, onChanged }: { orderId: string; 
       if (knownRejection) {
         localStorage.removeItem(storageKey); setUncertain(null); setConfirmation(null);
       }
-      setError(e instanceof Error ? e.message : "Ответ не получен. Повторите проверку той же операции.");
+      setError(
+        rewardRequestErrorMessage(e, "Ответ не получен. Повторите проверку той же операции."),
+      );
     } finally { inFlight.current = false; setBusy(false); }
   }
   function prepare(action: () => RewardAction, text: string) {
@@ -78,7 +103,26 @@ export function RewardLifecyclePanel({ orderId, onChanged }: { orderId: string; 
     value={amounts[key] ?? ""} onChange={e => setAmounts(prev => ({ ...prev, [key]: e.target.value }))}
     disabled={busy || !!uncertain} data-testid={`reward-amount-${key}`} />;
   if (loading && !data) return <p role="status">Загружаем условия вознаграждения…</p>;
-  if (!data) return <div role="alert"><p>{error}</p><Button variant="secondary" onClick={() => void load()}>Повторить</Button></div>;
+  if (!data) {
+    if (accessDenied) {
+      return (
+        <div
+          className={styles.panel}
+          role="alert"
+          data-testid="reward-lifecycle-access-denied"
+        >
+          <h3>{REWARD_DETAILS_ACCESS_DENIED_TITLE}</h3>
+          <p className={styles.note}>{REWARD_DETAILS_ACCESS_DENIED_HINT}</p>
+        </div>
+      );
+    }
+    return (
+      <div role="alert" data-testid="reward-lifecycle-load-error">
+        <p>{error || "Не удалось загрузить начисление"}</p>
+        <Button variant="secondary" onClick={() => void load()}>Повторить</Button>
+      </div>
+    );
+  }
   if (!data.reward || !data.permissions) return null;
   const { reward: r, permissions: p } = data;
   const label = r.summary.review ? "Требует сверки после возврата"
