@@ -24,7 +24,9 @@ import {
   canManageBusinessWalletRequisites,
   resolveSettlementWalletReadAccess,
   settlementWalletReadBlockedMessage,
+  walletLedgerBranchIdsFromReadAuth,
 } from "@/lib/business-wallet/access";
+import { walletSettlementsFetchScopeKey } from "@/lib/settlements-fetch-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +109,11 @@ export default async function SettlementsPage() {
     walletReadAuth.allowed === false
       ? settlementWalletReadBlockedMessage(walletReadAuth)
       : null;
+  const walletLedgerBranchIds = walletLedgerBranchIdsFromReadAuth(walletReadAuth);
+  const walletLedgerScopeKey = walletSettlementsFetchScopeKey(
+    ledgerScopeKey ?? `${businessPartnerType ?? "wallet"}:${user.id}`,
+    walletLedgerBranchIds,
+  );
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
@@ -116,11 +123,12 @@ export default async function SettlementsPage() {
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
         <BusinessOwnerWallet
           partnerType={businessPartnerType}
-          ledgerScopeKey={ledgerScopeKey ?? `${businessPartnerType}:${user.id}`}
+          ledgerScopeKey={walletLedgerScopeKey}
           canManageRequisites={canManageRequisites}
           walletEmptyViewerRole={walletEmptyViewerRole}
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
           settlementsAccessBlockedMessage={settlementsAccessBlockedMessage}
+          walletLedgerBranchIds={walletLedgerBranchIds}
         />
       ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />

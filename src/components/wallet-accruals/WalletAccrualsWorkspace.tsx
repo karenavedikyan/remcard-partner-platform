@@ -34,6 +34,8 @@ export type WalletMasterLedgerOptions = {
 type Props = {
   incomingOnly?: boolean;
   scopeKey?: string;
+  /** Org staff granted branches — per-branch GET + merge; owner/solo omit. */
+  walletLedgerBranchIds?: string[] | null;
   /** Dev-fixture only: parent-owned data (no fetch). */
   previewData?: SettlementsResponse;
   fallbackRibbon?: string;
@@ -67,6 +69,7 @@ function applyResponseState(
 export function WalletAccrualsWorkspace({
   incomingOnly = false,
   scopeKey,
+  walletLedgerBranchIds = null,
   previewData,
   fallbackRibbon,
   masterLedger,
@@ -135,7 +138,11 @@ export function WalletAccrualsWorkspace({
         setError("");
       }
       try {
-        const settlements = await fetchSettlements();
+        const settlements = await fetchSettlements(
+          walletLedgerBranchIds?.length
+            ? { walletLedgerBranchIds }
+            : undefined,
+        );
         if (generation !== loadGenerationRef.current) return;
         applyResponseState(settlements, incomingOnly, setResponse, setData);
         hasLoadedDataRef.current = true;
@@ -169,7 +176,7 @@ export function WalletAccrualsWorkspace({
         }
       }
     },
-    [fallbackRibbon, incomingOnly],
+    [fallbackRibbon, incomingOnly, walletLedgerBranchIds],
   );
 
   const load = useCallback(async () => {
@@ -268,6 +275,8 @@ export function WalletAccrualsWorkspace({
         onBack={returnToShell}
         onDataRefresh={fetchAndApplySettlements}
         walletEmptyViewerRole={walletEmptyViewerRole}
+        walletLedgerBranchIds={walletLedgerBranchIds}
+        disableLedgerExport={Boolean(walletLedgerBranchIds?.length)}
         payableSummaryLabel={ledgerOptions?.payableSummaryLabel}
         payableDirectionLabel={ledgerOptions?.payableDirectionLabel}
         payableHint={ledgerOptions?.payableHint}

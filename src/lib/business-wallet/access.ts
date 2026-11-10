@@ -39,3 +39,12 @@ export function settlementWalletReadBlockedMessage(
 ): string {
   return settlementWalletAccessDeniedCopy(auth.reason);
 }
+
+/** Explicit granted branches for staff settlements GET ?branchId= (not owner aggregate). */
+export function walletLedgerBranchIdsFromReadAuth(
+  auth: SettlementWalletReadAuthResult,
+): string[] | undefined {
+  if (!auth.allowed || auth.mode !== "org-member-with-ledger") return undefined;
+  const ids = [...new Set((auth.branchIds ?? []).map((id) => id.trim()).filter(Boolean))].sort();
+  return ids.length > 0 ? ids : undefined;
+}

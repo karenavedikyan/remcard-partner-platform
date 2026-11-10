@@ -19,6 +19,8 @@ type Props = WalletEmptyViewerProps & {
   canLinkOnboardingHistory?: boolean;
   /** When set, skip ledger fetch and show access explanation (no fake zeros). */
   settlementsAccessBlockedMessage?: string | null;
+  /** Org staff: per-branch settlements fetch + merge (owner/solo omit). */
+  walletLedgerBranchIds?: string[] | null;
 };
 
 export function BusinessOwnerWallet({
@@ -29,6 +31,7 @@ export function BusinessOwnerWallet({
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
   settlementsAccessBlockedMessage = null,
+  walletLedgerBranchIds = null,
 }: Props) {
   const copy = businessWalletPageCopy(partnerType);
 
@@ -36,6 +39,7 @@ export function BusinessOwnerWallet({
     settlementsSlot ?? (
       <WalletAccrualsWorkspace
         scopeKey={ledgerScopeKey}
+        walletLedgerBranchIds={walletLedgerBranchIds}
         walletEmptyViewerRole={walletEmptyViewerRole}
         canLinkOnboardingHistory={canLinkOnboardingHistory}
         accessBlockedMessage={settlementsAccessBlockedMessage}

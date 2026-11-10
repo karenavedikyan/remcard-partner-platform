@@ -67,6 +67,9 @@ type Props = {
   onBack?: () => void;
   /** Refetch settlements (accruals parent); required when previewData is snapshot from parent. */
   onDataRefresh?: (options?: { preserveDataOnError?: boolean }) => void | Promise<void>;
+  walletLedgerBranchIds?: string[] | null;
+  /** Staff merged ledger: export API has no per-branch aggregate scope. */
+  disableLedgerExport?: boolean;
 };
 
 const DEFAULT_PAYABLE_SUMMARY = "Я должен";
@@ -259,6 +262,8 @@ export function SpecialistSettlementsWorkspace({
   skipOverview = false,
   onBack,
   onDataRefresh,
+  walletLedgerBranchIds = null,
+  disableLedgerExport = false,
 }: Props) {
   const [screen, setScreen] = useState<Screen>(skipOverview ? "partners" : "overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
@@ -298,7 +303,9 @@ export function SpecialistSettlementsWorkspace({
     setError("");
     setAccessDenied(false);
     try {
-      const result = await fetchSettlements();
+      const result = await fetchSettlements(
+        walletLedgerBranchIds?.length ? { walletLedgerBranchIds } : undefined,
+      );
       if (generation !== loadGenerationRef.current) return;
       setData(result);
     } catch (caught) {
@@ -318,7 +325,7 @@ export function SpecialistSettlementsWorkspace({
         setLoading(false);
       }
     }
-  }, [previewData]);
+  }, [previewData, walletLedgerBranchIds]);
 
   useEffect(() => {
     if (previewData) {
@@ -432,7 +439,7 @@ export function SpecialistSettlementsWorkspace({
   }
 
   async function exportCurrent() {
-    if (!data || periodError) return;
+    if (disableLedgerExport || !data || periodError) return;
     setExportError("");
     try {
       const scope = resolveExportScope(screen);
@@ -596,7 +603,12 @@ export function SpecialistSettlementsWorkspace({
           type="button"
           variant="secondary"
           onClick={() => void exportCurrent()}
-          disabled={Boolean(periodError)}
+          disabled={Boolean(periodError) || disableLedgerExport}
+          title={
+            disableLedgerExport
+              ? "Выгрузка недоступна для объединённого кошелька по филиалам"
+              : undefined
+          }
         >
           Excel (.xlsx, весь отбор)
         </Button>
