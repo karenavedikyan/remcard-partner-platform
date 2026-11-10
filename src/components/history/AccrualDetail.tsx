@@ -165,7 +165,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   return (
     <div className={focus.page}>
       <Link href="/history" className={focus.backLink}>
-        ← К начислениям
+        ← К истории
       </Link>
 
       <div className={focus.detailHeading}>

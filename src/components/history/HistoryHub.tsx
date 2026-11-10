@@ -258,7 +258,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
 
   return (
     <div className={focus.hub}>
-      <div className={focus.tabs} role="group" aria-label="Тип операции">
+      <div className={focus.tabs} role="tablist" aria-label="Тип операции">
         <button
           type="button"
           role="tab"

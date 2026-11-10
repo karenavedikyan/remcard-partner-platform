@@ -42,7 +42,7 @@
   cursor: pointer;
 }
 
-.tab[aria-pressed="true"] {
+.tab[aria-selected="true"] {
   color: var(--ink);
   border-bottom-color: var(--primary);
 }
