@@ -125,6 +125,47 @@ describe("settlement lifecycle accrual mapping", () => {
     assert.equal(viaMerge?.pendingAmount, 11_900);
     assert.equal(presentAccrualRow(viaMerge!).heroAmount, 11_900);
   });
+
+  it("terminal paid, cancelled, and review-zero presentations", () => {
+    const base: AccrualRow = {
+      id: "x",
+      orderId: "o",
+      accrualType: "bonus",
+      createdAt: "2026-10-01T10:00:00.000Z",
+      amount: 0,
+      status: "CONFIRMED",
+      paidAt: null,
+      counterpartyName: "Shop",
+      promoCode: "RC-1",
+      isSelfScan: false,
+      walletRole: null,
+      scope: "payable-to-pros",
+      items: [],
+    };
+
+    assert.equal(presentAccrualRow({ ...base, status: "CANCELLED" }).statusLabel, "Отменено");
+
+    const paid = presentAccrualRow({
+      ...base,
+      amount: 5_400,
+      status: "PAID",
+      paidAt: "2026-11-01T10:00:00.000Z",
+      pendingAmount: 0,
+    });
+    assert.equal(paid.statusLabel, "Выплачено");
+    assert.match(paid.heroNote, /Выплаченная/);
+    assert.doesNotMatch(paid.heroNote, /Подтверждённая сумма к расчёту/);
+
+    const review = presentAccrualRow({
+      ...base,
+      status: "NEEDS_REVIEW",
+      confirmationLabel: "Требует сверки",
+      pendingAmount: 0,
+      suspendedAmount: 0,
+    });
+    assert.equal(review.statusLabel, "Требует сверки");
+    assert.notEqual(review.statusLabel, "Подтверждено к расчёту 0 ₽");
+  });
 });
 
 describe("mergeAccrualRowsById", () => {
