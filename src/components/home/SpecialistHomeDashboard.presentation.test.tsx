@@ -64,7 +64,7 @@ describe("SpecialistHomeDashboard", () => {
     render(<SpecialistHomeDashboard />);
 
     expect(
-      screen.getByRole("heading", { level: 2, name: /Рекомендуйте проверенного партнёра/ }),
+      await screen.findByRole("heading", { level: 2, name: /Рекомендуйте проверенного партнёра/ }),
     ).toBeInTheDocument();
     await waitFor(() => {
       expect(getStatText("2")).toBeInTheDocument();

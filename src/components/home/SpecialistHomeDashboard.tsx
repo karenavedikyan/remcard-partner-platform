@@ -30,7 +30,6 @@ import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
 import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
 import { Button } from "@/components/ui/Button";
 import { IconArrowRight, IconArrowUpRight } from "@/components/layout/ThemeIcons";
-import { formattedMoneyWrapGroups } from "@/lib/specialist-home/display";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 type SpecialistHomeDashboardProps = {
@@ -71,18 +70,8 @@ function moneyLabel(slice: SpecialistHomeMoneySlice): string {
 }
 
 function StatMoneyValue({ label }: { label: string }) {
-  const groups = formattedMoneyWrapGroups(label);
-  if (!groups) {
-    return <strong className={styles.statValue}>{label}</strong>;
-  }
   return (
-    <strong className={`${styles.statValue} ${styles.statValueMoney}`}>
-      {groups.map((part, index) => (
-        <span key={`${part}-${index}`} className={styles.statValueGroup}>
-          {part}
-        </span>
-      ))}
-    </strong>
+    <strong className={`${styles.statValue} ${styles.statValueMoney}`}>{label}</strong>
   );
 }
 
