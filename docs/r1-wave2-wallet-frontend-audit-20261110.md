@@ -7,16 +7,20 @@
 **Docs branch (this file):** `docs/r1-wave2-wallet-frontend-audit-20261110`  
 **Parallel backend:** navigator repo, cloud agent `bc-ab35b8c5` (`authorizeSettlementWalletRead`, `/api/pro/wallet/settlements`, `/api/pro/context` DTO)
 
-## Product ask (approved direction pending)
+## Product ask (clarified 2026-11-10)
 
-Сергей Жуков (сотрудник ЛК оптовика, роль org staff, **не** владелец) должен в **ЛК → Кошелёк** видеть **транзакции по партнёрам в том же read-смысле, что владелец**, без payout/owner/admin/write и без расширения grants.
+**Persona (scoped, not generic staff):** Sergey Zhukov — **руководитель** in the optovik (COMPANY) LK, **not** `ORG_OWNER`. Product position label (`membershipPosition`, e.g. «Руководитель отдела…») is **display only**; the frontend **does not** treat “руководитель” as a role or auto-expand wallet read.
 
-Constraints for any future implementation:
+**Approved permission change (configuration only):** grant **`canViewWallet`** (Prof-I `ledger`) on **every org branch** where full org partner-ledger read is intended — **grant-only**. No payout flags, no new org roles, no owner/admin grants, no blanket “all employees.”
 
-- Read visibility only; hide or server-disable payout, реквизиты management, admin surfaces.
-- Preserve **org** and **branch** isolation (`branchIds` from grants with `canViewWallet`).
-- No real OTP/logins, no production ledger reads in this audit; fixtures only (`fixtureSergeyOrgEmployeeContext`).
-- Symbol `wallet_READ_FINANCE` **does not exist** in this repo — wallet read maps to Prof-I **`ledger` → `canViewWallet`** in `src/lib/prof-i-permissions.ts`.
+**Desired UX:** in **ЛК → Кошелёк**, **owner-style partner transaction view** aggregated across **all branches of that organization** that appear in the member’s ACTIVE assignments with `canViewWallet` — read-only (no payout write, no requisites manage).
+
+**This audit / R1 wave constraints:**
+
+- **No backend source changes** in scope — verify behavior on **sandbox login**; org/account/grants checked via **owner UI** (Comet unavailable).
+- **No unnecessary partner `src/` changes** — frontend gaps listed below are **minimal**; implement only if sandbox proves a UI leak.
+- Fixtures only in tests (`fixtureSergeyOrgEmployeeContext`); no hardcoded production account id/email/name.
+- Symbol `wallet_READ_FINANCE` **does not exist** — read = **`canViewWallet`** in `branchAssignments[].effectivePermissions` (or `activeBranch` fallback).
 
 ## Entry surfaces (live `edb2c187`)
 
@@ -60,7 +64,7 @@ File: `src/lib/employee-workspace-data/settlement-wallet-read-auth.ts`
 | Mode | Who | Condition |
 |------|-----|-----------|
 | `pro-owner` | `ORG_OWNER` + valid context | Full owner ledger |
-| `org-member-with-ledger` | `ORG_EMPLOYEE` / `BRANCH_*` / etc. | ACTIVE grants + `canViewWallet` on ≥1 branch + `organization.ownerId` |
+| `org-member-with-ledger` | `ORG_EMPLOYEE` / `ORG_TEAM_MEMBER` / `BRANCH_MANAGER` / `BRANCH_EMPLOYEE` (not owner) | ACTIVE grants + `canViewWallet` on **≥1** branch; `branchIds` = **union** of all grants with flag |
 | `pro-solo` | `user.role === PRO` non-org path | Legacy PRO gate |
 | deny | CLIENT without org grants | `raw_pro_gate`, `no_active_branch_grant`, `missing_wallet_permission`, … |
 
@@ -72,9 +76,11 @@ File: `src/lib/employee-workspace-data/branch-assignment-auth.ts`
 
 - `activeBranchPermissionGrants` keeps only `branchAssignments[]` where **`status === "ACTIVE"`**.
 - If the list is empty, fallback is **only** `activeBranch` + `effectivePermissions` (single branch).
-- **`ORG_EMPLOYEE` with six branches and no `activeBranch`:** all rows missing `status` → **zero grants** → `no_active_branch_grant` even if permissions exist elsewhere in the payload.
+- **Manager “all branches” on frontend:** `branchIdsWithPermission(grants, "canViewWallet")` collects **every** ACTIVE assignment with the flag — not limited to `activeBranch` when the full `branchAssignments[]` list is present.
+- **Fallback risk (QA, not code):** if context only has `activeBranch` + `effectivePermissions` (no per-branch rows), auth `branchIds` is **one** branch even when owner UI granted wallet on all branches — ledger breadth then depends on **runtime context DTO**, outside this doc’s backend-edit scope.
+- **`ORG_EMPLOYEE` / manager with N branches and no `activeBranch`:** rows missing `status: "ACTIVE"` → **zero grants** → blocked UI before fetch.
 
-**Backend prerequisite (navigator, not necessarily on partner live stack yet):** serializer emitting `branchAssignments[].status: "ACTIVE"` (private chain tip `960ba411` referenced in R1 coordination). Frontend at `edb2c187` **already depends** on this shape.
+**DTO contract (verify on sandbox, no source change in this wave):** each granted branch must appear as `branchAssignments[]` with `status: "ACTIVE"` and `effectivePermissions.canViewWallet: true`.
 
 ### 4. Write / owner-only UI (already partially separated)
 
@@ -94,15 +100,25 @@ File: `src/lib/employee-workspace-data/branch-assignment-auth.ts`
 | `GET /api/pro/context` | `fetchCabinetPresentationServer` | Must return role, organization, `branchAssignments` (ACTIVE), permissions flags |
 | `GET /api/pro/wallet/settlements` | `src/lib/settlements-loader.ts` (no query params) | **All** branch filtering and owner-ledger projection must be **server-side** using same rules as `authorizeSettlementWalletRead` + `branchIds` |
 
-Frontend does **not** pass `branchId` on settlements fetch; isolation is entirely backend.
+Frontend does **not** pass `branchId` or page-computed `walletReadAuth.branchIds` to `fetchSettlements` — the settlements page only uses auth for **allow/deny** (`settlements/page.tsx`). Multi-branch **row content** is therefore **not filtered in partner `src/`**; sandbox must show the correct ledger for the configured grants.
 
-Navigator auditor `bc-ab35b8c5` should confirm:
+**Parallel navigator read-only audit** (`bc-ab35b8c5`) remains the place for API settlement scoping proofs; **this wave does not authorize navigator patches.**
 
-1. Staff with `canViewWallet` receives **owner-style** partner settlement rows limited to allowed `branchIds`.
-2. Response omits or zeros `payoutActions` when payment flags false.
-3. Context DTO matches `activeBranchPermissionGrants` filter (ACTIVE status).
+## Manager + all-branch: frontend gap assessment (`edb2c187`)
 
-## What blocks Sergey today (checklist)
+| Check | Result |
+|-------|--------|
+| Owner-only read gate? | **No** — org staff use `org-member-with-ledger`, not `pro-owner`. |
+| Title «руководитель» required? | **No** — only `canViewWallet` on grants. |
+| All branches when each grant has wallet? | **Auth union OK**; no client-side branch filter on ledger fetch. |
+| Payout UI without payout grants? | **Possible gap** — UI follows API `payoutActions` (see below). |
+| Requisites / payout mutations | Already owner-PRO-only (`canManageBusinessWalletRequisites`). |
+
+**Minimal partner code (only if sandbox proves need):** strip/hide `payoutActions` on business wallet when `authorizeSettlementWalletPaymentMutations` denies — optional one mapper/shell guard; **not** required for read visibility itself.
+
+**Not recommended:** new role types, client-side branch query params, HistoryHub changes, or broadening `authorizeSettlementWalletRead` beyond existing grant mirror.
+
+## What blocks the manager persona today (checklist)
 
 1. **Context DTO:** missing `status: "ACTIVE"` on `branchAssignments` → frontend deny before any fetch.
 2. **Missing `canViewWallet` on any ACTIVE grant** → `missing_wallet_permission` (correct fail-closed).
@@ -112,32 +128,32 @@ Navigator auditor `bc-ab35b8c5` should confirm:
 6. **Workplace context:** org staff without `workplacePartnerType` from org context may not reach business wallet shell (`employeeRequiresWorkplaceContext`).
 7. **HistoryHub confusion:** users may open **История** expecting partner ledger; that route loads `fetchHistoryData` (purchases/accruals), not org wallet settlements — product/doc clarity only, not a permission fix.
 
-No production `accountId` for Sergey was used or invented in this audit.
+No production `accountId` was used or invented in this audit.
 
-## Proposed change scope (minimal, **after** approval)
+## Sandbox QA (grant-only, owner UI)
 
-**Do not implement until permissions sign-off.**
+1. **Owner UI:** assign **only** `canViewWallet` / «Просмотр расчётов» on **each** org branch for the manager member (not all staff).
+2. **Sandbox login** as manager (Comet unavailable) → `/settlements` → business `BusinessOwnerWallet`.
+3. **Context check:** `/api/pro/context` (network tab) shows **N** `branchAssignments` ACTIVE rows with `canViewWallet: true` (not single-branch fallback only).
+4. **Ledger check:** partner rows match owner-style **across org branches** subject to runtime settlements API (empty/403 = runtime/config, not a signal to patch partner read gate without evidence).
+5. **Negative:** staff **without** wallet grant must still see blocked copy and **no** settlements fetch (`WalletAccrualsWorkspace.access-blocked.test.tsx` behavior).
 
-### Backend (navigator — primary)
+## Proposed change scope (minimal)
 
-- Ship context serializer with ACTIVE `branchAssignments` (if not on live).
-- Align `GET /api/pro/wallet/settlements` auth with mirrored `authorizeSettlementWalletRead` + branch-scoped owner ledger for `org-member-with-ledger`.
-- Strip `payoutActions` / payable write surfaces for staff without payment flags.
+**Default for this clarification: no partner `src/` commit required.**
 
-### Frontend (partner — secondary, small)
+| If sandbox shows… | Action |
+|-------------------|--------|
+| Blocked ledger despite grants on all branches | Fix **context DTO** / settlements auth on runtime stack (outside frontend source edit scope here). |
+| Ledger OK, payout buttons visible | Smallest partner diff: gate `payoutActions` with `authorizeSettlementWalletPaymentMutations` |
+| Ledger OK, no payout UI | **No product code** |
+| Optional hardening | One unit test: multi-branch `branchIds` union in `settlement-wallet-read-auth.test.ts` (docs/QA only unless requested) |
 
-| Path | Change |
-|------|--------|
-| `src/components/wallet-accruals/WalletAccrualsShell.tsx` (or mapper) | Optional: clear `payoutActions` when `authorizeSettlementWalletPaymentMutations` denies (defense in depth) |
-| `src/lib/employee-workspace-data/fixtures.ts` + `settlement-wallet-read-auth.test.ts` | Add case: multi-branch `ORG_EMPLOYEE`, no `activeBranch`, six ACTIVE rows, `canViewWallet` true |
-| `src/app/settlements/page.tsx` | No change if backend + DTO correct |
-| `src/lib/business-wallet/access.ts` | No change expected |
-| **Out of scope** | HistoryHub redesign, new grants, env/secrets, SQL, admin payout routes |
-
-### Explicit non-goals
+### Explicit non-goals (unchanged)
 
 - Redesign / R2 / new features.
-- `wallet_READ_FINANCE` naming or new capability symbols.
+- Owner-only interpretation or **blanket** wallet for all org employees.
+- Navigator/backend source patches in this wave.
 - Hardcoding Sergey email/name/id.
 - Fake production success in client when API denies.
 
@@ -177,15 +193,18 @@ Expected paths on live:
 - `src/lib/business-wallet/access.ts`
 - `src/app/settlements/page.tsx`
 
-## Blockers summary
+## Blockers / verification (no backend source in this wave)
 
-| ID | Blocker | Owner |
-|----|---------|-------|
-| B1 | `branchAssignments[].status` must be `ACTIVE` in `/api/pro/context` | Navigator (`960ba411` class fix) |
-| B2 | Settlements API must authorize read + scope ledger like owner for staff `branchIds` | Navigator `bc-ab35b8c5` |
-| B3 | `payoutActions` must not enable UI for read-only staff | Navigator (required); partner optional strip |
-| B4 | Permissions approval for “owner-style read” without payout grants | Product / security |
-| B5 | Confirm live partner release includes wallet read mirror modules | Release manager |
+| ID | What to verify | Typical owner |
+|----|----------------|---------------|
+| V1 | Owner UI: `canViewWallet` on **all** intended branches for **this manager only** | Owner / ops via UI |
+| V2 | Sandbox context: full ACTIVE `branchAssignments` list matches grants | QA + network |
+| V3 | Sandbox settlements: owner-style partner ledger visible across org branches | QA (runtime API) |
+| V4 | No payout / requisites actions for manager | QA UI + optional partner strip if API leaks |
+| V5 | Partner release `edb2c187` includes wallet read mirror modules | Release manager |
+| V6 | Staff without wallet grant remain blocked | QA negative |
+
+Prior code blockers B1–B4 are **runtime verification** items unless a separate navigator release is explicitly opened later.
 
 ## Coordination
 
