@@ -41,6 +41,12 @@ function parseBranchId(path: string): string | null {
   return params.get("branchId");
 }
 
+/** Synthetic 403 only on ?scene=company-staff-403 (staff-6 must succeed on branch-b4). */
+function qaSyntheticBranch403Enabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("scene") === "company-staff-403";
+}
+
 export async function remcardFetch<T>(path: string): Promise<T> {
   logSettlementsPath(path);
   if (!path.startsWith("/api/pro/wallet/settlements")) {
@@ -51,7 +57,7 @@ export async function remcardFetch<T>(path: string): Promise<T> {
   if (!branchId) {
     return qaOwnerAggregateSettlements() as T;
   }
-  if (branchId === QA_FAIL_BRANCH) {
+  if (branchId === QA_FAIL_BRANCH && qaSyntheticBranch403Enabled()) {
     throw new RemcardApiError(403, "Synthetic branch forbidden");
   }
   return qaBranchScopedSettlements(branchId) as T;

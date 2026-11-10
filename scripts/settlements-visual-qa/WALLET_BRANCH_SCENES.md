@@ -19,7 +19,7 @@ pnpm run harness:settlements-qa
 | `?scene=company-owner` | **1×** `/api/pro/wallet/settlements` (no `branchId`) |
 | `?scene=company-staff-6` | **6×** `...settlements?branchId=branch-b1` … `branch-b6` (sorted parallel); merged UI shows staff `coverageNote` with branch list + unassigned caveat |
 | `?scene=company-staff-1` | **1×** `?branchId=branch-b1` |
-| `?scene=company-staff-403` | **6×** attempts; UI error (`wallet-accruals-error`); **no** partial merged success |
+| `?scene=company-staff-403` | **6×** attempts; `branch-b4` returns 403 **only in this scene**; UI error; **no** partial merged success |
 
 Inspect log in DOM: `data-testid="qa-settlements-fetch-log"`.
 
