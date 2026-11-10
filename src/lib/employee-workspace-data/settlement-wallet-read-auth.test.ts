@@ -33,11 +33,30 @@ describe("authorizeSettlementWalletRead", () => {
     ).toEqual({ allowed: false, reason: "no_active_branch_grant" });
   });
 
-  it("allows CLIENT employee with canViewWallet on ACTIVE branch only", () => {
+  it("allows CLIENT employee with canViewWallet on every active branch as company ledger (not owner)", () => {
     expect(
       authorizeSettlementWalletRead({
         user: fixtureSergeyAuthUser(),
         proContext: fixtureSergeyOrgEmployeeContext({ canViewWallet: true }),
+        contextReady: true,
+      }),
+    ).toEqual({
+      allowed: true,
+      mode: "org-member-company-ledger",
+    });
+  });
+
+  it("allows CLIENT employee with partial canViewWallet as branch ledger only", () => {
+    expect(
+      authorizeSettlementWalletRead({
+        user: fixtureSergeyAuthUser(),
+        proContext: fixtureSergeyOrgEmployeeContext({
+          canViewWallet: true,
+          organizationActiveBranchIds: [
+            "branch-optovik-main",
+            "branch-optovik-north",
+          ],
+        }),
         contextReady: true,
       }),
     ).toEqual({

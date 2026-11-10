@@ -40,7 +40,11 @@ export function settlementWalletReadBlockedMessage(
   return settlementWalletAccessDeniedCopy(auth.reason);
 }
 
-/** Explicit granted branches for staff settlements GET ?branchId= (not owner aggregate). */
+/**
+ * Explicit granted branches for staff settlements GET ?branchId= union.
+ * Company-wide staff (`org-member-company-ledger`) and owner/solo return undefined
+ * so the loader uses unscoped GET /api/pro/wallet/settlements.
+ */
 export function walletLedgerBranchIdsFromReadAuth(
   auth: SettlementWalletReadAuthResult,
 ): string[] | undefined {

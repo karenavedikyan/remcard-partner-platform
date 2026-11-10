@@ -32,3 +32,21 @@ export function branchIdsWithPermission(
   }
   return ids;
 }
+
+/**
+ * True when every trusted active org branch id is present in the granted set.
+ * Generic coverage helper — no role/title/position checks.
+ */
+export function hasFullActiveBranchCoverage(
+  organizationActiveBranchIds: readonly string[] | null | undefined,
+  grantedBranchIds: readonly string[],
+): boolean {
+  const active = [
+    ...new Set(
+      (organizationActiveBranchIds ?? []).map((id) => id.trim()).filter(Boolean),
+    ),
+  ];
+  if (active.length === 0) return false;
+  const granted = new Set(grantedBranchIds.map((id) => id.trim()).filter(Boolean));
+  return active.every((id) => granted.has(id));
+}

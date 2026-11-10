@@ -13,9 +13,15 @@ describe("walletLedgerBranchIdsFromReadAuth", () => {
     ).toEqual(["b1", "b2"]);
   });
 
-  it("omits owner and solo modes", () => {
+  it("omits owner, solo, and company-ledger modes (unscoped GET)", () => {
     expect(
       walletLedgerBranchIdsFromReadAuth({ allowed: true, mode: "pro-owner" }),
+    ).toBeUndefined();
+    expect(
+      walletLedgerBranchIdsFromReadAuth({
+        allowed: true,
+        mode: "org-member-company-ledger",
+      }),
     ).toBeUndefined();
     expect(
       walletLedgerBranchIdsFromReadAuth({
@@ -26,7 +32,7 @@ describe("walletLedgerBranchIdsFromReadAuth", () => {
     ).toBeUndefined();
   });
 
-  it("maps fixture Sergey grants to branch list", () => {
+  it("maps fixture Sergey partial grants to branch list", () => {
     const auth = {
       allowed: true as const,
       mode: "org-member-with-ledger" as const,

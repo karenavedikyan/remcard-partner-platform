@@ -72,6 +72,7 @@ describe("WalletAccrualsWorkspace loader", () => {
       completed: [],
       coverageNote:
         "Показаны расчёты по филиалам с правом просмотра (2). Исторические начисления без привязки к филиалу не включены. Итог может отличаться от общего баланса владельца.",
+      walletReadScope: "org-staff-branches",
     });
     render(
       <WalletAccrualsWorkspace
@@ -83,6 +84,29 @@ describe("WalletAccrualsWorkspace loader", () => {
     await screen.findByTestId("wallet-accruals");
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
     expect(screen.getByTestId("wallet-coverage-note")).toHaveTextContent(/филиалам с правом просмотра/i);
+  });
+
+  it("company-wide staff empty keeps wallet shell via walletReadScope (not owner onboarding)", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      receivable: [],
+      payable: [],
+      completed: [],
+      coverageNote: "Показаны расчёты организации.",
+      walletReadScope: "org-staff-company",
+    });
+    render(
+      <WalletAccrualsWorkspace
+        walletEmptyViewerRole="company"
+        scopeKey="staff-company-empty"
+      />,
+    );
+    await screen.findByTestId("wallet-accruals");
+    expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+    expect(fetchSettlements).toHaveBeenCalledWith(undefined);
+    expect(screen.getByTestId("wallet-coverage-note")).toHaveTextContent(/организации/i);
+    expect(screen.queryByTestId("wallet-coverage-note")).not.toHaveTextContent(
+      /без привязки к филиалу/i,
+    );
   });
 
   it("does not show actor publicId on card ribbon (ownership not provable)", async () => {
