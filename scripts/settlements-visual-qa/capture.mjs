@@ -12,6 +12,10 @@ const scenes = [
   { id: "specialist-overview", scene: "specialist-overview" },
   { id: "specialist-partners", scene: "specialist-partners" },
   { id: "agent-overview", scene: "agent-overview" },
+  { id: "company-owner", scene: "company-owner" },
+  { id: "company-staff-6", scene: "company-staff-6" },
+  { id: "company-staff-1", scene: "company-staff-1" },
+  { id: "company-staff-403", scene: "company-staff-403" },
 ];
 
 const viewports = [

@@ -1,9 +1,14 @@
 import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
 import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
 import { masterWalletFixtureData } from "@/lib/specialist-settlements/fixture-data";
+import { walletSettlementsFetchScopeKey } from "@/lib/settlements-fetch-scope";
+import {
+  QA_STAFF_WALLET_BRANCH_IDS,
+} from "./mocks/company-wallet-fixtures";
 import "@/app/globals.css";
 
 const params = new URLSearchParams(window.location.search);
@@ -42,13 +47,62 @@ function SpecialistPartners() {
   );
 }
 
+function CompanyWalletHarness(input: {
+  branchIds?: string[];
+  staff?: boolean;
+  testId: string;
+}) {
+  const baseKey = "COMPANY:org-optovik-qa:actor-qa-staff";
+  const scopeKey = walletSettlementsFetchScopeKey(baseKey, input.branchIds);
+  return (
+    <div data-testid={input.testId}>
+      <BusinessOwnerWallet
+        partnerType="COMPANY"
+        ledgerScopeKey={scopeKey}
+        canManageRequisites={!input.staff}
+        walletEmptyViewerRole="company"
+        walletLedgerBranchIds={input.branchIds ?? null}
+      />
+    </div>
+  );
+}
+
 const root = createRoot(document.getElementById("root")!);
 let node: React.ReactNode = null;
-if (scene.startsWith("hub")) node = openCompleted ? <HubWithCompleted /> : <SettlementsHub />;
-else if (scene.startsWith("specialist-partners")) node = <SpecialistPartners />;
-else if (scene.startsWith("specialist")) {
+
+if (scene === "company-owner") {
+  node = (
+    <CompanyWalletHarness testId="qa-company-wallet-owner" staff={false} />
+  );
+} else if (scene === "company-staff-6") {
+  node = (
+    <CompanyWalletHarness
+      testId="qa-company-wallet-staff-6"
+      staff
+      branchIds={[...QA_STAFF_WALLET_BRANCH_IDS]}
+    />
+  );
+} else if (scene === "company-staff-1") {
+  node = (
+    <CompanyWalletHarness testId="qa-company-wallet-staff-1" staff branchIds={["branch-b1"]} />
+  );
+} else if (scene === "company-staff-403") {
+  node = (
+    <CompanyWalletHarness
+      testId="qa-company-wallet-staff-403"
+      staff
+      branchIds={[...QA_STAFF_WALLET_BRANCH_IDS]}
+    />
+  );
+} else if (scene.startsWith("hub")) {
+  node = openCompleted ? <HubWithCompleted /> : <SettlementsHub />;
+} else if (scene.startsWith("specialist-partners")) {
+  node = <SpecialistPartners />;
+} else if (scene.startsWith("specialist")) {
   node = <SpecialistSettlementsWorkspace previewData={masterWalletFixtureData()} scopeKey="qa" />;
-} else if (scene.startsWith("agent")) node = <AgentReceivablesHub />;
+} else if (scene.startsWith("agent")) {
+  node = <AgentReceivablesHub />;
+}
 
 root.render(
   <div

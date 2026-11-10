@@ -12,6 +12,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "mocks/settlements-loader.ts"),
       },
       {
+        find: "@/lib/auth-session",
+        replacement: path.resolve(__dirname, "mocks/auth-session.ts"),
+      },
+      {
         find: "@/lib/agent-r05/api",
         replacement: path.resolve(__dirname, "mocks/agent-r05-api.ts"),
       },
