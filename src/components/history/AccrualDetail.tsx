@@ -4,12 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabelFromStored } from "@/lib/category-display";
+import { presentAccrualRow } from "@/lib/history-accrual-display";
 import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
-import {
-  accrualScopeLabel,
-  bonusStatusLabel,
-  bonusStatusTone,
-} from "@/lib/history-labels";
+import { accrualScopeLabel } from "@/lib/history-labels";
 import { findPurchaseForAccrual, purchaseDetailHref } from "@/lib/history-links";
 import {
   fetchAccrualById,
@@ -159,8 +156,8 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
     );
   }
 
-  const hero = splitHeroAmount(accrual.amount);
-  const storedZero = accrual.amount === 0;
+  const presentation = presentAccrualRow(accrual);
+  const hero = splitHeroAmount(presentation.heroAmount);
 
   return (
     <div className={focus.page}>
@@ -170,7 +167,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
 
       <div className={focus.detailHeading}>
         <h1>Детали начисления</h1>
-        <StatusBadge label={bonusStatusLabel(accrual.status)} tone={bonusStatusTone(accrual.status)} />
+        <StatusBadge label={presentation.statusLabel} tone={presentation.statusTone} />
       </div>
 
       <article className={focus.receipt}>
@@ -179,10 +176,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
           <p className={focus.heroAmount}>
             {hero.amount} <span>{hero.symbol}</span>
           </p>
-          <p className={focus.heroNote}>
-            Сохранённая сумма начисления, не сумма покупки.
-            {storedZero ? " Нулевая сумма сохранена в данных операции." : null}
-          </p>
+          <p className={focus.heroNote}>{presentation.heroNote}</p>
         </div>
 
         <dl className={focus.receiptMeta}>
@@ -207,6 +201,12 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
               {accrual.scope !== "unknown" ? ` · ${accrualScopeLabel(accrual.scope)}` : null}
             </dd>
           </div>
+          {presentation.breakdown?.map((line) => (
+            <div key={line.label}>
+              <dt>{line.label}</dt>
+              <dd>{line.value}</dd>
+            </div>
+          ))}
           {accrual.paidAt ? (
             <div>
               <dt>Выплачено</dt>
