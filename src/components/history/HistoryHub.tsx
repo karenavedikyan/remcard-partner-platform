@@ -23,9 +23,9 @@ import {
   orderStatusLabel,
   purchaseOrderStatusLabel,
   purchaseOrderStatusTone,
-  purchaseRowDateLabel,
 } from "@/lib/history-labels";
-import { purchaseDetailHref, purchaseOrderNumberLabel } from "@/lib/history-links";
+import { accrualDetailHref } from "@/lib/accrual-type";
+import { purchaseDetailHref } from "@/lib/history-links";
 import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
 import {
   shouldShowAcceptedAccessDeniedNote,
@@ -35,77 +35,97 @@ import {
 } from "@/lib/history-sources";
 import type { AccrualRow, HistoryFilters, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
-import { Tabs } from "@/components/ui/Tabs";
-import { TextField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import styles from "./history.module.css";
+import focus from "./history-focus.module.css";
 
 type HistoryTab = "purchases" | "accruals";
 
-function formatDate(iso: string) {
+function formatListDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+    day: "numeric",
+    month: "long",
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
+function purchaseListTitle(row: PurchaseRow): string {
+  if (row.source === "accepted-bonus") {
+    return "Покупка из истории начислений";
+  }
+  return row.direction === "issued" ? "Покупка по рекомендации" : "Покупка по сертификату";
+}
+
+function accrualListTitle(row: AccrualRow): string {
+  if (row.accrualType === "agentBonus") {
+    return "Агентское вознаграждение";
+  }
+  if (row.scope === "payable-to-pros") {
+    return "Вознаграждение профклиенту";
+  }
+  if (row.scope === "earned") {
+    return "Начислено мне";
+  }
+  return accrualScopeLabel(row.scope);
+}
+
 function PurchaseRowCard({ row }: { row: PurchaseRow }) {
   const orderStatus = purchaseOrderStatusLabel(row);
-  const orderNumber = purchaseOrderNumberLabel(row);
+  const promo = row.promoCode ?? "Документ";
 
   return (
-    <Link href={purchaseDetailHref(row)} className={styles.row}>
-      <div className={styles.rowHeader}>
-        <div>
-          <p className={styles.rowTitle}>
-            {row.promoCode ?? "Документ"} · {formatMoneyRub(row.payableAmount)}
-          </p>
-          <p className={styles.meta}>
-            {purchaseRowDateLabel(row)}: {formatDate(row.createdAt)}
-            {orderNumber ? ` · №${orderNumber}` : " · № заказа недоступен"} ·{" "}
-            {row.direction === "accepted" ? "Принято у меня" : "По моей рекомендации"}
-          </p>
-        </div>
-        {orderStatus ? (
-          <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(row)} />
-        ) : null}
-      </div>
-      <p className={styles.meta}>
-        Партнёр: {row.partnerName}
-        {row.clientName ? ` · Клиент: ${row.clientName}` : ""}
-      </p>
-      {row.source === "accepted-bonus" && row.bonusStatus ? (
-        <p className={styles.meta}>
-          Начисление профклиенту: {bonusStatusLabel(row.bonusStatus)}
+    <Link href={purchaseDetailHref(row)} className={focus.operation}>
+      <div className={focus.operationMain}>
+        <strong>{purchaseListTitle(row)}</strong>
+        <p className={focus.rowPartner}>Партнёр: {row.partnerName}</p>
+        <p>
+          {promo} · {formatListDate(row.createdAt)}
         </p>
-      ) : null}
-      <div className={styles.amounts}>
-        <span>До скидки: {formatMoneyRub(row.totalAmount)}</span>
-        <span>Скидка: −{formatMoneyRub(row.discountAmount)}</span>
-        {row.isSelfScan ? <span>Самосканирование</span> : null}
       </div>
+      <div className={focus.operationMoney}>
+        <strong>{formatMoneyRub(row.payableAmount)}</strong>
+        <div className={focus.statusLine}>
+          {orderStatus ? (
+            <StatusBadge label={orderStatus} tone={purchaseOrderStatusTone(row)} />
+          ) : row.source === "accepted-bonus" && row.bonusStatus ? (
+            <StatusBadge label={bonusStatusLabel(row.bonusStatus)} tone={bonusStatusTone(row.bonusStatus)} />
+          ) : (
+            <span>{row.isSelfScan ? "Самосканирование" : "—"}</span>
+          )}
+        </div>
+      </div>
+      <span className={focus.arrow} aria-hidden="true">
+        ›
+      </span>
     </Link>
   );
 }
 
 function AccrualRowCard({ row }: { row: AccrualRow }) {
+  const promo = row.promoCode ?? "Документ";
+
   return (
-    <Link href={`/history/accruals/${encodeURIComponent(row.id)}`} className={styles.row}>
-      <div className={styles.rowHeader}>
-        <div>
-          <p className={styles.rowTitle}>{formatMoneyRub(row.amount)}</p>
-          <p className={styles.meta}>
-            {formatDate(row.createdAt)} · {row.promoCode ?? "Документ"} ·{" "}
-            {accrualScopeLabel(row.scope)}
-          </p>
-        </div>
-        <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+    <Link
+      href={accrualDetailHref(row.id, row.accrualType)}
+      className={focus.operation}
+    >
+      <div className={focus.operationMain}>
+        <strong>{accrualListTitle(row)}</strong>
+        <p className={focus.rowPartner}>Партнёр: {row.counterpartyName}</p>
+        <p>
+          {promo} · {formatListDate(row.createdAt)}
+        </p>
       </div>
-      <p className={styles.meta}>Партнёр: {row.counterpartyName}</p>
+      <div className={focus.operationMoney}>
+        <strong>{formatMoneyRub(row.amount)}</strong>
+        <div className={focus.statusLine}>
+          <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+        </div>
+      </div>
+      <span className={focus.arrow} aria-hidden="true">
+        ›
+      </span>
     </Link>
   );
 }
@@ -121,6 +141,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
     ...DEFAULT_HISTORY_FILTERS,
     search: initialPromoCode ?? "",
   });
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
@@ -222,64 +243,110 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
     acceptedAccessDenied,
   );
 
+  const activeFilterCount = [filters.status, filters.dateFrom, filters.dateTo]
+    .filter(Boolean)
+    .concat(directionFilterVisible && tab === "purchases" && filters.direction !== "all" ? ["dir"] : [])
+    .length;
+
+  const viewPurpose =
+    tab === "purchases"
+      ? "Покупки · суммы к оплате после скидки"
+      : "Начисления · сохранённые суммы по типу операции";
+
+  const totalInTab = tab === "purchases" ? purchases.length : accruals.length;
+  const shownInTab = tab === "purchases" ? filteredPurchases.length : filteredAccruals.length;
+
   return (
-    <>
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          { id: "purchases", label: "Покупки", count: filteredPurchases.length || undefined },
-          { id: "accruals", label: "Начисления", count: filteredAccruals.length || undefined },
-        ]}
-      />
+    <div className={focus.hub}>
+      <div className={focus.tabs} role="tablist" aria-label="Тип операции">
+        <button
+          type="button"
+          role="tab"
+          className={focus.tab}
+          aria-selected={tab === "purchases"}
+          onClick={() => setTab("purchases")}
+        >
+          Покупки
+          {purchases.length ? <span className={focus.tabCount}>{filteredPurchases.length}</span> : null}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={focus.tab}
+          aria-selected={tab === "accruals"}
+          onClick={() => setTab("accruals")}
+        >
+          Начисления
+          {accruals.length ? <span className={focus.tabCount}>{filteredAccruals.length}</span> : null}
+        </button>
+      </div>
 
-      <p className={styles.note}>
-        Поиск и фильтры — по загруженным записям. «Принято у меня» подгружается постранично;
-        «По рекомендациям» — до 200 последних заказов.
-      </p>
+      <p className={focus.viewPurpose}>{viewPurpose}</p>
 
-      {showAcceptedLimitation ? <p className={styles.note}>{ACCEPTED_BONUS_SOURCE_NOTE}</p> : null}
+      {showAcceptedLimitation ? <p className={focus.notice}>{ACCEPTED_BONUS_SOURCE_NOTE}</p> : null}
 
-      {tab === "purchases" ? (
-        <p className={styles.note}>{PURCHASE_PERIOD_FILTER_NOTE}</p>
-      ) : null}
+      {tab === "purchases" ? <p className={focus.notice}>{PURCHASE_PERIOD_FILTER_NOTE}</p> : null}
 
-      <div className={styles.toolbar}>
-        <div className={styles.filters}>
-          <TextField
-            label="Поиск"
-            placeholder="Код документа или номер заказа"
+      <div className={focus.toolbar}>
+        <label className={focus.searchField}>
+          <span className={focus.srOnly}>Поиск по партнёру или сертификату</span>
+          <input
+            className={focus.searchInput}
+            type="search"
+            placeholder="Партнёр или сертификат"
+            autoComplete="off"
             value={filters.search}
             onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
           />
-          <TextField
-            label={tab === "purchases" ? "Статус заказа" : "Статус начисления"}
-            value={filters.status}
-            onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
-            list="history-status-options"
-          />
-          <datalist id="history-status-options">
-            {(tab === "purchases" ? purchaseStatuses : accrualStatuses).map((status) => (
-              <option key={status} value={status}>
-                {tab === "purchases" ? orderStatusLabel(status) : bonusStatusLabel(status)}
-              </option>
-            ))}
-          </datalist>
-          <TextField
-            label="С даты"
-            type="date"
-            value={filters.dateFrom}
-            onChange={(event) => setFilters((prev) => ({ ...prev, dateFrom: event.target.value }))}
-          />
-          <TextField
-            label="По дату"
-            type="date"
-            value={filters.dateTo}
-            onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))}
-          />
+        </label>
+        <button
+          type="button"
+          className={focus.filterButton}
+          aria-expanded={filtersOpen}
+          aria-controls="history-filters-panel"
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          Фильтры
+          {activeFilterCount > 0 ? <span aria-hidden="true"> ({activeFilterCount})</span> : null}
+          <span aria-hidden="true"> ⌄</span>
+        </button>
+      </div>
+
+      {filtersOpen ? (
+        <div id="history-filters-panel" className={focus.filters}>
+          <label className={focus.filterLabel}>
+            <span>{tab === "purchases" ? "Статус заказа" : "Статус начисления"}</span>
+            <select
+              value={filters.status}
+              onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
+            >
+              <option value="">Все статусы</option>
+              {(tab === "purchases" ? purchaseStatuses : accrualStatuses).map((status) => (
+                <option key={status} value={status}>
+                  {tab === "purchases" ? orderStatusLabel(status) : bonusStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={focus.filterLabel}>
+            <span>С даты</span>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(event) => setFilters((prev) => ({ ...prev, dateFrom: event.target.value }))}
+            />
+          </label>
+          <label className={focus.filterLabel}>
+            <span>По дату</span>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))}
+            />
+          </label>
           {directionFilterVisible && tab === "purchases" ? (
-            <label className={styles.meta}>
-              Направление
+            <label className={focus.filterLabel}>
+              <span>Направление</span>
               <select
                 value={filters.direction}
                 onChange={(event) =>
@@ -288,7 +355,6 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
                     direction: event.target.value as HistoryFilters["direction"],
                   }))
                 }
-                style={{ display: "block", width: "100%", marginTop: "4px" }}
               >
                 <option value="all">Все</option>
                 <option value="accepted">Принято у меня</option>
@@ -296,46 +362,84 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
               </select>
             </label>
           ) : null}
+          <div className={focus.filterActions}>
+            <button
+              type="button"
+              className={focus.textButton}
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: "",
+                  dateFrom: "",
+                  dateTo: "",
+                  direction: "all",
+                }))
+              }
+            >
+              Сбросить фильтры
+            </button>
+            <Button variant="secondary" onClick={() => void loadHistory()} disabled={loading}>
+              Обновить
+            </Button>
+          </div>
         </div>
-        <Button variant="secondary" onClick={() => void loadHistory()} disabled={loading}>
-          Повторить
-        </Button>
+      ) : null}
+
+      <div className={focus.resultsHeading}>
+        <p role="status">
+          {tab === "purchases" ? "Покупки" : "Начисления"}: {shownInTab} из {totalInTab}
+        </p>
+        {filters.search.trim() ? (
+          <button
+            type="button"
+            className={focus.textButton}
+            onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
+          >
+            Сбросить поиск
+          </button>
+        ) : null}
       </div>
 
-      {loading ? <div className={styles.loading}>Загрузка…</div> : null}
+      {loading ? <div className={focus.loading}>Загрузка…</div> : null}
 
       {!loading && error ? (
-        <div className={styles.error} role="alert">
+        <div className={focus.error} role="alert">
           <p>{error}</p>
           <Button onClick={() => void loadHistory()}>Повторить</Button>
         </div>
       ) : null}
 
       {!loading && !error && tab === "purchases" && showAcceptedAccessDeniedNote ? (
-        <p className={styles.note}>{ACCEPTED_STORE_ACCESS_DENIED_NOTE}</p>
+        <p className={focus.notice}>{ACCEPTED_STORE_ACCESS_DENIED_NOTE}</p>
       ) : null}
 
       {!loading && !error && tab === "purchases" && showAcceptedEmptyNote ? (
-        <p className={styles.note}>{ACCEPTED_BONUS_EMPTY_NOTE}</p>
+        <p className={focus.notice}>{ACCEPTED_BONUS_EMPTY_NOTE}</p>
       ) : null}
 
       {!loading && !error && tab === "purchases" ? (
         <>
           {filteredPurchases.length ? (
-            <div className={styles.list}>
+            <div className={focus.rows}>
               {filteredPurchases.map((row) => (
                 <PurchaseRowCard key={`${row.direction}-${row.id}`} row={row} />
               ))}
             </div>
           ) : purchases.length > 0 ? (
-            <p className={styles.note}>{FILTERED_PURCHASES_EMPTY_NOTE}</p>
+            <div className={focus.empty}>
+              <strong>Ничего не найдено</strong>
+              <p>{FILTERED_PURCHASES_EMPTY_NOTE}</p>
+            </div>
           ) : (
-            <div className={styles.empty}>Покупок не найдено</div>
+            <div className={focus.empty}>
+              <strong>Покупок не найдено</strong>
+              <p>Когда появятся операции, они отобразятся здесь.</p>
+            </div>
           )}
           {acceptedNextCursor ? (
-            <div style={{ marginTop: "var(--space-3)" }}>
+            <div className={focus.loadMore}>
               {loadMoreError ? (
-                <div className={styles.error} role="alert" style={{ marginBottom: "var(--space-2)" }}>
+                <div className={focus.error} role="alert" style={{ marginBottom: "var(--space-3)" }}>
                   <p>{loadMoreError}</p>
                   <Button variant="secondary" onClick={() => void loadMoreAccepted()}>
                     Повторить загрузку
@@ -356,15 +460,27 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
 
       {!loading && !error && tab === "accruals" ? (
         filteredAccruals.length ? (
-          <div className={styles.list}>
+          <div className={focus.rows}>
             {filteredAccruals.map((row) => (
-              <AccrualRowCard key={row.id} row={row} />
+              <AccrualRowCard key={`${row.accrualType}-${row.id}`} row={row} />
             ))}
           </div>
         ) : (
-          <div className={styles.empty}>Начислений не найдено</div>
+          <div className={focus.empty}>
+            <strong>Начислений не найдено</strong>
+            <p>Когда появятся операции, они отобразятся здесь.</p>
+          </div>
         )
       ) : null}
-    </>
+
+      <details className={focus.finePrint}>
+        <summary>Об истории</summary>
+        <p>
+          Поиск и фильтры работают по загруженным записям. Покупки «Принято у меня» загружаются
+          постранично; «По рекомендациям» охватывают до 200 последних заказов. Суммы показаны как
+          сохранено, без пересчёта по текущим условиям.
+        </p>
+      </details>
+    </div>
   );
 }

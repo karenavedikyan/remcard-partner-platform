@@ -58,13 +58,15 @@ describe("AccrualDetail accrualType", () => {
     const { rerender } = render(
       <AccrualDetail user={profUser} accrualId="shared-id" accrualType="bonus" />,
     );
-    expect(await screen.findByText(/100 ₽/)).toBeInTheDocument();
+    expect(await screen.findByText("100")).toBeInTheDocument();
+    expect(screen.getByText("₽")).toBeInTheDocument();
     expect(fetchAccrualById).toHaveBeenCalledWith("shared-id", "bonus");
 
     rerender(
       <AccrualDetail user={profUser} accrualId="shared-id" accrualType="agentBonus" />,
     );
-    expect(await screen.findByText(/200 ₽/)).toBeInTheDocument();
+    expect(await screen.findByText("200")).toBeInTheDocument();
+    expect(screen.getAllByText("₽").length).toBeGreaterThan(0);
     expect(fetchAccrualById).toHaveBeenCalledWith("shared-id", "agentBonus");
   });
 });

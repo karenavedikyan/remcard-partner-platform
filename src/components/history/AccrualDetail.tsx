@@ -22,16 +22,44 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PayoutRecordModal } from "@/components/payout/PayoutRecordModal";
 import { fetchBonusPayoutActions, type SettlementPayoutActions } from "@/lib/payout-record";
-import styles from "./history.module.css";
+import focus from "./history-focus.module.css";
 
-function formatDate(iso: string) {
+function formatDetailDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
+    day: "numeric",
+    month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function splitHeroAmount(value: number): { amount: string; symbol: string } {
+  const hasFraction = Math.abs(value - Math.round(value)) > 1e-9;
+  const amount = hasFraction
+    ? value.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : value.toLocaleString("ru-RU");
+  return { amount, symbol: "₽" };
+}
+
+function accrualFocusLabel(row: AccrualRow): string {
+  if (row.accrualType === "agentBonus") {
+    return "Агентское вознаграждение";
+  }
+  if (row.scope === "payable-to-pros") {
+    return "Вознаграждение профклиенту";
+  }
+  if (row.scope === "earned") {
+    return "Начислено мне";
+  }
+  return accrualScopeLabel(row.scope);
+}
+
+function accrualTypeLabel(row: AccrualRow): string {
+  if (row.accrualType === "agentBonus") {
+    return "Агентский бонус";
+  }
+  return "Бонус профклиента";
 }
 
 type AccrualDetailProps = {
@@ -45,6 +73,9 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
   const [linkedPurchase, setLinkedPurchase] = useState<PurchaseRow | null>(null);
+  const [linkedPurchaseState, setLinkedPurchaseState] = useState<"unknown" | "loading" | "found" | "missing">(
+    "unknown",
+  );
   const [payoutActions, setPayoutActions] = useState<SettlementPayoutActions | null>(null);
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
 
@@ -56,6 +87,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
       if (!row) {
         setAccrual(null);
         setLinkedPurchase(null);
+        setLinkedPurchaseState("missing");
         return;
       }
       setAccrual(row);
@@ -78,14 +110,18 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         }
       }
 
+      setLinkedPurchaseState("loading");
       if (row.orderId) {
         const byOrderId = await fetchPurchaseByOrderId(row.orderId, user);
         setLinkedPurchase(byOrderId);
+        setLinkedPurchaseState(byOrderId ? "found" : "missing");
         return;
       }
 
       const purchaseResult = await fetchPurchaseRows(user);
-      setLinkedPurchase(findPurchaseForAccrual(row, purchaseResult.purchases));
+      const match = findPurchaseForAccrual(row, purchaseResult.purchases);
+      setLinkedPurchase(match);
+      setLinkedPurchaseState(match ? "found" : "missing");
     } catch (caught) {
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить начисление",
@@ -100,12 +136,12 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   }, [load]);
 
   if (loading) {
-    return <div className={styles.loading}>Загрузка…</div>;
+    return <div className={focus.loading}>Загрузка…</div>;
   }
 
   if (error) {
     return (
-      <div className={styles.error} role="alert">
+      <div className={focus.error} role="alert">
         <p>{error}</p>
         <Button onClick={() => void load()}>Повторить</Button>
       </div>
@@ -114,74 +150,119 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
 
   if (!accrual) {
     return (
-      <div className={styles.empty}>
+      <div className={focus.empty}>
         <p>Начисление не найдено среди доступных записей.</p>
-        <Link href="/history">← К истории</Link>
+        <Link href="/history" className={focus.backLink}>
+          ← К истории
+        </Link>
       </div>
     );
   }
 
+  const hero = splitHeroAmount(accrual.amount);
+  const storedZero = accrual.amount === 0;
+
   return (
-    <div className={styles.detailCard}>
-      <div className={styles.rowHeader}>
-        <div>
-          <p className={styles.meta}>Начисление №{accrual.id}</p>
-          <h2 className={styles.rowTitle}>{formatMoneyRub(accrual.amount)}</h2>
-          <p className={styles.meta}>
-            {formatDate(accrual.createdAt)} · {accrualScopeLabel(accrual.scope)}
+    <div className={focus.page}>
+      <Link href="/history" className={focus.backLink}>
+        ← К истории
+      </Link>
+
+      <div className={focus.detailHeading}>
+        <h1>Детали начисления</h1>
+        <StatusBadge label={bonusStatusLabel(accrual.status)} tone={bonusStatusTone(accrual.status)} />
+      </div>
+
+      <article className={focus.receipt}>
+        <div className={focus.receiptFocus}>
+          <p className={focus.receiptFocusLabel}>{accrualFocusLabel(accrual)}</p>
+          <p className={focus.heroAmount}>
+            {hero.amount} <span>{hero.symbol}</span>
+          </p>
+          <p className={focus.heroNote}>
+            Сохранённая сумма начисления, не сумма покупки.
+            {storedZero ? " Нулевая сумма сохранена в данных операции." : null}
           </p>
         </div>
-        <StatusBadge
-          label={bonusStatusLabel(accrual.status)}
-          tone={bonusStatusTone(accrual.status)}
-        />
-      </div>
 
-      {accrual.scope === "unknown" ? (
-        <p className={styles.note}>
-          Не удалось определить тип начисления. Если сумма кажется неверной, обратитесь в
-          поддержку RemCard.
-        </p>
-      ) : null}
-
-      <div className={styles.detailGrid}>
-        <p className={styles.meta}>Партнёр: {accrual.counterpartyName}</p>
-        {accrual.promoCode ? <p className={styles.meta}>Документ: {accrual.promoCode}</p> : null}
-        {accrual.paidAt ? (
-          <p className={styles.meta}>Выплачено: {formatDate(accrual.paidAt)}</p>
-        ) : null}
-      </div>
-
-      {accrual.items.length ? (
-        <div>
-          <h3 className={styles.rowTitle}>Позиции</h3>
-          {accrual.items.map((item, index) => (
-            <div key={`${item.categoryLabel}-${index}`} className={styles.itemRow}>
-              <strong>{displayCategoryLabelFromStored(item.categoryLabel)}</strong>
-              <span className={styles.meta}>
-                {item.bonusPercent}% от {formatMoneyRub(item.amount)} →{" "}
-                {formatMoneyRub(item.bonusAmount)}
-              </span>
+        <dl className={focus.receiptMeta}>
+          <div>
+            <dt>Партнёр</dt>
+            <dd>{accrual.counterpartyName}</dd>
+          </div>
+          {accrual.promoCode ? (
+            <div>
+              <dt>Сертификат</dt>
+              <dd>{accrual.promoCode}</dd>
             </div>
-          ))}
+          ) : null}
+          <div>
+            <dt>Дата начисления</dt>
+            <dd>{formatDetailDate(accrual.createdAt)}</dd>
+          </div>
+          <div>
+            <dt>Тип</dt>
+            <dd>
+              {accrualTypeLabel(accrual)}
+              {accrual.scope !== "unknown" ? ` · ${accrualScopeLabel(accrual.scope)}` : null}
+            </dd>
+          </div>
+          {accrual.paidAt ? (
+            <div>
+              <dt>Выплачено</dt>
+              <dd>{formatDetailDate(accrual.paidAt)}</dd>
+            </div>
+          ) : null}
+        </dl>
+
+        {accrual.scope === "unknown" ? (
+          <p className={focus.heroNote}>
+            Не удалось определить тип начисления. Если сумма кажется неверной, обратитесь в поддержку
+            RemCard.
+          </p>
+        ) : null}
+
+        {linkedPurchase ? (
+          <Link href={purchaseDetailHref(linkedPurchase)} className={focus.primaryLink}>
+            Открыть связанную покупку <span aria-hidden="true">↗</span>
+          </Link>
+        ) : linkedPurchaseState === "missing" && accrual.promoCode ? (
+          <Link href={documentOperationsHref(accrual.promoCode)} className={focus.primaryLink}>
+            Все операции по документу <span aria-hidden="true">↗</span>
+          </Link>
+        ) : linkedPurchaseState === "loading" ? (
+          <p className={focus.heroNote}>Проверяем связанную покупку…</p>
+        ) : (
+          <p className={focus.heroNote}>Связанная покупка недоступна в загруженных данных.</p>
+        )}
+
+        {accrual.items.length ? (
+          <div className={focus.itemsSection}>
+            <h2>Позиции</h2>
+            {accrual.items.map((item, index) => (
+              <div key={`${item.categoryLabel}-${index}`} className={focus.itemRow}>
+                <strong>{displayCategoryLabelFromStored(item.categoryLabel)}</strong>
+                <span>
+                  {item.bonusPercent}% от {formatMoneyRub(item.amount)} → {formatMoneyRub(item.bonusAmount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <details className={focus.technical}>
+          <summary>Номер начисления</summary>
+          <p>{accrual.id}</p>
+        </details>
+      </article>
+
+      {payoutActions ? (
+        <div className={focus.actionsRow}>
+          <Button type="button" onClick={() => setPayoutModalOpen(true)}>
+            Зафиксировать выплату
+          </Button>
         </div>
       ) : null}
-
-      {linkedPurchase ? (
-        <Link href={purchaseDetailHref(linkedPurchase)}>Открыть связанную покупку</Link>
-      ) : accrual.promoCode ? (
-        <Link href={documentOperationsHref(accrual.promoCode)}>
-          Все операции по документу {accrual.promoCode}
-        </Link>
-      ) : null}
-
-      {payoutActions && accrual ? (
-        <Button type="button" onClick={() => setPayoutModalOpen(true)}>
-          Зафиксировать выплату
-        </Button>
-      ) : null}
-
-      <Link href="/history">← К истории</Link>
 
       {payoutModalOpen && payoutActions && accrual ? (
         <PayoutRecordModal
