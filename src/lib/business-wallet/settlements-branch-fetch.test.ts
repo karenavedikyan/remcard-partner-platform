@@ -28,7 +28,7 @@ const baseRow = {
 };
 
 describe("mergeSettlementsResponses", () => {
-  it("dedupes open rows by id and completed by id+direction", () => {
+  it("dedupes open rows by accrualType:id and completed by direction:type:id", () => {
     const merged = mergeSettlementsResponses([
       {
         receivable: [baseRow, { ...baseRow, amount: 99 }],
@@ -37,7 +37,9 @@ describe("mergeSettlementsResponses", () => {
         coverageNote: "A",
       },
       {
-        receivable: [],
+        receivable: [
+          { ...baseRow, accrualType: "agentBonus", amount: 20 },
+        ],
         payable: [{ ...baseRow, id: "p1" }],
         completed: [
           {
@@ -45,14 +47,21 @@ describe("mergeSettlementsResponses", () => {
             paidAt: "2026-02-01T00:00:00.000Z",
             direction: "receivable" as const,
           },
+          {
+            ...baseRow,
+            accrualType: "agentBonus",
+            paidAt: "2026-02-02T00:00:00.000Z",
+            direction: "receivable" as const,
+          },
         ],
         coverageNote: "B",
       },
     ]);
-    expect(merged.receivable).toHaveLength(1);
+    expect(merged.receivable).toHaveLength(2);
     expect(merged.receivable[0]?.amount).toBe(10);
+    expect(merged.receivable.find((r) => r.accrualType === "agentBonus")?.amount).toBe(20);
     expect(merged.payable).toHaveLength(1);
-    expect(merged.completed).toHaveLength(1);
+    expect(merged.completed).toHaveLength(2);
     expect(merged.coverageNote).toContain("A");
     expect(merged.coverageNote).toContain("B");
   });
@@ -61,6 +70,13 @@ describe("mergeSettlementsResponses", () => {
 describe("fetchSettlements branch scope", () => {
   beforeEach(() => {
     vi.mocked(remcardFetch).mockReset();
+  });
+
+  it("rejects explicit empty staff branch scope without owner GET", async () => {
+    await expect(fetchSettlements({ walletLedgerBranchIds: [] })).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(remcardFetch).not.toHaveBeenCalled();
   });
 
   it("uses owner GET without branchId when options omitted", async () => {

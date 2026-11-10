@@ -10,8 +10,11 @@ export type FetchSettlementsOptions = {
 export async function fetchSettlements(
   options?: FetchSettlementsOptions,
 ): Promise<SettlementsResponse> {
-  const branchIds = normalizeBranchIds(options?.walletLedgerBranchIds);
-  if (branchIds.length > 0) {
+  if (options && "walletLedgerBranchIds" in options) {
+    const branchIds = normalizeBranchIds(options.walletLedgerBranchIds);
+    if (branchIds.length === 0) {
+      throw new RemcardApiError(403, "Нет филиалов для просмотра расчётов.");
+    }
     return fetchSettlementsForGrantedBranches(branchIds);
   }
   return remcardFetch<SettlementsResponse>("/api/pro/wallet/settlements");
