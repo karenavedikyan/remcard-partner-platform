@@ -40,14 +40,19 @@ function formatMoneyHero(value: number): { amount: string; symbol: string } {
   return { amount, symbol: "₽" };
 }
 
-function itemDiscountAmount(item: PurchaseItemRow): number {
-  const percent = item.discountPercent ?? 0;
-  if (!percent) return 0;
-  return (item.amount * percent) / 100;
-}
-
-function itemPayableAmount(item: PurchaseItemRow): number {
-  return item.amount - itemDiscountAmount(item);
+function itemIssuerRewardCopy(item: PurchaseItemRow): string | null {
+  const hasPct = item.issuerPercent != null && Number.isFinite(item.issuerPercent);
+  const hasSum = item.issuerAmount != null && Number.isFinite(item.issuerAmount);
+  if (hasPct && hasSum) {
+    return `${formatMoneyRub(item.amount)} × ${item.issuerPercent}% = ${formatMoneyRub(item.issuerAmount)}`;
+  }
+  if (hasPct) {
+    return `Ставка ${item.issuerPercent}%. Сохранённая сумма по категории недоступна.`;
+  }
+  if (hasSum) {
+    return `Сохранённая сумма: ${formatMoneyRub(item.issuerAmount)}`;
+  }
+  return null;
 }
 
 function categoryBreakdownHint(items: PurchaseItemRow[]): string {
@@ -198,10 +203,6 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
   const hero = rewardHero(purchase);
   const breakdownHint = categoryBreakdownHint(purchase.items);
   const documentCode = purchase.promoCode ?? "Документ";
-  const hasIssuerLines = purchase.items.some(
-    (item) => item.issuerPercent != null || item.issuerAmount != null,
-  );
-
   return (
     <section className={styles.page} aria-labelledby="purchase-detail-title">
       <nav className={styles.pageNav} aria-label="Навигация по истории">
@@ -361,38 +362,26 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
 
             {purchase.items.map((item) => {
               const label = displayCategoryLabelFromStored(item.categoryLabel);
-              const discountPct = item.discountPercent ?? 0;
-              const discountAmt = itemDiscountAmount(item);
-              const payableItem = itemPayableAmount(item);
+              const issuerCopy = itemIssuerRewardCopy(item);
               return (
                 <article key={`${item.categoryLabel}-${item.amount}`} className={styles.item}>
                   <h3>{label}</h3>
                   <div className={styles.calcContent}>
                     <dl>
-                      {discountPct > 0 ? (
+                      <div>
+                        <dt>Сумма до скидки</dt>
+                        <dd>{formatMoneyRub(item.amount)}</dd>
+                      </div>
+                      {item.discountPercent != null && Number.isFinite(item.discountPercent) ? (
                         <div>
                           <dt>Скидка</dt>
-                          <dd>
-                            {formatMoneyRub(item.amount)} × {discountPct}% ={" "}
-                            {formatMoneyRub(discountAmt)}
-                          </dd>
+                          <dd>{item.discountPercent}%</dd>
                         </div>
                       ) : null}
-                      <div>
-                        <dt>К оплате за позицию</dt>
-                        <dd>
-                          {discountPct > 0
-                            ? `${formatMoneyRub(item.amount)} − ${formatMoneyRub(discountAmt)} = ${formatMoneyRub(payableItem)}`
-                            : formatMoneyRub(payableItem)}
-                        </dd>
-                      </div>
-                      {item.issuerPercent != null ? (
+                      {issuerCopy ? (
                         <div>
                           <dt>Вознаграждение</dt>
-                          <dd>
-                            {formatMoneyRub(item.amount)} × {item.issuerPercent}% ={" "}
-                            {formatMoneyRub(item.issuerAmount ?? 0)}
-                          </dd>
+                          <dd>{issuerCopy}</dd>
                         </div>
                       ) : null}
                     </dl>
@@ -401,10 +390,10 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
               );
             })}
 
-            {hasIssuerLines ? (
+            {purchase.items.length ? (
               <p className={styles.breakdownNote}>
-                Вознаграждение рассчитано от суммы до скидки. Общее начисление складывается из
-                вознаграждений по категориям и не подтверждает выплату.
+                Сохранённые суммы и ставки показаны как в данных операции. Статус выплаты здесь
+                не указан.
               </p>
             ) : null}
 
@@ -429,6 +418,29 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
                 ))}
               </div>
             ) : null}
+
+            {purchase.direction === "accepted" && purchase.canManageReceivingClient ? (
+              <div className={styles.receivingSlot}>
+                <PurchaseReceivingClientPanel
+                  purchase={purchase}
+                  onReload={() => void load()}
+                  onLinked={({
+                    orderId: linkedOrderId,
+                    receivingClient,
+                    receivingLinkRevision,
+                  }) => {
+                    setPurchase((prev) => {
+                      if (!prev || (prev.orderId ?? prev.id) !== linkedOrderId) return prev;
+                      return {
+                        ...prev,
+                        receivingClient,
+                        receivingLinkRevision,
+                      };
+                    });
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
         </details>
 
@@ -444,25 +456,6 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
           </div>
         ) : null}
       </div>
-
-      {purchase.direction === "accepted" && purchase.canManageReceivingClient ? (
-        <div className={styles.receivingSlot}>
-          <PurchaseReceivingClientPanel
-            purchase={purchase}
-            onReload={() => void load()}
-            onLinked={({ orderId: linkedOrderId, receivingClient, receivingLinkRevision }) => {
-              setPurchase((prev) => {
-                if (!prev || (prev.orderId ?? prev.id) !== linkedOrderId) return prev;
-                return {
-                  ...prev,
-                  receivingClient,
-                  receivingLinkRevision,
-                };
-              });
-            }}
-          />
-        </div>
-      ) : null}
 
       {accrualWarning ? (
         <p className={styles.warning} role="status">
