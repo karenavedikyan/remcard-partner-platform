@@ -4,12 +4,21 @@ import type {
   SettlementsResponse,
 } from "./settlements-types";
 
+function openRowDedupeKey(row: SettlementObligation): string {
+  return `${row.accrualType}:${row.id}`;
+}
+
+function completedRowDedupeKey(row: SettlementCompleted): string {
+  return `${row.direction}:${row.accrualType}:${row.id}`;
+}
+
 function dedupeOpenRows(rows: SettlementObligation[]): SettlementObligation[] {
   const seen = new Set<string>();
   const out: SettlementObligation[] = [];
   for (const row of rows) {
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
+    const key = openRowDedupeKey(row);
+    if (seen.has(key)) continue;
+    seen.add(key);
     out.push(row);
   }
   return out;
@@ -19,7 +28,7 @@ function dedupeCompletedRows(rows: SettlementCompleted[]): SettlementCompleted[]
   const seen = new Set<string>();
   const out: SettlementCompleted[] = [];
   for (const row of rows) {
-    const key = `${row.id}:${row.direction}`;
+    const key = completedRowDedupeKey(row);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(row);
