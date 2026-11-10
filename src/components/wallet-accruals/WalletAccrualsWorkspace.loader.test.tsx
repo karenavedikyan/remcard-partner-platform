@@ -65,6 +65,26 @@ describe("WalletAccrualsWorkspace loader", () => {
     expect(fetchAgentReceivableOrders).not.toHaveBeenCalled();
   });
 
+  it("staff merged branch ledger uses wallet shell with coverage when slices are empty", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      receivable: [],
+      payable: [],
+      completed: [],
+      coverageNote:
+        "Показаны расчёты по филиалам с правом просмотра (2). Исторические начисления без привязки к филиалу не включены. Итог может отличаться от общего баланса владельца.",
+    });
+    render(
+      <WalletAccrualsWorkspace
+        walletLedgerBranchIds={["branch-a", "branch-b"]}
+        walletEmptyViewerRole="company"
+        scopeKey="staff-merged-empty"
+      />,
+    );
+    await screen.findByTestId("wallet-accruals");
+    expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+    expect(screen.getByTestId("wallet-coverage-note")).toHaveTextContent(/филиалам с правом просмотра/i);
+  });
+
   it("does not show actor publicId on card ribbon (ownership not provable)", async () => {
     render(<WalletAccrualsWorkspace fallbackRibbon="Магазин" />);
     await screen.findByTestId("wallet-rc-receivable-face");

@@ -234,10 +234,13 @@ export function WalletAccrualsWorkspace({
     );
   }
 
+  const staffMergedBranchLedger = Boolean(walletLedgerBranchIds?.length);
+
   if (
     !agentRegistry &&
     isSupportedWalletEmptyViewerRole(walletEmptyViewerRole) &&
-    isWalletSettlementsDataEmpty(response)
+    isWalletSettlementsDataEmpty(response) &&
+    !staffMergedBranchLedger
   ) {
     return (
       <WalletSectionEmptyState
