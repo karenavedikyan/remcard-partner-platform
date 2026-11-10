@@ -72,7 +72,15 @@ export function qaOwnerAggregateSettlements(): SettlementsResponse {
   };
 }
 
+function qaStaffSlicesEmpty(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("staffSlices") === "empty";
+}
+
 export function qaBranchScopedSettlements(branchId: string): SettlementsResponse {
+  if (qaStaffSlicesEmpty()) {
+    return { receivable: [], payable: [], completed: [], coverageNote: "" };
+  }
   return {
     coverageNote: `QA branch ${branchId}`,
     receivable: [
