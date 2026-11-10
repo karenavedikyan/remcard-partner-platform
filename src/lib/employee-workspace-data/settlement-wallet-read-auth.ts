@@ -5,6 +5,7 @@ import type { AuthUser } from "@/lib/types";
 import {
   activeBranchPermissionGrants,
   branchIdsWithPermission,
+  hasFullActiveBranchCoverage,
 } from "./branch-assignment-auth";
 
 export type SettlementWalletReadDenyReason =
@@ -20,7 +21,11 @@ export type SettlementWalletReadDenyReason =
 export type SettlementWalletReadAuthResult =
   | {
       allowed: true;
-      mode: "pro-owner" | "pro-solo" | "org-member-with-ledger";
+      mode:
+        | "pro-owner"
+        | "pro-solo"
+        | "org-member-with-ledger"
+        | "org-member-company-ledger";
       branchIds?: string[];
     }
   | { allowed: false; reason: SettlementWalletReadDenyReason };
@@ -71,6 +76,20 @@ export function authorizeSettlementWalletRead(input: {
     const ownerId = proContext.organization?.ownerId?.trim();
     if (!ownerId) {
       return { allowed: false, reason: "foreign_or_revoked_membership" };
+    }
+
+    // Full canViewWallet coverage of every active org branch → company ledger read
+    // (unscoped GET). Not an owner promotion; requisites/payout stay owner-only.
+    if (
+      hasFullActiveBranchCoverage(
+        proContext.organizationActiveBranchIds,
+        walletBranchIds,
+      )
+    ) {
+      return {
+        allowed: true,
+        mode: "org-member-company-ledger",
+      };
     }
 
     return {

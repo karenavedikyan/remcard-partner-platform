@@ -30,11 +30,16 @@ export type SettlementCompleted = SettlementObligation & {
   direction: "receivable" | "payable";
 };
 
+/** Optional server ledger scope for org staff (typed; no copy matching). */
+export type WalletReadScope = "org-staff-company" | "org-staff-branches";
+
 export type SettlementsResponse = {
   receivable: SettlementObligation[];
   payable: SettlementObligation[];
   completed: SettlementCompleted[];
   coverageNote: string;
+  /** Present for org staff reads when backend reports scope. Owner/personal may omit. */
+  walletReadScope?: WalletReadScope;
 };
 
 export type SettlementPartnerGroup = {
