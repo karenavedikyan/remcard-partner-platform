@@ -25,13 +25,25 @@ function normalizeBranchIds(ids?: string[] | null): string[] {
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].sort();
 }
 
+function staffBranchMergedCoverageNote(branchIds: string[], upstreamNote: string): string {
+  const scope = `По филиалам с правом просмотра: ${branchIds.join(", ")}.`;
+  const caveat =
+    "Начисления без привязки к филиалу (исторические) в этот обзор не входят и могут отличаться от кошелька владельца.";
+  const base = upstreamNote.trim();
+  return [scope, caveat, base].filter(Boolean).join(" ");
+}
+
 async function fetchSettlementsForGrantedBranches(
   branchIds: string[],
 ): Promise<SettlementsResponse> {
   const responses = await Promise.all(
     branchIds.map((branchId) => fetchSettlementsForBranch(branchId)),
   );
-  return mergeSettlementsResponses(responses);
+  const merged = mergeSettlementsResponses(responses);
+  return {
+    ...merged,
+    coverageNote: staffBranchMergedCoverageNote(branchIds, merged.coverageNote),
+  };
 }
 
 async function fetchSettlementsForBranch(branchId: string): Promise<SettlementsResponse> {

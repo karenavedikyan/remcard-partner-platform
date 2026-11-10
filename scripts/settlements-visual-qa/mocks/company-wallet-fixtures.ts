@@ -1,8 +1,11 @@
 import type { SettlementsResponse } from "@/lib/settlements-types";
 
-/** Six branches + HO — mirrors full-coverage manager grant shape (synthetic only). */
+/**
+ * Six store branches with wallet grants (synthetic).
+ * HO / head office is not a backend wallet branch scope — excluded from
+ * branchAssignments used for ?branchId= (per navigator wallet auditor).
+ */
 export const QA_STAFF_WALLET_BRANCH_IDS = [
-  "branch-ho",
   "branch-b1",
   "branch-b2",
   "branch-b3",
@@ -11,7 +14,7 @@ export const QA_STAFF_WALLET_BRANCH_IDS = [
   "branch-b6",
 ] as const;
 
-const FAIL_403_BRANCH = "branch-b4";
+export const QA_FAIL_BRANCH = "branch-b4";
 
 export function qaOwnerAggregateSettlements(): SettlementsResponse {
   return {
@@ -39,6 +42,17 @@ export function qaOwnerAggregateSettlements(): SettlementsResponse {
         status: "CONFIRMED",
         createdAt: "2026-10-02T10:00:00.000Z",
       },
+      {
+        id: "owner-null-branch",
+        orderId: "ord-owner-unassigned",
+        accrualType: "bonus",
+        counterpartyId: "agent-historical",
+        counterpartyName: "Историческое (без филиала)",
+        amount: 500,
+        basis: "QA owner-only null-branch",
+        status: "CONFIRMED",
+        createdAt: "2026-09-15T10:00:00.000Z",
+      },
     ],
     payable: [
       {
@@ -59,9 +73,6 @@ export function qaOwnerAggregateSettlements(): SettlementsResponse {
 }
 
 export function qaBranchScopedSettlements(branchId: string): SettlementsResponse {
-  if (branchId === FAIL_403_BRANCH) {
-    throw new QaSettlementsForbiddenError();
-  }
   return {
     coverageNote: `QA branch ${branchId}`,
     receivable: [
@@ -80,11 +91,4 @@ export function qaBranchScopedSettlements(branchId: string): SettlementsResponse
     payable: [],
     completed: [],
   };
-}
-
-export class QaSettlementsForbiddenError extends Error {
-  status = 403;
-  constructor() {
-    super("QA synthetic 403");
-  }
 }

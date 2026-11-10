@@ -8,8 +8,8 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: "@/lib/settlements-loader",
-        replacement: path.resolve(__dirname, "mocks/settlements-loader.ts"),
+        find: "@/lib/api-client",
+        replacement: path.resolve(__dirname, "mocks/api-client.ts"),
       },
       {
         find: "@/lib/auth-session",

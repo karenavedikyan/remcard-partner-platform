@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
@@ -47,6 +47,22 @@ function SpecialistPartners() {
   );
 }
 
+function QaFetchLogProbe() {
+  const [log, setLog] = useState<string[]>([]);
+  useEffect(() => {
+    window.__QA_SETTLEMENTS_FETCH_LOG__ = [];
+    const tick = () => setLog([...(window.__QA_SETTLEMENTS_FETCH_LOG__ ?? [])]);
+    const id = window.setInterval(tick, 200);
+    tick();
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <pre data-testid="qa-settlements-fetch-log" style={{ fontSize: 10, marginTop: 12 }}>
+      {JSON.stringify(log)}
+    </pre>
+  );
+}
+
 function CompanyWalletHarness(input: {
   branchIds?: string[];
   staff?: boolean;
@@ -63,6 +79,7 @@ function CompanyWalletHarness(input: {
         walletEmptyViewerRole="company"
         walletLedgerBranchIds={input.branchIds ?? null}
       />
+      <QaFetchLogProbe />
     </div>
   );
 }

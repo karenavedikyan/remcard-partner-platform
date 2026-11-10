@@ -1,48 +1,37 @@
-# Wallet branch-merge QA (candidate `ca9358f3`)
+# Wallet branch-merge QA (runtime loader under test)
 
-**Runtime SHA under test:** `ca9358f3511211113804cca5b49052e72017e11f`  
-**Harness path:** `scripts/settlements-visual-qa/` (existing Vite visual QA, mocked loader — no RemCard login/finance)
+**Runtime under test:** merge `origin/release/fe-wallet-multi-branch-settlements-edb2c187` (≥ `40db71d3`, coverage note on QA branch successor).  
+**QA branch:** `qa/wallet-multi-branch-harness-ca9358f3`  
+**Harness:** `scripts/settlements-visual-qa/` — mocks **`@/lib/api-client` `remcardFetch` only**; **`src/lib/settlements-loader.ts`** and **`settlements-merge.ts`** are real.
 
 ## Commands
 
 ```bash
-git checkout ca9358f3511211113804cca5b49052e72017e11f   # or QA branch below
+git checkout qa/wallet-multi-branch-harness-ca9358f3
 
-# Unit / loader (synthetic, no browser)
-pnpm exec vitest run \
-  src/lib/business-wallet/settlements-branch-fetch.test.ts \
-  src/lib/business-wallet/access.branch-ledger.test.ts
+pnpm exec vitest run src/lib/business-wallet/settlements-branch-fetch.test.ts
 
-# UI harness (mocked @/lib/settlements-loader + auth-session)
 pnpm run harness:settlements-qa
-# open:
-#   http://127.0.0.1:5211/?scene=company-owner
-#   http://127.0.0.1:5211/?scene=company-staff-6
-#   http://127.0.0.1:5211/?scene=company-staff-1
-#   http://127.0.0.1:5211/?scene=company-staff-403
-
-# Optional screenshots (Playwright; harness must be running)
-pnpm run harness:settlements-qa:capture
-# -> artifacts/partner-wallet-20261103/wallet-settlements/screenshots/
 ```
 
-| Scene | What it exercises |
-|--------|-------------------|
-| `company-owner` | Single aggregate GET path (`walletLedgerBranchIds` omitted) |
-| `company-staff-6` | 7 synthetic branches (HO + b1–b6), merge → 7 receivable rows |
-| `company-staff-1` | One `branchId`, single partner row |
-| `company-staff-403` | Full branch list; `branch-b4` → 403 → error alert, no partial UI |
+| Scene | Expected `window.__QA_SETTLEMENTS_FETCH_LOG__` |
+|--------|-----------------------------------------------|
+| `?scene=company-owner` | **1×** `/api/pro/wallet/settlements` (no `branchId`) |
+| `?scene=company-staff-6` | **6×** `...settlements?branchId=branch-b1` … `branch-b6` (sorted parallel); merged UI shows staff `coverageNote` with branch list + unassigned caveat |
+| `?scene=company-staff-1` | **1×** `?branchId=branch-b1` |
+| `?scene=company-staff-403` | **6×** attempts; UI error (`wallet-accruals-error`); **no** partial merged success |
 
-**DOM hooks:** `data-testid="qa-company-wallet-owner"`, `qa-company-wallet-staff-6`, etc.; wallet shell `business-owner-wallet`, load/error `wallet-accruals-loading` / `wallet-accruals-error`.
+Inspect log in DOM: `data-testid="qa-settlements-fetch-log"`.
 
-## Local dev-fixture (specialist only — not branch-merge)
+## Branch ids (synthetic)
 
-`/settlements/dev-fixture` — `masterWalletFixtureData` preview, **does not** cover company staff multi-branch (NODE_ENV !== production).
+**Six retail branches only:** `branch-b1` … `branch-b6`.  
+**HO is not** a backend wallet `branchId` — wallet grants use **branchAssignments** on store branches only (HO excluded; align with navigator wallet auditor).
 
-## Caveat (backend / product)
+## Owner vs staff honesty
 
-Navigator may attach orders with **null / unscoped branch** only on owner aggregate. Per-branch `?branchId=` staff merge is **union of branch-scoped API rows**, not a proof of **bitwise identity** with owner aggregate. Do **not** claim “company wallet equals owner” for unassigned historical orders.
+Owner mock includes `owner-null-branch` row (historical / no branch). Staff merged view **omits** it by design — UI must not imply full company parity. Runtime staff merge adds `coverageNote` clarifying scoped branches and excluded unassigned historical accruals.
 
-## Backend auditor (same facts)
+## Caveat
 
-Live navigator: `authorizeSettlementWalletRead` with `requireFullOrgCoverage: false`; branch resolution single `activeBranch`; no `all` / `full_org` wallet token. Partner FE `ca9358f3` merges explicit granted-branch GETs client-side.
+Per-branch staff merge ≠ owner aggregate for null-branch orders. Do not claim full owner parity in QA sign-off.
