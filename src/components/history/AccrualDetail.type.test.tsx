@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { contrastRatio, THEME_CONTRAST_PAIRS } from "@/lib/theme-contrast";
 import { AccrualDetail } from "./AccrualDetail";
 import type { AccrualRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
@@ -68,5 +72,18 @@ describe("AccrualDetail accrualType", () => {
     expect(await screen.findByText("200")).toBeInTheDocument();
     expect(screen.getAllByText("₽").length).toBeGreaterThan(0);
     expect(fetchAccrualById).toHaveBeenCalledWith("shared-id", "agentBonus");
+  });
+
+  it("binds purchase CTA to accent-fill tokens for 4.5:1 contrast in light and dark", () => {
+    const cssPath = join(dirname(fileURLToPath(import.meta.url)), "history-focus.module.css");
+    const css = readFileSync(cssPath, "utf8");
+    expect(css).toContain("background: var(--accent-fill)");
+    expect(css).toContain("color: var(--accent-on-fill");
+
+    const light = THEME_CONTRAST_PAIRS.light.primaryButton;
+    const dark = THEME_CONTRAST_PAIRS.dark.primaryButton;
+    expect(contrastRatio(light.fg, light.bg)).toBeGreaterThanOrEqual(light.minRatio);
+    expect(contrastRatio(dark.fg, dark.bg)).toBeGreaterThanOrEqual(dark.minRatio);
+    expect(contrastRatio("#ffffff", "#fda4af")).toBeLessThan(4.5);
   });
 });

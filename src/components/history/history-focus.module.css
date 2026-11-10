@@ -476,16 +476,16 @@
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-radius: 9px;
-  background: var(--primary);
-  color: var(--primary-fg, #fff);
+  background: var(--accent-fill);
+  color: var(--accent-on-fill, var(--primary-fg, #fff));
   font-weight: 800;
   font-size: 14px;
   text-decoration: none;
 }
 
 .primaryLink:hover {
-  color: var(--primary-fg, #fff);
-  filter: brightness(0.93);
+  background: var(--accent-fill-hover);
+  color: var(--accent-on-fill, var(--primary-fg, #fff));
 }
 
 .primaryLink:focus-visible {
