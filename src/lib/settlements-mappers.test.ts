@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { presentAccrualRow } from "./history-accrual-display";
 import {
   groupObligationsByCounterparty,
   mapSettlementsToAccrualRows,
   mergeAccrualRowsById,
+  mergeSettlementLifecycleIntoAccrual,
   sumObligationAmounts,
 } from "./settlements-mappers";
 import type { AccrualRow } from "./history-types";
@@ -61,6 +63,108 @@ describe("mapSettlementsToAccrualRows", () => {
     assert.equal(rows.length, 2);
     assert.equal(rows[0]?.scope, "earned");
     assert.equal(rows[1]?.scope, "payable-to-pros");
+  });
+});
+
+describe("settlement lifecycle accrual mapping", () => {
+  it("carries pendingAmount and shows waiting presentation for confirmed 0", () => {
+    const rows = mapSettlementsToAccrualRows({
+      receivable: [],
+      payable: [
+        baseRow({
+          id: "pay-pending",
+          amount: 0,
+          pendingAmount: 11_900,
+          status: "CALCULATED",
+        }),
+      ],
+      completed: [],
+    });
+    const row = rows[0];
+    assert.equal(row?.pendingAmount, 11_900);
+    assert.equal(row?.amount, 0);
+    const view = presentAccrualRow(row!);
+    assert.equal(view.heroAmount, 11_900);
+    assert.equal(view.statusLabel, "Ожидает подтверждения");
+    assert.match(view.heroNote, /Подтверждено к расчёту 0 ₽/);
+  });
+
+  it("enriches wallet row with settlement buckets for same typed id", () => {
+    const walletRow: AccrualRow = {
+      id: "b1",
+      orderId: "o1",
+      accrualType: "bonus",
+      createdAt: "2026-10-01T10:00:00.000Z",
+      amount: 11_900,
+      status: "CALCULATED",
+      paidAt: null,
+      counterpartyName: "Shop",
+      promoCode: "RC-1",
+      isSelfScan: false,
+      walletRole: "MASTER",
+      scope: "earned",
+      items: [],
+    };
+    const settlementRow = mapSettlementsToAccrualRows({
+      receivable: [],
+      payable: [
+        baseRow({
+          id: "b1",
+          amount: 0,
+          pendingAmount: 11_900,
+          status: "CALCULATED",
+        }),
+      ],
+      completed: [],
+    })[0]!;
+    const merged = mergeSettlementLifecycleIntoAccrual(walletRow, settlementRow);
+    assert.equal(merged.amount, 0);
+    assert.equal(merged.pendingAmount, 11_900);
+    assert.equal(merged.walletRole, "MASTER");
+    const viaMerge = mergeAccrualRowsById([walletRow], [settlementRow]).find((r) => r.id === "b1");
+    assert.equal(viaMerge?.pendingAmount, 11_900);
+    assert.equal(presentAccrualRow(viaMerge!).heroAmount, 11_900);
+  });
+
+  it("terminal paid, cancelled, and review-zero presentations", () => {
+    const base: AccrualRow = {
+      id: "x",
+      orderId: "o",
+      accrualType: "bonus",
+      createdAt: "2026-10-01T10:00:00.000Z",
+      amount: 0,
+      status: "CONFIRMED",
+      paidAt: null,
+      counterpartyName: "Shop",
+      promoCode: "RC-1",
+      isSelfScan: false,
+      walletRole: null,
+      scope: "payable-to-pros",
+      items: [],
+    };
+
+    assert.equal(presentAccrualRow({ ...base, status: "CANCELLED" }).statusLabel, "Отменено");
+
+    const paid = presentAccrualRow({
+      ...base,
+      amount: 5_400,
+      status: "PAID",
+      paidAt: "2026-11-01T10:00:00.000Z",
+      pendingAmount: 0,
+    });
+    assert.equal(paid.statusLabel, "Выплачено");
+    assert.match(paid.heroNote, /Выплаченная/);
+    assert.doesNotMatch(paid.heroNote, /Подтверждённая сумма к расчёту/);
+
+    const review = presentAccrualRow({
+      ...base,
+      status: "NEEDS_REVIEW",
+      confirmationLabel: "Требует сверки",
+      pendingAmount: 0,
+      suspendedAmount: 0,
+    });
+    assert.equal(review.statusLabel, "Требует сверки");
+    assert.notEqual(review.statusLabel, "Подтверждено к расчёту 0 ₽");
   });
 });
 

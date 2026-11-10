@@ -67,6 +67,47 @@ function mapSettlementRowToAccrual(
     walletRole: null,
     scope,
     items: [],
+    pendingAmount: row.pendingAmount,
+    suspendedAmount: row.suspendedAmount,
+    paidAmount: row.paidAmount,
+    confirmationLabel: row.confirmationLabel ?? null,
+    confirmationAt: row.confirmationAt ?? null,
+    hasIndividualTerms: row.hasIndividualTerms,
+  };
+}
+
+function settlementLifecyclePresent(row: AccrualRow): boolean {
+  return (
+    row.pendingAmount != null ||
+    row.suspendedAmount != null ||
+    row.paidAmount != null ||
+    row.confirmationLabel != null ||
+    row.confirmationAt != null
+  );
+}
+
+/** Prefer settlement bucket metadata over wallet flat amount when ids collide. */
+export function mergeSettlementLifecycleIntoAccrual(
+  primary: AccrualRow,
+  settlement: AccrualRow,
+): AccrualRow {
+  if (!settlementLifecyclePresent(settlement)) {
+    return primary;
+  }
+  return {
+    ...primary,
+    amount: settlement.amount,
+    status: settlement.status,
+    paidAt: settlement.paidAt ?? primary.paidAt,
+    pendingAmount: settlement.pendingAmount,
+    suspendedAmount: settlement.suspendedAmount,
+    paidAmount: settlement.paidAmount,
+    confirmationLabel: settlement.confirmationLabel,
+    confirmationAt: settlement.confirmationAt,
+    hasIndividualTerms: settlement.hasIndividualTerms,
+    counterpartyName: settlement.counterpartyName || primary.counterpartyName,
+    promoCode: settlement.promoCode ?? primary.promoCode,
+    scope: primary.scope !== "unknown" ? primary.scope : settlement.scope,
   };
 }
 
@@ -97,7 +138,10 @@ export function mergeAccrualRowsById(
   }
   for (const row of supplemental) {
     const key = `${row.accrualType}:${row.id}`;
-    if (!byId.has(key)) {
+    const existing = byId.get(key);
+    if (existing) {
+      byId.set(key, mergeSettlementLifecycleIntoAccrual(existing, row));
+    } else {
       byId.set(key, row);
     }
   }

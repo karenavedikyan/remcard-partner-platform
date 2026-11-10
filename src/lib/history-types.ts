@@ -151,6 +151,7 @@ export type AccrualRow = {
   orderId: string | null;
   accrualType: AccrualType;
   createdAt: string;
+  /** Confirmed unpaid portion from settlements lifecycle (may be 0 while pendingAmount > 0). */
   amount: number;
   status: string;
   paidAt: string | null;
@@ -160,6 +161,13 @@ export type AccrualRow = {
   walletRole: WalletRole | null;
   scope: AccrualScope;
   items: AccrualItemRow[];
+  /** Settlement lifecycle buckets — authoritative server semantics for history display. */
+  pendingAmount?: number;
+  suspendedAmount?: number;
+  paidAmount?: number;
+  confirmationLabel?: string | null;
+  confirmationAt?: string | null;
+  hasIndividualTerms?: boolean;
 };
 
 export type WalletBalanceResponse = {

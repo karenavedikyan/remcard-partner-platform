@@ -10,6 +10,7 @@ import {
   filterPurchases,
   purchaseStatusOptions,
 } from "@/lib/history-filters";
+import { presentAccrualRow } from "@/lib/history-accrual-display";
 import { formatMoneyRub } from "@/lib/history-format";
 import {
   ACCEPTED_BONUS_EMPTY_NOTE,
@@ -104,6 +105,7 @@ function PurchaseRowCard({ row }: { row: PurchaseRow }) {
 
 function AccrualRowCard({ row }: { row: AccrualRow }) {
   const promo = row.promoCode ?? "Документ";
+  const presentation = presentAccrualRow(row);
 
   return (
     <Link
@@ -118,9 +120,9 @@ function AccrualRowCard({ row }: { row: AccrualRow }) {
         </p>
       </div>
       <div className={focus.operationMoney}>
-        <strong>{formatMoneyRub(row.amount)}</strong>
+        <strong>{formatMoneyRub(presentation.heroAmount)}</strong>
         <div className={focus.statusLine}>
-          <StatusBadge label={bonusStatusLabel(row.status)} tone={bonusStatusTone(row.status)} />
+          <StatusBadge label={presentation.statusLabel} tone={presentation.statusTone} />
         </div>
       </div>
       <span className={focus.arrow} aria-hidden="true">
