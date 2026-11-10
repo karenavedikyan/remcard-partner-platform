@@ -41,16 +41,21 @@ function formatMoneyHero(value: number): { amount: string; symbol: string } {
 }
 
 function itemIssuerRewardCopy(item: PurchaseItemRow): string | null {
-  const hasPct = item.issuerPercent != null && Number.isFinite(item.issuerPercent);
-  const hasSum = item.issuerAmount != null && Number.isFinite(item.issuerAmount);
-  if (hasPct && hasSum) {
-    return `${formatMoneyRub(item.amount)} × ${item.issuerPercent}% = ${formatMoneyRub(item.issuerAmount)}`;
+  const issuerPercent = item.issuerPercent;
+  const issuerAmount = item.issuerAmount;
+  if (
+    issuerPercent != null &&
+    Number.isFinite(issuerPercent) &&
+    issuerAmount != null &&
+    Number.isFinite(issuerAmount)
+  ) {
+    return `${formatMoneyRub(item.amount)} × ${issuerPercent}% = ${formatMoneyRub(issuerAmount)}`;
   }
-  if (hasPct) {
-    return `Ставка ${item.issuerPercent}%. Сохранённая сумма по категории недоступна.`;
+  if (issuerPercent != null && Number.isFinite(issuerPercent)) {
+    return `Ставка ${issuerPercent}%. Сохранённая сумма по категории недоступна.`;
   }
-  if (hasSum) {
-    return `Сохранённая сумма: ${formatMoneyRub(item.issuerAmount)}`;
+  if (issuerAmount != null && Number.isFinite(issuerAmount)) {
+    return `Сохранённая сумма: ${formatMoneyRub(issuerAmount)}`;
   }
   return null;
 }
