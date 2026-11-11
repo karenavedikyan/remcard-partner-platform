@@ -6,10 +6,11 @@ import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 
 const replace = vi.fn();
 const push = vi.fn();
+let joinSearchParams = new URLSearchParams("");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, push, refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => joinSearchParams,
 }));
 
 vi.mock("@/lib/registration/capabilities", () => ({
@@ -46,6 +47,7 @@ describe("RegistrationJoinFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    joinSearchParams = new URLSearchParams("");
   });
 
   it("shows pre-auth consent before AuthFlow on auth step", async () => {
@@ -73,5 +75,41 @@ describe("RegistrationJoinFlow", () => {
     await user.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(await screen.findByText(/регистрация агента временно недоступна/i)).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("does not send agent to legacy onboarding when joinRegistrationPathEnabled is false", async () => {
+    const { fetchRegistrationCapabilitiesClient } = await import("@/lib/registration/capabilities");
+    vi.mocked(fetchRegistrationCapabilitiesClient).mockResolvedValueOnce({
+      contractVersion: "test",
+      welcomeEnabled: true,
+      agentRegistrationPathEnabled: true,
+      joinRegistrationPathEnabled: false,
+      legacyLoginPathEnabled: true,
+    });
+    const user = userEvent.setup();
+    renderJoin();
+    await waitFor(() => expect(screen.getByTestId("registration-types-grid")).toBeInTheDocument());
+    await user.click(screen.getByRole("radio", { name: /агент/i }));
+    await user.click(screen.getByRole("button", { name: /продолжить/i }));
+    expect(await screen.findByText(/регистрация агента временно недоступна/i)).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows recovery when finish role mismatches wizard draft", async () => {
+    joinSearchParams = new URLSearchParams("phase=finish&role=company");
+    saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
+    renderJoin();
+    expect(
+      await screen.findByTestId("registration-finish-recovery"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/не совпадает/i)).toBeInTheDocument();
+  });
+
+  it("shows recovery when finish has no resolvable kind", async () => {
+    joinSearchParams = new URLSearchParams("phase=finish");
+    renderJoin();
+    expect(
+      await screen.findByTestId("registration-finish-recovery"),
+    ).toBeInTheDocument();
   });
 });

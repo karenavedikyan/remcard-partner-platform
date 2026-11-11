@@ -15,6 +15,11 @@ export async function fetchRegistrationCapabilitiesClient(): Promise<Registratio
       contractVersion: data.contractVersion ?? FALLBACK.contractVersion,
       welcomeEnabled: Boolean(data.welcomeEnabled),
       agentRegistrationPathEnabled: Boolean(data.agentRegistrationPathEnabled),
+      joinRegistrationPathEnabled:
+        data.joinRegistrationPathEnabled !== undefined
+          ? Boolean(data.joinRegistrationPathEnabled)
+          : Boolean(data.agentRegistrationPathEnabled),
+      joinKinds: data.joinKinds,
       legacyLoginPathEnabled: data.legacyLoginPathEnabled !== false,
     };
   } catch {

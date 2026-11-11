@@ -17,10 +17,9 @@ import authStyles from "@/components/auth/auth.module.css";
 type Props = {
   kind: RegistrationKind;
   onContinue: () => void;
-  onBack: () => void;
 };
 
-export function RegistrationPreAuthConsent({ kind, onContinue, onBack }: Props) {
+export function RegistrationPreAuthConsent({ kind, onContinue }: Props) {
   const legalBase = getLegalSiteUrl();
   const titleId = useId();
   const { state, confirmAnalyticsChoice } = useCookieConsent();
@@ -99,9 +98,6 @@ export function RegistrationPreAuthConsent({ kind, onContinue, onBack }: Props) 
         <div className={authStyles.actions}>
           <Button type="submit" disabled={!allRequired}>
             Продолжить к MAX / Telegram
-          </Button>
-          <Button type="button" variant="secondary" onClick={onBack}>
-            Назад
           </Button>
         </div>
       </form>

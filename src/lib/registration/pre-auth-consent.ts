@@ -43,6 +43,14 @@ export function clearPreAuthConsentAck(kind: RegistrationKind): void {
   }
 }
 
+const JOIN_KINDS_WITH_ACK: RegistrationKind[] = ["agent", "specialist", "store", "company"];
+
+export function clearAllPreAuthConsentAcks(): void {
+  for (const kind of JOIN_KINDS_WITH_ACK) {
+    clearPreAuthConsentAck(kind);
+  }
+}
+
 export function preAuthDocumentHref(legalBase: string, kind: RegistrationPreAuthConsentKind): string {
   if (kind === "PERSONAL_DATA") return `${legalBase}/privacy`;
   if (kind === "TERMS") return `${legalBase}/terms`;

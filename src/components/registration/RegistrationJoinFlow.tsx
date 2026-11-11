@@ -42,6 +42,10 @@ import {
   loadPreAuthConsentAck,
   savePreAuthConsentAck,
 } from "@/lib/registration/pre-auth-consent";
+import {
+  isJoinKindRegistrationEnabled,
+  resolveValidatedFinishJoinKind,
+} from "@/lib/registration/join-kind-capability";
 import { JoinProgress } from "./JoinProgress";
 import { RegistrationKindIcon } from "./RegistrationKindIcons";
 import { RegistrationPreAuthConsent } from "./RegistrationPreAuthConsent";
@@ -89,6 +93,7 @@ export function RegistrationJoinFlow() {
   const [city, setCity] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [finishContextError, setFinishContextError] = useState("");
   const finishLock = useRef(false);
   const idempotencyKey = useRef(`join-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
@@ -123,13 +128,28 @@ export function RegistrationJoinFlow() {
     if (phase === "finish") {
       setStep("finish");
       const saved = loadRegistrationWizardState();
-      const fromRole = roleLanding && isJoinRegistrationKind(roleLanding) ? roleLanding : null;
-      const resolved =
-        fromRole ??
-        (saved?.kind && isJoinRegistrationKind(saved.kind) ? saved.kind : null);
-      if (resolved) setKind(resolved);
+      const resolution = resolveValidatedFinishJoinKind({
+        wizardKind: saved?.kind,
+        urlRole: roleLanding,
+      });
+      if (resolution.status === "mismatch") {
+        setFinishContextError(
+          `Тип в ссылке («${REGISTRATION_KIND_LABELS[resolution.urlRole].title}») не совпадает с выбранным («${REGISTRATION_KIND_LABELS[resolution.wizardKind].title}»). Продолжите из регистрации без смены типа.`,
+        );
+        setKind(resolution.wizardKind);
+        return;
+      }
+      if (resolution.status === "missing") {
+        setFinishContextError(
+          "Не удалось восстановить тип регистрации. Вернитесь к выбору типа и пройдите шаги снова.",
+        );
+        return;
+      }
+      setFinishContextError("");
+      setKind(resolution.kind);
       return;
     }
+    setFinishContextError("");
     const saved = loadRegistrationWizardState();
     if (saved?.kind) {
       setKind(saved.kind);
@@ -150,22 +170,27 @@ export function RegistrationJoinFlow() {
 
   const activeJoinKind: RegistrationKind | "" = useMemo(() => {
     if (step !== "finish" && phase !== "finish") {
-      return kind;
+      return isJoinRegistrationKind(kind) ? kind : "";
     }
-    if (isJoinRegistrationKind(kind)) return kind;
     const saved = loadRegistrationWizardState();
-    if (saved?.kind && isJoinRegistrationKind(saved.kind)) return saved.kind;
-    if (roleLanding && isJoinRegistrationKind(roleLanding)) return roleLanding;
-    return "";
+    const resolution = resolveValidatedFinishJoinKind({
+      wizardKind: saved?.kind ?? (isJoinRegistrationKind(kind) ? kind : ""),
+      urlRole: roleLanding,
+    });
+    if (resolution.status === "ok") return resolution.kind;
+    return isJoinRegistrationKind(kind) ? kind : "";
   }, [kind, phase, roleLanding, step]);
 
-  const joinKindPathEnabled = useMemo(() => {
-    if (!isJoinRegistrationKind(activeJoinKind)) return false;
-    if (activeJoinKind === "agent") return agentPathActive;
-    return joinPathActive;
-  }, [activeJoinKind, agentPathActive, joinPathActive]);
+  const joinKindPathEnabled = useMemo(
+    () =>
+      isJoinRegistrationKind(activeJoinKind) &&
+      isJoinKindRegistrationEnabled(caps, activeJoinKind),
+    [activeJoinKind, caps],
+  );
 
-  const isJoinNewPath = joinPathActive && isJoinRegistrationKind(activeJoinKind);
+  const isJoinNewPath =
+    isJoinRegistrationKind(activeJoinKind) &&
+    isJoinKindRegistrationEnabled(caps, activeJoinKind);
 
   const [preAuthReady, setPreAuthReady] = useState(false);
 
@@ -185,21 +210,29 @@ export function RegistrationJoinFlow() {
   const onContinueFromTypes = () => {
     if (!kind) return;
     setError("");
-    if (kind === "agent" && !agentPathActive) {
-      setError("Регистрация агента временно недоступна. Повторите позже или войдите в существующий кабинет.");
-      return;
-    }
-    if (isJoinRegistrationKind(kind) && joinPathActive) {
-      clearPreAuthConsentAck(kind);
-      setPreAuthReady(false);
-      setStep("name");
-      return;
-    }
     if (kind === "employee") {
       router.push(buildEmployeeLegacyJoinHref(joinContext));
       return;
     }
-    router.push(buildLegacyOnboardingLoginHref(kind));
+    if (isJoinRegistrationKind(kind)) {
+      if (isJoinKindRegistrationEnabled(caps, kind)) {
+        clearPreAuthConsentAck(kind);
+        setPreAuthReady(false);
+        setStep("name");
+        return;
+      }
+      if (kind === "agent") {
+        setError(
+          "Регистрация агента временно недоступна. Повторите позже или войдите в существующий кабинет.",
+        );
+        return;
+      }
+    }
+    if (kind === "specialist" || kind === "store" || kind === "company") {
+      router.push(buildLegacyOnboardingLoginHref(kind));
+      return;
+    }
+    setError("Выберите тип партнёрства для продолжения.");
   };
 
   const onContinueName = () => {
@@ -241,6 +274,9 @@ export function RegistrationJoinFlow() {
       }
       const userId = me.data.user.id;
       if (clearDraftOnOwnerMismatch(userId)) {
+        if (isJoinRegistrationKind(activeJoinKind)) {
+          clearPreAuthConsentAck(activeJoinKind);
+        }
         setError(
           "Черновик принадлежал другому входу. Заполните имя и город заново для текущего аккаунта.",
         );
@@ -252,6 +288,7 @@ export function RegistrationJoinFlow() {
       const owner = getRegistrationDraftOwner();
       if (owner && owner !== userId) {
         clearAllRegistrationDrafts();
+        setPreAuthReady(false);
         setError("Черновик привязан к другому аккаунту. Начните регистрацию заново.");
         setStep("types");
         finishLock.current = false;
@@ -319,6 +356,7 @@ export function RegistrationJoinFlow() {
       const owner = getRegistrationDraftOwner();
       if (owner && owner !== userId) {
         clearAllRegistrationDrafts();
+        setPreAuthReady(false);
         setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
         setStep("name");
         return;
@@ -340,9 +378,6 @@ export function RegistrationJoinFlow() {
 
   const loginRecovery = `/login?${new URLSearchParams({
     returnTo: authReturnTo,
-    ...(isJoinRegistrationKind(activeJoinKind) && activeJoinKind === "agent"
-      ? { registration: "agent" }
-      : {}),
   }).toString()}`;
 
   if (!capsLoaded) {
@@ -376,7 +411,6 @@ export function RegistrationJoinFlow() {
           {!preAuthReady ? (
             <RegistrationPreAuthConsent
               kind={kind}
-              onBack={() => setStep("city")}
               onContinue={() => {
                 savePreAuthConsentAck(kind);
                 setPreAuthReady(true);
@@ -391,22 +425,43 @@ export function RegistrationJoinFlow() {
               onAuthenticated={handleAuthenticated}
             />
           )}
-          <div className={styles.footerActions}>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                if (preAuthReady) {
+          {!preAuthReady ? (
+            <div className={styles.footerActions}>
+              <Button type="button" variant="secondary" onClick={() => setStep("city")}>
+                Назад
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.footerActions}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
                   clearPreAuthConsentAck(kind);
                   setPreAuthReady(false);
-                } else {
-                  setStep("city");
-                }
-              }}
-            >
-              Назад
-            </Button>
-          </div>
+                }}
+              >
+                Изменить согласия
+              </Button>
+            </div>
+          )}
+        </div>
+      </RegistrationPublicShell>
+    );
+  }
+
+  if (phase === "finish" && finishContextError) {
+    return (
+      <RegistrationPublicShell loginHref={loginRecovery}>
+        <div className={styles.fallback} data-testid="registration-finish-recovery">
+          <h1>Не удалось продолжить регистрацию</h1>
+          <p className={styles.error}>{finishContextError}</p>
+          <Link href={buildJoinHref(joinContext)} className={styles.primaryLink}>
+            К выбору типа
+          </Link>
+          <Link href="/login" className={styles.secondaryLink}>
+            Войти
+          </Link>
         </div>
       </RegistrationPublicShell>
     );
@@ -504,7 +559,11 @@ export function RegistrationJoinFlow() {
                     value={k}
                     checked={kind === k}
                     onChange={() => {
+                      if (isJoinRegistrationKind(kind) && kind !== k) {
+                        clearPreAuthConsentAck(kind);
+                      }
                       setKind(k);
+                      setPreAuthReady(false);
                       setError("");
                     }}
                   />

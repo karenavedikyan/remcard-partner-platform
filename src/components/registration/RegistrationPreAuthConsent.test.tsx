@@ -10,7 +10,7 @@ describe("RegistrationPreAuthConsent", () => {
   const onContinue = vi.fn();
     render(
       <CookieConsentProvider>
-        <RegistrationPreAuthConsent kind="agent" onContinue={onContinue} onBack={() => undefined} />
+        <RegistrationPreAuthConsent kind="agent" onContinue={onContinue} />
       </CookieConsentProvider>,
     );
 
