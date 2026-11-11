@@ -330,7 +330,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       ) {
         return;
       }
-      if (isWalletRefreshUnauthorized(caught)) {
+      if (caught instanceof RemcardApiError && caught.status === 401) {
         applyHistoryUnauthorized();
         return;
       }
