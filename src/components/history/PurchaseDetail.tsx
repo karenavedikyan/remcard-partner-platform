@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabelFromStored } from "@/lib/category-display";
+import { accrualDetailHref } from "@/lib/accrual-type";
+import { presentAccrualRow } from "@/lib/history-accrual-display";
 import { documentOperationsHref, formatMoneyRub } from "@/lib/history-format";
 import {
   bonusStatusLabel,
@@ -405,22 +407,33 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             {linkedAccruals.length ? (
               <div className={styles.linkedSection}>
                 <h3>Связанные начисления</h3>
-                {linkedAccruals.map((accrual) => (
-                  <Link
-                    key={accrual.id}
-                    href={`/history/accruals/${encodeURIComponent(accrual.id)}`}
-                    className={styles.linkedRow}
-                  >
-                    <span>
-                      <span className={styles.metaInk}>{formatMoneyRub(accrual.amount)}</span>
-                      <p className={styles.linkedMeta}>{formatDate(accrual.createdAt)}</p>
-                    </span>
-                    <StatusBadge
-                      label={bonusStatusLabel(accrual.status)}
-                      tone={bonusStatusTone(accrual.status)}
-                    />
-                  </Link>
-                ))}
+                {linkedAccruals.map((accrual) => {
+                  const presentation = presentAccrualRow(accrual);
+                  const typeLabel =
+                    accrual.accrualType === "agentBonus"
+                      ? "Агентский бонус"
+                      : "Бонус профклиента";
+                  return (
+                    <Link
+                      key={`${accrual.accrualType}-${accrual.id}`}
+                      href={accrualDetailHref(accrual.id, accrual.accrualType)}
+                      className={styles.linkedRow}
+                    >
+                      <span>
+                        <span className={styles.metaInk}>
+                          {formatMoneyRub(presentation.heroAmount)}
+                        </span>
+                        <p className={styles.linkedMeta}>
+                          {typeLabel} · {formatDate(accrual.createdAt)}
+                        </p>
+                      </span>
+                      <StatusBadge
+                        label={presentation.statusLabel}
+                        tone={presentation.statusTone}
+                      />
+                    </Link>
+                  );
+                })}
               </div>
             ) : null}
 
