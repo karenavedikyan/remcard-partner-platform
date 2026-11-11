@@ -12,6 +12,10 @@ describe("registration pre-auth consent (local only)", () => {
 
   beforeEach(() => {
     store.clear();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: globalThis,
+    });
     Object.defineProperty(globalThis, "sessionStorage", {
       configurable: true,
       value: {
