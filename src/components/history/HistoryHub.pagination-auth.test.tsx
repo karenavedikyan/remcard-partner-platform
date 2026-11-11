@@ -60,6 +60,17 @@ vi.mock("@/lib/history-loader", async (importOriginal) => {
 import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
 
 describe("HistoryHub load-more auth errors", () => {
+  it("clears loading and shows session error on initial 401", async () => {
+    vi.mocked(fetchHistoryData).mockRejectedValue(new RemcardApiError(401, "Unauthorized"));
+
+    render(<HistoryHub user={user} />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/сессия завершилась/i)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Загрузка…")).toBeNull();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchHistoryData).mockResolvedValue({

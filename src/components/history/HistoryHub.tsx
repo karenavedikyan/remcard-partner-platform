@@ -220,6 +220,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
     setLoadingMoreAccepted(false);
     setLoadMoreError("");
     setError("Сессия завершилась. Войдите снова.");
+    setLoading(false);
   }, []);
 
   const loadHistory = useCallback(async (options?: { background?: boolean }) => {
@@ -340,6 +341,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       if (caught instanceof RemcardApiError && caught.status === 403) {
         loadGenerationRef.current += 1;
         loadMoreGenerationRef.current += 1;
+        setLoading(false);
         setPurchases((prev) => prev.filter((row) => row.direction !== "accepted"));
         setAcceptedNextCursor(null);
         setAcceptedAccessDenied(true);
