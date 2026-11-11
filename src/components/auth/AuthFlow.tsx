@@ -46,6 +46,8 @@ type AuthFlowProps = {
   initialStep?: AuthFlowStep;
   /** Agent registration via /join uses finish step instead of legacy onboarding. */
   registrationAgentJoin?: boolean;
+  /** Local pre-auth acknowledgement before opening MAX/Telegram (join registration only). */
+  registrationMessengerGateReady?: boolean;
   /** Admin entry must not automatically reuse a partner session. */
   checkSessionOnMount?: boolean;
   layout?: "full" | "embedded";
@@ -78,6 +80,7 @@ export function AuthFlow({
   returnTo,
   reason,
   registrationAgentJoin,
+  registrationMessengerGateReady = true,
   checkSessionOnMount = true,
   layout = "full",
   onAuthenticated,
@@ -252,20 +255,28 @@ export function AuthFlow({
 
   const chooseProvider = useCallback(
     (next: AuthLoginProvider) => {
+      if (registrationAgentJoin && !registrationMessengerGateReady) {
+        setError("Сначала примите обязательные соглашения на предыдущем шаге.");
+        return;
+      }
       setProvider(next);
       setError("");
       setResendStatus(messengerWaitHint(next));
       setStep("code");
       openMessengerForLogin(messengerLoginUrl(next, maxBotUrl, telegramBotUrl));
     },
-    [maxBotUrl, telegramBotUrl],
+    [maxBotUrl, registrationAgentJoin, registrationMessengerGateReady, telegramBotUrl],
   );
 
   const resendCode = useCallback(() => {
+    if (registrationAgentJoin && !registrationMessengerGateReady) {
+      setError("Сначала примите обязательные соглашения на предыдущем шаге.");
+      return;
+    }
     setError("");
     openMessengerForLogin(messengerLoginUrl(provider, maxBotUrl, telegramBotUrl));
     setResendStatus(messengerResendHint(provider));
-  }, [maxBotUrl, provider, telegramBotUrl]);
+  }, [maxBotUrl, provider, registrationAgentJoin, registrationMessengerGateReady, telegramBotUrl]);
 
   const submitCode = useCallback(
     async (event: React.FormEvent) => {
@@ -534,6 +545,7 @@ export function AuthFlow({
         <Button
           type="button"
           className={`${styles.providerButton} ${styles.providerButtonMax}`}
+          disabled={registrationAgentJoin && !registrationMessengerGateReady}
           onClick={() => chooseProvider("MAX")}
         >
           <span className={styles.providerMark} aria-hidden="true">
@@ -548,6 +560,7 @@ export function AuthFlow({
           type="button"
           variant="secondary"
           className={`${styles.providerButton} ${styles.providerButtonTelegram}`}
+          disabled={registrationAgentJoin && !registrationMessengerGateReady}
           onClick={() => chooseProvider("TELEGRAM")}
         >
           <span className={styles.providerMark} aria-hidden="true">

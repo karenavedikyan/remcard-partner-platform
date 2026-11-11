@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildEmployeeLegacyJoinHref,
   buildEmployeeLoginHref,
+  buildJoinFinishHref,
   resolveAgentRegistrationCompleteHref,
 } from "./routing.ts";
 
@@ -27,5 +28,10 @@ describe("registration routing", () => {
       resolveAgentRegistrationCompleteHref({ invite: "INVITE-QA", returnTo: "/partners" }),
       "/invite/INVITE-QA",
     );
+  });
+
+  it("includes registration kind on finish href when provided", () => {
+    assert.match(buildJoinFinishHref({ kind: "specialist" }), /phase=finish/);
+    assert.match(buildJoinFinishHref({ kind: "specialist" }), /role=specialist/);
   });
 });

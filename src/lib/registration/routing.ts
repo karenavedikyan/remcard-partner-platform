@@ -1,4 +1,6 @@
 import { sanitizeReturnTo } from "@/lib/auth-flow";
+import type { RegistrationKind } from "./types";
+import { isJoinRegistrationKind } from "./join-finish";
 
 export function buildWelcomeHref(input: {
   invite?: string | null;
@@ -15,8 +17,12 @@ export function buildWelcomeHref(input: {
 export function buildJoinFinishHref(input: {
   invite?: string | null;
   returnTo?: string | null;
+  kind?: RegistrationKind | "";
 }): string {
   const params = new URLSearchParams({ phase: "finish" });
+  if (input.kind && isJoinRegistrationKind(input.kind)) {
+    params.set("role", input.kind);
+  }
   if (input.invite?.trim()) params.set("invite", input.invite.trim());
   const safeReturn = sanitizeReturnTo(input.returnTo);
   if (safeReturn) params.set("returnTo", safeReturn);
@@ -26,6 +32,7 @@ export function buildJoinFinishHref(input: {
 export function buildJoinAuthReturnTo(input: {
   invite?: string | null;
   returnTo?: string | null;
+  kind?: RegistrationKind | "";
 }): string {
   return buildJoinFinishHref(input);
 }
