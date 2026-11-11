@@ -1,16 +1,20 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RegistrationJoinFlow } from "./RegistrationJoinFlow";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 
-const replace = vi.fn();
-const push = vi.fn();
-let joinSearchParams = new URLSearchParams("");
+const navigation = vi.hoisted(() => ({
+  replace: vi.fn(),
+  push: vi.fn(),
+  joinSearchParams: new URLSearchParams(""),
+  onJoinNavigate: null as (() => void) | null,
+}));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace, push, refresh: vi.fn() }),
-  useSearchParams: () => joinSearchParams,
+  useRouter: () => ({ replace: navigation.replace, push: navigation.push, refresh: vi.fn() }),
+  useSearchParams: () => navigation.joinSearchParams,
 }));
 
 vi.mock("@/lib/registration/capabilities", () => ({
@@ -26,19 +30,6 @@ vi.mock("@/lib/registration/capabilities", () => ({
 vi.mock("@/components/layout/ThemeToggle", () => ({
   ThemeToggle: () => null,
 }));
-
-vi.mock("@/components/auth/AuthFlow", () => ({
-  AuthFlow: (props: { registrationMessengerGateReady?: boolean }) => (
-    <div data-testid="auth-flow" data-messenger-ready={String(props.registrationMessengerGateReady)} />
-  ),
-}));
-
-import {
-  bindRegistrationDraftOwner,
-  mergeRegistrationDraftFields,
-  saveRegistrationWizardState,
-} from "@/lib/registration/draft";
-import { savePreAuthConsentAck } from "@/lib/registration/pre-auth-consent";
 
 const { fetchAuthMeSafeMock, postFinishMock } = vi.hoisted(() => ({
   fetchAuthMeSafeMock: vi.fn(),
@@ -61,10 +52,56 @@ vi.mock("@/lib/registration/join-finish", async (importOriginal) => {
   };
 });
 
+vi.mock("@/components/auth/AuthFlow", () => ({
+  AuthFlow: (props: {
+    returnTo?: string;
+    onAuthenticated?: (userId: string) => void;
+    registrationMessengerGateReady?: boolean;
+  }) => (
+    <div data-testid="auth-flow" data-messenger-ready={String(props.registrationMessengerGateReady)}>
+      <button
+        type="button"
+        data-testid="auth-flow-simulate-complete"
+        onClick={() => {
+          props.onAuthenticated?.("qa-new-owner");
+          if (props.returnTo) {
+            navigation.replace(props.returnTo);
+          }
+        }}
+      >
+        Завершить вход
+      </button>
+    </div>
+  ),
+}));
+
+import {
+  bindRegistrationDraftOwner,
+  mergeRegistrationDraftFields,
+  saveRegistrationWizardState,
+} from "@/lib/registration/draft";
+import { savePreAuthConsentAck } from "@/lib/registration/pre-auth-consent";
+
+function JoinNavHarness() {
+  const [searchEpoch, setSearchEpoch] = useState(0);
+  useEffect(() => {
+    navigation.onJoinNavigate = () => setSearchEpoch((value) => value + 1);
+    return () => {
+      navigation.onJoinNavigate = null;
+    };
+  }, []);
+  return (
+    <>
+      <span data-nav-epoch={searchEpoch} hidden />
+      <RegistrationJoinFlow />
+    </>
+  );
+}
+
 function renderJoin() {
   return render(
     <CookieConsentProvider>
-      <RegistrationJoinFlow />
+      <JoinNavHarness />
     </CookieConsentProvider>,
   );
 }
@@ -73,9 +110,14 @@ describe("RegistrationJoinFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
-    joinSearchParams = new URLSearchParams("");
+    navigation.joinSearchParams = new URLSearchParams("");
     fetchAuthMeSafeMock.mockResolvedValue({ ok: false });
     postFinishMock.mockReset();
+    navigation.replace.mockImplementation((href: string) => {
+      const query = href.includes("?") ? href.split("?")[1] : "";
+      navigation.joinSearchParams = new URLSearchParams(query);
+      navigation.onJoinNavigate?.();
+    });
   });
 
   it("shows pre-auth consent before AuthFlow on auth step", async () => {
@@ -102,7 +144,7 @@ describe("RegistrationJoinFlow", () => {
     await user.click(screen.getByRole("radio", { name: /агент/i }));
     await user.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(await screen.findByText(/регистрация агента временно недоступна/i)).toBeInTheDocument();
-    expect(push).not.toHaveBeenCalled();
+    expect(navigation.push).not.toHaveBeenCalled();
   });
 
   it("does not send agent to legacy onboarding when joinRegistrationPathEnabled is false", async () => {
@@ -120,11 +162,11 @@ describe("RegistrationJoinFlow", () => {
     await user.click(screen.getByRole("radio", { name: /агент/i }));
     await user.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(await screen.findByText(/регистрация агента временно недоступна/i)).toBeInTheDocument();
-    expect(push).not.toHaveBeenCalled();
+    expect(navigation.push).not.toHaveBeenCalled();
   });
 
   it("shows recovery when finish role mismatches wizard draft", async () => {
-    joinSearchParams = new URLSearchParams("phase=finish&role=company");
+    navigation.joinSearchParams = new URLSearchParams("phase=finish&role=company");
     saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
     renderJoin();
     expect(
@@ -134,7 +176,7 @@ describe("RegistrationJoinFlow", () => {
   });
 
   it("shows recovery when finish has no resolvable kind", async () => {
-    joinSearchParams = new URLSearchParams("phase=finish");
+    navigation.joinSearchParams = new URLSearchParams("phase=finish");
     renderJoin();
     expect(
       await screen.findByTestId("registration-finish-recovery"),
@@ -154,7 +196,7 @@ describe("RegistrationJoinFlow", () => {
       ok: true,
       data: { user: { id: "user-finish-mismatch" } },
     });
-    joinSearchParams = new URLSearchParams("phase=finish&role=company");
+    navigation.joinSearchParams = new URLSearchParams("phase=finish&role=company");
     saveRegistrationWizardState({ step: "finish", kind: "agent", updatedAt: Date.now() });
     mergeRegistrationDraftFields("agent", {
       displayName: "Test Agent",
@@ -182,17 +224,67 @@ describe("RegistrationJoinFlow", () => {
       ok: true,
       data: { user: { id: "qa-new-owner" } },
     });
-    joinSearchParams = new URLSearchParams("phase=finish&role=agent");
+    navigation.joinSearchParams = new URLSearchParams("phase=finish&role=agent");
     renderJoin();
     expect(
       await screen.findByText(/черновик принадлежал другому входу/i),
     ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(navigation.joinSearchParams.get("phase")).toBeNull();
+      expect(navigation.joinSearchParams.get("role")).toBe("agent");
+    });
     const nameField = await screen.findByRole("textbox", { name: /имя/i });
     await waitFor(() => {
       expect(nameField).toHaveValue("");
       expect(postFinishMock).not.toHaveBeenCalled();
     });
     expect(screen.queryByText(/завершение регистрации/i)).not.toBeInTheDocument();
+  });
+
+  it("completes finish with new profile after owner mismatch recovery", async () => {
+    const user = userEvent.setup();
+    bindRegistrationDraftOwner("qa-old-owner");
+    mergeRegistrationDraftFields("agent", {
+      displayName: "QA чужой черновик",
+      city: "QA чужой город",
+    });
+    saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
+    savePreAuthConsentAck("agent");
+    fetchAuthMeSafeMock.mockResolvedValue({
+      ok: true,
+      data: { user: { id: "qa-new-owner" } },
+    });
+    navigation.joinSearchParams = new URLSearchParams("phase=finish&role=agent");
+    renderJoin();
+
+    await screen.findByText(/черновик принадлежал другому входу/i);
+    await waitFor(() => expect(navigation.joinSearchParams.get("phase")).toBeNull());
+
+    const newName = "Новое имя QA";
+    const newCity = "Новый город QA";
+    await user.type(await screen.findByRole("textbox", { name: /имя/i }), newName);
+    await user.click(screen.getByRole("button", { name: /^продолжить$/i }));
+    await user.type(await screen.findByRole("textbox", { name: /город/i }), newCity);
+    await user.click(screen.getByRole("button", { name: /^продолжить$/i }));
+
+    for (const label of [/персональных данных/i, /пользовательское/i, /публичную оферту/i]) {
+      await user.click(await screen.findByRole("checkbox", { name: label }));
+    }
+    await user.click(screen.getByRole("button", { name: /продолжить к max/i }));
+    await user.click(await screen.findByTestId("auth-flow-simulate-complete"));
+
+    await waitFor(() => {
+      expect(postFinishMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "agent",
+          displayName: newName,
+          city: newCity,
+        }),
+      );
+    });
+    expect(postFinishMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: "QA чужой черновик" }),
+    );
   });
 
   it("stays on empty name step when finish has no profile fields for current owner", async () => {
@@ -202,7 +294,7 @@ describe("RegistrationJoinFlow", () => {
       ok: true,
       data: { user: { id: "qa-new-owner" } },
     });
-    joinSearchParams = new URLSearchParams("phase=finish&role=agent");
+    navigation.joinSearchParams = new URLSearchParams("phase=finish&role=agent");
     renderJoin();
     const nameField = await screen.findByRole("textbox", { name: /имя/i });
     await waitFor(() => {

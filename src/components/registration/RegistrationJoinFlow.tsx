@@ -212,12 +212,24 @@ export function RegistrationJoinFlow() {
           updatedAt: Date.now(),
         });
       }
+      if (phase === "finish") {
+        phaseFinishAppliedKeyRef.current = null;
+        if (restartKind) {
+          router.replace(
+            buildJoinHref({
+              role: restartKind,
+              invite: joinContext.invite,
+              returnTo: joinContext.returnTo,
+            }),
+          );
+        }
+      }
       if (message) setError(message);
       setStep(nextStep);
       finishLock.current = false;
       setBusy(false);
     },
-    [activeJoinKind, kind],
+    [activeJoinKind, joinContext, kind, phase, router],
   );
 
   const [preAuthReady, setPreAuthReady] = useState(false);
