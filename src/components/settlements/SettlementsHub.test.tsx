@@ -1,8 +1,65 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
+import { cabinetPresentationFixture } from "@/lib/cabinet-presentation/test-fixtures";
+import {
+  fixtureOptovikOwnerProContext,
+  fixtureSergeyAuthUser,
+  fixtureSergeyOrgEmployeeContext,
+} from "@/lib/employee-workspace-data/fixtures";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
+import type { AuthUser } from "@/lib/types";
 import { SettlementsHub } from "./SettlementsHub";
 import { RemcardApiError } from "@/lib/api-client";
+
+const profUser: AuthUser = {
+  id: "prof-1",
+  role: "PRO",
+  partnerType: null,
+  displayName: "PROF",
+};
+
+const ownerUser: AuthUser = {
+  id: "pro-optovik-owner",
+  role: "PRO",
+  partnerType: "COMPANY",
+  displayName: "Owner",
+};
+
+function renderHubWithPresentation(
+  user: AuthUser,
+  proContext: ProContextSnapshot,
+  contextReady: boolean,
+  extra?: { walletEmptyViewerRole?: "specialist" },
+) {
+  const presentation = cabinetPresentationFixture(user, proContext, contextReady);
+  return render(
+    <CabinetPresentationProvider value={presentation}>
+      <SettlementsHub user={user} walletEmptyViewerRole={extra?.walletEmptyViewerRole ?? "specialist"} />
+    </CabinetPresentationProvider>,
+  );
+}
+
+const payableWithPayoutActions = {
+  coverageNote: "",
+  receivable: [] as const,
+  payable: [
+    {
+      id: "b-pay",
+      orderId: "o-pay",
+      accrualType: "bonus" as const,
+      counterpartyId: "pro-1",
+      counterpartyName: "Master Pro",
+      amount: 80,
+      basis: "Сертификат RC-PAY",
+      status: "CONFIRMED" as const,
+      createdAt: "2026-10-03T10:00:00.000Z",
+      payoutActions: { canRecordCash: true, canRecordTransfer: false },
+    },
+  ],
+  completed: [] as const,
+};
 
 vi.mock("@/lib/settlements-loader", () => ({
   fetchSettlements: vi.fn(),
@@ -21,7 +78,7 @@ describe("SettlementsHub", () => {
   it("shows API error with retry instead of zero balances", async () => {
     vi.mocked(fetchSettlements).mockRejectedValue(new RemcardApiError(500, "Сбой сервера"));
 
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
 
     expect(await screen.findByText(/сбой сервера/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /повторить/i })).toBeInTheDocument();
@@ -98,7 +155,7 @@ describe("SettlementsHub", () => {
       ],
     });
 
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
 
     expect(await screen.findByText(/Alpha Shop/)).toBeInTheDocument();
     expect(screen.getAllByText(/150 ₽/).length).toBeGreaterThan(0);
@@ -116,7 +173,7 @@ describe("SettlementsHub", () => {
   it("denies access for unrelated accounts", async () => {
     vi.mocked(fetchSettlements).mockRejectedValue(new RemcardApiError(403, "Forbidden"));
 
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
 
     expect(
       await screen.findByText(/раздел взаиморасчётов недоступен/i),
@@ -154,7 +211,7 @@ describe("SettlementsHub", () => {
       completed: [],
     });
 
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
     expect(await screen.findByText("Visible Partner")).toBeInTheDocument();
     expect(screen.getByText("Hidden Partner")).toBeInTheDocument();
 
@@ -192,7 +249,7 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
     const tile = await screen.findByRole("button", { name: /мне должны/i });
     expect(tile).toHaveTextContent("100");
     expect(tile).toHaveTextContent("500");
@@ -205,7 +262,7 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [{ id: "c1", orderId: "o1", accrualType: "bonus", counterpartyId: "x", counterpartyName: "Done", amount: 1, basis: "B", status: "PAID", createdAt: "2026-10-01T10:00:00.000Z", paidAt: "2026-10-02T10:00:00.000Z", direction: "receivable" }],
     });
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
     await screen.findByTestId("settlements-hub");
     expect(screen.getAllByRole("button", { name: /мне должны|я должен/i })).toHaveLength(2);
     expect(screen.getByTestId("settlements-completed-history")).toHaveTextContent("(1)");
@@ -231,8 +288,46 @@ describe("SettlementsHub", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
     expect(await screen.findByText("Сертификат RC-TITLE")).toBeInTheDocument();
     expect(screen.queryByText(/Заказ internal-order-uuid/i)).toBeNull();
+  });
+});
+
+describe("SettlementsHub payout affordance", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function openPayableTab() {
+    await screen.findByTestId("settlements-hub");
+    await userEvent.click(screen.getByRole("tab", { name: /я должен/i }));
+    await screen.findByText("Master Pro");
+  }
+
+  it("hides payout control for ledger-only org staff when server sent payoutActions", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue(payableWithPayoutActions);
+    const staff = fixtureSergeyAuthUser();
+    renderHubWithPresentation(
+      staff,
+      fixtureSergeyOrgEmployeeContext({ canViewWallet: true }),
+      true,
+    );
+    await openPayableTab();
+    expect(screen.queryByRole("button", { name: "Зафиксировать выплату" })).toBeNull();
+  });
+
+  it("shows payout control for org owner when payable row has payoutActions", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue(payableWithPayoutActions);
+    renderHubWithPresentation(ownerUser, fixtureOptovikOwnerProContext(), true);
+    await openPayableTab();
+    expect(await screen.findByTestId("settlements-record-payout-b-pay")).toBeInTheDocument();
+  });
+
+  it("keeps payout control for legacy shell without cabinet provider", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue(payableWithPayoutActions);
+    render(<SettlementsHub user={profUser} walletEmptyViewerRole="specialist" />);
+    await openPayableTab();
+    expect(await screen.findByTestId("settlements-record-payout-b-pay")).toBeInTheDocument();
   });
 });

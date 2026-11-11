@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import { deriveCanRecordAccrualPayout } from "@/components/history/AccrualDetail";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import {
@@ -38,6 +40,7 @@ import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSection
 import { isWalletSettlementsDataEmpty } from "@/lib/wallet-empty/is-empty";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
+import type { AuthUser } from "@/lib/types";
 
 function obligationPrimaryTitle(row: SettlementObligation) {
   const basis = row.basis?.trim();
@@ -280,12 +283,17 @@ function filterCompleted(rows: SettlementCompleted[], query: string) {
 }
 
 export function SettlementsHub({
+  user,
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
 }: WalletEmptyViewerProps & {
+  user: AuthUser;
   /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
   canLinkOnboardingHistory?: boolean;
 }) {
+  const cabinetPresentation = useCabinetPresentation();
+  const canRecordPayout = deriveCanRecordAccrualPayout(user, cabinetPresentation);
+
   const [tab, setTab] = useState<SettlementsTab>("receivable");
   const [searchQ, setSearchQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -348,16 +356,26 @@ export function SettlementsHub({
     [data?.completed, searchQ],
   );
 
-  const openPayoutModal = useCallback((row: SettlementObligation) => {
-    if (!row.payoutActions) return;
-    setPayoutTarget({
-      bonusId: row.id,
-      counterpartyName: row.counterpartyName,
-      amount: row.amount,
-      basis: row.basis,
-      payoutActions: row.payoutActions,
-    });
-  }, []);
+  useEffect(() => {
+    if (!canRecordPayout) {
+      setPayoutTarget(null);
+    }
+  }, [canRecordPayout]);
+
+  const openPayoutModal = useCallback(
+    (row: SettlementObligation) => {
+      if (!canRecordPayout) return;
+      if (!row.payoutActions) return;
+      setPayoutTarget({
+        bonusId: row.id,
+        counterpartyName: row.counterpartyName,
+        amount: row.amount,
+        basis: row.basis,
+        payoutActions: row.payoutActions,
+      });
+    },
+    [canRecordPayout],
+  );
 
   const receivableTotal = sumObligationAmounts(data?.receivable ?? []);
   const payableTotal = sumObligationAmounts(data?.payable ?? []);
@@ -510,7 +528,7 @@ export function SettlementsHub({
               <PartnerGroupBlock
                 key={group.counterpartyId}
                 group={group}
-                onRecordPayout={openPayoutModal}
+                onRecordPayout={canRecordPayout ? openPayoutModal : undefined}
               />
             ))}
           </div>
@@ -529,7 +547,7 @@ export function SettlementsHub({
         )
       ) : null}
 
-      {payoutTarget ? (
+      {payoutTarget && canRecordPayout ? (
         <PayoutRecordModal
           target={payoutTarget}
           onClose={() => setPayoutTarget(null)}

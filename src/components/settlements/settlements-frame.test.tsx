@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import hubStyles from "@/components/settlements/settlements.module.css";
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
+import type { AuthUser } from "@/lib/types";
+
+const settlementsHubUser: AuthUser = {
+  id: "frame-test",
+  role: "PRO",
+  partnerType: null,
+  displayName: "Test",
+};
 import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
 
 vi.mock("@/lib/settlements-loader", () => ({
@@ -67,7 +75,7 @@ describe("settlements workspace prototype frame", () => {
   });
 
   it("keeps hub settlements on one settlement demo root without nesting", async () => {
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="specialist" />);
     const hub = await screen.findByTestId("settlements-hub");
     expect(hub).toHaveClass(hubStyles.settlementDemo);
     expect(document.querySelectorAll('[data-testid="settlements-hub"]')).toHaveLength(1);

@@ -14,6 +14,8 @@ document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
 
 const COMPLETED_HISTORY_SELECTOR = '[data-testid="settlements-completed-history"]';
 
+const qaAuthUser = { id: "qa-settlements", role: "PRO" as const, partnerType: null, displayName: "QA" };
+
 function HubWithCompleted() {
   useEffect(() => {
     if (!openCompleted) return;
@@ -33,7 +35,7 @@ function HubWithCompleted() {
     };
   }, []);
 
-  return <SettlementsHub />;
+  return <SettlementsHub user={qaAuthUser} />;
 }
 
 function SpecialistPartners() {
@@ -44,7 +46,9 @@ function SpecialistPartners() {
 
 const root = createRoot(document.getElementById("root")!);
 let node: React.ReactNode = null;
-if (scene.startsWith("hub")) node = openCompleted ? <HubWithCompleted /> : <SettlementsHub />;
+if (scene.startsWith("hub")) {
+  node = openCompleted ? <HubWithCompleted /> : <SettlementsHub user={qaAuthUser} />;
+}
 else if (scene.startsWith("specialist-partners")) node = <SpecialistPartners />;
 else if (scene.startsWith("specialist")) {
   node = <SpecialistSettlementsWorkspace previewData={masterWalletFixtureData()} scopeKey="qa" />;
