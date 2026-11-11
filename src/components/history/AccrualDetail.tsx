@@ -15,11 +15,53 @@ import {
 } from "@/lib/history-loader";
 import type { AccrualRow, AccrualType, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PayoutRecordModal } from "@/components/payout/PayoutRecordModal";
+import { isOrgWorkplaceMemberRole } from "@/lib/cabinet-presentation/resolve";
+import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+import { validateProContextSnapshot } from "@/lib/cabinet-presentation/validate";
+import { authorizeSettlementWalletPaymentMutations } from "@/lib/employee-workspace-data/settlement-wallet-read-auth";
 import { fetchBonusPayoutActions, type SettlementPayoutActions } from "@/lib/payout-record";
 import focus from "./history-focus.module.css";
+
+/**
+ * Payout affordance gate for history detail.
+ * - `presentation === null`: legacy personal shell (no CabinetPresentationProvider).
+ * - Provider present but context pending/invalid: fail closed.
+ * - Org workplace: shared payment mutation auth only.
+ */
+export function deriveCanRecordAccrualPayout(
+  user: Pick<AuthUser, "id" | "role">,
+  presentation: CabinetPresentationSnapshot | null,
+): boolean {
+  if (presentation === null) {
+    return true;
+  }
+  if (!presentation.contextReady) {
+    return false;
+  }
+  if (validateProContextSnapshot(presentation.proContext).ok !== true) {
+    return false;
+  }
+  const proContext = presentation.proContext;
+  if (!proContext) {
+    return false;
+  }
+  const role = proContext.role?.trim() ?? "";
+  if (role === "ORG_OWNER" && user.role === "PRO") {
+    return true;
+  }
+  if (isOrgWorkplaceMemberRole(role) && proContext.organization?.id) {
+    return authorizeSettlementWalletPaymentMutations({
+      user: user as AuthUser,
+      proContext,
+      contextReady: true,
+    }).allowed;
+  }
+  return true;
+}
 
 function formatDetailDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -66,6 +108,9 @@ type AccrualDetailProps = {
 };
 
 export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailProps) {
+  const cabinetPresentation = useCabinetPresentation();
+  const canRecordPayout = deriveCanRecordAccrualPayout(user, cabinetPresentation);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
@@ -75,6 +120,13 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   );
   const [payoutActions, setPayoutActions] = useState<SettlementPayoutActions | null>(null);
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!canRecordPayout) {
+      setPayoutActions(null);
+      setPayoutModalOpen(false);
+    }
+  }, [canRecordPayout]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,6 +144,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
       setPayoutModalOpen(false);
 
       if (
+        canRecordPayout &&
         row.scope === "payable-to-pros" &&
         row.accrualType === "bonus" &&
         row.status !== "PAID" &&
@@ -126,7 +179,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
     } finally {
       setLoading(false);
     }
-  }, [user, accrualId, accrualType]);
+  }, [user, accrualId, accrualType, canRecordPayout]);
 
   useEffect(() => {
     void load();
@@ -256,7 +309,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         </details>
       </article>
 
-      {payoutActions ? (
+      {canRecordPayout && payoutActions ? (
         <div className={focus.actionsRow}>
           <Button type="button" onClick={() => setPayoutModalOpen(true)}>
             Зафиксировать выплату
@@ -264,7 +317,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         </div>
       ) : null}
 
-      {payoutModalOpen && payoutActions && accrual ? (
+      {payoutModalOpen && canRecordPayout && payoutActions && accrual ? (
         <PayoutRecordModal
           target={{
             bonusId: accrual.id,
