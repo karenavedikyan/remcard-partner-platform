@@ -6,6 +6,7 @@ import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub"
 import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 import "../../src/app/globals.css";
 const orderId = "caaaaaaaaaaaaaaaaaaaaaaaa";
+const qaAuthUser = { id: "qa-reward", role: "PRO" as const, partnerType: null, displayName: "QA" };
 function App() {
   const [view, setView] = useState("scanner");
   const [recipient, setRecipient] = useState(false);
@@ -22,7 +23,7 @@ function App() {
       </button>
     </nav>
     <div key={`${view}-${revision}`}>
-      {view === "scanner" ? <ScannerHub userId="qa-payer" /> : view === "wallet" ? <SettlementsHub />
+      {view === "scanner" ? <ScannerHub userId="qa-payer" /> : view === "wallet" ? <SettlementsHub user={qaAuthUser} />
         : view === "agent" ? <AgentReceivablesHub /> : <RewardLifecyclePanel orderId={orderId} />}
     </div>
   </main>;

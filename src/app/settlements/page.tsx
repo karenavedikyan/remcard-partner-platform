@@ -134,6 +134,7 @@ export default async function SettlementsPage() {
         <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : (
         <SettlementsHub
+          user={user}
           walletEmptyViewerRole={walletEmptyViewerRole}
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
         />

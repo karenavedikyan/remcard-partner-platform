@@ -4,6 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentReceivablesHub } from "@/components/agent-r05/AgentReceivablesHub";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import { RemcardApiError } from "@/lib/api-client";
+import type { AuthUser } from "@/lib/types";
+
+const settlementsHubUser: AuthUser = {
+  id: "wallet-empty-test",
+  role: "PRO",
+  partnerType: null,
+  displayName: "Test",
+};
 
 vi.mock("@/lib/api-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api-client")>();
@@ -172,7 +180,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="agent" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="agent" />);
     const cta = await screen.findByTestId("wallet-empty-primary-cta");
     expect(cta).toHaveAttribute("href", "/certificates/new");
   });
@@ -184,7 +192,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="specialist" />);
     expect(await screen.findByTestId("wallet-empty-state")).toBeInTheDocument();
   });
 
@@ -207,7 +215,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="specialist" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="specialist" />);
     await screen.findByTestId("settlements-hub");
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText(/партнёр, сертификат/i), "zzzz-no-match");
@@ -222,7 +230,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="store" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="store" />);
     const cta = await screen.findByTestId("wallet-empty-primary-cta");
     expect(cta.tagName).toBe("A");
     expect(cta).toHaveAttribute("href", "/scanner");
@@ -242,7 +250,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole={null} />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole={null} />);
     expect(await screen.findByTestId("settlements-hub")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
@@ -254,7 +262,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub />);
+    render(<SettlementsHub user={settlementsHubUser} />);
     expect(await screen.findByTestId("settlements-hub")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
@@ -266,7 +274,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="store" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="store" />);
     await screen.findByTestId("wallet-empty-state");
     expect(vi.mocked(remcardFetch)).not.toHaveBeenCalled();
     expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
@@ -280,7 +288,7 @@ describe("wallet empty integrations", () => {
       payable: [],
       completed: [],
     });
-    render(<SettlementsHub walletEmptyViewerRole="store" canLinkOnboardingHistory />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="store" canLinkOnboardingHistory />);
     await screen.findByTestId("wallet-empty-state");
     expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
     expect(
@@ -296,7 +304,11 @@ describe("wallet empty integrations", () => {
       completed: [],
     });
     render(
-      <SettlementsHub walletEmptyViewerRole="store" canLinkOnboardingHistory={false} />,
+      <SettlementsHub
+        user={settlementsHubUser}
+        walletEmptyViewerRole="store"
+        canLinkOnboardingHistory={false}
+      />,
     );
     await screen.findByTestId("wallet-empty-state");
     expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();

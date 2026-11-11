@@ -1,6 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
+import type { AuthUser } from "@/lib/types";
+
+const settlementsHubUser: AuthUser = {
+  id: "history-link-test",
+  role: "PRO",
+  partnerType: null,
+  displayName: "Test",
+};
 import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccrualsWorkspace";
 import * as historyEligibility from "@/lib/onboarding-step/history-link-eligibility";
 
@@ -33,7 +41,13 @@ describe("onboarding history capability — no client fetch for role", () => {
   });
 
   it("SettlementsHub uses page prop only and never calls fetchAuthMeSafe", async () => {
-    render(<SettlementsHub walletEmptyViewerRole="store" canLinkOnboardingHistory />);
+    render(
+      <SettlementsHub
+        user={settlementsHubUser}
+        walletEmptyViewerRole="store"
+        canLinkOnboardingHistory
+      />,
+    );
     await screen.findByTestId("wallet-empty-state");
     expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
     expect(
@@ -42,7 +56,7 @@ describe("onboarding history capability — no client fetch for role", () => {
   });
 
   it("SettlementsHub without prop stays STATIC without fetchAuthMeSafe", async () => {
-    render(<SettlementsHub walletEmptyViewerRole="store" />);
+    render(<SettlementsHub user={settlementsHubUser} walletEmptyViewerRole="store" />);
     await screen.findByTestId("wallet-empty-state");
     expect(vi.mocked(fetchAuthMeSafe)).not.toHaveBeenCalled();
     expect(screen.queryByRole("link", { name: /Открыть историю/i })).toBeNull();
