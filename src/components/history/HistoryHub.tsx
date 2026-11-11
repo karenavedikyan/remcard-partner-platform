@@ -28,6 +28,7 @@ import {
 import { accrualDetailHref } from "@/lib/accrual-type";
 import { purchaseDetailHref } from "@/lib/history-links";
 import {
+  canPreserveHistoryAcceptedTail,
   fetchAcceptedPurchasePage,
   fetchHistoryData,
   historyAcceptedTailBeyondFreshHead,
@@ -208,6 +209,19 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
     }
   }, [historyScopeKey]);
 
+  const applyHistoryUnauthorized = useCallback(() => {
+    loadGenerationRef.current += 1;
+    loadMoreGenerationRef.current += 1;
+    setBackgroundRefreshEnabled(false);
+    setPurchases([]);
+    setAccruals([]);
+    hasLoadedDataRef.current = false;
+    setAcceptedNextCursor(null);
+    setLoadingMoreAccepted(false);
+    setLoadMoreError("");
+    setError("Сессия завершилась. Войдите снова.");
+  }, []);
+
   const loadHistory = useCallback(async (options?: { background?: boolean }) => {
     const scopeAtStart = loadScopeRef.current;
     const generation = ++loadGenerationRef.current;
@@ -235,19 +249,20 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       }
 
       setAccruals(accrualRows);
+      const acceptedSourceOpen = canPreserveHistoryAcceptedTail(sourceFlags, storeAccessDenied);
       let preserveAcceptedCursor = false;
       let mergedPurchases = purchaseRows;
-      if (background && hasLoadedDataRef.current) {
+      if (background && hasLoadedDataRef.current && acceptedSourceOpen) {
         const previous = purchasesRef.current;
         preserveAcceptedCursor = historyAcceptedTailBeyondFreshHead(previous, purchaseRows);
         mergedPurchases = mergeHistoryPurchasesBackground(previous, purchaseRows);
-        setPurchases(mergedPurchases);
-      } else {
-        setPurchases(purchaseRows);
       }
+      setPurchases(mergedPurchases);
       setSources(sourceFlags);
       setAcceptedAccessDenied(storeAccessDenied);
-      if (!(background && preserveAcceptedCursor)) {
+      if (!acceptedSourceOpen) {
+        setAcceptedNextCursor(null);
+      } else if (!(background && preserveAcceptedCursor)) {
         setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
       }
       setHasIssuedPurchases(mergedPurchases.some((row) => row.direction === "issued"));
@@ -259,11 +274,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
         return;
       }
       if (isWalletRefreshUnauthorized(caught)) {
-        setBackgroundRefreshEnabled(false);
-        setPurchases([]);
-        setAccruals([]);
-        hasLoadedDataRef.current = false;
-        setError("Сессия завершилась. Войдите снова.");
+        applyHistoryUnauthorized();
         return;
       }
       if (preserveOnError) {
@@ -279,7 +290,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
         setLoading(false);
       }
     }
-  }, []);
+  }, [applyHistoryUnauthorized]);
 
   const loadMoreAccepted = useCallback(async () => {
     if (!acceptedNextCursor || loadingMoreAccepted) {
@@ -319,6 +330,19 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       ) {
         return;
       }
+      if (isWalletRefreshUnauthorized(caught)) {
+        applyHistoryUnauthorized();
+        return;
+      }
+      if (caught instanceof RemcardApiError && caught.status === 403) {
+        loadMoreGenerationRef.current += 1;
+        setPurchases((prev) => prev.filter((row) => row.direction !== "accepted"));
+        setAcceptedNextCursor(null);
+        setAcceptedAccessDenied(true);
+        setSources((prev) => ({ ...prev, acceptedOrders: false }));
+        setLoadMoreError("");
+        return;
+      }
       setLoadMoreError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
       );
@@ -327,7 +351,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
         setLoadingMoreAccepted(false);
       }
     }
-  }, [acceptedNextCursor, loadingMoreAccepted]);
+  }, [acceptedNextCursor, applyHistoryUnauthorized, loadingMoreAccepted]);
 
   useEffect(() => {
     void loadHistory();

@@ -303,6 +303,14 @@ export function mergeHistoryPurchasesBackground(
   );
 }
 
+/** Accepted tail merge is allowed only while the accepted source is still authorized. */
+export function canPreserveHistoryAcceptedTail(
+  sources: HistorySourceAvailability,
+  acceptedAccessDenied: boolean,
+): boolean {
+  return sources.acceptedOrders && !acceptedAccessDenied;
+}
+
 export function historyAcceptedTailBeyondFreshHead(
   previous: PurchaseRow[],
   fresh: PurchaseRow[],

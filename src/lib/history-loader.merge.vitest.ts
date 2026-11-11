@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canPreserveHistoryAcceptedTail,
   historyAcceptedTailBeyondFreshHead,
   mergeHistoryPurchasesBackground,
 } from "./history-loader";
@@ -13,6 +14,17 @@ const accepted = (id: string, promo: string): PurchaseRow =>
     promoCode: promo,
     createdAt: "2026-10-01T10:00:00.000Z",
   }) as PurchaseRow;
+
+describe("canPreserveHistoryAcceptedTail", () => {
+  it("is false when accepted access denied even if issued remains", () => {
+    expect(
+      canPreserveHistoryAcceptedTail({ acceptedOrders: false, issuedOrders: true }, true),
+    ).toBe(false);
+    expect(canPreserveHistoryAcceptedTail({ acceptedOrders: true, issuedOrders: true }, true)).toBe(
+      false,
+    );
+  });
+});
 
 describe("mergeHistoryPurchasesBackground", () => {
   it("keeps accepted tail not present in fresh first page", () => {
