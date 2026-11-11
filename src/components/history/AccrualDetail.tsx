@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabelFromStored } from "@/lib/category-display";
 import { presentAccrualRow } from "@/lib/history-accrual-display";
@@ -109,16 +109,7 @@ type AccrualDetailProps = {
 
 export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailProps) {
   const cabinetPresentation = useCabinetPresentation();
-  const presentationPresent = cabinetPresentation !== null;
-  const contextReady = cabinetPresentation?.contextReady === true;
-  const proContextRole = cabinetPresentation?.proContext?.role ?? "";
-  const proContextOrgId = cabinetPresentation?.proContext?.organization?.id ?? "";
-  const branchAssignments = cabinetPresentation?.proContext?.branchAssignments;
-
-  const canRecordPayout = useMemo(
-    () => deriveCanRecordAccrualPayout(user, cabinetPresentation),
-    [user, presentationPresent, contextReady, proContextRole, proContextOrgId, branchAssignments],
-  );
+  const canRecordPayout = deriveCanRecordAccrualPayout(user, cabinetPresentation);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -194,4 +194,39 @@ describe("AccrualDetail payout affordance", () => {
     await waitFor(() => expect(fetchBonusPayoutActions).toHaveBeenCalled());
     expect(await screen.findByRole("button", { name: "Зафиксировать выплату" })).toBeVisible();
   });
+
+  it("hides payout affordance after cabinet context becomes invalid", async () => {
+    const ownerContext = fixtureOptovikOwnerProContext();
+    const validPresentation = cabinetPresentationFixture(ownerUser, ownerContext, true);
+    const invalidPresentation = cabinetPresentationFixture(
+      ownerUser,
+      {
+        ...ownerContext,
+        organization: {
+          ...ownerContext.organization!,
+          name: "",
+        },
+      },
+      true,
+    );
+    expect(deriveCanRecordAccrualPayout(ownerUser, validPresentation)).toBe(true);
+    expect(deriveCanRecordAccrualPayout(ownerUser, invalidPresentation)).toBe(false);
+
+    const { rerender } = render(
+      <CabinetPresentationProvider value={validPresentation}>
+        <AccrualDetail user={ownerUser} accrualId="pay-1" accrualType="bonus" />
+      </CabinetPresentationProvider>,
+    );
+    await screen.findByText("100");
+    expect(await screen.findByRole("button", { name: "Зафиксировать выплату" })).toBeVisible();
+
+    rerender(
+      <CabinetPresentationProvider value={invalidPresentation}>
+        <AccrualDetail user={ownerUser} accrualId="pay-1" accrualType="bonus" />
+      </CabinetPresentationProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Зафиксировать выплату" })).toBeNull(),
+    );
+  });
 });
