@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import { displayCategoryLabelFromStored } from "@/lib/category-display";
 import { presentAccrualRow } from "@/lib/history-accrual-display";
@@ -21,27 +21,46 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PayoutRecordModal } from "@/components/payout/PayoutRecordModal";
 import { isOrgWorkplaceMemberRole } from "@/lib/cabinet-presentation/resolve";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+import { validateProContextSnapshot } from "@/lib/cabinet-presentation/validate";
 import { authorizeSettlementWalletPaymentMutations } from "@/lib/employee-workspace-data/settlement-wallet-read-auth";
 import { fetchBonusPayoutActions, type SettlementPayoutActions } from "@/lib/payout-record";
 import focus from "./history-focus.module.css";
 
-/** Ledger read for org staff must not surface payout recording without cash/transfer grants. */
-function accrualPayoutRecordingPermitted(
-  user: AuthUser,
+/**
+ * Payout affordance gate for history detail.
+ * - `presentation === null`: legacy personal shell (no CabinetPresentationProvider).
+ * - Provider present but context pending/invalid: fail closed.
+ * - Org workplace: shared payment mutation auth only.
+ */
+export function deriveCanRecordAccrualPayout(
+  user: Pick<AuthUser, "id" | "role">,
   presentation: CabinetPresentationSnapshot | null,
 ): boolean {
-  if (!presentation?.contextReady || !presentation.proContext) {
+  if (presentation === null) {
     return true;
   }
-  const role = presentation.proContext.role?.trim() ?? "";
-  if (!isOrgWorkplaceMemberRole(role) || !presentation.proContext.organization?.id) {
+  if (!presentation.contextReady) {
+    return false;
+  }
+  if (validateProContextSnapshot(presentation.proContext).ok !== true) {
+    return false;
+  }
+  const proContext = presentation.proContext;
+  if (!proContext) {
+    return false;
+  }
+  const role = proContext.role?.trim() ?? "";
+  if (role === "ORG_OWNER" && user.role === "PRO") {
     return true;
   }
-  return authorizeSettlementWalletPaymentMutations({
-    user,
-    proContext: presentation.proContext,
-    contextReady: presentation.contextReady,
-  }).allowed;
+  if (isOrgWorkplaceMemberRole(role) && proContext.organization?.id) {
+    return authorizeSettlementWalletPaymentMutations({
+      user: user as AuthUser,
+      proContext,
+      contextReady: true,
+    }).allowed;
+  }
+  return true;
 }
 
 function formatDetailDate(iso: string) {
@@ -90,6 +109,17 @@ type AccrualDetailProps = {
 
 export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailProps) {
   const cabinetPresentation = useCabinetPresentation();
+  const presentationPresent = cabinetPresentation !== null;
+  const contextReady = cabinetPresentation?.contextReady === true;
+  const proContextRole = cabinetPresentation?.proContext?.role ?? "";
+  const proContextOrgId = cabinetPresentation?.proContext?.organization?.id ?? "";
+  const branchAssignments = cabinetPresentation?.proContext?.branchAssignments;
+
+  const canRecordPayout = useMemo(
+    () => deriveCanRecordAccrualPayout(user, cabinetPresentation),
+    [user, presentationPresent, contextReady, proContextRole, proContextOrgId, branchAssignments],
+  );
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
@@ -99,6 +129,13 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
   );
   const [payoutActions, setPayoutActions] = useState<SettlementPayoutActions | null>(null);
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!canRecordPayout) {
+      setPayoutActions(null);
+      setPayoutModalOpen(false);
+    }
+  }, [canRecordPayout]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,7 +153,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
       setPayoutModalOpen(false);
 
       if (
-        accrualPayoutRecordingPermitted(user, cabinetPresentation) &&
+        canRecordPayout &&
         row.scope === "payable-to-pros" &&
         row.accrualType === "bonus" &&
         row.status !== "PAID" &&
@@ -151,7 +188,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
     } finally {
       setLoading(false);
     }
-  }, [user, accrualId, accrualType, cabinetPresentation]);
+  }, [user, accrualId, accrualType, canRecordPayout]);
 
   useEffect(() => {
     void load();
@@ -281,7 +318,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         </details>
       </article>
 
-      {payoutActions ? (
+      {canRecordPayout && payoutActions ? (
         <div className={focus.actionsRow}>
           <Button type="button" onClick={() => setPayoutModalOpen(true)}>
             Зафиксировать выплату
@@ -289,7 +326,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
         </div>
       ) : null}
 
-      {payoutModalOpen && payoutActions && accrual ? (
+      {payoutModalOpen && canRecordPayout && payoutActions && accrual ? (
         <PayoutRecordModal
           target={{
             bonusId: accrual.id,
