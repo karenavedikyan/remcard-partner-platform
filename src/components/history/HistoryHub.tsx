@@ -467,6 +467,14 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
               <AccrualRowCard key={`${row.accrualType}-${row.id}`} row={row} />
             ))}
           </div>
+        ) : accruals.length > 0 ? (
+          <div className={focus.empty}>
+            <strong>Ничего не найдено</strong>
+            <p>
+              В загруженных начислениях совпадений нет. Это не означает, что начислений нет во всей
+              истории — попробуйте изменить фильтр или поиск.
+            </p>
+          </div>
         ) : (
           <div className={focus.empty}>
             <strong>Начислений не найдено</strong>
