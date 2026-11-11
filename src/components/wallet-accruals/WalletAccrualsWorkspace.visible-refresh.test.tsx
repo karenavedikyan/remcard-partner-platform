@@ -36,6 +36,7 @@ vi.mock("@/lib/auth-session", () => ({
 }));
 
 import { fetchSettlements } from "@/lib/settlements-loader";
+import { fetchAuthMeSafe } from "@/lib/auth-session";
 import { WalletAccrualsWorkspace } from "./WalletAccrualsWorkspace";
 
 const pendingAgentRow = {
@@ -126,6 +127,24 @@ describe("WalletAccrualsWorkspace visible refresh", () => {
     window.dispatchEvent(new Event("focus"));
     await vi.advanceTimersByTimeAsync(15_000);
     expect(fetchSettlements).not.toHaveBeenCalled();
+  });
+
+  it("does not probe auth/me on background visible refresh", async () => {
+    vi.mocked(fetchSettlements).mockResolvedValue({
+      coverageNote: "",
+      receivable: [pendingAgentRow],
+      payable: [],
+      completed: [],
+    });
+
+    render(<WalletAccrualsWorkspace incomingOnly scopeKey="scope-auth-probe" />);
+    await screen.findByTestId("wallet-accruals");
+    expect(fetchAuthMeSafe).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(800);
+    await waitFor(() => expect(fetchSettlements).toHaveBeenCalledTimes(2));
+    expect(fetchAuthMeSafe).toHaveBeenCalledTimes(1);
   });
 
   it("clears data on 401 and shows auth error", async () => {

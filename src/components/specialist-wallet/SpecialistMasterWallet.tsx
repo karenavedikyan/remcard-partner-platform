@@ -11,9 +11,16 @@ import walletStyles from "@/components/specialist-wallet/specialist-wallet.modul
 type Props = WalletEmptyViewerProps & {
   /** Override settlements tab content (dev-fixture preview). */
   settlementsSlot?: ReactNode;
+  /** Server-derived actor scope; required for live wallet (dev fixture may omit). */
+  walletScopeKey?: string;
 };
 
-export function SpecialistMasterWallet({ settlementsSlot, walletEmptyViewerRole }: Props) {
+export function SpecialistMasterWallet({
+  settlementsSlot,
+  walletEmptyViewerRole,
+  walletScopeKey,
+}: Props) {
+  const resolvedScopeKey = walletScopeKey ?? "specialist:preview";
   return (
     <WalletPrototypeShell
       shellTestId="specialist-master-wallet"
@@ -23,9 +30,10 @@ export function SpecialistMasterWallet({ settlementsSlot, walletEmptyViewerRole 
       settlements={
         settlementsSlot ?? (
           <WalletAccrualsWorkspace
-            scopeKey="specialist-master"
+            key={resolvedScopeKey}
+            scopeKey={resolvedScopeKey}
             walletEmptyViewerRole={walletEmptyViewerRole}
-            masterLedger={{ ledgerScopeKey: "specialist-master-ledger" }}
+            masterLedger={{ ledgerScopeKey: `${resolvedScopeKey}:ledger` }}
           />
         )
       }

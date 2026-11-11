@@ -14,6 +14,9 @@ export const WALLET_VISIBLE_REFRESH_DEBOUNCE_MS = 750;
 export const WALLET_STALE_DATA_NOTICE =
   "Не удалось обновить данные. Показаны последние загруженные значения.";
 
+export const WALLET_PAYOUT_STALE_NOTICE =
+  "Выплата записана, не удалось обновить данные, обновите страницу";
+
 export type WalletRefreshReason =
   | "reward-changed"
   | "visible"

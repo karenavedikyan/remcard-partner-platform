@@ -1,3 +1,13 @@
+/** Actor-bound scope for personal wallet surfaces (agent, specialist, legacy hub). */
+export function actorWalletSurfaceScopeKey(
+  surface: "agent" | "specialist" | "legacy-settlements",
+  actorUserId: string,
+): string {
+  const id = actorUserId.trim();
+  if (!id) return `${surface}:anonymous`;
+  return `${surface}:${id}`;
+}
+
 /** Cache/remount key for multi-branch staff wallet loads (actor + org scope + granted branches). */
 export function walletSettlementsFetchScopeKey(
   baseScopeKey: string,

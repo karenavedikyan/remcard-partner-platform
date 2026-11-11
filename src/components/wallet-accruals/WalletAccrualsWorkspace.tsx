@@ -27,6 +27,7 @@ import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role
 import {
   isWalletRefreshUnauthorized,
   useWalletVisibleRefresh,
+  WALLET_PAYOUT_STALE_NOTICE,
   WALLET_STALE_DATA_NOTICE,
   type WalletRefreshReason,
 } from "@/lib/wallet-data-refresh";
@@ -170,25 +171,27 @@ export function WalletAccrualsWorkspace({
         hasLoadedDataRef.current = true;
         setRefreshNotice("");
         setError("");
-        const me = await fetchAuthMeSafe();
-        if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
-          return;
-        }
-        if (!me.ok && (me.kind === "unauthorized" || me.kind === "blocked")) {
-          setBackgroundRefreshEnabled(false);
-          setResponse(null);
-          setData(null);
-          hasLoadedDataRef.current = false;
-          setError(
-            me.kind === "blocked"
-              ? me.message ?? "Раздел недоступен для этого профиля."
-              : "Сессия завершилась. Войдите снова.",
+        if (!background) {
+          const me = await fetchAuthMeSafe();
+          if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+            return;
+          }
+          if (!me.ok && (me.kind === "unauthorized" || me.kind === "blocked")) {
+            setBackgroundRefreshEnabled(false);
+            setResponse(null);
+            setData(null);
+            hasLoadedDataRef.current = false;
+            setError(
+              me.kind === "blocked"
+                ? me.message ?? "Раздел недоступен для этого профиля."
+                : "Сессия завершилась. Войдите снова.",
+            );
+            return;
+          }
+          setPresentation(
+            resolveWalletPresentationForSession(me.ok ? me.data : null, { fallbackRibbon }),
           );
-          return;
         }
-        setPresentation(
-          resolveWalletPresentationForSession(me.ok ? me.data : null, { fallbackRibbon }),
-        );
       } catch (err) {
         if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
           return;
@@ -245,11 +248,24 @@ export function WalletAccrualsWorkspace({
   }, [accessBlockedMessage, fetchAndApplySettlements, incomingOnly, previewData]);
 
   useEffect(() => {
-    loadScopeRef.current = scopeKey ?? "default";
+    const nextScope = scopeKey ?? "default";
+    const scopeChanged = loadScopeRef.current !== nextScope;
+    loadScopeRef.current = nextScope;
     loadGenerationRef.current += 1;
-    setBackgroundRefreshEnabled(true);
+    agentGateGenerationRef.current += 1;
+    setBackgroundRefreshEnabled(!previewData && !accessBlockedMessage?.trim());
     setRefreshNotice("");
-  }, [scopeKey]);
+    if (scopeChanged && !previewData) {
+      setResponse(null);
+      setData(null);
+      setError("");
+      setLoading(true);
+      hasLoadedDataRef.current = false;
+      setPresentation(resolveWalletPresentationForSession(null, { fallbackRibbon }));
+      setAgentGateSignals(null);
+      setAgentGateLoading(false);
+    }
+  }, [accessBlockedMessage, fallbackRibbon, previewData, scopeKey]);
 
   useEffect(() => {
     if (previewData) return;
@@ -383,7 +399,7 @@ export function WalletAccrualsWorkspace({
       onPayoutRefreshFailed={() =>
         void fetchAndApplySettlements({
           background: true,
-          staleNotice: "Выплата записана, не удалось обновить данные, обновите страницу",
+          staleNotice: WALLET_PAYOUT_STALE_NOTICE,
         })
       }
       onOpenMasterLedger={masterLedgerEnabled ? () => setSubview("master-ledger") : undefined}

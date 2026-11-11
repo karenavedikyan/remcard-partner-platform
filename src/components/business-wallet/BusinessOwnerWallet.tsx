@@ -38,6 +38,7 @@ export function BusinessOwnerWallet({
   const workspace =
     settlementsSlot ?? (
       <WalletAccrualsWorkspace
+        key={ledgerScopeKey}
         scopeKey={ledgerScopeKey}
         walletLedgerBranchIds={walletLedgerBranchIds}
         walletEmptyViewerRole={walletEmptyViewerRole}

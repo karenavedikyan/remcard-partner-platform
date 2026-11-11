@@ -26,7 +26,10 @@ import {
   settlementWalletReadBlockedMessage,
   walletLedgerBranchIdsFromReadAuth,
 } from "@/lib/business-wallet/access";
-import { walletSettlementsFetchScopeKey } from "@/lib/settlements-fetch-scope";
+import {
+  actorWalletSurfaceScopeKey,
+  walletSettlementsFetchScopeKey,
+} from "@/lib/settlements-fetch-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -114,12 +117,18 @@ export default async function SettlementsPage() {
     ledgerScopeKey ?? `${businessPartnerType ?? "wallet"}:${user.id}`,
     walletLedgerBranchIds,
   );
+  const agentWalletScopeKey = actorWalletSurfaceScopeKey("agent", user.id);
+  const specialistWalletScopeKey = actorWalletSurfaceScopeKey("specialist", user.id);
+  const legacySettlementsScopeKey = actorWalletSurfaceScopeKey("legacy-settlements", user.id);
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
       {shell === "agent-r05" ? (
-        <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+        <AgentReceivablesWallet
+          walletEmptyViewerRole={walletEmptyViewerRole}
+          walletScopeKey={agentWalletScopeKey}
+        />
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
         <BusinessOwnerWallet
           partnerType={businessPartnerType}
@@ -131,9 +140,14 @@ export default async function SettlementsPage() {
           walletLedgerBranchIds={walletLedgerBranchIds}
         />
       ) : shell === "master-wallet" ? (
-        <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+        <SpecialistMasterWallet
+          walletEmptyViewerRole={walletEmptyViewerRole}
+          walletScopeKey={specialistWalletScopeKey}
+        />
       ) : (
         <SettlementsHub
+          key={legacySettlementsScopeKey}
+          scopeKey={legacySettlementsScopeKey}
           walletEmptyViewerRole={walletEmptyViewerRole}
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
         />

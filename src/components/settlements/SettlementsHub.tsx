@@ -288,9 +288,12 @@ function filterCompleted(rows: SettlementCompleted[], query: string) {
 export function SettlementsHub({
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
+  scopeKey = "legacy-settlements:anonymous",
 }: WalletEmptyViewerProps & {
   /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
   canLinkOnboardingHistory?: boolean;
+  /** Server-derived actor scope for refresh isolation. */
+  scopeKey?: string;
 }) {
   const [tab, setTab] = useState<SettlementsTab>("receivable");
   const [searchQ, setSearchQ] = useState("");
@@ -302,9 +305,12 @@ export function SettlementsHub({
   const [refreshNotice, setRefreshNotice] = useState("");
   const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
   const loadGenerationRef = useRef(0);
+  const loadScopeRef = useRef(scopeKey);
+  const prevScopeKeyRef = useRef(scopeKey);
   const hasLoadedDataRef = useRef(false);
 
   const load = useCallback(async (options?: { background?: boolean }) => {
+    const scopeAtStart = loadScopeRef.current;
     const generation = ++loadGenerationRef.current;
     const background = Boolean(options?.background);
     const preserveOnError = background && hasLoadedDataRef.current;
@@ -317,14 +323,18 @@ export function SettlementsHub({
     }
     try {
       const response = await fetchSettlements();
-      if (generation !== loadGenerationRef.current) return;
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
       setData(response);
       hasLoadedDataRef.current = true;
       setRefreshNotice("");
       setError("");
       setAccessDenied(false);
     } catch (caught) {
-      if (generation !== loadGenerationRef.current) return;
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
       if (isWalletRefreshUnauthorized(caught) || isSettlementsAccessDenied(caught)) {
         setBackgroundRefreshEnabled(false);
         setData(null);
@@ -350,15 +360,11 @@ export function SettlementsHub({
             : "Не удалось загрузить взаиморасчёты",
       );
     } finally {
-      if (generation === loadGenerationRef.current) {
+      if (generation === loadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
         setLoading(false);
       }
     }
   }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const onVisibleRefresh = useCallback(
     (_reason: WalletRefreshReason) => {
@@ -367,9 +373,26 @@ export function SettlementsHub({
     [load],
   );
 
+  useEffect(() => {
+    const scopeChanged = prevScopeKeyRef.current !== scopeKey;
+    prevScopeKeyRef.current = scopeKey;
+    loadScopeRef.current = scopeKey;
+    if (scopeChanged) {
+      loadGenerationRef.current += 1;
+      setData(null);
+      hasLoadedDataRef.current = false;
+      setBackgroundRefreshEnabled(true);
+      setRefreshNotice("");
+      setError("");
+      setAccessDenied(false);
+      setLoading(true);
+    }
+    void load();
+  }, [load, scopeKey]);
+
   useWalletVisibleRefresh({
     enabled: backgroundRefreshEnabled,
-    scopeKey: "settlements-hub",
+    scopeKey,
     onRefresh: onVisibleRefresh,
   });
 
