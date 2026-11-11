@@ -1,4 +1,5 @@
 import type { RegistrationDraft, RegistrationDraftFields, RegistrationKind } from "./types";
+import { clearAllPreAuthConsentAcks } from "./pre-auth-consent";
 
 const STORAGE_PREFIX = "remcard.registration.draft.v1";
 const OWNER_PREFIX = "remcard.registration.owner.v1";
@@ -150,6 +151,7 @@ export function clearAllRegistrationDrafts(): void {
   );
   clearRegistrationDraftOwner();
   safeRemoveItem(WIZARD_PREFIX);
+  clearAllPreAuthConsentAcks();
 }
 
 export function mergeRegistrationDraftFields(

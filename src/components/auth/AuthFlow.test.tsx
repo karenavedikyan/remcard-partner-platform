@@ -389,4 +389,17 @@ describe("AuthFlow", () => {
       expect(screen.getByRole("status")).toHaveTextContent(/дождитесь кода/i);
     });
   });
+
+  it("blocks MAX/Telegram for registration join until pre-auth gate is ready", async () => {
+    vi.mocked(getAuthMe).mockResolvedValue({ user: null });
+    const openSpy = vi.mocked(window.open);
+    const ui = userEvent.setup();
+    render(
+      <AuthFlow returnTo="/join?phase=finish" registrationAgentJoin registrationMessengerGateReady={false} />,
+    );
+    const maxBtn = await screen.findByRole("button", { name: /продолжить с max/i });
+    expect(maxBtn).toBeDisabled();
+    await ui.click(maxBtn);
+    expect(openSpy).not.toHaveBeenCalled();
+  });
 });
