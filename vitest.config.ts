@@ -78,6 +78,8 @@ export default defineConfig({
       "src/lib/cabinet-presentation/**/*.test.ts",
       "src/lib/settlements-page-shell.test.ts",
       "src/lib/settlements-fetch-scope.actor.test.ts",
+      "src/lib/history-loader.unauthorized.vitest.ts",
+      "src/lib/history-loader.merge.vitest.ts",
       "src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx",
       "src/lib/business-clients/client-list-row.test.ts",
       "src/lib/business-owner-certificates/copy.test.ts",

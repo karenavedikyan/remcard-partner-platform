@@ -27,7 +27,12 @@ import {
 } from "@/lib/history-labels";
 import { accrualDetailHref } from "@/lib/accrual-type";
 import { purchaseDetailHref } from "@/lib/history-links";
-import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
+import {
+  fetchAcceptedPurchasePage,
+  fetchHistoryData,
+  historyAcceptedTailBeyondFreshHead,
+  mergeHistoryPurchasesBackground,
+} from "@/lib/history-loader";
 import {
   shouldShowAcceptedAccessDeniedNote,
   shouldShowAcceptedBonusEmptyNote,
@@ -176,7 +181,9 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
   const loadScopeRef = useRef(historyScopeKey);
   const loadMoreGenerationRef = useRef(0);
   const hasLoadedDataRef = useRef(false);
+  const purchasesRef = useRef<PurchaseRow[]>([]);
   const prevHistoryScopeRef = useRef(historyScopeKey);
+  purchasesRef.current = purchases;
 
   useEffect(() => {
     const scopeChanged = prevHistoryScopeRef.current !== historyScopeKey;
@@ -228,11 +235,22 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       }
 
       setAccruals(accrualRows);
-      setPurchases(purchaseRows);
+      let preserveAcceptedCursor = false;
+      let mergedPurchases = purchaseRows;
+      if (background && hasLoadedDataRef.current) {
+        const previous = purchasesRef.current;
+        preserveAcceptedCursor = historyAcceptedTailBeyondFreshHead(previous, purchaseRows);
+        mergedPurchases = mergeHistoryPurchasesBackground(previous, purchaseRows);
+        setPurchases(mergedPurchases);
+      } else {
+        setPurchases(purchaseRows);
+      }
       setSources(sourceFlags);
       setAcceptedAccessDenied(storeAccessDenied);
-      setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
-      setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
+      if (!(background && preserveAcceptedCursor)) {
+        setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
+      }
+      setHasIssuedPurchases(mergedPurchases.some((row) => row.direction === "issued"));
       hasLoadedDataRef.current = true;
       setRefreshNotice("");
       setError("");
@@ -295,6 +313,12 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       });
       setAcceptedNextCursor(accepted.pagination.hasMore ? accepted.pagination.nextCursor : null);
     } catch (caught) {
+      if (
+        generationAtStart !== loadMoreGenerationRef.current ||
+        scopeAtStart !== loadScopeRef.current
+      ) {
+        return;
+      }
       setLoadMoreError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
       );
@@ -307,7 +331,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory]);
+  }, [historyScopeKey, loadHistory]);
 
   const onVisibleRefresh = useCallback(
     (_reason: WalletRefreshReason) => loadHistory({ background: true }),
