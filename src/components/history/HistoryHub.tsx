@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   accrualStatusOptions,
@@ -39,6 +39,12 @@ import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import focus from "./history-focus.module.css";
+import {
+  isWalletRefreshUnauthorized,
+  useWalletVisibleRefresh,
+  WALLET_STALE_DATA_NOTICE,
+  type WalletRefreshReason,
+} from "@/lib/wallet-data-refresh";
 
 type HistoryTab = "purchases" | "accruals";
 
@@ -157,11 +163,33 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [loadingMoreAccepted, setLoadingMoreAccepted] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState("");
   const [acceptedAccessDenied, setAcceptedAccessDenied] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState("");
+  const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
+  const loadGenerationRef = useRef(0);
+  const loadScopeRef = useRef(`${user.id}:${user.role ?? "unknown"}`);
+  const hasLoadedDataRef = useRef(false);
 
-  const loadHistory = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setAcceptedAccessDenied(false);
+  const historyScopeKey = `${user.id}:${user.role ?? "unknown"}`;
+
+  useEffect(() => {
+    loadScopeRef.current = historyScopeKey;
+    loadGenerationRef.current += 1;
+    setBackgroundRefreshEnabled(true);
+    setRefreshNotice("");
+  }, [historyScopeKey]);
+
+  const loadHistory = useCallback(async (options?: { background?: boolean }) => {
+    const scopeAtStart = loadScopeRef.current;
+    const generation = ++loadGenerationRef.current;
+    const background = Boolean(options?.background);
+    const preserveOnError = background && hasLoadedDataRef.current;
+    if (!preserveOnError) {
+      setError("");
+      setAcceptedAccessDenied(false);
+    }
+    if (!background || !hasLoadedDataRef.current) {
+      setLoading(true);
+    }
 
     try {
       const {
@@ -172,18 +200,43 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         acceptedAccessDenied: storeAccessDenied,
       } = await fetchHistoryData(user);
 
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
+
       setAccruals(accrualRows);
       setPurchases(purchaseRows);
       setSources(sourceFlags);
       setAcceptedAccessDenied(storeAccessDenied);
       setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
       setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
+      hasLoadedDataRef.current = true;
+      setRefreshNotice("");
+      setError("");
     } catch (caught) {
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
+      if (isWalletRefreshUnauthorized(caught)) {
+        setBackgroundRefreshEnabled(false);
+        setPurchases([]);
+        setAccruals([]);
+        hasLoadedDataRef.current = false;
+        setError("Сессия завершилась. Войдите снова.");
+        return;
+      }
+      if (preserveOnError) {
+        setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+        return;
+      }
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить историю",
       );
+      hasLoadedDataRef.current = false;
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+        setLoading(false);
+      }
     }
   }, [user]);
 
@@ -221,7 +274,20 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory]);
+  }, [loadHistory, historyScopeKey]);
+
+  const onVisibleRefresh = useCallback(
+    (_reason: WalletRefreshReason) => {
+      void loadHistory({ background: true });
+    },
+    [loadHistory],
+  );
+
+  useWalletVisibleRefresh({
+    enabled: backgroundRefreshEnabled,
+    scopeKey: historyScopeKey,
+    onRefresh: onVisibleRefresh,
+  });
 
   const filteredPurchases = useMemo(() => filterPurchases(purchases, filters), [purchases, filters]);
   const filteredAccruals = useMemo(() => filterAccruals(accruals, filters), [accruals, filters]);
@@ -260,6 +326,11 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
 
   return (
     <div className={focus.hub}>
+      {refreshNotice ? (
+        <p className={focus.notice} role="status" data-testid="history-refresh-notice">
+          {refreshNotice}
+        </p>
+      ) : null}
       <div className={focus.tabs} role="tablist" aria-label="Тип операции">
         <button
           type="button"

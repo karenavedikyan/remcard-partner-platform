@@ -8,6 +8,7 @@ import {
 } from "@/components/payout/PayoutRecordModal";
 import { formatMoneyRub } from "@/lib/history-format";
 import { settlementAccrualHref, settlementPurchaseHref } from "@/lib/settlements-links";
+import { ONBOARDING_READ_ONLY_HISTORY_HREF } from "@/lib/onboarding-step/read-only-history";
 import type { SettlementObligation } from "@/lib/settlements-types";
 import {
   scheduleBadgeExtra,
@@ -814,6 +815,13 @@ export function WalletAccrualsShell({
         >
           <div className="wallet-accruals-history__header">
             <div className="wallet-accruals-history__header-text">
+              <Link
+                href={ONBOARDING_READ_ONLY_HISTORY_HREF}
+                className="wallet-accruals-history__hub-link"
+                data-testid="wallet-history-hub-link"
+              >
+                Покупки и транзакции в разделе «История»
+              </Link>
               <span className="wallet-accruals-history__eyebrow">
                 История · {DIRECTION_LABELS[effectiveDirection]}
               </span>

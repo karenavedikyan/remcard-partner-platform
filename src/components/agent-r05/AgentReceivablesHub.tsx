@@ -10,6 +10,7 @@ import {
   fetchAgentReceivableOrderDetail,
   fetchAgentReceivableOrders,
   fetchAgentReceivablePartners,
+  fetchAgentReceivablesOverview,
   type AgentReceivableOrderLine,
   type AgentReceivablePartnerGroup,
   type AgentReceivableRecord,
@@ -33,6 +34,12 @@ import {
 } from "@/lib/agent-r05/receivables-prefs";
 import styles from "./agent-receivables.module.css";
 import hubStyles from "@/components/settlements/settlements.module.css";
+import {
+  isWalletRefreshUnauthorized,
+  useWalletVisibleRefresh,
+  WALLET_STALE_DATA_NOTICE,
+  type WalletRefreshReason,
+} from "@/lib/wallet-data-refresh";
 
 type Screen = "overview" | "partners" | "orders" | "order";
 
@@ -110,10 +117,12 @@ export function AgentReceivablesHub({
   walletEmptyViewerRole,
   onBack,
   initialEmptyGateSignals,
+  scopeKey = "agent-receivables-hub",
 }: WalletEmptyViewerProps & {
   onBack?: () => void;
   /** When set, skips duplicate overview+probe fetch on first overview mount. */
   initialEmptyGateSignals?: AgentReceivablesEmptyGateSignals | null;
+  scopeKey?: string;
 } = {}) {
   const hasInitialSignals = initialEmptyGateSignals != null;
   const [screen, setScreen] = useState<Screen>("overview");
@@ -129,7 +138,12 @@ export function AgentReceivablesHub({
     initialEmptyGateSignals?.historyProbeFailed ?? false,
   );
   const overviewGenerationRef = useRef(0);
+  const screenLoadGenerationRef = useRef(0);
+  const loadScopeRef = useRef(scopeKey);
+  const hasScreenDataRef = useRef(hasInitialSignals);
   const skipInitialOverviewReloadRef = useRef(hasInitialSignals);
+  const [refreshNotice, setRefreshNotice] = useState("");
+  const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
   const [partners, setPartners] = useState<AgentReceivablePartnerGroup[]>([]);
   const [orders, setOrders] = useState<AgentReceivableRecord[]>([]);
   const [meta, setMeta] = useState<AgentReceivablesMeta | null>(null);
@@ -158,90 +172,281 @@ export function AgentReceivablesHub({
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
-  const reloadOverview = useCallback(async () => {
+  const prevScopeKeyRef = useRef(scopeKey);
+  useEffect(() => {
+    loadScopeRef.current = scopeKey;
+    if (prevScopeKeyRef.current !== scopeKey) {
+      prevScopeKeyRef.current = scopeKey;
+      overviewGenerationRef.current += 1;
+      screenLoadGenerationRef.current += 1;
+      setBackgroundRefreshEnabled(true);
+      setRefreshNotice("");
+      hasScreenDataRef.current = false;
+    }
+  }, [scopeKey]);
+
+  const reloadOverview = useCallback(async (options?: { background?: boolean }) => {
+    const scopeAtStart = loadScopeRef.current;
     const generation = overviewGenerationRef.current + 1;
     overviewGenerationRef.current = generation;
-    setLoading(true);
-    setError("");
-    setHistoryTotalRecords(null);
-    setHistoryProbeFailed(false);
-    const signals = await fetchAgentReceivablesEmptyGateSignals();
-    if (generation !== overviewGenerationRef.current) return;
+    const background = Boolean(options?.background);
+    const preserveOnError = background && hasScreenDataRef.current;
+    if (!preserveOnError) {
+      setError("");
+      setHistoryTotalRecords(null);
+      setHistoryProbeFailed(false);
+    }
+    if (!background || !hasScreenDataRef.current) {
+      setLoading(true);
+    }
+    let signals: AgentReceivablesEmptyGateSignals;
+    try {
+      signals = await fetchAgentReceivablesEmptyGateSignals();
+    } catch (caught) {
+      if (generation !== overviewGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
+      if (isWalletRefreshUnauthorized(caught)) {
+        setBackgroundRefreshEnabled(false);
+        setOverview(null);
+        hasScreenDataRef.current = false;
+        setError("Сессия завершилась. Войдите снова.");
+        setLoading(false);
+        return;
+      }
+      if (preserveOnError) {
+        setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+        setLoading(false);
+        return;
+      }
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить кошелёк");
+      setLoading(false);
+      return;
+    }
+    if (generation !== overviewGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+      return;
+    }
+
+    if (!signals.overview && signals.error) {
+      try {
+        await fetchAgentReceivablesOverview();
+      } catch (caught) {
+        if (isWalletRefreshUnauthorized(caught)) {
+          setBackgroundRefreshEnabled(false);
+          setOverview(null);
+          hasScreenDataRef.current = false;
+          setError("Сессия завершилась. Войдите снова.");
+          setLoading(false);
+          return;
+        }
+      }
+    }
 
     setOverview(signals.overview);
-    setError(signals.error);
     setHistoryTotalRecords(signals.historyTotalRecords);
     setHistoryProbeFailed(signals.historyProbeFailed);
+    if (signals.overview) {
+      hasScreenDataRef.current = true;
+      setRefreshNotice("");
+    }
+    if (signals.error) {
+      if (preserveOnError) {
+        setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+      } else {
+        setError(signals.error);
+      }
+    } else {
+      setError("");
+    }
     if (generation === overviewGenerationRef.current) {
       setLoading(false);
     }
   }, []);
 
-  const reloadPartners = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const params = buildQuery({
-        q,
-        status,
-        sort,
-        from: fromDate,
-        to: toDate,
-        page,
-        pageSize: prefs.pageSize,
-      });
-      const data = await fetchAgentReceivablePartners(params);
-      setPartners(data.partners);
-      setMeta(data.meta);
-    } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить партнёров");
-    } finally {
-      setLoading(false);
-    }
-  }, [fromDate, page, prefs.pageSize, q, sort, status, toDate]);
+  const reloadPartners = useCallback(
+    async (options?: { background?: boolean }) => {
+      const scopeAtStart = loadScopeRef.current;
+      const generation = ++screenLoadGenerationRef.current;
+      const background = Boolean(options?.background);
+      const preserveOnError = background && hasScreenDataRef.current;
+      if (!preserveOnError) {
+        setError("");
+      }
+      if (!background || !hasScreenDataRef.current) {
+        setLoading(true);
+      }
+      try {
+        const params = buildQuery({
+          q,
+          status,
+          sort,
+          from: fromDate,
+          to: toDate,
+          page,
+          pageSize: prefs.pageSize,
+        });
+        const data = await fetchAgentReceivablePartners(params);
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        setPartners(data.partners);
+        setMeta(data.meta);
+        hasScreenDataRef.current = true;
+        setRefreshNotice("");
+        setError("");
+      } catch (caught) {
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        if (isWalletRefreshUnauthorized(caught)) {
+          setBackgroundRefreshEnabled(false);
+          setPartners([]);
+          setMeta(null);
+          hasScreenDataRef.current = false;
+          setError("Сессия завершилась. Войдите снова.");
+          return;
+        }
+        if (preserveOnError) {
+          setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+          return;
+        }
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить партнёров");
+      } finally {
+        if (generation === screenLoadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [fromDate, page, prefs.pageSize, q, sort, status, toDate],
+  );
 
-  const reloadOrders = useCallback(async () => {
-    if (!selectedPartner) return;
-    setLoading(true);
-    setError("");
-    try {
-      const params = buildQuery({
-        q,
-        status,
-        sort,
-        from: fromDate,
-        to: toDate,
-        page,
-        pageSize: prefs.pageSize,
-        groupKey: selectedPartner.groupKey,
-      });
-      const data = await fetchAgentReceivableOrders(params);
-      setOrders(data.orders);
-      setMeta(data.meta);
-    } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить заказы");
-    } finally {
-      setLoading(false);
-    }
-  }, [fromDate, page, prefs.pageSize, q, selectedPartner, sort, status, toDate]);
+  const reloadOrders = useCallback(
+    async (options?: { background?: boolean }) => {
+      if (!selectedPartner) return;
+      const scopeAtStart = loadScopeRef.current;
+      const generation = ++screenLoadGenerationRef.current;
+      const background = Boolean(options?.background);
+      const preserveOnError = background && hasScreenDataRef.current;
+      if (!preserveOnError) {
+        setError("");
+      }
+      if (!background || !hasScreenDataRef.current) {
+        setLoading(true);
+      }
+      try {
+        const params = buildQuery({
+          q,
+          status,
+          sort,
+          from: fromDate,
+          to: toDate,
+          page,
+          pageSize: prefs.pageSize,
+          groupKey: selectedPartner.groupKey,
+        });
+        const data = await fetchAgentReceivableOrders(params);
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        setOrders(data.orders);
+        setMeta(data.meta);
+        hasScreenDataRef.current = true;
+        setRefreshNotice("");
+        setError("");
+      } catch (caught) {
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        if (isWalletRefreshUnauthorized(caught)) {
+          setBackgroundRefreshEnabled(false);
+          setOrders([]);
+          setMeta(null);
+          hasScreenDataRef.current = false;
+          setError("Сессия завершилась. Войдите снова.");
+          return;
+        }
+        if (preserveOnError) {
+          setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+          return;
+        }
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить заказы");
+      } finally {
+        if (generation === screenLoadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [fromDate, page, prefs.pageSize, q, selectedPartner, sort, status, toDate],
+  );
 
-  const reloadOrderDetail = useCallback(async (orderId: string) => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await fetchAgentReceivableOrderDetail(orderId);
-      setOrderDetail({
-        record: data.record,
-        lines: data.lines,
-        totalsMismatch: data.totalsMismatch,
-        history: data.history,
-      });
-    } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить заказ");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const reloadOrderDetail = useCallback(
+    async (orderId: string, options?: { background?: boolean }) => {
+      const scopeAtStart = loadScopeRef.current;
+      const generation = ++screenLoadGenerationRef.current;
+      const background = Boolean(options?.background);
+      const preserveOnError = background && hasScreenDataRef.current;
+      if (!preserveOnError) {
+        setError("");
+      }
+      if (!background || !hasScreenDataRef.current) {
+        setLoading(true);
+      }
+      try {
+        const data = await fetchAgentReceivableOrderDetail(orderId);
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        setOrderDetail({
+          record: data.record,
+          lines: data.lines,
+          totalsMismatch: data.totalsMismatch,
+          history: data.history,
+        });
+        hasScreenDataRef.current = true;
+        setRefreshNotice("");
+        setError("");
+      } catch (caught) {
+        if (generation !== screenLoadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
+        if (isWalletRefreshUnauthorized(caught)) {
+          setBackgroundRefreshEnabled(false);
+          setOrderDetail(null);
+          hasScreenDataRef.current = false;
+          setError("Сессия завершилась. Войдите снова.");
+          return;
+        }
+        if (preserveOnError) {
+          setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+          return;
+        }
+        setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить заказ");
+      } finally {
+        if (generation === screenLoadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  const onVisibleRefresh = useCallback(
+    (_reason: WalletRefreshReason) => {
+      if (screen === "overview") void reloadOverview({ background: true });
+      else if (screen === "partners") void reloadPartners({ background: true });
+      else if (screen === "orders") void reloadOrders({ background: true });
+      else if (screen === "order" && selectedOrderId) {
+        void reloadOrderDetail(selectedOrderId, { background: true });
+      }
+    },
+    [reloadOrderDetail, reloadOrders, reloadOverview, reloadPartners, screen, selectedOrderId],
+  );
+
+  useWalletVisibleRefresh({
+    enabled: backgroundRefreshEnabled,
+    scopeKey,
+    onRefresh: onVisibleRefresh,
+  });
 
   useEffect(() => {
     if (screen !== "overview") return;
@@ -493,6 +698,11 @@ export function AgentReceivablesHub({
     const showOverviewLedger = overview && !loading && !showWalletEmpty && !error;
     return (
       <AgentSettlementsFrame onBack={onBack} data-ledger-view={prefs.view} data-testid="agent-r05-receivables">
+        {refreshNotice ? (
+          <p className={styles.meta} role="status" data-testid="agent-receivables-refresh-notice">
+            {refreshNotice}
+          </p>
+        ) : null}
         {!showWalletEmpty ? viewControl : null}
         {!showWalletEmpty ? (
           <p className={styles.muted}>Выберите сумму, чтобы увидеть партнёров.</p>
