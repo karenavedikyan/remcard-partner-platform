@@ -45,6 +45,7 @@ import {
   WALLET_STALE_DATA_NOTICE,
   type WalletRefreshReason,
 } from "@/lib/wallet-data-refresh";
+import { historyActorScopeKey } from "@/lib/settlements-fetch-scope";
 
 type HistoryTab = "purchases" | "accruals";
 
@@ -141,9 +142,15 @@ function AccrualRowCard({ row }: { row: AccrualRow }) {
 type HistoryHubProps = {
   user: AuthUser;
   initialPromoCode?: string;
+  /** Server-derived actor scope; should match page remount key. */
+  scopeKey?: string;
 };
 
-export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
+export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps) {
+  const historyScopeKey =
+    scopeKey ?? historyActorScopeKey(user.id, user.role);
+  const userRef = useRef(user);
+  userRef.current = user;
   const [tab, setTab] = useState<HistoryTab>("purchases");
   const [filters, setFilters] = useState<HistoryFilters>({
     ...DEFAULT_HISTORY_FILTERS,
@@ -166,16 +173,32 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [refreshNotice, setRefreshNotice] = useState("");
   const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
   const loadGenerationRef = useRef(0);
-  const loadScopeRef = useRef(`${user.id}:${user.role ?? "unknown"}`);
+  const loadScopeRef = useRef(historyScopeKey);
+  const loadMoreGenerationRef = useRef(0);
   const hasLoadedDataRef = useRef(false);
-
-  const historyScopeKey = `${user.id}:${user.role ?? "unknown"}`;
+  const prevHistoryScopeRef = useRef(historyScopeKey);
 
   useEffect(() => {
+    const scopeChanged = prevHistoryScopeRef.current !== historyScopeKey;
+    prevHistoryScopeRef.current = historyScopeKey;
     loadScopeRef.current = historyScopeKey;
     loadGenerationRef.current += 1;
+    loadMoreGenerationRef.current += 1;
     setBackgroundRefreshEnabled(true);
     setRefreshNotice("");
+    if (scopeChanged) {
+      setPurchases([]);
+      setAccruals([]);
+      setSources({ acceptedOrders: false, issuedOrders: false });
+      setHasIssuedPurchases(false);
+      setAcceptedNextCursor(null);
+      setAcceptedAccessDenied(false);
+      setLoadMoreError("");
+      setLoadingMoreAccepted(false);
+      hasLoadedDataRef.current = false;
+      setError("");
+      setLoading(true);
+    }
   }, [historyScopeKey]);
 
   const loadHistory = useCallback(async (options?: { background?: boolean }) => {
@@ -198,7 +221,7 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         sources: sourceFlags,
         acceptedPagination,
         acceptedAccessDenied: storeAccessDenied,
-      } = await fetchHistoryData(user);
+      } = await fetchHistoryData(userRef.current);
 
       if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
         return;
@@ -238,16 +261,24 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         setLoading(false);
       }
     }
-  }, [user]);
+  }, []);
 
   const loadMoreAccepted = useCallback(async () => {
     if (!acceptedNextCursor || loadingMoreAccepted) {
       return;
     }
+    const scopeAtStart = loadScopeRef.current;
+    const generationAtStart = loadMoreGenerationRef.current;
     setLoadingMoreAccepted(true);
     setLoadMoreError("");
     try {
       const accepted = await fetchAcceptedPurchasePage(acceptedNextCursor);
+      if (
+        generationAtStart !== loadMoreGenerationRef.current ||
+        scopeAtStart !== loadScopeRef.current
+      ) {
+        return;
+      }
       setPurchases((prev) => {
         const seen = new Set(prev.map((row) => `${row.direction}-${row.id}`));
         const merged = [...prev];
@@ -268,18 +299,18 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
       );
     } finally {
-      setLoadingMoreAccepted(false);
+      if (loadScopeRef.current === scopeAtStart) {
+        setLoadingMoreAccepted(false);
+      }
     }
   }, [acceptedNextCursor, loadingMoreAccepted]);
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory, historyScopeKey]);
+  }, [loadHistory]);
 
   const onVisibleRefresh = useCallback(
-    (_reason: WalletRefreshReason) => {
-      void loadHistory({ background: true });
-    },
+    (_reason: WalletRefreshReason) => loadHistory({ background: true }),
     [loadHistory],
   );
 

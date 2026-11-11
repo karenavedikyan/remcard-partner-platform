@@ -367,9 +367,7 @@ export function SettlementsHub({
   }, []);
 
   const onVisibleRefresh = useCallback(
-    (_reason: WalletRefreshReason) => {
-      void load({ background: true });
-    },
+    (_reason: WalletRefreshReason) => load({ background: true }),
     [load],
   );
 

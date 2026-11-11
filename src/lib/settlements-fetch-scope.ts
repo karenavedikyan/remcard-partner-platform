@@ -1,3 +1,10 @@
+/** History hub remount / refresh scope (actor session + role). */
+export function historyActorScopeKey(actorUserId: string, role?: string | null): string {
+  const id = actorUserId.trim() || "anonymous";
+  const rolePart = role?.trim() || "unknown";
+  return `history:${id}:${rolePart}`;
+}
+
 /** Actor-bound scope for personal wallet surfaces (agent, specialist, legacy hub). */
 export function actorWalletSurfaceScopeKey(
   surface: "agent" | "specialist" | "legacy-settlements",

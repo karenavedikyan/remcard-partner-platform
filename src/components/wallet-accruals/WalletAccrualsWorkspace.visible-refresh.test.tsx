@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RemcardApiError } from "@/lib/api-client";
-import { WALLET_STALE_DATA_NOTICE } from "@/lib/wallet-data-refresh";
+import { WALLET_STALE_DATA_NOTICE, WALLET_VISIBLE_REFRESH_DEBOUNCE_MS } from "@/lib/wallet-data-refresh";
 
 vi.mock("./wallet-accruals.global.css", () => ({}));
 vi.mock("@/components/wallet-empty/wallet-empty.module.css", () => ({ default: {} }));
@@ -102,7 +102,7 @@ describe("WalletAccrualsWorkspace visible refresh", () => {
     expect(await screen.findByTestId("wallet-accruals")).toBeInTheDocument();
 
     window.dispatchEvent(new Event("focus"));
-    await vi.advanceTimersByTimeAsync(800);
+    await vi.advanceTimersByTimeAsync(WALLET_VISIBLE_REFRESH_DEBOUNCE_MS + 50);
 
     await waitFor(() => expect(fetchSettlements).toHaveBeenCalledTimes(2));
     expect(await screen.findByTestId("wallet-refresh-notice")).toHaveTextContent(
@@ -142,7 +142,7 @@ describe("WalletAccrualsWorkspace visible refresh", () => {
     expect(fetchAuthMeSafe).toHaveBeenCalledTimes(1);
 
     window.dispatchEvent(new Event("focus"));
-    await vi.advanceTimersByTimeAsync(800);
+    await vi.advanceTimersByTimeAsync(WALLET_VISIBLE_REFRESH_DEBOUNCE_MS + 50);
     await waitFor(() => expect(fetchSettlements).toHaveBeenCalledTimes(2));
     expect(fetchAuthMeSafe).toHaveBeenCalledTimes(1);
   });

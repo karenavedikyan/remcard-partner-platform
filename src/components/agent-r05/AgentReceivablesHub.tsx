@@ -432,12 +432,13 @@ export function AgentReceivablesHub({
 
   const onVisibleRefresh = useCallback(
     (_reason: WalletRefreshReason) => {
-      if (screen === "overview") void reloadOverview({ background: true });
-      else if (screen === "partners") void reloadPartners({ background: true });
-      else if (screen === "orders") void reloadOrders({ background: true });
-      else if (screen === "order" && selectedOrderId) {
-        void reloadOrderDetail(selectedOrderId, { background: true });
+      if (screen === "overview") return reloadOverview({ background: true });
+      if (screen === "partners") return reloadPartners({ background: true });
+      if (screen === "orders") return reloadOrders({ background: true });
+      if (screen === "order" && selectedOrderId) {
+        return reloadOrderDetail(selectedOrderId, { background: true });
       }
+      return Promise.resolve();
     },
     [reloadOrderDetail, reloadOrders, reloadOverview, reloadPartners, screen, selectedOrderId],
   );

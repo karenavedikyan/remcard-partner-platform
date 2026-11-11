@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   actorWalletSurfaceScopeKey,
+  historyActorScopeKey,
   walletSettlementsFetchScopeKey,
 } from "./settlements-fetch-scope";
 
@@ -11,6 +12,11 @@ describe("actorWalletSurfaceScopeKey", () => {
     expect(actorWalletSurfaceScopeKey("agent", "user-1")).not.toBe(
       actorWalletSurfaceScopeKey("agent", "user-2"),
     );
+  });
+
+  it("builds history actor scope for page remount", () => {
+    expect(historyActorScopeKey("user-1", "PRO")).toBe("history:user-1:PRO");
+    expect(historyActorScopeKey("user-1", null)).toBe("history:user-1:unknown");
   });
 
   it("preserves branch suffix on staff ledger scope", () => {

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettlementsHub } from "./SettlementsHub";
 import { RemcardApiError } from "@/lib/api-client";
-import { WALLET_STALE_DATA_NOTICE } from "@/lib/wallet-data-refresh";
+import { WALLET_STALE_DATA_NOTICE, WALLET_VISIBLE_REFRESH_DEBOUNCE_MS } from "@/lib/wallet-data-refresh";
 
 vi.mock("./settlements.module.css", () => ({ default: {} }));
 vi.mock("@/components/ui/Button.module.css", () => ({ default: {} }));
@@ -92,6 +92,6 @@ describe("SettlementsHub visible refresh", () => {
 async function actPollRefresh() {
   await waitFor(() => expect(fetchSettlements).toHaveBeenCalledTimes(1));
   window.dispatchEvent(new Event("focus"));
-  await vi.advanceTimersByTimeAsync(800);
+  await vi.advanceTimersByTimeAsync(WALLET_VISIBLE_REFRESH_DEBOUNCE_MS + 50);
   await waitFor(() => expect(fetchSettlements).toHaveBeenCalledTimes(2));
 }

@@ -36,6 +36,10 @@ type UseWalletVisibleRefreshOptions = {
   pollIntervalMs?: number;
 };
 
+function isVisibleTabRefreshReason(reason: WalletRefreshReason): boolean {
+  return reason !== "reward-changed";
+}
+
 export function useWalletVisibleRefresh({
   enabled,
   scopeKey,
@@ -51,41 +55,80 @@ export function useWalletVisibleRefresh({
   const scopeKeyRef = useRef(scopeKey);
   scopeKeyRef.current = scopeKey;
 
+  const scopeTokenRef = useRef(0);
   const inFlightRef = useRef(false);
+  const flightTokenRef = useRef(0);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingReasonRef = useRef<WalletRefreshReason>("manual");
 
-  const scheduleRefresh = useCallback((reason: WalletRefreshReason, immediate = false) => {
-    if (!enabledRef.current) return;
-
-    const run = () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
-      const scopeAtStart = scopeKeyRef.current;
-      void Promise.resolve(onRefreshRef.current(reason)).finally(() => {
-        if (scopeKeyRef.current === scopeAtStart) {
-          inFlightRef.current = false;
-        }
-      });
-    };
-
-    if (immediate) {
-      run();
-      return;
-    }
-
+  useEffect(() => {
+    scopeTokenRef.current += 1;
+    inFlightRef.current = false;
+    flightTokenRef.current += 1;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
-    debounceTimerRef.current = setTimeout(run, WALLET_VISIBLE_REFRESH_DEBOUNCE_MS);
+  }, [scopeKey]);
+
+  const executeRefresh = useCallback((reason: WalletRefreshReason) => {
+    if (!enabledRef.current) return;
+    if (isVisibleTabRefreshReason(reason) && document.visibilityState !== "visible") {
+      return;
+    }
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
+    const flightToken = ++flightTokenRef.current;
+    const scopeTokenAtStart = scopeTokenRef.current;
+    const scopeKeyAtStart = scopeKeyRef.current;
+
+    void (async () => {
+      try {
+        await onRefreshRef.current(reason);
+      } catch {
+        // Loaders surface errors; avoid unhandled rejection from abandoned scope flights.
+      } finally {
+        if (
+          flightToken === flightTokenRef.current &&
+          scopeTokenAtStart === scopeTokenRef.current &&
+          scopeKeyRef.current === scopeKeyAtStart
+        ) {
+          inFlightRef.current = false;
+        }
+      }
+    })();
   }, []);
+
+  const scheduleRefresh = useCallback(
+    (reason: WalletRefreshReason, immediate = false) => {
+      if (!enabledRef.current) return;
+
+      if (immediate) {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        executeRefresh(reason);
+        return;
+      }
+
+      pendingReasonRef.current = reason;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null;
+        executeRefresh(pendingReasonRef.current);
+      }, WALLET_VISIBLE_REFRESH_DEBOUNCE_MS);
+    },
+    [executeRefresh],
+  );
 
   useEffect(() => {
     if (!enabled) {
+      inFlightRef.current = false;
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
@@ -99,11 +142,11 @@ export function useWalletVisibleRefresh({
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
-        scheduleRefresh("visible", true);
+        scheduleRefresh("visible");
       }
     };
-    const onFocus = () => scheduleRefresh("focus", true);
-    const onOnline = () => scheduleRefresh("online", true);
+    const onFocus = () => scheduleRefresh("focus");
+    const onOnline = () => scheduleRefresh("online");
     const onReward = () => scheduleRefresh("reward-changed", true);
 
     const syncPoll = () => {
@@ -116,7 +159,6 @@ export function useWalletVisibleRefresh({
       }
       if (pollTimerRef.current) return;
       pollTimerRef.current = setInterval(() => {
-        if (document.visibilityState !== "visible") return;
         scheduleRefresh("poll");
       }, pollIntervalMs);
     };
@@ -134,6 +176,7 @@ export function useWalletVisibleRefresh({
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("remcard:reward-changed", onReward);
+      inFlightRef.current = false;
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;

@@ -278,9 +278,7 @@ export function WalletAccrualsWorkspace({
   }, [scopeKey]);
 
   const onVisibleRefresh = useCallback(
-    (_reason: WalletRefreshReason) => {
-      void fetchAndApplySettlements({ background: true });
-    },
+    (_reason: WalletRefreshReason) => fetchAndApplySettlements({ background: true }),
     [fetchAndApplySettlements],
   );
 
