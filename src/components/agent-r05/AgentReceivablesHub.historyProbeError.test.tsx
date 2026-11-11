@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentReceivablesHub } from "./AgentReceivablesHub";
 import { RemcardApiError } from "@/lib/api-client";
 import { buildAgentReceivablesHistoryProbeParams } from "@/lib/wallet-empty/agent-history-probe";
+import { WALLET_STALE_DATA_NOTICE, WALLET_VISIBLE_REFRESH_DEBOUNCE_MS } from "@/lib/wallet-data-refresh";
 
 const overviewWithBalance = {
   contractVersion: "1",
@@ -123,5 +124,35 @@ describe("AgentReceivablesHub history probe errors", () => {
     expect(await screen.findByTestId("agent-r05-incoming-tile")).toBeInTheDocument();
     expect(screen.getByTestId("agent-history-probe-status")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+  });
+
+  it("keeps overview on background refresh when overview gate returns error", async () => {
+    let overviewCall = 0;
+    vi.mocked(fetchAgentReceivablesOverview).mockImplementation(() => {
+      overviewCall += 1;
+      if (overviewCall === 1) {
+        return Promise.resolve(overviewWithBalance);
+      }
+      return Promise.reject(new RemcardApiError(500, "Сбой overview"));
+    });
+    mockHistoryProbePartners({ meta: probeMeta(2) });
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    render(<AgentReceivablesHub walletEmptyViewerRole="agent" />);
+    await screen.findByTestId("agent-r05-incoming-tile");
+    expect(screen.getByTestId("agent-r05-incoming-tile")).toHaveTextContent("2 500 ₽");
+
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(WALLET_VISIBLE_REFRESH_DEBOUNCE_MS + 50);
+    vi.useRealTimers();
+
+    await waitFor(() => expect(screen.getByText(WALLET_STALE_DATA_NOTICE)).toBeInTheDocument());
+    expect(screen.getByTestId("agent-r05-incoming-tile")).toHaveTextContent("2 500 ₽");
+    expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

@@ -231,6 +231,9 @@ export function AgentReceivablesHub({
       try {
         await fetchAgentReceivablesOverview();
       } catch (caught) {
+        if (generation !== overviewGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+          return;
+        }
         if (isWalletRefreshUnauthorized(caught)) {
           setBackgroundRefreshEnabled(false);
           setOverview(null);
@@ -240,6 +243,16 @@ export function AgentReceivablesHub({
           return;
         }
       }
+    }
+
+    if (generation !== overviewGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+      return;
+    }
+
+    if (preserveOnError && signals.error) {
+      setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+      setLoading(false);
+      return;
     }
 
     setOverview(signals.overview);
