@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import { deriveCanRecordAccrualPayout } from "@/components/history/AccrualDetail";
 import { RemcardApiError } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import { fetchSettlements, isSettlementsAccessDenied } from "@/lib/settlements-loader";
@@ -47,12 +49,14 @@ import {
   bonusStatusTone,
   type HistoryStatusTone,
 } from "@/lib/history-labels";
+import type { AuthUser } from "@/lib/types";
 
 type Screen = "overview" | "partners" | "orders" | "partnerHistory" | "reconciliation";
 
 const PAGE_SIZE = 10;
 
 type Props = {
+  user: AuthUser;
   previewData?: SettlementsResponse;
   payableSummaryLabel?: string;
   payableDirectionLabel?: string;
@@ -253,6 +257,7 @@ function CompletedRow({ row }: { row: SettlementCompleted }) {
 }
 
 export function SpecialistSettlementsWorkspace({
+  user,
   previewData,
   payableSummaryLabel = DEFAULT_PAYABLE_SUMMARY,
   payableDirectionLabel = DEFAULT_PAYABLE_SUMMARY,
@@ -265,6 +270,9 @@ export function SpecialistSettlementsWorkspace({
   walletLedgerBranchIds = null,
   disableLedgerExport = false,
 }: Props) {
+  const cabinetPresentation = useCabinetPresentation();
+  const canRecordPayout = deriveCanRecordAccrualPayout(user, cabinetPresentation);
+
   const [screen, setScreen] = useState<Screen>(skipOverview ? "partners" : "overview");
   const [direction, setDirection] = useState<SettlementDirection>("receivable");
   const [selectedPartner, setSelectedPartner] = useState<SettlementPartnerGroup | null>(null);
@@ -280,16 +288,26 @@ export function SpecialistSettlementsWorkspace({
   const [refreshNotice, setRefreshNotice] = useState("");
   const loadGenerationRef = useRef(0);
 
-  const openPayoutModal = useCallback((row: SettlementObligation) => {
-    if (!row.payoutActions) return;
-    setPayoutTarget({
-      bonusId: row.id,
-      counterpartyName: row.counterpartyName,
-      amount: row.amount,
-      basis: row.basis,
-      payoutActions: row.payoutActions,
-    });
-  }, []);
+  useEffect(() => {
+    if (!canRecordPayout) {
+      setPayoutTarget(null);
+    }
+  }, [canRecordPayout]);
+
+  const openPayoutModal = useCallback(
+    (row: SettlementObligation) => {
+      if (!canRecordPayout) return;
+      if (!row.payoutActions) return;
+      setPayoutTarget({
+        bonusId: row.id,
+        counterpartyName: row.counterpartyName,
+        amount: row.amount,
+        basis: row.basis,
+        payoutActions: row.payoutActions,
+      });
+    },
+    [canRecordPayout],
+  );
 
   const periodError = useMemo(
     () => validateLedgerPeriod(filters.from, filters.to),
@@ -798,7 +816,9 @@ export function SpecialistSettlementsWorkspace({
                   key={row.id}
                   row={row}
                   view={view}
-                  onRecordPayout={direction === "payable" ? openPayoutModal : undefined}
+                  onRecordPayout={
+                    direction === "payable" && canRecordPayout ? openPayoutModal : undefined
+                  }
                 />
               ))}
             </div>
@@ -879,7 +899,7 @@ export function SpecialistSettlementsWorkspace({
         </div>
       ) : null}
 
-      {payoutTarget ? (
+      {payoutTarget && canRecordPayout ? (
         <PayoutRecordModal
           target={payoutTarget}
           onClose={() => setPayoutTarget(null)}

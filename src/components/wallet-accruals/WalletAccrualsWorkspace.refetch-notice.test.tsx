@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -91,7 +92,7 @@ describe("WalletAccrualsWorkspace post-payout refetch notice", () => {
 
   it("keeps shell data and shows notice when refresh fails after payout", async () => {
     const user = userEvent.setup();
-    render(<WalletAccrualsWorkspace scopeKey="refetch-notice" />);
+    render(<WalletAccrualsWorkspace user={walletSessionTestUser} scopeKey="refetch-notice" />);
     await screen.findByTestId("wallet-accruals");
     await user.click(screen.getByTestId("wallet-direction-out"));
     expect(screen.getByTestId("wallet-rc-payable-face")).toHaveTextContent("900");

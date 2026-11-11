@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialistSettlementsWorkspace } from "./SpecialistSettlementsWorkspace";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 
 vi.mock("@/lib/settlements-loader", () => ({
   fetchSettlements: vi.fn(),
@@ -35,7 +36,7 @@ describe("SpecialistSettlementsWorkspace structure", () => {
       completed: [],
     });
 
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-wallet-receivable-total");
     const user = userEvent.setup();
     await user.click(screen.getByTestId("specialist-wallet-receivable-total"));
@@ -69,7 +70,7 @@ describe("SpecialistSettlementsWorkspace structure", () => {
       ],
     });
 
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-wallet-receivable-total");
     const user = userEvent.setup();
     await user.click(screen.getByTestId("specialist-wallet-receivable-total"));

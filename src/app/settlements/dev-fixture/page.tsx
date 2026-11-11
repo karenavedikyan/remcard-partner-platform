@@ -3,6 +3,7 @@ import { PageHeading } from "@/components/ui/PageHeading";
 import { SpecialistMasterWallet } from "@/components/specialist-wallet/SpecialistMasterWallet";
 import { SpecialistSettlementsWorkspace } from "@/components/specialist-wallet/SpecialistSettlementsWorkspace";
 import { masterWalletFixtureData } from "@/lib/specialist-settlements/fixture-data";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 
 /** Local wallet layout preview (NODE_ENV !== production). */
 export default function SettlementsDevFixturePage() {
@@ -27,8 +28,11 @@ export default function SettlementsDevFixturePage() {
       <PageHeading eyebrow="СПЕЦИАЛИСТ" title="Кошелёк" description="Dev-fixture превью." />
       <div className="specialist-wallet-dev-fixture">
         <SpecialistMasterWallet
+          user={walletSessionTestUser}
           walletEmptyViewerRole="specialist"
-          settlementsSlot={<SpecialistSettlementsWorkspace previewData={fixture} />}
+          settlementsSlot={
+            <SpecialistSettlementsWorkspace user={walletSessionTestUser} previewData={fixture} />
+          }
         />
       </div>
     </main>

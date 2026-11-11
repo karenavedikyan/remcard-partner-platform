@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -110,7 +111,7 @@ describe("WalletAccrualsWorkspace unified surface", () => {
   it("fetches settlements once on mount and not again when opening master ledger subview", async () => {
     const user = userEvent.setup();
     render(
-      <WalletAccrualsWorkspace scopeKey="spec" masterLedger={{ ledgerScopeKey: "spec:ledger" }} />,
+      <WalletAccrualsWorkspace user={walletSessionTestUser} scopeKey="spec" masterLedger={{ ledgerScopeKey: "spec:ledger" }} />,
     );
     await screen.findByTestId("wallet-accruals");
     expect(fetchSettlements).toHaveBeenCalledTimes(1);

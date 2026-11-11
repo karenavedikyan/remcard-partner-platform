@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialistSettlementsWorkspace } from "./SpecialistSettlementsWorkspace";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { RemcardApiError } from "@/lib/api-client";
 
 vi.mock("@/lib/settlements-loader", () => ({
@@ -21,7 +22,7 @@ describe("SpecialistSettlementsWorkspace", () => {
   it("shows error with retry instead of zero balances", async () => {
     vi.mocked(fetchSettlements).mockRejectedValue(new RemcardApiError(500, "Сбой сервера"));
 
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
 
     expect(await screen.findByText(/сбой сервера/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /повторить/i })).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       completed: [],
     });
 
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
 
     expect(await screen.findByTestId("specialist-wallet-receivable-total")).toHaveTextContent(
       /100/,
@@ -93,7 +94,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       payable: [],
       completed: [],
     });
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-settlements-workspace");
     const user = userEvent.setup();
     await user.click(screen.getByText(/поиск и фильтры/i));
@@ -137,7 +138,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       completed: [],
     });
 
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-wallet-receivable-total");
     await userEvent.click(screen.getByTestId("specialist-wallet-receivable-total"));
     expect(await screen.findByText(/2 начисления/i)).toBeInTheDocument();
@@ -150,7 +151,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       payable: [],
       completed: [],
     });
-    render(<SpecialistSettlementsWorkspace walletEmptyViewerRole="specialist" />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} walletEmptyViewerRole="specialist" />);
     expect(await screen.findByTestId("wallet-empty-state")).toBeInTheDocument();
     expect(screen.queryByTestId("specialist-wallet-receivable-total")).toBeNull();
   });
@@ -162,7 +163,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       payable: [],
       completed: [],
     });
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     expect(await screen.findByTestId("specialist-wallet-receivable-total")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
@@ -188,7 +189,7 @@ describe("SpecialistSettlementsWorkspace", () => {
         },
       ],
     });
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     expect(await screen.findByTestId("specialist-wallet-receivable-total")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
@@ -212,7 +213,7 @@ describe("SpecialistSettlementsWorkspace", () => {
       payable: [],
       completed: [],
     });
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-settlements-workspace");
     expect(
       screen.getByText(/подтверждение получения вторым участником/i),

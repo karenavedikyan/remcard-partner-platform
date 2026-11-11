@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialistSettlementsWorkspace } from "./SpecialistSettlementsWorkspace";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { RemcardApiError } from "@/lib/api-client";
 
 vi.mock("@/components/ui/Button.module.css", () => ({ default: {} }));
@@ -69,7 +70,7 @@ describe("SpecialistSettlementsWorkspace payout path", () => {
 
   it("records payout via modal and reloads settlements", async () => {
     const user = userEvent.setup();
-    render(<SpecialistSettlementsWorkspace />);
+    render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} />);
     await screen.findByTestId("specialist-settlements-workspace");
     await user.click(screen.getByTestId("specialist-wallet-payable-total"));
     await user.click(screen.getByTestId("specialist-partner-group-cp-1"));
@@ -81,13 +82,13 @@ describe("SpecialistSettlementsWorkspace payout path", () => {
 
   it("clears payout dialog state when scopeKey changes", async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="store:owner-a" />);
+    const { rerender } = render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:owner-a" />);
     await screen.findByTestId("specialist-settlements-workspace");
     await user.click(screen.getByTestId("specialist-wallet-payable-total"));
     await user.click(screen.getByTestId("specialist-partner-group-cp-1"));
     await user.click(screen.getByTestId("specialist-settlements-record-payout-bonus-gate-1"));
     expect(screen.getByRole("heading", { name: "Зафиксировать выплату" })).toBeInTheDocument();
-    rerender(<SpecialistSettlementsWorkspace scopeKey="company:owner-b" />);
+    rerender(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="company:owner-b" />);
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Зафиксировать выплату" })).toBeNull(),
     );

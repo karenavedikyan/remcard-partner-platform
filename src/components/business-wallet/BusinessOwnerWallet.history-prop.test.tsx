@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { describe, expect, it, vi } from "vitest";
 import { BusinessOwnerWallet } from "./BusinessOwnerWallet";
 

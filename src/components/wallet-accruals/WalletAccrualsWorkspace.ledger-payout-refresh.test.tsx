@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -89,7 +90,7 @@ describe("WalletAccrualsWorkspace master-ledger payout refresh", () => {
   it("refreshes ledger row and shell totals after payout in subview", async () => {
     const user = userEvent.setup();
     render(
-      <WalletAccrualsWorkspace scopeKey="ledger-refresh" masterLedger={{ ledgerScopeKey: "ledger-refresh:ledger" }} />,
+      <WalletAccrualsWorkspace user={walletSessionTestUser} scopeKey="ledger-refresh" masterLedger={{ ledgerScopeKey: "ledger-refresh:ledger" }} />,
     );
     await screen.findByTestId("wallet-accruals");
     await user.click(screen.getByTestId("wallet-direction-out"));

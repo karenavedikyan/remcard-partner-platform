@@ -7,13 +7,15 @@ import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/Wallet
 import type { ReactNode } from "react";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
+import type { AuthUser } from "@/lib/types";
 
 type Props = WalletEmptyViewerProps & {
+  user: AuthUser;
   /** Override settlements tab content (dev-fixture preview). */
   settlementsSlot?: ReactNode;
 };
 
-export function SpecialistMasterWallet({ settlementsSlot, walletEmptyViewerRole }: Props) {
+export function SpecialistMasterWallet({ user, settlementsSlot, walletEmptyViewerRole }: Props) {
   return (
     <WalletPrototypeShell
       shellTestId="specialist-master-wallet"
@@ -23,6 +25,7 @@ export function SpecialistMasterWallet({ settlementsSlot, walletEmptyViewerRole 
       settlements={
         settlementsSlot ?? (
           <WalletAccrualsWorkspace
+            user={user}
             scopeKey="specialist-master"
             walletEmptyViewerRole={walletEmptyViewerRole}
             masterLedger={{ ledgerScopeKey: "specialist-master-ledger" }}

@@ -9,8 +9,10 @@ import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.cs
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
 import type { ReactNode } from "react";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
+import type { AuthUser } from "@/lib/types";
 
 type Props = WalletEmptyViewerProps & {
+  user: AuthUser;
   partnerType: BusinessClientsPartnerType;
   /** Cache/remount scope (includes actor session id, never organization.ownerId). */
   ledgerScopeKey: string;
@@ -24,6 +26,7 @@ type Props = WalletEmptyViewerProps & {
 };
 
 export function BusinessOwnerWallet({
+  user,
   partnerType,
   ledgerScopeKey,
   canManageRequisites = true,
@@ -38,6 +41,7 @@ export function BusinessOwnerWallet({
   const workspace =
     settlementsSlot ?? (
       <WalletAccrualsWorkspace
+        user={user}
         scopeKey={ledgerScopeKey}
         walletLedgerBranchIds={walletLedgerBranchIds}
         walletEmptyViewerRole={walletEmptyViewerRole}

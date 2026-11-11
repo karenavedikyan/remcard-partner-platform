@@ -119,9 +119,10 @@ export default async function SettlementsPage() {
     <CabinetShell returnTo={RETURN_PATH}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
       {shell === "agent-r05" ? (
-        <AgentReceivablesWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+        <AgentReceivablesWallet user={user} walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
         <BusinessOwnerWallet
+          user={user}
           partnerType={businessPartnerType}
           ledgerScopeKey={walletLedgerScopeKey}
           canManageRequisites={canManageRequisites}
@@ -131,7 +132,7 @@ export default async function SettlementsPage() {
           walletLedgerBranchIds={walletLedgerBranchIds}
         />
       ) : shell === "master-wallet" ? (
-        <SpecialistMasterWallet walletEmptyViewerRole={walletEmptyViewerRole} />
+        <SpecialistMasterWallet user={user} walletEmptyViewerRole={walletEmptyViewerRole} />
       ) : (
         <SettlementsHub
           user={user}

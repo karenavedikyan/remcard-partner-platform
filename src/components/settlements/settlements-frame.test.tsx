@@ -59,7 +59,12 @@ vi.mock("@/lib/agent-r05/receivables-prefs", () => ({
 
 describe("settlements workspace prototype frame", () => {
   it("wraps specialist workspace in a single settlement demo frame", async () => {
-    render(<SpecialistSettlementsWorkspace previewData={{ coverageNote: "", receivable: [], payable: [], completed: [] }} />);
+    render(
+      <SpecialistSettlementsWorkspace
+        user={settlementsHubUser}
+        previewData={{ coverageNote: "", receivable: [], payable: [], completed: [] }}
+      />,
+    );
     const root = await screen.findByTestId("specialist-settlements-workspace");
     expect(root).toHaveClass(hubStyles.settlementDemo);
   });

@@ -40,7 +40,11 @@ function HubWithCompleted() {
 
 function SpecialistPartners() {
   return (
-    <SpecialistSettlementsWorkspace previewData={masterWalletFixtureData()} scopeKey="qa-partners" />
+    <SpecialistSettlementsWorkspace
+      user={qaAuthUser}
+      previewData={masterWalletFixtureData()}
+      scopeKey="qa-partners"
+    />
   );
 }
 
@@ -51,7 +55,13 @@ if (scene.startsWith("hub")) {
 }
 else if (scene.startsWith("specialist-partners")) node = <SpecialistPartners />;
 else if (scene.startsWith("specialist")) {
-  node = <SpecialistSettlementsWorkspace previewData={masterWalletFixtureData()} scopeKey="qa" />;
+  node = (
+    <SpecialistSettlementsWorkspace
+      user={qaAuthUser}
+      previewData={masterWalletFixtureData()}
+      scopeKey="qa"
+    />
+  );
 } else if (scene.startsWith("agent")) node = <AgentReceivablesHub />;
 
 root.render(

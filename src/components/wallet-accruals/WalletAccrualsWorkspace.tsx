@@ -24,6 +24,7 @@ import {
 } from "@/lib/wallet-empty/agent-history-probe";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
+import type { AuthUser } from "@/lib/types";
 export type WalletMasterLedgerOptions = {
   ledgerScopeKey?: string;
   payableSummaryLabel?: string;
@@ -32,6 +33,7 @@ export type WalletMasterLedgerOptions = {
 };
 
 type Props = {
+  user: AuthUser;
   incomingOnly?: boolean;
   scopeKey?: string;
   /** Org staff granted branches — per-branch GET + merge; owner/solo omit. */
@@ -67,6 +69,7 @@ function applyResponseState(
 }
 
 export function WalletAccrualsWorkspace({
+  user,
   incomingOnly = false,
   scopeKey,
   walletLedgerBranchIds = null,
@@ -275,6 +278,7 @@ export function WalletAccrualsWorkspace({
   if (subview === "master-ledger" && masterLedgerEnabled) {
     return (
       <SpecialistSettlementsWorkspace
+        user={user}
         previewData={response}
         scopeKey={ledgerOptions?.ledgerScopeKey ?? `${scopeKey ?? "default"}:ledger`}
         skipOverview

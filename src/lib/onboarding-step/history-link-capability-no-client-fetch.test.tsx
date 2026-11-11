@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettlementsHub } from "@/components/settlements/SettlementsHub";
 import type { AuthUser } from "@/lib/types";
@@ -78,7 +79,7 @@ describe("onboarding history capability — no client fetch for role", () => {
 
   it("WalletAccrualsWorkspace without prop stays STATIC", async () => {
     render(
-      <WalletAccrualsWorkspace walletEmptyViewerRole="store" scopeKey="test:owner" />,
+      <WalletAccrualsWorkspace user={walletSessionTestUser} walletEmptyViewerRole="store" scopeKey="test:owner" />,
     );
     await screen.findByTestId("wallet-empty-state");
     expect(screen.queryByRole("link", { name: /Открыть историю/i })).toBeNull();

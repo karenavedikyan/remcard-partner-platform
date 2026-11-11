@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WalletAccrualsWorkspace } from "./WalletAccrualsWorkspace";
 
@@ -58,7 +59,7 @@ describe("WalletAccrualsWorkspace loader", () => {
   });
 
   it("loads only settlements API for incoming-only agent shell (no agent-receivables/orders)", async () => {
-    render(<WalletAccrualsWorkspace incomingOnly scopeKey="agent-test" fallbackRibbon="Агент" />);
+    render(<WalletAccrualsWorkspace user={walletSessionTestUser} incomingOnly scopeKey="agent-test" fallbackRibbon="Агент" />);
     await screen.findByTestId("wallet-accruals");
     expect(fetchSettlements).toHaveBeenCalledTimes(1);
     expect(fetchAgentReceivablePartners).not.toHaveBeenCalled();
@@ -110,7 +111,7 @@ describe("WalletAccrualsWorkspace loader", () => {
   });
 
   it("does not show actor publicId on card ribbon (ownership not provable)", async () => {
-    render(<WalletAccrualsWorkspace fallbackRibbon="Магазин" />);
+    render(<WalletAccrualsWorkspace user={walletSessionTestUser} fallbackRibbon="Магазин" />);
     await screen.findByTestId("wallet-rc-receivable-face");
     expect(screen.queryByText("RC ACTOR")).toBeNull();
     expect(screen.getByText("Магазин")).toBeInTheDocument();

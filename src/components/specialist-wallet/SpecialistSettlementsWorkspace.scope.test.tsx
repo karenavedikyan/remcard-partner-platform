@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecialistSettlementsWorkspace } from "./SpecialistSettlementsWorkspace";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { RemcardApiError } from "@/lib/api-client";
 
 vi.mock("@/lib/settlements-loader", () => ({
@@ -49,8 +50,8 @@ describe("SpecialistSettlementsWorkspace scope / load generation", () => {
         completed: [],
       });
 
-    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="store:owner-a" />);
-    rerender(<SpecialistSettlementsWorkspace scopeKey="store:owner-b" />);
+    const { rerender } = render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:owner-a" />);
+    rerender(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:owner-b" />);
 
     await screen.findByTestId("specialist-settlements-workspace");
     await waitFor(() =>
@@ -79,8 +80,8 @@ describe("SpecialistSettlementsWorkspace scope / load generation", () => {
       .mockReturnValueOnce(latePromise)
       .mockRejectedValueOnce(new RemcardApiError(403, "Forbidden"));
 
-    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="company:owner-1" />);
-    rerender(<SpecialistSettlementsWorkspace scopeKey="company:owner-revoked" />);
+    const { rerender } = render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="company:owner-1" />);
+    rerender(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="company:owner-revoked" />);
 
     expect(await screen.findByText(/недоступен для этого аккаунта/i)).toBeInTheDocument();
 
@@ -108,7 +109,7 @@ describe("SpecialistSettlementsWorkspace scope / load generation", () => {
       });
 
     const user = userEvent.setup();
-    const { rerender } = render(<SpecialistSettlementsWorkspace scopeKey="store:retry-owner" />);
+    const { rerender } = render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:retry-owner" />);
     expect(await screen.findByText(/сбой сервера/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /повторить/i }));
     await screen.findByTestId("specialist-wallet-payable-total");
@@ -118,7 +119,7 @@ describe("SpecialistSettlementsWorkspace scope / load generation", () => {
     await user.click(screen.getByTestId("specialist-settlements-record-payout-bonus-ok"));
     expect(screen.getByRole("heading", { name: "Зафиксировать выплату" })).toBeInTheDocument();
 
-    rerender(<SpecialistSettlementsWorkspace scopeKey="store:other-owner" />);
+    rerender(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:other-owner" />);
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: "Зафиксировать выплату" })).toBeNull(),
     );
@@ -131,7 +132,7 @@ describe("SpecialistSettlementsWorkspace scope / load generation", () => {
     });
     vi.mocked(fetchSettlements).mockReturnValueOnce(latePromise);
 
-    const { unmount } = render(<SpecialistSettlementsWorkspace scopeKey="store:unmount" />);
+    const { unmount } = render(<SpecialistSettlementsWorkspace user={walletSessionTestUser} scopeKey="store:unmount" />);
     unmount();
 
     resolveLate!({

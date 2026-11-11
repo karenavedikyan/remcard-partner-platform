@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { walletSessionTestUser } from "@/lib/wallet-session-test-user";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentReceivablesWallet } from "@/components/agent-r05/AgentReceivablesWallet";
 import { BusinessOwnerWallet } from "@/components/business-wallet/BusinessOwnerWallet";
@@ -202,7 +203,7 @@ describe("wallet entry empty gates", () => {
 
   it("agent wallet shows empty onboarding at entry when settlements and probe are zero", async () => {
     mockAgentProbe(0);
-    render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+    render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
     expect(await screen.findByTestId("wallet-empty-state")).toHaveAttribute(
       "data-wallet-empty-role",
       "agent",
@@ -219,21 +220,21 @@ describe("wallet entry empty gates", () => {
 
   it("agent wallet keeps accruals shell when history totalRecords > 0", async () => {
     mockAgentProbe(3);
-    render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+    render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
     expect(await screen.findByTestId("wallet-accruals")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
 
   it("agent wallet keeps shell when probe meta is missing", async () => {
     mockAgentProbe("missing");
-    render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+    render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
     expect(await screen.findByTestId("wallet-accruals")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
 
   it("agent wallet keeps shell when history probe returns 403", async () => {
     mockAgentProbe("reject403");
-    render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+    render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
     expect(await screen.findByTestId("wallet-accruals")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
@@ -241,13 +242,13 @@ describe("wallet entry empty gates", () => {
   it("agent wallet keeps shell when history probe fails with network error", async () => {
     vi.mocked(fetchAgentReceivablesOverview).mockResolvedValue(emptyOverview);
     vi.mocked(fetchAgentReceivablePartners).mockRejectedValue(new TypeError("Failed to fetch"));
-    render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+    render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
     expect(await screen.findByTestId("wallet-accruals")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-empty-state")).toBeNull();
   });
 
   it("specialist master wallet still shows empty from settlements only", async () => {
-    render(<SpecialistMasterWallet walletEmptyViewerRole="specialist" />);
+    render(<SpecialistMasterWallet user={walletSessionTestUser} walletEmptyViewerRole="specialist" />);
     expect(await screen.findByTestId("wallet-empty-state")).toHaveAttribute(
       "data-wallet-empty-role",
       "specialist",
@@ -288,7 +289,7 @@ describe("agent gate: no WalletAccrualsShell render before probe completes", () 
     "%s",
     async (_label, outcome, finalTestId) => {
       const gate = installDeferredAgentGate(outcome);
-      render(<AgentReceivablesWallet walletEmptyViewerRole="agent" />);
+      render(<AgentReceivablesWallet user={walletSessionTestUser} walletEmptyViewerRole="agent" />);
       await gate.waitForGateStart();
       expect(gate.shellRendersAtGateStart()).toBe(0);
       expect(walletAccrualsShellStats.renders).toBe(0);
