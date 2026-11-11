@@ -209,7 +209,12 @@ export function WalletAccrualsWorkspace({
           return;
         }
         if (preserveOnError) {
-          setRefreshNotice(options?.staleNotice ?? WALLET_STALE_DATA_NOTICE);
+          setRefreshNotice(
+            options?.staleNotice ??
+              (options?.preserveDataOnError
+                ? WALLET_PAYOUT_STALE_NOTICE
+                : WALLET_STALE_DATA_NOTICE),
+          );
           return;
         }
         if (err instanceof RemcardApiError) {
@@ -394,12 +399,7 @@ export function WalletAccrualsWorkspace({
       coverageNote={publicSettlementsCoverageNote(response.coverageNote)}
       refreshNotice={refreshNotice || null}
       onDismissRefreshNotice={() => setRefreshNotice("")}
-      onPayoutRefreshFailed={() =>
-        void fetchAndApplySettlements({
-          background: true,
-          staleNotice: WALLET_PAYOUT_STALE_NOTICE,
-        })
-      }
+      onPayoutRefreshFailed={() => setRefreshNotice(WALLET_PAYOUT_STALE_NOTICE)}
       onOpenMasterLedger={masterLedgerEnabled ? () => setSubview("master-ledger") : undefined}
       onOpenAgentRegistry={agentRegistry ? () => setSubview("agent-registry") : undefined}
     />
