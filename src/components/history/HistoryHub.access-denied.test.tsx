@@ -35,10 +35,14 @@ const issuedPurchase: PurchaseRow = {
   items: [],
 };
 
-vi.mock("@/lib/history-loader", () => ({
-  fetchHistoryData: vi.fn(),
-  fetchAcceptedPurchasePage: vi.fn(),
-}));
+vi.mock("@/lib/history-loader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/history-loader")>();
+  return {
+    ...actual,
+    fetchHistoryData: vi.fn(),
+    fetchAcceptedPurchasePage: vi.fn(),
+  };
+});
 
 import { fetchHistoryData } from "@/lib/history-loader";
 
