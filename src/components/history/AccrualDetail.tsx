@@ -15,11 +15,34 @@ import {
 } from "@/lib/history-loader";
 import type { AccrualRow, AccrualType, PurchaseRow } from "@/lib/history-types";
 import type { AuthUser } from "@/lib/types";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PayoutRecordModal } from "@/components/payout/PayoutRecordModal";
+import { isOrgWorkplaceMemberRole } from "@/lib/cabinet-presentation/resolve";
+import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+import { authorizeSettlementWalletPaymentMutations } from "@/lib/employee-workspace-data/settlement-wallet-read-auth";
 import { fetchBonusPayoutActions, type SettlementPayoutActions } from "@/lib/payout-record";
 import focus from "./history-focus.module.css";
+
+/** Ledger read for org staff must not surface payout recording without cash/transfer grants. */
+function accrualPayoutRecordingPermitted(
+  user: AuthUser,
+  presentation: CabinetPresentationSnapshot | null,
+): boolean {
+  if (!presentation?.contextReady || !presentation.proContext) {
+    return true;
+  }
+  const role = presentation.proContext.role?.trim() ?? "";
+  if (!isOrgWorkplaceMemberRole(role) || !presentation.proContext.organization?.id) {
+    return true;
+  }
+  return authorizeSettlementWalletPaymentMutations({
+    user,
+    proContext: presentation.proContext,
+    contextReady: presentation.contextReady,
+  }).allowed;
+}
 
 function formatDetailDate(iso: string) {
   return new Date(iso).toLocaleString("ru-RU", {
@@ -66,6 +89,7 @@ type AccrualDetailProps = {
 };
 
 export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailProps) {
+  const cabinetPresentation = useCabinetPresentation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accrual, setAccrual] = useState<AccrualRow | null>(null);
@@ -92,6 +116,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
       setPayoutModalOpen(false);
 
       if (
+        accrualPayoutRecordingPermitted(user, cabinetPresentation) &&
         row.scope === "payable-to-pros" &&
         row.accrualType === "bonus" &&
         row.status !== "PAID" &&
@@ -126,7 +151,7 @@ export function AccrualDetail({ user, accrualId, accrualType }: AccrualDetailPro
     } finally {
       setLoading(false);
     }
-  }, [user, accrualId, accrualType]);
+  }, [user, accrualId, accrualType, cabinetPresentation]);
 
   useEffect(() => {
     void load();
