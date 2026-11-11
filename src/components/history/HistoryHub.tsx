@@ -261,6 +261,9 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
       setSources(sourceFlags);
       setAcceptedAccessDenied(storeAccessDenied);
       if (!acceptedSourceOpen) {
+        loadMoreGenerationRef.current += 1;
+        setLoadingMoreAccepted(false);
+        setLoadMoreError("");
         setAcceptedNextCursor(null);
       } else if (!(background && preserveAcceptedCursor)) {
         setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
@@ -335,6 +338,7 @@ export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps
         return;
       }
       if (caught instanceof RemcardApiError && caught.status === 403) {
+        loadGenerationRef.current += 1;
         loadMoreGenerationRef.current += 1;
         setPurchases((prev) => prev.filter((row) => row.direction !== "accepted"));
         setAcceptedNextCursor(null);
