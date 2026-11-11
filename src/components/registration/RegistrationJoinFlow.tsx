@@ -95,6 +95,7 @@ export function RegistrationJoinFlow() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const finishLock = useRef(false);
+  const phaseFinishAppliedKeyRef = useRef<string | null>(null);
   const idempotencyKey = useRef(`join-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const finishHref = useMemo(
@@ -129,7 +130,7 @@ export function RegistrationJoinFlow() {
   const finishJoinResolution = useMemo(() => {
     if (!onFinishPhase) return null;
     return readFinishJoinKindResolution(roleLanding);
-  }, [onFinishPhase, roleLanding, step]);
+  }, [onFinishPhase, roleLanding]);
 
   const finishContextBlocked =
     finishJoinResolution !== null && finishJoinResolution.status !== "ok";
@@ -140,21 +141,28 @@ export function RegistrationJoinFlow() {
   }, [finishJoinResolution]);
 
   useEffect(() => {
-    if (phase === "finish") {
-      setStep("finish");
-      if (finishJoinResolution?.status === "ok") {
-        setKind(finishJoinResolution.kind);
-      } else if (finishJoinResolution?.status === "mismatch") {
-        setKind(finishJoinResolution.wizardKind);
+    if (phase !== "finish") {
+      phaseFinishAppliedKeyRef.current = null;
+      const saved = loadRegistrationWizardState();
+      if (saved?.kind) {
+        setKind(saved.kind);
+        setStep(saved.step);
       }
       return;
     }
-    const saved = loadRegistrationWizardState();
-    if (saved?.kind) {
-      setKind(saved.kind);
-      setStep(saved.step);
+    const restoreKey = `finish:${roleLanding ?? ""}`;
+    if (phaseFinishAppliedKeyRef.current === restoreKey) {
+      return;
     }
-  }, [phase, finishJoinResolution, roleLanding]);
+    phaseFinishAppliedKeyRef.current = restoreKey;
+    setStep("finish");
+    const resolution = readFinishJoinKindResolution(roleLanding);
+    if (resolution.status === "ok") {
+      setKind(resolution.kind);
+    } else if (resolution.status === "mismatch") {
+      setKind(resolution.wizardKind);
+    }
+  }, [phase, roleLanding]);
 
   useEffect(() => {
     if (!kind) return;
@@ -185,6 +193,32 @@ export function RegistrationJoinFlow() {
   const isJoinNewPath =
     isJoinRegistrationKind(activeJoinKind) &&
     isJoinKindRegistrationEnabled(caps, activeJoinKind);
+
+  const leaveFinishForProfileRestart = useCallback(
+    (nextStep: Exclude<WizardStep, "finish">, message?: string) => {
+      setDisplayName("");
+      setCity("");
+      setPreAuthReady(false);
+      const restartKind = isJoinRegistrationKind(kind)
+        ? kind
+        : isJoinRegistrationKind(activeJoinKind)
+          ? activeJoinKind
+          : null;
+      if (restartKind) {
+        clearPreAuthConsentAck(restartKind);
+        saveRegistrationWizardState({
+          step: nextStep,
+          kind: restartKind,
+          updatedAt: Date.now(),
+        });
+      }
+      if (message) setError(message);
+      setStep(nextStep);
+      finishLock.current = false;
+      setBusy(false);
+    },
+    [activeJoinKind, kind],
+  );
 
   const [preAuthReady, setPreAuthReady] = useState(false);
 
@@ -274,25 +308,19 @@ export function RegistrationJoinFlow() {
       }
       const userId = me.data.user.id;
       if (clearDraftOnOwnerMismatch(userId)) {
-        if (isJoinRegistrationKind(activeJoinKind)) {
-          clearPreAuthConsentAck(activeJoinKind);
-        }
-        setError(
+        leaveFinishForProfileRestart(
+          "name",
           "Черновик принадлежал другому входу. Заполните имя и город заново для текущего аккаунта.",
         );
-        setStep("name");
-        finishLock.current = false;
-        setBusy(false);
         return;
       }
       const owner = getRegistrationDraftOwner();
       if (owner && owner !== userId) {
         clearAllRegistrationDrafts();
-        setPreAuthReady(false);
-        setError("Черновик привязан к другому аккаунту. Начните регистрацию заново.");
-        setStep("types");
-        finishLock.current = false;
-        setBusy(false);
+        leaveFinishForProfileRestart(
+          "types",
+          "Черновик привязан к другому аккаунту. Начните регистрацию заново.",
+        );
         return;
       }
       if (!owner) {
@@ -315,10 +343,10 @@ export function RegistrationJoinFlow() {
       const name = draft?.fields.displayName?.trim() ?? displayName.trim();
       const cityValue = draft?.fields.city?.trim() ?? city.trim();
       if (!name || !cityValue) {
-        setError("Не хватает данных регистрации. Вернитесь и заполните имя и город.");
-        setStep("name");
-        finishLock.current = false;
-        setBusy(false);
+        leaveFinishForProfileRestart(
+          "name",
+          "Не хватает данных регистрации. Вернитесь и заполните имя и город.",
+        );
         return;
       }
 
@@ -344,7 +372,17 @@ export function RegistrationJoinFlow() {
     } finally {
       setBusy(false);
     }
-  }, [activeJoinKind, city, displayName, joinContext, joinKindPathEnabled, onFinishPhase, roleLanding, router]);
+  }, [
+    activeJoinKind,
+    city,
+    displayName,
+    joinContext,
+    joinKindPathEnabled,
+    leaveFinishForProfileRestart,
+    onFinishPhase,
+    roleLanding,
+    router,
+  ]);
 
   useEffect(() => {
     if (step !== "finish" || finishContextBlocked || !isJoinNewPath || !capsLoaded || !joinKindPathEnabled) {
@@ -358,16 +396,17 @@ export function RegistrationJoinFlow() {
       const owner = getRegistrationDraftOwner();
       if (owner && owner !== userId) {
         clearAllRegistrationDrafts();
-        setPreAuthReady(false);
-        setError("Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.");
-        setStep("name");
+        leaveFinishForProfileRestart(
+          "name",
+          "Вход выполнен под другим аккаунтом. Черновик очищен — заполните данные заново.",
+        );
         return;
       }
       if (!owner) {
         bindRegistrationDraftOwner(userId);
       }
     },
-    [],
+    [leaveFinishForProfileRestart],
   );
 
   const typeHint = useMemo(() => {

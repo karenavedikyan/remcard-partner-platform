@@ -34,9 +34,11 @@ vi.mock("@/components/auth/AuthFlow", () => ({
 }));
 
 import {
+  bindRegistrationDraftOwner,
   mergeRegistrationDraftFields,
   saveRegistrationWizardState,
 } from "@/lib/registration/draft";
+import { savePreAuthConsentAck } from "@/lib/registration/pre-auth-consent";
 
 const { fetchAuthMeSafeMock, postFinishMock } = vi.hoisted(() => ({
   fetchAuthMeSafeMock: vi.fn(),
@@ -166,6 +168,48 @@ describe("RegistrationJoinFlow", () => {
       expect(postFinishMock).not.toHaveBeenCalled();
     });
     expect(fetchAuthMeSafeMock).not.toHaveBeenCalled();
+  });
+
+  it("clears stale profile and never posts finish after owner mismatch on finish", async () => {
+    bindRegistrationDraftOwner("qa-old-owner");
+    saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
+    mergeRegistrationDraftFields("agent", {
+      displayName: "QA чужой черновик",
+      city: "QA чужой город",
+    });
+    savePreAuthConsentAck("agent");
+    fetchAuthMeSafeMock.mockResolvedValue({
+      ok: true,
+      data: { user: { id: "qa-new-owner" } },
+    });
+    joinSearchParams = new URLSearchParams("phase=finish&role=agent");
+    renderJoin();
+    expect(
+      await screen.findByText(/черновик принадлежал другому входу/i),
+    ).toBeInTheDocument();
+    const nameField = await screen.findByRole("textbox", { name: /имя/i });
+    await waitFor(() => {
+      expect(nameField).toHaveValue("");
+      expect(postFinishMock).not.toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/завершение регистрации/i)).not.toBeInTheDocument();
+  });
+
+  it("stays on empty name step when finish has no profile fields for current owner", async () => {
+    bindRegistrationDraftOwner("qa-new-owner");
+    saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
+    fetchAuthMeSafeMock.mockResolvedValue({
+      ok: true,
+      data: { user: { id: "qa-new-owner" } },
+    });
+    joinSearchParams = new URLSearchParams("phase=finish&role=agent");
+    renderJoin();
+    const nameField = await screen.findByRole("textbox", { name: /имя/i });
+    await waitFor(() => {
+      expect(nameField).toHaveValue("");
+      expect(postFinishMock).not.toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/завершение регистрации/i)).not.toBeInTheDocument();
   });
 
   it("shows unavailable UI for restored auth step when join path is disabled", async () => {
