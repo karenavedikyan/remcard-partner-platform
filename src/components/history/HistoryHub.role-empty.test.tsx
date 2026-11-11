@@ -8,10 +8,14 @@ import { ACCEPTED_STORE_ACCESS_DENIED_NOTE } from "@/lib/history-labels";
 import type { AuthUser } from "@/lib/types";
 import { RemcardApiError } from "@/lib/api-client";
 
-vi.mock("@/lib/history-loader", () => ({
-  fetchHistoryData: vi.fn(),
-  fetchAcceptedPurchasePage: vi.fn(),
-}));
+vi.mock("@/lib/history-loader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/history-loader")>();
+  return {
+    ...actual,
+    fetchHistoryData: vi.fn(),
+    fetchAcceptedPurchasePage: vi.fn(),
+  };
+});
 
 import { fetchHistoryData } from "@/lib/history-loader";
 

@@ -1001,6 +1001,19 @@ html[data-theme="dark"] section.wallet-accruals p.wallet-accruals-coverage {
   width: auto;
 }
 
+.wallet-accruals-history__hub-link {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  color: #0a6b60;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html[data-theme="dark"] .wallet-accruals-history__hub-link {
+  color: #7fd8c9;
+}
+
 .wallet-accruals-history__filters {
   display: flex;
   flex-wrap: wrap;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
 import {
   accrualStatusOptions,
@@ -27,7 +27,13 @@ import {
 } from "@/lib/history-labels";
 import { accrualDetailHref } from "@/lib/accrual-type";
 import { purchaseDetailHref } from "@/lib/history-links";
-import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
+import {
+  canPreserveHistoryAcceptedTail,
+  fetchAcceptedPurchasePage,
+  fetchHistoryData,
+  historyAcceptedTailBeyondFreshHead,
+  mergeHistoryPurchasesBackground,
+} from "@/lib/history-loader";
 import {
   shouldShowAcceptedAccessDeniedNote,
   shouldShowAcceptedBonusEmptyNote,
@@ -39,6 +45,13 @@ import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import focus from "./history-focus.module.css";
+import {
+  isWalletRefreshUnauthorized,
+  useWalletVisibleRefresh,
+  WALLET_STALE_DATA_NOTICE,
+  type WalletRefreshReason,
+} from "@/lib/wallet-data-refresh";
+import { historyActorScopeKey } from "@/lib/settlements-fetch-scope";
 
 type HistoryTab = "purchases" | "accruals";
 
@@ -135,9 +148,15 @@ function AccrualRowCard({ row }: { row: AccrualRow }) {
 type HistoryHubProps = {
   user: AuthUser;
   initialPromoCode?: string;
+  /** Server-derived actor scope; should match page remount key. */
+  scopeKey?: string;
 };
 
-export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
+export function HistoryHub({ user, initialPromoCode, scopeKey }: HistoryHubProps) {
+  const historyScopeKey =
+    scopeKey ?? historyActorScopeKey(user.id, user.role);
+  const userRef = useRef(user);
+  userRef.current = user;
   const [tab, setTab] = useState<HistoryTab>("purchases");
   const [filters, setFilters] = useState<HistoryFilters>({
     ...DEFAULT_HISTORY_FILTERS,
@@ -157,11 +176,65 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
   const [loadingMoreAccepted, setLoadingMoreAccepted] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState("");
   const [acceptedAccessDenied, setAcceptedAccessDenied] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState("");
+  const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
+  const loadGenerationRef = useRef(0);
+  const loadScopeRef = useRef(historyScopeKey);
+  const loadMoreGenerationRef = useRef(0);
+  const hasLoadedDataRef = useRef(false);
+  const purchasesRef = useRef<PurchaseRow[]>([]);
+  const prevHistoryScopeRef = useRef(historyScopeKey);
+  purchasesRef.current = purchases;
 
-  const loadHistory = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setAcceptedAccessDenied(false);
+  useEffect(() => {
+    const scopeChanged = prevHistoryScopeRef.current !== historyScopeKey;
+    prevHistoryScopeRef.current = historyScopeKey;
+    loadScopeRef.current = historyScopeKey;
+    loadGenerationRef.current += 1;
+    loadMoreGenerationRef.current += 1;
+    setBackgroundRefreshEnabled(true);
+    setRefreshNotice("");
+    if (scopeChanged) {
+      setPurchases([]);
+      setAccruals([]);
+      setSources({ acceptedOrders: false, issuedOrders: false });
+      setHasIssuedPurchases(false);
+      setAcceptedNextCursor(null);
+      setAcceptedAccessDenied(false);
+      setLoadMoreError("");
+      setLoadingMoreAccepted(false);
+      hasLoadedDataRef.current = false;
+      setError("");
+      setLoading(true);
+    }
+  }, [historyScopeKey]);
+
+  const applyHistoryUnauthorized = useCallback(() => {
+    loadGenerationRef.current += 1;
+    loadMoreGenerationRef.current += 1;
+    setBackgroundRefreshEnabled(false);
+    setPurchases([]);
+    setAccruals([]);
+    hasLoadedDataRef.current = false;
+    setAcceptedNextCursor(null);
+    setLoadingMoreAccepted(false);
+    setLoadMoreError("");
+    setError("Сессия завершилась. Войдите снова.");
+    setLoading(false);
+  }, []);
+
+  const loadHistory = useCallback(async (options?: { background?: boolean }) => {
+    const scopeAtStart = loadScopeRef.current;
+    const generation = ++loadGenerationRef.current;
+    const background = Boolean(options?.background);
+    const preserveOnError = background && hasLoadedDataRef.current;
+    if (!preserveOnError) {
+      setError("");
+      setAcceptedAccessDenied(false);
+    }
+    if (!background || !hasLoadedDataRef.current) {
+      setLoading(true);
+    }
 
     try {
       const {
@@ -170,31 +243,75 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
         sources: sourceFlags,
         acceptedPagination,
         acceptedAccessDenied: storeAccessDenied,
-      } = await fetchHistoryData(user);
+      } = await fetchHistoryData(userRef.current);
+
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
 
       setAccruals(accrualRows);
-      setPurchases(purchaseRows);
+      const acceptedSourceOpen = canPreserveHistoryAcceptedTail(sourceFlags, storeAccessDenied);
+      let preserveAcceptedCursor = false;
+      let mergedPurchases = purchaseRows;
+      if (background && hasLoadedDataRef.current && acceptedSourceOpen) {
+        const previous = purchasesRef.current;
+        preserveAcceptedCursor = historyAcceptedTailBeyondFreshHead(previous, purchaseRows);
+        mergedPurchases = mergeHistoryPurchasesBackground(previous, purchaseRows);
+      }
+      setPurchases(mergedPurchases);
       setSources(sourceFlags);
       setAcceptedAccessDenied(storeAccessDenied);
-      setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
-      setHasIssuedPurchases(purchaseRows.some((row) => row.direction === "issued"));
+      if (!acceptedSourceOpen) {
+        loadMoreGenerationRef.current += 1;
+        setLoadingMoreAccepted(false);
+        setLoadMoreError("");
+        setAcceptedNextCursor(null);
+      } else if (!(background && preserveAcceptedCursor)) {
+        setAcceptedNextCursor(acceptedPagination?.hasMore ? acceptedPagination.nextCursor : null);
+      }
+      setHasIssuedPurchases(mergedPurchases.some((row) => row.direction === "issued"));
+      hasLoadedDataRef.current = true;
+      setRefreshNotice("");
+      setError("");
     } catch (caught) {
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
+      if (isWalletRefreshUnauthorized(caught)) {
+        applyHistoryUnauthorized();
+        return;
+      }
+      if (preserveOnError) {
+        setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+        return;
+      }
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить историю",
       );
+      hasLoadedDataRef.current = false;
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+        setLoading(false);
+      }
     }
-  }, [user]);
+  }, [applyHistoryUnauthorized]);
 
   const loadMoreAccepted = useCallback(async () => {
     if (!acceptedNextCursor || loadingMoreAccepted) {
       return;
     }
+    const scopeAtStart = loadScopeRef.current;
+    const generationAtStart = loadMoreGenerationRef.current;
     setLoadingMoreAccepted(true);
     setLoadMoreError("");
     try {
       const accepted = await fetchAcceptedPurchasePage(acceptedNextCursor);
+      if (
+        generationAtStart !== loadMoreGenerationRef.current ||
+        scopeAtStart !== loadScopeRef.current
+      ) {
+        return;
+      }
       setPurchases((prev) => {
         const seen = new Set(prev.map((row) => `${row.direction}-${row.id}`));
         const merged = [...prev];
@@ -211,17 +328,51 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
       });
       setAcceptedNextCursor(accepted.pagination.hasMore ? accepted.pagination.nextCursor : null);
     } catch (caught) {
+      if (
+        generationAtStart !== loadMoreGenerationRef.current ||
+        scopeAtStart !== loadScopeRef.current
+      ) {
+        return;
+      }
+      if (caught instanceof RemcardApiError && caught.status === 401) {
+        applyHistoryUnauthorized();
+        return;
+      }
+      if (caught instanceof RemcardApiError && caught.status === 403) {
+        loadGenerationRef.current += 1;
+        loadMoreGenerationRef.current += 1;
+        setLoading(false);
+        setPurchases((prev) => prev.filter((row) => row.direction !== "accepted"));
+        setAcceptedNextCursor(null);
+        setAcceptedAccessDenied(true);
+        setSources((prev) => ({ ...prev, acceptedOrders: false }));
+        setLoadMoreError("");
+        return;
+      }
       setLoadMoreError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить следующую страницу",
       );
     } finally {
-      setLoadingMoreAccepted(false);
+      if (loadScopeRef.current === scopeAtStart) {
+        setLoadingMoreAccepted(false);
+      }
     }
-  }, [acceptedNextCursor, loadingMoreAccepted]);
+  }, [acceptedNextCursor, applyHistoryUnauthorized, loadingMoreAccepted]);
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory]);
+  }, [historyScopeKey, loadHistory]);
+
+  const onVisibleRefresh = useCallback(
+    (_reason: WalletRefreshReason) => loadHistory({ background: true }),
+    [loadHistory],
+  );
+
+  useWalletVisibleRefresh({
+    enabled: backgroundRefreshEnabled,
+    scopeKey: historyScopeKey,
+    onRefresh: onVisibleRefresh,
+  });
 
   const filteredPurchases = useMemo(() => filterPurchases(purchases, filters), [purchases, filters]);
   const filteredAccruals = useMemo(() => filterAccruals(accruals, filters), [accruals, filters]);
@@ -260,6 +411,11 @@ export function HistoryHub({ user, initialPromoCode }: HistoryHubProps) {
 
   return (
     <div className={focus.hub}>
+      {refreshNotice ? (
+        <p className={focus.notice} role="status" data-testid="history-refresh-notice">
+          {refreshNotice}
+        </p>
+      ) : null}
       <div className={focus.tabs} role="tablist" aria-label="Тип операции">
         <button
           type="button"

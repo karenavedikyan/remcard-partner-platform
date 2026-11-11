@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { formatMoneyRub } from "@/lib/history-format";
 import {
@@ -38,6 +38,12 @@ import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSection
 import { isWalletSettlementsDataEmpty } from "@/lib/wallet-empty/is-empty";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
+import {
+  isWalletRefreshUnauthorized,
+  useWalletVisibleRefresh,
+  WALLET_STALE_DATA_NOTICE,
+  type WalletRefreshReason,
+} from "@/lib/wallet-data-refresh";
 
 function obligationPrimaryTitle(row: SettlementObligation) {
   const basis = row.basis?.trim();
@@ -282,9 +288,12 @@ function filterCompleted(rows: SettlementCompleted[], query: string) {
 export function SettlementsHub({
   walletEmptyViewerRole,
   canLinkOnboardingHistory,
+  scopeKey = "legacy-settlements:anonymous",
 }: WalletEmptyViewerProps & {
   /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
   canLinkOnboardingHistory?: boolean;
+  /** Server-derived actor scope for refresh isolation. */
+  scopeKey?: string;
 }) {
   const [tab, setTab] = useState<SettlementsTab>("receivable");
   const [searchQ, setSearchQ] = useState("");
@@ -293,38 +302,97 @@ export function SettlementsHub({
   const [accessDenied, setAccessDenied] = useState(false);
   const [data, setData] = useState<SettlementsResponse | null>(null);
   const [payoutTarget, setPayoutTarget] = useState<PayoutRecordTarget | null>(null);
+  const [refreshNotice, setRefreshNotice] = useState("");
+  const [backgroundRefreshEnabled, setBackgroundRefreshEnabled] = useState(true);
+  const loadGenerationRef = useRef(0);
+  const loadScopeRef = useRef(scopeKey);
+  const prevScopeKeyRef = useRef(scopeKey);
+  const hasLoadedDataRef = useRef(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setAccessDenied(false);
+  const load = useCallback(async (options?: { background?: boolean }) => {
+    const scopeAtStart = loadScopeRef.current;
+    const generation = ++loadGenerationRef.current;
+    const background = Boolean(options?.background);
+    const preserveOnError = background && hasLoadedDataRef.current;
+    if (!preserveOnError) {
+      setError("");
+      setAccessDenied(false);
+    }
+    if (!background || !hasLoadedDataRef.current) {
+      setLoading(true);
+    }
     try {
       const response = await fetchSettlements();
-      setData(response);
-    } catch (caught) {
-      setData(null);
-      if (isSettlementsAccessDenied(caught)) {
-        setAccessDenied(true);
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
         return;
       }
+      setData(response);
+      hasLoadedDataRef.current = true;
+      setRefreshNotice("");
+      setError("");
+      setAccessDenied(false);
+    } catch (caught) {
+      if (generation !== loadGenerationRef.current || scopeAtStart !== loadScopeRef.current) {
+        return;
+      }
+      if (isWalletRefreshUnauthorized(caught) || isSettlementsAccessDenied(caught)) {
+        setBackgroundRefreshEnabled(false);
+        setData(null);
+        hasLoadedDataRef.current = false;
+        if (isSettlementsAccessDenied(caught)) {
+          setAccessDenied(true);
+        } else {
+          setError("Сессия завершилась. Войдите снова.");
+        }
+        return;
+      }
+      if (preserveOnError) {
+        setRefreshNotice(WALLET_STALE_DATA_NOTICE);
+        return;
+      }
+      setData(null);
+      hasLoadedDataRef.current = false;
       setError(
-        caught instanceof RemcardApiError
-          ? caught.message
-          : "Не удалось загрузить взаиморасчёты",
+        isWalletRefreshUnauthorized(caught)
+          ? "Сессия завершилась. Войдите снова."
+          : caught instanceof RemcardApiError
+            ? caught.message
+            : "Не удалось загрузить взаиморасчёты",
       );
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current && scopeAtStart === loadScopeRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
+  const onVisibleRefresh = useCallback(
+    (_reason: WalletRefreshReason) => load({ background: true }),
+    [load],
+  );
+
   useEffect(() => {
+    const scopeChanged = prevScopeKeyRef.current !== scopeKey;
+    prevScopeKeyRef.current = scopeKey;
+    loadScopeRef.current = scopeKey;
+    if (scopeChanged) {
+      loadGenerationRef.current += 1;
+      setData(null);
+      hasLoadedDataRef.current = false;
+      setBackgroundRefreshEnabled(true);
+      setRefreshNotice("");
+      setError("");
+      setAccessDenied(false);
+      setLoading(true);
+    }
     void load();
-    const changed = () => {
-      void load();
-    };
-    window.addEventListener("remcard:reward-changed", changed);
-    return () => window.removeEventListener("remcard:reward-changed", changed);
-  }, [load]);
+  }, [load, scopeKey]);
+
+  useWalletVisibleRefresh({
+    enabled: backgroundRefreshEnabled,
+    scopeKey,
+    onRefresh: onVisibleRefresh,
+  });
 
   const receivableGroups = useMemo(
     () => groupObligationsByCounterparty(data?.receivable ?? []),
@@ -370,7 +438,7 @@ export function SettlementsHub({
     0,
   );
 
-  if (loading) {
+  if (loading && !data) {
     return <div className={styles.loading}>Загружаем взаиморасчёты…</div>;
   }
 
@@ -382,7 +450,7 @@ export function SettlementsHub({
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className={styles.error} role="alert">
         <p>{error}</p>
@@ -421,6 +489,11 @@ export function SettlementsHub({
 
   return (
     <div className={styles.settlementDemo} data-testid="settlements-hub">
+      {refreshNotice ? (
+        <p className={styles.note} role="status" data-testid="settlements-refresh-notice">
+          {refreshNotice}
+        </p>
+      ) : null}
       <p className={styles.note}>{SETTLEMENTS_COVERAGE_NOTE}</p>
 
       <div className={styles.summary}>

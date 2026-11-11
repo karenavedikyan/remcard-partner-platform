@@ -3,6 +3,7 @@ import { HistoryHub } from "@/components/history/HistoryHub";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { requireProPageUser } from "@/lib/session";
+import { historyActorScopeKey } from "@/lib/settlements-fetch-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function HistoryPage(props: HistoryPageProps) {
   }
 
   const initialPromoCode = searchParams?.search ?? "";
+  const historyScopeKey = historyActorScopeKey(user.id, user.role);
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
@@ -28,7 +30,12 @@ export default async function HistoryPage(props: HistoryPageProps) {
         title="История"
         description="Покупки и начисления по данным сервера — без пересчёта по текущим условиям."
       />
-      <HistoryHub user={user} initialPromoCode={initialPromoCode} />
+      <HistoryHub
+        key={historyScopeKey}
+        user={user}
+        scopeKey={historyScopeKey}
+        initialPromoCode={initialPromoCode}
+      />
     </CabinetShell>
   );
 }

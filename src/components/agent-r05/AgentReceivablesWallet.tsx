@@ -6,7 +6,12 @@ import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccr
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
 import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
 
-export function AgentReceivablesWallet({ walletEmptyViewerRole }: WalletEmptyViewerProps) {
+type Props = WalletEmptyViewerProps & {
+  /** Server-derived actor scope (user id); isolates cache, refresh, and remount per session. */
+  walletScopeKey: string;
+};
+
+export function AgentReceivablesWallet({ walletEmptyViewerRole, walletScopeKey }: Props) {
   return (
     <WalletPrototypeShell
       shellTestId="agent-r05-wallet"
@@ -15,8 +20,9 @@ export function AgentReceivablesWallet({ walletEmptyViewerRole }: WalletEmptyVie
       requisitesScopeTestId="agent-r05-requisites-scope"
       settlements={
         <WalletAccrualsWorkspace
+          key={walletScopeKey}
           incomingOnly
-          scopeKey="agent-r05-settlements"
+          scopeKey={walletScopeKey}
           fallbackRibbon="Агент"
           agentRegistry
           walletEmptyViewerRole={walletEmptyViewerRole}

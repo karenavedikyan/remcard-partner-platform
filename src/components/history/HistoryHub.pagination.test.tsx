@@ -43,10 +43,14 @@ const page2Match: PurchaseRow = {
   promoCode: "RC-TARGET-999",
 };
 
-vi.mock("@/lib/history-loader", () => ({
-  fetchHistoryData: vi.fn(),
-  fetchAcceptedPurchasePage: vi.fn(),
-}));
+vi.mock("@/lib/history-loader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/history-loader")>();
+  return {
+    ...actual,
+    fetchHistoryData: vi.fn(),
+    fetchAcceptedPurchasePage: vi.fn(),
+  };
+});
 
 import { fetchAcceptedPurchasePage, fetchHistoryData } from "@/lib/history-loader";
 

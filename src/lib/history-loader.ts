@@ -230,6 +230,9 @@ export async function fetchAccrualSourcesSnapshot(): Promise<AccrualSourcesSnaps
   try {
     walletAccruals = await fetchWalletAccrualRows();
   } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 401) {
+      throw caught;
+    }
     if (caught instanceof RemcardApiError && (caught.status === 403 || caught.status === 404)) {
       wallet = "unavailable";
       walletAccruals = [];
@@ -247,6 +250,9 @@ export async function fetchAccrualSourcesSnapshot(): Promise<AccrualSourcesSnaps
   try {
     settlementAccruals = await fetchSettlementAccrualRows();
   } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 401) {
+      throw caught;
+    }
     settlements = "error";
     settlementsError = caught;
     settlementAccruals = [];
@@ -276,6 +282,47 @@ export async function fetchAccrualById(
 ): Promise<AccrualRow | null> {
   const snapshot = await fetchAccrualSourcesSnapshot();
   return resolveAccrualLookup(snapshot, accrualId, accrualType);
+}
+
+export function purchaseRowIdentity(row: PurchaseRow): string {
+  return `${row.direction}-${row.id}`;
+}
+
+/** Background history refresh: update first page in place, keep paginated accepted tail. */
+export function mergeHistoryPurchasesBackground(
+  previous: PurchaseRow[],
+  fresh: PurchaseRow[],
+): PurchaseRow[] {
+  const freshKeys = new Set(fresh.map((row) => purchaseRowIdentity(row)));
+  const tail = previous.filter(
+    (row) => row.direction === "accepted" && !freshKeys.has(purchaseRowIdentity(row)),
+  );
+  const combined = [...fresh, ...tail];
+  return combined.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
+/** Accepted tail merge is allowed only while the accepted source is still authorized. */
+export function canPreserveHistoryAcceptedTail(
+  sources: HistorySourceAvailability,
+  acceptedAccessDenied: boolean,
+): boolean {
+  return sources.acceptedOrders && !acceptedAccessDenied;
+}
+
+export function historyAcceptedTailBeyondFreshHead(
+  previous: PurchaseRow[],
+  fresh: PurchaseRow[],
+): boolean {
+  const freshAcceptedKeys = new Set(
+    fresh
+      .filter((row) => row.direction === "accepted")
+      .map((row) => purchaseRowIdentity(row)),
+  );
+  return previous.some(
+    (row) => row.direction === "accepted" && !freshAcceptedKeys.has(purchaseRowIdentity(row)),
+  );
 }
 
 export async function fetchHistoryData(user: AuthUser): Promise<{
