@@ -43,8 +43,9 @@ import {
   savePreAuthConsentAck,
 } from "@/lib/registration/pre-auth-consent";
 import {
+  finishJoinContextErrorMessage,
   isJoinKindRegistrationEnabled,
-  resolveValidatedFinishJoinKind,
+  readFinishJoinKindResolution,
 } from "@/lib/registration/join-kind-capability";
 import { JoinProgress } from "./JoinProgress";
 import { RegistrationKindIcon } from "./RegistrationKindIcons";
@@ -93,7 +94,6 @@ export function RegistrationJoinFlow() {
   const [city, setCity] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [finishContextError, setFinishContextError] = useState("");
   const finishLock = useRef(false);
   const idempotencyKey = useRef(`join-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
@@ -124,38 +124,37 @@ export function RegistrationJoinFlow() {
     };
   }, []);
 
+  const onFinishPhase = phase === "finish" || step === "finish";
+
+  const finishJoinResolution = useMemo(() => {
+    if (!onFinishPhase) return null;
+    return readFinishJoinKindResolution(roleLanding);
+  }, [onFinishPhase, roleLanding, step]);
+
+  const finishContextBlocked =
+    finishJoinResolution !== null && finishJoinResolution.status !== "ok";
+
+  const finishContextError = useMemo(() => {
+    if (!finishJoinResolution || finishJoinResolution.status === "ok") return "";
+    return finishJoinContextErrorMessage(finishJoinResolution);
+  }, [finishJoinResolution]);
+
   useEffect(() => {
     if (phase === "finish") {
       setStep("finish");
-      const saved = loadRegistrationWizardState();
-      const resolution = resolveValidatedFinishJoinKind({
-        wizardKind: saved?.kind,
-        urlRole: roleLanding,
-      });
-      if (resolution.status === "mismatch") {
-        setFinishContextError(
-          `Тип в ссылке («${REGISTRATION_KIND_LABELS[resolution.urlRole].title}») не совпадает с выбранным («${REGISTRATION_KIND_LABELS[resolution.wizardKind].title}»). Продолжите из регистрации без смены типа.`,
-        );
-        setKind(resolution.wizardKind);
-        return;
+      if (finishJoinResolution?.status === "ok") {
+        setKind(finishJoinResolution.kind);
+      } else if (finishJoinResolution?.status === "mismatch") {
+        setKind(finishJoinResolution.wizardKind);
       }
-      if (resolution.status === "missing") {
-        setFinishContextError(
-          "Не удалось восстановить тип регистрации. Вернитесь к выбору типа и пройдите шаги снова.",
-        );
-        return;
-      }
-      setFinishContextError("");
-      setKind(resolution.kind);
       return;
     }
-    setFinishContextError("");
     const saved = loadRegistrationWizardState();
     if (saved?.kind) {
       setKind(saved.kind);
       setStep(saved.step);
     }
-  }, [phase, roleLanding]);
+  }, [phase, finishJoinResolution, roleLanding]);
 
   useEffect(() => {
     if (!kind) return;
@@ -169,17 +168,12 @@ export function RegistrationJoinFlow() {
   const welcomeActive = Boolean(caps?.welcomeEnabled);
 
   const activeJoinKind: RegistrationKind | "" = useMemo(() => {
-    if (step !== "finish" && phase !== "finish") {
+    if (!onFinishPhase) {
       return isJoinRegistrationKind(kind) ? kind : "";
     }
-    const saved = loadRegistrationWizardState();
-    const resolution = resolveValidatedFinishJoinKind({
-      wizardKind: saved?.kind ?? (isJoinRegistrationKind(kind) ? kind : ""),
-      urlRole: roleLanding,
-    });
-    if (resolution.status === "ok") return resolution.kind;
-    return isJoinRegistrationKind(kind) ? kind : "";
-  }, [kind, phase, roleLanding, step]);
+    if (finishJoinResolution?.status === "ok") return finishJoinResolution.kind;
+    return "";
+  }, [finishJoinResolution, kind, onFinishPhase]);
 
   const joinKindPathEnabled = useMemo(
     () =>
@@ -261,6 +255,12 @@ export function RegistrationJoinFlow() {
 
   const runJoinFinish = useCallback(async () => {
     if (finishLock.current) return;
+    if (onFinishPhase) {
+      const resolution = readFinishJoinKindResolution(roleLanding);
+      if (resolution.status !== "ok") {
+        return;
+      }
+    }
     finishLock.current = true;
     setBusy(true);
     setError("");
@@ -344,12 +344,14 @@ export function RegistrationJoinFlow() {
     } finally {
       setBusy(false);
     }
-  }, [activeJoinKind, city, displayName, joinContext, joinKindPathEnabled, router]);
+  }, [activeJoinKind, city, displayName, joinContext, joinKindPathEnabled, onFinishPhase, roleLanding, router]);
 
   useEffect(() => {
-    if (step !== "finish" || !isJoinNewPath || !capsLoaded || !joinKindPathEnabled) return;
+    if (step !== "finish" || finishContextBlocked || !isJoinNewPath || !capsLoaded || !joinKindPathEnabled) {
+      return;
+    }
     void runJoinFinish();
-  }, [step, isJoinNewPath, capsLoaded, joinKindPathEnabled, runJoinFinish]);
+  }, [step, finishContextBlocked, isJoinNewPath, capsLoaded, joinKindPathEnabled, runJoinFinish]);
 
   const handleAuthenticated = useCallback(
     (userId: string) => {
@@ -395,6 +397,32 @@ export function RegistrationJoinFlow() {
           <h1>Регистрация партнёров</h1>
           <p>Новый сценарий регистрации пока недоступен. Используйте существующий вход.</p>
           <Link href="/login" className={styles.primaryLink}>
+            Войти
+          </Link>
+        </div>
+      </RegistrationPublicShell>
+    );
+  }
+
+  if (
+    step === "auth" &&
+    capsLoaded &&
+    isJoinRegistrationKind(kind) &&
+    !isJoinKindRegistrationEnabled(caps, kind)
+  ) {
+    return (
+      <RegistrationPublicShell loginHref={loginRecovery}>
+        <div className={styles.fallback} data-testid="registration-auth-unavailable">
+          <h1>Регистрация недоступна</h1>
+          <p className={styles.error}>
+            {kind === "agent"
+              ? "Регистрация агента временно недоступна. Повторите позже."
+              : "Этот тип регистрации временно недоступен."}
+          </p>
+          <Link href={buildJoinHref(joinContext)} className={styles.primaryLink}>
+            К выбору типа
+          </Link>
+          <Link href="/login" className={styles.secondaryLink}>
             Войти
           </Link>
         </div>

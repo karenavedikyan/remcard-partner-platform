@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthFlow } from "@/components/auth/AuthFlow";
 import { AdminLoginAccessory } from "@/components/auth/AdminLoginAccessory";
 import { RegistrationPreAuthConsent } from "@/components/registration/RegistrationPreAuthConsent";
@@ -29,7 +29,9 @@ type Props = {
   registrationAgentJoin?: boolean;
 };
 
-function resolveRegistrationJoinKind(returnTo: string | null | undefined): RegistrationKind | null {
+export function resolveRegistrationJoinKindAfterHydration(
+  returnTo: string | null | undefined,
+): RegistrationKind | null {
   const fromReturn = parseJoinKindFromFinishReturnTo(returnTo);
   if (fromReturn) return fromReturn;
   const wizard = loadRegistrationWizardState();
@@ -44,16 +46,23 @@ export function LoginExperience({
   initialMode = "partner",
   registrationAgentJoin,
 }: Props) {
-  const joinKind = useMemo(
-    () => (registrationAgentJoin ? resolveRegistrationJoinKind(returnTo) : null),
-    [registrationAgentJoin, returnTo],
-  );
-  const needsRegistrationPreAuth = Boolean(
-    registrationAgentJoin && joinKind && isJoinRegistrationKind(joinKind),
-  );
-  const [preAuthReady, setPreAuthReady] = useState(
-    () => (joinKind && isJoinRegistrationKind(joinKind) ? loadPreAuthConsentAck(joinKind) : false),
-  );
+  const urlJoinKind = registrationAgentJoin ? parseJoinKindFromFinishReturnTo(returnTo) : null;
+  const [hydrated, setHydrated] = useState(() => !registrationAgentJoin);
+  const [joinKind, setJoinKind] = useState<RegistrationKind | null>(urlJoinKind);
+  const [preAuthReady, setPreAuthReady] = useState(false);
+
+  useEffect(() => {
+    if (!registrationAgentJoin) {
+      setHydrated(true);
+      return;
+    }
+    const restored = resolveRegistrationJoinKindAfterHydration(returnTo);
+    setJoinKind(restored);
+    setPreAuthReady(
+      restored && isJoinRegistrationKind(restored) ? loadPreAuthConsentAck(restored) : false,
+    );
+    setHydrated(true);
+  }, [registrationAgentJoin, returnTo]);
 
   if (initialMode === "admin") {
     return (
@@ -70,10 +79,24 @@ export function LoginExperience({
     );
   }
 
+  if (registrationAgentJoin && !hydrated) {
+    return (
+      <div className={styles.loginEntryShell} data-testid="login-registration-hydrating">
+        <section className={styles.card}>
+          <p className={styles.lead}>Загружаем…</p>
+        </section>
+      </div>
+    );
+  }
+
+  const needsRegistrationPreAuth = Boolean(
+    registrationAgentJoin && joinKind && isJoinRegistrationKind(joinKind),
+  );
+
   if (registrationAgentJoin && !joinKind) {
     return (
       <div className={styles.loginEntryShell}>
-        <section className={styles.card}>
+        <section className={styles.card} data-testid="login-registration-missing-kind">
           <h1 className={styles.title}>Продолжение регистрации</h1>
           <p className={styles.lead}>
             Не удалось определить тип регистрации для этого входа. Вернитесь к выбору типа в

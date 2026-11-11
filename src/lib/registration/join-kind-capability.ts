@@ -1,4 +1,6 @@
+import { loadRegistrationWizardState } from "./draft";
 import type { RegistrationCapabilities, RegistrationKind } from "./types";
+import { REGISTRATION_KIND_LABELS } from "./types";
 import { isJoinRegistrationKind } from "./join-finish";
 
 export function parseJoinKindFromFinishReturnTo(
@@ -34,6 +36,26 @@ export type FinishJoinKindResolution =
   | { status: "missing" };
 
 /** Wizard/draft choice wins; URL role must match when both are present. */
+export function finishJoinContextErrorMessage(resolution: Exclude<FinishJoinKindResolution, { status: "ok" }>): string {
+  if (resolution.status === "mismatch") {
+    return `Тип в ссылке («${REGISTRATION_KIND_LABELS[resolution.urlRole].title}») не совпадает с выбранным («${REGISTRATION_KIND_LABELS[resolution.wizardKind].title}»). Продолжите из регистрации без смены типа.`;
+  }
+  if (resolution.status === "missing") {
+    return "Не удалось восстановить тип регистрации. Вернитесь к выбору типа и пройдите шаги снова.";
+  }
+  return "";
+}
+
+export function readFinishJoinKindResolution(
+  urlRole: RegistrationKind | null | undefined,
+): FinishJoinKindResolution {
+  const saved = loadRegistrationWizardState();
+  return resolveValidatedFinishJoinKind({
+    wizardKind: saved?.kind,
+    urlRole,
+  });
+}
+
 export function resolveValidatedFinishJoinKind(input: {
   wizardKind: RegistrationKind | "" | null | undefined;
   urlRole: RegistrationKind | null | undefined;

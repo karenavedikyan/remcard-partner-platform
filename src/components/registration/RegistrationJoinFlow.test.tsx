@@ -33,7 +33,31 @@ vi.mock("@/components/auth/AuthFlow", () => ({
   ),
 }));
 
-import { saveRegistrationWizardState } from "@/lib/registration/draft";
+import {
+  mergeRegistrationDraftFields,
+  saveRegistrationWizardState,
+} from "@/lib/registration/draft";
+
+const { fetchAuthMeSafeMock, postFinishMock } = vi.hoisted(() => ({
+  fetchAuthMeSafeMock: vi.fn(),
+  postFinishMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth-session", () => ({
+  fetchAuthMeSafe: fetchAuthMeSafeMock,
+}));
+
+vi.mock("@/lib/registration/join-finish", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/registration/join-finish")>();
+  return {
+    ...actual,
+    postRegistrationJoinFinish: postFinishMock,
+    waitForRegistrationReady: vi.fn().mockResolvedValue({
+      canAccessCabinet: true,
+      needsProfileOnboarding: false,
+    }),
+  };
+});
 
 function renderJoin() {
   return render(
@@ -48,6 +72,8 @@ describe("RegistrationJoinFlow", () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     joinSearchParams = new URLSearchParams("");
+    fetchAuthMeSafeMock.mockResolvedValue({ ok: false });
+    postFinishMock.mockReset();
   });
 
   it("shows pre-auth consent before AuthFlow on auth step", async () => {
@@ -111,5 +137,53 @@ describe("RegistrationJoinFlow", () => {
     expect(
       await screen.findByTestId("registration-finish-recovery"),
     ).toBeInTheDocument();
+  });
+
+  it("does not call join finish when authenticated but finish context mismatches", async () => {
+    const { fetchRegistrationCapabilitiesClient } = await import("@/lib/registration/capabilities");
+    vi.mocked(fetchRegistrationCapabilitiesClient).mockResolvedValue({
+      contractVersion: "test",
+      welcomeEnabled: true,
+      agentRegistrationPathEnabled: true,
+      joinRegistrationPathEnabled: true,
+      legacyLoginPathEnabled: true,
+    });
+    fetchAuthMeSafeMock.mockResolvedValue({
+      ok: true,
+      data: { user: { id: "user-finish-mismatch" } },
+    });
+    joinSearchParams = new URLSearchParams("phase=finish&role=company");
+    saveRegistrationWizardState({ step: "finish", kind: "agent", updatedAt: Date.now() });
+    mergeRegistrationDraftFields("agent", {
+      displayName: "Test Agent",
+      city: "Москва",
+    });
+    renderJoin();
+    expect(
+      await screen.findByTestId("registration-finish-recovery"),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(postFinishMock).not.toHaveBeenCalled();
+    });
+    expect(fetchAuthMeSafeMock).not.toHaveBeenCalled();
+  });
+
+  it("shows unavailable UI for restored auth step when join path is disabled", async () => {
+    const { fetchRegistrationCapabilitiesClient } = await import("@/lib/registration/capabilities");
+    vi.mocked(fetchRegistrationCapabilitiesClient).mockResolvedValueOnce({
+      contractVersion: "test",
+      welcomeEnabled: true,
+      agentRegistrationPathEnabled: true,
+      joinRegistrationPathEnabled: false,
+      legacyLoginPathEnabled: true,
+    });
+    saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
+    renderJoin();
+    expect(
+      await screen.findByTestId("registration-auth-unavailable"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/регистрация агента временно недоступна/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("auth-flow")).toBeNull();
+    expect(screen.queryByTestId("registration-pre-auth-consent")).toBeNull();
   });
 });
