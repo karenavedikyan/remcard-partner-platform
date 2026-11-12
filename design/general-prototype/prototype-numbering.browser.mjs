@@ -140,5 +140,7 @@ assert.match(reviewerJs, /partnerNavAction/, "wallet nav normalization");
 assert.match(reviewerJs, /closeActiveAppDialogs/, "close dialog before TOC nav");
 assert.match(reviewerJs, /nav:\$\{navKey\}/, "same-area partner uses nav key");
 assert.match(reviewerJs, /if \(page\.partnerSection\) \{[^]*partnerNavAction/, "TOC home uses nav dispatch");
+assert.match(reviewerJs, /proto_page/, "deferred partner TOC via proto_page");
+assert.match(reviewerJs, /params\.set\("open", "clients"\)/, "R1 partner href seeds clients");
 
 console.log("prototype-numbering.browser: ok", { port, hostedPrefix: HOSTED_PREFIX });

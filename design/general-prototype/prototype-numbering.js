@@ -310,8 +310,6 @@ const PAGE_DEFS = [
       const act = currentNav.getAttribute("data-action") || "";
       const m = act.match(/^nav:(.+)$/);
       if (m) section = m[1];
-    } else if (openFromQs) {
-      section = openFromQs;
     }
     if (section === "wallet") {
       section = ["agent", "specialist"].includes(role) ? "bonus" : "settlements";
@@ -404,12 +402,20 @@ const PAGE_DEFS = [
     });
   }
 
+  const PARTNER_DEEP_OPEN = new Set(["clients", "care", "procurement"]);
+
   function pageHref(page) {
     if (page.rel && page.zone !== "partner") return hubUrl(page.rel);
     if (page.zone === "partner" && page.partnerMode === "registration") return hubUrl("partner/index.html");
     if (page.partnerRole) {
       const params = new URLSearchParams({ role: page.partnerRole });
-      params.set("open", page.partnerSection || "home");
+      const section = page.partnerSection || "home";
+      if (page.r2 && PARTNER_DEEP_OPEN.has(section)) {
+        params.set("open", section);
+      } else {
+        params.set("open", "clients");
+        params.set("proto_page", String(page.n));
+      }
       return `${hubUrl("partner/index.html")}?${params}`;
     }
     if (page.zone === "client") {
@@ -424,6 +430,75 @@ const PAGE_DEFS = [
     }
     if (page.adminView) return `${hubUrl("admin/index.html")}#${page.adminView}`;
     return hubUrl("index.html");
+  }
+
+  let deferredProtoTarget = null;
+
+  function stripProtoPageQuery() {
+    const qs = new URLSearchParams(location.search);
+    if (!qs.has("proto_page")) return;
+    qs.delete("proto_page");
+    const next = `${location.pathname}${qs.toString() ? `?${qs}` : ""}${location.hash}`;
+    history.replaceState(null, "", next);
+  }
+
+  function partnerCabinetReadyForNav(page) {
+    const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
+    if (!cabinetBtn || cabinetBtn.getAttribute("aria-pressed") !== "true") return false;
+    if (!page?.partnerSection) return true;
+    const navKey = partnerNavAction(page.partnerSection, page);
+    return !!document.querySelector(`[data-action="nav:${navKey}"]`);
+  }
+
+  function applyPartnerCabinetNav(page) {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
+    if (roleEl && roleEl.value !== page.partnerRole) {
+      roleEl.value = page.partnerRole;
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (cabinetBtn && cabinetBtn.getAttribute("aria-pressed") !== "true") {
+      cabinetBtn.click();
+    }
+    if (page.partnerSection) {
+      const navKey = partnerNavAction(page.partnerSection, page);
+      document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
+    }
+    scheduleRefresh();
+  }
+
+  function pumpDeferredProtoPageNav() {
+    if (!deferredProtoTarget || window.__protoDeferredNavConsumed) return;
+    if (!partnerCabinetReadyForNav(deferredProtoTarget)) return;
+    window.__protoDeferredNavConsumed = true;
+    const page = deferredProtoTarget;
+    deferredProtoTarget = null;
+    stripProtoPageQuery();
+    if (page.tocOpen) {
+      scheduleRefresh();
+      return;
+    }
+    applyPartnerCabinetNav(page);
+  }
+
+  function initDeferredProtoPageNav() {
+    const rel = pathnameRel();
+    if (!["partner/index.html", "partner/roles.html"].includes(rel)) return;
+    if (!new URLSearchParams(location.search).get("proto_page")) {
+      window.__protoDeferredNavConsumed = false;
+    }
+    if (window.__protoDeferredNavConsumed) return;
+    const qs = new URLSearchParams(location.search);
+    const protoN = qs.get("proto_page");
+    if (!protoN) return;
+    const target = byN.get(Number(protoN));
+    if (!target?.partnerRole) {
+      window.__protoDeferredNavConsumed = true;
+      stripProtoPageQuery();
+      return;
+    }
+    deferredProtoTarget = target;
+    pumpDeferredProtoPageNav();
   }
 
   function navigateToPage(page, ev) {
@@ -450,23 +525,15 @@ const PAGE_DEFS = [
       location.href = pageHref(page);
       return;
     }
-    if (page.partnerRole && (rel === "partner/roles.html" || rel === "partner/index.html")) {
+    if (page.partnerRole) {
       ev?.preventDefault();
-      const roleEl = document.querySelector('[data-testid="scenario-role"]');
-      const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
-      if (roleEl && roleEl.value !== page.partnerRole) {
-        roleEl.value = page.partnerRole;
-        roleEl.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      if (cabinetBtn && cabinetBtn.getAttribute("aria-pressed") !== "true") {
-        cabinetBtn.click();
-      }
-      if (page.partnerSection) {
-        const navKey = partnerNavAction(page.partnerSection, page);
-        document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
+      const onPartner = rel === "partner/roles.html" || rel === "partner/index.html";
+      if (!onPartner) {
+        location.href = pageHref(page);
+        return;
       }
       if (page.tocOpen) return;
-      scheduleRefresh();
+      applyPartnerCabinetNav(page);
     }
   }
 
@@ -505,6 +572,7 @@ const PAGE_DEFS = [
       scheduled = false;
       refreshBadge();
       syncDialogDock();
+      pumpDeferredProtoPageNav();
     });
   }
 
@@ -647,6 +715,7 @@ const PAGE_DEFS = [
   window.protoPathnameRel = pathnameRel;
 
   mountChrome();
+  initDeferredProtoPageNav();
   refreshBadge();
   syncDialogDock();
 
