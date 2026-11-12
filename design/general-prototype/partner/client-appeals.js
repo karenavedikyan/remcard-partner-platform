@@ -4,8 +4,7 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
 import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
-  observerGuestHash,
-  observerPublicModel,
+  observerDesignSampleHash,
 } from "./guest-embed-payloads.js";
 
 
@@ -2360,7 +2359,7 @@ function renderObserverClientPage(config) {
     <h3>Хронология (без внутренних заметок партнёра)</h3>
     <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
   </section>
-  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Гостевой макет наблюдения</button></div>`;
+  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Макет наблюдения за объектом (пример Navigator)</button><p class="small muted">Не связан с этим обращением: в демо нет handoff объекта ремонта.</p></div>`;
 }
 
 function backLink(config, label, action) {
@@ -3762,19 +3761,14 @@ export function buildClientAppealsStandaloneEmbedCtx(pageN, config) {
     designExample: true,
   };
   if (pageN === 142) {
-    const appeal = s.observerClientId
-      ? appeals.find((a) => a.id === s.observerClientId)
-      : null;
-    if (!appeal) return designExample;
-    const partner = PARTNERS[appeal.receivingPartnerId];
-    const timeline = publicReferrerTimeline(appeal);
-    const observerModel = observerPublicModel({ appeal, partner, timeline });
     return {
       source: "client-appeals",
       pageN,
-      appealId: appeal.id,
-      observerModel,
-      guestHash: observerGuestHash(observerModel),
+      designExample: true,
+      guestHash: observerDesignSampleHash(),
+      guestSample: "observer-object",
+      naReason:
+        "Макет наблюдения за объектом ремонта (Navigator). К обращению не привязан: в прототипе нет передачи ссылки на реальный объект.",
     };
   }
   const purchaseId = s.purchaseViewId;

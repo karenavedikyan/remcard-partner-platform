@@ -462,11 +462,25 @@ export function prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, h
     nextEmbed.publicModel = hooks.certificatePublicModel(record);
     nextEmbed.guestHash = hooks.certificateGuestHash?.(record) || "";
   }
-  if (pageN === 140 && record && hooks.recommendationGuestHash) {
-    nextEmbed.guestHash = hooks.recommendationGuestHash(record) || "";
+  if (pageN === 140) {
+    if (record && hooks.recommendationGuestHash) {
+      nextEmbed.guestHash = hooks.recommendationGuestHash(record) || "";
+      delete nextEmbed.record;
+    } else if (hooks.recommendationDesignSampleHash) {
+      nextEmbed.guestHash = hooks.recommendationDesignSampleHash();
+      nextEmbed.designExample = true;
+      delete nextEmbed.record;
+    }
   }
-  if (pageN === 142 && embedCtx?.observerModel && hooks.observerGuestHash) {
-    nextEmbed.guestHash = hooks.observerGuestHash(embedCtx.observerModel) || "";
+  if (pageN === 142) {
+    if (!nextEmbed.guestHash && hooks.observerDesignSampleHash) {
+      nextEmbed.guestHash = hooks.observerDesignSampleHash();
+      nextEmbed.designExample = true;
+      nextEmbed.naReason =
+        nextEmbed.naReason ||
+        "Макет наблюдения за объектом ремонта. К выбранной записи в кабинете не привязан.";
+    }
+    delete nextEmbed.observerModel;
   }
   if ([139, 140].includes(pageN) && hooks.closeSourceDialog?.()) {
     if (record?.id) nextReturn.restoreCertificateId = record.id;

@@ -25,9 +25,9 @@
       const earned =
         payload.role === "agent" || payload.role === "specialist" || actor.receiptMode === "earned";
       hero.textContent =
-        ctx.heroLabel ||
         actor.receiptHeroLabel ||
-        (earned ? "Заработанное вознаграждение" : "Начисление профклиенту");
+        (earned ? "Заработанное вознаграждение" : "Начисление профклиенту") ||
+        ctx.heroLabel;
     }
     const amount = document.getElementById("prr-amount");
     if (amount) amount.textContent = `+${money(ctx.amount ?? 0)}`;

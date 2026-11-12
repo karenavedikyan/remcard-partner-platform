@@ -74,7 +74,8 @@ import {
 import {
   certificateGuestHash,
   recommendationGuestHash,
-  observerGuestHash,
+  recommendationDesignSampleHash,
+  observerDesignSampleHash,
 } from "./guest-embed-payloads.js";
 import {
   renderPartners,
@@ -3197,7 +3198,14 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
     return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
   }
   if (pageN === 142 && ctx?.guestHash) {
-    return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
+    return embedPayloadEnvelope(pageN, ctx, {
+      guestReady: true,
+      designExample: !!ctx.designExample,
+      naReason: ctx.naReason || "",
+    });
+  }
+  if (pageN === 140 && ctx?.designExample) {
+    return embedPayloadEnvelope(pageN, ctx, { guestReady: true, designExample: true });
   }
   if (pageN === 147) {
     return embedPayloadEnvelope(pageN, ctx, {
@@ -4801,7 +4809,8 @@ document.addEventListener("click", (e) => {
           certificatePublicModel,
           certificateGuestHash,
           recommendationGuestHash,
-          observerGuestHash,
+          recommendationDesignSampleHash,
+          observerDesignSampleHash,
           closeSourceDialog: () => {
             if (!se.open) return false;
             _();

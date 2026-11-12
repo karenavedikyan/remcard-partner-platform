@@ -32,7 +32,6 @@
       relatedPurchasePayable,
       purchaseCtx: linkedPurchase ? purchaseRowCtx(0) : null,
       hasCalcSnapshot: false,
-      heroLabel: "Начисление профклиенту",
     };
   }
   function purchaseRowCtx(index) {

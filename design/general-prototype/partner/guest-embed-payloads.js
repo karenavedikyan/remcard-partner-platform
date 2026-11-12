@@ -51,35 +51,55 @@ export function recommendationGuestHash(record) {
   return model ? compressGuestHash(model) : "";
 }
 
-/** Static observer snapshot for client-appeals guest embed (no private notes). */
-export function observerPublicModel({ appeal, partner, timeline = [] }) {
-  if (!appeal) return null;
-  const events =
-    timeline.length > 0
-      ? timeline
-      : [{ text: "Обращение зарегистрировано", at: appeal.updatedAt || appeal.createdAt }];
+/** Fixed public sample for guest 140 when no certificate handoff (matches recommendation parser). */
+export function recommendationDesignSampleModel() {
+  return {
+    kind: "prof-recommendation",
+    code: "DEMO-PROF-1",
+    partners: [
+      {
+        name: "Пример партнёра",
+        categories: [{ category: "Двери и фурнитура", discount: 10 }],
+      },
+    ],
+  };
+}
+
+export function recommendationDesignSampleHash() {
+  return compressGuestHash(recommendationDesignSampleModel());
+}
+
+/**
+ * Navigator repair-object observer — design sample only (entry 142).
+ * Not derived from client-appeal status; no private handoff.
+ */
+export function observerDesignSampleModel() {
   return {
     version: 1,
-    token: `CA-${String(appeal.id).replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`,
-    name: appeal.clientName ? `Обращение · ${appeal.clientName}` : "Наблюдение за обращением",
-    address: partner?.city ? `${partner.city} · демо` : undefined,
+    token: "DESIGN-SAMPLE-OBSERVER",
+    name: "Демонстрационный объект ремонта",
+    address: "Краснодар · макет без привязки к кабинету",
     showCosts: false,
     stages: [
       {
-        title: "Публичный ход",
+        title: "Подготовка объекта",
         status: "active",
         subs: [
           {
-            title: "События без внутренних заметок",
-            tasks: events.slice(0, 20).map((e) => ({
-              title: e.text,
-              done: true,
-            })),
+            title: "Пример этапов Navigator",
+            tasks: [
+              { title: "Демо: согласование плана работ", done: true },
+              { title: "Демо: следующий этап (без live-синхронизации)", done: false },
+            ],
           },
         ],
       },
     ],
   };
+}
+
+export function observerDesignSampleHash() {
+  return compressGuestHash(observerDesignSampleModel());
 }
 
 export function observerGuestHash(model) {
@@ -124,7 +144,6 @@ export function clientAppealsReceiptCtx(purchase, appeal, partnerName) {
     relatedPurchasePayable: purchaseCtx.amount,
     purchaseCtx,
     hasCalcSnapshot: false,
-    heroLabel: "Снимок по выбранной покупке в обращениях",
     designExample: false,
   };
 }

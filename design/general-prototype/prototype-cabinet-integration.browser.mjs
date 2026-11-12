@@ -215,6 +215,11 @@ try {
   await agentWallet.setViewportSize({ width: 1280, height: 900 });
   await agentWallet.goto(`${base}/partner/index.html?role=agent`, { waitUntil: "load" });
   await agentWallet.evaluate(() => {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "agent";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     document.querySelector('[data-testid="view-cabinet"]')?.click();
   });
   await agentWallet.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
@@ -337,7 +342,14 @@ try {
   const chainPage = await browser.newPage();
   await chainPage.setViewportSize({ width: 1280, height: 900 });
   await chainPage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
-  await chainPage.evaluate(() => document.querySelector('[data-testid="view-cabinet"]')?.click());
+  await chainPage.evaluate(() => {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "store";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
   await chainPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
   await chainPage.locator('[data-action="nav:settlements"], [data-action="nav:wallet"]').first().click();
   await chainPage.locator("[data-testid='wallet-history-hub-link']").click();
