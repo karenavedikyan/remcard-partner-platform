@@ -8,6 +8,10 @@ import {
   employeeEmployerRole,
   profileHasUnsavedChanges,
   syncProfileIdentity,
+  primeProfileWizardPayCategories,
+  focusProfileWizardActivityStep,
+  clearProfileWizardPayCategoriesTrip,
+  revertProfileWizardDraft,
 } from "./profile-wizard.js";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
@@ -36,7 +40,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca14";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca16";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -3346,26 +3350,6 @@ function careConfig() {
     profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
   };
 }
-function mergeCatalogDirectionsForPayResume() {
-  const role = i.role;
-  if (!["store", "company", "specialist"].includes(role)) return;
-  if (!getPayProfileReturnContext(clientAppealsConfig().key)) return;
-  try {
-    const cat = Ge.catalogWizard.state();
-    if (!cat?.values) return;
-    const products = role === "specialist" ? [] : [...(cat.values.products || [])];
-    const services = [...(cat.values.services || [])];
-    i.drafts[role] = {
-      ...ie(),
-      products,
-      services,
-      stages: cat.values.stages || ie().stages || [],
-    };
-  } catch (_) {
-    /* catalog state unavailable */
-  }
-}
-
 function clientAppealsConfig() {
   return {
     key: `${i.role}:${i.role === "employee" ? employeeEmployerRole() || Y : "self"}`,
@@ -3378,21 +3362,30 @@ function clientAppealsConfig() {
       R();
     },
     openProfileForPayCategories: () => {
-      const tab = ["store", "company", "specialist"].includes(i.role) ? "catalog" : "basics";
-      Ge.selectTab(tab);
+      const role = i.role;
+      Ge.selectTab("basics");
       i.page = "profile";
-      i.notice =
-        "После сохранения категорий нажмите «Вернуться к оформлению покупки» в верхней подсказке.";
+      if (["store", "company", "specialist"].includes(role)) {
+        primeProfileWizardPayCategories({
+          role,
+          data: ie(),
+          directions: Le,
+          userId: sa,
+          save: (patch) => {
+            i.drafts[i.role] = { ...ie(), ...patch };
+          },
+          refresh: R,
+        });
+        i.notice =
+          "Отметьте товары и услуги на шаге «Ассортимент» / «Направления», сохраните профиль, затем нажмите «Вернуться к оформлению покупки».";
+      } else {
+        i.notice =
+          "После настройки категорий нажмите «Вернуться к оформлению покупки» в подсказке выше.";
+      }
       R();
-      requestAnimationFrame(() => {
-        if (tab === "catalog") {
-          document.querySelector('[data-direction-group="products"]')?.closest("details")?.setAttribute("open", true);
-          document.querySelector('[data-direction-group="services"]')?.closest("details")?.setAttribute("open", true);
-          document.querySelector('[data-catalog-panel="directions"]')?.scrollIntoView({ block: "start", behavior: "smooth" });
-        } else {
-          document.querySelector('[data-profile-step="basics"]')?.scrollIntoView({ block: "start", behavior: "smooth" });
-        }
-      });
+      if (["store", "company", "specialist"].includes(role)) {
+        focusProfileWizardActivityStep(role);
+      }
     },
   };
 }
@@ -4139,8 +4132,21 @@ document.addEventListener("click", (e) => {
   if (!t) return;
   let [a, s] = t.dataset.action.split(":");
   if (a === "pay-profile" && s === "resume") {
-    mergeCatalogDirectionsForPayResume();
-    resumePayProfileCategoriesTrip(clientAppealsConfig(), {
+    if (profileHasUnsavedChanges(i.role)) {
+      const leave = window.confirm(
+        "Есть несохранённые изменения в профиле. Вернуться к оплате без сохранения категорий?\n\nНажмите «Отмена», чтобы сохранить профиль («Сохранить профиль») или отменить правки.",
+      );
+      if (!leave) {
+        U(
+          "Сохраните профиль на шаге «Проверка» или нажмите «Отменить», затем вернитесь к оплате.",
+          "info",
+        );
+        return;
+      }
+      revertProfileWizardDraft(i.role);
+    }
+    clearProfileWizardPayCategoriesTrip(i.role);
+    const resumed = resumePayProfileCategoriesTrip(clientAppealsConfig(), {
       refresh: R,
       notify: (m, tone) => U(m, tone || "success"),
       clearNotice: () => {
@@ -4148,14 +4154,67 @@ document.addEventListener("click", (e) => {
         Re();
       },
     });
+    if (!resumed) return;
     i.page = "clients";
     i.screen = "cabinet";
     i.notice = "";
     T();
     return;
   }
+  if (a === "nav") {
+    const resolvedPage = ["bonus", "settlements"].includes(s)
+      ? "wallet"
+      : s === "links" && !qe()
+        ? "partners"
+        : s === "links" && qe()
+          ? "profile"
+          : s;
+    const leavingProfile =
+      i.page === "profile" && i.screen === "cabinet" && resolvedPage !== "profile";
+    if (leavingProfile) {
+      const cfg = clientAppealsConfig();
+      if (getPayProfileReturnContext(cfg.key)) {
+        if (profileHasUnsavedChanges(i.role)) {
+          const leave = window.confirm(
+            "Есть несохранённые изменения в профиле. Уйти без сохранения категорий? Черновик оплаты останется, но вернуться к нему можно только через «Оформить оплату» заново.\n\nНажмите «Отмена», чтобы сохранить профиль или отменить правки.",
+          );
+          if (!leave) {
+            U(
+              "Сохраните профиль на шаге «Проверка» или нажмите «Отменить», затем выберите раздел в меню.",
+              "info",
+            );
+            return;
+          }
+          revertProfileWizardDraft(i.role);
+        }
+        clearPayProfileReturnContext(cfg.key);
+        clearProfileWizardPayCategoriesTrip(i.role);
+      }
+    }
+    if (s === "clients") {
+      ge = null;
+      resetClientAppealsNav(clientAppealsConfig());
+    }
+    i.page = s;
+    i.notice = "";
+    if (["bonus", "settlements"].includes(s)) {
+      showWalletSection(i.role, s);
+      i.page = "wallet";
+    }
+    if (s === "links" && !qe()) {
+      showPartnerInvitations(i.role);
+      i.page = "partners";
+    }
+    if (s === "links" && qe()) {
+      Ge.selectTab("team");
+      i.page = "profile";
+    }
+    T();
+    return;
+  }
   if (a === "pay-profile" && s === "abandon") {
     clearPayProfileReturnContext(clientAppealsConfig().key);
+    clearProfileWizardPayCategoriesTrip(i.role);
     z.querySelector("[data-pay-profile-return]")?.remove();
     return;
   }
@@ -4470,19 +4529,6 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       s !== "cabinet" && (entryState.returning = false, entryState.accepted = false, entryState.invite = false, entryState.registering = false),
       (i.page = "home"),
       (i.notice = ""),
-      T()),
-    a === "nav" &&
-      (s === "clients" &&
-        (ge = null,
-        !getPayProfileReturnContext(clientAppealsConfig().key) && resetClientAppealsNav(clientAppealsConfig())),
-      (i.page = s),
-      (i.notice = ""),
-      ["bonus", "settlements"].includes(s) &&
-        (showWalletSection(i.role, s), (i.page = "wallet")),
-      s === "links" &&
-        !qe() &&
-        (showPartnerInvitations(i.role), (i.page = "partners")),
-      s === "links" && qe() && (Ge.selectTab("team"), (i.page = "profile")),
       T()),
     a === "edit-profile" && ((i.screen = "form"), T()),
     a === "demo-invite" && ((i.invite = "valid"), R()),

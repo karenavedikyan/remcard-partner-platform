@@ -357,13 +357,66 @@ function wizard(s) {
 export function renderProfileWizard(config, mode = "overview") {
   const s = session(config);
   // Opening Basic data from the saved overview explicitly enters editing.
-  if (mode === "basics" && s.lastMode !== "basics" && !s.editing) {
+  if (mode === "basics" && s.lastMode !== "basics" && !s.editing && !s.payCategoriesTrip) {
     s.editing = true;
     s.step = 0;
     s.draft = clone(s.saved);
   }
   s.lastMode = mode;
   return `<div class="pw" data-profile-wizard="${config.role}">${s.editing ? wizard(s) : summary(s)}</div>`;
+}
+
+/** Basics wizard → step with products/services (pay form), without catalog/publication. */
+export function primeProfileWizardPayCategories(config) {
+  const s = session(config);
+  const base = {
+    products: [],
+    services: [],
+    stages: [],
+    partnerSearchOptIn: true,
+    ...clone(config.data),
+  };
+  s.saved = clone(base);
+  s.draft = clone(base);
+  s.editing = true;
+  s.step = config.role === "agent" ? 0 : 1;
+  s.lastMode = "basics";
+  s.payCategoriesTrip = true;
+  s.group = config.role === "specialist" ? "services" : "products";
+  s.query = "";
+  s.errors = {};
+  s.message = "";
+  return s;
+}
+
+export function clearProfileWizardPayCategoriesTrip(role) {
+  const s = sessions.get(role);
+  if (s) s.payCategoriesTrip = false;
+}
+
+export function revertProfileWizardDraft(role) {
+  const s = sessions.get(role);
+  if (!s) return;
+  const root = document.querySelector(`[data-profile-wizard="${role}"]`);
+  if (root && s.editing) capture(s, root);
+  s.draft = clone(s.saved);
+  s.editing = false;
+  s.payCategoriesTrip = false;
+  s.errors = {};
+}
+
+export function focusProfileWizardActivityStep(role) {
+  requestAnimationFrame(() => {
+    const root = document.querySelector(`[data-profile-wizard="${role}"]`);
+    if (!root) return;
+    root.scrollIntoView({ block: "start", behavior: "smooth" });
+    const title = root.querySelector("#pw-title");
+    title?.focus({ preventScroll: true });
+    root.querySelector('[data-pw-action="edit-directions"]')?.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  });
 }
 function capture(s, root) {
   root.querySelectorAll("[name]").forEach((el) => {
@@ -577,6 +630,7 @@ export function hydrateProfileWizards() {
       } else if (action === "cancel") {
         s.draft = clone(s.saved);
         s.editing = false;
+        s.payCategoriesTrip = false;
         s.errors = {};
         s.message = "Изменения отменены.";
       } else if (action.startsWith("step-")) {
@@ -630,6 +684,7 @@ export function hydrateProfileWizards() {
         s.saved = clone(s.draft);
         s.config.save(clone(s.saved));
         s.editing = false;
+        s.payCategoriesTrip = false;
         s.message = "Профиль сохранён в макете. Рабочий ЛК не изменён.";
       }
       paint(s);
