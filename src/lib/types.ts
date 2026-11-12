@@ -150,11 +150,24 @@ export type PartnershipTerm = {
   minMargin: number | null;
 };
 
+export type PartnershipCooperationContact = {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+};
+
+export type PartnershipUserBranch = {
+  address: string;
+  city: string;
+};
+
 export type PartnershipUser = {
   id: string;
   displayName: string | null;
   photoUrl?: string | null;
   city: string | null;
+  /** Existing list read: branch geography (separate from additive `areas`). */
+  branches?: PartnershipUserBranch[] | null;
   specializations: string[];
   storeCategories: string[];
   partnerType: string | null;
@@ -164,6 +177,14 @@ export type PartnershipUser = {
   workingNavigatorStageIds?: string[];
   organizationName?: string | null;
   organizationLogoUrl?: string | null;
+  /**
+   * Additive GET /api/partnership/list enrichment (authorized counterparty only).
+   * Never synthesize `publicId` from `id`; never fall back to registration contacts.
+   */
+  publicId?: string | null;
+  description?: string | null;
+  partnershipContact?: PartnershipCooperationContact | null;
+  areas?: string[] | null;
 };
 
 export type Partnership = {
