@@ -1857,6 +1857,35 @@
   .settlement-parties { grid-template-columns: 1fr; }
   .settlement-amount { text-align: left; grid-template-columns: 1fr auto; width: 100%; align-items: center; }
 }
+.settlement-master-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-4);
+  margin-bottom: var(--pw-4);
+}
+
+.settlement-direction-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settlement-direction-tiles .pw-btn[aria-pressed="true"] {
+  outline: 2px solid var(--pw-accent, #c12b2f);
+  outline-offset: 2px;
+}
+
+.counterparty-profile h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+
+.counterparty-profile section + section {
+  margin-top: var(--pw-4);
+  padding-top: var(--pw-4);
+  border-top: 1px solid var(--pw-border, #e8e6e1);
+}
+
 .cab-wallet-intro {
   margin-bottom: var(--pw-6);
 }

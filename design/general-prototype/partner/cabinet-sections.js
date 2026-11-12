@@ -25,7 +25,8 @@ function view(role) {
     views.set(role, {
       partners: "active",
       invites: "incoming",
-      wallet: "accruals",
+      wallet: "settlements",
+      walletSubview: null,
     });
   return views.get(role);
 }
@@ -38,9 +39,19 @@ export function showPartnerInvitations(role) {
 }
 export function showWalletSection(role, section) {
   const v = view(role);
+  v.walletSubview = null;
   if (section === "requisites") v.wallet = "requisites";
-  else if (section === "settlements") v.wallet = "settlements";
-  else v.wallet = "accruals";
+  else v.wallet = "settlements";
+}
+
+export function openWalletMasterLedger(role) {
+  const v = view(role);
+  v.wallet = "settlements";
+  v.walletSubview = "master-ledger";
+}
+
+export function closeWalletMasterLedger(role) {
+  view(role).walletSubview = null;
 }
 export function renderPartners(config) {
   const s = view(config.role);
@@ -129,47 +140,60 @@ export function renderBankDetails(config) {
 }
 function walletTabs(config, active) {
   const items = [];
-  const canAccruals =
-    config.allowed.includes("bonus") || config.allowed.includes("history");
-  const canSettle = config.allowed.includes("settlements");
-  if (canAccruals) items.push(["accruals", "Бонусы и начисления"]);
-  if (canSettle) items.push(["settlements", "Взаиморасчёты"]);
+  const canWorkspace =
+    config.allowed.includes("bonus") ||
+    config.allowed.includes("history") ||
+    config.allowed.includes("settlements");
+  if (canWorkspace) items.push(["settlements", "Взаиморасчёты"]);
   items.push(["requisites", "Реквизиты"]);
-  return { items, active: items.some(([id]) => id === active) ? active : items[0][0] };
+  const resolved =
+    active === "requisites"
+      ? "requisites"
+      : active === "settlements" || active === "accruals" || active === "bonus"
+        ? "settlements"
+        : active;
+  return {
+    items,
+    active: items.some(([id]) => id === resolved) ? resolved : items[0][0],
+  };
 }
 
 export function renderWallet(config) {
   const s = view(config.role);
-  const canAccruals =
-    config.allowed.includes("bonus") || config.allowed.includes("history");
-  const canSettle = config.allowed.includes("settlements");
-  if (!canAccruals && !canSettle)
-    return `<section class="pw pw-card" data-testid="wallet-denied"><h2>Кошелёк недоступен</h2><p class="pw-muted">Работодатель не назначил право просмотра бонусов, истории или взаиморасчётов. Другие разделы ЛК остаются без изменений.</p></section>`;
+  const canWorkspace =
+    config.allowed.includes("bonus") ||
+    config.allowed.includes("history") ||
+    config.allowed.includes("settlements");
+  if (!canWorkspace)
+    return `<section class="pw pw-card" data-testid="wallet-denied"><h2>Кошелёк недоступен</h2><p class="pw-muted">Работодатель не назначил право просмотра взаиморасчётов. Другие разделы ЛК остаются без изменений.</p></section>`;
   const { items, active } = walletTabs(config, s.wallet);
   s.wallet = active;
   const incomingOnly = config.role === "agent";
+  const masterLedger =
+    config.allowed.includes("settlements") ||
+    (config.role !== "employee" &&
+      ["store", "company", "specialist", "agent"].includes(config.role));
   let panel = "";
-  if (s.wallet === "accruals" && canAccruals) {
-    panel = renderWalletAccruals(config, {
-      incomingOnly,
-      ledgerLink: canSettle,
-      agentRegistryLink: config.role === "agent",
-    });
-  } else if (s.wallet === "settlements" && canSettle) {
-    panel = renderSettlementDemo(config);
+  if (s.wallet === "settlements") {
+    if (s.walletSubview === "master-ledger" && masterLedger) {
+      panel = renderSettlementDemo({
+        ...config,
+        walletMasterLedger: true,
+      });
+    } else {
+      panel = renderWalletAccruals(config, {
+        incomingOnly,
+        ledgerLink: masterLedger,
+        agentRegistryLink: config.role === "agent",
+        historyHubLink: !incomingOnly || config.role === "agent",
+      });
+    }
   } else {
     panel = renderBankDetails({ ...config, location: "wallet" });
   }
-  const lead =
-    config.role === "employee"
-      ? "Рабочий кошелёк организации. Доступны только подразделы, назначенные управляющим."
-      : incomingOnly
-        ? "Начисления по сертификатам и рекомендациям. Агент видит только входящие бонусы."
-        : "Бонусы, история операций и расчёты с партнёрами — как на опубликованном кабинете.";
-  return `<div class="pw cab-sections cab-wallet-shell" data-cabinet-sections data-cab-role="${config.role}" data-testid="wallet-shell">
-    <div class="cab-wallet-intro"><h2>Кошелёк RemCard</h2><p class="pw-muted">${lead}</p></div>
-    <div class="cab-wallet-actions settlement-wallet-tabs">${tabs(items, s.wallet, "wallet")}</div>
-    <div class="cab-panel">${panel}</div>
+  return `<div class="pw cab-sections cab-wallet-shell" data-cabinet-sections data-cab-role="${config.role}" data-testid="wallet-shell" data-wallet-tab="${s.wallet}">
+    <div class="cab-wallet-actions settlement-wallet-tabs" role="tablist" aria-label="Кошелёк">${tabs(items, s.wallet, "wallet")}</div>
+    <div class="cab-panel" data-wallet-panel="${s.walletSubview || s.wallet}">${panel}</div>
     <p class="pw-footnote">Демонстрационные суммы и записи. Выплаты, переводы и API не выполняются.</p>
     </div>`;
 }
@@ -258,8 +282,12 @@ function renderLegacyWallet(config) {
 export function hydrateCabinet(config) {
   const walletConfig = {
     ...config,
-    openWalletSettlements: () => {
-      view(config.role).wallet = "settlements";
+    openWalletMasterLedger: () => {
+      openWalletMasterLedger(config.role);
+      config.refresh?.();
+    },
+    closeWalletMasterLedger: () => {
+      closeWalletMasterLedger(config.role);
       config.refresh?.();
     },
   };
@@ -404,12 +432,10 @@ export function hydrateCabinet(config) {
         } else {
           const v = view(config.role);
           const [group, ...rest] = action.split("-");
-          if (group === "wallet" && rest[0] === "settlements") {
-            v.wallet = "settlements";
-          } else if (group === "wallet" && rest[0] === "requisites") {
-            v.wallet = "requisites";
-          } else if (group === "wallet") {
-            v.wallet = "accruals";
+          if (group === "wallet") {
+            v.walletSubview = null;
+            v.wallet =
+              rest[0] === "requisites" ? "requisites" : "settlements";
           } else if (["partners", "invites"].includes(group)) {
             v[group] = rest.join("-");
           }

@@ -1036,6 +1036,20 @@
   width: auto;
 }
 
+.wallet-accruals-history__hub-link {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pw-accent, #c12b2f);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-bottom: 6px;
+}
+
+.wallet-accruals-history__hub-link:hover {
+  opacity: 0.88;
+}
+
 .wallet-accruals-history__filters {
   display: flex;
   flex-wrap: wrap;

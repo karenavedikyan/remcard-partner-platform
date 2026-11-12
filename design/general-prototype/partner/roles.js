@@ -69,6 +69,7 @@ import {
   hydrateCabinet,
   showPartnerInvitations,
   showWalletSection,
+  openWalletMasterLedger,
 } from "./cabinet-sections.js";
 import "./chunk-5TBO732O.js";
 var xe =
@@ -162,7 +163,7 @@ function Lt(e) {
           archive: "active",
           status: "",
           sort: "newest",
-          size: 25,
+          size: m === "partners" ? 10 : 25,
           page: 1,
           view: "list",
           selected: new Set(),
@@ -300,7 +301,7 @@ function Lt(e) {
     return (
       le(c),
       `<section class="collection" data-collection="${l(c)}" aria-label="${l(m.title || "Список записей")}">${re(c)}${Q(c)}${K(c)}${u(c)}
-      <div class="collection-footer"><label class="field">На странице<select ${b(c)} data-coll-control="size">${[25, 50, 100].map((j) => `<option ${g.size === j ? "selected" : ""}>${j}</option>`).join("")}</select></label><span>Страница ${g.page} из ${q}</span><div class="row">${A(c, "prev", "Назад", g.page <= 1 ? "disabled" : "")}${A(c, "next", "Далее", g.page >= q ? "disabled" : "")}</div></div>
+      <div class="collection-footer"><label class="field">На странице<select ${b(c)} data-coll-control="size">${(m.type === "partners" ? [10, 25, 50] : [25, 50, 100]).map((j) => `<option ${g.size === j ? "selected" : ""}>${j}</option>`).join("")}</select></label><span>Страница ${g.page} из ${q}</span><div class="row">${A(c, "prev", "Назад", g.page <= 1 ? "disabled" : "")}${A(c, "next", "Далее", g.page >= q ? "disabled" : "")}</div></div>
       ${m.seed !== !1 ? `<details class="collection-demo"><summary>Проверить макет с большим списком</summary><p class="small">Добавит до 80 вымышленных записей только в этот просмотр. На одной записи можно проверить повтор после временной ошибки.</p>${A(c, "seed", "Добавить 80 демозаписей")}</details>` : ""}</section>`
     );
   }
@@ -2559,7 +2560,7 @@ function recordActionToolbar(type, item, key, readOnly = false, showOpen = false
       : "";
   return `<div class="certificate-list-actions record-action-toolbar" role="group" aria-label="Действия с записью «${r(item.alias || item.name)}»">
     ${showOpen ? button("eye", "Открыть карточку", "open") : ""}
-    ${editable ? button("share-2", "Поделиться", "share") + button("pencil", "Переименовать", "rename") + button(item.archived ? "archive-restore" : "archive", item.archived ? "Вернуть из архива" : "В архив", "archive") + button("trash-2", "Удалить", "delete", true) : ""}
+    ${editable ? button("share-2", "Поделиться", "share") + button("pencil", "Переименовать для себя", "rename") + button(item.archived ? "archive-restore" : "archive", item.archived ? "Вернуть из архива" : "В архив", "archive") + button("trash-2", type === "partners" ? "Убрать из списка" : "Удалить", "delete", true) : ""}
   </div>${coopAction}`;
 }
 function showRecordShare(text, note = "Ничего не отправляется автоматически. В прототипе рабочая ссылка не создаётся.") {
@@ -3780,7 +3781,7 @@ function Oa(e, t, a) {
     n = G.find((l) => l.id === t.id);
   E(
     t.name,
-    `<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small">Архив в списке не меняет эти условия и доступность партнёра в сертификате. Пауза сотрудничества независима от архива.</p>`,
+    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
   );
   se.querySelector(".dialog-body").insertAdjacentHTML("beforeend", `<div class="record-card-actions">${recordActionToolbar("partners", t, a, k() && !O("terms"), false, false)}</div>`);
   if (!k() || O("ledger"))
@@ -4352,7 +4353,7 @@ document.addEventListener("click", (e) => {
     const partner = P.find((partner) => partner.id === s);
     if (!partner) return;
     openSettlementPartner({ role: i.role, employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) }, s, partner.name);
-    showWalletSection(i.role, "settlements");
+    openWalletMasterLedger(i.role);
     if (se.open) _();
     i.page = "wallet";
     T();

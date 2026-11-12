@@ -7,14 +7,14 @@
 
 | Published (src) | Prototype module | Parity |
 | --- | --- | --- |
-| `WalletAccrualsShell` / `WalletAccrualsWorkspace` | `wallet-accruals.js` via `cabinet-sections.js` → default tab **Бонусы и начисления** | **Aligned presentation** — direction toggle, edition selector, receivable/payable cards, history rail, detail dialogs, client purchase drill-down, scenario selector |
-| History link / filters | `renderHistoryPanel`, `history-filter:*` | **Aligned** (demo data) |
-| Role: agent `incomingOnly` | `incomingOnly` + hidden outbound UI | **Aligned** |
-| Employee / org scope | Demo scenarios + rights via `allowed` / `Te()` | **Partial** — org/staff **scope keys** from prod not fully modeled; rights gate tabs and settlements |
-| Extensions: master ledger | `wallet-open-master-ledger` → вкладка «Взаиморасчёты» | **Aligned navigation** |
-| Extensions: agent registry | `wallet-open-agent-registry` → panel «Получено» (demo) | **Gap** — no dedicated agent registry page like prod |
-| `SettlementsHub` / ledger | `settlement-demo.js` (вкладка «Взаиморасчёты») | **Aligned core flows** — partner drill-down, batch pay, reconciliation, OTP demo |
-| Bank requisites in wallet | `renderBankDetails` | **Aligned** |
+| `WalletPrototypeShell` tabs **Взаиморасчёты** / **Реквизиты** | `cabinet-sections.js` `renderWallet` | **Aligned** (company/store/specialist/agent) |
+| `WalletAccrualsShell` inside settlements tab | `wallet-accruals.js` | **Aligned** — «Мне должны»/«Я должен», card confirmed/pending, quick **Ожидает**/**График**/**Выплачено**, history filters |
+| History hub link `/history` | `wallet-history-hub-link` → `partner-wallet-history.html` | **Aligned entry** (demo page) |
+| Extensions: master ledger | `wallet-open-master-ledger` → subview `settlement-demo` + **← К кошельку** | **Aligned** — search/filters, Excel весь отбор, направления, сверка |
+| Extensions: agent registry | `wallet-open-agent-registry` → panel «Получено» | **Gap** — no full `AgentReceivablesHub` page |
+| Role: agent `incomingOnly` | `incomingOnly` | **Aligned** |
+| Employee / org scope | `allowed` / `Te()` | **Partial** — branch merge not modeled |
+| Bank requisites | `renderBankDetails` | **Aligned** |
 | Refresh notice / live payout errors | — | **Gap** — no server refresh banner |
 | Standalone `partner-wallet-history.html` | Reference page | **Supplemental** — cabinet uses integrated history rail |
 
@@ -26,7 +26,8 @@
 | Find / invite / link flows | `hubFindShell`, `openPartnerInviteWizard`, `external-partner` | **Aligned (demo catalog)** |
 | `AgentPartnersHub` modal composition | Shared redesign + agent copy in invite wizard | **Partial** — single shell; agent-specific hub modal split from prod not duplicated 1:1 |
 | Partnership detail / terms / pause | `cooperation-controls.js` on collection rows | **Aligned meaningful flows** — terms edit, respond side, pause (demo) |
-| Counterparty profile surface | Cooperation dialog + legal blocks in settlement/partners rows | **Partial** — prod `CounterpartyProfile` composite (ECD) not a separate route; prototype uses cooperation panel + ledger legal captions |
+| `PartnerPartnershipDetailDialog` / CounterpartyProfile blocks | `counterpartyProfileHtml` + `Oa()` dialog + `coop.cardBlockHtml` | **Aligned demo** — О партнёре, направления (товары/услуги/этапы), география, контакт, ваше сотрудничество, copy ID, archive vs pause note |
+| List toolbar 10/25/50, list/card, row actions | `collection` in `roles.js` | **Aligned labels** — Открыть карточку, Поделиться, Переименовать для себя, В архив, Убрать из списка, Изменить условия (`coop-list-actions`) |
 | `AgentPartnerCollection` cards | `compactPartnerCollection` + `collection` renderer | **Aligned** |
 | Legacy `cabinet-sections.renderPartners` (2 tabs) | **Unused** in `roles.js` (`renderPartnersRedesign` only) | **Retired from nav** — file kept for reference |
 

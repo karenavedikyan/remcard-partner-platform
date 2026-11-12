@@ -412,6 +412,7 @@ export function initCooperationControls(context) {
     isPaused: (partnerId) => ensure(partnerId).cooperation === "paused",
     statusLabel: (partnerId) => statusLabel(ensure(partnerId)),
     listActionHtml,
+    counterpartyProfileHtml,
     cardBlockHtml,
     openTermChange,
     openPauseConfirm,
@@ -443,6 +444,25 @@ function captureTriggerFromEvent(event) {
   if (t.hasAttribute("data-coll-open") || openers.has(kind)) {
     captureTrigger(t);
   }
+}
+
+function counterpartyProfileHtml(partner) {
+  if (!partner) return "";
+  const demoPublicId = `RC-${String(partner.id).replace(/[^a-z0-9]/gi, "").slice(0, 8).toUpperCase() || "DEMO"}`;
+  const typeLabel =
+    { store: "Магазин", company: "Компания", specialist: "Специалист", agent: "Агент" }[
+      partner.type
+    ] || "Партнёр";
+  const topics = partner.topics?.length ? partner.topics : ["Отделка", "Материалы"];
+  const goods = topics.filter((t) => /материал|плитк|свет|товар/i.test(t)).join(", ") || "—";
+  const stages = ["Подготовка", "Черновые работы", "Отделка"];
+  return `<div class="counterparty-profile stack" data-testid="counterparty-profile">
+    <section data-testid="counterparty-about"><h3>О партнёре</h3><p class="small">${escapeHtml(typeLabel)} · ${escapeHtml(partner.city || "Город не указан")}</p><p class="small muted">Публичный ID: <code data-testid="counterparty-public-id">${escapeHtml(demoPublicId)}</code> <button type="button" class="btn ghost" data-action="coop-copy-id:${escapeHtml(partner.id)}" data-testid="counterparty-copy-id">Скопировать ID</button></p></section>
+    <section data-testid="counterparty-directions"><h3>Направления работы</h3><dl class="pw-facts"><div><dt>Товары</dt><dd>${escapeHtml(goods)}</dd></div><div><dt>Услуги</dt><dd>${escapeHtml(topics.join(", "))}</dd></div><div><dt>Этапы ремонта</dt><dd>${escapeHtml(stages.join(" · "))}</dd></div></dl></section>
+    <section data-testid="counterparty-geo"><h3>География</h3><p class="small">${escapeHtml(partner.city || "Работа по городу профиля")}${partner.city ? " · демо-зона" : ""}</p></section>
+    <section data-testid="counterparty-contact"><h3>Контакт для сотрудничества</h3><p class="small">Демо-канал: согласование через RemCard. Реальные контакты не показываются в макете.</p></section>
+    <section data-testid="counterparty-cooperation-heading"><h3>Ваше сотрудничество</h3><p class="small muted">Категории, пауза и изменение условий — ниже.</p></section>
+  </div>`;
 }
 
 function listActionHtml(partner, { readOnly = false } = {}) {
@@ -962,6 +982,15 @@ function handleClick(event) {
   }
 
   const partner = id ? api.getPartner(id) : null;
+
+  if (kind === "coop-copy-id" && id) {
+    const code = document.querySelector(`[data-testid="counterparty-public-id"]`)?.textContent?.trim() || `RC-${id}`;
+    void navigator.clipboard.writeText(code).then(
+      () => api.notice?.("ID скопирован · демо"),
+      () => api.notice?.("Скопируйте ID вручную из карточки"),
+    );
+    return true;
+  }
 
   if (kind === "coop-change-terms" && partner) {
     if (!canWrite()) return true;

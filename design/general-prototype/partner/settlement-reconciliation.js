@@ -47,12 +47,18 @@ function groupedEvents(events) {
   return rows;
 }
 export function renderReconciliation(s, { money, esc, button, orderSummary, paginate }) {
-  const records = s.records.filter((r) => r.partnerId === s.partner && (!s.incomingOnly || r.direction === "in"));
+  const records = s.partner
+    ? s.records.filter((r) => r.partnerId === s.partner && (!s.incomingOnly || r.direction === "in"))
+    : s.records.filter((r) => !s.incomingOnly || r.direction === "in");
   const f = s.reconciliation, result = reconcile(records, f);
   const directions = s.incomingOnly ? [["in", "Партнёр должен вам"]] : [["in", "Партнёр должен вам"], ["out", "Вы должны партнёру"]];
   const events = groupedEvents(result.events);
   const page = paginate ? paginate(events) : {items:events,controls:""};
-  return `<section class="settlement-reconciliation" data-testid="settlement-reconciliation"><h3>Сверка с партнёром ${esc(s.partnerName)}</h3><p class="pw-muted">${s.incomingOnly ? "Только ваши расчёты к получению." : "Оба направления отдельно."} По всем расчётам этого партнёра, независимо от поиска и фильтров вкладки «Обязательства». Это сводка, а не подписанный акт сверки.</p>
+  const title = s.partner ? `Сверка с партнёром ${esc(s.partnerName)}` : "Сверка за период";
+  const lead = s.partner
+    ? `${s.incomingOnly ? "Только ваши расчёты к получению." : "Оба направления отдельно."} По всем расчётам этого партнёра, независимо от поиска и фильтров вкладки «Обязательства». Это сводка, а не подписанный акт сверки.`
+  : "Сводка по всем учебным расчётам кабинета за выбранный период. Демо, без юридической силы.";
+  return `<section class="settlement-reconciliation" data-testid="settlement-reconciliation"><h3>${title}</h3><p class="pw-muted">${lead}</p>
     <div class="settlement-filter-grid"><label class="pw-field"><span>Начало периода</span><input type="date" required data-reconciliation-filter="from" data-testid="reconciliation-from" value="${esc(f.from)}"></label><label class="pw-field"><span>Конец периода включительно</span><input type="date" required data-reconciliation-filter="to" data-testid="reconciliation-to" value="${esc(f.to)}"></label></div>
     ${button("Весь учебный период", "reconciliation-reset")}
     <details class="ledger-document-legal" data-testid="reconciliation-legal-parties"><summary>Стороны сверки · ${legalGroups(records).length}</summary>${legalGroups(records).map(g=>`${renderLegalParties(g,esc)}<small>Заказов: ${g.records.length}</small>`).join("")}<p class="pw-footnote">Юридические стороны взяты из снимков заказов, не из текущего профиля. Незаполненная сторона отмечена явно.</p></details>

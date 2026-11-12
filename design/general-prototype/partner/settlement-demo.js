@@ -124,15 +124,36 @@ export function renderSettlementDemo(config) {
   const incoming = scope.filter((r) => r.direction === "in").reduce((n, r) => n + remaining(r), 0);
   const outgoing = scope.filter((r) => r.direction === "out").reduce((n, r) => n + remaining(r), 0);
   const demoFooter = `<details class="settlement-demo-note"><summary>О демонстрации</summary><p class="pw-footnote">Учебные суммы и операции. Реальные переводы, SMS и данные ЛК не подключены.</p><p class="pw-footnote">Награда в ожидании ≠ ожидание подтверждения получателем. Подтверждённый баланс не включает ожидание, приостановление, отмену и выплаченное.</p><div class="cab-actions">${button("Добавить 120 учебных расчётов", "seed-ledger", s.bulkSeeded ? "disabled" : "")}${button("Начать демо заново", "reset")}</div></details>`;
-  const presentation = `<div class="ledger-presentation">${renderLedgerView(s)}${button(s.exportBusy ? "Готовим Excel…" : "Excel (.xlsx)", "export", `${s.exportBusy ? "disabled" : ""} title="Скачать весь текущий отбор, включая все страницы"` )}</div>${s.exportMessage ? `<p class="pw-footnote" role="status" data-testid="ledger-export-status">${esc(s.exportMessage)}</p>` : ""}`;
+  const presentation = `<div class="ledger-presentation">${renderLedgerView(s)}${button(s.exportBusy ? "Готовим Excel…" : "Excel (.xlsx, весь отбор)", "export", `${s.exportBusy ? "disabled" : ""} title="Скачать весь текущий отбор, включая все страницы"` )}</div>${s.exportMessage ? `<p class="pw-footnote" role="status" data-testid="ledger-export-status">${esc(s.exportMessage)}</p>` : ""}`;
+  const masterLedger = Boolean(config.walletMasterLedger);
+  const receivableTotal = scope.filter((r) => r.direction === "in").reduce((n, r) => n + remaining(r), 0);
+  const payableTotal = scope.filter((r) => r.direction === "out").reduce((n, r) => n + remaining(r), 0);
+  const masterChrome = masterLedger
+    ? `<div class="settlement-master-chrome" data-testid="specialist-settlements-workspace">
+      ${button("← К кошельку", "wallet-ledger-back", "", true)}
+      <motion-replace/>
+      <h2 class="sr-only">Реестр, сверка и Excel</h2>
+      <div class="settlement-direction-tiles" role="group" aria-label="Направления в реестре">
+        ${button(`Мне должны · ${money(receivableTotal)}`, "direction:in", s.direction === "in" && s.screen !== "reconciliation" ? 'aria-pressed="true"' : "")}
+        ${s.incomingOnly ? "" : button(`К выплате партнёрам · ${money(payableTotal)}`, "direction:out", s.direction === "out" && s.screen !== "reconciliation" ? 'aria-pressed="true"' : "")}
+        ${button("Сверка за период", "filter:reconciliation", s.filter === "reconciliation" ? 'aria-pressed="true"' : "")}
+      </div>
+      <details class="settlement-search-drawer" open><summary>Поиск и фильтры</summary>${renderLedgerFilters(s, { money, esc, button })}</details>
+      </div>`.replace("<motion-replace/>", "")
+    : "";
   if (!s.partner && s.screen === "overview") {
     const paginate = ledgerPaginator(s, `partners:${s.direction}:${s.filter}`, button);
     const batchTools = { money, esc, button, paginate };
     const filtered = sortLedger(filterLedger(scope, s.direction, s.analysis), s.analysis.sort);
-    return `<section class="settlement-demo settlement-overview" data-ledger-view="${s.density}" data-settlement-demo data-testid="settlement-demo">
-    <p class="pw-muted settlement-overview-lead">Реестр обязательств с партнёрами, сверка и выгрузка Excel. Карточки бонусов и история — во вкладке «Бонусы и начисления».</p>
+    const body =
+      s.filter === "reconciliation"
+        ? renderReconciliation(s, { ...batchTools, orderSummary: renderOrderSummary })
+        : renderPartnerLedgerList(filtered, s, batchTools);
+    return `<section class="settlement-demo settlement-overview ${masterLedger ? "is-master-ledger" : ""}" data-ledger-view="${s.density}" data-settlement-demo data-testid="settlement-demo">
+    ${masterChrome}
+    ${masterLedger ? "" : `<p class="pw-muted settlement-overview-lead">Реестр обязательств с партнёрами, сверка и выгрузка Excel.</p>`}
     ${presentation}
-    ${renderPartnerLedgerList(filtered, s, batchTools)}
+    ${body}
     ${demoFooter}</section>`;
   }
   const recipientRecord = s.records.find((r) => r.id === s.receiver && r.payment);
@@ -294,9 +315,48 @@ export function hydrateSettlementDemo(config) {
     }
     const r = s.records.find((r) => r.id === id);
     const authorized = r?.direction === "out" && methods(config).length > 0 && (!r.payment || methods(config).some(([method]) => method === r.payment.method));
-    if (action === "filter" && ["all", "history", "reconciliation"].includes(id)) { s.filter = id; s.analysis.status = id === "history" ? "all" : "open"; s.receiver = ""; s.draft = ""; s.reference = null; s.error = ""; s.batchDraft = ""; s.batchSelected = []; s.batchView = ""; }
+    if (action === "wallet-ledger-back") {
+      config.closeWalletMasterLedger?.();
+      return;
+    }
+    if (action === "filter" && ["all", "history", "reconciliation"].includes(id)) {
+      if (config.walletMasterLedger && id === "reconciliation") {
+        s.screen = "overview";
+        s.partner = "";
+        s.partnerName = "";
+      }
+      s.filter = id;
+      s.analysis.status = id === "history" ? "all" : "open";
+      s.receiver = "";
+      s.draft = "";
+      s.reference = null;
+      s.error = "";
+      s.batchDraft = "";
+      s.batchSelected = [];
+      s.batchView = "";
+    }
     if (action === "reconciliation-reset") s.reconciliation = reconciliationDefaults();
-    if (action === "direction" && ["in", "out"].includes(id) && (!s.incomingOnly || id === "in")) { s.screen = "partners"; s.direction = id; s.partner = ""; s.partnerName = ""; s.filter = "all"; s.analysis = analysisDefaults(); s.analysisOpen = false; s.receiver = ""; s.draft = ""; s.reference = null; s.batchDraft = ""; s.batchSelected = []; s.batchView = ""; s.message = ""; }
+    if (action === "direction" && ["in", "out"].includes(id) && (!s.incomingOnly || id === "in")) {
+      if (config.walletMasterLedger) {
+        s.screen = "overview";
+        s.filter = "all";
+      } else {
+        s.screen = "partners";
+        s.filter = "all";
+      }
+      s.direction = id;
+      s.partner = "";
+      s.partnerName = "";
+      s.analysis = analysisDefaults();
+      s.analysisOpen = false;
+      s.receiver = "";
+      s.draft = "";
+      s.reference = null;
+      s.batchDraft = "";
+      s.batchSelected = [];
+      s.batchView = "";
+      s.message = "";
+    }
     if (action === "overview") { s.screen = "overview"; s.partner = ""; s.partnerName = ""; s.analysis = analysisDefaults(); s.message = ""; }
     if (action === "analysis-reset") { s.analysis = analysisDefaults(); s.analysisOpen = false; s.filter = "all"; s.batchDraft = ""; s.batchSelected = []; }
     if (action === "partner") openSettlementPartner(config, id);

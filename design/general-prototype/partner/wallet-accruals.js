@@ -345,7 +345,7 @@ function renderHistoryTotalMarkup(total) {
   return `Всего <span class="wallet-accruals-history__total-value" data-testid="wallet-history-total-value">${esc(amount)}</span><span class="wallet-accruals-history__total-currency">${esc(currency)}</span>`;
 }
 
-function renderHistoryPanel(config, incomingOnly, activeDirection) {
+function renderHistoryPanel(config, incomingOnly, activeDirection, options = {}) {
   const st = getAccrualState(config);
   const direction = incomingOnly ? "in" : activeDirection;
   const lines = linesFor(config);
@@ -415,9 +415,15 @@ function renderHistoryPanel(config, incomingOnly, activeDirection) {
       ? `${clientLedgerHtml}${demoList}`
       : `<p class="wallet-accruals-history__empty pw-muted">Операций пока нет</p>`;
 
+  const historyHub =
+    options.historyHubLink !== false
+      ? `<a href="./partner-wallet-history.html" class="wallet-accruals-history__hub-link" data-testid="wallet-history-hub-link">Покупки и транзакции в разделе «История»</a>`
+      : "";
+
   return `<aside class="wallet-accruals-history" data-testid="wallet-history" data-history-filter="${st.historyFilter}" data-history-direction="${direction}">
     <div class="wallet-accruals-history__header">
       <div class="wallet-accruals-history__header-text">
+        ${historyHub}
         <span class="wallet-accruals-history__eyebrow">История · ${esc(DIRECTION_LABELS[direction])}</span>
         <strong class="wallet-accruals-history__total" data-testid="wallet-history-total">${renderHistoryTotalMarkup(total)}</strong>
       </div>
@@ -1109,7 +1115,7 @@ export function renderWalletAccruals(config, options = {}) {
         </div>
         ${extensions}
       </div>
-      ${renderHistoryPanel(config, incomingOnly, activeDirection)}
+      ${renderHistoryPanel(config, incomingOnly, activeDirection, options)}
     </div>
     <dialog class="wallet-accrual-dialog" data-accrual-dialog aria-labelledby="accrual-panel-title">
       <form method="dialog" class="wallet-accrual-dialog__inner">
@@ -1259,7 +1265,7 @@ export function hydrateWalletAccruals(config, root = document) {
     const action = btn.dataset.accrualAction;
     const st = getAccrualState(config);
     if (action === "open-master-ledger") {
-      config.openWalletSettlements?.();
+      config.openWalletMasterLedger?.();
       return;
     }
     if (action === "open-agent-registry") {
