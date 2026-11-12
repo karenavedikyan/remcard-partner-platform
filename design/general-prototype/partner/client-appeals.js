@@ -1968,6 +1968,37 @@ function clearClientsPreviewNav(s) {
   if (s.view === "observer-partner" || s.view === "observer-client") s.view = "list";
 }
 
+function resetObserverFilters(s) {
+  s.observerQ = "";
+  s.observerPeriod = "all";
+}
+
+function syncClientsPreviewAccess(config) {
+  if (clientsPreviewEligible(config.role, config.readOnly)) return;
+  const s = ws(config.key);
+  const hadPreview =
+    s.clientsPreviewMode ||
+    s.observerPartnerId ||
+    s.observerClientId ||
+    s.view === "observer-partner" ||
+    s.view === "observer-client";
+  if (!hadPreview) return;
+  s.clientsPreviewMode = false;
+  s.clientsDirection = "incoming";
+  clearClientsPreviewNav(s);
+  clearBulkSelection(s);
+  resetObserverFilters(s);
+}
+
+function observerActionsAllowed(config) {
+  const s = ws(config.key);
+  return clientsPreviewEligible(config.role, config.readOnly) && Boolean(s.clientsPreviewMode);
+}
+
+function renderObserverFiltersEmpty() {
+  return `<section class="panel empty ca-empty" data-testid="ca-observer-filter-empty"><h2>По выбранным фильтрам ничего не найдено</h2><p class="muted">Измените поиск или период направления.</p><div class="ca-actions-row"><button type="button" class="btn ghost" data-ca-action="observer:reset-filters">Сбросить фильтры</button></div></section>`;
+}
+
 function ownReferredAppeals() {
   return appeals.filter(
     (a) => a.referrerPartnerId === REFERRER_VIEWER.id && hasCertificateFlow(a) && PARTNERS[a.receivingPartnerId],
@@ -2044,6 +2075,9 @@ function partnerAppealStats(list) {
   return { total, inWork, paidThrough, refusals, returns, lastUpdate, conv: safePct(paidThrough, total) };
 }
 
+const PUBLIC_PAID_HISTORY = /^оплачено(?=\s|[·:—(]|$)/i;
+const PUBLIC_SHIPPED_HISTORY = /^отгружено(?=\s|[·:—(]|$)/i;
+
 function isPublicReferrerHistoryEntry(entry, appeal) {
   const t = String(entry.text || "").trim();
   if (!t) return false;
@@ -2055,8 +2089,8 @@ function isPublicReferrerHistoryEntry(entry, appeal) {
   if (entry.reason && /отказ/i.test(t)) return true;
   if (/^отказ$/i.test(t) && appeal.refusedReason) return true;
   if (/^отказ:/i.test(t) && entry.reason) return true;
-  if (/^оплачено\b/i.test(t)) return true;
-  if (/^отгружено\b/i.test(t)) return true;
+  if (PUBLIC_PAID_HISTORY.test(t)) return true;
+  if (PUBLIC_SHIPPED_HISTORY.test(t)) return true;
   if (/^возврат/i.test(t)) return true;
   return false;
 }
@@ -2072,8 +2106,8 @@ function publicHistoryLine(entry, appeal) {
   if (entry.reason && /отказ/i.test(t)) return `Отказ: ${entry.reason}`;
   if (/^отказ$/i.test(t) && appeal.refusedReason) return `Отказ: ${appeal.refusedReason}`;
   if (/^отказ:/i.test(t) && entry.reason) return `Отказ: ${entry.reason}`;
-  if (/^оплачено\b/i.test(t)) return "Оплачено";
-  if (/^отгружено\b/i.test(t)) return "Отгружено";
+  if (PUBLIC_PAID_HISTORY.test(t)) return "Оплачено";
+  if (PUBLIC_SHIPPED_HISTORY.test(t)) return "Отгружено";
   if (/^возврат/i.test(t)) return "Возврат";
   return "";
 }
@@ -2126,6 +2160,7 @@ function previewOpensObserverDirection(role) {
 }
 
 function previewShowsObserverList(config) {
+  if (!clientsPreviewEligible(config.role, config.readOnly)) return false;
   const s = ws(config.key);
   if (!s.clientsPreviewMode) return false;
   if (config.role === "agent") return true;
@@ -2133,7 +2168,9 @@ function previewShowsObserverList(config) {
 }
 
 function observerSectionClass(config, s) {
+  const eligible = clientsPreviewEligible(config.role, config.readOnly);
   const observer =
+    eligible &&
     s.clientsPreviewMode &&
     (previewShowsObserverList(config) || s.view === "observer-partner" || s.view === "observer-client");
   return observer ? "stack ca-section ca-section--observer" : "stack ca-section";
@@ -2167,6 +2204,9 @@ function renderObserverFilterChips(s) {
 }
 
 function renderObserverPartnersList(config) {
+  if (!clientsPreviewEligible(config.role, config.readOnly) || !ws(config.key).clientsPreviewMode) {
+    return renderListPage(config);
+  }
   const s = ws(config.key);
   const base = ownReferredAppeals();
   const filtered = filterObserverAppeals(s, base);
@@ -2196,13 +2236,19 @@ function renderObserverPartnersList(config) {
       </button>`;
     })
     .join("");
-  const empty =
-    !cards &&
-    `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Пример ваших направлений · демоданные</p></section>`;
+  const empty = !cards
+    ? base.length > 0 && filtered.length === 0
+      ? renderObserverFiltersEmpty()
+      : `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Пример ваших направлений · демоданные</p></section>`
+    : "";
   return `${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
 }
 
 function renderObserverPartnerPage(config) {
+  if (!observerActionsAllowed(config)) {
+    syncClientsPreviewAccess(config);
+    return renderListPage(config);
+  }
   const s = ws(config.key);
   const partnerId = s.observerPartnerId;
   const partner = partnerId ? PARTNERS[partnerId] : null;
@@ -2210,10 +2256,8 @@ function renderObserverPartnerPage(config) {
     s.view = "list";
     return renderObserverPartnersList(config);
   }
-  const list = filterObserverAppeals(
-    s,
-    ownReferredAppeals().filter((a) => a.receivingPartnerId === partnerId),
-  );
+  const basePartner = ownReferredAppeals().filter((a) => a.receivingPartnerId === partnerId);
+  const list = filterObserverAppeals(s, basePartner);
   const stats = partnerAppealStats(list);
   const meta = PARTNER_OBSERVER_META[partnerId];
   const rows = list
@@ -2238,10 +2282,19 @@ function renderObserverPartnerPage(config) {
   </div>
   ${renderObserverFilters(s)}
   ${renderObserverFilterChips(s)}
-  <div class="ca-observer-client-rows">${rows || '<p class="muted panel">Нет обращений по выбранным фильтрам.</p>'}</div>`;
+  <div class="ca-observer-client-rows">${
+    rows ||
+    (basePartner.length > 0 && list.length === 0
+      ? renderObserverFiltersEmpty()
+      : '<p class="muted panel">Нет обращений по выбранным фильтрам.</p>')
+  }</div>`;
 }
 
 function renderObserverClientPage(config) {
+  if (!observerActionsAllowed(config)) {
+    syncClientsPreviewAccess(config);
+    return renderListPage(config);
+  }
   const s = ws(config.key);
   const appeal = appeals.find((a) => a.id === s.observerClientId);
   if (!appeal || appeal.referrerPartnerId !== REFERRER_VIEWER.id) {
@@ -2516,6 +2569,7 @@ function renderListPage(config) {
 export function renderClientAppeals(config) {
   appealsRenderConfig = config;
   ensureSeed(config);
+  syncClientsPreviewAccess(config);
   const s = ws(config.key);
   activeTab = s.tab;
   // sync globals used by ported logic
@@ -2530,11 +2584,15 @@ export function renderClientAppeals(config) {
     const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
     return `<div class="${rootClass}" data-ca-root>${previewChrome}${body}</div>`;
   }
-  if (s.view === "observer-partner") {
+  if (s.view === "observer-partner" && previewShowsObserverList(config) && observerActionsAllowed(config)) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
   }
-  if (s.view === "observer-client") {
+  if (s.view === "observer-client" && observerActionsAllowed(config)) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${previewChrome}${renderObserverClientPage(config)}</div>`;
+  }
+  if (s.view === "observer-partner" || s.view === "observer-client") {
+    syncClientsPreviewAccess(config);
+    return renderClientAppeals(config);
   }
   if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${renderScanInline(config)}</div>`;
   if (s.view === "manual") return `<div class="stack ca-section" data-ca-root>${renderManualInline(config)}</div>`;
@@ -3100,6 +3158,11 @@ export function hydrateClientAppeals(hooks) {
       return;
     }
     if (t.matches('[data-ca-input="preview-mode"]')) {
+      if (!clientsPreviewEligible(config.role, config.readOnly)) {
+        syncClientsPreviewAccess(config);
+        hooks.refresh();
+        return;
+      }
       const next = t.checked;
       s.clientsPreviewMode = next;
       if (next) {
@@ -3167,7 +3230,7 @@ function handleCaAction(action, config, hooks) {
   const s = ws(config.key);
   hooks.clearNotice?.();
   if (action === "direction:incoming") {
-    if (!s.clientsPreviewMode) return;
+    if (!observerActionsAllowed(config)) return;
     s.clientsDirection = "incoming";
     clearObserverNav(s);
     clearBulkSelection(s);
@@ -3178,7 +3241,7 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action === "direction:at-partners") {
-    if (!s.clientsPreviewMode) return;
+    if (!observerActionsAllowed(config)) return;
     s.clientsDirection = "at-partners";
     clearObserverNav(s);
     clearBulkSelection(s);
@@ -3187,6 +3250,7 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action.startsWith("observer:partner:")) {
+    if (!observerActionsAllowed(config)) return;
     s.observerPartnerId = action.split(":")[2];
     s.observerClientId = null;
     s.view = "observer-partner";
@@ -3194,18 +3258,17 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action.startsWith("observer:client:")) {
+    if (!observerActionsAllowed(config)) return;
     s.observerClientId = action.split(":")[2];
     s.view = "observer-client";
     hooks.refresh();
     return;
   }
-  if (action === "observer:clear-q") {
-    s.observerQ = "";
-    hooks.refresh();
-    return;
-  }
-  if (action === "observer:clear-period") {
-    s.observerPeriod = "all";
+  if (action === "observer:clear-q" || action === "observer:clear-period" || action === "observer:reset-filters") {
+    if (!clientsPreviewEligible(config.role, config.readOnly)) return;
+    if (action === "observer:clear-q") s.observerQ = "";
+    else if (action === "observer:clear-period") s.observerPeriod = "all";
+    else resetObserverFilters(s);
     hooks.refresh();
     return;
   }
