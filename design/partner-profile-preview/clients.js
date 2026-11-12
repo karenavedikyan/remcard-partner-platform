@@ -209,9 +209,17 @@
     return `Принимает: ${PARTNERS[appeal.receivingPartnerId]?.name || "—"}`;
   }
 
+  function wholeDaysElapsed(fromIso, toIso) {
+    const a = new Date(fromIso);
+    const b = new Date(toIso);
+    const start = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+    const end = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86400000));
+  }
+
   function formatAgeSince(iso) {
-    const days = daysBetween(iso, new Date().toISOString());
-    if (days <= 0) return "создано сегодня";
+    const days = wholeDaysElapsed(iso, new Date().toISOString());
+    if (days <= 0) return "Создано сегодня";
     if (days === 1) return "1 день с создания";
     if (days < 5) return `${days} дня с создания`;
     return `${days} дн. с создания`;
@@ -224,6 +232,34 @@
 
   function appealHasPaidPurchase(appeal) {
     return Boolean(appeal.purchaseId || appeal.paidAt);
+  }
+
+  /** Когорта: событие зафиксировано в истории или persisted-полях (не только текущий статус). */
+  function appealReachedPaid(appeal) {
+    if (appeal.paidAt || appeal.purchaseId) return true;
+    return appeal.history.some((h) => /оплачено|покупк.*кошельк/i.test(h.text));
+  }
+
+  function appealReachedShipped(appeal) {
+    if (appeal.shippedAt) return true;
+    return appeal.history.some((h) => /отгружено/i.test(h.text));
+  }
+
+  function appealReachedReturn(appeal) {
+    if (appeal.stageId === SYSTEM.RETURN || appeal.returnedAt) return true;
+    return appeal.history.some((h) => /возврат/i.test(h.text));
+  }
+
+  function funnelCohortFromFilters() {
+    const mode = activeTab === "incoming" ? "incoming" : "outgoing";
+    const fromVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-from"))?.value;
+    const toVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-to"))?.value;
+    const periodStart = fromVal ? new Date(`${fromVal}T00:00:00`) : new Date(2026, 9, 1);
+    const periodEnd = toVal ? new Date(`${toVal}T23:59:59`) : new Date();
+    return filterAppeals(mode).filter((a) => {
+      const t = new Date(a.createdAt).getTime();
+      return t >= periodStart.getTime() && t <= periodEnd.getTime();
+    });
   }
 
   function isFinancialStage(stageId) {
@@ -871,53 +907,66 @@
   function renderFunnel() {
     const body = document.getElementById("funnel-body");
     if (!body) return;
-    const fromVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-from"))?.value;
-    const toVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-to"))?.value;
-    const periodStart = fromVal ? new Date(`${fromVal}T00:00:00`) : new Date(2026, 9, 1);
-    const periodEnd = toVal ? new Date(`${toVal}T23:59:59`) : new Date();
-    const sourceKey =
-      activeTab === "incoming"
-        ? document.getElementById("filter-source-incoming")?.value || "all"
-        : document.getElementById("filter-source-outgoing")?.value || "all";
-    let scoped =
-      activeTab === "incoming"
-        ? appeals.filter((a) => a.receivingPartnerId === RECEIVING.id)
-        : appeals.filter((a) => a.referrerPartnerId === REFERRER_VIEWER.id);
-    if (activeTab === "outgoing") {
-      const partner = document.getElementById("filter-partner-outgoing")?.value || "all";
-      if (partner !== "all") scoped = scoped.filter((a) => a.receivingPartnerId === partner);
-    }
-    if (sourceKey !== "all") scoped = scoped.filter((a) => a.sourceKey === sourceKey);
-    const inPeriod = scoped.filter((a) => {
-      const t = new Date(a.createdAt).getTime();
-      return t >= periodStart.getTime() && t <= periodEnd.getTime();
-    });
-    const everPaid = inPeriod.filter((a) => appealHasPaidPurchase(a));
-    const everShipped = inPeriod.filter((a) => a.shippedAt || a.stageId === SYSTEM.SHIPPED);
-    const returns = inPeriod.filter((a) => a.stageId === SYSTEM.RETURN);
-    const byReferrer = new Map();
+    const cohort = funnelCohortFromFilters();
+    const denom = cohort.length;
+    const paidIds = new Set(cohort.filter((a) => appealReachedPaid(a)).map((a) => a.id));
+    const shippedIds = new Set(cohort.filter((a) => appealReachedShipped(a)).map((a) => a.id));
+    const returnIds = new Set(cohort.filter((a) => appealReachedReturn(a)).map((a) => a.id));
+    const paidN = paidIds.size;
+    const shippedN = shippedIds.size;
+    const returnN = returnIds.size;
+
+    let extra = "";
     if (activeTab === "incoming") {
-      inPeriod.forEach((a) => {
+      const byReferrer = new Map();
+      cohort.forEach((a) => {
         const key = isManualAppeal(a) ? "Добавлен вручную" : PARTNERS[a.referrerPartnerId]?.name || "—";
-        const row = byReferrer.get(key) || { created: 0, paid: 0 };
+        const row = byReferrer.get(key) || { created: 0, paid: 0, shipped: 0 };
         row.created += 1;
-        if (appealHasPaidPurchase(a)) row.paid += 1;
+        if (paidIds.has(a.id)) row.paid += 1;
+        if (shippedIds.has(a.id)) row.shipped += 1;
         byReferrer.set(key, row);
       });
+      const refRows = Array.from(byReferrer.entries())
+        .map(
+          ([name, row]) =>
+            `<div class="cl-funnel-row"><span>${esc(name)}</span><strong>${esc(String(row.created))} · опл. ${esc(safePct(row.paid, row.created))} · отгр. ${esc(safePct(row.shipped, row.created))}</strong></div>`
+        )
+        .join("");
+      if (refRows) {
+        extra = `<details class="cl-funnel-nested"><summary>По направившему</summary>${refRows}</details>`;
+      }
+    } else {
+      const byReceiver = new Map();
+      cohort.forEach((a) => {
+        const id = a.receivingPartnerId;
+        const name = PARTNERS[id]?.name || "—";
+        const row = byReceiver.get(id) || { name, created: 0, paid: 0, shipped: 0 };
+        row.created += 1;
+        if (paidIds.has(a.id)) row.paid += 1;
+        if (shippedIds.has(a.id)) row.shipped += 1;
+        byReceiver.set(id, row);
+      });
+      const rows = Array.from(byReceiver.values())
+        .map(
+          (row) =>
+            `<tr><td>${esc(row.name)}</td><td>${esc(String(row.created))}</td><td>${esc(String(row.paid))} · ${esc(safePct(row.paid, row.created))}</td><td>${esc(String(row.shipped))} · ${esc(safePct(row.shipped, row.created))}</td></tr>`
+        )
+        .join("");
+      if (rows) {
+        extra = `<details class="cl-funnel-nested"><summary>По принимающему партнёру</summary>
+          <table class="cl-table cl-funnel-table"><thead><tr><th>Партнёр</th><th>Обращ.</th><th>Оплачено</th><th>Отгружено</th></tr></thead><tbody>${rows}</tbody></table></details>`;
+      }
     }
-    const refRows = Array.from(byReferrer.entries())
-      .map(
-        ([name, row]) =>
-          `<div class="cl-funnel-row"><span>${esc(name)}</span><strong>${esc(String(row.created))} · оплата ${esc(safePct(row.paid, row.created))}</strong></div>`
-      )
-      .join("");
+
     body.innerHTML = `
-      <p class="cl-meta">Когорта: уникальные обращения, созданные в выбранном периоде (фильтры списка учтены).</p>
-      <div class="cl-funnel-row"><span>Создано</span><strong>${esc(String(inPeriod.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Когда-либо «Оплачено»</span><strong>${esc(String(everPaid.length))} · ${esc(safePct(everPaid.length, inPeriod.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Когда-либо «Отгружено»</span><strong>${esc(String(everShipped.length))} · ${esc(safePct(everShipped.length, inPeriod.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Возврат (отдельно)</span><strong>${esc(String(returns.length))}</strong></div>
-      ${activeTab === "incoming" && refRows ? `<p class="cl-meta" style="margin-top:8px">По направившему (в периоде)</p>${refRows}` : ""}`;
+      <p class="cl-meta">По обращениям, созданным за период; состояние на текущий момент. Обращение появляется при первом скане/создании; оплата позже привязывает ту же покупку в кошельке.</p>
+      <div class="cl-funnel-row"><span>Обращения</span><strong>${esc(String(denom))}</strong></div>
+      <div class="cl-funnel-row"><span>→ Оплачено (когда-либо)</span><strong>${esc(String(paidN))} · ${esc(safePct(paidN, denom))}</strong></div>
+      <div class="cl-funnel-row"><span>→ Отгружено (когда-либо)</span><strong>${esc(String(shippedN))} · ${esc(safePct(shippedN, denom))}</strong></div>
+      <div class="cl-funnel-row"><span>Возврат (отдельно)</span><strong>${esc(String(returnN))}</strong></div>
+      <p class="cl-meta">Конверсия по оплате сохраняется по факту достижения «Оплачено», даже если позже был возврат. Без пересчёта прибыли.</p>
+      ${extra}`;
   }
 
   function renderDetail() {
@@ -939,7 +988,7 @@
 
     const certTab = `
       <section aria-labelledby="cert-heading">
-        <h3 id="cert-heading" class="cl-visually-hidden">Сертификат</h3>
+        <h3 id="cert-heading" class="cl-visually-hidden">${manual ? "Клиент" : "Сертификат"}</h3>
         <div class="cl-cert-block">
           <div class="cl-cert-row"><span class="cl-cert-label">ID обращения</span><p class="cl-readonly-value">${esc(appeal.id)}</p></div>
           ${certExtra}
@@ -1024,7 +1073,7 @@
         <p class="cl-meta">${esc(appeal.id)} · <span class="cl-badge cl-badge--accent">${esc(stageLabel(appeal))}</span></p>
       </div>
       <div class="cl-subtabs" role="tablist">
-        <button type="button" class="cl-subtab" role="tab" id="subtab-cert" aria-selected="${detailSubTab === "cert"}">Сертификат</button>
+        <button type="button" class="cl-subtab" role="tab" id="subtab-cert" aria-selected="${detailSubTab === "cert"}">${manual ? "Клиент" : "Сертификат"}</button>
         <button type="button" class="cl-subtab" role="tab" id="subtab-work" aria-selected="${detailSubTab === "work"}">Работа</button>
       </div>
       <div id="detail-panel-cert" ${detailSubTab === "cert" ? "" : 'hidden'}>${certTab}</div>
@@ -1137,7 +1186,7 @@
       </div>`;
     const rewardBlock = purchase.referrerName
       ? purchase.rewardStatusLabel
-        ? `<motion class="cl-wallet-card" style="margin-top:10px">
+        ? `<div class="cl-wallet-card" style="margin-top:10px">
         <span class="cl-wallet-kind cl-wallet-kind--referral">Вознаграждение направившему</span>
         <div>Направил: ${esc(purchase.referrerName)}</div>
         <div><strong>${esc(purchase.rewardStatusLabel)}</strong></div>
@@ -1325,7 +1374,7 @@
     const body = document.getElementById("settings-body");
     if (!body || !settingsDraft) return;
     const systemRows = [
-      ["Новое обращение", "Создание по сертификату"],
+      ["Новое обращение", "Создание обращения"],
       ["Оплачено", "Финансовое событие"],
       ["Отгружено", "Финансовое событие · 14 дней ожидания (демо)"],
       ["Возврат", "Финансовое событие"],

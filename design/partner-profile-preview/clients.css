@@ -77,6 +77,22 @@
   color: var(--pp-text);
 }
 
+.cl-funnel-nested {
+  margin-top: 8px;
+  font-size: var(--pp-xs);
+}
+
+.cl-funnel-nested summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--pp-text);
+}
+
+.cl-funnel-table {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
 .cl-wallet-card {
   padding: 12px;
   border: 1px solid var(--pp-line);
