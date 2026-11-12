@@ -52,6 +52,88 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     { key: "other", label: "Другое" },
   ];
 
+  const DEMO_PAY_CATEGORIES = [
+    { key: "doors", label: "Двери" },
+    { key: "floors", label: "Напольные покрытия" },
+    { key: "hardware", label: "Фурнитура и замки" },
+  ];
+
+  const AMOUNT_MAX_KOPECKS = BigInt(Number.MAX_SAFE_INTEGER);
+  let appealsRenderConfig = null;
+
+  function dedupeCaseInsensitiveStrings(list) {
+    const out = [];
+    const seen = new Set();
+    list.forEach((item) => {
+      const t = String(item || "").trim();
+      if (!t) return;
+      const k = t.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(t);
+    });
+    return out;
+  }
+
+  function partnerSettingsMerged(partnerId) {
+    const base = partnerSettings[partnerId];
+    if (!base) return null;
+    if (!appealsRenderConfig) return base;
+    const ov = ws(appealsRenderConfig.key).partnerOverlay;
+    if (!ov) return base;
+    return {
+      ...base,
+      refusalReasons: dedupeCaseInsensitiveStrings([...(base.refusalReasons || []), ...(ov.refusalReasons || [])]),
+      workingStages: [...(base.workingStages || []), ...(ov.workingStages || [])],
+      archivedStages: base.archivedStages || [],
+    };
+  }
+
+  function parseAmountKopecks(raw) {
+    const trimmed = String(raw ?? "").trim();
+    if (!trimmed) return { ok: true, empty: true, kopecks: 0 };
+    const normalized = trimmed.replace(/\s/g, "").replace(",", ".");
+    if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return { ok: false, empty: false, kopecks: 0, reason: "invalid" };
+    const [intPart, fracPart = ""] = normalized.split(".");
+    const fracPadded = (fracPart + "00").slice(0, 2);
+    let kopecksBi;
+    try {
+      kopecksBi = BigInt(intPart) * 100n + BigInt(fracPadded);
+    } catch {
+      return { ok: false, empty: false, kopecks: 0, reason: "overflow" };
+    }
+    if (kopecksBi > AMOUNT_MAX_KOPECKS || kopecksBi < 0n) return { ok: false, empty: false, kopecks: 0, reason: "overflow" };
+    const kopecks = Number(kopecksBi);
+    if (!Number.isSafeInteger(kopecks)) return { ok: false, empty: false, kopecks: 0, reason: "overflow" };
+    return { ok: true, empty: false, kopecks };
+  }
+
+  function parseDelayDays(raw) {
+    const trimmed = String(raw ?? "").trim();
+    if (!trimmed) return { ok: false, empty: true, days: 0, reason: "empty" };
+    if (!/^\d+$/.test(trimmed)) return { ok: false, empty: false, days: 0, reason: "invalid" };
+    const days = Number(trimmed);
+    if (!Number.isSafeInteger(days) || days < 0 || days > 36500) return { ok: false, empty: false, days: 0, reason: "range" };
+    return { ok: true, empty: false, days };
+  }
+
+  function formatRubFromKopecks(kopecks) {
+    if (!Number.isSafeInteger(kopecks)) return "—";
+    const rub = Math.trunc(kopecks / 100);
+    const frac = kopecks % 100;
+    const rubStr = rub.toLocaleString("ru-RU");
+    return frac === 0 ? `${rubStr} ₽` : `${rubStr},${String(frac).padStart(2, "0")} ₽`;
+  }
+
+  function formatDaysRu(days) {
+    const n = Math.abs(days);
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${days} день`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${days} дня`;
+    return `${days} дней`;
+  }
+
   /** @type {Record<string, {kind:string, title:string, appealId:string, amountLabel:string, statusLabel:string, note:string}>} */
   const walletPurchases = {};
 
@@ -178,7 +260,13 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
   }
 
   function manualChannelLabel(key) {
-    return MANUAL_CHANNEL_OPTIONS.find((s) => s.key === key)?.label || null;
+    const base = MANUAL_CHANNEL_OPTIONS.find((s) => s.key === key)?.label;
+    if (base) return base;
+    for (const [, w] of workspaces) {
+      const custom = w.partnerOverlay?.manualChannels?.find((c) => c.key === key);
+      if (custom) return custom.label;
+    }
+    return null;
   }
 
   function isManualAppeal(appeal) {
@@ -356,14 +444,37 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     if (shipped || appeal.stageId === SYSTEM.SHIPPED) {
       wallet.purchaseFulfillmentLabel = WALLET_VOCAB.fulfilled;
       if (canAccrueReferral(appeal) && appeal.shippedAt) {
-        wallet.waitEndsAt = addDays(appeal.shippedAt, WAIT_DAYS);
-        wallet.waitDaysLeft = referralWaitDaysLeft(appeal.shippedAt);
-        if (wallet.waitDaysLeft > 0) {
-          wallet.rewardStatusLabel = WALLET_VOCAB.rewardPending;
+        if (appeal.purchaseBreakdown?.rows?.length) {
+          appeal.purchaseBreakdown.rows.forEach((r) => {
+            if (!r.lineShippedAt) r.lineShippedAt = appeal.shippedAt;
+          });
+          wallet.categoryBreakdown = appeal.purchaseBreakdown;
+          wallet.rewardStatusLabel = aggregateRewardLabel(appeal) || WALLET_VOCAB.rewardPending;
           wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
+          const waiting = appeal.purchaseBreakdown.rows
+            .map((r) => rowAccrualSnapshot(r, appeal))
+            .filter((x) => x?.phase === "waiting");
+          if (waiting.length) {
+            const lefts = waiting.map((w) => {
+              const row = appeal.purchaseBreakdown.rows.find((r) => rowAccrualSnapshot(r, appeal) === w);
+              const delay = row?.accrualDelayDays ?? WAIT_DAYS;
+              const ship = row?.lineShippedAt || appeal.shippedAt;
+              return Math.max(0, delay - wholeDaysElapsed(ship, new Date().toISOString()));
+            });
+            wallet.waitDaysLeft = Math.max(...lefts);
+          } else {
+            wallet.waitDaysLeft = 0;
+          }
         } else {
-          wallet.rewardStatusLabel = WALLET_VOCAB.rewardConfirmed;
-          wallet.rewardDetailLabel = WALLET_VOCAB.confirmedCalc;
+          wallet.waitEndsAt = addDays(appeal.shippedAt, WAIT_DAYS);
+          wallet.waitDaysLeft = referralWaitDaysLeft(appeal.shippedAt);
+          if (wallet.waitDaysLeft > 0) {
+            wallet.rewardStatusLabel = WALLET_VOCAB.rewardPending;
+            wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
+          } else {
+            wallet.rewardStatusLabel = WALLET_VOCAB.rewardConfirmed;
+            wallet.rewardDetailLabel = WALLET_VOCAB.confirmedCalc;
+          }
         }
       }
       return wallet;
@@ -437,7 +548,7 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
   }
 
   function getWorkingStage(partnerId, stageId) {
-    const settings = partnerSettings[partnerId];
+    const settings = appealsRenderConfig ? partnerSettingsMerged(partnerId) : partnerSettings[partnerId];
     if (!settings) return null;
     return settings.workingStages.find((s) => s.id === stageId) || null;
   }
@@ -454,7 +565,7 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
   }
 
   function pipelineFor(partnerId) {
-    const settings = partnerSettings[partnerId];
+    const settings = appealsRenderConfig ? partnerSettingsMerged(partnerId) : partnerSettings[partnerId];
     const working = settings ? settings.workingStages.map((s) => s.id) : [];
     return [SYSTEM.NEW, ...working, SYSTEM.PAID, SYSTEM.SHIPPED, SYSTEM.RETURN];
   }
@@ -770,6 +881,13 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
       if (extra?.shippedAt) appeal.shippedAt = extra.shippedAt;
       else if (!appeal.shippedAt) appeal.shippedAt = todayIsoDate();
     }
+    if (stageId === SYSTEM.SHIPPED && appeal.purchaseBreakdown?.rows) {
+      appeal.purchaseBreakdown.rows.forEach((r) => {
+        if (!r.lineShippedAt) r.lineShippedAt = appeal.shippedAt;
+      });
+      const wallet = ensureWalletPurchase(appeal);
+      wallet.categoryBreakdown = appeal.purchaseBreakdown;
+    }
   if (stageId === SYSTEM.RETURN && extra?.returnedAt) {
       appeal.returnedAt = extra.returnedAt;
     }
@@ -787,7 +905,8 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     syncWalletFromAppeal(appeal);
     if (stageId === SYSTEM.REFUSED && extra?.reason) {
       appeal.refusedReason = extra.reason;
-      pushHistory(appeal, "Отказ", extra.reason);
+      const note = extra.note?.trim();
+      pushHistory(appeal, note ? `Отказ: ${note}` : "Отказ", extra.reason);
     } else if (stageId !== SYSTEM.PAID) {
       pushHistory(appeal, `Статус: ${label}`);
     }
@@ -820,11 +939,11 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
 function stagePillClass(appeal) {
   if (appeal.stageId === SYSTEM.REFUSED) return "ca-pill--danger";
   if (appeal.stageId === SYSTEM.RETURN) return "ca-pill--warn";
-  if (appeal.stageId === SYSTEM.PAID) return "good";
-  if (appeal.stageId === SYSTEM.SHIPPED) return "ca-pill--shipped";
+  if (appeal.stageId === SYSTEM.PAID) return "ca-pill--good";
+  if (appeal.stageId === SYSTEM.SHIPPED) return "ca-pill--good";
   if (appeal.stageId === SYSTEM.NEW) return "";
-  if (isFinancialStage(appeal.stageId)) return "good";
-  return "accent";
+  if (isFinancialStage(appeal.stageId)) return "ca-pill--good";
+  return "ca-pill--info";
 }
 
 function pillHtml(appeal) {
@@ -868,6 +987,289 @@ function applyFunnelPreset(s, preset) {
   }
 }
 
+function refusalReasonsFor(config, partnerId) {
+  return dedupeCaseInsensitiveStrings([
+    ...(partnerSettings[partnerId]?.refusalReasons || []),
+    ...(ws(config.key).partnerOverlay?.refusalReasons || []),
+  ]);
+}
+
+function payCategoriesFor(config) {
+  const custom = ws(config.key).partnerOverlay?.payCategories || [];
+  return [...DEMO_PAY_CATEGORIES, ...custom];
+}
+
+function manualChannelsFor(config) {
+  const custom = ws(config.key).partnerOverlay?.manualChannels || [];
+  return [...MANUAL_CHANNEL_OPTIONS, ...custom];
+}
+
+function normalizeLabelKey(label) {
+  return `custom_${label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, "_").slice(0, 40)}_${Date.now().toString(36)}`;
+}
+
+function findDuplicateReason(config, partnerId, text) {
+  const t = text.trim().toLowerCase();
+  return refusalReasonsFor(config, partnerId).find((r) => r.toLowerCase() === t) || null;
+}
+
+function addWorkspaceReason(config, text) {
+  const trimmed = text.trim();
+  if (!trimmed) return { ok: false, error: "Введите причину отказа." };
+  const dupe = findDuplicateReason(config, RECEIVING.id, trimmed);
+  if (dupe) return { ok: false, error: "Такая причина уже есть.", existing: dupe };
+  ws(config.key).partnerOverlay.refusalReasons.push(trimmed);
+  return { ok: true, value: trimmed };
+}
+
+function addWorkspaceStage(config, label) {
+  const trimmed = label.trim();
+  if (!trimmed) return { ok: false, error: "Введите название этапа." };
+  const merged = partnerSettingsMerged(RECEIVING.id);
+  const dupe = [...(merged?.workingStages || [])].find((s) => s.label.toLowerCase() === trimmed.toLowerCase());
+  if (dupe) return { ok: false, error: "Такой этап уже есть.", existing: dupe };
+  const stage = { id: `ws_custom_${Date.now()}`, label: trimmed };
+  ws(config.key).partnerOverlay.workingStages.push(stage);
+  return { ok: true, stage };
+}
+
+function addWorkspaceChannel(config, label) {
+  const trimmed = label.trim();
+  if (!trimmed) return { ok: false, error: "Введите название канала." };
+  const all = manualChannelsFor(config);
+  const dupe = all.find((c) => c.label.toLowerCase() === trimmed.toLowerCase());
+  if (dupe) return { ok: false, error: "Такой канал уже есть.", existing: dupe.label, key: dupe.key };
+  const entry = { key: normalizeLabelKey(trimmed), label: trimmed };
+  ws(config.key).partnerOverlay.manualChannels.push(entry);
+  return { ok: true, channel: entry };
+}
+
+function addWorkspacePayCategory(config, label) {
+  const trimmed = label.trim();
+  if (!trimmed) return { ok: false, error: "Введите название категории." };
+  const all = payCategoriesFor(config);
+  const dupe = all.find((c) => c.label.toLowerCase() === trimmed.toLowerCase());
+  if (dupe) return { ok: false, error: "Такая категория уже есть.", existing: dupe.label, key: dupe.key };
+  const entry = { key: normalizeLabelKey(trimmed), label: trimmed };
+  ws(config.key).partnerOverlay.payCategories.push(entry);
+  return { ok: true, category: entry };
+}
+
+function syncRefusalDraftFromDom(s) {
+  const form = document.getElementById("ca-refusal-form");
+  if (!form || !s.refusalDraft) return;
+  s.refusalDraft.comment = form.comment?.value ?? s.refusalDraft.comment;
+  s.refusalDraft.reason = form.reason?.value ?? s.refusalDraft.reason;
+  const custom = form.querySelector('[name="custom-reason"]');
+  if (custom) s.refusalDraft.customText = custom.value;
+}
+
+function syncStageDraftFromDom(s) {
+  const sel = document.querySelector('[data-ca-input="detail-status"]');
+  if (sel) s.stageDraft.selectedStageId = sel.value;
+  const custom = document.querySelector('[name="custom-stage"]');
+  if (custom) s.stageDraft.customText = custom.value;
+}
+
+function syncManualDraftFromDom(s) {
+  const form = document.getElementById("ca-manual-form");
+  if (!form || !s.manualDraft) return;
+  s.manualDraft.name = form.name?.value ?? "";
+  s.manualDraft.interest = form.interest?.value ?? "";
+  s.manualDraft.contact = form.contact?.value ?? "";
+  s.manualDraft.source = form.source?.value ?? s.manualDraft.source;
+  const custom = form.querySelector('[name="custom-channel"]');
+  if (custom) s.manualDraft.customChannelText = custom.value;
+}
+
+function defaultPayRow() {
+  return { rowId: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, categoryKey: "doors", amountRaw: "", kind: "goods", delayDays: "14", delayOpen: false, amountError: "", delayError: "" };
+}
+
+function initPayDraft(s, appeal) {
+  if (s.payDraft && s.payDraft.appealId === appeal.id) return s.payDraft;
+  if (appeal.purchaseBreakdown?.rows?.length) {
+    s.payDraft = {
+      appealId: appeal.id,
+      paidDate: appeal.paidAt ? appeal.paidAt.slice(0, 10) : todayYmd(),
+      delayAll: false,
+      rows: appeal.purchaseBreakdown.rows.map((r) => ({
+        rowId: r.rowId,
+        categoryKey: r.categoryKey,
+        amountRaw: r.amountKopecks ? formatRubFromKopecks(r.amountKopecks).replace(" ₽", "") : "",
+        kind: r.kind || "goods",
+        delayDays: String(r.accrualDelayDays ?? 14),
+        delayOpen: false,
+        amountError: "",
+        delayError: "",
+      })),
+      formError: "",
+      showCustomCategory: false,
+      customCategoryText: "",
+      customCategoryError: "",
+    };
+    return s.payDraft;
+  }
+  s.payDraft = { appealId: appeal.id, paidDate: todayYmd(), delayAll: false, rows: [defaultPayRow()], formError: "", showCustomCategory: false, customCategoryText: "", customCategoryError: "" };
+  return s.payDraft;
+}
+
+function syncPayDraftFromDom(config, s) {
+  const form = document.querySelector(`[data-ca-pay-form="${s.payDraft?.appealId || ""}"]`) || document.getElementById("ca-pay-form") || document.getElementById("ca-review-form");
+  if (!form || !s.payDraft) return;
+  const date = form.querySelector('[name="review-date"]');
+  if (date) s.payDraft.paidDate = date.value;
+  const delayAll = form.querySelector('[name="delay-all"]');
+  if (delayAll) s.payDraft.delayAll = delayAll.checked;
+  s.payDraft.rows.forEach((row, i) => {
+    row.amountRaw = form.querySelector(`[name="amount-${i}"]`)?.value ?? row.amountRaw;
+    row.categoryKey = form.querySelector(`[name="cat-${i}"]`)?.value ?? row.categoryKey;
+    row.kind = form.querySelector(`input[name="kind-${i}"]:checked`)?.value || row.kind;
+    row.delayDays = form.querySelector(`[name="delay-${i}"]`)?.value ?? row.delayDays;
+    const custom = form.querySelector('[name="custom-category"]');
+    if (custom) s.payDraft.customCategoryText = custom.value;
+  });
+}
+
+function rowAccrualSnapshot(row, appeal) {
+  if (!canAccrueReferral(appeal)) return null;
+  const ship = row.lineShippedAt || appeal.shippedAt;
+  if (!ship) return { text: "ожидает передачи", phase: "handoff" };
+  const delay = row.accrualDelayDays ?? WAIT_DAYS;
+  const left = Math.max(0, delay - wholeDaysElapsed(ship, new Date().toISOString()));
+  if (left > 0) return { text: `осталось ${left} из ${delay} дней`, phase: "waiting" };
+  return { text: "подтверждено", phase: "confirmed" };
+}
+
+function aggregateRewardLabel(appeal) {
+  const bd = appeal.purchaseBreakdown;
+  if (!bd?.rows?.length || !canAccrueReferral(appeal) || !appeal.shippedAt) return null;
+  const phases = bd.rows.map((r) => rowAccrualSnapshot(r, appeal)?.phase).filter(Boolean);
+  if (!phases.length) return null;
+  if (phases.every((p) => p === "confirmed")) return WALLET_VOCAB.rewardConfirmed;
+  if (phases.some((p) => p === "confirmed") && phases.some((p) => p === "waiting")) return "Частично подтверждено";
+  if (phases.every((p) => p === "handoff")) return WALLET_VOCAB.awaitFulfillment;
+  return WALLET_VOCAB.rewardPending;
+}
+
+function savePurchaseBreakdown(appeal, rows, totalKopecks, paidIso) {
+  appeal.purchaseBreakdown = {
+    rows: rows.map((r) => ({ ...r })),
+    totalKopecks,
+    paidAt: paidIso,
+  };
+  appeal.paidAmount = Math.round(totalKopecks / 100);
+  const wallet = ensureWalletPurchase(appeal);
+  wallet.amountLabel = formatRubFromKopecks(totalKopecks);
+  wallet.categoryBreakdown = appeal.purchaseBreakdown;
+  return wallet;
+}
+
+function renderPayCategoryForm(config, appeal, formId) {
+  const s = ws(config.key);
+  const draft = initPayDraft(s, appeal);
+  const manual = isManualAppeal(appeal);
+  const cats = payCategoriesFor(config);
+  const catOptions = cats.map((c) => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join("");
+  const rowsHtml = draft.rows
+    .map((row, i) => {
+      const delayLabel = manual
+        ? ""
+        : `<details class="ca-pay-delay" ${row.delayOpen ? "open" : ""}><summary class="ca-pay-delay-sum">Подтверждение начисления · ${esc(formatDaysRu(Number(row.delayDays) || 14))}</summary><div class="ca-pay-delay-body"><label class="field">Подтвердить вознаграждение через, дней<input type="text" inputmode="numeric" name="delay-${i}" value="${esc(row.delayDays)}" maxlength="5"></label><p class="small muted">${row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара"}</p>${row.delayError ? `<p class="field-error" role="alert">${esc(row.delayError)}</p>` : ""}</div></details>`;
+      const opts = cats.map((c) => `<option value="${esc(c.key)}" ${row.categoryKey === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("");
+      return `<div class="ca-pay-row panel" data-pay-row="${i}"><div class="ca-pay-row-top"><label class="field">Категория<select name="cat-${i}">${opts}</select><small class="input-hint muted">Демо-справочник, не условия сертификата</small></label><button type="button" class="btn ghost icon-btn" data-ca-action="pay:remove-row:${i}" ${draft.rows.length < 2 ? "disabled" : ""} aria-label="Удалить">×</button></div><label class="field">Оплаченная сумма, ₽<input name="amount-${i}" inputmode="decimal" value="${esc(row.amountRaw)}" placeholder="0"></label>${row.amountError ? `<p class="field-error" role="alert">${esc(row.amountError)}</p>` : ""}<div class="ca-pay-kind"><span class="small muted">Тип</span><label class="radio"><input type="radio" name="kind-${i}" value="goods" ${row.kind === "goods" ? "checked" : ""}> Товар</label><label class="radio"><input type="radio" name="kind-${i}" value="service" ${row.kind === "service" ? "checked" : ""}> Услуга</label></div>${delayLabel}</div>`;
+    })
+    .join("");
+  const customCat = draft.showCustomCategory
+    ? `<div class="ca-custom-inline"><label class="field">Своя категория<input name="custom-category" maxlength="80" value="${esc(draft.customCategoryText)}"></label><small class="input-hint">Сохранится в ваших вариантах.</small>${draft.customCategoryError ? `<p class="field-error" role="alert">${esc(draft.customCategoryError)}</p>` : ""}<span class="ca-form-actions"><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-cancel">Отмена</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-add">Добавить</button></span></div>`
+    : "";
+  const manualHint = manual ? `<p class="notice">Без сертификата: вознаграждение не начисляется.</p>` : "";
+  const delayAll = manual
+    ? ""
+    : `<label class="check"><input type="checkbox" name="delay-all" ${draft.delayAll ? "checked" : ""} data-ca-action="pay:delay-all-toggle"> Этот срок для всех категорий</label>`;
+  const totalPreview = draft.rows.reduce((sum, r) => {
+    const p = parseAmountKopecks(r.amountRaw);
+    return sum + (p.ok && !p.empty ? p.kopecks : 0);
+  }, 0);
+  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — сумма по категориям (демо).</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-toggle">+ Своя категория</button>${customCat}${manualHint}${delayAll}<p class="ca-pay-total">Итого: <strong>${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
+}
+
+function submitPaidCategoryForm(ev, config, hooks) {
+  ev.preventDefault();
+  const s = ws(config.key);
+  syncPayDraftFromDom(config, s);
+  const appeal = appeals.find((a) => a.id === s.payDraft?.appealId);
+  if (!appeal || !s.payDraft) return;
+  const manual = isManualAppeal(appeal);
+  let total = 0;
+  let hasPositive = false;
+  const rowsOut = [];
+  s.payDraft.formError = "";
+  s.payDraft.rows.forEach((row, i) => {
+    row.amountError = "";
+    row.delayError = "";
+    const amount = parseAmountKopecks(row.amountRaw);
+    if (!amount.ok) {
+      row.amountError = amount.reason === "overflow" ? "Слишком большая сумма для демо." : "Введите сумму с не более чем двумя знаками после запятой.";
+      return;
+    }
+    if (!amount.empty && amount.kopecks > 0) hasPositive = true;
+    if (!manual) {
+      const delay = parseDelayDays(row.delayDays);
+      if (!delay.ok) row.delayError = delay.reason === "range" ? "Целое число дней 0–36 500." : "Укажите срок в днях.";
+    }
+    if (row.amountError || row.delayError) return;
+    if (amount.empty || amount.kopecks <= 0) return;
+    total += amount.kopecks;
+    if (total > Number(AMOUNT_MAX_KOPECKS)) s.payDraft.formError = "Слишком большая общая сумма.";
+    const cat = payCategoriesFor(config).find((c) => c.key === row.categoryKey);
+    rowsOut.push({
+      rowId: row.rowId,
+      categoryKey: row.categoryKey,
+      categoryLabel: cat?.label || row.categoryKey,
+      amountKopecks: amount.kopecks,
+      kind: row.kind,
+      accrualDelayDays: manual ? 0 : parseDelayDays(row.delayDays).days,
+      lineShippedAt: appeal.purchaseBreakdown?.rows?.find((x) => x.rowId === row.rowId)?.lineShippedAt || null,
+    });
+  });
+  if (s.payDraft.formError) { hooks.refresh(); return; }
+  if (!hasPositive || !rowsOut.length) {
+    s.payDraft.formError = "Укажите сумму хотя бы в одной категории.";
+    hooks.refresh();
+    return;
+  }
+  const dateVal = s.payDraft.paidDate;
+  if (!dateVal) {
+    s.payDraft.formError = "Укажите дату оплаты.";
+    hooks.refresh();
+    return;
+  }
+  const iso = new Date(dateVal + "T12:00:00").toISOString();
+  if (dateOnlyMs(iso) > dateOnlyMs(new Date().toISOString())) {
+    s.payDraft.formError = "Дата не может быть в будущем.";
+    hooks.refresh();
+    return;
+  }
+  if (dateOnlyMs(iso) < dateOnlyMs(appeal.createdAt)) {
+    s.payDraft.formError = "Дата не может быть раньше создания обращения.";
+    hooks.refresh();
+    return;
+  }
+  savePurchaseBreakdown(appeal, rowsOut, total, iso);
+  if (appeal.stageId !== SYSTEM.PAID) commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, amount: appeal.paidAmount, skipPaidHistory: rowsOut.length > 0 });
+  else {
+    appeal.paidAt = iso;
+    syncWalletFromAppeal(appeal);
+    pushHistory(appeal, "Обновлена разбивка оплаты по категориям");
+  }
+  s.inlinePanel = null;
+  s.inlineReview = null;
+  s.payDraft = null;
+  hooks.notify?.("Оплата зафиксирована");
+  hooks.refresh();
+}
+
 let lastDatasetEmpty = null;
 let cabinetHooks = null;
 function afterDataChange() {
@@ -902,9 +1304,16 @@ function ws(key) {
       settingsDraft: null,
       showRefusal: null,
       notice: "",
+      partnerOverlay: { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] },
+      refusalDraft: { reason: "", comment: "", showCustom: false, customText: "", customError: "" },
+      stageDraft: { selectedStageId: "", showCustom: false, customText: "", customError: "" },
+      manualDraft: { name: "", interest: "", contact: "", source: "phone", showCustomChannel: false, customChannelText: "", customChannelError: "" },
+      payDraft: null,
     });
   }
-  return workspaces.get(key);
+  const s = workspaces.get(key);
+  if (!s.partnerOverlay) s.partnerOverlay = { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] };
+  return s;
 }
 
 function roleCaps(role) {
@@ -956,6 +1365,14 @@ export function clientAppealsHeaderPill(config) {
   if (s.view !== "detail" || !s.selectedId) return "";
   const appeal = appeals.find((a) => a.id === s.selectedId);
   return appeal ? pillHtml(appeal) : "";
+}
+
+export function clientAppealsSubpageBack(config) {
+  const s = ws(config.key);
+  if (s.view === "list") return "";
+  if (s.view === "detail") return backLink(config, "К списку клиентов", "nav:list");
+  if (s.view === "purchase") return backLink(config, "К обращению", "nav:detail");
+  return backLink(config, "К списку клиентов", "nav:list");
 }
 
 function ensureSeed(config) {
@@ -1041,10 +1458,12 @@ function renderListPage(config) {
         : readOnly
           ? `<p class="notice">Только просмотр: изменять статусы и заметки нельзя.</p>`
           : "";
-  return `${tabs}${kpiStrip}${actions}<div class="ca-filters row"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field">Источник<select data-ca-input="source"></select></label>` : ""}</div>${empty || `<div class="ca-rows">${listHead}${rows}</div>`}`;
+  const filters = `<div class="ca-filters panel"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field ca-filter">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field ca-filter">Источник<select data-ca-input="source"></select></label>` : ""}</div>`;
+  return `${tabs}${kpiStrip}${actions}${filters}${empty || `<div class="ca-rows">${listHead}${rows}</div>`}`;
 }
 
 export function renderClientAppeals(config) {
+  appealsRenderConfig = config;
   ensureSeed(config);
   const s = ws(config.key);
   activeTab = s.tab;
@@ -1055,12 +1474,12 @@ export function renderClientAppeals(config) {
     RECEIVING.name = viewer.name;
   }
   if (s.view === "list") return `<div class="stack ca-section" data-ca-root>${renderListPage(config)}</div>`;
-  if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${backLink(config, "К списку клиентов", "nav:list")}${renderScanInline(config)}</div>`;
-  if (s.view === "manual") return `<div class="stack ca-section" data-ca-root>${backLink(config, "К списку клиентов", "nav:list")}${renderManualInline(config)}</div>`;
-  if (s.view === "settings") return `<div class="stack ca-section" data-ca-root>${backLink(config, "К списку клиентов", "nav:list")}${renderSettingsInline(config)}</div>`;
-  if (s.view === "purchase") return `<div class="stack ca-section" data-ca-root>${backLink(config, "К обращению", "nav:detail")}${renderPurchaseInline(s.purchaseViewId)}</div>`;
-  if (s.view === "analytics") return `<div class="stack ca-section" data-ca-root>${backLink(config, "К списку клиентов", "nav:list")}${renderFunnelPage(config)}</div>`;
-  if (s.view === "detail" && s.selectedId) return `<div class="stack ca-section" data-ca-root>${backLink(config, "К списку клиентов", "nav:list")}${renderDetailPage(config, s.selectedId)}</div>`;
+  if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${renderScanInline(config)}</div>`;
+  if (s.view === "manual") return `<div class="stack ca-section" data-ca-root>${renderManualInline(config)}</div>`;
+  if (s.view === "settings") return `<div class="stack ca-section" data-ca-root>${renderSettingsInline(config)}</div>`;
+  if (s.view === "purchase") return `<div class="stack ca-section" data-ca-root>${renderPurchaseInline(config, s.purchaseViewId)}</div>`;
+  if (s.view === "analytics") return `<div class="stack ca-section" data-ca-root>${renderFunnelPage(config)}</div>`;
+  if (s.view === "detail" && s.selectedId) return `<div class="stack ca-section" data-ca-root>${renderDetailPage(config, s.selectedId)}</div>`;
   s.view = "list";
   return renderClientAppeals(config);
 }
@@ -1074,7 +1493,7 @@ function renderScanInline(config) {
   ]
     .map(
       ([val, ico, title, hint]) =>
-        `<label class="ca-option-card"><input type="radio" name="ca-scan-outcome" value="${val}" ${val === "new" ? "checked" : ""}><span class="ca-option-body"><span class="care-ico">${icon?.(ico) || ""}</span><span><strong>${esc(title)}</strong><small class="muted">${esc(hint)}</small></span></span></label>`,
+        `<label class="ca-option-card"><input type="radio" name="ca-scan-outcome" value="${val}" ${val === "new" ? "checked" : ""}><span class="ca-option-body"><span class="care-ico">${icon?.(ico) || ""}</span><span class="ca-option-text"><strong>${esc(title)}</strong><small class="muted">${esc(hint)}</small></span></span></label>`,
     )
     .join("");
   return `<section class="panel stack ca-scan"><p class="small muted">Демо без камеры — исход проверки выбирается вручную.</p><div class="ca-option-grid">${cards}</div><div class="ca-scan-result" data-ca-scan-error hidden role="alert"></div><button type="button" class="btn primary" data-ca-action="scan:submit">Считать демосертификат</button></section>`;
@@ -1082,8 +1501,15 @@ function renderScanInline(config) {
 
 function renderManualInline(config) {
   if (config.readOnly) return `<section class="panel"><p class="notice">Добавление недоступно в режиме просмотра.</p></section>`;
-  const opts = MANUAL_CHANNEL_OPTIONS.map((o) => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("");
-  return `<section class="panel ca-manual-form"><form class="stack" id="ca-manual-form"><label class="field ca-req">Имя или компания<span class="ca-req-mark">*</span><input name="name" required maxlength="120" autocomplete="name"><small class="input-hint">Как к вам обращаются в переписке или CRM.</small></label><label class="field">Запрос / интерес<input name="interest" maxlength="200" placeholder="Что хотят купить или заказать"><small class="input-hint">Попадёт в карточку и список обращений.</small></label><div class="ca-manual-grid"><label class="field">Контакт<input name="contact" maxlength="80" placeholder="Телефон или @username"><small class="input-hint">Только для вашей команды, не уходит направившему.</small></label><label class="field">Канал<select name="source">${opts}</select><small class="input-hint">Откуда пришёл клиент.</small></label></div><p class="field-error" id="ca-manual-error" hidden role="alert"></p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:list">Отмена</button><button type="submit" class="btn primary">Создать обращение</button></div></form></section>`;
+  const s = ws(config.key);
+  const d = s.manualDraft;
+  const opts = manualChannelsFor(config)
+    .map((o) => `<option value="${esc(o.key)}" ${d.source === o.key ? "selected" : ""}>${esc(o.label)}</option>`)
+    .join("");
+  const custom = d.showCustomChannel
+    ? `<motion class="ca-custom-inline"><label class="field">Свой канал<input name="custom-channel" maxlength="60" value="${esc(d.customChannelText)}"></label><small class="input-hint">Сохранится в ваших вариантах.</small>${d.customChannelError ? `<p class="field-error" role="alert">${esc(d.customChannelError)}</p>` : ""}<span class="ca-form-actions"><button type="button" class="btn ghost small-btn" data-ca-action="manual:custom-cancel">Отмена</button><button type="button" class="btn ghost small-btn" data-ca-action="manual:custom-add">Добавить</button></span></motion>`.replace(/<motion/g, "<div").replace(/<\/motion>/g, "</div>")
+    : "";
+  return `<section class="panel ca-manual-form"><form class="stack" id="ca-manual-form"><label class="field ca-req">Имя или компания <span class="ca-req-mark" aria-hidden="true">*</span><input name="name" required maxlength="120" autocomplete="name" value="${esc(d.name)}"><small class="input-hint">Как к вам обращаются в переписке или CRM.</small></label><label class="field">Запрос / интерес<input name="interest" maxlength="200" value="${esc(d.interest)}" placeholder="Что хотят купить или заказать"><small class="input-hint">Попадёт в карточку и список обращений.</small></label><div class="ca-manual-grid"><label class="field">Контакт<input name="contact" maxlength="80" value="${esc(d.contact)}" placeholder="Телефон или @username"><small class="input-hint">Только для вашей команды.</small></label><label class="field">Канал<select name="source">${opts}</select><small class="input-hint">Откуда пришёл клиент.</small></label></div><button type="button" class="btn ghost small-btn ca-chip--add" data-ca-action="manual:custom-toggle">+ Свой канал</button>${custom}<p class="field-error" id="ca-manual-error" hidden role="alert"></p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:list">Отмена</button><button type="submit" class="btn primary">Создать обращение</button></div></form></section>`;
 }
 
 function renderDetailStepper(appeal) {
@@ -1119,17 +1545,25 @@ function renderWaitProgress(appeal) {
   return `<div class="ca-wait-progress"><div class="ca-progress" aria-hidden="true"><i style="width:${pct}%"></i></div><p class="small muted">Осталось ${left} из ${WAIT_DAYS} календарных дней</p><p class="small muted">${esc(WALLET_CALENDAR_NOTE)}</p></div>`;
 }
 
-function renderPayInlineForm() {
-  const maxYmd = todayYmd();
-  return `<form class="stack ca-inline-form" id="ca-pay-form"><label class="field">Сумма<input type="number" name="review-amount" min="0" step="1000" placeholder="Необязательно"></label><label class="field">Дата оплаты<input type="date" name="review-date" max="${maxYmd}" value="${maxYmd}" required></label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
+function renderPayInlineForm(config, appeal) {
+  return renderPayCategoryForm(config, appeal, "ca-pay-form");
 }
 
 function renderRefusalChips(config, appeal) {
-  const settings = partnerSettings[appeal.receivingPartnerId];
-  const chips = (settings?.refusalReasons || [])
-    .map((r) => `<button type="button" class="ca-chip" data-ca-action="refusal:pick:${encodeURIComponent(r)}">${esc(r)}</button>`)
+  const s = ws(config.key);
+  if (!s.refusalDraft) s.refusalDraft = { reason: "", comment: "", showCustom: false, customText: "", customError: "" };
+  const d = s.refusalDraft;
+  const reasons = refusalReasonsFor(config, appeal.receivingPartnerId);
+  const chips = reasons
+    .map((r) => {
+      const sel = d.reason === r ? " is-selected" : "";
+      return `<button type="button" class="ca-chip${sel}" data-ca-action="refusal:pick:${encodeURIComponent(r)}">${esc(r)}</button>`;
+    })
     .join("");
-  return `<form class="stack" id="ca-refusal-form">${chips ? `<motion class="ca-chips">${chips}</motion>` : ""}<input type="hidden" name="reason" value=""><label class="field">Комментарий<textarea name="comment" rows="2" placeholder="Необязательно"></textarea></label><motion class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn ghost">Зафиксировать отказ</button></motion></form>`.replace(/<motion/g, "<div").replace(/<\/motion>/g, "</div>");
+  const custom = d.showCustom
+    ? `<div class="ca-custom-inline"><label class="field">Своя причина<input type="text" name="custom-reason" maxlength="80" value="${esc(d.customText)}"></label><small class="input-hint">Сохранится в ваших вариантах.</small>${d.customError ? `<p class="field-error" role="alert">${esc(d.customError)}</p>` : ""}<span class="ca-form-actions"><button type="button" class="btn ghost small-btn" data-ca-action="refusal:custom-cancel">Отмена</button><button type="button" class="btn ghost small-btn" data-ca-action="refusal:custom-add">Добавить</button></span></div>`
+    : "";
+  return `<form class="stack" id="ca-refusal-form"><div class="ca-chips">${chips}<button type="button" class="ca-chip ca-chip--add" data-ca-action="refusal:custom-toggle">+ Своя причина</button></div>${custom}<input type="hidden" name="reason" value="${esc(d.reason)}"><label class="field">Комментарий<textarea name="comment" rows="2" placeholder="Необязательно">${esc(d.comment)}</textarea></label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="refusal:panel-cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать отказ</button></div></form>`;
 }
 
 function renderNextStepCard(config, appeal, s, readOnly) {
@@ -1141,18 +1575,24 @@ function renderNextStepCard(config, appeal, s, readOnly) {
     const reason = appeal.refusedReason || (appeal.stageId === SYSTEM.RETURN ? "Возврат оформлен" : "—");
     return `<section class="panel stack ca-next ca-next--terminal"><h3>${esc(stageLabel(appeal))}</h3><p class="muted">${esc(reason)}</p>${appeal.stageId === SYSTEM.REFUSED ? `<button type="button" class="btn ghost small-btn" data-ca-action="stage:next:${SYSTEM.NEW}">Вернуть в работу</button>` : ""}</section>`;
   }
-  if (s.inlinePanel === "pay") return `<section class="panel stack ca-next"><h3>Отметить оплату</h3>${renderPayInlineForm()}</section>`;
+  if (s.inlinePanel === "pay") return `<section class="panel stack ca-next ca-pay-card"><h3>Отметить оплату</h3>${renderPayInlineForm(config, appeal)}</section>`;
   if (s.showRefusal === appeal.id) return `<section class="panel stack ca-next"><h3>Клиент отказался</h3>${renderRefusalChips(config, appeal)}</section>`;
-  if (s.inlineReview) return `<section class="panel stack ca-next">${renderReviewInline(config, s)}</section>`;
+  if (s.inlineReview) return `<section class="panel stack ca-next">${renderReviewInline(config, s, appeal)}</section>`;
   if (s.detailPickStage) {
+    if (!s.stageDraft) s.stageDraft = { selectedStageId: "", showCustom: false, customText: "", customError: "" };
+    const sd = s.stageDraft;
     const statusOptions = pipelineFor(appeal.receivingPartnerId)
       .filter((id) => id !== appeal.stageId && canTransitionTo(appeal, id).ok)
       .map((id) => {
         const label = systemLabel(id) || getWorkingStage(appeal.receivingPartnerId, id)?.label || id;
-        return `<option value="${esc(id)}">${esc(label)}</option>`;
+        const sel = (sd.selectedStageId || "") === id ? "selected" : "";
+        return `<option value="${esc(id)}" ${sel}>${esc(label)}</option>`;
       })
       .join("");
-    return `<section class="panel stack ca-next"><h3>Выбор этапа</h3><label class="field">Этап<select data-ca-input="detail-status">${statusOptions}</select></label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="stage:apply">Перевести</button></div></section>`;
+    const custom = sd.showCustom
+      ? `<div class="ca-custom-inline"><label class="field">Свой этап<input type="text" name="custom-stage" maxlength="80" value="${esc(sd.customText)}"></label><small class="input-hint">Сохранится в ваших вариантах.</small>${sd.customError ? `<p class="field-error" role="alert">${esc(sd.customError)}</p>` : ""}<span class="ca-form-actions"><button type="button" class="btn ghost small-btn" data-ca-action="stage:custom-cancel">Отмена</button><button type="button" class="btn ghost small-btn" data-ca-action="stage:custom-add">Добавить</button></span></div>`
+      : "";
+    return `<section class="panel stack ca-next"><h3>Выбор этапа</h3><label class="field">Этап<select data-ca-input="detail-status">${statusOptions}</select></label><button type="button" class="btn ghost small-btn ca-chip--add" data-ca-action="stage:custom-toggle">+ Свой этап</button>${custom}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="stage:apply">Перевести</button></div></section>`;
   }
   if (appeal.stageId === SYSTEM.SHIPPED) {
     return `<section class="panel stack ca-next"><h3>Ждём подтверждения начисления</h3>${renderWaitProgress(appeal)}<button type="button" class="linkbtn" data-ca-action="panel:return">Оформить возврат</button></section>`;
@@ -1162,19 +1602,22 @@ function renderNextStepCard(config, appeal, s, readOnly) {
   }
   const next = nextStageId(appeal);
   const nextLabel = next ? systemLabel(next) || getWorkingStage(appeal.receivingPartnerId, next)?.label : null;
-  const actions = `<motion class="ca-next-actions">${nextLabel ? `<button type="button" class="btn primary" data-ca-action="stage:next:${esc(next)}">Перевести в «${esc(nextLabel)}»</button>` : ""}${!appealHasPaidPurchase(appeal) ? `<button type="button" class="btn ghost" data-ca-action="panel:pay">Отметить оплату</button>` : ""}${canRefuseFrom(appeal) ? `<button type="button" class="btn ghost" data-ca-action="refusal:open">Клиент отказался</button>` : ""}</motion><button type="button" class="linkbtn" data-ca-action="panel:pick">Выбрать другой этап</button>`;
-  return `<section class="panel stack ca-next"><h3>${nextLabel ? `Следующий шаг: ${esc(nextLabel)}` : "Следующий шаг"}</h3>${actions.replace(/<motion/g, "<div").replace(/<\/motion>/g, "</div>")}</section>`;
+  const actions = `<div class="ca-next-actions">${nextLabel ? `<button type="button" class="btn primary" data-ca-action="stage:next:${esc(next)}">Перевести в «${esc(nextLabel)}»</button>` : ""}${!appealHasPaidPurchase(appeal) ? `<button type="button" class="btn ghost" data-ca-action="panel:pay">Отметить оплату</button>` : ""}${canRefuseFrom(appeal) ? `<button type="button" class="btn ghost" data-ca-action="refusal:open">Клиент отказался</button>` : ""}</div><button type="button" class="btn ghost small-btn" data-ca-action="panel:pick">Выбрать другой этап</button>`;
+  return `<section class="panel stack ca-next"><h3>${nextLabel ? `Следующий шаг: ${esc(nextLabel)}` : "Следующий шаг"}</h3>${actions}</section>`;
 }
 
-function renderReviewInline(config, s) {
+function renderReviewInline(config, s, appeal) {
   if (!s.inlineReview) return "";
   const pr = s.inlineReview;
   const label = systemLabel(pr.stageId) || pr.stageId;
   const maxYmd = todayYmd();
-  let fields = "";
   if (pr.stageId === SYSTEM.PAID) {
-    fields = `<label class="field">Дата оплаты<input type="date" name="review-date" max="${maxYmd}" value="${maxYmd}" required></label><label class="field">Сумма<input type="number" name="review-amount" min="0" step="1000"></label>`;
-  } else if (pr.stageId === SYSTEM.SHIPPED) {
+    const appealObj = appeal || appeals.find((a) => a.id === pr.appealId);
+    if (appealObj) initPayDraft(s, appealObj);
+    return `<h3>${esc(label)}</h3>${renderPayCategoryForm(config, appealObj, "ca-review-form")}<p class="field-error" id="ca-review-error" hidden role="alert"></p>`;
+  }
+  let fields = "";
+  if (pr.stageId === SYSTEM.SHIPPED) {
     fields = `<label class="field">Дата отгрузки<input type="date" name="review-date" max="${maxYmd}" value="${maxYmd}" required></label>`;
   } else if (pr.stageId === SYSTEM.RETURN) {
     fields = `<label class="field">Дата возврата<input type="date" name="review-date" max="${maxYmd}" value="${maxYmd}" required></label>`;
@@ -1190,7 +1633,7 @@ function renderDetailPage(config, appealId) {
   const readOnly = config.readOnly || outgoing;
   const manual = isManualAppeal(appeal);
   const timeline = [...appeal.history]
-    .reverse()
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
     .map((h) => `<li class="ca-tl-item"><span class="ca-tl-dot" aria-hidden="true"></span><div><time class="small muted">${esc(formatDateTime(h.at))}</time><p>${esc(h.text)}${h.reason ? ` — ${esc(h.reason)}` : ""}</p></div></li>`)
     .join("");
   const clientCard = `<section class="panel stack ca-side-card"><h3>Клиент</h3><p><strong>${esc(appeal.clientName)}</strong></p><p class="small muted">${esc(appeal.clientContact || "Контакт не указан")}</p><dl class="ca-dl"><div><dt>Запрос</dt><dd>${esc(appeal.interest || "—")}</dd></div><div><dt>Источник</dt><dd>${esc(sourceDisplay(appeal))}</dd></div><div><dt>Обращение</dt><dd>${esc(appeal.id)}</dd></div></dl></section>`;
@@ -1259,7 +1702,7 @@ function renderSettingsInline(config) {
   if (config.readOnly) return `<section class="panel"><p class="notice">Настройки недоступны в режиме просмотра.</p></section>`;
   const s = ws(config.key);
   const icon = config.icon;
-  if (!s.settingsDraft) s.settingsDraft = JSON.parse(JSON.stringify(partnerSettings[RECEIVING.id]));
+  if (!s.settingsDraft) s.settingsDraft = JSON.parse(JSON.stringify(partnerSettingsMerged(RECEIVING.id) || partnerSettings[RECEIVING.id]));
   const draft = s.settingsDraft;
   const locked = `<div class="ca-locked-chips"><span class="pill">Новое обращение</span><span aria-hidden="true">…</span><span class="pill good">Оплачено</span><span aria-hidden="true">→</span><span class="pill ca-pill--shipped">Отгружено</span><span aria-hidden="true">→</span><span class="pill ca-pill--warn">Возврат</span></div>`;
   const stages = draft.workingStages
@@ -1278,10 +1721,21 @@ function renderSettingsInline(config) {
   return `<div class="ca-settings-grid"><section class="panel stack"><h3>Этапы работы</h3>${locked}<div class="stack" id="ca-stage-list">${stages}</div><button type="button" class="btn ghost small-btn" data-ca-action="settings:add-stage">${icon?.("plus") || "+"} Добавить этап</button></section><section class="panel stack"><h3>Причины отказа</h3>${reasons}<button type="button" class="btn ghost small-btn" data-ca-action="settings:add-reason">${icon?.("plus") || "+"} Добавить причину</button>${arch}</section></div><div class="ca-settings-footer panel"><button type="button" class="btn ghost" data-ca-action="settings:discard">Отменить изменения</button><button type="button" class="btn primary" data-ca-action="settings:save">Сохранить</button></div>`;
 }
 
-function renderPurchaseInline(purchaseId) {
+function renderPurchaseInline(config, purchaseId) {
   const purchase = walletPurchases[purchaseId];
   if (!purchase) return `<section class="panel"><p class="notice">Покупка не найдена.</p></section>`;
-  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма</dt><dd>${esc(purchase.amountLabel)}</dd></div>${purchase.rewardStatusLabel ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl><a class="btn ghost" href="./partner-wallet-history.html">История кошелька</a></section>`;
+  const appeal = appeals.find((a) => a.purchaseId === purchaseId);
+  const bd = appeal?.purchaseBreakdown || purchase.categoryBreakdown;
+  const rows =
+    bd?.rows?.length > 0
+      ? `<ul class="ca-pay-breakdown">${bd.rows
+          .map(
+            (row) =>
+              `<li><span>${esc(row.categoryLabel || row.categoryKey)}</span><span class="ca-amount">${esc(formatRubFromKopecks(row.amountKopecks))}</span><span class="small muted">${row.kind === "service" ? "Услуга" : "Товар"}</span></li>`,
+          )
+          .join("")}</ul>`
+      : "";
+  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${purchase.rewardStatusLabel ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}<a class="btn ghost" href="./partner-wallet-history.html">История кошелька</a></section>`;
 }
 
 function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) {
@@ -1295,6 +1749,7 @@ function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) 
   }
   if (!fromRefusal && needsReview(stageId)) {
     s.inlineReview = { appealId, stageId };
+    if (stageId === SYSTEM.PAID) initPayDraft(s, appeal);
     hooks.refresh();
     return;
   }
@@ -1311,6 +1766,10 @@ function submitReviewCabinet(ev, config, hooks) {
   const s = ws(config.key);
   const pr = s.inlineReview;
   if (!pr) return;
+  if (pr.stageId === SYSTEM.PAID) {
+    submitPaidCategoryForm(ev, config, hooks);
+    return;
+  }
   const appeal = appeals.find((a) => a.id === pr.appealId);
   const form = ev.target;
   const dateInput = form.querySelector('[name="review-date"]');
@@ -1418,6 +1877,8 @@ function runScanPage(config, hooks) {
 }
 
 function submitManualPage(ev, config, hooks) {
+  const s = ws(config.key);
+  syncManualDraftFromDom(s);
   const form = ev.target;
   const name = form.name?.value?.trim();
   const err = form.querySelector("#ca-manual-error");
@@ -1481,6 +1942,7 @@ export function primeClientAppealsView(config, view) {
 export function hydrateClientAppeals(hooks) {
   cabinetHooks = hooks;
   const config = hooks.config();
+  appealsRenderConfig = config;
   const root = document.querySelector("[data-ca-root]");
   if (!root) return;
   ensureSeed(config);
@@ -1495,6 +1957,16 @@ export function hydrateClientAppeals(hooks) {
   if (sourceEl) {
     sourceEl.innerHTML = LIST_SOURCE_FILTER.map((o) => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("");
     sourceEl.value = s.listSource;
+  }
+  if (document.documentElement.dataset.caHeaderBound !== "1") {
+    document.documentElement.dataset.caHeaderBound = "1";
+    document.addEventListener("click", (e) => {
+      const back = e.target.closest(".page-header .ca-back[data-ca-action]");
+      if (!back || document.querySelector("[data-ca-root]")?.contains(back)) return;
+      const cfg = cabinetHooks?.config?.();
+      if (!cfg) return;
+      handleCaAction(back.getAttribute("data-ca-action"), cfg, cabinetHooks);
+    });
   }
   if (root.dataset.caBound === "1") return;
   root.dataset.caBound = "1";
@@ -1514,6 +1986,15 @@ export function hydrateClientAppeals(hooks) {
     if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
+    if (t.matches("#ca-manual-form [name]")) syncManualDraftFromDom(s);
+    if (t.closest(".ca-pay-form")) syncPayDraftFromDom(config, s);
+    if (t.closest("#ca-refusal-form")) syncRefusalDraftFromDom(s);
+  });
+  root.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!root.contains(t)) return;
+    if (t.matches('[data-ca-input="detail-status"]')) syncStageDraftFromDom(s);
+    if (t.closest(".ca-pay-form")) syncPayDraftFromDom(config, s);
   });
   root.addEventListener("submit", (ev) => {
     if (ev.target?.id === "ca-manual-form") {
@@ -1522,33 +2003,25 @@ export function hydrateClientAppeals(hooks) {
     }
     if (ev.target?.id === "ca-pay-form") {
       ev.preventDefault();
-      const appeal = appeals.find((a) => a.id === s.selectedId);
-      const form = ev.target;
-      const dateInput = form.querySelector('[name="review-date"]');
-      const amountInput = form.querySelector('[name="review-amount"]');
-      if (!appeal || !dateInput?.value) return;
-      const iso = new Date(dateInput.value + "T12:00:00").toISOString();
-      let amount = null;
-      if (amountInput?.value.trim()) amount = Number(amountInput.value);
-      s.inlinePanel = null;
-      commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, amount });
-      hooks.notify?.("Оплата зафиксирована");
-      hooks.refresh();
+      submitPaidCategoryForm(ev, config, hooks);
+    } else if (ev.target?.id === "ca-review-form") {
+      ev.preventDefault();
+      if (s.inlineReview?.stageId === SYSTEM.PAID) submitPaidCategoryForm(ev, config, hooks);
+      else submitReviewCabinet(ev, config, hooks);
     }
-    if (ev.target?.id === "ca-review-form") submitReviewCabinet(ev, config, hooks);
     if (ev.target?.id === "ca-refusal-form") {
       ev.preventDefault();
+      syncRefusalDraftFromDom(s);
       const appeal = appeals.find((a) => a.id === s.selectedId);
-      const reason = ev.target.reason?.value;
-      if (!reason) {
+      if (!appeal) return;
+      const reason = s.refusalDraft?.reason || ev.target.reason?.value;
+      if (!reason?.trim()) {
         hooks.notify?.("Выберите причину отказа", "error");
         return;
       }
-      appeal.refusedReason = reason;
-      appeal.stageId = SYSTEM.REFUSED;
-      const note = ev.target.comment?.value?.trim();
-      pushHistory(appeal, note ? `Отказ: ${note}` : "Отказ", reason);
+      commitStageChange(appeal, SYSTEM.REFUSED, { reason, note: s.refusalDraft?.comment?.trim() || "" });
       s.showRefusal = null;
+      s.refusalDraft = { reason: "", comment: "", showCustom: false, customText: "", customError: "" };
       afterDataChange();
       hooks.notify?.("Отказ зафиксирован");
       hooks.refresh();
@@ -1564,12 +2037,15 @@ function handleCaAction(action, config, hooks) {
     if (v === "detail") s.view = "detail";
     else s.view = v;
     if (v === "list") {
+      if (s.view === "manual") syncManualDraftFromDom(s);
+      if (s.showRefusal) syncRefusalDraftFromDom(s);
       s.selectedId = null;
       s.purchaseViewId = null;
       s.inlineReview = null;
       s.inlinePanel = null;
       s.detailPickStage = false;
       s.showRefusal = null;
+      s.payDraft = null;
     }
     hooks.refresh();
     return;
@@ -1589,6 +2065,9 @@ function handleCaAction(action, config, hooks) {
     s.inlinePanel = "pay";
     s.showRefusal = null;
     s.detailPickStage = false;
+    s.inlineReview = null;
+    const appeal = appeals.find((a) => a.id === s.selectedId);
+    if (appeal) initPayDraft(s, appeal);
     hooks.refresh();
     return;
   }
@@ -1608,19 +2087,171 @@ function handleCaAction(action, config, hooks) {
     s.detailPickStage = false;
     s.showRefusal = null;
     s.inlineReview = null;
+    s.payDraft = null;
     hooks.refresh();
     return;
   }
   if (action.startsWith("refusal:pick:")) {
     const reason = decodeURIComponent(action.split(":").slice(2).join(":"));
-    const form = document.getElementById("ca-refusal-form");
-    const hidden = form?.querySelector('input[name="reason"]');
-    if (hidden) hidden.value = reason;
-    form?.querySelectorAll(".ca-chip").forEach((b) => b.classList.toggle("is-selected", b.getAttribute("data-ca-action") === action));
+    if (!s.refusalDraft) s.refusalDraft = { reason: "", comment: "", showCustom: false, customText: "", customError: "" };
+    syncRefusalDraftFromDom(s);
+    s.refusalDraft.reason = reason;
+    s.refusalDraft.customError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "refusal:custom-toggle") {
+    if (!s.refusalDraft) s.refusalDraft = { reason: "", comment: "", showCustom: false, customText: "", customError: "" };
+    syncRefusalDraftFromDom(s);
+    s.refusalDraft.showCustom = !s.refusalDraft.showCustom;
+    hooks.refresh();
+    return;
+  }
+  if (action === "refusal:custom-cancel") {
+    syncRefusalDraftFromDom(s);
+    s.refusalDraft.showCustom = false;
+    s.refusalDraft.customText = "";
+    s.refusalDraft.customError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "refusal:custom-add") {
+    syncRefusalDraftFromDom(s);
+    const appeal = appeals.find((a) => a.id === s.selectedId);
+    const res = addWorkspaceReason(config, s.refusalDraft.customText);
+    if (!res.ok) {
+      s.refusalDraft.customError = res.error;
+      if (res.existing) s.refusalDraft.reason = res.existing;
+      hooks.refresh();
+      return;
+    }
+    s.refusalDraft.reason = res.value;
+    s.refusalDraft.showCustom = false;
+    s.refusalDraft.customText = "";
+    s.refusalDraft.customError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "stage:custom-toggle") {
+    syncStageDraftFromDom(s);
+    if (!s.stageDraft) s.stageDraft = { selectedStageId: "", showCustom: false, customText: "", customError: "" };
+    s.stageDraft.showCustom = !s.stageDraft.showCustom;
+    hooks.refresh();
+    return;
+  }
+  if (action === "stage:custom-cancel") {
+    syncStageDraftFromDom(s);
+    s.stageDraft.showCustom = false;
+    s.stageDraft.customText = "";
+    s.stageDraft.customError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "stage:custom-add") {
+    syncStageDraftFromDom(s);
+    const res = addWorkspaceStage(config, s.stageDraft.customText);
+    if (!res.ok) {
+      s.stageDraft.customError = res.error;
+      if (res.existing) s.stageDraft.selectedStageId = res.existing.id;
+      hooks.refresh();
+      return;
+    }
+    s.stageDraft.selectedStageId = res.stage.id;
+    s.stageDraft.showCustom = false;
+    s.stageDraft.customText = "";
+    s.stageDraft.customError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "manual:custom-toggle") {
+    syncManualDraftFromDom(s);
+    s.manualDraft.showCustomChannel = !s.manualDraft.showCustomChannel;
+    hooks.refresh();
+    return;
+  }
+  if (action === "manual:custom-cancel") {
+    syncManualDraftFromDom(s);
+    s.manualDraft.showCustomChannel = false;
+    s.manualDraft.customChannelText = "";
+    s.manualDraft.customChannelError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "manual:custom-add") {
+    syncManualDraftFromDom(s);
+    const res = addWorkspaceChannel(config, s.manualDraft.customChannelText);
+    if (!res.ok) {
+      s.manualDraft.customChannelError = res.error;
+      if (res.key) s.manualDraft.source = res.key;
+      hooks.refresh();
+      return;
+    }
+    s.manualDraft.source = res.channel.key;
+    s.manualDraft.showCustomChannel = false;
+    s.manualDraft.customChannelText = "";
+    s.manualDraft.customChannelError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "pay:add-row") {
+    syncPayDraftFromDom(config, s);
+    if (s.payDraft) s.payDraft.rows.push(defaultPayRow());
+    hooks.refresh();
+    return;
+  }
+  if (action.startsWith("pay:remove-row:")) {
+    syncPayDraftFromDom(config, s);
+    const idx = Number(action.split(":")[2]);
+    if (s.payDraft && s.payDraft.rows.length > 1) s.payDraft.rows.splice(idx, 1);
+    hooks.refresh();
+    return;
+  }
+  if (action === "pay:custom-toggle") {
+    syncPayDraftFromDom(config, s);
+    if (s.payDraft) s.payDraft.showCustomCategory = !s.payDraft.showCustomCategory;
+    hooks.refresh();
+    return;
+  }
+  if (action === "pay:custom-cancel") {
+    syncPayDraftFromDom(config, s);
+    if (s.payDraft) {
+      s.payDraft.showCustomCategory = false;
+      s.payDraft.customCategoryText = "";
+      s.payDraft.customCategoryError = "";
+    }
+    hooks.refresh();
+    return;
+  }
+  if (action === "pay:custom-add") {
+    syncPayDraftFromDom(config, s);
+    if (!s.payDraft) return;
+    const res = addWorkspacePayCategory(config, s.payDraft.customCategoryText);
+    if (!res.ok) {
+      s.payDraft.customCategoryError = res.error;
+      hooks.refresh();
+      return;
+    }
+    const row = s.payDraft.rows[s.payDraft.rows.length - 1] || s.payDraft.rows[0];
+    if (row) row.categoryKey = res.category.key;
+    s.payDraft.showCustomCategory = false;
+    s.payDraft.customCategoryText = "";
+    s.payDraft.customCategoryError = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "pay:delay-all-toggle") {
+    syncPayDraftFromDom(config, s);
+    if (s.payDraft?.delayAll) {
+      const days = s.payDraft.rows[0]?.delayDays || "14";
+      s.payDraft.rows.forEach((r) => {
+        r.delayDays = days;
+      });
+    }
+    hooks.refresh();
     return;
   }
   if (action === "settings:discard") {
-    s.settingsDraft = JSON.parse(JSON.stringify(partnerSettings[RECEIVING.id]));
+    s.settingsDraft = JSON.parse(JSON.stringify(partnerSettingsMerged(RECEIVING.id) || partnerSettings[RECEIVING.id]));
     hooks.refresh();
     return;
   }
@@ -1688,10 +2319,17 @@ function handleCaAction(action, config, hooks) {
   if (action === "refusal:open") {
     s.showRefusal = s.selectedId;
     s.inlinePanel = null;
+  s.detailPickStage = false;
+    if (!s.refusalDraft) s.refusalDraft = { reason: "", comment: "", showCustom: false, customText: "", customError: "" };
     hooks.refresh();
     return;
   }
-  if (action === "refusal:cancel") { s.showRefusal = null; hooks.refresh(); return; }
+  if (action === "refusal:cancel" || action === "refusal:panel-cancel") {
+    syncRefusalDraftFromDom(s);
+    s.showRefusal = null;
+    hooks.refresh();
+    return;
+  }
   if (action === "review:cancel") { s.inlineReview = null; hooks.refresh(); return; }
   if (action === "notes:save") {
     const appeal = appeals.find((a) => a.id === s.selectedId);
@@ -1735,6 +2373,8 @@ function handleCaAction(action, config, hooks) {
     s.settingsDraft.workingStages.forEach((st, i) => { st.label = labels[i]; });
     s.settingsDraft.refusalReasons = reasons;
     partnerSettings[RECEIVING.id] = s.settingsDraft;
+    s.partnerOverlay.refusalReasons = [];
+    s.partnerOverlay.workingStages = [];
     hooks.notify?.("Настройки сохранены");
     s.view = "list";
     hooks.refresh();

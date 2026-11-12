@@ -36,7 +36,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView } from "./client-appeals.js?v=ca2";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView } from "./client-appeals.js?v=ca3";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
 import {
@@ -3359,7 +3359,7 @@ function Ia() {
   }
   return (
     e.includes(i.page) || (i.page = "home"),
-    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header"><div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : i.page === "clients" ? `${clientAppealsPageTitle(clientAppealsConfig())}${clientAppealsHeaderPill(clientAppealsConfig()) ? `<span class="ca-title-pill">${clientAppealsHeaderPill(clientAppealsConfig())}</span>` : ""}` : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : i.page === "clients" ? clientAppealsPageMuted(clientAppealsConfig()) : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
+    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header">${i.page === "clients" ? clientAppealsSubpageBack(clientAppealsConfig()) : ""}<div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : i.page === "clients" ? `${clientAppealsPageTitle(clientAppealsConfig())}${clientAppealsHeaderPill(clientAppealsConfig()) ? `<span class="ca-title-pill">${clientAppealsHeaderPill(clientAppealsConfig())}</span>` : ""}` : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : i.page === "clients" ? clientAppealsPageMuted(clientAppealsConfig()) : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
   );
 }
 function Ea() {
@@ -3800,16 +3800,8 @@ function R() {
       header.querySelector('[data-action^="client-edit:"]')?.remove();
       header.insertAdjacentHTML("beforeend", `<div class="record-card-actions">${recordActionToolbar("clients", client, "clients", k() && !O("clients"))}</div>`);
     }
-    let a = z.querySelector(".page-header .muted");
-    a &&
-      (a.textContent =
-        i.role === "agent"
-          ? "Ваши клиенты, сертификаты и бонусы."
-          : i.role === "store"
-            ? "Покупатели вашего магазина и история их обращений."
-            : ge
-              ? "Контакты, заметки, сертификаты и покупки клиента."
-              : "Люди, с которыми вы работаете.");
+    const muted = z.querySelector(".page-header .muted");
+    if (muted) muted.textContent = clientAppealsPageMuted(clientAppealsConfig());
   }
   hydrateEntry({ root: z, state: i, render: () => {
     if (["store", "company"].includes(i.role)) Y = i.role;
