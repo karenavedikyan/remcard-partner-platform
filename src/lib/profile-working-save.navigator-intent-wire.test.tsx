@@ -176,6 +176,7 @@ describe("Navigator PATCH semantics wire contract", () => {
       validationScope: "basics",
     });
     expect(calls.filter((c) => c.method === "PATCH")).toHaveLength(0);
+    expect(calls.filter((c) => c.method === "GET")).toHaveLength(1);
   });
 
   it("rejects activation enable without categories on the wire", async () => {

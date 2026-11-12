@@ -183,9 +183,8 @@ export async function persistWorkingProfileDraft(
   }
 
   const patchBody = buildWorkingProfilePatchBody(profile, draft, options);
-  const wroteProfilePatch = Object.keys(patchBody).length > 0;
 
-  if (wroteProfilePatch) {
+  if (Object.keys(patchBody).length > 0) {
     await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
       method: "PATCH",
       body: patchBody,
@@ -196,10 +195,7 @@ export async function persistWorkingProfileDraft(
     await persistOrganizationFromDraft(draft, profile);
   }
 
-  const refreshed =
-    wroteProfilePatch || trimmedName !== (profile.user.displayName ?? "").trim()
-      ? await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" })
-      : profile;
+  const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
   return {
     ...refreshed,
     user: { ...refreshed.user, displayName: trimmedName },

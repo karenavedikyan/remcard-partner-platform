@@ -105,6 +105,7 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     }, { partnerSearchTouched: false });
     expect(calls).toEqual([
       { method: "PATCH", path: "/api/remcard/api/auth/me", body: { displayName: "Пётр" } },
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
     ]);
     expect(result.user.displayName).toBe("Пётр");
     expect(result.workingProfile?.partnerSearchOptInExplicit).toBe(false);
@@ -178,13 +179,15 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     expect(calls[0].body).not.toHaveProperty("workingProfileSaveIntent");
   });
 
-  it("skips profile PATCH when cabinet scope has no deltas", async () => {
+  it("skips profile PATCH when cabinet scope has no deltas but still GET-refreshes", async () => {
     current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
     await persistWorkingProfileDraft(current, profileDraftFromProfile(current), {
       validationIntent: "cabinet",
       validationScope: "basics",
     });
-    expect(calls).toEqual([]);
+    expect(calls).toEqual([
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
+    ]);
   });
 
   it("cannot remove the last direction from an existing explicit ON profile", async () => {
