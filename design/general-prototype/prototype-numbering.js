@@ -692,31 +692,51 @@
     return !!activeAppDialog();
   }
 
+  function moveNodeIfNeeded(node, parent) {
+    if (!node || !parent || node.parentNode === parent) return false;
+    parent.append(node);
+    return true;
+  }
+
+  function setClassMembership(el, className, present) {
+    if (!el?.classList) return false;
+    const has = el.classList.contains(className);
+    if (present === has) return false;
+    if (present) el.classList.add(className);
+    else el.classList.remove(className);
+    return true;
+  }
+
   function appendUiToBody() {
     if (!badgeHost || !chromeEl || !panelEl) return;
-    document.body.append(badgeHost, chromeEl, panelEl);
-    dockedDialog?.classList.remove("proto-num-dialog-host");
-    dockedDialog = null;
+    moveNodeIfNeeded(badgeHost, document.body);
+    moveNodeIfNeeded(chromeEl, document.body);
+    moveNodeIfNeeded(panelEl, document.body);
+    if (dockedDialog) {
+      setClassMembership(dockedDialog, "proto-num-dialog-host", false);
+      dockedDialog = null;
+    }
   }
 
   function mountAnnotationInDialog(dlg) {
     if (!dlg || !badgeHost || !chromeEl || !panelEl) return;
-    if (dockedDialog !== dlg) {
-      appendUiToBody();
-      dockedDialog = dlg;
+    if (dockedDialog && dockedDialog !== dlg) {
+      setClassMembership(dockedDialog, "proto-num-dialog-host", false);
     }
-    dlg.classList.add("proto-num-dialog-host");
-    dlg.append(badgeHost, chromeEl);
+    dockedDialog = dlg;
+    setClassMembership(dlg, "proto-num-dialog-host", true);
+    moveNodeIfNeeded(badgeHost, dlg);
+    moveNodeIfNeeded(chromeEl, dlg);
     if (panelOpen && !panelEl.hasAttribute("hidden")) {
-      dlg.append(panelEl);
+      moveNodeIfNeeded(panelEl, dlg);
     } else {
-      document.body.append(panelEl);
+      moveNodeIfNeeded(panelEl, document.body);
     }
   }
 
   function syncModalDock() {
     const dlg = activeAppDialog();
-    document.documentElement.classList.toggle("proto-num-modal-open", !!dlg);
+    setClassMembership(document.documentElement, "proto-num-modal-open", !!dlg);
     if (dlg) mountAnnotationInDialog(dlg);
     else appendUiToBody();
   }
@@ -777,8 +797,44 @@
     rescanTimer = setTimeout(rescan, 320);
   }
 
+  const DOCK_MARKER_CLASSES = new Set([
+    "proto-num-modal-open",
+    "proto-num-off",
+    "proto-num-dialog-host",
+  ]);
+
+  function classMutationIsDockMarkerOnly(mutation) {
+    if (mutation.type !== "attributes" || mutation.attributeName !== "class") return false;
+    const el = mutation.target;
+    if (el === document.documentElement) {
+      const prev = (mutation.oldValue || "").trim().split(/\s+/).filter(Boolean);
+      const next = [...el.classList];
+      const changed = [
+        ...next.filter((c) => !prev.includes(c)),
+        ...prev.filter((c) => !el.classList.contains(c)),
+      ];
+      return changed.length > 0 && changed.every((c) => DOCK_MARKER_CLASSES.has(c));
+    }
+    if (
+      el instanceof HTMLDialogElement &&
+      !el.hasAttribute(UI_ATTR)
+    ) {
+      const prev = (mutation.oldValue || "").trim().split(/\s+/).filter(Boolean);
+      const changed = [
+        ...[...el.classList].filter((c) => !prev.includes(c)),
+        ...prev.filter((c) => !el.classList.contains(c)),
+      ];
+      return (
+        changed.length > 0 &&
+        changed.every((c) => c === "proto-num-dialog-host")
+      );
+    }
+    return false;
+  }
+
   function mutationIsRelevant(mutation) {
     if (scanning) return false;
+    if (classMutationIsDockMarkerOnly(mutation)) return false;
     if (mutation.type === "childList") {
       const t = mutation.target;
       if (t?.nodeType === 1) {
@@ -936,6 +992,7 @@
       childList: true,
       subtree: true,
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: [
         "class",
         "hidden",

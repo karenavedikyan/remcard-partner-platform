@@ -30,6 +30,10 @@ assert.doesNotMatch(src, /showPopover/, "popover must not be used for modal chro
 assert.match(src, /overlapsTarget/, "must avoid badges over product text");
 assert.match(src, /badgeHidden/, "hidden badges stay in index");
 assert.match(src, /BADGE_HOST_CLASS/, "badge host mutations filtered");
+assert.match(src, /moveNodeIfNeeded/, "dock append must be idempotent");
+assert.match(src, /setClassMembership/, "dock class markers must be idempotent");
+assert.match(src, /classMutationIsDockMarkerOnly/, "ignore own dock marker class mutations");
+assert.match(src, /attributeOldValue:\s*true/, "class diff for dock markers");
 assert.match(css, /proto-num-dialog-host/, "dialog-docked chrome positioning");
 
 console.log("prototype-numbering.selftest: ok");
