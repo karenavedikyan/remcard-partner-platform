@@ -13,8 +13,9 @@
     kind: "специалист",
   };
 
-  const INCOMING_ACTOR = "Демо-роль: менеджер принимающего партнёра";
-  const OUTGOING_ACTOR = "Демо-роль: рекомендатель · только свои referral";
+  /** Демо-аккаунт A: принимает. B: направляет. C: другой принимающий. D: чужой направивший. */
+  const DEMO_REFERRER_D = { id: "DEMO-PARTNER-008", name: "Андрей Ким" };
+  const DEMO_RECEIVER_C = { id: "DEMO-PARTNER-022", name: "ФормаПро" };
 
   const SOURCE_OPTIONS = [
     { key: "all", label: "Все источники" },
@@ -244,6 +245,19 @@
     const idx = pipe.indexOf(appeal.stageId);
     if (idx < 0 || idx >= pipe.length - 1) return null;
     return pipe[idx + 1];
+  }
+
+  function isActiveAppeal(appeal) {
+    return appeal.stageId !== SYSTEM.REFUSED && appeal.stageId !== SYSTEM.RETURN;
+  }
+
+  function findActiveAppeal(certificateId, receivingPartnerId) {
+    return appeals.find(
+      (a) =>
+        a.certificateId === certificateId &&
+        a.receivingPartnerId === receivingPartnerId &&
+        isActiveAppeal(a)
+    );
   }
 
   function canRefuseFrom(appeal) {
@@ -627,30 +641,32 @@
       </div>`;
   }
 
-  function renderActorBadge() {
-    const el = document.getElementById("actor-badge");
-    const hint = document.getElementById("outgoing-scope-hint");
-    if (!el) return;
-    if (activeTab === "incoming") {
-      el.textContent = INCOMING_ACTOR;
-      if (hint) hint.hidden = true;
-    } else {
-      el.textContent = OUTGOING_ACTOR;
-      if (hint) {
-        hint.hidden = false;
-        hint.textContent = `Только referral от ${REFERRER_VIEWER.name} (${REFERRER_VIEWER.id}). Чужие рекомендации скрыты.`;
-      }
-    }
-  }
-
   function renderContextLine() {
     const el = document.getElementById("context-line");
+    const badge = document.getElementById("actor-badge");
+    const inNote = document.getElementById("scope-incoming-note");
+    const outHint = document.getElementById("outgoing-scope-hint");
     if (!el) return;
-    renderActorBadge();
     if (activeTab === "incoming") {
-      el.textContent = `Демо-контекст принимающего: ${RECEIVING.name}, ${RECEIVING.city} (${RECEIVING.id})`;
+      el.textContent = `Демонстрация: принимающий партнёр ${RECEIVING.name} (${RECEIVING.id}), ${RECEIVING.city}`;
+      if (badge) {
+        badge.textContent = "Это не аккаунт направившего партнёра — вкладка «Отправил клиентов» покажет другой демо-актор.";
+      }
+      if (inNote) {
+        inNote.hidden = false;
+        inNote.textContent = `Видны только обращения у партнёра A (${RECEIVING.id}), в том числе от направившего D (${DEMO_REFERRER_D.name}). Обращения B→C (${DEMO_RECEIVER_C.name}) здесь не показываются. Настройки статусов — только для A; партнёр C не затрагивается.`;
+      }
+      if (outHint) outHint.hidden = true;
     } else {
-      el.textContent = `Демо-контекст отправителя: ${REFERRER_VIEWER.name} · ${REFERRER_VIEWER.id}`;
+      el.textContent = `Демонстрация: направивший партнёр ${REFERRER_VIEWER.name} (${REFERRER_VIEWER.id})`;
+      if (badge) {
+        badge.textContent = "Это не аккаунт принимающего магазина — нельзя смотреть чужие referral, как свои исходящие.";
+      }
+      if (inNote) inNote.hidden = true;
+      if (outHint) {
+        outHint.hidden = false;
+        outHint.textContent = `Только referral партнёра B: к A (${RECEIVING.name}) и к C (${DEMO_RECEIVER_C.name}). referral направившего D (${DEMO_REFERRER_D.name}) к A скрыты — их видит только вкладка принимающего A. Один объект обращения в памяти: смена статуса на A синхронно отражается у B. В продукте — один текущий аккаунт, без смены перспективы.`;
+      }
     }
     renderFunnel();
   }
@@ -678,12 +694,13 @@
     if (appeal.stageId === SYSTEM.RETURN) return "";
     const releaseAt = addDays(appeal.shippedAt, WAIT_DAYS);
     const left = daysBetween(new Date().toISOString(), releaseAt);
+    const walletPhase = left > 0 ? "Ожидание (кошелёк)" : "К подтверждению";
     return `<div class="cl-wait-block" role="status">
       <div class="cl-wallet-kind cl-wallet-kind--referral">Реферальное вознаграждение (не покупка)</div>
       <div>Отгрузка: <strong>${esc(formatDate(appeal.shippedAt))}</strong></div>
-      <div>Кошелёк · ожидание: <strong>${esc(String(Math.max(left, 0)))}</strong> из ${WAIT_DAYS} календ. дн.</div>
-      <div>Плановое снятие ожидания: ${esc(formatDate(releaseAt))}</div>
-      <p class="cl-note cl-note--legal">Тот же 14-дневный жизненный цикл, что в демо-кошельке. Без новой машины «подтверждений» и без гарантии выплаты.</p>
+      <div>Фаза после 14 дн.: <strong>${esc(walletPhase)}</strong>${left > 0 ? ` · осталось ${esc(String(left))} календ. дн.` : ""}</div>
+      <div>Дата перехода «К подтверждению»: ${esc(formatDate(releaseAt))}</div>
+      <p class="cl-note cl-note--legal">По предложению для владельца: «К подтверждению» — не автоматическая выплата; решение на согласовании. Тот же цикл, что в демо-кошельке.</p>
     </div>`;
   }
 
@@ -1006,23 +1023,23 @@
       return;
     }
     if (outcome.value === "repeat") {
-      const existing = appeals.find(
-        (a) => a.certificateId === "DEMO-CERT-1999" && a.receivingPartnerId === RECEIVING.id
-      );
+      const existing = findActiveAppeal("DEMO-CERT-1999", RECEIVING.id);
       if (existing) {
         closeScanDialog();
         openDetail(existing.id, "incoming");
         return;
       }
+      err.hidden = false;
+      err.textContent = "Нет активного обращения по этому сертификату у партнёра A (демо).";
+      return;
     }
     if (outcome.value === "new") {
       const tpl = CERT_TEMPLATES["DEMO-CERT-2048"];
-      const dup = appeals.some(
-        (a) => a.certificateId === tpl.certificateId && a.receivingPartnerId === RECEIVING.id
-      );
+      const dup = findActiveAppeal(tpl.certificateId, RECEIVING.id);
       if (dup) {
         err.hidden = false;
-        err.textContent = "Этот сертификат уже привязан к обращению. Выберите «Повторное сканирование».";
+        err.textContent =
+          "У партнёра A уже есть активное обращение по этому сертификату. Повторная покупка после закрытой сделки в спецификации не решена — демо не обещает «один сертификат = одно обращение навсегда».";
         return;
       }
       appealIdSeq += 1;
@@ -1313,8 +1330,10 @@
     tIn?.setAttribute("aria-selected", String(isIn));
     tOut?.setAttribute("aria-selected", String(!isIn));
     renderContextLine();
-    renderList(tab);
+    renderList("incoming");
+    renderList("outgoing");
     renderFunnel();
+    if (selectedAppealId) renderDetail();
   }
 
   function initTheme() {
