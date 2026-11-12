@@ -4,15 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Партнёры — демонстрационный профиль</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="pp-shell">
       <div class="pp-demo-banner" role="note">
-        <div>
-          <strong>Демонстрационный профиль</strong>
-          <div>Данные вымышлены. Без API, без записи в прод.</div>
-        </div>
+        <div>Это прототип. Все данные вымышлены.</div>
         <button type="button" class="pp-btn pp-btn--quiet" id="theme-toggle">Тёмная тема</button>
       </div>
 
@@ -26,8 +29,8 @@
         </div>
       </div>
 
-      <p style="margin: 0 0 12px; font-size: var(--pp-sm); color: var(--pp-muted)">
-        Вы (демо): <strong>Мария Орлова</strong>, специалист · Казань
+      <p class="pp-viewer-line">
+        Вы: <strong>Мария Орлова</strong>, специалист · Казань
       </p>
 
       <div id="partner-list" class="pp-list" data-view="list" aria-label="Активные партнёры"></div>
@@ -41,10 +44,10 @@
         </header>
         <div class="pp-dialog-body">
           <div class="pp-perspective">
-            <label for="perspective-select">Как видит партнёр</label>
+            <label for="perspective-select">Ракурс просмотра</label>
             <select id="perspective-select">
-              <option value="cabinet">Мой кабинет — профиль контрагента</option>
-              <option value="reciprocal">Зеркало — как контрагент видит меня</option>
+              <option value="cabinet">Профиль партнёра</option>
+              <option value="reciprocal">Как партнёр видит мой профиль</option>
             </select>
           </div>
           <div id="profile-dialog-body"></div>

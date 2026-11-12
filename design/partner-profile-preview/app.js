@@ -1,22 +1,40 @@
 (function () {
   "use strict";
 
-  /** @typedef {{ id: string, kind: string, displayName: string, organizationName: string|null, personalAlias: string|null, city: string|null, statusLabel: string, photo: string|null, about: string|null, products: string[], services: string[], stages: string[], geography: string[], contact: {name:string|null, phone:string|null, email:string|null}, cooperation: {status:string, since:string, terms:string, note:string} }} PartnerFixture */
+  /**
+   * @typedef {{
+   *   key: string,
+   *   publicId: string|null,
+   *   kind: string,
+   *   displayName: string,
+   *   organizationName: string|null,
+   *   personalAlias: string|null,
+   *   city: string|null,
+   *   photo: string|null,
+   *   about: string|null,
+   *   products: string[],
+   *   services: string[],
+   *   renovationStages: string[],
+   *   geography: string[],
+   *   contact: {name:string|null, phone:string|null, email:string|null},
+   *   cooperation: {status:string, since:string, terms:string, note:string|null}
+   * }} PartnerFixture
+   */
 
   const VIEWER = {
-    id: "usr_demo_viewer_maria",
+    key: "viewer",
+    publicId: "RC-DEMO-0100",
     kind: "specialist",
     displayName: "Мария Орлова",
     organizationName: null,
     personalAlias: null,
     city: "Казань",
-    statusLabel: "Сотрудничает",
     photo: null,
     about:
       "Специалист по мебели и кухням. Работаю с проверенными магазинами и брендами, без скрытых комиссий для клиента.",
     products: ["Мебель", "Кухни"],
     services: ["Подбор поставщиков", "Комплектация"],
-    stages: ["Подбор", "Замер"],
+    renovationStages: ["Планирование", "Чистовая отделка"],
     geography: ["Казань", "Татарстан"],
     contact: {
       name: "Мария Орлова",
@@ -24,29 +42,29 @@
       email: "maria.demo@example.invalid",
     },
     cooperation: {
-      status: "Активно",
-      since: "март 2025",
-      terms: "Базовые условия по направлению «Мебель»",
-      note: "Демо: условия только для этой пары.",
+      status: "—",
+      since: "—",
+      terms: "—",
+      note: null,
     },
   };
 
   /** @type {PartnerFixture[]} */
   const PARTNERS = [
     {
-      id: "usr_demo_agent_k7m2",
+      key: "agent",
+      publicId: "RC-DEMO-0001",
       kind: "agent",
       displayName: "Андрей Ким",
       organizationName: null,
       personalAlias: null,
       city: "Москва",
-      statusLabel: "Сотрудничает",
       photo: null,
       about:
         "Рекомендую проверенные магазины и специалистов. Публикую короткие обзоры и помогаю клиентам с выбором.",
       products: [],
       services: ["Рекомендации", "Консультации"],
-      stages: ["Привлечение", "Сопровождение"],
+      renovationStages: ["Диагностика", "Приёмка"],
       geography: ["Москва", "МО"],
       contact: {
         name: "Андрей Ким",
@@ -57,24 +75,24 @@
         status: "Активно",
         since: "январь 2025",
         terms: "Стандартные условия агента по направлению «Мебель»",
-        note: "Ваше сотрудничество: вы — специалист, контрагент — агент.",
+        note: null,
       },
     },
     {
-      id: "usr_demo_spec_elena",
+      key: "spec",
+      publicId: "RC-DEMO-0002",
       kind: "specialist",
       displayName:
         "Елена Соколова-Виноградова — дизайнер интерьеров премиум-сегмента",
       organizationName: null,
       personalAlias: "Елена · дизайн",
       city: "Санкт-Петербург",
-      statusLabel: "Сотрудничает",
       photo: null,
       about:
         "Проектирую жилые пространства и подбираю материалы. Открыта к долгим коллаборациям с магазинами.",
       products: ["Мебель", "Свет", "Керамика"],
       services: ["Дизайн-проект", "Авторский надзор"],
-      stages: ["Концепция", "Комплектация"],
+      renovationStages: ["Планирование", "Чистовая отделка"],
       geography: ["Санкт-Петербург", "Ленобласть"],
       contact: {
         name: "Елена Соколова",
@@ -89,19 +107,19 @@
       },
     },
     {
-      id: "usr_demo_store_rentech",
+      key: "store",
+      publicId: "RC-DEMO-0003",
       kind: "store",
       displayName: "РемТех на Ленина",
       organizationName: 'ООО «РемТех Северо-Запад»',
       personalAlias: null,
       city: "Казань",
-      statusLabel: "Сотрудничает",
       photo: null,
       about:
         "Сеть магазинов стройматериалов и мебели. Работаем с профессионалами по прозрачным условиям.",
       products: ["Мебель", "Кухни", "Стройматериалы"],
       services: [],
-      stages: ["Продажа", "Доставка"],
+      renovationStages: ["Демонтаж", "Чистовая отделка", "Оборудование"],
       geography: ["Казань", "Набережные Челны"],
       contact: {
         name: "Отдел партнёрств",
@@ -112,22 +130,22 @@
         status: "Активно",
         since: "февраль 2025",
         terms: "Категорийные скидки и фиксированный процент по «Мебель»",
-        note: "Организация отличается от названия точки на витрине.",
+        note: null,
       },
     },
     {
-      id: "usr_demo_company_forma",
+      key: "company",
+      publicId: "RC-DEMO-0004",
       kind: "company",
       displayName: "ФормаПро",
       organizationName: 'ООО «ФормаПро»',
       personalAlias: "ФормаПро · офис",
       city: "Екатеринбург",
-      statusLabel: "На паузе",
       photo: null,
       about: "Производство и поставка корпусной мебели для бизнеса и девелоперов.",
       products: ["Корпусная мебель", "Офис"],
       services: ["Логистика", "Монтаж"],
-      stages: ["Производство", "Монтаж"],
+      renovationStages: ["Конструктив", "Оборудование"],
       geography: ["Екатеринбург", "Урал"],
       contact: {
         name: null,
@@ -138,22 +156,22 @@
         status: "Пауза",
         since: "июнь 2024",
         terms: "Условия заморожены до возобновления",
-        note: "Контакт для сотрудничества не заполнен — в проде показываем заглушку.",
+        note: null,
       },
     },
     {
-      id: "usr_demo_sparse_partner",
+      key: "sparse",
+      publicId: null,
       kind: "store",
       displayName: "Склад №7",
       organizationName: null,
       personalAlias: null,
       city: null,
-      statusLabel: "Ожидает ответа",
       photo: null,
       about: null,
       products: [],
       services: [],
-      stages: [],
+      renovationStages: [],
       geography: [],
       contact: { name: null, phone: null, email: null },
       cooperation: {
@@ -193,9 +211,6 @@
   }
 
   function partnerTitle(p) {
-    if (p.organizationName && p.displayName) {
-      return p.displayName;
-    }
     return p.displayName;
   }
 
@@ -203,6 +218,10 @@
     const type = KIND_LABEL[p.kind] || "Партнёр";
     const city = p.city?.trim() || "Город не указан";
     return `${type} · ${city}`;
+  }
+
+  function showsOrganization(p) {
+    return (p.kind === "store" || p.kind === "company") && Boolean(p.organizationName?.trim());
   }
 
   function chipList(items, emptyCopy) {
@@ -222,6 +241,10 @@
       .replace(/"/g, "&quot;");
   }
 
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/'/g, "&#39;");
+  }
+
   function contactLines(contact) {
     const name = contact.name?.trim();
     const phone = contact.phone?.trim();
@@ -236,25 +259,41 @@
     return `<ul>${rows.join("")}</ul>`;
   }
 
+  function pairCooperation() {
+    return selectedPartner?.cooperation ?? null;
+  }
+
   function activeProfile() {
-    if (perspective === "reciprocal" && selectedPartner) {
+    if (!selectedPartner) return null;
+    const cooperation = selectedPartner.cooperation;
+    if (perspective === "reciprocal") {
       return {
         profile: VIEWER,
-        cooperation: {
-          status: selectedPartner.cooperation.status,
-          since: selectedPartner.cooperation.since,
-          terms: `Как видит «${selectedPartner.displayName}»: ${VIEWER.cooperation.terms}`,
-          note: `Зеркальный просмотр: ${selectedPartner.displayName} открывает ваш профиль.`,
-        },
-        reciprocal: selectedPartner.displayName,
+        cooperation,
+        reciprocalName: selectedPartner.displayName,
       };
     }
-    if (!selectedPartner) return null;
     return {
       profile: selectedPartner,
-      cooperation: selectedPartner.cooperation,
-      reciprocal: null,
+      cooperation,
+      reciprocalName: null,
     };
+  }
+
+  function renderFactsGrid(p, cooperation) {
+    const rows = [
+      `<div><dt>Тип</dt><dd>${escapeHtml(KIND_LABEL[p.kind] || "Партнёр")}</dd></div>`,
+      `<div><dt>Город</dt><dd>${escapeHtml(p.city?.trim() || "Не указано")}</dd></div>`,
+    ];
+    if (showsOrganization(p)) {
+      rows.push(
+        `<div><dt>Организация</dt><dd>${escapeHtml(p.organizationName?.trim() || "Не указано")}</dd></div>`,
+      );
+    }
+    rows.push(
+      `<div><dt>Статус сотрудничества</dt><dd>${escapeHtml(cooperation.status)}</dd></div>`,
+    );
+    return rows.join("");
   }
 
   function renderProfile() {
@@ -262,27 +301,32 @@
     if (!ctx || !selectedPartner) return;
 
     const p = ctx.profile;
+    const cooperation = ctx.cooperation;
     const orgLine =
-      p.organizationName && p.displayName
+      showsOrganization(p) && p.displayName
         ? `<p class="pw-org-line">Официально: <strong>${escapeHtml(p.organizationName)}</strong></p>`
-        : p.organizationName
-          ? `<p class="pw-org-line"><strong>${escapeHtml(p.organizationName)}</strong></p>`
-          : "";
+        : "";
     const aliasLine = p.personalAlias
-      ? `<p class="pw-org-line">Личный алиас в списке: <strong>${escapeHtml(p.personalAlias)}</strong></p>`
+      ? `<p class="pw-org-line">Временное имя (видно только вам): <strong>${escapeHtml(p.personalAlias)}</strong></p>`
       : "";
 
-    const reciprocalNote = ctx.reciprocal
-      ? `<p class="pp-reciprocal-note">Как видит партнёр «${escapeHtml(ctx.reciprocal)}» — та же структура профиля, без данных регистрации и витрины.</p>`
+    const reciprocalNote = ctx.reciprocalName
+      ? `<p class="pp-reciprocal-note">Как партнёр «${escapeHtml(ctx.reciprocalName)}» видит ваш профиль — в том же формате, без лишних данных.</p>`
       : "";
 
     const about = p.about?.trim()
       ? escapeHtml(p.about)
       : '<span class="pp-empty-hint">Партнёр пока не добавил описание.</span>';
 
+    const publicId = p.publicId?.trim() || "";
+    const idAvailable = Boolean(publicId);
+    const idDisplay = idAvailable ? publicId : "ID пока недоступен";
+
     dialogTitle.textContent = perspective === "reciprocal"
-      ? "Профиль (зеркальный просмотр)"
+      ? "Мой профиль для партнёра"
       : "Профиль партнёра";
+
+    const summaryChips = [...p.products, ...p.services, ...p.renovationStages].slice(0, 8);
 
     dialogBody.innerHTML = `
       ${reciprocalNote}
@@ -296,30 +340,40 @@
             ${orgLine}
             ${aliasLine}
           </div>
-          <span class="pw-status">${escapeHtml(p.statusLabel)}</span>
+          <span class="pw-status">${escapeHtml(cooperation.status)}</span>
         </div>
         <dl class="pw-facts">
-          <div><dt>Тип</dt><dd>${escapeHtml(KIND_LABEL[p.kind] || "Партнёр")}</dd></div>
-          <div><dt>Город</dt><dd>${escapeHtml(p.city?.trim() || "Не указано")}</dd></div>
-          <div><dt>Организация</dt><dd>${escapeHtml(p.organizationName?.trim() || "Не указано")}</dd></div>
-          <div><dt>Статус сотрудничества</dt><dd>${escapeHtml(ctx.cooperation.status)}</dd></div>
+          ${renderFactsGrid(p, cooperation)}
         </dl>
         <div class="pw-review-directions">
           <h3>Направления</h3>
-          ${chipList(
-            [...p.products, ...p.services, ...p.stages].slice(0, 8),
-            "Партнёр пока не указал направления.",
-          )}
+          ${chipList(summaryChips, "Партнёр пока не указал направления.")}
         </div>
         <div class="pw-summary-actions">
           <div class="pw-id-block">
             <label for="partner-id-field">ID партнёра</label>
             <div class="pw-id-row">
-              <div class="pw-id-value" id="partner-id-field" tabindex="0">${escapeHtml(p.id)}</div>
-              <button type="button" class="pp-btn" id="copy-partner-id">Копировать</button>
+              <input
+                type="text"
+                class="pw-id-value"
+                id="partner-id-field"
+                readonly
+                value="${escapeAttr(idDisplay)}"
+                aria-describedby="partner-id-help"
+              />
+              <button
+                type="button"
+                class="pp-btn"
+                id="copy-partner-id"
+                ${idAvailable ? "" : "disabled"}
+              >
+                Копировать
+              </button>
             </div>
             <p class="pw-copy-status" id="copy-status" role="status" aria-live="polite"></p>
-            <p class="pp-empty-hint" style="margin-top:6px">Внутренний идентификатор пользователя. Это не publicId и не id партнёрства.</p>
+            <p class="pp-empty-hint" id="partner-id-help" style="margin-top:6px">
+              Демо-ID. На сайте — ID из профиля партнёра.
+            </p>
           </div>
         </div>
       </section>
@@ -329,12 +383,12 @@
       </section>
       <section class="pp-section" aria-labelledby="sec-directions">
         <h3 id="sec-directions">Направления работы</h3>
-        <p style="margin-bottom:8px;font-size:var(--pp-xs);color:var(--pp-muted)">Товары</p>
+        <p class="pp-direction-label">Товары</p>
         ${chipList(p.products, "Не указано")}
-        <p style="margin:12px 0 8px;font-size:var(--pp-xs);color:var(--pp-muted)">Услуги</p>
+        <p class="pp-direction-label">Услуги</p>
         ${chipList(p.services, "Не указано")}
-        <p style="margin:12px 0 8px;font-size:var(--pp-xs);color:var(--pp-muted)">Этапы</p>
-        ${chipList(p.stages, "Не указано")}
+        <p class="pp-direction-label">Этапы ремонта</p>
+        ${chipList(p.renovationStages, "Не указано")}
       </section>
       <section class="pp-section" aria-labelledby="sec-geo">
         <h3 id="sec-geo">География</h3>
@@ -351,20 +405,22 @@
       <section class="pp-section pp-section--cooperation" aria-labelledby="sec-coop">
         <h3 id="sec-coop">Ваше сотрудничество</h3>
         <ul>
-          <li><strong>Статус:</strong> ${escapeHtml(ctx.cooperation.status)}</li>
-          <li><strong>С ${escapeHtml(ctx.cooperation.since)}</strong></li>
-          <li><strong>Условия:</strong> ${escapeHtml(ctx.cooperation.terms)}</li>
+          <li><strong>Статус:</strong> ${escapeHtml(cooperation.status)}</li>
+          <li><strong>С ${escapeHtml(cooperation.since)}</strong></li>
+          <li><strong>Условия:</strong> ${escapeHtml(cooperation.terms)}</li>
         </ul>
         ${
-          ctx.cooperation.note
-            ? `<p style="margin-top:10px;font-size:var(--pp-sm);color:var(--pp-muted)">${escapeHtml(ctx.cooperation.note)}</p>`
+          cooperation.note
+            ? `<p class="pp-coop-note">${escapeHtml(cooperation.note)}</p>`
             : ""
         }
       </section>
     `;
 
     const copyBtn = document.getElementById("copy-partner-id");
-    copyBtn?.addEventListener("click", () => void copyPartnerId(p.id));
+    if (copyBtn && idAvailable) {
+      copyBtn.addEventListener("click", () => void copyPartnerId(publicId));
+    }
   }
 
   async function copyPartnerId(id) {
@@ -383,12 +439,9 @@
       status.textContent = "Не удалось скопировать — выделите ID и скопируйте вручную";
       status.classList.add("is-fail");
       const field = document.getElementById("partner-id-field");
-      if (field && window.getSelection) {
-        const range = document.createRange();
-        range.selectNodeContents(field);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+      if (field) {
+        field.focus();
+        field.select();
       }
     }
   }
@@ -400,19 +453,19 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pp-partner-card";
-      btn.dataset.partnerId = partner.id;
+      btn.dataset.partnerKey = partner.key;
       btn.innerHTML = `
         <div class="pp-avatar" aria-hidden="true">${escapeHtml(initials(partnerTitle(partner)))}</div>
         <div>
           <p class="pp-card-title">${escapeHtml(partnerTitle(partner))}</p>
           <p class="pp-card-sub">${escapeHtml(subtitleLine(partner))}</p>
           ${
-            partner.organizationName
+            showsOrganization(partner)
               ? `<p class="pp-card-sub">${escapeHtml(partner.organizationName)}</p>`
               : ""
           }
         </div>
-        <span class="pp-status-chip">${escapeHtml(partner.statusLabel)}</span>
+        <span class="pp-status-chip">${escapeHtml(partner.cooperation.status)}</span>
       `;
       btn.addEventListener("click", () => openProfile(partner, btn));
       listEl.appendChild(btn);
@@ -427,8 +480,7 @@
     if (typeof dialogEl.showModal === "function") {
       dialogEl.showModal();
     }
-    const closeBtn = document.getElementById("profile-close");
-    closeBtn?.focus();
+    document.getElementById("profile-close")?.focus();
   }
 
   function closeProfile() {
