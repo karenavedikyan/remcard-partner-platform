@@ -37,12 +37,18 @@
   const DEMO_REFERRER_D = { id: "DEMO-PARTNER-008", name: "Андрей Ким" };
   const DEMO_RECEIVER_C = { id: "DEMO-PARTNER-022", name: "ФормаПро" };
 
-  const SOURCE_OPTIONS = [
-    { key: "all", label: "Все источники" },
-    { key: "scan", label: "Сертификат (скан)" },
+  const LIST_SOURCE_FILTER = [
+    { key: "all", label: "Все" },
+    { key: "cert", label: "По сертификату" },
     { key: "manual", label: "Вручную" },
+  ];
+
+  const MANUAL_CHANNEL_OPTIONS = [
     { key: "phone", label: "Звонок" },
-    { key: "visit", label: "Визит в магазин" },
+    { key: "messenger", label: "Мессенджер" },
+    { key: "visit", label: "Личный визит" },
+    { key: "ads", label: "Реклама" },
+    { key: "other", label: "Другое" },
   ];
 
   /** @type {Record<string, {kind:string, title:string, appealId:string, amountLabel:string, statusLabel:string, note:string}>} */
@@ -111,6 +117,7 @@
    *   createdAt: string,
    *   history: {at:string, author:string, text:string, reason?:string}[],
    *   updatedAt: string,
+   *   manualEntry?: boolean,
    * }} Appeal
    */
 
@@ -124,7 +131,7 @@
       certificateId: "DEMO-CERT-2048",
       referrerPartnerId: "DEMO-PARTNER-0100",
       discountPercent: 10,
-      certValidUntil: "2026-04-15",
+      certValidUntil: "2027-04-15",
       interest: "Гостиная, мягкая мебель",
       clientCity: "Казань",
       budgetHint: "до 450 000 ₽",
@@ -174,12 +181,12 @@
     return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
   }
 
-  function sourceLabel(key) {
-    return SOURCE_OPTIONS.find((s) => s.key === key)?.label || key;
+  function manualChannelLabel(key) {
+    return MANUAL_CHANNEL_OPTIONS.find((s) => s.key === key)?.label || null;
   }
 
   function isManualAppeal(appeal) {
-    return Boolean(appeal.manualEntry) || (!appeal.certificateId && appeal.sourceKey !== "scan");
+    return Boolean(appeal.manualEntry);
   }
 
   function hasCertificateFlow(appeal) {
@@ -191,8 +198,11 @@
   }
 
   function sourceDisplay(appeal) {
-    if (isManualAppeal(appeal)) return "Добавлен вручную";
-    return sourceLabel(appeal.sourceKey);
+    if (isManualAppeal(appeal)) {
+      const ch = manualChannelLabel(appeal.sourceKey);
+      return ch ? `Добавлен вручную · ${ch}` : "Добавлен вручную";
+    }
+    return "По сертификату";
   }
 
   function certListLine(appeal) {
@@ -350,7 +360,7 @@
       wallet.purchaseFulfillmentLabel = WALLET_VOCAB.fulfilled;
       if (canAccrueReferral(appeal) && appeal.shippedAt) {
         wallet.waitEndsAt = addDays(appeal.shippedAt, WAIT_DAYS);
-        wallet.waitDaysLeft = daysBetween(new Date().toISOString(), wallet.waitEndsAt);
+        wallet.waitDaysLeft = referralWaitDaysLeft(appeal.shippedAt);
         if (wallet.waitDaysLeft > 0) {
           wallet.rewardStatusLabel = WALLET_VOCAB.rewardPending;
           wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
@@ -383,6 +393,27 @@
     const d = new Date();
     d.setHours(12, 0, 0, 0);
     return d.toISOString();
+  }
+
+  function todayYmd() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function certStillValid(untilIso) {
+    if (!untilIso) return false;
+    return dateOnlyMs(untilIso) >= dateOnlyMs(new Date().toISOString());
+  }
+
+  function referralWaitDaysLeft(shippedAtIso) {
+    const shippedMs = dateOnlyMs(shippedAtIso);
+    const todayMs = dateOnlyMs(new Date().toISOString());
+    const endMs = dateOnlyMs(addDays(shippedAtIso, WAIT_DAYS));
+    const fromMs = Math.max(shippedMs, todayMs);
+    return Math.min(WAIT_DAYS, Math.max(0, Math.floor((endMs - fromMs) / 86400000)));
   }
 
   function addDays(iso, days) {
@@ -503,7 +534,7 @@
         receivingPartnerId: RECEIVING.id,
         referrerPartnerId: "DEMO-PARTNER-031",
         discountPercent: 8,
-        certValidUntil: "2026-05-20",
+        certValidUntil: "2027-05-20",
         interest: "Шкафы-купе",
         clientCity: "Набережные Челны",
         budgetHint: "до 120 000 ₽",
@@ -526,7 +557,7 @@
         receivingPartnerId: RECEIVING.id,
         referrerPartnerId: "DEMO-PARTNER-0100",
         discountPercent: 15,
-        certValidUntil: "2026-02-01",
+        certValidUntil: "2027-02-01",
         interest: "Стол и стулья",
         clientCity: "Казань",
         budgetHint: "до 95 000 ₽",
@@ -549,7 +580,7 @@
         receivingPartnerId: RECEIVING.id,
         referrerPartnerId: "DEMO-PARTNER-0100",
         discountPercent: 11,
-        certValidUntil: "2026-06-01",
+        certValidUntil: "2027-06-01",
         interest: "Диван и кресло",
         clientCity: "Казань",
         budgetHint: "до 210 000 ₽",
@@ -573,7 +604,7 @@
         receivingPartnerId: "DEMO-PARTNER-022",
         referrerPartnerId: REFERRER_VIEWER.id,
         discountPercent: 9,
-        certValidUntil: "2026-07-10",
+        certValidUntil: "2027-07-10",
         interest: "Офисная мебель",
         clientCity: "Екатеринбург",
         budgetHint: "до 1 200 000 ₽",
@@ -709,10 +740,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       const prev = el.value;
-      const options =
-        id === "manual-source"
-          ? SOURCE_OPTIONS.filter((s) => s.key !== "all" && s.key !== "scan")
-          : SOURCE_OPTIONS;
+      const options = id === "manual-source" ? MANUAL_CHANNEL_OPTIONS : LIST_SOURCE_FILTER;
       el.textContent = "";
       options.forEach((s) => {
         const opt = document.createElement("option");
@@ -721,8 +749,15 @@
         el.appendChild(opt);
       });
       if (prev && Array.from(el.options).some((o) => o.value === prev)) el.value = prev;
-      else if (id === "manual-source") el.value = "manual";
+      else if (id === "manual-source") el.value = "phone";
     });
+  }
+
+  function matchesSourceFilter(appeal, sourceKey) {
+    if (sourceKey === "all") return true;
+    if (sourceKey === "manual") return isManualAppeal(appeal);
+    if (sourceKey === "cert") return hasCertificateFlow(appeal);
+    return true;
   }
 
   function populateOutgoingPartnerFilter() {
@@ -765,7 +800,7 @@
       if (partner !== "all") list = list.filter((a) => a.receivingPartnerId === partner);
     }
   list = list.filter((a) => {
-      if (source !== "all" && a.sourceKey !== source) return false;
+      if (!matchesSourceFilter(a, source)) return false;
       if (status !== "Все статусы" && stageLabel(a) !== status) return false;
       if (!q) return true;
       const hay = [a.clientName, a.certificateId, a.id, PARTNERS[a.referrerPartnerId]?.name, PARTNERS[a.receivingPartnerId]?.name]
@@ -855,7 +890,7 @@
       }
       if (inNote) {
         inNote.hidden = false;
-        inNote.textContent = `Видны только обращения у партнёра A (${RECEIVING.id}), в том числе от направившего D (${DEMO_REFERRER_D.name}). Обращения B→C (${DEMO_RECEIVER_C.name}) здесь не показываются. Настройки статусов — только для A; партнёр C не затрагивается.`;
+        inNote.textContent = `Видны только обращения у партнёра A (${RECEIVING.id}), в том числе от направившего D (${DEMO_REFERRER_D.name}). Клиенты, добавленные вручную без сертификата, есть только здесь — не во вкладке «Отправил клиентов». Обращения B→C (${DEMO_RECEIVER_C.name}) не показываются. Настройки статусов — только для A.`;
       }
       if (outHint) outHint.hidden = true;
     } else {
@@ -884,8 +919,12 @@
       <div class="cl-meta">Обращение ${esc(appeal.id)} · покупка ${esc(appeal.purchaseId)}</div>
       <div><strong>${esc(purchase.purchasePaymentLabel)}</strong> · ${esc(purchase.amountLabel)}${esc(rewardHint)}</div>
       ${purchase.purchaseFulfillmentLabel ? `<div class="cl-meta">${esc(purchase.purchaseFulfillmentLabel)}</div>` : ""}
-      <button type="button" class="pp-btn" id="detail-wallet" data-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>
-      <p class="cl-meta">Оплата клиентом и вознаграждение направившему — разные статусы в одной покупке.</p>
+      <button type="button" class="pp-btn" data-wallet-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>
+      <p class="cl-meta">Оплата клиентом и вознаграждение направившему — разные статусы в одной покупке.${
+        isManualAppeal(appeal)
+          ? " Без направившего: реферальное вознаграждение и ожидание 14 дней не создаются."
+          : ""
+      }</p>
     </div>`;
   }
 
@@ -893,14 +932,14 @@
     if (!canAccrueReferral(appeal)) return "";
     const wallet = syncWalletFromAppeal(appeal);
     if (!wallet?.rewardStatusLabel || appeal.stageId !== SYSTEM.SHIPPED) return "";
-    const left = wallet.waitDaysLeft != null ? Math.max(0, wallet.waitDaysLeft) : 0;
+    const left = wallet.waitDaysLeft != null ? Math.min(WAIT_DAYS, Math.max(0, wallet.waitDaysLeft)) : 0;
     return `<div class="cl-wait-block" role="status">
       <div class="cl-wallet-kind cl-wallet-kind--purchase">${esc(wallet.purchaseFulfillmentLabel || "")}</div>
       <div class="cl-wallet-kind cl-wallet-kind--referral">Вознаграждение: <strong>${esc(wallet.rewardStatusLabel)}</strong></div>
       <div class="cl-meta">${esc(wallet.rewardDetailLabel || "")}${left > 0 ? ` · осталось ${esc(String(left))} из ${WAIT_DAYS} календ. дн.` : ""}</div>
       ${wallet.waitEndsAt ? `<div class="cl-meta">Ориентир по сроку: ${esc(formatDate(wallet.waitEndsAt))}</div>` : ""}
-      <button type="button" class="pp-btn" data-purchase="${esc(appeal.purchaseId)}" id="detail-wallet-wait">Покупка в кошельке</button>
-      <p class="cl-note cl-note--legal">${esc(WALLET_CALENDAR_NOTE)} Демо только показывает существующие статусы — без новых кнопок подтверждения.</p>
+      <button type="button" class="pp-btn" data-wallet-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>
+      <p class="cl-note cl-note--legal">${esc(WALLET_CALENDAR_NOTE)} Демо. Без реальных операций.</p>
     </div>`;
   }
 
@@ -915,6 +954,10 @@
     const paidN = paidIds.size;
     const shippedN = shippedIds.size;
     const returnN = returnIds.size;
+    const certCohort = cohort.filter((a) => hasCertificateFlow(a));
+    const manualCohort = cohort.filter((a) => isManualAppeal(a));
+    const certPaid = certCohort.filter((a) => paidIds.has(a.id)).length;
+    const manualPaid = manualCohort.filter((a) => paidIds.has(a.id)).length;
 
     let extra = "";
     if (activeTab === "incoming") {
@@ -962,6 +1005,8 @@
     body.innerHTML = `
       <p class="cl-meta">По обращениям, созданным за период; состояние на текущий момент. Обращение появляется при первом скане/создании; оплата позже привязывает ту же покупку в кошельке.</p>
       <div class="cl-funnel-row"><span>Обращения</span><strong>${esc(String(denom))}</strong></div>
+      <div class="cl-funnel-row cl-funnel-row--sub"><span>в т. ч. по сертификату</span><strong>${esc(String(certCohort.length))} · опл. ${esc(safePct(certPaid, certCohort.length))}</strong></div>
+      <div class="cl-funnel-row cl-funnel-row--sub"><span>в т. ч. вручную</span><strong>${esc(String(manualCohort.length))} · опл. ${esc(safePct(manualPaid, manualCohort.length))}</strong></div>
       <div class="cl-funnel-row"><span>→ Оплачено (когда-либо)</span><strong>${esc(String(paidN))} · ${esc(safePct(paidN, denom))}</strong></div>
       <div class="cl-funnel-row"><span>→ Отгружено (когда-либо)</span><strong>${esc(String(shippedN))} · ${esc(safePct(shippedN, denom))}</strong></div>
       <div class="cl-funnel-row"><span>Возврат (отдельно)</span><strong>${esc(String(returnN))}</strong></div>
@@ -999,6 +1044,11 @@
           ${manual ? "" : `<div class="cl-cert-row"><span class="cl-cert-label">Бюджет (демо)</span><p class="cl-readonly-value">${esc(appeal.budgetHint)}</p></div>`}
           <div class="cl-cert-row"><span class="cl-cert-label">Создано</span><p class="cl-readonly-value">${esc(formatDateTime(appeal.createdAt))} · ${esc(formatAgeSince(appeal.createdAt))}</p></div>
           <div class="cl-cert-row"><span class="cl-cert-label">Принимает</span><p class="cl-readonly-value">${esc(receiver?.name || "—")}</p></div>
+          ${
+            manual
+              ? `<p class="cl-note cl-note--legal">Совпадение имени не означает того же клиента. Привязка сертификата или перенаправление после оплаты — возможная будущая функция (сверка); в демо не выполняется, без ретроактивных скидок и смены происхождения.</p>`
+              : ""
+          }
         </div>
       </section>`;
 
@@ -1104,12 +1154,6 @@
       pushHistory(appeal, "Обновлена служебная заметка");
       renderDetail();
     });
-    const openFromBtn = (e) => {
-      const id = /** @type {HTMLButtonElement} */ (e.currentTarget).getAttribute("data-purchase");
-      if (id) openWalletDialog(id);
-    };
-    document.getElementById("detail-wallet")?.addEventListener("click", openFromBtn);
-    document.getElementById("detail-wallet-wait")?.addEventListener("click", openFromBtn);
   }
 
   function needsReview(stageId) {
@@ -1177,7 +1221,7 @@
     if (!purchase || !body) return;
     const purchaseBlock = `
       <div class="cl-wallet-card">
-        <span class="cl-wallet-kind cl-wallet-kind--purchase">Покупка клиентом (read-only)</span>
+        <span class="cl-wallet-kind cl-wallet-kind--purchase">Покупка клиентом (демо)</span>
         <div>ID покупки: <strong>${esc(purchaseId)}</strong> — один и тот же при оплате, отгрузке и возврате</div>
         <div>ID обращения: ${esc(purchase.appealId)}</div>
         ${purchase.certificateId !== "—" ? `<div>ID сертификата: ${esc(purchase.certificateId)}</div>` : ""}
@@ -1195,18 +1239,30 @@
         <p class="cl-note">${esc(WALLET_CALENDAR_NOTE)}</p>
       </div>`
         : `<p class="cl-meta">Вознаграждение появится после передачи товара / принятия работ, если есть направивший по сертификату.</p>`
-      : "";
+      : `<p class="cl-meta">Обращение без сертификата и направившего: реферальное вознаграждение и 14‑дневное ожидание не применяются. Покупка клиента отслеживается отдельно.</p>`;
     body.innerHTML = `${purchaseBlock}${rewardBlock}
-      <p class="cl-note cl-note--legal">Демо-зеркало RewardLifecyclePanel / purchase-accrual-receipt-view. Оплата клиентом ≠ выплата направившему. Без API.</p>`;
+      <p class="cl-note cl-note--legal">Демо. Без реальных операций. Оплата клиентом и выплата направившему — разные статусы.</p>`;
     /** @type {HTMLDialogElement|null} */ (document.getElementById("wallet-dialog"))?.showModal();
   }
 
-  function openManualDialog() {
+  function resetManualForm() {
+    /** @type {HTMLInputElement|null} */ (document.getElementById("manual-name")) &&
+      (/** @type {HTMLInputElement} */ (document.getElementById("manual-name")).value = "");
+    /** @type {HTMLInputElement|null} */ (document.getElementById("manual-interest")) &&
+      (/** @type {HTMLInputElement} */ (document.getElementById("manual-interest")).value = "");
+    /** @type {HTMLInputElement|null} */ (document.getElementById("manual-contact")) &&
+      (/** @type {HTMLInputElement} */ (document.getElementById("manual-contact")).value = "");
+    const sourceEl = /** @type {HTMLSelectElement|null} */ (document.getElementById("manual-source"));
+    if (sourceEl) sourceEl.value = "phone";
     const err = document.getElementById("manual-error");
     if (err) {
       err.hidden = true;
       err.textContent = "";
     }
+  }
+
+  function openManualDialog() {
+    resetManualForm();
     /** @type {HTMLInputElement|null} */ (document.getElementById("manual-name"))?.focus();
     /** @type {HTMLDialogElement|null} */ (document.getElementById("manual-dialog"))?.showModal();
   }
@@ -1222,7 +1278,7 @@
     if (!name) {
       if (err) {
         err.hidden = false;
-        err.textContent = "Укажите имя клиента.";
+        err.textContent = "Укажите имя или название компании.";
       }
       return;
     }
@@ -1237,18 +1293,18 @@
       receivingPartnerId: RECEIVING.id,
       referrerPartnerId: null,
       manualEntry: true,
-      discountPercent: 0,
-      certValidUntil: "",
-      interest: interestEl?.value.trim() || "—",
+      discountPercent: null,
+      certValidUntil: null,
+      interest: interestEl?.value.trim() || "",
       clientCity: RECEIVING.city,
-      budgetHint: "—",
+      budgetHint: "",
       stageId: SYSTEM.NEW,
       refusedReason: null,
       shippedAt: null,
       paidAmount: null,
       paidAt: null,
       privateNotes: "",
-      sourceKey: sourceEl?.value || "manual",
+      sourceKey: sourceEl?.value || "phone",
       clientContact: contactEl?.value.trim() || null,
       purchaseId: null,
       createdAt: now,
@@ -1260,8 +1316,7 @@
     renderList("incoming");
     renderFunnel();
     /** @type {HTMLDialogElement|null} */ (document.getElementById("manual-dialog"))?.close();
-    if (nameEl) nameEl.value = "";
-    if (contactEl) contactEl.value = "";
+    resetManualForm();
     openDetail(id, "incoming");
   }
 
@@ -1320,6 +1375,11 @@
     }
     if (outcome.value === "new") {
       const tpl = CERT_TEMPLATES["DEMO-CERT-2048"];
+      if (!certStillValid(tpl.certValidUntil)) {
+        err.hidden = false;
+        err.textContent = "Сертификат недействителен или срок истёк. Обращение не создано.";
+        return;
+      }
       const dup = findActiveAppeal(tpl.certificateId, RECEIVING.id);
       if (dup) {
         err.hidden = false;
@@ -1364,6 +1424,29 @@
     }
   }
 
+  function syncSettingsDraftFromDom() {
+    const body = document.getElementById("settings-body");
+    if (!body || !settingsDraft) return;
+    body.querySelectorAll(".stage-label").forEach((input, i) => {
+      if (settingsDraft.workingStages[i]) {
+        settingsDraft.workingStages[i].label = /** @type {HTMLInputElement} */ (input).value;
+      }
+    });
+    body.querySelectorAll(".reason-label").forEach((input, i) => {
+      if (settingsDraft.refusalReasons[i] != null) {
+        settingsDraft.refusalReasons[i] = /** @type {HTMLInputElement} */ (input).value;
+      }
+    });
+  }
+
+  function bindSettingsDraftSync() {
+    const body = document.getElementById("settings-body");
+    if (!body) return;
+    body.querySelectorAll(".stage-label, .reason-label").forEach((input) => {
+      input.addEventListener("input", syncSettingsDraftFromDom);
+    });
+  }
+
   function openSettingsDialog() {
     settingsDraft = JSON.parse(JSON.stringify(partnerSettings[RECEIVING.id]));
     renderSettingsBody();
@@ -1391,7 +1474,7 @@
     const stages = settingsDraft.workingStages
       .map((stage, index) => {
         return `<div class="cl-stage-row" data-stage-index="${index}">
-          <input type="text" class="cl-input stage-label" value="${esc(stage.label)}" aria-label="Название этапа ${index + 1}" />
+          <input type="text" class="cl-input stage-label" value="${esc(stage.label)}" placeholder="Например: Подбор кухни" aria-label="Название этапа ${index + 1}" />
           <button type="button" class="pp-btn stage-up" aria-label="Выше">↑</button>
           <button type="button" class="pp-btn stage-down" aria-label="Ниже">↓</button>
           <button type="button" class="pp-btn stage-archive" data-stage-index="${index}">В архив</button>
@@ -1432,18 +1515,21 @@
       <p id="settings-error" class="cl-form-error" role="alert" hidden></p>`;
 
     body.querySelector("#add-stage")?.addEventListener("click", () => {
+      syncSettingsDraftFromDom();
       settingsDraft.workingStages.push({
         id: `ws_custom_${Date.now()}`,
-        label: "Например: Подбор материалов",
+        label: "",
       });
       renderSettingsBody();
     });
     body.querySelector("#add-reason")?.addEventListener("click", () => {
-      settingsDraft.refusalReasons.push("Новая причина");
+      syncSettingsDraftFromDom();
+      settingsDraft.refusalReasons.push("");
       renderSettingsBody();
     });
     body.querySelectorAll(".stage-up").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        syncSettingsDraftFromDom();
         const row = /** @type {HTMLElement} */ (e.currentTarget).closest(".cl-stage-row");
         const idx = Number(row?.getAttribute("data-stage-index"));
         if (idx > 0) {
@@ -1456,6 +1542,7 @@
     });
     body.querySelectorAll(".stage-down").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        syncSettingsDraftFromDom();
         const row = /** @type {HTMLElement} */ (e.currentTarget).closest(".cl-stage-row");
         const idx = Number(row?.getAttribute("data-stage-index"));
         if (idx >= 0 && idx < settingsDraft.workingStages.length - 1) {
@@ -1468,6 +1555,7 @@
     });
     body.querySelectorAll(".reason-remove").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        syncSettingsDraftFromDom();
         const idx = Number(/** @type {HTMLElement} */ (e.currentTarget).getAttribute("data-reason-index"));
         const removed = settingsDraft.refusalReasons.splice(idx, 1)[0];
         if (removed) settingsDraft.archivedStages.push({ id: `arch_reason_${removed}`, label: `Причина: ${removed}` });
@@ -1476,18 +1564,21 @@
     });
     body.querySelectorAll(".stage-archive").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        syncSettingsDraftFromDom();
         const idx = Number(/** @type {HTMLElement} */ (e.currentTarget).getAttribute("data-stage-index"));
         const removed = settingsDraft.workingStages.splice(idx, 1)[0];
         if (removed) settingsDraft.archivedStages.push(removed);
         renderSettingsBody();
       });
     });
+    bindSettingsDraftSync();
   }
 
   function saveSettings(event) {
     event.preventDefault();
     const body = document.getElementById("settings-body");
     if (!body || !settingsDraft) return;
+    syncSettingsDraftFromDom();
     const stageInputs = body.querySelectorAll(".stage-label");
     const labels = [];
     stageInputs.forEach((input) => {
@@ -1599,7 +1690,23 @@
       fields = `<p class="cl-note">Возврат приостанавливает демо-ожидание начисления. Расчёт удержаний не показан — открытый вопрос спецификации.</p>
         <label class="cl-field"><span class="cl-field-label">Дата возврата</span><input type="date" class="cl-input" id="review-date" required /></label>`;
     }
-    body.innerHTML = `${fields}<p class="cl-note cl-note--legal">Демо-форма: реальных платежей и проводок нет.</p>`;
+    body.innerHTML = `${fields}<p class="cl-note cl-note--legal">Демо. Без реальных операций.</p>`;
+    const dateEl = /** @type {HTMLInputElement|null} */ (document.getElementById("review-date"));
+    const maxYmd = todayYmd();
+    if (dateEl) {
+      dateEl.max = maxYmd;
+      dateEl.value = maxYmd;
+      dateEl.addEventListener("change", () => {
+        if (!reviewErr) return;
+        if (dateEl.value && dateEl.value > maxYmd) {
+          reviewErr.hidden = false;
+          reviewErr.textContent = "Дата не может быть в будущем.";
+        } else {
+          reviewErr.hidden = true;
+          reviewErr.textContent = "";
+        }
+      });
+    }
     /** @type {HTMLDialogElement|null} */ (document.getElementById("review-dialog"))?.showModal();
   }
 
@@ -1620,6 +1727,14 @@
     const iso = new Date(dateInput.value + "T12:00:00").toISOString();
     const createdMs = dateOnlyMs(appeal.createdAt);
     const eventMs = dateOnlyMs(iso);
+    const todayMs = dateOnlyMs(new Date().toISOString());
+    if (eventMs > todayMs) {
+      if (reviewErr) {
+        reviewErr.hidden = false;
+        reviewErr.textContent = "Дата не может быть в будущем.";
+      }
+      return;
+    }
     if (eventMs < createdMs) {
       if (reviewErr) {
         reviewErr.hidden = false;

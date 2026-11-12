@@ -227,9 +227,9 @@
           </button>
         </header>
         <div class="cl-dialog-body">
-          <p class="cl-note">Без сертификата: демо-обращение без направившего. Контакт, запрос и источник необязательны.</p>
+          <p class="cl-note">Второй путь создания: без сертификата и без направившего. Имя или компания обязательны; контакт, запрос и канал — по желанию. Одинаковое имя не считается тем же клиентом.</p>
           <label class="cl-field">
-            <span class="cl-field-label">Клиент (человек или компания)</span>
+            <span class="cl-field-label">Имя или компания</span>
             <input type="text" class="cl-input" id="manual-name" required maxlength="120" />
           </label>
           <label class="cl-field">
@@ -241,8 +241,8 @@
             <input type="text" class="cl-input" id="manual-contact" maxlength="80" placeholder="+7 900 000-00-00" />
           </label>
           <label class="cl-field">
-            <span class="cl-field-label">Источник</span>
-            <select id="manual-source" class="cl-select"></select>
+            <span class="cl-field-label">Канал обращения</span>
+            <select id="manual-source" class="cl-select" aria-label="Канал обращения"></select>
           </label>
           <p id="manual-error" class="cl-form-error" role="alert" hidden></p>
         </div>
