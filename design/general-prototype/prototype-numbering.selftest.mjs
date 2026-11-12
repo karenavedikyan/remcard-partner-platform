@@ -16,7 +16,8 @@ function loadPageDefs(src) {
   return sandbox.PAGE_DEFS;
 }
 const PAGE_DEFS = loadPageDefs(js);
-assert.ok(Array.isArray(PAGE_DEFS) && PAGE_DEFS.length >= 151, "catalogue page count");
+assert.ok(Array.isArray(PAGE_DEFS) && PAGE_DEFS.length === 147, "catalogue page count");
+assert.ok(!PAGE_DEFS.some((p) => /:history$|:links$/.test(p.id)), "no invented history/links pages");
 
 for (let i = 0; i < PAGE_DEFS.length; i++) {
   assert.equal(PAGE_DEFS[i].n, i + 1, `consecutive n at index ${i}`);

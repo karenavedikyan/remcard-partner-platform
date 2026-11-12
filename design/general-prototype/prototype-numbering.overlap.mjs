@@ -20,10 +20,12 @@ const PAGE_DEFS = loadPageDefs(js);
 const navInRoles = new Set(
   [...roles.matchAll(/nav:\s*\[\s*([\s\S]*?)\s*\]/g)].flatMap((m) => [...m[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1])),
 );
-navInRoles.add("links");
-
 const sections = new Set(PAGE_DEFS.filter((p) => p.partnerSection).map((p) => p.partnerSection));
+const allowCabinetOnly = new Set(["settlements", "bonus"]);
 for (const s of sections) {
-  assert.ok(navInRoles.has(s), `partner section ${s} missing from roles.js nav arrays`);
+  assert.ok(
+    navInRoles.has(s) || allowCabinetOnly.has(s),
+    `partner section ${s} missing from roles.js nav arrays`,
+  );
 }
 console.log("prototype-numbering.overlap: ok", { sections: [...sections].sort() });

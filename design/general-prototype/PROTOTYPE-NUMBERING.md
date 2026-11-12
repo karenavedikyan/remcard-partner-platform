@@ -1,6 +1,6 @@
 # Нумерация прототипа (reviewer-only)
 
-**Актуальная модель — книжная:** один целый номер на логический экран-шаблон (`1…151` на ветке book2). Client — только маршруты frozen artifact (`CLIENT_ROUTE_MATCHERS`). Полная таблица: **`PROTOTYPE-PAGES.md`**.
+**Актуальная модель — книжная:** один целый номер на логический экран-шаблон (`1…147` на ветке book2). Client — только маршруты frozen artifact (`CLIENT_ROUTE_MATCHERS`). Полная таблица: **`PROTOTYPE-PAGES.md`**.
 
 Файлы: `prototype-numbering.js`, `prototype-numbering.css` в корне `design/general-prototype/`. Подключение в HTML: `?v=book2`.
 

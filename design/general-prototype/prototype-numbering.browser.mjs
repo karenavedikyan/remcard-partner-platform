@@ -119,7 +119,7 @@ try {
     catalogLen: window.PROTOTYPE_PAGE_CATALOG?.length || 0,
     tocHrefs: [...document.querySelectorAll(".proto-page-list a")].map((a) => a.getAttribute("href") || ""),
   }));
-  assert.equal(catalogLen, 151);
+  assert.equal(catalogLen, 147);
   assert.ok(tocHrefs.length > 0);
   for (const h of tocHrefs) {
     assert.doesNotMatch(h, /rc_demo_release/, `TOC href must not gate R2: ${h}`);
