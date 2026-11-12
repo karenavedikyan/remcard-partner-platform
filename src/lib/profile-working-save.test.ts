@@ -165,7 +165,7 @@ describe("validateWorkingProfileDraft validationIntent", () => {
     ).toMatch(/видимости/);
   });
 
-  it("activation blocks removing last direction while search stays ON", () => {
+  it("activation blocks removing last direction for explicit ON profile", () => {
     const profile = businessFixture("STORE", {
       productCategoryIds: ["doors"],
       effectiveProductCategoryIds: ["doors"],
@@ -179,6 +179,25 @@ describe("validateWorkingProfileDraft validationIntent", () => {
         validationScope: "full",
       }),
     ).toMatch(/видимости/);
+  });
+
+  it("AUTO untouched allows removing last directions on activation save", () => {
+    const profile = businessFixture("STORE", {
+      partnerSearchOptInExplicit: false,
+      partnerSearchOptIn: false,
+      partnerSearchVisible: true,
+      productCategoryIds: ["doors"],
+      effectiveProductCategoryIds: ["doors"],
+    });
+    const draft = { ...profileDraftFromProfile(profile), productCategoryIds: [] };
+    expect(
+      validateWorkingProfileDraft(draft, {
+        profile,
+        partnerSearchTouched: false,
+        validationIntent: "activation",
+        validationScope: "full",
+      }),
+    ).toBeNull();
   });
 
   it("contextless default validation stays strict for explicit ON without directions", () => {

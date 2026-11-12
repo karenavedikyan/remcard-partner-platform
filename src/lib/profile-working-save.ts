@@ -35,7 +35,10 @@ function requiresSearchDirectionsOnSave(
   if (!context) return true;
   if (context.partnerSearchTouched === true) return true;
   const saved = profileDraftFromProfile(context.profile);
-  if (workingDirectionsRegressed(saved, draft)) return true;
+  if (workingDirectionsRegressed(saved, draft)) {
+    const w = context.profile.workingProfile;
+    return Boolean(w?.partnerSearchOptInExplicit && w.partnerSearchOptIn);
+  }
   return false;
 }
 

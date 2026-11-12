@@ -217,6 +217,26 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     expect(calls).toEqual([]);
   });
 
+  it("AUTO untouched may remove last direction without emitting partnerSearchOptIn", async () => {
+    current = fixture({
+      partnerSearchOptInExplicit: false,
+      partnerSearchVisible: true,
+      productCategoryIds: ["doors"],
+      effectiveProductCategoryIds: ["doors"],
+    });
+    const result = await persistWorkingProfileDraft(current, {
+      ...profileDraftFromProfile(current),
+      productCategoryIds: [],
+    }, { validationIntent: "activation", validationScope: "full", partnerSearchTouched: false });
+    expect(calls[0]).toEqual({
+      method: "PATCH",
+      path: "/api/remcard/api/pro/profile",
+      body: { productCategoryIds: [] },
+    });
+    expect(calls[0].body).not.toHaveProperty("partnerSearchOptIn");
+    expect(result.workingProfile?.partnerSearchOptInExplicit).toBe(false);
+  });
+
   it("serializes explicit ON when canonical directions are already present", async () => {
     current = fixture({
       partnerSearchVisible: false, productCategoryIds: ["doors"], effectiveProductCategoryIds: ["doors"],
