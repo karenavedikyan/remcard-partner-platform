@@ -4133,17 +4133,8 @@ document.addEventListener("click", (e) => {
   let [a, s] = t.dataset.action.split(":");
   if (a === "pay-profile" && s === "resume") {
     if (profileHasUnsavedChanges(i.role)) {
-      const leave = window.confirm(
-        "Есть несохранённые изменения в профиле. Вернуться к оплате без сохранения категорий?\n\nНажмите «Отмена», чтобы сохранить профиль («Сохранить профиль») или отменить правки.",
-      );
-      if (!leave) {
-        U(
-          "Сохраните профиль на шаге «Проверка» или нажмите «Отменить», затем вернитесь к оплате.",
-          "info",
-        );
-        return;
-      }
-      revertProfileWizardDraft(i.role);
+      U("Сохраните профиль или нажмите «Отменить», затем вернитесь к покупке.", "info");
+      return;
     }
     clearProfileWizardPayCategoriesTrip(i.role);
     const resumed = resumePayProfileCategoriesTrip(clientAppealsConfig(), {
@@ -4175,17 +4166,8 @@ document.addEventListener("click", (e) => {
       const cfg = clientAppealsConfig();
       if (getPayProfileReturnContext(cfg.key)) {
         if (profileHasUnsavedChanges(i.role)) {
-          const leave = window.confirm(
-            "Есть несохранённые изменения в профиле. Уйти без сохранения категорий? Черновик оплаты останется, но вернуться к нему можно только через «Оформить оплату» заново.\n\nНажмите «Отмена», чтобы сохранить профиль или отменить правки.",
-          );
-          if (!leave) {
-            U(
-              "Сохраните профиль на шаге «Проверка» или нажмите «Отменить», затем выберите раздел в меню.",
-              "info",
-            );
-            return;
-          }
-          revertProfileWizardDraft(i.role);
+          U("Сохраните профиль или нажмите «Отменить», затем вернитесь к покупке.", "info");
+          return;
         }
         clearPayProfileReturnContext(cfg.key);
         clearProfileWizardPayCategoriesTrip(i.role);

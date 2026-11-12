@@ -1628,8 +1628,7 @@ function revalidatePayDraftAfterProfile(config, draft) {
   const keys = new Set(cats.map((c) => c.key));
   const clone = structuredClone(draft);
   clone.formError = "";
-  const allCatsMissing = clone.rows.length > 0 && clone.rows.every((r) => !r.categoryKey);
-  clone.rows.forEach((row, i) => {
+  clone.rows.forEach((row) => {
     row.categoryError = "";
     row.amountError = "";
     row.delayError = "";
@@ -1641,10 +1640,6 @@ function revalidatePayDraftAfterProfile(config, draft) {
       row.categoryKey = norm;
       const cat = findPayCategory(config, norm);
       if (cat) row.kind = cat.kind;
-    }
-    if (!row.categoryKey && cats.length && allCatsMissing && i === 0) {
-      row.categoryKey = cats[0].key;
-      row.kind = cats[0].kind;
     }
   });
   return clone;
