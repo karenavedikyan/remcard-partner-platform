@@ -1877,9 +1877,10 @@ a.wallet-accruals-history__hub-link:hover {
 }
 
 .wallet-accruals-extensions__link {
-  font: inherit;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.35;
   color: var(--pw-accent, #c12b2f);
   background: none;
   border: none;

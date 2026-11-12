@@ -300,6 +300,7 @@ try {
   });
   assert.equal(hubLinkStyles?.tag, "A", "history hub must be anchor like production Link");
   assert.match(hubLinkStyles?.fontSize || "", /^13px$/, "history hub font-size 0.8125rem");
+  assert.match(hubLinkStyles?.lineHeight || "", /^17\.(5|55)px$/, "history hub line-height 1.35 at 0.8125rem");
   assert.match(hubLinkStyles?.color || "", /rgb\(10,\s*107,\s*96\)/, "history hub teal color");
   assert.equal(hubLinkStyles?.minHeight, "0px", "history hub must not inherit global button min-height");
   assert.equal(
@@ -375,6 +376,22 @@ try {
   await frame147.locator("#result-count").waitFor({ timeout: 3000 });
   const src = await agentWallet.locator("[data-testid='cabinet-standalone-frame']").getAttribute("src");
   assert.ok(src?.includes("embed_role=agent"), "147 iframe must carry embed_role");
+  await frame147.locator('.history-tabs [data-view="purchases"]').click();
+  await frame147.locator("[data-purchase-embed='1']").waitFor({ timeout: 10000 });
+  await frame147.locator("[data-purchase-embed='1']").click();
+  await agentWallet.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 144, null, {
+    timeout: 10000,
+  });
+  const frame144second = agentWallet.frameLocator("[data-testid='cabinet-standalone-frame']");
+  const payableSecond = (await frame144second.locator(".op-payable").textContent()) || "";
+  assert.match(payableSecond.replace(/\u00a0/g, " "), /103\s*500/, "second purchase row must open 144 with ctx amount");
+  assert.doesNotMatch(payableSecond, /162\s*000/, "second row must not show first-purchase fixture");
+  const modalOpen = await frame144second.locator("#purchase-dialog[open]").count();
+  assert.equal(modalOpen, 0, "second purchase must not open legacy hardcoded modal");
+  await agentWallet.locator('[data-testid="proto-standalone-back"]').click();
+  await agentWallet.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
+    timeout: 10000,
+  });
   await agentWallet.close();
 
   const scanEmp = await browser.newPage();
@@ -591,7 +608,9 @@ try {
   await enterCabinet(resizeThemePage, "store");
   await resizeThemePage.locator('[data-action="nav:partners"], [data-action="nav:links"]').first().click();
   await resizeThemePage.waitForSelector("[data-coll-open]", { timeout: 10000 });
-  await resizeThemePage.locator("[data-coll-open]").first().click();
+  const partnerOpenCard = resizeThemePage.locator("[data-testid^='partner-open-card-']").first();
+  await partnerOpenCard.waitFor({ timeout: 10000 });
+  await partnerOpenCard.click();
   await resizeThemePage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])");
   await resizeThemePage.setViewportSize({ width: 375, height: 812 });
   await resizeThemePage.waitForTimeout(200);

@@ -95,7 +95,13 @@ assert.match(embedRole, /scanSaleRelockScheduled/, "146 sale guard coalesces rel
 assert.match(embedRole, /if \(el\.disabled !== true\)/, "146 sale lock writes are idempotent");
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
-assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");
+assert.match(walletHistory, /data-purchase-embed="\$\{index\}"/, "147 routes every purchase row to 144 embed");
+assert.doesNotMatch(
+  walletHistory,
+  /linkedPurchase=isPurchase&&index===0/,
+  "147 must not hard-wire only the first purchase to 144",
+);
+assert.match(roles, /collection-partner-open/, "143 partners list has visible card open action");
 assert.match(
   walletHistory,
   /hasRewardSnapshot:\s*hasSavedReward/,

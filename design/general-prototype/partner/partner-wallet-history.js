@@ -88,10 +88,21 @@
     $("#filter-count").hidden = count===0; $("#filter-count").textContent=String(count);
     $("#history-rows").innerHTML = matches.length ? matches.map(r=>{
       const index=all.indexOf(r);
-      const linkedPurchase=isPurchase&&index===0;
+      const standaloneFirstPurchase = isPurchase && !isCabinetEmbed && index === 0;
       const embedPurchaseAttrs =
-        isCabinetEmbed && linkedPurchase ? ' data-proto-embed-ignore data-purchase-embed="0"' : "";
-      return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?embedPurchaseAttrs:`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":accrualOperationLabel}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
+        isCabinetEmbed && isPurchase
+          ? ` data-proto-embed-ignore data-purchase-embed="${index}"`
+          : "";
+      const rowTag = standaloneFirstPurchase ? 'a href="partner-purchase-detail.html"' : "button";
+      const rowAttrs = isPurchase
+        ? isCabinetEmbed
+          ? embedPurchaseAttrs
+          : standaloneFirstPurchase
+            ? ""
+            : `data-purchase-row="${index}"`
+        : `data-accrual-row="${index}"`;
+      const rowClose = standaloneFirstPurchase ? "a" : "button";
+      return `<${rowTag} class="operation" ${rowAttrs}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":accrualOperationLabel}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${rowClose}>`;
     }).join("") : empty("Ничего не найдено","Измените запрос или выбранный период.",true);
   }
   let viewPurposeCopy = null;

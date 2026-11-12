@@ -2573,8 +2573,14 @@ function recordActionToolbar(type, item, key, readOnly = false, showOpen = false
     includeCoop && type === "partners" && item.ready
       ? `<div class="coop-list-actions">${coop.listActionHtml(item, { readOnly: !!readOnly })}</div>`
       : "";
+  const openPartnerCard =
+    showOpen && type === "partners" && key
+      ? `<button type="button" class="btn ghost coop-list-btn collection-partner-open" data-coll-key="${r(key)}" data-coll-open="${r(item.id)}" data-testid="partner-open-card-${r(item.id)}">Карточка</button>`
+      : showOpen
+        ? button("eye", "Открыть карточку", "open")
+        : "";
   return `<div class="certificate-list-actions record-action-toolbar" role="group" aria-label="Действия с записью «${r(item.alias || item.name)}»">
-    ${showOpen ? button("eye", "Открыть карточку", "open") : ""}
+    ${openPartnerCard}
     ${editable ? button("share-2", "Поделиться", "share") + button("pencil", "Переименовать для себя", "rename") + button(item.archived ? "archive-restore" : "archive", item.archived ? "Вернуть из архива" : "В архив", "archive") + button("trash-2", type === "partners" ? "Убрать из списка" : "Удалить", "delete", true) : ""}
   </div>${coopAction}`;
 }
