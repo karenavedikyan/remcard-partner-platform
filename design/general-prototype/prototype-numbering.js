@@ -1024,10 +1024,11 @@
     chromeEl.className = "proto-num-chrome";
     chromeEl.setAttribute(UI_ATTR, "");
 
+    const LEGEND_TEXT =
+      "Пространства: 1 — общий вход, 2 — клиент, 3 — партнёр, 4 — админ";
     const legend = document.createElement("div");
     legend.className = "proto-num-legend";
-    legend.textContent =
-      "Пространства: 1 — общий вход, 2 — клиент, 3 — партнёр, 4 — админ";
+    legend.textContent = LEGEND_TEXT;
 
     toggleBtn = document.createElement("button");
     toggleBtn.type = "button";
@@ -1077,13 +1078,16 @@
     head.className = "proto-num-panel__head";
     const h2 = document.createElement("h2");
     h2.textContent = "Индекс номеров (текущий экран)";
+    const legendInPanel = document.createElement("details");
+    legendInPanel.className = "proto-num-panel__ns-legend";
+    legendInPanel.innerHTML = `<summary>Пространства номеров</summary><p>${LEGEND_TEXT}</p>`;
     searchEl = document.createElement("input");
     searchEl.type = "search";
     searchEl.placeholder = "Поиск по номеру или тексту…";
     searchEl.autocomplete = "off";
     metaEl = document.createElement("div");
     metaEl.className = "proto-num-panel__meta";
-    head.append(h2, searchEl, metaEl);
+    head.append(h2, legendInPanel, searchEl, metaEl);
 
     listEl = document.createElement("ul");
     listEl.className = "proto-num-panel__list";
