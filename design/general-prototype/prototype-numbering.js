@@ -434,14 +434,6 @@ const PAGE_DEFS = [
 
   let deferredProtoTarget = null;
 
-  function stripProtoPageQuery() {
-    const qs = new URLSearchParams(location.search);
-    if (!qs.has("proto_page")) return;
-    qs.delete("proto_page");
-    const next = `${location.pathname}${qs.toString() ? `?${qs}` : ""}${location.hash}`;
-    history.replaceState(null, "", next);
-  }
-
   function partnerCabinetReadyForNav(page) {
     const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
     if (!cabinetBtn || cabinetBtn.getAttribute("aria-pressed") !== "true") return false;
@@ -473,7 +465,6 @@ const PAGE_DEFS = [
     window.__protoDeferredNavConsumed = true;
     const page = deferredProtoTarget;
     deferredProtoTarget = null;
-    stripProtoPageQuery();
     if (page.tocOpen) {
       scheduleRefresh();
       return;
@@ -494,7 +485,6 @@ const PAGE_DEFS = [
     const target = byN.get(Number(protoN));
     if (!target?.partnerRole) {
       window.__protoDeferredNavConsumed = true;
-      stripProtoPageQuery();
       return;
     }
     deferredProtoTarget = target;
