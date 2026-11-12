@@ -23,8 +23,13 @@
 
     const payable = document.querySelector(".op-payable");
     if (payable) {
-      payable.textContent =
-        ctx.amount != null ? money(ctx.amount) : "Сумма в этом снимке не указана";
+      if (ctx.amount != null && Number.isFinite(Number(ctx.amount))) {
+        payable.textContent = money(Number(ctx.amount));
+      } else if (ctx.amountDisplay) {
+        payable.textContent = ctx.amountDisplay;
+      } else {
+        payable.textContent = "Сумма в этом снимке не указана";
+      }
     }
 
     const participants = document.querySelector(".op-participants");

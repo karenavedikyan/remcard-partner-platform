@@ -4,7 +4,6 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
 import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
-  observerDesignSampleHash,
 } from "./guest-embed-payloads.js";
 
 
@@ -2359,7 +2358,7 @@ function renderObserverClientPage(config) {
     <h3>Хронология (без внутренних заметок партнёра)</h3>
     <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
   </section>
-  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Макет наблюдения за объектом (пример Navigator)</button><p class="small muted">Не связан с этим обращением: в демо нет handoff объекта ремонта.</p></div>`;
+  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Наблюдение за объектом (142)</button><p class="small muted">Н/Д из обращений: передачи объекта ремонта Navigator нет. Полный макет 142 — в оглавлении прототипа.</p></div>`;
 }
 
 function backLink(config, label, action) {
@@ -3764,11 +3763,9 @@ export function buildClientAppealsStandaloneEmbedCtx(pageN, config) {
     return {
       source: "client-appeals",
       pageN,
-      designExample: true,
-      guestHash: observerDesignSampleHash(),
-      guestSample: "observer-object",
-      naReason:
-        "Макет наблюдения за объектом ремонта (Navigator). К обращению не привязан: в прототипе нет передачи ссылки на реальный объект.",
+      observerUnavailable: true,
+      naMessage:
+        "Наблюдение за объектом ремонта (142) из обращений недоступно: нет handoff объекта Navigator. Откройте запись 142 в оглавлении прототипа.",
     };
   }
   const purchaseId = s.purchaseViewId;

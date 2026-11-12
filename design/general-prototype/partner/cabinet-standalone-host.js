@@ -473,13 +473,6 @@ export function prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, h
     }
   }
   if (pageN === 142) {
-    if (!nextEmbed.guestHash && hooks.observerDesignSampleHash) {
-      nextEmbed.guestHash = hooks.observerDesignSampleHash();
-      nextEmbed.designExample = true;
-      nextEmbed.naReason =
-        nextEmbed.naReason ||
-        "Макет наблюдения за объектом ремонта. К выбранной записи в кабинете не привязан.";
-    }
     delete nextEmbed.observerModel;
   }
   if ([139, 140].includes(pageN) && hooks.closeSourceDialog?.()) {

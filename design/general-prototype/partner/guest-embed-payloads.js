@@ -70,8 +70,8 @@ export function recommendationDesignSampleHash() {
 }
 
 /**
- * Navigator repair-object observer — design sample only (entry 142).
- * Not derived from client-appeal status; no private handoff.
+ * Navigator repair-object observer — TOC / standalone sample only (entry 142).
+ * Not used from client-appeals embed (no object handoff). Not appeal data.
  */
 export function observerDesignSampleModel() {
   return {
@@ -106,27 +106,23 @@ export function observerGuestHash(model) {
   return model ? compressGuestHash(model) : "";
 }
 
-export function parseAmountLabel(label) {
-  if (label == null) return null;
-  const n = Number(String(label).replace(/[^\d]/g, ""));
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
 export function clientAppealsPurchaseCtx(purchase, appeal, partnerName) {
   if (!purchase || !appeal) return null;
+  const amountDisplay =
+    typeof purchase.amountLabel === "string" && purchase.amountLabel.trim()
+      ? purchase.amountLabel.trim()
+      : null;
   return {
     id: purchase.appealId || appeal.id,
     certCode:
       appeal.certificateId && appeal.certificateId !== "—"
         ? String(appeal.certificateId)
         : "Демо · без сертификата",
-    partner: partnerName || appeal.clientName || "Демо-клиент",
-    amount: parseAmountLabel(purchase.amountLabel),
-    dateDisplay: appeal.paidAt
-      ? new Date(appeal.paidAt).toLocaleString("ru-RU")
-      : appeal.updatedAt
-        ? new Date(appeal.updatedAt).toLocaleString("ru-RU")
-        : "",
+    partner: partnerName || null,
+    clientLabel: appeal.clientName || null,
+    amount: null,
+    amountDisplay,
+    dateDisplay: null,
     designExample: false,
     sourceAppealId: appeal.id,
     embedSnapshot: true,
@@ -141,13 +137,17 @@ export function clientAppealsReceiptCtx(purchase, appeal, partnerName) {
   if (!purchaseCtx) return null;
   return {
     certCode: purchaseCtx.certCode,
-    clientLabel: appeal.clientName || "Клиент",
-    partner: partnerName || "Партнёр",
-    amount: 0,
-    dateDisplay: purchaseCtx.dateDisplay,
-    relatedPurchasePayable: purchaseCtx.amount,
+    clientLabel: purchaseCtx.clientLabel || "Клиент",
+    partner: purchaseCtx.partner || null,
+    amount: null,
+    rewardAmount: null,
+    hasRewardSnapshot: false,
+    dateDisplay: null,
+    relatedPurchasePayable: null,
+    relatedPurchasePayableDisplay: purchaseCtx.amountDisplay,
     purchaseCtx,
     hasCalcSnapshot: false,
+    embedSnapshot: true,
     designExample: false,
   };
 }

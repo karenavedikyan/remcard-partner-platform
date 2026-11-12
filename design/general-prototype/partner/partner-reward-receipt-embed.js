@@ -29,10 +29,24 @@
         (earned ? "Заработанное вознаграждение" : "Начисление профклиенту") ||
         ctx.heroLabel;
     }
+    const hasReward =
+      ctx.hasRewardSnapshot === true &&
+      ctx.rewardAmount != null &&
+      Number.isFinite(Number(ctx.rewardAmount));
     const amount = document.getElementById("prr-amount");
-    if (amount) amount.textContent = `+${money(ctx.amount ?? 0)}`;
+    const helper = document.getElementById("prr-helper");
+    if (amount) {
+      amount.textContent = hasReward
+        ? `+${money(Number(ctx.rewardAmount))}`
+        : "—";
+    }
+    if (helper) {
+      helper.textContent = hasReward
+        ? ""
+        : "Сумма вознаграждения для выбранной записи в этом снимке не сохранена.";
+    }
     const badge = document.getElementById("prr-status-badge");
-    if (badge) badge.textContent = "Начислено";
+    if (badge) badge.textContent = hasReward ? "Начислено" : "—";
     const cert = document.getElementById("prr-cert-code");
     if (cert && ctx.certCode) cert.textContent = ctx.certCode;
     const client = document.getElementById("prr-client");
@@ -40,10 +54,18 @@
     const merchant = document.getElementById("prr-merchant");
     if (merchant && ctx.partner) merchant.textContent = ctx.partner;
     const pDate = document.getElementById("prr-purchase-date");
-    if (pDate && ctx.dateDisplay) pDate.textContent = ctx.dateDisplay.replace(",", " ·");
+    if (pDate) {
+      pDate.textContent = ctx.dateDisplay ? ctx.dateDisplay.replace(",", " ·") : "—";
+    }
     const paid = document.getElementById("prr-paid");
-    if (paid && ctx.relatedPurchasePayable != null) {
-      paid.textContent = money(ctx.relatedPurchasePayable);
+    if (paid) {
+      if (ctx.relatedPurchasePayable != null && Number.isFinite(Number(ctx.relatedPurchasePayable))) {
+        paid.textContent = money(Number(ctx.relatedPurchasePayable));
+      } else if (ctx.relatedPurchasePayableDisplay) {
+        paid.textContent = ctx.relatedPurchasePayableDisplay;
+      } else {
+        paid.textContent = "—";
+      }
     }
     hideFact("prr-purchase-number");
     hideFact("prr-branch");
@@ -82,7 +104,7 @@
     if (purchaseDetails && ctx.purchaseCtx) {
       purchaseDetails.innerHTML = `
         <summary>Подробности покупки</summary>
-        <p class="small">Связанная покупка · ${money(ctx.relatedPurchasePayable ?? ctx.purchaseCtx.amount ?? 0)} · ${ctx.purchaseCtx.dateDisplay || ""}</p>
+        <p class="small">Связанная покупка · ${ctx.relatedPurchasePayableDisplay || (ctx.relatedPurchasePayable != null ? money(ctx.relatedPurchasePayable) : "—")}${ctx.purchaseCtx?.dateDisplay ? ` · ${ctx.purchaseCtx.dateDisplay}` : ""}</p>
         <button type="button" class="prr-link" id="prr-open-linked-purchase" data-proto-embed-ignore>Открыть покупку <span aria-hidden="true">↗</span></button>`;
       document.getElementById("prr-open-linked-purchase")?.addEventListener("click", (e) => {
         e.preventDefault();

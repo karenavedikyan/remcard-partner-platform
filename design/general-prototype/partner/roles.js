@@ -75,7 +75,6 @@ import {
   certificateGuestHash,
   recommendationGuestHash,
   recommendationDesignSampleHash,
-  observerDesignSampleHash,
 } from "./guest-embed-payloads.js";
 import {
   renderPartners,
@@ -3971,6 +3970,10 @@ function clientAppealsConfig() {
         return;
       }
       const embedCtx = buildClientAppealsStandaloneEmbedCtx(pageN, clientAppealsConfig());
+      if (embedCtx?.observerUnavailable) {
+        U(embedCtx.naMessage, "info");
+        return;
+      }
       ensureStandaloneHost().openStandalone(pageN, {
         returnCtx: { page: i.page, role: i.role, source: "client-appeals", pageN },
         embedCtx,
@@ -4810,7 +4813,6 @@ document.addEventListener("click", (e) => {
           certificateGuestHash,
           recommendationGuestHash,
           recommendationDesignSampleHash,
-          observerDesignSampleHash,
           closeSourceDialog: () => {
             if (!se.open) return false;
             _();
