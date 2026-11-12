@@ -1,5 +1,6 @@
 import { Z as ve, _ as be } from "./chunk-RVN7VNK5.js";
-import { initPartnersRedesign, renderPartnersRedesign, markOutgoingFocus, scrollToZone, hubChoose, hubFindShell, showcaseResults, compactPartnerCollection, openPartnerInviteWizard, showPartnerInviteReady, recipientInvitationSummary } from "./partners-redesign.js?v=coop2";
+import { initPartnersRedesign, renderPartnersRedesign, markOutgoingFocus, scrollToZone, hubChoose, hubFindShell, showcaseResults, compactPartnerCollection, openPartnerInviteWizard, showPartnerInviteReady, recipientInvitationSummary } from "./partners-redesign.js?v=coop3";
+import { initAgentPartnersHub, closeAgentPartnersHub } from "./agent-partners-hub.js";
 import { initCooperationControls, cooperationHasUnsavedDraft, requestClose } from "./cooperation-controls.js?v=coop8";
 import {
   renderProfileWizard,
@@ -5022,6 +5023,14 @@ document.addEventListener("submit", (e) => {
   }
 });
 initPartnersRedesign({ E, d, D, r, se, getRole: () => i.role, getDirectory: () => P });
+initAgentPartnersHub({
+  getRole: () => i.role,
+  onAction: (action) => {
+    closeAgentPartnersHub();
+    if (action === "partner-hub") $t();
+    else if (action === "external-partner") it("partner", !0);
+  },
+});
 var coop = initCooperationControls({
   escape: r,
   button: d,

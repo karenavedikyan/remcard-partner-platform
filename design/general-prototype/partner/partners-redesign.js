@@ -1,6 +1,7 @@
 // Новая компоновка раздела «Партнёры» и витрина поиска партнёров.
 // Только дизайн: действия, фильтры и данные те же, что в прежней версии макета.
 import { partnerDirections, directionLabel, stageLabel, filterDirectory } from "./partner-directory.js";
+import { openAgentPartnersHub, agentPartnersLeadHtml } from "./agent-partners-hub.js";
 
 let api = null; // { E, d, D, r, se, paint }
 let focusOutgoing = false;
@@ -315,7 +316,13 @@ export function renderPartnersRedesign(config) {
   focusOutgoing = false;
   const isEmpty = !partners.length && !invites.length;
 
-  const head = `<div class="pr-head"><p class="muted pr-lead">${config.employee ? "Рабочие партнёры организации, не личные партнёры сотрудника. Условия по каждому партнёру открываются в его строке." : "Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке."}</p>${canManage ? d(`${D("user-plus")} Найти партнёра`, "partner-hub-choose", "primary pr-primary") : ""}</div>`;
+  const lead = isAgentInvite()
+    ? agentPartnersLeadHtml()
+    : config.employee
+      ? "Рабочие партнёры организации, не личные партнёры сотрудника. Условия по каждому партнёру открываются в его строке."
+      : "Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке.";
+  const findCta = isAgentInvite() ? "Найти партнёра" : `${D("user-plus")} Найти партнёра`;
+  const head = `<div class="pr-head" data-testid="${isAgentInvite() ? "agent-partners-hub-shell" : "partners-hub-shell"}"><p class="muted pr-lead">${lead}</p>${canManage ? d(findCta, "partner-hub-choose", "primary pr-primary") : ""}</div>`;
 
   const tile = (count, title, note, target, tone = "") =>
     `<button type="button" class="pr-tile ${tone}" data-action="partner-zone:${target}" aria-label="${r(title.replace(/<[^>]+>/g, ""))}: ${count}"><strong>${count}</strong><span><b>${title}</b><small>${note}</small></span></button>`;
@@ -361,7 +368,9 @@ export function scrollToZone(id) {
 
 export function hubChoose() {
   const { E, se } = api;
-  E("Найти партнёра", `<p class="muted">Два пути: партнёр уже зарегистрирован в RemCard или его ещё нужно пригласить на платформу.</p>${scenarioCards()}<small>Приглашения сотрудников находятся отдельно в разделе команды.</small>`);
+  const body = `<p class="muted">Два пути: партнёр уже зарегистрирован в RemCard или его ещё нужно пригласить на платформу.</p>${scenarioCards()}<small>Приглашения сотрудников находятся отдельно в разделе команды.</small>`;
+  if (isAgentInvite() && openAgentPartnersHub({ tab: "find", title: "Найти партнёра", body })) return;
+  E("Найти партнёра", body);
   se.classList.remove("hub-wide");
 }
 
@@ -369,9 +378,7 @@ export function hubFindShell(options) {
   // options: { state, dictionary, cities, typeLabels, results, certReturn, escape }
   const { d, D, r, se, E } = api;
   const { state, dictionary, cities, typeLabels, certReturn } = options;
-  E(
-    "Витрина партнёров",
-    `<div class="pr-showcase-intro"><p class="small">Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.</p>${d(`${D("arrow-left")} Другой способ приглашения`, "partner-hub-choose", "ghost pr-back")}</div>
+  const showcaseBody = `<div class="pr-showcase-intro"><p class="small">Найдите, кого рекомендовать своим клиентам. Направления и условия видны сразу.</p>${d(`${D("arrow-left")} Другой способ приглашения`, "partner-hub-choose", "ghost pr-back")}</div>
     <label class="field pr-search"><span class="sr-only">Поиск по словам</span><span class="pr-search-box">${D("search")}<input id="directory-query" type="search" maxlength="120" value="${r(state.q)}" placeholder="Название, товар, услуга, этап или ID"></span></label>
     <details class="optional pr-refine pr-showcase-refine" ${state.city || state.type ? "open" : ""}><summary>Город и тип партнёра${state.city || state.type ? " · выбраны" : ""}</summary><div class="directory-filters">
       <label class="field">Город<select data-directory-filter="city"><option value="">Все</option>${cities.map((c) => `<option value="${r(c)}" ${state.city === c ? "selected" : ""}>${r(c)}</option>`).join("")}</select></label>
@@ -382,8 +389,11 @@ export function hubFindShell(options) {
     <div id="directory-results" class="pr-results">${options.results()}</div>
     <div class="invite-inline pr-invite-inline"><div><strong>Знакомого ещё нет в RemCard?</strong><small>Отправьте персональную ссылку на приглашение.</small></div>${d("Пригласить по ссылке", "external-partner")}</div>
     ${certReturn ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}
-    <small>Макет общего поиска на примерах. Живая база платформы здесь не подключена.</small>`,
-  );
+    <small>Макет общего поиска на примерах. Живая база платформы здесь не подключена.</small>`;
+  if (isAgentInvite() && openAgentPartnersHub({ tab: "find", title: "Витрина партнёров", body: showcaseBody, wide: true })) {
+    return;
+  }
+  E("Витрина партнёров", showcaseBody);
   se.classList.add("hub-wide");
 }
 

@@ -2,6 +2,10 @@
 import { a as remcardLogo } from "./chunk-PG3I4FMB.js";
 import { renderSettlementDemo, hydrateSettlementDemo, settlementTotals } from "./settlement-demo.js";
 import { renderWalletAccruals, hydrateWalletAccruals } from "./wallet-accruals.js";
+import {
+  renderAgentReceivablesRegistry,
+  hydrateAgentReceivablesRegistry,
+} from "./agent-receivables-registry.js";
 import { bankState, selectedLegal } from "./partner-legal.js";
 const views = new Map();
 let nextBankId = 1;
@@ -51,6 +55,16 @@ export function openWalletMasterLedger(role) {
 }
 
 export function closeWalletMasterLedger(role) {
+  view(role).walletSubview = null;
+}
+
+export function openWalletAgentRegistry(role) {
+  const v = view(role);
+  v.wallet = "settlements";
+  v.walletSubview = "agent-registry";
+}
+
+export function closeWalletAgentRegistry(role) {
   view(role).walletSubview = null;
 }
 export function renderPartners(config) {
@@ -180,6 +194,8 @@ export function renderWallet(config) {
         ...config,
         walletMasterLedger: true,
       });
+    } else if (s.walletSubview === "agent-registry" && config.role === "agent") {
+      panel = renderAgentReceivablesRegistry(config);
     } else {
       panel = renderWalletAccruals(config, {
         incomingOnly,
@@ -290,9 +306,18 @@ export function hydrateCabinet(config) {
       closeWalletMasterLedger(config.role);
       config.refresh?.();
     },
+    openWalletAgentRegistry: () => {
+      openWalletAgentRegistry(config.role);
+      config.refresh?.();
+    },
+    closeWalletAgentRegistry: () => {
+      closeWalletAgentRegistry(config.role);
+      config.refresh?.();
+    },
   };
   hydrateSettlementDemo(walletConfig);
   hydrateWalletAccruals(walletConfig);
+  hydrateAgentReceivablesRegistry(walletConfig);
   document
     .querySelectorAll("[data-cabinet-sections], [data-bank-panel]")
     .forEach((root) => {

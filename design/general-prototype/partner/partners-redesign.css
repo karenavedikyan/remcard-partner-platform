@@ -389,6 +389,14 @@ dialog.pr-invite-dialog{width:min(620px,calc(100% - 32px));max-height:94dvh}
 .pr-invite-share{width:100%}
 .pr-invite-after summary{font-size:var(--text-xs);color:var(--muted);cursor:pointer}
 .pr-invite-after .pr-invite-next{margin-top:var(--s4)}
+dialog.agent-partners-hub{border:none;padding:0;max-width:min(960px,calc(100% - 24px));width:100%;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.agent-hub-sheet{display:grid;gap:var(--s4);padding:var(--s5);max-height:92dvh;overflow:auto}
+.agent-hub-sheet.is-wide{min-width:min(920px,calc(100vw - 32px))}
+.agent-hub-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
+.agent-hub-close{font-size:28px;line-height:1;border:none;background:none;cursor:pointer;color:var(--muted)}
+.agent-hub-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.agent-hub-tab{font:inherit;border:1px solid var(--line);background:var(--offset);padding:8px 14px;border-radius:999px;cursor:pointer}
+.agent-hub-tab[aria-selected=true]{background:var(--brand,#c12b2f);color:#fff;border-color:transparent}
 @media(max-width:640px){
   dialog.pr-invite-dialog{padding:var(--s4);width:calc(100% - 24px);max-height:94dvh}
   .pr-invite-wizard{gap:var(--s5)}

@@ -1269,7 +1269,7 @@ export function hydrateWalletAccruals(config, root = document) {
       return;
     }
     if (action === "open-agent-registry") {
-      openPanel("paid|in");
+      config.openWalletAgentRegistry?.();
       return;
     }
     if (action === "schedule-toggle") {
