@@ -2,15 +2,26 @@
   "use strict";
 
   const WAIT_DAYS = 14;
-  /** Зеркало prod: src/lib/history-labels.ts ORDER_STATUS_LABELS */
-  const ORDER_STATUS_LABELS = {
-    CONFIRMED: "Подтверждена",
-    COMPLETED: "Завершена",
-    RETURNED: "Возврат",
-    CANCELLED: "Отменена",
+  /**
+   * Упрощённое зеркало prod:
+   * RewardLifecyclePanel.tsx (статусы покупки/передачи и вознаграждения)
+   * purchase-accrual-receipt-view.ts (ожидание / подтверждение к расчёту)
+   */
+  const WALLET_VOCAB = {
+    purchasePaid: "Покупка: Оплачено",
+    awaitFulfillment: "Покупка ожидает передачи товара / принятия работ",
+    fulfilled: "Товар передан / работы приняты",
+    fullReturn: "Покупка: полный возврат",
+    rewardPending: "Начислено, ожидает подтверждения",
+    rewardConfirmed: "Подтверждено",
+    rewardSuspended: "Есть приостановленная сумма",
+    rewardReview: "Требует сверки после возврата",
+    pendingAmount: "Ожидает подтверждения",
+    confirmedCalc: "Подтверждено к расчёту",
+    paidOut: "Выплачено",
   };
-  /** Зеркало prod: src/lib/history-accrual-display.ts (ожидание после отгрузки) */
-  const ACCRUAL_WAITING_LABEL = "Ожидает подтверждения";
+  const WALLET_CALENDAR_NOTE =
+    "Сроки — полные календарные дни после передачи товара / принятия работ, по московскому времени (как в кошельке).";
   const RECEIVING = {
     id: "DEMO-PARTNER-017",
     name: 'РемТех на Ленина',
@@ -261,56 +272,62 @@
       appealId: appeal.id,
       certificateId: appeal.certificateId || "—",
       referrerName: appeal.referrerPartnerId ? PARTNERS[appeal.referrerPartnerId]?.name || null : null,
-      orderStatusKey: "CONFIRMED",
-      orderStatusLabel: ORDER_STATUS_LABELS.CONFIRMED,
-      paidSummary: `Оплачено ${amount}`,
       amountLabel: amount,
-      accrualStatusLabel: null,
-      accrualNote: null,
-      nextConfirmationAt: null,
+      purchasePaymentLabel: WALLET_VOCAB.purchasePaid,
+      purchaseFulfillmentLabel: null,
+      rewardStatusLabel: null,
+      rewardDetailLabel: null,
       waitDaysLeft: null,
+      waitEndsAt: null,
     };
     return walletPurchases[appeal.purchaseId];
   }
 
-  /** Синхронизация демо-покупки с этапом обращения — без отдельной финансовой машины. */
+  /** Синхронизация демо-покупки с этапом обращения — те же подписи, что в кошельке prod. */
   function syncWalletFromAppeal(appeal) {
     if (!appealHasPaidPurchase(appeal)) return null;
     const wallet = ensureWalletPurchase(appeal);
+    wallet.purchasePaymentLabel = WALLET_VOCAB.purchasePaid;
+    wallet.purchaseFulfillmentLabel = null;
+    wallet.rewardStatusLabel = null;
+    wallet.rewardDetailLabel = null;
+    wallet.waitDaysLeft = null;
+    wallet.waitEndsAt = null;
+
+    const shipped = Boolean(appeal.shippedAt);
+    const paidOnly =
+      appeal.paidAt &&
+      !shipped &&
+      appeal.stageId !== SYSTEM.SHIPPED &&
+      appeal.stageId !== SYSTEM.RETURN;
+
     if (appeal.stageId === SYSTEM.RETURN) {
-      wallet.orderStatusKey = "RETURNED";
-      wallet.orderStatusLabel = ORDER_STATUS_LABELS.RETURNED;
-      wallet.accrualStatusLabel = "Приостановлено";
-      wallet.accrualNote = "Приостановленная сумма начисления, не сумма покупки.";
-      wallet.nextConfirmationAt = null;
-      wallet.waitDaysLeft = null;
-      return wallet;
-    }
-    if (appeal.stageId === SYSTEM.SHIPPED && appeal.shippedAt) {
-      wallet.orderStatusKey = "COMPLETED";
-      wallet.orderStatusLabel = ORDER_STATUS_LABELS.COMPLETED;
+      wallet.purchaseFulfillmentLabel = WALLET_VOCAB.fullReturn;
       if (canAccrueReferral(appeal)) {
-        wallet.accrualStatusLabel = ACCRUAL_WAITING_LABEL;
-        wallet.accrualNote = "Сумма ожидает подтверждения.";
-        wallet.nextConfirmationAt = addDays(appeal.shippedAt, WAIT_DAYS);
-        wallet.waitDaysLeft = daysBetween(new Date().toISOString(), wallet.nextConfirmationAt);
-      } else {
-        wallet.accrualStatusLabel = null;
-        wallet.accrualNote = null;
-        wallet.nextConfirmationAt = null;
-        wallet.waitDaysLeft = null;
+        wallet.rewardStatusLabel = WALLET_VOCAB.rewardReview;
+        wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
       }
       return wallet;
     }
-    if (appeal.paidAt || appeal.stageId === SYSTEM.PAID || appeal.stageId === SYSTEM.SHIPPED) {
-      wallet.orderStatusKey = "CONFIRMED";
-      wallet.orderStatusLabel = ORDER_STATUS_LABELS.CONFIRMED;
-      if (appeal.stageId !== SYSTEM.SHIPPED) {
-        wallet.accrualStatusLabel = null;
-        wallet.accrualNote = null;
-        wallet.nextConfirmationAt = null;
-        wallet.waitDaysLeft = null;
+
+    if (shipped || appeal.stageId === SYSTEM.SHIPPED) {
+      wallet.purchaseFulfillmentLabel = WALLET_VOCAB.fulfilled;
+      if (canAccrueReferral(appeal) && appeal.shippedAt) {
+        wallet.waitEndsAt = addDays(appeal.shippedAt, WAIT_DAYS);
+        wallet.waitDaysLeft = daysBetween(new Date().toISOString(), wallet.waitEndsAt);
+        if (wallet.waitDaysLeft > 0) {
+          wallet.rewardStatusLabel = WALLET_VOCAB.rewardPending;
+          wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
+        } else {
+          wallet.rewardStatusLabel = WALLET_VOCAB.rewardConfirmed;
+          wallet.rewardDetailLabel = WALLET_VOCAB.confirmedCalc;
+        }
       }
+      return wallet;
+    }
+
+    if (paidOnly || appeal.stageId === SYSTEM.PAID || appeal.paidAt) {
+      wallet.purchaseFulfillmentLabel = WALLET_VOCAB.awaitFulfillment;
     }
     return wallet;
   }
@@ -824,30 +841,30 @@
     if (!appeal.purchaseId) return "";
     const purchase = walletPurchases[appeal.purchaseId];
     if (!purchase) return "";
+    const rewardHint = purchase.rewardStatusLabel
+      ? ` · Вознаграждение: ${purchase.rewardStatusLabel}`
+      : "";
     return `<div class="cl-paid-row">
       <div class="cl-meta">Обращение ${esc(appeal.id)} · покупка ${esc(appeal.purchaseId)}</div>
-      <div><strong>Покупка в кошельке:</strong> ${esc(purchase.orderStatusLabel)} · ${esc(purchase.paidSummary)}</div>
+      <div><strong>${esc(purchase.purchasePaymentLabel)}</strong> · ${esc(purchase.amountLabel)}${esc(rewardHint)}</div>
+      ${purchase.purchaseFulfillmentLabel ? `<div class="cl-meta">${esc(purchase.purchaseFulfillmentLabel)}</div>` : ""}
       <button type="button" class="pp-btn" id="detail-wallet" data-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>
-      <p class="cl-meta">Этап обращения «Оплачено» — операционный; финансовый статус только в покупке.</p>
+      <p class="cl-meta">Оплата клиентом и вознаграждение направившему — разные статусы в одной покупке.</p>
     </div>`;
   }
 
   function waitBlockHtml(appeal) {
     if (!canAccrueReferral(appeal)) return "";
     const wallet = syncWalletFromAppeal(appeal);
-    if (!wallet?.accrualStatusLabel || appeal.stageId !== SYSTEM.SHIPPED) return "";
+    if (!wallet?.rewardStatusLabel || appeal.stageId !== SYSTEM.SHIPPED) return "";
     const left = wallet.waitDaysLeft != null ? Math.max(0, wallet.waitDaysLeft) : 0;
     return `<div class="cl-wait-block" role="status">
-      <div class="cl-wallet-kind cl-wallet-kind--referral">Начисление по покупке (кошелёк)</div>
-      <div>Статус начисления: <strong>${esc(wallet.accrualStatusLabel)}</strong></div>
-      <div>${esc(wallet.accrualNote || "")}${left > 0 ? ` Осталось ${esc(String(left))} из ${WAIT_DAYS} календ. дн.` : ""}</div>
-      ${
-        wallet.nextConfirmationAt
-          ? `<div class="cl-meta">Окончание ожидания (демо): ${esc(formatDate(wallet.nextConfirmationAt))}</div>`
-          : ""
-      }
-      <button type="button" class="pp-btn" data-purchase="${esc(appeal.purchaseId)}" id="detail-wallet-wait">Открыть покупку в кошельке</button>
-      <p class="cl-note cl-note--legal">Те же правила, что в существующем кошельке/истории (ожидание начисления). Без отдельной кнопки или этапа подтверждения в этом прототипе.</p>
+      <div class="cl-wallet-kind cl-wallet-kind--purchase">${esc(wallet.purchaseFulfillmentLabel || "")}</div>
+      <div class="cl-wallet-kind cl-wallet-kind--referral">Вознаграждение: <strong>${esc(wallet.rewardStatusLabel)}</strong></div>
+      <div class="cl-meta">${esc(wallet.rewardDetailLabel || "")}${left > 0 ? ` · осталось ${esc(String(left))} из ${WAIT_DAYS} календ. дн.` : ""}</div>
+      ${wallet.waitEndsAt ? `<div class="cl-meta">Ориентир по сроку: ${esc(formatDate(wallet.waitEndsAt))}</div>` : ""}
+      <button type="button" class="pp-btn" data-purchase="${esc(appeal.purchaseId)}" id="detail-wallet-wait">Покупка в кошельке</button>
+      <p class="cl-note cl-note--legal">${esc(WALLET_CALENDAR_NOTE)} Демо только показывает существующие статусы — без новых кнопок подтверждения.</p>
     </div>`;
   }
 
@@ -1109,34 +1126,29 @@
     const purchase = walletPurchases[purchaseId];
     const body = document.getElementById("wallet-body");
     if (!purchase || !body) return;
-    const accrualBlock = purchase.accrualStatusLabel
-      ? `<div>
-        <div class="cl-wallet-kind cl-wallet-kind--referral">Начисление (не сумма покупки)</div>
-        <div>Статус: <strong>${esc(purchase.accrualStatusLabel)}</strong></div>
-        <div>${esc(purchase.accrualNote || "")}</div>
-        ${
-          purchase.nextConfirmationAt
-            ? `<div class="cl-meta">Окончание ${WAIT_DAYS}-дн. ожидания: ${esc(formatDate(purchase.nextConfirmationAt))}</div>`
-            : ""
-        }
-      </div>`
-      : `<p class="cl-meta">Начисление появится после отгрузки в существующем жизненном цикле кошелька.</p>`;
-    body.innerHTML = `
+    const purchaseBlock = `
       <div class="cl-wallet-card">
-        <span class="cl-wallet-kind cl-wallet-kind--purchase">Покупка · Принято у меня (read-only)</span>
-        <div>ID покупки: <strong>${esc(purchaseId)}</strong></div>
+        <span class="cl-wallet-kind cl-wallet-kind--purchase">Покупка клиентом (read-only)</span>
+        <div>ID покупки: <strong>${esc(purchaseId)}</strong> — один и тот же при оплате, отгрузке и возврате</div>
         <div>ID обращения: ${esc(purchase.appealId)}</div>
-        <div>ID сертификата: ${esc(purchase.certificateId)}</div>
-        ${
-          purchase.referrerName
-            ? `<div>Направил: ${esc(purchase.referrerName)}</div>`
-            : ""
-        }
-        <div>Статус покупки: <strong>${esc(purchase.orderStatusLabel)}</strong></div>
-        <div>${esc(purchase.paidSummary)}</div>
-        ${accrualBlock}
-        <p class="cl-note cl-note--legal">Демо-зеркало меток из репозитория: ORDER_STATUS_LABELS и «${esc(ACCRUAL_WAITING_LABEL)}» (history-labels / history-accrual-display). Без API и без прод-сайта.</p>
+        ${purchase.certificateId !== "—" ? `<div>ID сертификата: ${esc(purchase.certificateId)}</div>` : ""}
+        <div><strong>${esc(purchase.purchasePaymentLabel)}</strong> · ${esc(purchase.amountLabel)}</div>
+        ${purchase.purchaseFulfillmentLabel ? `<div>${esc(purchase.purchaseFulfillmentLabel)}</div>` : ""}
       </div>`;
+    const rewardBlock = purchase.referrerName
+      ? purchase.rewardStatusLabel
+        ? `<motion class="cl-wallet-card" style="margin-top:10px">
+        <span class="cl-wallet-kind cl-wallet-kind--referral">Вознаграждение направившему</span>
+        <div>Направил: ${esc(purchase.referrerName)}</div>
+        <div><strong>${esc(purchase.rewardStatusLabel)}</strong></div>
+        ${purchase.rewardDetailLabel ? `<div class="cl-meta">${esc(purchase.rewardDetailLabel)}</div>` : ""}
+        ${purchase.waitEndsAt && purchase.waitDaysLeft != null && purchase.waitDaysLeft > 0 ? `<div class="cl-meta">Осталось ${esc(String(purchase.waitDaysLeft))} календ. дн.</div>` : ""}
+        <p class="cl-note">${esc(WALLET_CALENDAR_NOTE)}</p>
+      </div>`
+        : `<p class="cl-meta">Вознаграждение появится после передачи товара / принятия работ, если есть направивший по сертификату.</p>`
+      : "";
+    body.innerHTML = `${purchaseBlock}${rewardBlock}
+      <p class="cl-note cl-note--legal">Демо-зеркало RewardLifecyclePanel / purchase-accrual-receipt-view. Оплата клиентом ≠ выплата направившему. Без API.</p>`;
     /** @type {HTMLDialogElement|null} */ (document.getElementById("wallet-dialog"))?.showModal();
   }
 
