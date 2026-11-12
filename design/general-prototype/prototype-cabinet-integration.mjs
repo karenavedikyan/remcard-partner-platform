@@ -46,6 +46,9 @@ assert.match(
   /cabinet-standalone-active main\.content/,
   "hide stale main content under portal gap",
 );
+const embedRole = readFileSync(path.join(root, "standalone-embed-role.js"), "utf8");
+assert.match(embedRole, /scanSaleRelockScheduled/, "146 sale guard coalesces relock rAF");
+assert.match(embedRole, /if \(el\.disabled !== true\)/, "146 sale lock writes are idempotent");
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
 assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");

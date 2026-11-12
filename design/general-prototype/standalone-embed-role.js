@@ -80,6 +80,8 @@
   }
 
   var scan146GuardsReady = false;
+  var scanSaleLocking = false;
+  var scanSaleRelockScheduled = false;
   var SCAN_SALE_ACTION_SELECTOR =
     "#pst-confirm, #pst-cancel-confirm, #pst-review-finish, #pst-overlay-review .pst-dialog__actions .pst-btn--primary";
 
@@ -90,23 +92,23 @@
 
   function lockScanSaleEl(el) {
     if (!el) return;
-    el.disabled = true;
-    el.setAttribute("aria-disabled", "true");
-    el.setAttribute("hidden", "");
-    el.setAttribute("data-embed-sale-locked", "");
+    if (el.disabled !== true) el.disabled = true;
+    if (el.getAttribute("aria-disabled") !== "true") el.setAttribute("aria-disabled", "true");
+    if (!el.hasAttribute("hidden")) el.setAttribute("hidden", "");
+    if (!el.hasAttribute("data-embed-sale-locked")) el.setAttribute("data-embed-sale-locked", "");
   }
 
   function releaseScanSaleEl(el) {
     if (!el) return;
-    el.removeAttribute("data-embed-sale-locked");
-    el.removeAttribute("hidden");
+    if (el.hasAttribute("data-embed-sale-locked")) el.removeAttribute("data-embed-sale-locked");
+    if (el.hasAttribute("hidden")) el.removeAttribute("hidden");
   }
 
   function closeScanReviewIfOpen() {
     var overlay = document.getElementById("pst-overlay-review");
     if (!overlay || overlay.hidden) return;
     overlay.hidden = true;
-    overlay.setAttribute("hidden", "");
+    if (!overlay.hasAttribute("hidden")) overlay.setAttribute("hidden", "");
     var dialog = overlay.querySelector(".pst-dialog");
     if (dialog && typeof dialog.blur === "function") dialog.blur();
   }
@@ -116,17 +118,32 @@
   }
 
   function lockAllScanSaleActions(noticeText) {
-    if (embedCanConfirmSale()) return;
-    document.documentElement.dataset.embedSaleLocked = "1";
-    document.querySelectorAll(SCAN_SALE_ACTION_SELECTOR).forEach(lockScanSaleEl);
-    closeScanReviewIfOpen();
-    var reason = document.getElementById("pst-block-reason");
-    if (reason) reason.textContent = noticeText || scanSaleLockedNotice();
+    if (embedCanConfirmSale() || scanSaleLocking) return;
+    scanSaleLocking = true;
+    try {
+      if (document.documentElement.dataset.embedSaleLocked !== "1") {
+        document.documentElement.dataset.embedSaleLocked = "1";
+      }
+      document.querySelectorAll(SCAN_SALE_ACTION_SELECTOR).forEach(lockScanSaleEl);
+      closeScanReviewIfOpen();
+      var reason = document.getElementById("pst-block-reason");
+      var nextNotice = noticeText || scanSaleLockedNotice();
+      if (reason && reason.textContent !== nextNotice) reason.textContent = nextNotice;
+    } finally {
+      scanSaleLocking = false;
+    }
   }
 
   function releaseScanSaleActionLocks() {
-    delete document.documentElement.dataset.embedSaleLocked;
-    document.querySelectorAll("[data-embed-sale-locked]").forEach(releaseScanSaleEl);
+    scanSaleLocking = true;
+    try {
+      if (document.documentElement.dataset.embedSaleLocked === "1") {
+        delete document.documentElement.dataset.embedSaleLocked;
+      }
+      document.querySelectorAll("[data-embed-sale-locked]").forEach(releaseScanSaleEl);
+    } finally {
+      scanSaleLocking = false;
+    }
   }
 
   function isScanSaleActionTarget(node) {
@@ -152,10 +169,13 @@
     );
 
     var scheduleRelock = function () {
-      if (embedCanConfirmSale()) return;
-      setTimeout(function () {
-        lockAllScanSaleActions();
-      }, 0);
+      if (embedCanConfirmSale() || scanSaleLocking) return;
+      if (scanSaleRelockScheduled) return;
+      scanSaleRelockScheduled = true;
+      requestAnimationFrame(function () {
+        scanSaleRelockScheduled = false;
+        if (!embedCanConfirmSale() && !scanSaleLocking) lockAllScanSaleActions();
+      });
     };
 
     var form = document.getElementById("pst-form");
@@ -167,14 +187,20 @@
     function watchScanSaleNodes() {
       var confirm = document.getElementById("pst-confirm");
       if (confirm) {
-        new MutationObserver(scheduleRelock).observe(confirm, {
+        new MutationObserver(function () {
+          if (scanSaleLocking || embedCanConfirmSale()) return;
+          scheduleRelock();
+        }).observe(confirm, {
           attributes: true,
           attributeFilter: ["disabled", "aria-disabled", "hidden"],
         });
       }
       var reviewActions = document.querySelector("#pst-overlay-review .pst-dialog__actions");
       if (reviewActions) {
-        new MutationObserver(scheduleRelock).observe(reviewActions, {
+        new MutationObserver(function () {
+          if (scanSaleLocking || embedCanConfirmSale()) return;
+          scheduleRelock();
+        }).observe(reviewActions, {
           childList: true,
           subtree: true,
         });
