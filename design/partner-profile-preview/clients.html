@@ -25,11 +25,9 @@
     </header>
 
     <div class="cl-shell">
-      <div class="pp-demo-banner" role="note">
-        <div>
-          <strong>Прототип</strong> · вымышленные данные · без камеры и без реальных операций
-        </div>
-        <button type="button" class="pp-btn pp-btn--quiet" id="theme-toggle" aria-pressed="false">
+      <div class="pp-demo-banner cl-demo-banner" role="note">
+        <p class="cl-demo-banner-text">Прототип · вымышленные данные · без реальных операций</p>
+        <button type="button" class="pp-btn pp-btn--quiet cl-theme-toggle" id="theme-toggle" aria-pressed="false">
           Тёмная тема
         </button>
       </div>
@@ -38,6 +36,10 @@
         <h1>Клиенты</h1>
         <p class="cl-actor-badge" id="actor-badge"></p>
         <p class="cl-context-line" id="context-line"></p>
+        <details class="cl-demo-scope" id="demo-scope-details">
+          <summary>О демонстрации</summary>
+          <p class="cl-demo-scope-body" id="demo-scope-body"></p>
+        </details>
       </div>
 
       <details class="cl-funnel" id="cohort-funnel">
@@ -67,14 +69,14 @@
       <div id="panel-incoming" class="cl-panel" role="tabpanel" aria-labelledby="tab-incoming">
         <div class="cl-panel-head">
           <div class="cl-actions cl-actions--toolbar">
-            <button type="button" class="pp-btn" id="btn-add-client">Добавить клиента</button>
-            <button type="button" class="pp-btn cl-btn-primary" id="btn-scan">
+            <button type="button" class="pp-btn cl-btn-primary cl-actions-scan" id="btn-scan">
               <svg class="cl-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M4 7V5a2 2 0 0 1 2-2h2M4 17v2a2 2 0 0 0 2 2h2m8-16h2a2 2 0 0 1 2 2v2m-4 12h2a2 2 0 0 0 2-2v-2M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
               Сканировать сертификат
             </button>
-            <button type="button" class="pp-btn" id="btn-settings">Настроить статусы</button>
+            <button type="button" class="pp-btn cl-actions-add" id="btn-add-client">Добавить клиента</button>
+            <button type="button" class="pp-btn cl-actions-settings" id="btn-settings">Настроить статусы</button>
           </div>
         </div>
         <div class="cl-controls cl-controls--filters">
@@ -91,7 +93,6 @@
             <select id="filter-source-incoming" class="cl-select"></select>
           </label>
         </div>
-        <p class="cl-readonly-hint" id="scope-incoming-note"></p>
         <div id="list-incoming" class="cl-list" aria-live="polite"></div>
       </div>
 
@@ -114,7 +115,6 @@
             <select id="filter-source-outgoing" class="cl-select"></select>
           </label>
         </div>
-        <p class="cl-readonly-hint" id="outgoing-scope-hint">Только просмотр: статусы и заметки принимающего партнёра недоступны.</p>
         <div id="list-outgoing" class="cl-list" aria-live="polite"></div>
       </div>
     </div>

@@ -880,28 +880,19 @@
   function renderContextLine() {
     const el = document.getElementById("context-line");
     const badge = document.getElementById("actor-badge");
-    const inNote = document.getElementById("scope-incoming-note");
-    const outHint = document.getElementById("outgoing-scope-hint");
+    const scopeBody = document.getElementById("demo-scope-body");
     if (!el) return;
     if (activeTab === "incoming") {
-      el.textContent = `Демонстрация: принимающий партнёр ${RECEIVING.name} (${RECEIVING.id}), ${RECEIVING.city}`;
-      if (badge) {
-        badge.textContent = "Это не аккаунт направившего партнёра — вкладка «Отправил клиентов» покажет другой демо-актор.";
+      el.textContent = `${RECEIVING.name} (${RECEIVING.id}), ${RECEIVING.city}`;
+      if (badge) badge.textContent = "Демо: принимающий партнёр";
+      if (scopeBody) {
+        scopeBody.textContent = `Видны только обращения у партнёра A (${RECEIVING.id}), в том числе от направившего D (${DEMO_REFERRER_D.name}). Клиенты, добавленные вручную без сертификата, есть только здесь — не во вкладке «Отправил клиентов». Обращения B→C (${DEMO_RECEIVER_C.name}) не показываются. Настройки статусов — только для A. Вкладка «Отправил клиентов» — другой демо-актор, не смешивать с этим аккаунтом.`;
       }
-      if (inNote) {
-        inNote.hidden = false;
-        inNote.textContent = `Видны только обращения у партнёра A (${RECEIVING.id}), в том числе от направившего D (${DEMO_REFERRER_D.name}). Клиенты, добавленные вручную без сертификата, есть только здесь — не во вкладке «Отправил клиентов». Обращения B→C (${DEMO_RECEIVER_C.name}) не показываются. Настройки статусов — только для A.`;
-      }
-      if (outHint) outHint.hidden = true;
     } else {
-      el.textContent = `Демонстрация: направивший партнёр ${REFERRER_VIEWER.name} (${REFERRER_VIEWER.id})`;
-      if (badge) {
-        badge.textContent = "Это не аккаунт принимающего магазина — нельзя смотреть чужие referral, как свои исходящие.";
-      }
-      if (inNote) inNote.hidden = true;
-      if (outHint) {
-        outHint.hidden = false;
-        outHint.textContent = `Только направления партнёра B: к A (${RECEIVING.name}) и к C (${DEMO_RECEIVER_C.name}). Направления D (${DEMO_REFERRER_D.name}) к A скрыты — их видит только вкладка принимающего A. Один объект обращения в памяти: смена статуса на A синхронно отражается у B. В продукте — один текущий аккаунт, без смены перспективы.`;
+      el.textContent = `${REFERRER_VIEWER.name} (${REFERRER_VIEWER.id})`;
+      if (badge) badge.textContent = "Демо: направивший партнёр";
+      if (scopeBody) {
+        scopeBody.textContent = `Только направления партнёра B: к A (${RECEIVING.name}) и к C (${DEMO_RECEIVER_C.name}). Направления D (${DEMO_REFERRER_D.name}) к A скрыты — их видит только вкладка принимающего A. Статусы и служебные заметки принимающего здесь недоступны (только просмотр). Один объект обращения в памяти: смена статуса на A синхронно отражается у B. В продукте — один текущий аккаунт, без смены перспективы.`;
       }
     }
     renderFunnel();
