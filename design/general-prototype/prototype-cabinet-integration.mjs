@@ -32,8 +32,19 @@ assert.match(roles, /handleEmbedSupplementalAction/, "parent supplemental bridge
 assert.match(roles, /embed-supplemental-actions/, "143 supplemental toolbar html");
 const embed143 = readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8");
 assert.match(embed143, /type: "supplemental"/, "143 posts supplemental actions");
-const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
-assert.match(walletHistory, /wallet-open-receipt-145/, "147 accrual detail opens receipt 145");
+const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
+assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
+assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");
+const receiptEmbed = readFileSync(path.join(root, "partner/partner-reward-receipt-embed.js"), "utf8");
+assert.match(receiptEmbed, /Начисление профклиенту/, "145 merchant hero copy");
+assert.match(receiptEmbed, /детализация расчёта недоступна/, "145 hides borrowed calc breakdown");
+assert.match(
+  host,
+  /if \(chain && openPageN\)[\s\S]{0,400}if \(embedCtx != null\) openCtx = embedCtx;/,
+  "chain push before ctx swap",
+);
+const walletHistoryHtml = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
+assert.match(walletHistoryHtml, /wallet-open-receipt-145/, "147 accrual detail opens receipt 145");
 
 for (const n of [143, 144, 147]) {
   const file = {

@@ -176,6 +176,7 @@
   }
 
   function renderState() {
+    if (window.__protoReceiptEmbedSnapshot) return;
     const st = state.rewardState;
     const amount = rewardAmountDisplay(st);
     setText(el.heroLabel, rewardHeadline(st));
@@ -288,6 +289,15 @@
   }
 
   function closeDialog() {
+    try {
+      if (
+        new URLSearchParams(window.location.search).get("cabinet_embed") === "1" &&
+        typeof window.__protoCabinetEmbedBack === "function"
+      ) {
+        window.__protoCabinetEmbedBack();
+        return;
+      }
+    } catch (_) {}
     if (!el.overlay) return;
     el.overlay.hidden = true;
     state.dialogOpen = false;
@@ -312,6 +322,7 @@
   }
 
   function onStateRadioChange(ev) {
+    if (window.__protoReceiptEmbedSnapshot) return;
     const input = ev.target;
     if (!input || input.name !== "prr-state") return;
     state.rewardState = input.value;

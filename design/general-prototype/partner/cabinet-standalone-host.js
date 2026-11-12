@@ -281,7 +281,6 @@ export function createCabinetStandaloneHost(config) {
   }
 
   function doOpen(pageN, { extraQuery = "", returnCtx = null, chain = false, embedCtx = null } = {}) {
-    if (embedCtx != null) openCtx = embedCtx;
     if (config.getEmbedGuardKey) embedGuardKey = config.getEmbedGuardKey();
     if (!assertCanOpen(pageN)) return false;
     if (getScreen?.() !== "cabinet") {
@@ -292,15 +291,20 @@ export function createCabinetStandaloneHost(config) {
     if (!url || !def) return false;
 
     if (chain && openPageN) {
+      const leavingCtx = { ...(openCtx || {}) };
+      if (embedCtx?.walletState != null) {
+        leavingCtx.walletState = embedCtx.walletState;
+      }
       pushReturn({
         pageN: openPageN,
         query: openQuery,
-        ctx: openCtx,
+        ctx: leavingCtx,
         kind: "embed-chain",
       });
     } else if (returnCtx) {
       pushReturn(returnCtx);
     }
+    if (embedCtx != null) openCtx = embedCtx;
 
     titleEl.textContent = def.title;
     openPageN = pageN;
@@ -336,7 +340,6 @@ export function createCabinetStandaloneHost(config) {
     if (data.type === "nav" && data.pageN) {
       if (!assertCanOpen(Number(data.pageN))) return;
       const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
-      openCtx = nextCtx;
       doOpen(Number(data.pageN), {
         extraQuery: data.query || "",
         chain: true,

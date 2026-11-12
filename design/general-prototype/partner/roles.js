@@ -2936,10 +2936,12 @@ function standaloneEmbedActor(pageN) {
     return { ...base, directionLabel: "Принято у меня" };
   }
   if (pageN === 145) {
+    const earned = role === "agent" || role === "specialist";
     return {
       ...base,
-      contextBadge: role === "agent" || role === "specialist" ? "ВОЗНАГРАЖДЕНИЕ" : "НАЧИСЛЕНИЕ",
-      receiptMode: role === "agent" || role === "specialist" ? "earned" : "merchant",
+      contextBadge: earned ? "ВОЗНАГРАЖДЕНИЕ" : "НАЧИСЛЕНИЕ",
+      receiptMode: earned ? "earned" : "merchant",
+      receiptHeroLabel: earned ? "Заработанное вознаграждение" : "Начисление профклиенту",
     };
   }
   if (pageN === 146) {
@@ -3185,6 +3187,7 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
     return embedPayloadEnvelope(pageN, ctx, {
       purchaseCtx: ctx?.purchaseCtx || null,
       receiptCtx: ctx?.receiptCtx || null,
+      walletState: ctx?.walletState || null,
     });
   }
   return embedPayloadEnvelope(pageN, ctx, ctx || {});

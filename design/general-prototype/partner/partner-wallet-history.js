@@ -15,10 +15,12 @@
   let view = "purchases",
     selectedAccrual = accruals[0];
   const WALLET_CERT = "RC-X9Z0WZ";
+  const embedParams = new URLSearchParams(location.search);
+  const isCabinetEmbed = embedParams.get("cabinet_embed") === "1";
   function accrualReceiptCtx(accrual) {
     if (!accrual) return null;
-    const relatedPurchasePayable =
-      accrual === accruals[0] && purchases[0] ? purchases[0].amount : undefined;
+    const linkedPurchase = accrual === accruals[0] && purchases[0] ? purchases[0] : null;
+    const relatedPurchasePayable = linkedPurchase ? linkedPurchase.amount : undefined;
     return {
       accrualId: accrual.id,
       date: accrual.date,
@@ -28,6 +30,9 @@
       certCode: WALLET_CERT,
       clientLabel: "Демо-клиент",
       relatedPurchasePayable,
+      purchaseCtx: linkedPurchase ? purchaseRowCtx(0) : null,
+      hasCalcSnapshot: false,
+      heroLabel: "Начисление профклиенту",
     };
   }
   function purchaseRowCtx(index) {
@@ -63,7 +68,9 @@
     $("#history-rows").innerHTML = matches.length ? matches.map(r=>{
       const index=all.indexOf(r);
       const linkedPurchase=isPurchase&&index===0;
-      return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?"":`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":"Вознаграждение профклиенту"}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
+      const embedPurchaseAttrs =
+        isCabinetEmbed && linkedPurchase ? ' data-proto-embed-ignore data-purchase-embed="0"' : "";
+      return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?embedPurchaseAttrs:`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":"Вознаграждение профклиенту"}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
     }).join("") : empty("Ничего не найдено","Измените запрос или выбранный период.",true);
   }
   let viewPurposeCopy = null;
@@ -97,6 +104,20 @@
     }
     $("#main").focus({preventScroll:true});
   }
+  const walletState = () => ({
+    view,
+    selectedAccrualId: selectedAccrual?.id || null,
+    search: $("#search").value,
+    status: $("#status").value,
+    from: $("#from").value,
+    to: $("#to").value,
+  });
+  function navigatePurchaseEmbed(purchaseIndex) {
+    window.__protoCabinetEmbedNavigate?.(144, "", {
+      walletState: walletState(),
+      purchaseCtx: purchaseRowCtx(purchaseIndex),
+    });
+  }
   document.addEventListener("click",e=>{
     const b = e.target.closest("button"); if(!b)return;
     if(b.dataset.view)setView(b.dataset.view);
@@ -115,8 +136,13 @@
   });
   $("#clear-filters").addEventListener("click",()=>{$("#status").value="all";$("#from").value="";$("#to").value="";renderHistory();});
   $("#clear-search").addEventListener("click",()=>{$("#search").value="";renderHistory();$("#search").focus();});
-  $("#open-related").addEventListener("click",()=>{
+  $("#open-related").addEventListener("click",(e)=>{
     if(selectedAccrual===accruals[0]){
+      if(isCabinetEmbed){
+        e.preventDefault();
+        navigatePurchaseEmbed(0);
+        return;
+      }
       if(window.__protoCabinetEmbedNavigate?.(144))return;
       location.href="partner-purchase-detail.html";
     }
@@ -124,18 +150,7 @@
   });
   ["#search","#status","#from","#to"].forEach(s=>$(s).addEventListener("input",renderHistory));
   ["#close-dialog","#dialog-return"].forEach(s=>$(s).addEventListener("click",()=>$("#purchase-dialog").close()));
-  setView("purchases");
-
-  const embedParams = new URLSearchParams(location.search);
-  if (embedParams.get("cabinet_embed") === "1") {
-    const walletState = () => ({
-      view,
-      selectedAccrualId: selectedAccrual?.id || null,
-      search: $("#search").value,
-      status: $("#status").value,
-      from: $("#from").value,
-      to: $("#to").value,
-    });
+  if (isCabinetEmbed) {
     const applyWalletState = (state) => {
       if (!state) return;
       if (state.search != null) $("#search").value = state.search;
@@ -163,27 +178,17 @@
         receiptCtx: accrualReceiptCtx(selectedAccrual),
       });
     });
-    $("#open-related")?.addEventListener("click", (e) => {
-      if (selectedAccrual === accruals[0]) {
-        e.preventDefault();
-        window.__protoCabinetEmbedNavigate?.(144, "", {
-          walletState: walletState(),
-          purchaseCtx: purchaseRowCtx(0),
-        });
-      }
-    });
     $("#history-rows")?.addEventListener(
       "click",
       (e) => {
-        const link = e.target.closest('a[href*="partner-purchase-detail"]');
+        const link = e.target.closest("[data-purchase-embed]");
         if (!link) return;
         e.preventDefault();
-        window.__protoCabinetEmbedNavigate?.(144, "", {
-          walletState: walletState(),
-          purchaseCtx: purchaseRowCtx(0),
-        });
+        e.stopImmediatePropagation();
+        navigatePurchaseEmbed(Number(link.getAttribute("data-purchase-embed")));
       },
       true,
     );
   }
+  setView("purchases");
 })();

@@ -236,9 +236,22 @@ try {
     { timeout: 10000 },
   );
   const frame145 = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
-  await frame145.locator("#prr-amount").waitFor({ timeout: 8000 });
-  const receiptText = await frame145.locator("#prr-cert-code").textContent();
-  assert.equal(receiptText?.trim(), "RC-X9Z0WZ");
+  await frame145.locator("#prr-cert-code", { hasText: "RC-X9Z0WZ" }).waitFor({ timeout: 10000 });
+  const hero145 = (await frame145.locator("#prr-hero-label").textContent())?.trim() || "";
+  assert.match(hero145, /профклиенту/i, `145 hero label, got: ${hero145}`);
+  const calc145 = await frame145.locator("#prr-calc-text").textContent();
+  assert.match(calc145 || "", /недоступна/i);
+  assert.doesNotMatch(calc145 || "", /115.?000/);
+  await frame145.locator("#prr-ok").click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
+    timeout: 10000,
+  });
+  const frame147b = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame147b.locator("#detail-view:not([hidden])").waitFor({ timeout: 8000 });
+  await frame147b.locator("#open-related").click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 144, null, {
+    timeout: 10000,
+  });
   await chainPage.locator('[data-testid="proto-standalone-back"]').click();
   await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
     timeout: 10000,

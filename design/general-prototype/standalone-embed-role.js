@@ -133,6 +133,9 @@
 
   function apply145(payload) {
     var actor = payload.embedActor || {};
+    if (typeof window.__protoApplyReceiptEmbedCtx === "function" && payload.receiptCtx) {
+      window.__protoApplyReceiptEmbedCtx(payload);
+    }
     if (payload.permissions && payload.permissions.viewOnly) {
       document.documentElement.dataset.embedReadonly = "1";
     }
@@ -143,6 +146,8 @@
           ? "Квитанция заработанного вознаграждения"
           : "Начисление по сертификату";
     }
+    var hero = document.getElementById("prr-hero-label");
+    if (hero && actor.receiptHeroLabel && !payload.receiptCtx) hero.textContent = actor.receiptHeroLabel;
     var topTitle = document.querySelector(".prr-top__title");
     if (topTitle && actor.contextBadge) topTitle.textContent = actor.contextBadge;
   }
