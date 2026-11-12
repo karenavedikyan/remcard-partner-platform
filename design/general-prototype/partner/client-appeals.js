@@ -1,6 +1,12 @@
 /* Клиенты и обращения в кабинете партнёра. Демо, in-memory. Без диалогов — только страницы. */
 import { emptyDatasetOn } from "./empty-states.js?v=es2";
 import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-purchase-ledger.js";
+import {
+  clientAppealsPurchaseCtx,
+  clientAppealsReceiptCtx,
+  observerGuestHash,
+  observerPublicModel,
+} from "./guest-embed-payloads.js";
 
 
   const WAIT_DAYS = 14;
@@ -3745,6 +3751,56 @@ export function refreshClientPurchaseLedgerForWallet() {
   appeals.forEach((a) => {
     if (a.ledgerRecorded && a.paidAt) syncWalletFromAppeal(a);
   });
+}
+
+/** Embed 142/144/145 from client-appeals — selected appeal snapshot or explicit design-example flag. */
+export function buildClientAppealsStandaloneEmbedCtx(pageN, config) {
+  const s = ws(config.key);
+  const designExample = {
+    source: "client-appeals",
+    pageN,
+    designExample: true,
+  };
+  if (pageN === 142) {
+    const appeal = s.observerClientId
+      ? appeals.find((a) => a.id === s.observerClientId)
+      : null;
+    if (!appeal) return designExample;
+    const partner = PARTNERS[appeal.receivingPartnerId];
+    const timeline = publicReferrerTimeline(appeal);
+    const observerModel = observerPublicModel({ appeal, partner, timeline });
+    return {
+      source: "client-appeals",
+      pageN,
+      appealId: appeal.id,
+      observerModel,
+      guestHash: observerGuestHash(observerModel),
+    };
+  }
+  const purchaseId = s.purchaseViewId;
+  if (!purchaseId) return designExample;
+  const purchase = walletPurchases[purchaseId];
+  const appeal =
+    purchase?.appealId != null
+      ? appeals.find((a) => a.id === purchase.appealId)
+      : appeals.find((a) => a.purchaseId === purchaseId);
+  if (!purchase || !appeal) return designExample;
+  const partner = PARTNERS[appeal.receivingPartnerId];
+  const purchaseCtx = clientAppealsPurchaseCtx(purchase, appeal, partner?.name);
+  const base = {
+    source: "client-appeals",
+    pageN,
+    appealId: appeal.id,
+    purchaseId,
+    purchaseCtx,
+  };
+  if (pageN === 145) {
+    return {
+      ...base,
+      receiptCtx: clientAppealsReceiptCtx(purchase, appeal, partner?.name),
+    };
+  }
+  return base;
 }
 
 export function openClientAppealFromLegacy(id, hooks, clientName) {

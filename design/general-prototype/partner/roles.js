@@ -23,8 +23,9 @@ import {
   createCabinetStandaloneHost,
   handleStandaloneHostClick,
   parseStandaloneDeepLink,
+  prepareGuestStandaloneOpen,
   waitForCabinetReady,
-} from "./cabinet-standalone-host.js?v=embed2";
+} from "./cabinet-standalone-host.js?v=embed3";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -52,7 +53,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca28";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx } from "./client-appeals.js?v=ca29";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -67,8 +68,14 @@ import { openSettlementPartner, settlementPartnerSummary } from "./settlement-de
 import {
   certificateIdentity,
   certificateCard as renderCertificateCard,
+  certificatePublicModel,
   hydrateCertificateCard,
 } from "./certificate-view.js";
+import {
+  certificateGuestHash,
+  recommendationGuestHash,
+  observerGuestHash,
+} from "./guest-embed-payloads.js";
 import {
   renderPartners,
   renderWallet,
@@ -3126,6 +3133,16 @@ function handleEmbedSupplementalAction(data, embedCtx) {
   }
   return false;
 }
+function resolveCertificateRecord(suffix) {
+  if (suffix == null || suffix === "") return null;
+  return (
+    B(suffix) ||
+    i.records[Number(suffix)] ||
+    i.records.find((rec) => rec.id === suffix || rec.displayCode === suffix) ||
+    null
+  );
+}
+
 function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
   if (pageN === 143 && ctx?.partnerId) {
     const partner = P.find((p) => p.id === ctx.partnerId);
@@ -3169,14 +3186,18 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
     });
   }
   if (pageN === 139 && ctx?.record) {
+    const publicModel = ctx.publicModel || certificatePublicModel(ctx.record);
     return embedPayloadEnvelope(pageN, ctx, {
-      record: ctx.record,
-      displayCode: ctx.record.displayCode,
-      partner: ctx.record.partner,
-      terms: ctx.record.terms || [],
-      name: ctx.record.name,
-      disabled: !!ctx.record.disabled,
+      publicModel,
+      displayCode: publicModel.code,
+      recordId: ctx.record.id,
     });
+  }
+  if (pageN === 140 && ctx?.guestHash) {
+    return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
+  }
+  if (pageN === 142 && ctx?.guestHash) {
+    return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
   }
   if (pageN === 147) {
     return embedPayloadEnvelope(pageN, ctx, {
@@ -3188,6 +3209,7 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       purchaseCtx: ctx?.purchaseCtx || null,
       receiptCtx: ctx?.receiptCtx || null,
       walletState: ctx?.walletState || null,
+      designExample: !!ctx?.designExample,
     });
   }
   return embedPayloadEnvelope(pageN, ctx, ctx || {});
@@ -3230,6 +3252,12 @@ function ensureStandaloneHost() {
         handleEmbedSupplementalAction(data, { ...embedCtx, partnerId: data.partnerId || embedCtx?.partnerId }),
       onReturn: (ctx) => {
         if (!ctx) return;
+        if (ctx.restoreCertificateId) {
+          if (ctx.page) i.page = ctx.page;
+          T();
+          queueMicrotask(() => Ne(ctx.restoreCertificateId));
+          return;
+        }
         if (ctx.kind === "embed-chain" && ctx.pageN) {
           if (ctx.page) i.page = ctx.page;
           T();
@@ -3934,9 +3962,10 @@ function clientAppealsConfig() {
         U("Раздел недоступен для этой роли в демо.", "info");
         return;
       }
+      const embedCtx = buildClientAppealsStandaloneEmbedCtx(pageN, clientAppealsConfig());
       ensureStandaloneHost().openStandalone(pageN, {
-        returnCtx: { page: i.page, role: i.role, source: "client-appeals" },
-        embedCtx: { source: "client-appeals", pageN },
+        returnCtx: { page: i.page, role: i.role, source: "client-appeals", pageN },
+        embedCtx,
       });
     },
     scanEntry: i.page === "scanner",
@@ -4766,12 +4795,22 @@ document.addEventListener("click", (e) => {
       getPage: () => i.page,
       getRole: () => i.role,
       notify: (m, tone) => U(m, tone || "info"),
+      prepareGuestOpen: (pageN, suffix, embedCtx, returnCtx) =>
+        prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, {
+          resolveRecord: resolveCertificateRecord,
+          certificatePublicModel,
+          certificateGuestHash,
+          recommendationGuestHash,
+          observerGuestHash,
+          closeSourceDialog: () => {
+            if (!se.open) return false;
+            _();
+            return true;
+          },
+        }),
       buildEmbedCtx: (pageN, suffix) => {
-        if (pageN === 139) {
-          const record =
-            B(suffix) ||
-            i.records[Number(suffix)] ||
-            i.records.find((rec) => rec.id === suffix || rec.displayCode === suffix);
+        if (pageN === 139 || pageN === 140) {
+          const record = resolveCertificateRecord(suffix);
           return { recordId: suffix, record };
         }
         if (pageN === 143) return { partnerId: suffix };
@@ -5144,7 +5183,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       "Поделиться",
       `<label class="field">Готовый текст<textarea id="share-copy" rows="7" readonly>${r(l)}${n.proposedTerms ? `\n\nПредлагаемые условия:\n${r(n.proposedTerms)}\nУсловия требуют согласования обеими сторонами.` : ""}
 
-[Здесь будет ссылка. Сейчас это демонстрационный макет.]</textarea></label>${d("Скопировать текст", "copy-link-message", "primary")}${n.kind === "certificate" ? d("Гостевой макет рекомендации", "proto-guest-preview:140", "ghost") : ""}<p class="small" id="copy-result" role="status">Настоящая ссылка в макете не создаётся.</p>${Z ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}`,
+[Здесь будет ссылка. Сейчас это демонстрационный макет.]</textarea></label>${d("Скопировать текст", "copy-link-message", "primary")}${n.kind === "certificate" ? d("Гостевой макет рекомендации", `proto-guest-preview:140:${r(n.id)}`, "ghost") : ""}<p class="small" id="copy-result" role="status">Настоящая ссылка в макете не создаётся.</p>${Z ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}`,
     );
   }
   if (a === "copy-link-message") {

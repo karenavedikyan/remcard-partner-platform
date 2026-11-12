@@ -330,10 +330,11 @@ export function createCabinetStandaloneHost(config) {
     hostEl.hidden = false;
     watchLayout();
     reposition();
+    const guestHash = embedCtx?.guestHash;
     frame.onload = () => {
       sendContextToFrame();
     };
-    frame.src = url;
+    frame.src = guestHash ? `${url}#${guestHash}` : url;
     return true;
   }
 
@@ -446,6 +447,33 @@ export function createCabinetStandaloneHost(config) {
   };
 }
 
+export function prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, hooks = {}) {
+  const record =
+    embedCtx?.record ||
+    hooks.resolveRecord?.(suffix) ||
+    null;
+  let nextEmbed = { ...(embedCtx || {}) };
+  let nextReturn = { ...(returnCtx || {}) };
+  if (record) {
+    nextEmbed.record = record;
+    nextEmbed.recordId = record.id || suffix;
+  }
+  if (pageN === 139 && record && hooks.certificatePublicModel) {
+    nextEmbed.publicModel = hooks.certificatePublicModel(record);
+    nextEmbed.guestHash = hooks.certificateGuestHash?.(record) || "";
+  }
+  if (pageN === 140 && record && hooks.recommendationGuestHash) {
+    nextEmbed.guestHash = hooks.recommendationGuestHash(record) || "";
+  }
+  if (pageN === 142 && embedCtx?.observerModel && hooks.observerGuestHash) {
+    nextEmbed.guestHash = hooks.observerGuestHash(embedCtx.observerModel) || "";
+  }
+  if ([139, 140].includes(pageN) && hooks.closeSourceDialog?.()) {
+    if (record?.id) nextReturn.restoreCertificateId = record.id;
+  }
+  return { embedCtx: nextEmbed, returnCtx: nextReturn };
+}
+
 export function handleStandaloneHostClick(e, host, ctx) {
   const t = e.target.closest("[data-action]");
   if (!t) return false;
@@ -465,12 +493,18 @@ export function handleStandaloneHostClick(e, host, ctx) {
   if (!STANDALONE_BY_N[pageN]) return false;
   e.preventDefault();
   const suffix = parts.slice(2).join(":");
-  const embedCtx = ctx?.buildEmbedCtx?.(pageN, suffix) ?? { suffix };
-  const returnCtx = ctx?.buildReturnContext?.(pageN, suffix, embedCtx) || {
-    page: ctx?.getPage?.(),
-    role: ctx?.getRole?.(),
-    embedCtx,
-  };
+  let embedCtx = ctx?.buildEmbedCtx?.(pageN, suffix) ?? { suffix };
+  let returnCtx =
+    ctx?.buildReturnContext?.(pageN, suffix, embedCtx) || {
+      page: ctx?.getPage?.(),
+      role: ctx?.getRole?.(),
+      embedCtx,
+    };
+  if (ctx?.prepareGuestOpen) {
+    const prepared = ctx.prepareGuestOpen(pageN, suffix, embedCtx, returnCtx);
+    embedCtx = prepared.embedCtx;
+    returnCtx = prepared.returnCtx;
+  }
   return host.openStandalone(pageN, {
     extraQuery: ctx?.extraQuery?.(pageN, suffix, embedCtx) || "",
     returnCtx,

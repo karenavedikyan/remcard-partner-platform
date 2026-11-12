@@ -101,6 +101,19 @@
     var actor = payload.embedActor || {};
     var perms = payload.permissions || {};
     var ctx = payload.purchaseCtx || {};
+    if (payload.designExample || ctx.designExample) {
+      var note144 = document.getElementById("op-embed-design-note");
+      if (!note144) {
+        note144 = document.createElement("p");
+        note144.id = "op-embed-design-note";
+        note144.className = "notice op-embed-design-note";
+        var titleRow = document.querySelector(".op-title-row");
+        if (titleRow) titleRow.insertAdjacentElement("afterend", note144);
+      }
+      note144.textContent =
+        "Дизайн-макет без привязки к выбранной покупке в обращениях. Цифры на странице — демонстрационный пример.";
+      return;
+    }
     var dir = document.querySelector(".op-direction");
     if (dir && actor.directionLabel) dir.textContent = actor.directionLabel;
     if (ctx.certCode) {
@@ -133,6 +146,19 @@
 
   function apply145(payload) {
     var actor = payload.embedActor || {};
+    if (payload.designExample || payload.receiptCtx?.designExample) {
+      var note145 = document.getElementById("prr-embed-design-note");
+      if (!note145) {
+        note145 = document.createElement("p");
+        note145.id = "prr-embed-design-note";
+        note145.className = "notice";
+        var main = document.querySelector(".prr-main");
+        if (main) main.prepend(note145);
+      }
+      note145.textContent =
+        "Дизайн-макет квитанции без снимка выбранной покупки. Откройте покупку в обращениях, чтобы увидеть связанный пример.";
+      return;
+    }
     if (typeof window.__protoApplyReceiptEmbedCtx === "function" && payload.receiptCtx) {
       window.__protoApplyReceiptEmbedCtx(payload);
     }

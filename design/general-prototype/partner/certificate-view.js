@@ -33,7 +33,7 @@ export function certificateIdentity({
     actorUserId: `DEMO-${actorRole}`,
   };
 }
-function publicModel(record) {
+export function certificatePublicModel(record) {
   // Deliberate allowlist: no private bonuses, employer actor IDs or customer details.
   return {
     v: 2,
@@ -66,7 +66,7 @@ function publicModel(record) {
 }
 export function certificateCard(record, management = "") {
   const code = record.displayCode || "Код не указан";
-  const url = publicCertificateUrl(publicModel(record));
+  const url = publicCertificateUrl(certificatePublicModel(record));
   const terms = record.terms || [];
   return `<section class="rc-cert-wrap" data-testid="certificate-result"><article class="rc-cert">
     <div class="rc-cert-brand">${logo}</div><span class="rc-cert-badge">${record.disabled ? "Отключён" : "Демонстрационный сертификат"}</span>
