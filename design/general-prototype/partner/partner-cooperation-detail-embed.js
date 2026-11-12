@@ -20,9 +20,39 @@
       .join("");
   }
 
+  function applyPermissions(perms) {
+    if (!perms) return;
+    const hide = (id, allowed) => {
+      const el = byId(id);
+      if (!el) return;
+      if (allowed) {
+        el.removeAttribute("hidden");
+        el.disabled = false;
+      } else {
+        el.setAttribute("hidden", "");
+        el.disabled = true;
+      }
+    };
+    hide("edit-terms", perms.editTerms);
+    hide("pause", perms.pauseCoop);
+    hide("certificate", perms.createCertificate);
+    const footer = document.querySelector(".dialog-footer");
+    if (footer && perms.viewOnly) {
+      footer.querySelectorAll("button").forEach((btn) => {
+        if (!perms.editTerms && btn.id === "edit-terms") btn.setAttribute("hidden", "");
+        if (!perms.pauseCoop && btn.id === "pause") btn.setAttribute("hidden", "");
+        if (!perms.createCertificate && btn.id === "certificate") btn.setAttribute("hidden", "");
+      });
+    }
+  }
+
+  let lastPermissions = null;
+
   function applyContext(payload) {
+    lastPermissions = payload?.permissions || null;
     if (!payload?.partner) return;
     if (payload.partnerId) window.__protoEmbedPartnerId = payload.partnerId;
+    applyPermissions(payload.permissions);
     const p = payload.partner;
     const title = byId("partner-title");
     if (title) title.textContent = p.name || "Партнёр";
@@ -74,15 +104,19 @@
     post({ type: "need-context", pageN: 143 });
     const pause = byId("pause");
     pause?.addEventListener("click", () => {
+      if (lastPermissions && !lastPermissions.pauseCoop) return;
       post({ type: "coop", action: "toggle-pause", partnerId: window.__protoEmbedPartnerId || "" });
     });
     byId("edit-terms")?.addEventListener("click", (e) => {
       e.preventDefault();
+      if (lastPermissions && !lastPermissions.editTerms) return;
       post({ type: "coop", action: "edit-terms", partnerId: window.__protoEmbedPartnerId || "" });
     });
     byId("certificate")?.addEventListener("click", (e) => {
       e.preventDefault();
+      if (lastPermissions && !lastPermissions.createCertificate) return;
       post({ type: "coop", action: "certificate", partnerId: window.__protoEmbedPartnerId || "" });
     });
   });
+
 })();

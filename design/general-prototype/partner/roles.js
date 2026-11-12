@@ -2798,11 +2798,54 @@ function $t() {
   hubFindShell({ state: de, dictionary: Le, cities: [...new Set(P.map((e) => e.city))], typeLabels: Object.fromEntries(Object.entries(ee).map(([key, value]) => [key, value.label])), certReturn: !!Z, results: Ct });
 }
 let standaloneHost = null;
+function standaloneEmbedPermissions(pageN) {
+  if (pageN === 143) {
+    const editTerms = ue();
+    const createCertificate = k()
+      ? O("clients") && O("recommend")
+      : O("clients");
+    return {
+      editTerms,
+      pauseCoop: editTerms,
+      createCertificate,
+      viewOnly: k() && !editTerms,
+    };
+  }
+  if ([147, 144, 145].includes(pageN)) {
+    const write = k() ? O("ledger") || O("cash") || O("transfer") : true;
+    return { viewOnly: !write, readOnlyWallet: !write };
+  }
+  if (pageN === 146) {
+    const act = k() ? O("scan") || O("sale") : true;
+    return { viewOnly: !act };
+  }
+  return { viewOnly: false };
+}
+function employeeCanViewPartners() {
+  return (
+    ["clients", "scan", "sale", "terms"].some((key) => i.permissions.has(key))
+  );
+}
+function resolveDeepLinkEmbedCtx(pageN, q) {
+  if (pageN === 143) {
+    const fromUrl = q.get("partner_id");
+    let partner = fromUrl ? P.find((p) => p.id === fromUrl) : null;
+    if (!partner) partner = P.find((p) => p.ready);
+    if (partner) {
+      return {
+        partnerId: partner.id,
+        collectionKey: "directory",
+        deepLink: true,
+      };
+    }
+  }
+  return { deepLink: true };
+}
 function standaloneCanOpen(pageN) {
   if (pageN === 141) return false;
   if (pageN === 146 && i.role === "agent") return false;
   if (k()) {
-    if (pageN === 143) return ue() || O("partners");
+    if (pageN === 143) return ue() || employeeCanViewPartners();
     if (pageN === 146) return O("scan") || O("sale");
     if ([147, 144, 145].includes(pageN)) return O("ledger") || O("bonus") || O("cash");
     if ([139, 140, 142].includes(pageN)) return O("clients") || O("recommend");
@@ -2832,6 +2875,10 @@ function resolveStandaloneEmbedPayload(pageN, ctx) {
     }
     const paused =
       typeof coop !== "undefined" && coop?.isPaused ? coop.isPaused(partner.id) : false;
+    const permissions = standaloneEmbedPermissions(143);
+    if (permissions.createCertificate && coop?.isPaused?.(partner.id)) {
+      permissions.createCertificate = false;
+    }
     return {
       partner: {
         name: partner.name,
@@ -2841,10 +2888,14 @@ function resolveStandaloneEmbedPayload(pageN, ctx) {
       categories,
       paused,
       partnerId: partner.id,
+      permissions,
     };
   }
   if (pageN === 139 && ctx?.record) {
     return { record: ctx.record, displayCode: ctx.record.displayCode, partner: ctx.record.partner };
+  }
+  if ([147, 144, 145, 146].includes(pageN)) {
+    return { permissions: standaloneEmbedPermissions(pageN) };
   }
   return ctx || null;
 }
@@ -2858,19 +2909,25 @@ function ensureStandaloneHost() {
       resolveEmbedPayload: resolveStandaloneEmbedPayload,
       onCoopAction: (action, partnerId) => {
         const partner = P.find((p) => p.id === partnerId);
-        if (!partner) return;
-        if (action === "edit-terms") coop.openTermChange?.(partner);
-        else if (action === "toggle-pause") {
+        if (!partner) return false;
+        const perms = standaloneEmbedPermissions(143);
+        if (action === "edit-terms") {
+          if (!perms.editTerms) return false;
+          coop.openTermChange?.(partner);
+        } else if (action === "toggle-pause") {
+          if (!perms.pauseCoop) return false;
           if (coop.isPaused(partnerId)) coop.openResumeConfirm?.(partner);
           else coop.openPauseConfirm?.(partner);
         } else if (action === "certificate") {
+          if (!perms.createCertificate || coop.isPaused(partnerId)) return false;
           standaloneHost.closeHost({ reset: true });
-          if (O("clients") && !coop.isPaused(partnerId)) {
+          if (O("clients") && O("recommend")) {
             ct();
             document.querySelector('[data-action="action:recommend"]')?.click();
           }
-        }
+        } else return false;
         standaloneHost.refreshContext();
+        return true;
       },
       onReturn: (ctx) => {
         if (ctx?.page) i.page = ctx.page;
@@ -4793,6 +4850,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
     );
     ((i.theme = i.theme === "dark" ? "light" : "dark"),
       R(),
+      standaloneHost?.syncTheme?.(i.theme),
       z.querySelectorAll(".profile-guide details").forEach((l, o) => {
         o < n.length && (l.open = n[o]);
       }));
@@ -5273,13 +5331,21 @@ R();
   const q = new URLSearchParams(location.search);
   const pageN = parseStandaloneDeepLink(q);
   if (!pageN) return;
-  if (i.screen !== "cabinet") {
-    i.screen = "cabinet";
-    enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
-    syncPreviewProfileWizards(i.role);
+  const role = q.get("role");
+  const allowedRoles = ["store", "company", "agent", "specialist", "employee"];
+  if (role && allowedRoles.includes(role)) {
+    i.role = role;
+    if (["store", "company"].includes(role)) Y = role;
   }
   const open = q.get("open");
-  waitForCabinetReady({ getScreen: () => i.screen })
+  i.screen = "cabinet";
+  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
+  syncPreviewProfileWizards(i.role);
+  if (open === "partners") i.page = "partners";
+  else if (open === "wallet" || open === "history") i.page = "wallet";
+  else if (open === "clients") i.page = "clients";
+  R();
+  waitForCabinetReady({ getScreen: () => i.screen, timeoutMs: 9500 })
     .then(() => {
       if (open) {
         const navKey =
@@ -5288,22 +5354,33 @@ R();
               ? "bonus"
               : "settlements"
             : open === "partners"
-              ? "links"
-              : open;
+              ? "partners"
+              : open === "clients"
+                ? "clients"
+                : open;
         if (typeof navAllowedInRelease === "function" && navAllowedInRelease(navKey)) {
-          document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
+          const btn = document.querySelector(`[data-action="nav:${navKey}"]`);
+          if (btn) {
+            i.page = navKey === "bonus" || navKey === "settlements" ? "wallet" : navKey;
+            btn.click();
+          }
         }
       }
       return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     })
     .then(() => {
-      if (standaloneCanOpen(pageN)) {
-        ensureStandaloneHost().openStandalone(pageN, {
-          returnCtx: { page: i.page, role: i.role },
-          embedCtx: { deepLink: true },
-        });
-        standaloneHost?.afterCabinetRender?.();
-      }
+      if (!standaloneCanOpen(pageN)) return;
+      const embedCtx = resolveDeepLinkEmbedCtx(pageN, q);
+      const extraQuery =
+        pageN === 143 && embedCtx.partnerId
+          ? `partner_id=${encodeURIComponent(embedCtx.partnerId)}`
+          : "";
+      ensureStandaloneHost().openStandalone(pageN, {
+        returnCtx: { page: i.page, role: i.role },
+        embedCtx,
+        extraQuery,
+      });
+      standaloneHost?.afterCabinetRender?.();
     })
     .catch(() => {});
 })();

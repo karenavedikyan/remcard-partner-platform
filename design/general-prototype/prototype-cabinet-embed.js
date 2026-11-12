@@ -121,5 +121,13 @@
     if (data.type === "theme" && typeof data.theme === "string") {
       document.documentElement.dataset.theme = data.theme;
     }
+    if (data.type === "context" && data.payload && data.payload.permissions) {
+      var p = data.payload.permissions;
+      if (p.readOnlyWallet || p.viewOnly) {
+        document.documentElement.dataset.embedReadonly = "1";
+      } else {
+        delete document.documentElement.dataset.embedReadonly;
+      }
+    }
   });
 })();

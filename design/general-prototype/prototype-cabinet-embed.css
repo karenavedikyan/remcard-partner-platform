@@ -18,3 +18,15 @@ html.cabinet-embed-mode a.skip {
   position: absolute;
   left: -9999px;
 }
+
+html.cabinet-embed-mode .proto-page-flow,
+html.cabinet-embed-mode .proto-page-panel {
+  display: none !important;
+}
+
+html.cabinet-embed-mode[data-embed-readonly="1"] .wallet-accruals-history__filters,
+html.cabinet-embed-mode[data-embed-readonly="1"] #filter-button,
+html.cabinet-embed-mode[data-embed-readonly="1"] #clear-filters {
+  opacity: 0.45;
+  pointer-events: none;
+}

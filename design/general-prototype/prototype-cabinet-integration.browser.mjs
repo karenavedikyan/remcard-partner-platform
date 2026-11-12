@@ -82,12 +82,95 @@ try {
     await page.waitForSelector("[data-testid='wallet-history-hub-link']", { timeout: 10000 });
     await page.click("[data-testid='wallet-history-hub-link']");
     await page.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])");
-    const badge = await page.evaluate(() => window.__protoCabinetEmbeddedPage?.n);
-    assert.equal(badge, 147);
+  const walletEmbed = await page.evaluate(() => {
+    const host = document.querySelector("[data-testid='cabinet-standalone-host']");
+    const iframe = document.querySelector("[data-testid='cabinet-standalone-frame']");
+    const rect = host?.getBoundingClientRect();
+    return {
+      hostCount: document.querySelectorAll("[data-testid='cabinet-standalone-host']").length,
+      iframeCount: document.querySelectorAll("[data-testid='cabinet-standalone-frame']").length,
+      hostHidden: host?.hidden,
+      hasSrc: !!iframe?.getAttribute("src"),
+      attached: !!(rect && rect.width > 0 && rect.height > 0),
+      badge: window.__protoCabinetEmbeddedPage?.n,
+    };
+  });
+  assert.equal(walletEmbed.badge, 147);
+  assert.equal(walletEmbed.hostCount, 1);
+  assert.equal(walletEmbed.iframeCount, 1);
+  assert.equal(walletEmbed.hostHidden, false);
+  assert.ok(walletEmbed.hasSrc && walletEmbed.attached, "wallet 147 embed host must stay attached with iframe src");
     await page.evaluate(() => document.querySelector('[data-action="nav:home"]')?.click());
-    await page.waitForFunction(() => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden);
+    await page.waitForFunction(
+      () =>
+        document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden &&
+        !window.__protoCabinetEmbeddedPage,
+    );
     await page.close();
   }
+
+  const deepPage = await browser.newPage();
+  await deepPage.setViewportSize({ width: 1280, height: 800 });
+  await deepPage.goto(`${base}/partner/index.html?role=store&open=partners&proto_standalone=143`, {
+    waitUntil: "load",
+  });
+  await deepPage.waitForSelector('[data-testid="view-cabinet"][aria-pressed="true"]', { timeout: 15000 });
+  await deepPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
+  const deepBoot = await deepPage.evaluate(() => ({
+    hostCount: document.querySelectorAll("[data-testid='cabinet-standalone-host']").length,
+    iframeSrc: document.querySelector("[data-testid='cabinet-standalone-frame']")?.getAttribute("src") || "",
+    badge: window.__protoCabinetEmbeddedPage?.n,
+    cabinet: document.querySelector('[data-testid="view-cabinet"]')?.getAttribute("aria-pressed"),
+  }));
+  assert.equal(deepBoot.cabinet, "true");
+  assert.equal(deepBoot.badge, 143);
+  assert.equal(deepBoot.hostCount, 1);
+  assert.ok(deepBoot.iframeSrc.includes("partner-cooperation-detail"), "deep link must load cooperation embed");
+  await deepPage.close();
+
+  const empPage = await browser.newPage();
+  await empPage.setViewportSize({ width: 1280, height: 800 });
+  await empPage.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
+  await empPage.evaluate(() => {
+    document.querySelector('[data-testid="scenario-role"]')?.dispatchEvent(new Event("change", { bubbles: true }));
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await empPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await empPage.evaluate(() => {
+    const review = document.querySelector("#review");
+    if (review && !review.open) review.open = true;
+  });
+  await empPage.waitForSelector('[data-testid="permission-clients"]', { timeout: 10000 });
+  for (const perm of [
+    "terms",
+    "scan",
+    "sale",
+    "ledger",
+    "cash",
+    "transfer",
+    "recommend",
+    "team",
+    "catalog",
+    "own",
+  ]) {
+    const el = empPage.locator(`[data-testid="permission-${perm}"]`);
+    if (await el.count()) await el.setChecked(false);
+  }
+  await empPage.locator('[data-testid="permission-clients"]').setChecked(true);
+  await empPage.locator('[data-control="invite"]').selectOption("valid");
+  await empPage.waitForTimeout(300);
+  await empPage.click('[data-action="nav:partners"]');
+  await empPage.waitForSelector("[data-coll-open]", { timeout: 10000 });
+  await empPage.click("[data-coll-open]");
+  await empPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 10000 });
+  const frame143 = empPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame143.locator("#partner-title").waitFor({ timeout: 8000 });
+  for (const id of ["edit-terms", "pause", "certificate"]) {
+    const btn = frame143.locator(`#${id}`);
+    const hidden = await btn.evaluate((el) => el.hidden || el.hasAttribute("hidden") || el.disabled);
+    assert.equal(hidden, true, `employee view-only 143 must hide/disable #${id}`);
+  }
+  await empPage.close();
 
   const denyPage = await browser.newPage();
   await denyPage.setViewportSize({ width: 1280, height: 800 });

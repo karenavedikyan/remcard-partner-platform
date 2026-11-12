@@ -704,6 +704,15 @@ const PAGE_DEFS = [
   window.protoHubUrl = hubUrl;
   window.protoPathnameRel = pathnameRel;
 
+  let embedCabinetChild = false;
+  try {
+    embedCabinetChild = new URLSearchParams(location.search).get("cabinet_embed") === "1";
+  } catch (_) {}
+
+  if (embedCabinetChild) {
+    return;
+  }
+
   mountChrome();
   initDeferredProtoPageNav();
   refreshBadge();

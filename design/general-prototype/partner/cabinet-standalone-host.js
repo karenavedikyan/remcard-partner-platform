@@ -127,7 +127,7 @@ export function createCabinetStandaloneHost(config) {
     if (hostEl.hidden) return;
     const target = contentTarget();
     if (!target) {
-      hostEl.hidden = true;
+      requestAnimationFrame(reposition);
       return;
     }
     const rect = target.getBoundingClientRect();
@@ -276,7 +276,7 @@ export function createCabinetStandaloneHost(config) {
       return;
     }
     if (data.type === "coop" && data.action) {
-      onCoopAction?.(data.action, data.partnerId, openCtx);
+      if (!onCoopAction?.(data.action, data.partnerId, openCtx)) return;
       sendContextToFrame();
     }
   }
@@ -301,7 +301,25 @@ export function createCabinetStandaloneHost(config) {
     closeHost,
     resetHost(reason) {
       if (!hostEl.hidden) closeHost({ reset: true });
+      else {
+        openPageN = null;
+        openQuery = "";
+        openCtx = null;
+        syncEmbeddedPageBadge(null);
+        frame.removeAttribute("src");
+        unwatchLayout();
+      }
       if (reason && notify) notify(reason, "info");
+    },
+    syncTheme(theme) {
+      if (hostEl.hidden) return;
+      const t = theme || currentTheme();
+      try {
+        frame.contentWindow?.postMessage(
+          { source: "proto-cabinet-host", type: "theme", theme: t },
+          "*",
+        );
+      } catch (_) {}
     },
     afterCabinetRender() {
       if (hostEl.hidden) return;
@@ -310,6 +328,7 @@ export function createCabinetStandaloneHost(config) {
         return;
       }
       reposition();
+      syncTheme();
     },
     isOpen: () => !hostEl.hidden,
     currentPageN: () => openPageN,
