@@ -46,3 +46,15 @@
   background: var(--bg, #f6f6f4);
   overflow: hidden;
 }
+
+/* Keep main column geometry for portal math; hide stale list rows in the dock gap. */
+.shell.cabinet-standalone-active main.content,
+.shell.cabinet-standalone-active .content.main {
+  background: var(--bg, #f6f6f4);
+}
+
+.shell.cabinet-standalone-active main.content > *,
+.shell.cabinet-standalone-active .content.main > * {
+  visibility: hidden;
+  pointer-events: none;
+}

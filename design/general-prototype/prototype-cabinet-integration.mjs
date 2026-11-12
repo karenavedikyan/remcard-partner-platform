@@ -40,6 +40,12 @@ assert.match(roles, /handleEmbedSupplementalAction/, "parent supplemental bridge
 assert.match(roles, /embed-supplemental-actions/, "143 supplemental toolbar html");
 const embed143 = readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8");
 assert.match(embed143, /type: "supplemental"/, "143 posts supplemental actions");
+assert.match(embed143, /byId\("embed-supplemental"\)/, "143 supplemental delegate root");
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.css"), "utf8"),
+  /cabinet-standalone-active main\.content/,
+  "hide stale main content under portal gap",
+);
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
 assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");

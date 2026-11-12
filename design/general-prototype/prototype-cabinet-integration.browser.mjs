@@ -69,12 +69,38 @@ try {
     await frame.locator("#partner-title").filter({ hasText: partnerName }).waitFor({ timeout: 8000 });
     const titleOk = await frame.locator("#partner-title").textContent();
     assert.equal(titleOk?.trim(), partnerName, `143 title must match selected partner at ${viewport.width}px`);
+    if (viewport.width === 1280) {
+      const mainObscured = await page.evaluate(() => {
+        const row = document.querySelector(".shell.cabinet-standalone-active main.content > *");
+        return row ? getComputedStyle(row).visibility === "hidden" : false;
+      });
+      assert.ok(mainObscured, "main content hidden under portal while embed open");
+      await page.evaluate(() => {
+        window.__supplementalPostCount = 0;
+        window.addEventListener("message", (ev) => {
+          const d = ev.data;
+          if (d?.source === "proto-cabinet-embed" && d?.type === "supplemental") {
+            window.__supplementalPostCount = (window.__supplementalPostCount || 0) + 1;
+          }
+        });
+      });
+      await frame.locator('[data-testid="counterparty-copy-id"]').click();
+      await page.waitForFunction(() => (window.__supplementalPostCount || 0) > 0, null, { timeout: 5000 });
+      await page.waitForSelector(".action-toast", { timeout: 5000 });
+      const toast = await page.locator(".action-toast span:nth-child(2)").textContent();
+      assert.match(toast || "", /ID скопирован|Скопируйте ID вручную/i);
+    }
     await page.locator('[data-testid="proto-standalone-back"]').click();
     await page.waitForFunction(
       () => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
       null,
       { timeout: 10000 },
     );
+    const mainRestored = await page.evaluate(() => {
+      const row = document.querySelector(".shell main.content > *, .shell .content.main > *");
+      return row ? getComputedStyle(row).visibility !== "hidden" : true;
+    });
+    assert.ok(mainRestored, "main content visibility restored after embed close");
     await page.evaluate(() =>
       document.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click(),
     );

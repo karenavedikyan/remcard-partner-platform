@@ -131,7 +131,7 @@
   }
 
   function wireSupplementalActions() {
-    const root = document.querySelector(".embed-supplemental-actions");
+    const root = byId("embed-supplemental");
     if (!root || root.dataset.wired === "1") return;
     root.dataset.wired = "1";
     root.addEventListener(
