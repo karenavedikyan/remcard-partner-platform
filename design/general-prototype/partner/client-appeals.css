@@ -99,7 +99,7 @@ button.ca-row{font:inherit;color:inherit}
 .ca-bar-track i{display:block;height:100%;background:color-mix(in srgb,var(--accent) 70%,var(--ink));border-radius:inherit}
 .ca-bar-track--sm{height:6px;margin:6px 0}
 .ca-compare{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5,20px);margin-top:var(--s4,16px)}
-@media(max-width:1000px){
+@media(max-width:1100px){
   .ca-row--head{display:none}
   .ca-row{grid-template-columns:minmax(0,1fr) 130px;grid-template-areas:"name status" "request status" "meta status" "amount age" "chev chev";align-items:start;padding:var(--s4,16px) var(--s5,20px);gap:var(--s2,8px) var(--s3,12px)}
   .ca-row-name{grid-area:name;min-width:0}
