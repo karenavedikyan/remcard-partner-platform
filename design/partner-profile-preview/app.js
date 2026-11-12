@@ -259,10 +259,6 @@
     return `<ul>${rows.join("")}</ul>`;
   }
 
-  function pairCooperation() {
-    return selectedPartner?.cooperation ?? null;
-  }
-
   function activeProfile() {
     if (!selectedPartner) return null;
     const cooperation = selectedPartner.cooperation;
@@ -280,22 +276,6 @@
     };
   }
 
-  function renderFactsGrid(p, cooperation) {
-    const rows = [
-      `<div><dt>Тип</dt><dd>${escapeHtml(KIND_LABEL[p.kind] || "Партнёр")}</dd></div>`,
-      `<div><dt>Город</dt><dd>${escapeHtml(p.city?.trim() || "Не указано")}</dd></div>`,
-    ];
-    if (showsOrganization(p)) {
-      rows.push(
-        `<div><dt>Организация</dt><dd>${escapeHtml(p.organizationName?.trim() || "Не указано")}</dd></div>`,
-      );
-    }
-    rows.push(
-      `<div><dt>Статус сотрудничества</dt><dd>${escapeHtml(cooperation.status)}</dd></div>`,
-    );
-    return rows.join("");
-  }
-
   function renderProfile() {
     const ctx = activeProfile();
     if (!ctx || !selectedPartner) return;
@@ -310,10 +290,6 @@
       ? `<p class="pw-org-line">Временное имя (видно только вам): <strong>${escapeHtml(p.personalAlias)}</strong></p>`
       : "";
 
-    const reciprocalNote = ctx.reciprocalName
-      ? `<p class="pp-reciprocal-note">Как партнёр «${escapeHtml(ctx.reciprocalName)}» видит ваш профиль — в том же формате, без лишних данных.</p>`
-      : "";
-
     const about = p.about?.trim()
       ? escapeHtml(p.about)
       : '<span class="pp-empty-hint">Партнёр пока не добавил описание.</span>';
@@ -326,10 +302,7 @@
       ? "Мой профиль для партнёра"
       : "Профиль партнёра";
 
-    const summaryChips = [...p.products, ...p.services, ...p.renovationStages].slice(0, 8);
-
     dialogBody.innerHTML = `
-      ${reciprocalNote}
       <section class="pw-summary" data-testid="pw-summary">
         <div class="pw-summary-header">
           <div class="pw-avatar" aria-hidden="true">${escapeHtml(initials(p.displayName))}</div>
@@ -342,39 +315,27 @@
           </div>
           <span class="pw-status">${escapeHtml(cooperation.status)}</span>
         </div>
-        <dl class="pw-facts">
-          ${renderFactsGrid(p, cooperation)}
-        </dl>
-        <div class="pw-review-directions">
-          <h3>Направления</h3>
-          ${chipList(summaryChips, "Партнёр пока не указал направления.")}
-        </div>
-        <div class="pw-summary-actions">
-          <div class="pw-id-block">
-            <label for="partner-id-field">ID партнёра</label>
-            <div class="pw-id-row">
-              <input
-                type="text"
-                class="pw-id-value"
-                id="partner-id-field"
-                readonly
-                value="${escapeAttr(idDisplay)}"
-                aria-describedby="partner-id-help"
-              />
-              <button
-                type="button"
-                class="pp-btn"
-                id="copy-partner-id"
-                ${idAvailable ? "" : "disabled"}
-              >
-                Копировать
-              </button>
-            </div>
-            <p class="pw-copy-status" id="copy-status" role="status" aria-live="polite"></p>
-            <p class="pp-empty-hint" id="partner-id-help" style="margin-top:6px">
-              Демо-ID. На сайте — ID из профиля партнёра.
-            </p>
+        <div class="pw-summary-id">
+          <label for="partner-id-field">ID партнёра</label>
+          <div class="pw-id-row">
+            <input
+              type="text"
+              class="pw-id-value"
+              id="partner-id-field"
+              readonly
+              value="${escapeAttr(idDisplay)}"
+              aria-label="ID партнёра"
+            />
+            <button
+              type="button"
+              class="pp-btn pp-btn--copy"
+              id="copy-partner-id"
+              ${idAvailable ? "" : "disabled"}
+            >
+              Копировать
+            </button>
           </div>
+          <p class="pw-copy-status" id="copy-status" role="status" aria-live="polite"></p>
         </div>
       </section>
       <section class="pp-section" aria-labelledby="sec-about">
@@ -404,10 +365,9 @@
       </section>
       <section class="pp-section pp-section--cooperation" aria-labelledby="sec-coop">
         <h3 id="sec-coop">Ваше сотрудничество</h3>
-        <ul>
-          <li><strong>Статус:</strong> ${escapeHtml(cooperation.status)}</li>
-          <li><strong>С ${escapeHtml(cooperation.since)}</strong></li>
-          <li><strong>Условия:</strong> ${escapeHtml(cooperation.terms)}</li>
+        <ul class="pp-coop-list">
+          <li>С ${escapeHtml(cooperation.since)}</li>
+          <li>${escapeHtml(cooperation.terms)}</li>
         </ul>
         ${
           cooperation.note
