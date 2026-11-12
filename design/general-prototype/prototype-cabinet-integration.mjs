@@ -58,6 +58,20 @@ assert.match(
 const walletHistoryHtml = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
 assert.match(walletHistoryHtml, /wallet-open-receipt-145/, "147 accrual detail opens receipt 145");
 
+for (const broken of [
+  "partner/recommendation.html",
+  "partner/assignment.html",
+  "partner/observer.html",
+]) {
+  const html = readFileSync(path.join(root, broken), "utf8");
+  assert.doesNotMatch(
+    html,
+    /<script data-pplx-inline-edit>[\s\S]*?<link[\s\S]*?prototype-cabinet-embed/,
+    `${broken} embed tags must not live inside inline-edit script`,
+  );
+  assert.match(html, /prototype-cabinet-embed\.css/, `${broken} embed css in document`);
+}
+
 for (const n of [143, 144, 147]) {
   const file = {
     143: "partner/partner-cooperation-detail.html",
