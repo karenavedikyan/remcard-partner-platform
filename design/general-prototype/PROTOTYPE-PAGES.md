@@ -1,6 +1,6 @@
 # Каталог страниц прототипа (книжная нумерация)
 
-Один стабильный номер на логический экран. Модали/фильтры не меняют номер. R2 в оглавлении недоступен в релизе 1 (без rc_demo_release в ссылках).
+Один стабильный номер на логический экран-шаблон. Состояния внутри шаблона (фильтры, ID сущностей) номер не меняют. Вложенные экраны «Клиенты» и кошелька — отдельные номера; в оглавлении без прямой ссылки указано, как открыть в кабинете. R2 в оглавлении недоступен в релизе 1.
 
 | N | ID | Название |
 | --- | --- | --- |
@@ -53,63 +53,106 @@
 | 47 | `admin:settings` | Админ · настройки |
 | 48 | `partner:registration` | Партнёр · регистрация и вход |
 | 49 | `partner:specialist:home` | Кабинет специалиста · главная |
-| 50 | `partner:specialist:clients` | Кабинет специалиста · клиенты |
-| 51 | `partner:specialist:partners` | Кабинет специалиста · партнёры |
-| 52 | `partner:specialist:recommendations` | Кабинет специалиста · сертификаты |
-| 53 | `partner:specialist:bonus` | Кабинет специалиста · кошелёк |
-| 54 | `partner:specialist:scanner` | Кабинет специалиста · сканер |
-| 55 | `partner:specialist:procurement` | Кабинет специалиста · закупки (R2) |
-| 56 | `partner:specialist:care` | Кабинет специалиста · забота (R2) |
-| 57 | `partner:specialist:profile` | Кабинет специалиста · профиль |
-| 58 | `partner:store:home` | Кабинет магазина · главная |
-| 59 | `partner:store:clients` | Кабинет магазина · клиенты |
-| 60 | `partner:store:recommendations` | Кабинет магазина · сертификаты |
-| 61 | `partner:store:partners` | Кабинет магазина · партнёры |
-| 62 | `partner:store:scanner` | Кабинет магазина · сканер |
-| 63 | `partner:store:history` | Кабинет магазина · история |
-| 64 | `partner:store:settlements` | Кабинет магазина · кошелёк |
-| 65 | `partner:store:procurement` | Кабинет магазина · закупки (R2) |
-| 66 | `partner:store:care` | Кабинет магазина · забота (R2) |
-| 67 | `partner:store:profile` | Кабинет магазина · профиль |
-| 68 | `partner:company:home` | Кабинет компании · главная |
-| 69 | `partner:company:recommendations` | Кабинет компании · сертификаты |
-| 70 | `partner:company:partners` | Кабинет компании · партнёры |
-| 71 | `partner:company:clients` | Кабинет компании · клиенты |
-| 72 | `partner:company:scanner` | Кабинет компании · сканер |
-| 73 | `partner:company:history` | Кабинет компании · история |
-| 74 | `partner:company:settlements` | Кабинет компании · кошелёк |
-| 75 | `partner:company:team` | Кабинет компании · сотрудники |
-| 76 | `partner:company:procurement` | Кабинет компании · закупки (R2) |
-| 77 | `partner:company:care` | Кабинет компании · забота (R2) |
-| 78 | `partner:company:profile` | Кабинет компании · профиль |
-| 79 | `partner:agent:home` | Кабинет агента · главная |
-| 80 | `partner:agent:clients` | Кабинет агента · клиенты |
-| 81 | `partner:agent:partners` | Кабинет агента · партнёры |
-| 82 | `partner:agent:recommendations` | Кабинет агента · сертификаты |
-| 83 | `partner:agent:bonus` | Кабинет агента · кошелёк |
-| 84 | `partner:agent:procurement` | Кабинет агента · закупки (R2) |
-| 85 | `partner:agent:care` | Кабинет агента · забота (R2) |
-| 86 | `partner:agent:profile` | Кабинет агента · профиль |
-| 87 | `partner:employee:home` | Кабинет сотрудника · главная |
-| 88 | `partner:employee:partners` | Кабинет сотрудника · партнёры |
-| 89 | `partner:employee:clients` | Кабинет сотрудника · клиенты |
-| 90 | `partner:employee:scanner` | Кабинет сотрудника · сканер |
-| 91 | `partner:employee:history` | Кабинет сотрудника · история |
-| 92 | `partner:employee:settlements` | Кабинет сотрудника · кошелёк |
-| 93 | `partner:employee:team` | Кабинет сотрудника · сотрудники |
-| 94 | `partner:employee:links` | Кабинет сотрудника · приглашения |
-| 95 | `partner:employee:procurement` | Кабинет сотрудника · закупки (R2) |
-| 96 | `partner:employee:care` | Кабинет сотрудника · забота (R2) |
-| 97 | `partner:employee:profile` | Кабинет сотрудника · профиль |
-| 98 | `partner:legacy` | Партнёр · legacy |
-| 99 | `partner:certificate-guest` | Гостевой сертификат |
-| 100 | `partner:recommendation-guest` | Гостевая рекомендация |
-| 101 | `partner:assignment-guest` | Поручение исполнителю |
-| 102 | `partner:observer-guest` | Наблюдение за объектом |
-| 103 | `partner:cooperation-detail` | Деталь сотрудничества |
-| 104 | `partner:purchase-detail` | Деталь покупки |
-| 105 | `partner:reward-receipt` | Квитанция вознаграждения |
-| 106 | `partner:scan-transaction` | Сканер · эталон |
-| 107 | `partner:wallet-history` | История кошелька |
-
-**Всего: 107 страниц.** Добавляйте новые в конец.
+| 50 | `partner:specialist:partners` | Кабинет специалиста · партнёры |
+| 51 | `partner:specialist:recommendations` | Кабинет специалиста · сертификаты |
+| 52 | `partner:specialist:procurement` | Кабинет специалиста · закупки (R2) |
+| 53 | `partner:specialist:care` | Кабинет специалиста · забота (R2) |
+| 54 | `partner:specialist:profile` | Кабинет специалиста · профиль |
+| 55 | `partner:store:home` | Кабинет магазина · главная |
+| 56 | `partner:store:recommendations` | Кабинет магазина · сертификаты |
+| 57 | `partner:store:partners` | Кабинет магазина · партнёры |
+| 58 | `partner:store:history` | Кабинет магазина · история |
+| 59 | `partner:store:procurement` | Кабинет магазина · закупки (R2) |
+| 60 | `partner:store:care` | Кабинет магазина · забота (R2) |
+| 61 | `partner:store:profile` | Кабинет магазина · профиль |
+| 62 | `partner:company:home` | Кабинет компании · главная |
+| 63 | `partner:company:recommendations` | Кабинет компании · сертификаты |
+| 64 | `partner:company:partners` | Кабинет компании · партнёры |
+| 65 | `partner:company:history` | Кабинет компании · история |
+| 66 | `partner:company:team` | Кабинет компании · сотрудники |
+| 67 | `partner:company:procurement` | Кабинет компании · закупки (R2) |
+| 68 | `partner:company:care` | Кабинет компании · забота (R2) |
+| 69 | `partner:company:profile` | Кабинет компании · профиль |
+| 70 | `partner:agent:home` | Кабинет агента · главная |
+| 71 | `partner:agent:partners` | Кабинет агента · партнёры |
+| 72 | `partner:agent:recommendations` | Кабинет агента · сертификаты |
+| 73 | `partner:agent:procurement` | Кабинет агента · закупки (R2) |
+| 74 | `partner:agent:care` | Кабинет агента · забота (R2) |
+| 75 | `partner:agent:profile` | Кабинет агента · профиль |
+| 76 | `partner:employee:home` | Кабинет сотрудника · главная |
+| 77 | `partner:employee:partners` | Кабинет сотрудника · партнёры |
+| 78 | `partner:employee:history` | Кабинет сотрудника · история |
+| 79 | `partner:employee:team` | Кабинет сотрудника · сотрудники |
+| 80 | `partner:employee:links` | Кабинет сотрудника · приглашения |
+| 81 | `partner:employee:procurement` | Кабинет сотрудника · закупки (R2) |
+| 82 | `partner:employee:care` | Кабинет сотрудника · забота (R2) |
+| 83 | `partner:employee:profile` | Кабинет сотрудника · профиль |
+| 84 | `partner:specialist:clients-list` | Кабинет специалиста · Клиенты |
+| 85 | `partner:specialist:clients-detail` | Кабинет специалиста · Обращение |
+| 86 | `partner:specialist:clients-scan` | Кабинет специалиста · Сканировать сертификат |
+| 87 | `partner:specialist:clients-manual` | Кабинет специалиста · Добавить клиента |
+| 88 | `partner:specialist:clients-settings` | Кабинет специалиста · Этапы и причины |
+| 89 | `partner:specialist:clients-purchase` | Кабинет специалиста · Покупка |
+| 90 | `partner:specialist:clients-analytics` | Кабинет специалиста · Аналитика |
+| 91 | `partner:specialist:clients-observer-partner` | Кабинет специалиста · Клиенты у партнёра |
+| 92 | `partner:specialist:clients-observer-client` | Кабинет специалиста · Статус направления |
+| 93 | `partner:store:clients-list` | Кабинет магазина · Клиенты |
+| 94 | `partner:store:clients-detail` | Кабинет магазина · Обращение |
+| 95 | `partner:store:clients-scan` | Кабинет магазина · Сканировать сертификат |
+| 96 | `partner:store:clients-manual` | Кабинет магазина · Добавить клиента |
+| 97 | `partner:store:clients-settings` | Кабинет магазина · Этапы и причины |
+| 98 | `partner:store:clients-purchase` | Кабинет магазина · Покупка |
+| 99 | `partner:store:clients-analytics` | Кабинет магазина · Аналитика |
+| 100 | `partner:store:clients-observer-partner` | Кабинет магазина · Клиенты у партнёра |
+| 101 | `partner:store:clients-observer-client` | Кабинет магазина · Статус направления |
+| 102 | `partner:company:clients-list` | Кабинет компании · Клиенты |
+| 103 | `partner:company:clients-detail` | Кабинет компании · Обращение |
+| 104 | `partner:company:clients-scan` | Кабинет компании · Сканировать сертификат |
+| 105 | `partner:company:clients-manual` | Кабинет компании · Добавить клиента |
+| 106 | `partner:company:clients-settings` | Кабинет компании · Этапы и причины |
+| 107 | `partner:company:clients-purchase` | Кабинет компании · Покупка |
+| 108 | `partner:company:clients-analytics` | Кабинет компании · Аналитика |
+| 109 | `partner:company:clients-observer-partner` | Кабинет компании · Клиенты у партнёра |
+| 110 | `partner:company:clients-observer-client` | Кабинет компании · Статус направления |
+| 111 | `partner:agent:clients-list` | Кабинет агента · Клиенты |
+| 112 | `partner:agent:clients-detail` | Кабинет агента · Обращение |
+| 113 | `partner:agent:clients-scan` | Кабинет агента · Сканировать сертификат |
+| 114 | `partner:agent:clients-manual` | Кабинет агента · Добавить клиента |
+| 115 | `partner:agent:clients-settings` | Кабинет агента · Этапы и причины |
+| 116 | `partner:agent:clients-purchase` | Кабинет агента · Покупка |
+| 117 | `partner:agent:clients-analytics` | Кабинет агента · Аналитика |
+| 118 | `partner:agent:clients-observer-partner` | Кабинет агента · Клиенты у партнёра |
+| 119 | `partner:agent:clients-observer-client` | Кабинет агента · Статус направления |
+| 120 | `partner:employee:clients-list` | Кабинет сотрудника · Клиенты |
+| 121 | `partner:employee:clients-detail` | Кабинет сотрудника · Обращение |
+| 122 | `partner:employee:clients-scan` | Кабинет сотрудника · Сканировать сертификат |
+| 123 | `partner:employee:clients-manual` | Кабинет сотрудника · Добавить клиента |
+| 124 | `partner:employee:clients-settings` | Кабинет сотрудника · Этапы и причины |
+| 125 | `partner:employee:clients-purchase` | Кабинет сотрудника · Покупка |
+| 126 | `partner:employee:clients-analytics` | Кабинет сотрудника · Аналитика |
+| 127 | `partner:employee:clients-observer-partner` | Кабинет сотрудника · Клиенты у партнёра |
+| 128 | `partner:employee:clients-observer-client` | Кабинет сотрудника · Статус направления |
+| 129 | `partner:store:settlements-accruals` | Кабинет магазина · кошелёк · Взаиморасчёты (обзор) |
+| 130 | `partner:store:settlements-requisites` | Кабинет магазина · кошелёк · Реквизиты |
+| 131 | `partner:store:settlements-master-ledger` | Кабинет магазина · кошелёк · Реестр и сверка |
+| 132 | `partner:company:settlements-accruals` | Кабинет компании · кошелёк · Взаиморасчёты (обзор) |
+| 133 | `partner:company:settlements-requisites` | Кабинет компании · кошелёк · Реквизиты |
+| 134 | `partner:company:settlements-master-ledger` | Кабинет компании · кошелёк · Реестр и сверка |
+| 135 | `partner:employee:settlements-accruals` | Кабинет сотрудника · кошелёк · Взаиморасчёты (обзор) |
+| 136 | `partner:employee:settlements-requisites` | Кабинет сотрудника · кошелёк · Реквизиты |
+| 137 | `partner:employee:settlements-master-ledger` | Кабинет сотрудника · кошелёк · Реестр и сверка |
+| 138 | `partner:agent:bonus-accruals` | Кабинет агента · кошелёк · Взаиморасчёты (обзор) |
+| 139 | `partner:agent:bonus-requisites` | Кабинет агента · кошелёк · Реквизиты |
+| 140 | `partner:agent:bonus-agent-registry` | Кабинет агента · кошелёк · Реестр начислений агента |
+| 141 | `partner:specialist:bonus-accruals` | Кабинет специалиста · кошелёк · Взаиморасчёты (обзор) |
+| 142 | `partner:specialist:bonus-requisites` | Кабинет специалиста · кошелёк · Реквизиты |
+| 143 | `partner:legacy` | Партнёр · legacy |
+| 144 | `partner:certificate-guest` | Гостевой сертификат |
+| 145 | `partner:recommendation-guest` | Гостевая рекомендация |
+| 146 | `partner:assignment-guest` | Поручение исполнителю |
+| 147 | `partner:observer-guest` | Наблюдение за объектом |
+| 148 | `partner:cooperation-detail` | Деталь сотрудничества |
+| 149 | `partner:purchase-detail` | Деталь покупки |
+| 150 | `partner:reward-receipt` | Квитанция вознаграждения |
+| 151 | `partner:scan-transaction` | Сканер · эталон |
+| 152 | `partner:wallet-history` | История кошелька |

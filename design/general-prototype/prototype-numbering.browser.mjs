@@ -108,7 +108,7 @@ try {
     catalogLen: window.PROTOTYPE_PAGE_CATALOG?.length || 0,
     tocHrefs: [...document.querySelectorAll(".proto-page-list a")].map((a) => a.getAttribute("href") || ""),
   }));
-  assert.equal(catalogLen, 107);
+  assert.equal(catalogLen, 152);
   assert.ok(tocHrefs.length > 0);
   for (const h of tocHrefs) {
     assert.doesNotMatch(h, /rc_demo_release/, `TOC href must not gate R2: ${h}`);
@@ -117,7 +117,7 @@ try {
   await page.goto(`${hosted}/partner/roles.html?role=agent&open=bonus`, { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
   pageId = await page.evaluate(() => window.protoResolvePage()?.id);
-  assert.equal(pageId, "partner:agent:bonus");
+  assert.equal(pageId, "partner:agent:bonus-accruals");
 
   await assertChromeIdle(page);
 

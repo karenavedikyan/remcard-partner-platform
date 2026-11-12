@@ -1,9 +1,9 @@
 /** Book page reviewer chrome. See PROTOTYPE-PAGES.md */
 const PAGE_DEFS = [
   { n: 1, id: "hub", title: "Общий вход прототипа", zone: "hub", rel: "index.html" },
-  { n: 2, id: "client:home", title: "Клиент · главная", zone: "client", clientRoutes: ["home", ""], r2: false },
+  { n: 2, id: "client:home", title: "Клиент · главная", zone: "client", clientRoutes: ["home",""], r2: false },
   { n: 3, id: "client:login", title: "Клиент · вход", zone: "client", clientRoutes: ["login"], r2: false },
-  { n: 4, id: "client:register", title: "Клиент · регистрация", zone: "client", clientRoutes: ["register", "signup"], r2: false },
+  { n: 4, id: "client:register", title: "Клиент · регистрация", zone: "client", clientRoutes: ["register","signup"], r2: false },
   { n: 5, id: "client:catalog", title: "Клиент · каталог", zone: "client", clientRoutes: ["catalog"], r2: false },
   { n: 6, id: "client:product", title: "Клиент · карточка товара", zone: "client", clientRoutes: ["product/*"], r2: false },
   { n: 7, id: "client:client-retained", title: "Клиент · сохранённое (client-retained)", zone: "client", clientRoutes: ["client-retained"], r2: false },
@@ -16,13 +16,13 @@ const PAGE_DEFS = [
   { n: 14, id: "client:account-certificates", title: "Клиент · мои сертификаты", zone: "client", clientRoutes: ["account/certificates"], r2: false },
   { n: 15, id: "client:cert", title: "Клиент · сертификат (витрина)", zone: "client", clientRoutes: ["cert"], r2: false },
   { n: 16, id: "client:cert-detail", title: "Клиент · сертификат (код)", zone: "client", clientRoutes: ["cert/*"], r2: false },
-  { n: 17, id: "client:care", title: "Клиент · забота (R2)", zone: "client", clientRoutes: ["care", "services", "care/*"], r2: true },
+  { n: 17, id: "client:care", title: "Клиент · забота (R2)", zone: "client", clientRoutes: ["care","services","care/*"], r2: true },
   { n: 18, id: "client:calc", title: "Клиент · калькулятор", zone: "client", clientRoutes: ["calc"], r2: false },
   { n: 19, id: "client:calc-materials", title: "Клиент · калькулятор материалов", zone: "client", clientRoutes: ["calc/materials"], r2: false },
-  { n: 20, id: "client:calc-object", title: "Клиент · калькулятор объекта", zone: "client", clientRoutes: ["calc/object", "calc/objects"], r2: false },
+  { n: 20, id: "client:calc-object", title: "Клиент · калькулятор объекта", zone: "client", clientRoutes: ["calc/object","calc/objects"], r2: false },
   { n: 21, id: "client:matcalc", title: "Клиент · matcalc", zone: "client", clientRoutes: ["matcalc"], r2: false },
-  { n: 22, id: "client:matcalc-materials", title: "Клиент · matcalc материалы", zone: "client", clientRoutes: ["matcalc/materials", "matcalc/*"], r2: false },
-  { n: 23, id: "client:extras-projects", title: "Клиент · проекты (extras)", zone: "client", clientRoutes: ["extras/projects", "projects", "extras/*"], r2: false },
+  { n: 22, id: "client:matcalc-materials", title: "Клиент · matcalc материалы", zone: "client", clientRoutes: ["matcalc/materials","matcalc/*"], r2: false },
+  { n: 23, id: "client:extras-projects", title: "Клиент · проекты (extras)", zone: "client", clientRoutes: ["extras/projects","projects","extras/*"], r2: false },
   { n: 24, id: "client:app", title: "Клиент · приложение (PWA)", zone: "client", clientRoutes: ["app"], r2: false },
   { n: 25, id: "client:cart", title: "Клиент · корзина", zone: "client", clientRoutes: ["cart"], r2: false },
   { n: 26, id: "client:checkout", title: "Клиент · оформление", zone: "client", clientRoutes: ["checkout"], r2: false },
@@ -37,7 +37,7 @@ const PAGE_DEFS = [
   { n: 35, id: "client:landing", title: "Клиент · лендинг", zone: "client", clientRoutes: ["landing"], r2: false },
   { n: 36, id: "client:retained", title: "Клиент · удерживаемый экран", zone: "client", clientRoutes: ["retained"], r2: false },
   { n: 37, id: "client:deal", title: "Клиент · сделка", zone: "client", clientRoutes: ["deal"], r2: false },
-  { n: 38, id: "client:order", title: "Клиент · заказ", zone: "client", clientRoutes: ["order", "orders"], r2: false },
+  { n: 38, id: "client:order", title: "Клиент · заказ", zone: "client", clientRoutes: ["order","orders"], r2: false },
   { n: 39, id: "admin:overview", title: "Админ · обзор", zone: "admin", adminView: "overview" },
   { n: 40, id: "admin:partners", title: "Админ · партнёры", zone: "admin", adminView: "partners" },
   { n: 41, id: "admin:clients", title: "Админ · клиенты", zone: "admin", adminView: "clients" },
@@ -48,67 +48,112 @@ const PAGE_DEFS = [
   { n: 46, id: "admin:notifications", title: "Админ · уведомления", zone: "admin", adminView: "notifications" },
   { n: 47, id: "admin:settings", title: "Админ · настройки", zone: "admin", adminView: "settings" },
   { n: 48, id: "partner:registration", title: "Партнёр · регистрация и вход", zone: "partner", rel: "partner/index.html", partnerMode: "registration" },
-  { n: 49, id: "partner:specialist:home", title: "Кабинет специалиста · главная", zone: "partner", partnerRole: "specialist", partnerSection: "home", r2: false },
-  { n: 50, id: "partner:specialist:clients", title: "Кабинет специалиста · клиенты", zone: "partner", partnerRole: "specialist", partnerSection: "clients", r2: false },
-  { n: 51, id: "partner:specialist:partners", title: "Кабинет специалиста · партнёры", zone: "partner", partnerRole: "specialist", partnerSection: "partners", r2: false },
-  { n: 52, id: "partner:specialist:recommendations", title: "Кабинет специалиста · сертификаты", zone: "partner", partnerRole: "specialist", partnerSection: "recommendations", r2: false },
-  { n: 53, id: "partner:specialist:bonus", title: "Кабинет специалиста · кошелёк", zone: "partner", partnerRole: "specialist", partnerSection: "bonus", r2: false },
-  { n: 54, id: "partner:specialist:scanner", title: "Кабинет специалиста · сканер", zone: "partner", partnerRole: "specialist", partnerSection: "scanner", r2: false },
-  { n: 55, id: "partner:specialist:procurement", title: "Кабинет специалиста · закупки (R2)", zone: "partner", partnerRole: "specialist", partnerSection: "procurement", r2: true },
-  { n: 56, id: "partner:specialist:care", title: "Кабинет специалиста · забота (R2)", zone: "partner", partnerRole: "specialist", partnerSection: "care", r2: true },
-  { n: 57, id: "partner:specialist:profile", title: "Кабинет специалиста · профиль", zone: "partner", partnerRole: "specialist", partnerSection: "profile", r2: false },
-  { n: 58, id: "partner:store:home", title: "Кабинет магазина · главная", zone: "partner", partnerRole: "store", partnerSection: "home", r2: false },
-  { n: 59, id: "partner:store:clients", title: "Кабинет магазина · клиенты", zone: "partner", partnerRole: "store", partnerSection: "clients", r2: false },
-  { n: 60, id: "partner:store:recommendations", title: "Кабинет магазина · сертификаты", zone: "partner", partnerRole: "store", partnerSection: "recommendations", r2: false },
-  { n: 61, id: "partner:store:partners", title: "Кабинет магазина · партнёры", zone: "partner", partnerRole: "store", partnerSection: "partners", r2: false },
-  { n: 62, id: "partner:store:scanner", title: "Кабинет магазина · сканер", zone: "partner", partnerRole: "store", partnerSection: "scanner", r2: false },
-  { n: 63, id: "partner:store:history", title: "Кабинет магазина · история", zone: "partner", partnerRole: "store", partnerSection: "history", r2: false },
-  { n: 64, id: "partner:store:settlements", title: "Кабинет магазина · кошелёк", zone: "partner", partnerRole: "store", partnerSection: "settlements", r2: false },
-  { n: 65, id: "partner:store:procurement", title: "Кабинет магазина · закупки (R2)", zone: "partner", partnerRole: "store", partnerSection: "procurement", r2: true },
-  { n: 66, id: "partner:store:care", title: "Кабинет магазина · забота (R2)", zone: "partner", partnerRole: "store", partnerSection: "care", r2: true },
-  { n: 67, id: "partner:store:profile", title: "Кабинет магазина · профиль", zone: "partner", partnerRole: "store", partnerSection: "profile", r2: false },
-  { n: 68, id: "partner:company:home", title: "Кабинет компании · главная", zone: "partner", partnerRole: "company", partnerSection: "home", r2: false },
-  { n: 69, id: "partner:company:recommendations", title: "Кабинет компании · сертификаты", zone: "partner", partnerRole: "company", partnerSection: "recommendations", r2: false },
-  { n: 70, id: "partner:company:partners", title: "Кабинет компании · партнёры", zone: "partner", partnerRole: "company", partnerSection: "partners", r2: false },
-  { n: 71, id: "partner:company:clients", title: "Кабинет компании · клиенты", zone: "partner", partnerRole: "company", partnerSection: "clients", r2: false },
-  { n: 72, id: "partner:company:scanner", title: "Кабинет компании · сканер", zone: "partner", partnerRole: "company", partnerSection: "scanner", r2: false },
-  { n: 73, id: "partner:company:history", title: "Кабинет компании · история", zone: "partner", partnerRole: "company", partnerSection: "history", r2: false },
-  { n: 74, id: "partner:company:settlements", title: "Кабинет компании · кошелёк", zone: "partner", partnerRole: "company", partnerSection: "settlements", r2: false },
-  { n: 75, id: "partner:company:team", title: "Кабинет компании · сотрудники", zone: "partner", partnerRole: "company", partnerSection: "team", r2: false },
-  { n: 76, id: "partner:company:procurement", title: "Кабинет компании · закупки (R2)", zone: "partner", partnerRole: "company", partnerSection: "procurement", r2: true },
-  { n: 77, id: "partner:company:care", title: "Кабинет компании · забота (R2)", zone: "partner", partnerRole: "company", partnerSection: "care", r2: true },
-  { n: 78, id: "partner:company:profile", title: "Кабинет компании · профиль", zone: "partner", partnerRole: "company", partnerSection: "profile", r2: false },
-  { n: 79, id: "partner:agent:home", title: "Кабинет агента · главная", zone: "partner", partnerRole: "agent", partnerSection: "home", r2: false },
-  { n: 80, id: "partner:agent:clients", title: "Кабинет агента · клиенты", zone: "partner", partnerRole: "agent", partnerSection: "clients", r2: false },
-  { n: 81, id: "partner:agent:partners", title: "Кабинет агента · партнёры", zone: "partner", partnerRole: "agent", partnerSection: "partners", r2: false },
-  { n: 82, id: "partner:agent:recommendations", title: "Кабинет агента · сертификаты", zone: "partner", partnerRole: "agent", partnerSection: "recommendations", r2: false },
-  { n: 83, id: "partner:agent:bonus", title: "Кабинет агента · кошелёк", zone: "partner", partnerRole: "agent", partnerSection: "bonus", r2: false },
-  { n: 84, id: "partner:agent:procurement", title: "Кабинет агента · закупки (R2)", zone: "partner", partnerRole: "agent", partnerSection: "procurement", r2: true },
-  { n: 85, id: "partner:agent:care", title: "Кабинет агента · забота (R2)", zone: "partner", partnerRole: "agent", partnerSection: "care", r2: true },
-  { n: 86, id: "partner:agent:profile", title: "Кабинет агента · профиль", zone: "partner", partnerRole: "agent", partnerSection: "profile", r2: false },
-  { n: 87, id: "partner:employee:home", title: "Кабинет сотрудника · главная", zone: "partner", partnerRole: "employee", partnerSection: "home", r2: false },
-  { n: 88, id: "partner:employee:partners", title: "Кабинет сотрудника · партнёры", zone: "partner", partnerRole: "employee", partnerSection: "partners", r2: false },
-  { n: 89, id: "partner:employee:clients", title: "Кабинет сотрудника · клиенты", zone: "partner", partnerRole: "employee", partnerSection: "clients", r2: false },
-  { n: 90, id: "partner:employee:scanner", title: "Кабинет сотрудника · сканер", zone: "partner", partnerRole: "employee", partnerSection: "scanner", r2: false },
-  { n: 91, id: "partner:employee:history", title: "Кабинет сотрудника · история", zone: "partner", partnerRole: "employee", partnerSection: "history", r2: false },
-  { n: 92, id: "partner:employee:settlements", title: "Кабинет сотрудника · кошелёк", zone: "partner", partnerRole: "employee", partnerSection: "settlements", r2: false },
-  { n: 93, id: "partner:employee:team", title: "Кабинет сотрудника · сотрудники", zone: "partner", partnerRole: "employee", partnerSection: "team", r2: false },
-  { n: 94, id: "partner:employee:links", title: "Кабинет сотрудника · приглашения", zone: "partner", partnerRole: "employee", partnerSection: "links", r2: false },
-  { n: 95, id: "partner:employee:procurement", title: "Кабинет сотрудника · закупки (R2)", zone: "partner", partnerRole: "employee", partnerSection: "procurement", r2: true },
-  { n: 96, id: "partner:employee:care", title: "Кабинет сотрудника · забота (R2)", zone: "partner", partnerRole: "employee", partnerSection: "care", r2: true },
-  { n: 97, id: "partner:employee:profile", title: "Кабинет сотрудника · профиль", zone: "partner", partnerRole: "employee", partnerSection: "profile", r2: false },
-  { n: 98, id: "partner:legacy", title: "Партнёр · legacy", zone: "standalone", rel: "partner/legacy.html" },
-  { n: 99, id: "partner:certificate-guest", title: "Гостевой сертификат", zone: "standalone", rel: "partner/certificate.html" },
-  { n: 100, id: "partner:recommendation-guest", title: "Гостевая рекомендация", zone: "standalone", rel: "partner/recommendation.html" },
-  { n: 101, id: "partner:assignment-guest", title: "Поручение исполнителю", zone: "standalone", rel: "partner/assignment.html" },
-  { n: 102, id: "partner:observer-guest", title: "Наблюдение за объектом", zone: "standalone", rel: "partner/observer.html" },
-  { n: 103, id: "partner:cooperation-detail", title: "Деталь сотрудничества", zone: "standalone", rel: "partner/partner-cooperation-detail.html" },
-  { n: 104, id: "partner:purchase-detail", title: "Деталь покупки", zone: "standalone", rel: "partner/partner-purchase-detail.html" },
-  { n: 105, id: "partner:reward-receipt", title: "Квитанция вознаграждения", zone: "standalone", rel: "partner/partner-reward-receipt.html" },
-  { n: 106, id: "partner:scan-transaction", title: "Сканер · эталон", zone: "standalone", rel: "partner/partner-scan-transaction.html" },
-  { n: 107, id: "partner:wallet-history", title: "История кошелька", zone: "standalone", rel: "partner/partner-wallet-history.html" },
+  { n: 49, id: "partner:specialist:home", title: "Кабинет специалиста · главная", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "home" },
+  { n: 50, id: "partner:specialist:partners", title: "Кабинет специалиста · партнёры", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "partners" },
+  { n: 51, id: "partner:specialist:recommendations", title: "Кабинет специалиста · сертификаты", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "recommendations" },
+  { n: 52, id: "partner:specialist:procurement", title: "Кабинет специалиста · закупки (R2)", zone: "partner", r2: true, partnerRole: "specialist", partnerSection: "procurement" },
+  { n: 53, id: "partner:specialist:care", title: "Кабинет специалиста · забота (R2)", zone: "partner", r2: true, partnerRole: "specialist", partnerSection: "care" },
+  { n: 54, id: "partner:specialist:profile", title: "Кабинет специалиста · профиль", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "profile" },
+  { n: 55, id: "partner:store:home", title: "Кабинет магазина · главная", zone: "partner", r2: false, partnerRole: "store", partnerSection: "home" },
+  { n: 56, id: "partner:store:recommendations", title: "Кабинет магазина · сертификаты", zone: "partner", r2: false, partnerRole: "store", partnerSection: "recommendations" },
+  { n: 57, id: "partner:store:partners", title: "Кабинет магазина · партнёры", zone: "partner", r2: false, partnerRole: "store", partnerSection: "partners" },
+  { n: 58, id: "partner:store:history", title: "Кабинет магазина · история", zone: "partner", r2: false, partnerRole: "store", partnerSection: "history" },
+  { n: 59, id: "partner:store:procurement", title: "Кабинет магазина · закупки (R2)", zone: "partner", r2: true, partnerRole: "store", partnerSection: "procurement" },
+  { n: 60, id: "partner:store:care", title: "Кабинет магазина · забота (R2)", zone: "partner", r2: true, partnerRole: "store", partnerSection: "care" },
+  { n: 61, id: "partner:store:profile", title: "Кабинет магазина · профиль", zone: "partner", r2: false, partnerRole: "store", partnerSection: "profile" },
+  { n: 62, id: "partner:company:home", title: "Кабинет компании · главная", zone: "partner", r2: false, partnerRole: "company", partnerSection: "home" },
+  { n: 63, id: "partner:company:recommendations", title: "Кабинет компании · сертификаты", zone: "partner", r2: false, partnerRole: "company", partnerSection: "recommendations" },
+  { n: 64, id: "partner:company:partners", title: "Кабинет компании · партнёры", zone: "partner", r2: false, partnerRole: "company", partnerSection: "partners" },
+  { n: 65, id: "partner:company:history", title: "Кабинет компании · история", zone: "partner", r2: false, partnerRole: "company", partnerSection: "history" },
+  { n: 66, id: "partner:company:team", title: "Кабинет компании · сотрудники", zone: "partner", r2: false, partnerRole: "company", partnerSection: "team" },
+  { n: 67, id: "partner:company:procurement", title: "Кабинет компании · закупки (R2)", zone: "partner", r2: true, partnerRole: "company", partnerSection: "procurement" },
+  { n: 68, id: "partner:company:care", title: "Кабинет компании · забота (R2)", zone: "partner", r2: true, partnerRole: "company", partnerSection: "care" },
+  { n: 69, id: "partner:company:profile", title: "Кабинет компании · профиль", zone: "partner", r2: false, partnerRole: "company", partnerSection: "profile" },
+  { n: 70, id: "partner:agent:home", title: "Кабинет агента · главная", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "home" },
+  { n: 71, id: "partner:agent:partners", title: "Кабинет агента · партнёры", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "partners" },
+  { n: 72, id: "partner:agent:recommendations", title: "Кабинет агента · сертификаты", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "recommendations" },
+  { n: 73, id: "partner:agent:procurement", title: "Кабинет агента · закупки (R2)", zone: "partner", r2: true, partnerRole: "agent", partnerSection: "procurement" },
+  { n: 74, id: "partner:agent:care", title: "Кабинет агента · забота (R2)", zone: "partner", r2: true, partnerRole: "agent", partnerSection: "care" },
+  { n: 75, id: "partner:agent:profile", title: "Кабинет агента · профиль", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "profile" },
+  { n: 76, id: "partner:employee:home", title: "Кабинет сотрудника · главная", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "home" },
+  { n: 77, id: "partner:employee:partners", title: "Кабинет сотрудника · партнёры", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "partners" },
+  { n: 78, id: "partner:employee:history", title: "Кабинет сотрудника · история", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "history" },
+  { n: 79, id: "partner:employee:team", title: "Кабинет сотрудника · сотрудники", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "team" },
+  { n: 80, id: "partner:employee:links", title: "Кабинет сотрудника · приглашения", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "links" },
+  { n: 81, id: "partner:employee:procurement", title: "Кабинет сотрудника · закупки (R2)", zone: "partner", r2: true, partnerRole: "employee", partnerSection: "procurement" },
+  { n: 82, id: "partner:employee:care", title: "Кабинет сотрудника · забота (R2)", zone: "partner", r2: true, partnerRole: "employee", partnerSection: "care" },
+  { n: 83, id: "partner:employee:profile", title: "Кабинет сотрудника · профиль", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "profile" },
+  { n: 84, id: "partner:specialist:clients-list", title: "Кабинет специалиста · Клиенты", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "list" },
+  { n: 85, id: "partner:specialist:clients-detail", title: "Кабинет специалиста · Обращение", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
+  { n: 86, id: "partner:specialist:clients-scan", title: "Кабинет специалиста · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
+  { n: 87, id: "partner:specialist:clients-manual", title: "Кабинет специалиста · Добавить клиента", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
+  { n: 88, id: "partner:specialist:clients-settings", title: "Кабинет специалиста · Этапы и причины", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
+  { n: 89, id: "partner:specialist:clients-purchase", title: "Кабинет специалиста · Покупка", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
+  { n: 90, id: "partner:specialist:clients-analytics", title: "Кабинет специалиста · Аналитика", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  { n: 91, id: "partner:specialist:clients-observer-partner", title: "Кабинет специалиста · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
+  { n: 92, id: "partner:specialist:clients-observer-client", title: "Кабинет специалиста · Статус направления", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
+  { n: 93, id: "partner:store:clients-list", title: "Кабинет магазина · Клиенты", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "list" },
+  { n: 94, id: "partner:store:clients-detail", title: "Кабинет магазина · Обращение", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
+  { n: 95, id: "partner:store:clients-scan", title: "Кабинет магазина · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
+  { n: 96, id: "partner:store:clients-manual", title: "Кабинет магазина · Добавить клиента", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
+  { n: 97, id: "partner:store:clients-settings", title: "Кабинет магазина · Этапы и причины", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
+  { n: 98, id: "partner:store:clients-purchase", title: "Кабинет магазина · Покупка", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
+  { n: 99, id: "partner:store:clients-analytics", title: "Кабинет магазина · Аналитика", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  { n: 100, id: "partner:store:clients-observer-partner", title: "Кабинет магазина · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
+  { n: 101, id: "partner:store:clients-observer-client", title: "Кабинет магазина · Статус направления", zone: "partner", r2: false, partnerRole: "store", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
+  { n: 102, id: "partner:company:clients-list", title: "Кабинет компании · Клиенты", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "list" },
+  { n: 103, id: "partner:company:clients-detail", title: "Кабинет компании · Обращение", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
+  { n: 104, id: "partner:company:clients-scan", title: "Кабинет компании · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
+  { n: 105, id: "partner:company:clients-manual", title: "Кабинет компании · Добавить клиента", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
+  { n: 106, id: "partner:company:clients-settings", title: "Кабинет компании · Этапы и причины", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
+  { n: 107, id: "partner:company:clients-purchase", title: "Кабинет компании · Покупка", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
+  { n: 108, id: "partner:company:clients-analytics", title: "Кабинет компании · Аналитика", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  { n: 109, id: "partner:company:clients-observer-partner", title: "Кабинет компании · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
+  { n: 110, id: "partner:company:clients-observer-client", title: "Кабинет компании · Статус направления", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
+  { n: 111, id: "partner:agent:clients-list", title: "Кабинет агента · Клиенты", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "list" },
+  { n: 112, id: "partner:agent:clients-detail", title: "Кабинет агента · Обращение", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
+  { n: 113, id: "partner:agent:clients-scan", title: "Кабинет агента · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
+  { n: 114, id: "partner:agent:clients-manual", title: "Кабинет агента · Добавить клиента", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
+  { n: 115, id: "partner:agent:clients-settings", title: "Кабинет агента · Этапы и причины", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
+  { n: 116, id: "partner:agent:clients-purchase", title: "Кабинет агента · Покупка", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
+  { n: 117, id: "partner:agent:clients-analytics", title: "Кабинет агента · Аналитика", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  { n: 118, id: "partner:agent:clients-observer-partner", title: "Кабинет агента · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
+  { n: 119, id: "partner:agent:clients-observer-client", title: "Кабинет агента · Статус направления", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
+  { n: 120, id: "partner:employee:clients-list", title: "Кабинет сотрудника · Клиенты", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "list" },
+  { n: 121, id: "partner:employee:clients-detail", title: "Кабинет сотрудника · Обращение", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
+  { n: 122, id: "partner:employee:clients-scan", title: "Кабинет сотрудника · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
+  { n: 123, id: "partner:employee:clients-manual", title: "Кабинет сотрудника · Добавить клиента", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
+  { n: 124, id: "partner:employee:clients-settings", title: "Кабинет сотрудника · Этапы и причины", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
+  { n: 125, id: "partner:employee:clients-purchase", title: "Кабинет сотрудника · Покупка", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
+  { n: 126, id: "partner:employee:clients-analytics", title: "Кабинет сотрудника · Аналитика", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  { n: 127, id: "partner:employee:clients-observer-partner", title: "Кабинет сотрудника · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
+  { n: 128, id: "partner:employee:clients-observer-client", title: "Кабинет сотрудника · Статус направления", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
+  { n: 129, id: "partner:store:settlements-accruals", title: "Кабинет магазина · кошелёк · Взаиморасчёты (обзор)", zone: "partner", r2: false, partnerRole: "store", partnerSection: "settlements", walletTemplate: "accruals" },
+  { n: 130, id: "partner:store:settlements-requisites", title: "Кабинет магазина · кошелёк · Реквизиты", zone: "partner", r2: false, partnerRole: "store", partnerSection: "settlements", walletTemplate: "requisites", tocOpen: "Кошелёк → вкладка «Реквизиты»" },
+  { n: 131, id: "partner:store:settlements-master-ledger", title: "Кабинет магазина · кошелёк · Реестр и сверка", zone: "partner", r2: false, partnerRole: "store", partnerSection: "settlements", walletTemplate: "master-ledger", tocOpen: "Кошелёк → «Реестр, сверка и Excel»" },
+  { n: 132, id: "partner:company:settlements-accruals", title: "Кабинет компании · кошелёк · Взаиморасчёты (обзор)", zone: "partner", r2: false, partnerRole: "company", partnerSection: "settlements", walletTemplate: "accruals" },
+  { n: 133, id: "partner:company:settlements-requisites", title: "Кабинет компании · кошелёк · Реквизиты", zone: "partner", r2: false, partnerRole: "company", partnerSection: "settlements", walletTemplate: "requisites", tocOpen: "Кошелёк → вкладка «Реквизиты»" },
+  { n: 134, id: "partner:company:settlements-master-ledger", title: "Кабинет компании · кошелёк · Реестр и сверка", zone: "partner", r2: false, partnerRole: "company", partnerSection: "settlements", walletTemplate: "master-ledger", tocOpen: "Кошелёк → «Реестр, сверка и Excel»" },
+  { n: 135, id: "partner:employee:settlements-accruals", title: "Кабинет сотрудника · кошелёк · Взаиморасчёты (обзор)", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "settlements", walletTemplate: "accruals" },
+  { n: 136, id: "partner:employee:settlements-requisites", title: "Кабинет сотрудника · кошелёк · Реквизиты", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "settlements", walletTemplate: "requisites", tocOpen: "Кошелёк → вкладка «Реквизиты»" },
+  { n: 137, id: "partner:employee:settlements-master-ledger", title: "Кабинет сотрудника · кошелёк · Реестр и сверка", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "settlements", walletTemplate: "master-ledger", tocOpen: "Кошелёк → «Реестр, сверка и Excel»" },
+  { n: 138, id: "partner:agent:bonus-accruals", title: "Кабинет агента · кошелёк · Взаиморасчёты (обзор)", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "bonus", walletTemplate: "accruals" },
+  { n: 139, id: "partner:agent:bonus-requisites", title: "Кабинет агента · кошелёк · Реквизиты", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "bonus", walletTemplate: "requisites", tocOpen: "Кошелёк → вкладка «Реквизиты»" },
+  { n: 140, id: "partner:agent:bonus-agent-registry", title: "Кабинет агента · кошелёк · Реестр начислений агента", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "bonus", walletTemplate: "agent-registry", tocOpen: "Кошелёк агента → «Реестр начислений агента»" },
+  { n: 141, id: "partner:specialist:bonus-accruals", title: "Кабинет специалиста · кошелёк · Взаиморасчёты (обзор)", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "bonus", walletTemplate: "accruals" },
+  { n: 142, id: "partner:specialist:bonus-requisites", title: "Кабинет специалиста · кошелёк · Реквизиты", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "bonus", walletTemplate: "requisites", tocOpen: "Кошелёк → вкладка «Реквизиты»" },
+  { n: 143, id: "partner:legacy", title: "Партнёр · legacy", zone: "standalone", rel: "partner/legacy.html" },
+  { n: 144, id: "partner:certificate-guest", title: "Гостевой сертификат", zone: "standalone", rel: "partner/certificate.html" },
+  { n: 145, id: "partner:recommendation-guest", title: "Гостевая рекомендация", zone: "standalone", rel: "partner/recommendation.html" },
+  { n: 146, id: "partner:assignment-guest", title: "Поручение исполнителю", zone: "standalone", rel: "partner/assignment.html" },
+  { n: 147, id: "partner:observer-guest", title: "Наблюдение за объектом", zone: "standalone", rel: "partner/observer.html" },
+  { n: 148, id: "partner:cooperation-detail", title: "Деталь сотрудничества", zone: "standalone", rel: "partner/partner-cooperation-detail.html" },
+  { n: 149, id: "partner:purchase-detail", title: "Деталь покупки", zone: "standalone", rel: "partner/partner-purchase-detail.html" },
+  { n: 150, id: "partner:reward-receipt", title: "Квитанция вознаграждения", zone: "standalone", rel: "partner/partner-reward-receipt.html" },
+  { n: 151, id: "partner:scan-transaction", title: "Сканер · эталон", zone: "standalone", rel: "partner/partner-scan-transaction.html" },
+  { n: 152, id: "partner:wallet-history", title: "История кошелька", zone: "standalone", rel: "partner/partner-wallet-history.html" },
 ];
-// TOTAL 107
+// TOTAL 152
 
 (function protoPageNumbering() {
   if (typeof window === "undefined" || window.__protoPageNumberingBooted) return;
@@ -242,6 +287,53 @@ const PAGE_DEFS = [
     return { mode: "cabinet", role, section };
   }
 
+  function readClientAppealsView() {
+    if (document.querySelector('[data-testid="ca-observer-partner-page"]')) return "observer-partner";
+    if (document.querySelector('[data-testid="ca-observer-client-page"]')) return "observer-client";
+    const root = document.querySelector("[data-ca-root]");
+    if (!root) return null;
+    if (root.querySelector(".ca-scan")) return "scan";
+    if (root.querySelector(".ca-manual-form")) return "manual";
+    if (root.querySelector(".ca-settings-grid")) return "settings";
+    if (root.querySelector(".ca-purchase")) return "purchase";
+    if (root.querySelector(".ca-funnel")) return "analytics";
+    if (root.querySelector(".ca-detail-layout")) return "detail";
+    const back = document.querySelector('[data-testid="ca-clients-back"]');
+    if (back) {
+      const act = back.getAttribute("data-ca-action") || "";
+      if (act === "nav:observer-list") return "observer-partner";
+      if (act === "nav:observer-partner") return "observer-client";
+      if (act === "nav:detail") return "purchase";
+      if (act === "nav:list" || act === "nav:cabinet") return "detail";
+    }
+    return "list";
+  }
+
+  function readWalletTemplate() {
+    const shell = document.querySelector('[data-testid="wallet-shell"]');
+    if (!shell) return null;
+    const panel = shell.getAttribute("data-wallet-panel") || "";
+    if (panel === "master-ledger" || document.querySelector("[data-testid='settlement-demo'].is-master-ledger")) {
+      return "master-ledger";
+    }
+    if (panel === "agent-registry") return "agent-registry";
+    if (panel === "requisites" || shell.getAttribute("data-wallet-tab") === "requisites") return "requisites";
+    return "accruals";
+  }
+
+  function resolvePartnerCabinetPage(ctx) {
+    const { role, section } = ctx;
+    if (section === "clients" || section === "scanner") {
+      const view = readClientAppealsView() || (section === "scanner" ? "scan" : "list");
+      return byId.get(`partner:${role}:clients-${view}`) || byId.get(`partner:${role}:clients-list`);
+    }
+    if (section === "bonus" || section === "settlements") {
+      const tpl = readWalletTemplate() || "accruals";
+      return byId.get(`partner:${role}:${section}-${tpl}`) || byId.get(`partner:${role}:${section}-accruals`);
+    }
+    return byId.get(`partner:${role}:${section}`) || byId.get(`partner:${role}:home`);
+  }
+
   function resolveCurrentPage() {
     const rel = pathnameRel();
     if (rel === "index.html") return byId.get("hub");
@@ -257,8 +349,7 @@ const PAGE_DEFS = [
     if (rel === "partner/index.html" || rel === "partner/roles.html") {
       const ctx = partnerContext();
       if (!ctx || ctx.mode === "registration") return byId.get("partner:registration");
-      const id = `partner:${ctx.role}:${ctx.section}`;
-      return byId.get(id) || byId.get(`partner:${ctx.role}:home`);
+      return resolvePartnerCabinetPage(ctx);
     }
     return byId.get("hub");
   }
@@ -308,8 +399,10 @@ const PAGE_DEFS = [
       }
       document.querySelector('[data-testid="view-cabinet"]')?.click();
       if (page.partnerSection && page.partnerSection !== "home") {
-        document.querySelector(`[data-action="nav:${page.partnerSection}"]`)?.click();
+        const navSection = page.partnerSection === "clients" && page.clientAppealsView === "scan" ? "scanner" : page.partnerSection;
+        document.querySelector(`[data-action="nav:${navSection}"]`)?.click();
       }
+      if (page.tocOpen) return;
       scheduleRefresh();
     }
   }
@@ -356,8 +449,11 @@ const PAGE_DEFS = [
     const rel = readPrototypeRelease();
     listEl.innerHTML = PAGE_DEFS.map((p) => {
       const r2Locked = p.r2 && rel !== 2;
-      if (r2Locked) {
-        return `<li><span class="proto-page-toc-muted" title="Только в релизе 2 прототипа"><span class="n">${p.n}</span> ${escapeHtml(p.title)} · R2</span></li>`;
+      const tocHint = p.tocOpen;
+      if (r2Locked || tocHint) {
+        const hint = r2Locked ? "Только в релизе 2 прототипа" : tocHint;
+        const suffix = r2Locked ? " · R2" : "";
+        return `<li><span class="proto-page-toc-muted" title="${escapeAttr(hint)}"><span class="n">${p.n}</span> ${escapeHtml(p.title)}${suffix}</span></li>`;
       }
       return `<li><a href="${escapeAttr(pageHref(p))}" data-page-n="${p.n}" data-page-id="${escapeAttr(p.id)}"><span class="n">${p.n}</span> ${escapeHtml(p.title)}</a></li>`;
     }).join("");
