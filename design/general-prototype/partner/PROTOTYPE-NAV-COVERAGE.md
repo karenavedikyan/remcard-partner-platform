@@ -9,7 +9,7 @@ Legend: **Module** = routed through cabinet shell (`roles.js`) into an existing 
 | Partners | Module (`partners-redesign.js`) | Module | Module | Module | Module if terms/scan/sale |
 | Recommendations / outgoing certs | Legacy list + `action:recommend` wizard | Legacy + recommend | Legacy + recommend | Module (cert list + recommend) | Legacy if `clients` |
 | Scanner (receive cert) | Module via `client-appeals` scan | Module | Module | — (not in nav) | Module if scan/sale |
-| Wallet / bonus / settlements | Module (`wallet-accruals.js`) | Module | Module | Module (incoming-only) | Module if ledger rights |
+| Wallet / bonus / settlements | Module (`wallet-accruals.js` default tab + `settlement-demo.js`) | Module | Module | Module (incoming-only) | Module if bonus/history/settlements rights |
 | Purchases / operations detail | Module (appeal `purchase` + wallet txn panels) | Module | Module | Module (wallet → client-open) | Module |
 | Profile | Module (`profile-wizard.js`) | Module | Module | Module | Module |
 | Team / employee invites | — | links | links / team | — | profile tab if `team` |

@@ -1794,3 +1794,27 @@
     max-width: 100%;
   }
 }
+
+.wallet-accruals-extensions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: var(--pw-4, 1rem);
+}
+
+.wallet-accruals-extensions__link {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pw-accent, #c12b2f);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wallet-accruals-extensions__link:hover {
+  opacity: 0.85;
+}

@@ -3392,7 +3392,7 @@ function La() {
   }
   if (
     i.page === "wallet" ||
-    ["bonus", "settlements"].includes(i.page)
+    ["bonus", "settlements", "history"].includes(i.page)
   ) {
     if (i.page !== "wallet") {
       showWalletSection(i.role, i.page);
@@ -4298,7 +4298,7 @@ document.addEventListener("click", (e) => {
       openClientAppealsScanFlow();
       return;
     }
-    const resolvedPage = ["bonus", "settlements"].includes(s)
+    const resolvedPage = ["bonus", "settlements", "history"].includes(s)
       ? "wallet"
       : s === "links" && !qe()
         ? "partners"
@@ -4327,7 +4327,7 @@ document.addEventListener("click", (e) => {
     }
     i.page = s;
     i.notice = "";
-    if (["bonus", "settlements"].includes(s)) {
+    if (["bonus", "settlements", "history"].includes(s)) {
       showWalletSection(i.role, s);
       i.page = "wallet";
     }

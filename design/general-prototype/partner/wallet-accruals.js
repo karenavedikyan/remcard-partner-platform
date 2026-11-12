@@ -1079,6 +1079,19 @@ export function renderWalletAccruals(config, options = {}) {
   const cardSummary = activeDirection === "in" ? overview.receivable : overview.payable;
   const cardPrefix = activeDirection === "in" ? "receivable" : "payable";
   const cardTitle = DIRECTION_LABELS[activeDirection];
+  const extensionLinks = [
+    options.ledgerLink
+      ? `<button type="button" class="wallet-accruals-extensions__link" data-accrual-action="open-master-ledger" data-testid="wallet-open-master-ledger">Реестр, сверка и Excel</button>`
+      : "",
+    options.agentRegistryLink
+      ? `<button type="button" class="wallet-accruals-extensions__link" data-accrual-action="open-agent-registry" data-testid="wallet-open-agent-registry">Реестр начислений агента</button>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  const extensions = extensionLinks
+    ? `<div class="wallet-accruals-extensions" data-testid="wallet-accruals-extensions">${extensionLinks}</div>`
+    : "";
 
   return `<section class="wallet-accruals" data-wallet-accruals data-testid="wallet-accruals" data-incoming-only="${incomingOnly}" data-card-edition="${edition}" data-active-direction="${activeDirection}">
     <div class="wallet-accruals-layout">
@@ -1094,6 +1107,7 @@ export function renderWalletAccruals(config, options = {}) {
         <div class="wallet-accruals-cards ${incomingOnly ? "incoming-only" : ""}" data-testid="wallet-brand-card">
           ${renderCompactCard(config, activeDirection, cardTitle, cardSummary, cardPrefix, incomingOnly, edition)}
         </div>
+        ${extensions}
       </div>
       ${renderHistoryPanel(config, incomingOnly, activeDirection)}
     </div>
@@ -1244,6 +1258,14 @@ export function hydrateWalletAccruals(config, root = document) {
     if (!btn) return;
     const action = btn.dataset.accrualAction;
     const st = getAccrualState(config);
+    if (action === "open-master-ledger") {
+      config.openWalletSettlements?.();
+      return;
+    }
+    if (action === "open-agent-registry") {
+      openPanel("paid|in");
+      return;
+    }
     if (action === "schedule-toggle") {
       st.scheduleExpanded = !st.scheduleExpanded;
       const overview = overviewFor(config, incomingOnly);

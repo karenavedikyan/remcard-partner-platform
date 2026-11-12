@@ -1,6 +1,7 @@
 // Prototype-only navigation and bank details. No API, payments or browser storage.
 import { a as remcardLogo } from "./chunk-PG3I4FMB.js";
 import { renderSettlementDemo, hydrateSettlementDemo, settlementTotals } from "./settlement-demo.js";
+import { renderWalletAccruals, hydrateWalletAccruals } from "./wallet-accruals.js";
 import { bankState, selectedLegal } from "./partner-legal.js";
 const views = new Map();
 let nextBankId = 1;
@@ -24,7 +25,7 @@ function view(role) {
     views.set(role, {
       partners: "active",
       invites: "incoming",
-      wallet: "bonus",
+      wallet: "accruals",
     });
   return views.get(role);
 }
@@ -36,7 +37,10 @@ export function showPartnerInvitations(role) {
   view(role).invites = "outgoing";
 }
 export function showWalletSection(role, section) {
-  view(role).wallet = section === "requisites" ? "requisites" : "settlements";
+  const v = view(role);
+  if (section === "requisites") v.wallet = "requisites";
+  else if (section === "settlements") v.wallet = "settlements";
+  else v.wallet = "accruals";
 }
 export function renderPartners(config) {
   const s = view(config.role);
@@ -123,13 +127,50 @@ export function renderBankDetails(config) {
   const identity=selectedLegal(owner);
   return `<section class="pw pw-card cab-bank" data-bank-panel data-bank-owner="${owner || "unlinked-employee"}" data-bank-readonly="${readonly}" data-testid="bank-panel"><div class="pw-card-top"><h2>${inWallet ? "Куда получать оплату" : "Реквизиты для получения оплаты"}</h2><span class="pw-label">${readonly ? "Только просмотр" : "Необязательно"}</span></div>${content}${identity ? `<p class="pw-footnote" data-testid="bank-settlement-identity">Сторона новых взаиморасчётов: <strong>${esc(identity.name)}</strong>${identity.inn ? ` · ИНН ${esc(identity.inn)}` : ""}. Уже созданные заказы и сверки сохраняют прежние данные.</p>` : ""}<p role="status" data-testid="bank-status">${esc(s.status)}</p><textarea class="cab-copy-fallback" data-bank-copy-value aria-label="Реквизиты для ручного копирования" hidden readonly></textarea></section>`;
 }
+function walletTabs(config, active) {
+  const items = [];
+  const canAccruals =
+    config.allowed.includes("bonus") || config.allowed.includes("history");
+  const canSettle = config.allowed.includes("settlements");
+  if (canAccruals) items.push(["accruals", "Бонусы и начисления"]);
+  if (canSettle) items.push(["settlements", "Взаиморасчёты"]);
+  items.push(["requisites", "Реквизиты"]);
+  return { items, active: items.some(([id]) => id === active) ? active : items[0][0] };
+}
+
 export function renderWallet(config) {
   const s = view(config.role);
-  if (!config.allowed.includes("settlements")) return '<section class="pw pw-card"><h2>Взаиморасчёты недоступны</h2><p>Работодатель не назначил право просмотра. Ваши рабочие операции остаются в отдельном разделе.</p></section>';
-  if (!["settlements", "requisites"].includes(s.wallet)) s.wallet = "settlements";
-  return `<div class="pw cab-sections" data-cabinet-sections data-cab-role="${config.role}">
-    <div class="cab-wallet-actions settlement-wallet-tabs">${tabs([["settlements","Взаиморасчёты"],["requisites","Реквизиты"]],s.wallet,"wallet")}</div>
-    <div class="cab-panel">${s.wallet === "requisites" ? renderBankDetails({...config,location:"wallet"}) : renderSettlementDemo(config)}</div>
+  const canAccruals =
+    config.allowed.includes("bonus") || config.allowed.includes("history");
+  const canSettle = config.allowed.includes("settlements");
+  if (!canAccruals && !canSettle)
+    return `<section class="pw pw-card" data-testid="wallet-denied"><h2>Кошелёк недоступен</h2><p class="pw-muted">Работодатель не назначил право просмотра бонусов, истории или взаиморасчётов. Другие разделы ЛК остаются без изменений.</p></section>`;
+  const { items, active } = walletTabs(config, s.wallet);
+  s.wallet = active;
+  const incomingOnly = config.role === "agent";
+  let panel = "";
+  if (s.wallet === "accruals" && canAccruals) {
+    panel = renderWalletAccruals(config, {
+      incomingOnly,
+      ledgerLink: canSettle,
+      agentRegistryLink: config.role === "agent",
+    });
+  } else if (s.wallet === "settlements" && canSettle) {
+    panel = renderSettlementDemo(config);
+  } else {
+    panel = renderBankDetails({ ...config, location: "wallet" });
+  }
+  const lead =
+    config.role === "employee"
+      ? "Рабочий кошелёк организации. Доступны только подразделы, назначенные управляющим."
+      : incomingOnly
+        ? "Начисления по сертификатам и рекомендациям. Агент видит только входящие бонусы."
+        : "Бонусы, история операций и расчёты с партнёрами — как на опубликованном кабинете.";
+  return `<div class="pw cab-sections cab-wallet-shell" data-cabinet-sections data-cab-role="${config.role}" data-testid="wallet-shell">
+    <div class="cab-wallet-intro"><h2>Кошелёк RemCard</h2><p class="pw-muted">${lead}</p></div>
+    <div class="cab-wallet-actions settlement-wallet-tabs">${tabs(items, s.wallet, "wallet")}</div>
+    <div class="cab-panel">${panel}</div>
+    <p class="pw-footnote">Демонстрационные суммы и записи. Выплаты, переводы и API не выполняются.</p>
     </div>`;
 }
 // Kept only as a reference for the original ZIP. Not used by wallet navigation.
@@ -215,7 +256,15 @@ function renderLegacyWallet(config) {
   return `<div class="pw cab-sections" data-cabinet-sections data-cab-role="${config.role}"><div class="cab-wallet-top"><section class="cab-remcard-card" data-testid="wallet-brand-card"><div class="cab-card-top">${remcardLogo}<span>КОШЕЛЁК · ДЕМО</span></div><div class="cab-card-balance"><span>Баланс бонусов · к получению</span><strong data-testid="wallet-balance">${esc(config.bonusTotal || "— ₽")}</strong></div><div class="cab-card-bottom"><span>${config.role === "employee" ? "Рабочий кошелёк организации" : "Партнёр RemCard"}</span><span>Не банковская карта</span></div></section><div class="cab-wallet-actions"><h2>Кошелёк RemCard</h2><p class="pw-muted">Бонусы и расчёты с партнёрами. Начисленные средства и подтверждённые выплаты показываются отдельно.</p>${tabs(extra, s.wallet, "wallet")}<p class="pw-footnote">${config.role === "employee" ? "Только разделы, разрешённые работодателем. Права не расширены." : "Без подключения платёжного сервиса. Карта обозначает кошелёк, а не банковский счёт."}</p></div></div>${tabs(items, s.wallet, "wallet")}<div class="cab-panel">${s.wallet === "requisites" ? renderBankDetails({ ...config, location: "wallet" }) : s.wallet === "settlements" ? renderSettlementDemo(config) : list}</div><p class="pw-footnote">Все суммы и операции в макете демонстрационные. «—» означает, что баланс не предоставлен, а не нулевой остаток. Вывод и переводы не выполняются.</p></div>`;
 }
 export function hydrateCabinet(config) {
-  hydrateSettlementDemo(config);
+  const walletConfig = {
+    ...config,
+    openWalletSettlements: () => {
+      view(config.role).wallet = "settlements";
+      config.refresh?.();
+    },
+  };
+  hydrateSettlementDemo(walletConfig);
+  hydrateWalletAccruals(walletConfig);
   document
     .querySelectorAll("[data-cabinet-sections], [data-bank-panel]")
     .forEach((root) => {
@@ -355,8 +404,15 @@ export function hydrateCabinet(config) {
         } else {
           const v = view(config.role);
           const [group, ...rest] = action.split("-");
-          if (["partners", "invites", "wallet"].includes(group))
+          if (group === "wallet" && rest[0] === "settlements") {
+            v.wallet = "settlements";
+          } else if (group === "wallet" && rest[0] === "requisites") {
+            v.wallet = "requisites";
+          } else if (group === "wallet") {
+            v.wallet = "accruals";
+          } else if (["partners", "invites"].includes(group)) {
             v[group] = rest.join("-");
+          }
         }
         config.refresh();
       });

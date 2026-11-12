@@ -6,7 +6,7 @@ import { reconciliationDefaults, renderReconciliation } from "./settlement-recon
 import { ledgerViews, renderLedgerView, ledgerPaginator } from "./settlement-layout.js";
 import { downloadSettlementExport } from "./settlement-export.js";
 import { partnerLegal, selectedLegal, legalCaption, legalBlock, legalKey } from "./partner-legal.js";
-import { renderWalletAccruals, hydrateWalletAccruals } from "./wallet-accruals.js";
+import { hydrateWalletAccruals } from "./wallet-accruals.js";
 const states = new Map();
 const money = (v) => `${new Intl.NumberFormat("ru-RU").format(v)}\u00a0₽`;
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -125,9 +125,16 @@ export function renderSettlementDemo(config) {
   const outgoing = scope.filter((r) => r.direction === "out").reduce((n, r) => n + remaining(r), 0);
   const demoFooter = `<details class="settlement-demo-note"><summary>О демонстрации</summary><p class="pw-footnote">Учебные суммы и операции. Реальные переводы, SMS и данные ЛК не подключены.</p><p class="pw-footnote">Награда в ожидании ≠ ожидание подтверждения получателем. Подтверждённый баланс не включает ожидание, приостановление, отмену и выплаченное.</p><div class="cab-actions">${button("Добавить 120 учебных расчётов", "seed-ledger", s.bulkSeeded ? "disabled" : "")}${button("Начать демо заново", "reset")}</div></details>`;
   const presentation = `<div class="ledger-presentation">${renderLedgerView(s)}${button(s.exportBusy ? "Готовим Excel…" : "Excel (.xlsx)", "export", `${s.exportBusy ? "disabled" : ""} title="Скачать весь текущий отбор, включая все страницы"` )}</div>${s.exportMessage ? `<p class="pw-footnote" role="status" data-testid="ledger-export-status">${esc(s.exportMessage)}</p>` : ""}`;
-  if (!s.partner && s.screen === "overview") return `<section class="settlement-demo settlement-overview" data-ledger-view="${s.density}" data-settlement-demo data-testid="settlement-demo">
-    ${renderWalletAccruals(config, { incomingOnly: s.incomingOnly })}
+  if (!s.partner && s.screen === "overview") {
+    const paginate = ledgerPaginator(s, `partners:${s.direction}:${s.filter}`, button);
+    const batchTools = { money, esc, button, paginate };
+    const filtered = sortLedger(filterLedger(scope, s.direction, s.analysis), s.analysis.sort);
+    return `<section class="settlement-demo settlement-overview" data-ledger-view="${s.density}" data-settlement-demo data-testid="settlement-demo">
+    <p class="pw-muted settlement-overview-lead">Реестр обязательств с партнёрами, сверка и выгрузка Excel. Карточки бонусов и история — во вкладке «Бонусы и начисления».</p>
+    ${presentation}
+    ${renderPartnerLedgerList(filtered, s, batchTools)}
     ${demoFooter}</section>`;
+  }
   const recipientRecord = s.records.find((r) => r.id === s.receiver && r.payment);
   const activeBatch = s.records.find((r) => r.id === s.batchView && r.payment?.batch);
   const paginate = ledgerPaginator(s, `${s.partner || "partners"}:${s.direction}:${s.filter}`, button);
