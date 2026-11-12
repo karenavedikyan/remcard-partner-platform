@@ -274,10 +274,34 @@ try {
     document.querySelector('[data-action="nav:bonus"], [data-action="nav:wallet"]')?.click(),
   );
   await agentWallet.waitForSelector("[data-testid='wallet-history-hub-link']", { timeout: 15000 });
+  const agentWorkspaceName = (
+    await agentWallet.locator(".sidebar .workspace strong").textContent()
+  )?.trim();
   const agentWalletRibbon = (
     await agentWallet.locator('[data-testid="wallet-receivable-ribbon"]').textContent()
   )?.trim();
-  assert.equal(agentWalletRibbon, "Агент", "agent wallet card ribbon must match production fallbackRibbon");
+  assert.match(agentWorkspaceName || "", /Мария/, "agent demo workspace must use seeded actor");
+  assert.equal(
+    agentWalletRibbon,
+    agentWorkspaceName,
+    "wallet card ribbon must match selected workspace actor, not unrelated fixture",
+  );
+  const hubLinkStyles = await agentWallet.evaluate(() => {
+    const el = document.querySelector('[data-testid="wallet-history-hub-link"]');
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    return {
+      tag: el.tagName,
+      fontSize: cs.fontSize,
+      color: cs.color,
+      minHeight: cs.minHeight,
+      lineHeight: cs.lineHeight,
+    };
+  });
+  assert.equal(hubLinkStyles?.tag, "A", "history hub must be anchor like production Link");
+  assert.match(hubLinkStyles?.fontSize || "", /^13px$/, "history hub font-size 0.8125rem");
+  assert.match(hubLinkStyles?.color || "", /rgb\(10,\s*107,\s*96\)/, "history hub teal color");
+  assert.equal(hubLinkStyles?.minHeight, "0px", "history hub must not inherit global button min-height");
   assert.equal(
     await agentWallet.locator("[data-wallet-accruals][data-agent-wallet='true']").count(),
     1,

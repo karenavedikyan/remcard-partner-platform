@@ -3856,6 +3856,7 @@ function La() {
     employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null),
     canViewEmployerBank:
       k() && J() && ["ledger", "cash", "transfer"].some((a) => O(a)),
+    workspaceDisplayName: () => ke(),
   };
   if (i.page === "clients" || i.page === "scanner") {
     if (i.page === "scanner" && !receivingScannerEligible()) {
@@ -4503,7 +4504,15 @@ function R() {
         Re();
       },
     }),
-    hydrateCabinet({ role: i.role, allowed: k() ? Te().filter((key) => ["bonus", "settlements", "history"].includes(key)) : ["bonus", "settlements", "history"], refresh: R, canCash: () => O("cash"), canTransfer: () => O("transfer"), employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) }),
+    hydrateCabinet({
+      role: i.role,
+      allowed: k() ? Te().filter((key) => ["bonus", "settlements", "history"].includes(key)) : ["bonus", "settlements", "history"],
+      refresh: R,
+      canCash: () => O("cash"),
+      canTransfer: () => O("transfer"),
+      employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null),
+      workspaceDisplayName: () => ke(),
+    }),
     i.page === "profile" && i.screen === "cabinet")
   ) {
     const payReturnBanner = renderPayProfileReturnBanner(clientAppealsConfig());

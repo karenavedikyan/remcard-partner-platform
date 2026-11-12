@@ -165,7 +165,10 @@ export function workspaceRibbonName(config) {
   const role = workspaceOwnerRole(config);
   if (role === "store") return "Мой магазин";
   if (role === "company") return "Моя компания";
-  if (role === "agent") return "Агент";
+  if (typeof config.workspaceDisplayName === "function") {
+    const name = String(config.workspaceDisplayName() || "").trim();
+    if (name) return name;
+  }
   return "Алексей";
 }
 
@@ -419,7 +422,7 @@ function renderHistoryPanel(config, incomingOnly, activeDirection, options = {})
 
   const historyHub =
     options.historyHubLink !== false
-      ? `<button type="button" class="wallet-accruals-history__hub-link" data-action="proto-standalone:147" data-testid="wallet-history-hub-link">Покупки и транзакции в разделе «История»</button>`
+      ? `<a href="#" class="wallet-accruals-history__hub-link" data-action="proto-standalone:147" data-testid="wallet-history-hub-link">Покупки и транзакции в разделе «История»</a>`
       : "";
 
   return `<aside class="wallet-accruals-history" data-testid="wallet-history" data-history-filter="${st.historyFilter}" data-history-direction="${direction}">

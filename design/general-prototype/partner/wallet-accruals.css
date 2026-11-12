@@ -1076,28 +1076,38 @@
   width: auto;
 }
 
-.wallet-accruals-history__hub-link {
+a.wallet-accruals-history__hub-link {
   display: block;
-  margin-bottom: 6px;
+  margin: 0 0 6px;
+  padding: 0;
   font-size: 0.8125rem;
-  font-weight: 600;
+  line-height: 1.35;
+  font-weight: 400;
+  font-family: inherit;
   color: #0a6b60;
   text-decoration: underline;
   text-underline-offset: 2px;
   background: none;
   border: 0;
-  padding: 0;
-  font: inherit;
+  min-height: 0;
+  min-width: 0;
+  width: auto;
   text-align: left;
   cursor: pointer;
+  align-self: flex-start;
 }
 
-[data-theme="dark"] .wallet-accruals-history__hub-link {
+[data-theme="dark"] a.wallet-accruals-history__hub-link {
   color: #7fd8c9;
 }
 
-.wallet-accruals-history__hub-link:hover {
+a.wallet-accruals-history__hub-link:hover {
+  color: #0a6b60;
   opacity: 0.88;
+}
+
+[data-theme="dark"] a.wallet-accruals-history__hub-link:hover {
+  color: #7fd8c9;
 }
 
 .wallet-accruals-history__filters {

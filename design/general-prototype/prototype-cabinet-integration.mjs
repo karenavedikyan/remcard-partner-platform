@@ -14,6 +14,7 @@ const roles = readFileSync(path.join(root, "partner/roles.js"), "utf8");
 const repairR2 = readFileSync(path.join(root, "partner/repair-objects-r2.js"), "utf8");
 const clientAppeals = readFileSync(path.join(root, "partner/client-appeals.js"), "utf8");
 const wallet = readFileSync(path.join(root, "partner/wallet-accruals.js"), "utf8");
+const walletCss = readFileSync(path.join(root, "partner/wallet-accruals.css"), "utf8");
 const index = readFileSync(path.join(root, "index.html"), "utf8");
 const numbering = readFileSync(path.join(root, "prototype-numbering.js"), "utf8");
 
@@ -37,7 +38,14 @@ assert.match(clientAppeals, /ca-observer-partners-list/, "observer partners list
 assert.match(clientAppeals, /if \(agentClientsObserverOnly\(config\)\) return;/, "blocks agent legacy client nav handlers");
 assert.match(numbering, /partner:agent:clients-list[\s\S]*Мои клиенты у партнёров/, "page 106 titles agent observer list");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
-assert.match(wallet, /if \(role === "agent"\) return "Агент"/, "agent wallet card ribbon");
+assert.match(wallet, /workspaceDisplayName/, "wallet ribbon uses selected workspace actor");
+assert.match(wallet, /<a href="#" class="wallet-accruals-history__hub-link"/, "history hub matches production link surface");
+assert.doesNotMatch(
+  walletCss,
+  /\.wallet-accruals-history__hub-link[\s\S]{0,220}font:\s*inherit/,
+  "history hub must not use font: inherit shorthand",
+);
+assert.match(walletCss, /font-size:\s*0\.8125rem/, "history hub font-size matches production global css");
 assert.match(wallet, /data-agent-wallet="true"/, "agent wallet production shell marker");
 assert.match(wallet, /workspaceOwnerRole\(config\) !== "agent"/, "agent wallet omits demo PAN line");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
