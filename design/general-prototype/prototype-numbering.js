@@ -91,6 +91,9 @@
   let rescanTimer = null;
   let scrollBound = false;
   let scanning = false;
+  /** @type {HTMLElement[]} */
+  let topLayerUi = [];
+  let topLayerSyncBound = false;
 
   function fnv1a(str) {
     let h = 2166136261;
@@ -569,7 +572,61 @@
     metaEl.textContent = `${NS_LABELS[ns] || ns} · ${pageFileKey()} · ${readPrototypeState() || "—"} · ${registry.length} в индексе`;
   }
 
+  function appModalOpen() {
+    return !!document.querySelector(`dialog[open]:not([${UI_ATTR}])`);
+  }
+
+  function syncAnnotationTopLayer() {
+    const lift = appModalOpen();
+    topLayerUi.forEach((el) => {
+      if (!el) return;
+      try {
+        if (lift) {
+          if (!el.matches(":popover-open")) el.showPopover();
+        } else if (el.matches(":popover-open")) {
+          el.hidePopover();
+        }
+      } catch {
+        /* popover unsupported */
+      }
+    });
+  }
+
+  function bindTopLayerSync() {
+    if (topLayerSyncBound) return;
+    topLayerSyncBound = true;
+    document.addEventListener(
+      "toggle",
+      (ev) => {
+        if (ev.target instanceof HTMLDialogElement && !ev.target.hasAttribute(UI_ATTR)) {
+          syncAnnotationTopLayer();
+          scheduleRescan();
+        }
+      },
+      true,
+    );
+    const obs = new MutationObserver(() => {
+      if (appModalOpen()) {
+        syncAnnotationTopLayer();
+        scheduleRescan();
+      }
+    });
+    obs.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
+  }
+
+  function markTopLayerPopover(el) {
+    if (!el || el.popover === "manual") return;
+    el.setAttribute("popover", "manual");
+    topLayerUi.push(el);
+  }
+
   function rescan() {
+    syncAnnotationTopLayer();
     if (!enabled) {
       badgeHost && (badgeHost.textContent = "");
       return;
@@ -722,7 +779,12 @@
     panelEl.append(head, listEl, actions);
     searchEl.addEventListener("input", () => renderIndexList(searchEl.value));
 
+    markTopLayerPopover(badgeHost);
+    markTopLayerPopover(chromeEl);
+    markTopLayerPopover(panelEl);
+
     document.body.append(badgeHost, chromeEl, panelEl);
+    bindTopLayerSync();
   }
 
   function startObserver() {

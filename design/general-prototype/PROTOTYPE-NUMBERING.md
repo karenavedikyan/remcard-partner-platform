@@ -19,7 +19,9 @@
 
 ## Покрытие HTML (15)
 
-`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann2`.
+`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann3`.
+
+При открытом нативном `<dialog showModal>` (кроме UI нумерации) панель, хром и маркеры поднимаются в top layer через `popover="manual"`, чтобы оставаться поверх модалки без перехвата фокуса продукта.
 
 Клиент/админ в репозитории — минимальные оболочки для hash-маршрутов и пространств 2/4; полный SPA остаётся в артефакте сборки.
 
