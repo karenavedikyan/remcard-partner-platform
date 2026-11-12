@@ -409,8 +409,8 @@ const PAGE_DEFS = [
     if (page.zone === "partner" && page.partnerMode === "registration") return hubUrl("partner/index.html");
     if (page.partnerRole) {
       const params = new URLSearchParams({ role: page.partnerRole });
-      if (page.partnerSection && page.partnerSection !== "home") params.set("open", page.partnerSection);
-      return `${hubUrl("partner/roles.html")}?${params}`;
+      params.set("open", page.partnerSection || "home");
+      return `${hubUrl("partner/index.html")}?${params}`;
     }
     if (page.zone === "client") {
       if (page.clientDemoHash) {
