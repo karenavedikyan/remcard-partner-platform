@@ -716,6 +716,43 @@ try {
   assert.equal(r1Entry, null, "R1 hides repair objects entry");
   await r2Page.close();
 
+  const tocPage = await browser.newPage();
+  await tocPage.setViewportSize({ width: 1280, height: 900 });
+  await tocPage.goto(`${base}/partner/index.html?role=agent`, { waitUntil: "load" });
+  await tocPage.evaluate(() => {
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await tocPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await tocPage.locator(".proto-page-toc-btn").click();
+  await tocPage.locator('a[data-page-n="147"]').click();
+  await tocPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", {
+    timeout: 15000,
+  });
+  const toc147Src = await tocPage
+    .locator("[data-testid='cabinet-standalone-frame']")
+    .getAttribute("src");
+  assert.ok(toc147Src?.includes("cabinet_embed=1"), "TOC 147 opens cabinet embed, not orphan HTML");
+  await tocPage.locator('[data-testid="proto-standalone-close"]').click();
+  await tocPage.locator(".proto-page-toc-btn").click();
+  await tocPage.locator('a[data-page-n="143"]').click();
+  await tocPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", {
+    timeout: 15000,
+  });
+  const toc143Src = await tocPage
+    .locator("[data-testid='cabinet-standalone-frame']")
+    .getAttribute("src");
+  assert.ok(toc143Src?.includes("cabinet_embed=1"), "TOC 143 opens cabinet embed");
+  assert.ok(toc143Src?.includes("embed_role=agent"), "TOC 143 preserves agent embed role");
+  await tocPage.close();
+
+  const hubToc = await browser.newPage();
+  await hubToc.goto(`${base}/index.html`, { waitUntil: "load" });
+  await hubToc.locator(".proto-page-toc-btn").click();
+  const href147 = await hubToc.locator('a[data-page-n="147"]').getAttribute("href");
+  assert.match(href147 || "", /proto_standalone=147/, "hub TOC 147 links into partner cabinet");
+  assert.doesNotMatch(href147 || "", /partner-wallet-history\.html/, "hub TOC must not open orphan 147 HTML");
+  await hubToc.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

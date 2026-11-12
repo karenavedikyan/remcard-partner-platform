@@ -2998,6 +2998,42 @@ function employeeCanViewPartners() {
     ["clients", "scan", "sale", "terms"].some((key) => i.permissions.has(key))
   );
 }
+function demoWalletPurchaseCtx(index) {
+  const rows = [
+    {
+      amount: 162000,
+      title: "Артем",
+      display: "10 ноября, 15:48",
+      id: "purchase-1",
+      certCode: "RC-X9Z0WZ",
+      rewardAmount: 5400,
+      hasRewardSnapshot: true,
+    },
+    {
+      amount: 103500,
+      title: "Артем",
+      display: "9 ноября, 16:17",
+      id: "purchase-2",
+      certCode: "RC-X9Z0WZ",
+      rewardAmount: null,
+      hasRewardSnapshot: false,
+    },
+  ];
+  const row = rows[Number(index)];
+  if (!row) return null;
+  return {
+    index: Number(index),
+    amount: row.amount,
+    partner: row.title,
+    certCode: row.certCode,
+    dateDisplay: row.display,
+    id: row.id,
+    embedSnapshot: true,
+    hasCalcSnapshot: false,
+    hasRewardSnapshot: row.hasRewardSnapshot,
+    rewardAmount: row.rewardAmount,
+  };
+}
 function resolveDeepLinkEmbedCtx(pageN, q) {
   if (pageN === 143) {
     const fromUrl = q.get("partner_id");
@@ -3010,6 +3046,27 @@ function resolveDeepLinkEmbedCtx(pageN, q) {
         deepLink: true,
       };
     }
+    return {
+      partnerSelectionRequired: true,
+      naMessage: "Выберите партнёра в разделе «Партнёры» (строка списка), чтобы открыть карточку сотрудничества.",
+      deepLink: true,
+    };
+  }
+  if (pageN === 144) {
+    const raw = q.get("purchase");
+    if (raw != null && raw !== "") {
+      const purchaseCtx = demoWalletPurchaseCtx(raw);
+      if (purchaseCtx) return { purchaseCtx, deepLink: true };
+    }
+    return {
+      purchaseSelectionRequired: true,
+      naMessage:
+        "Покупку (144) откройте из «Истории» (147): выберите операцию в списке, а не произвольную запись.",
+      deepLink: true,
+    };
+  }
+  if (pageN === 147) {
+    return { walletState: null, deepLink: true };
   }
   if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
     const objectId = q.get("repair_object") || q.get("r2_object") || "";
@@ -3017,6 +3074,86 @@ function resolveDeepLinkEmbedCtx(pageN, q) {
   }
   return { deepLink: true };
 }
+function ensureCabinetScreenForStandalone() {
+  if (i.screen === "cabinet") return;
+  const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
+  if (!cabinetBtn) return;
+  i.screen = "cabinet";
+  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
+  syncPreviewProfileWizards(i.role);
+  cabinetBtn.setAttribute("aria-pressed", "true");
+  const regBtn = document.querySelector('[data-testid="view-registration"]');
+  regBtn?.setAttribute("aria-pressed", "false");
+}
+function protoCabinetTocStandalone(pageN) {
+  if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
+    U("Страницы 141 и 142 доступны в релизе R2 из раздела «Клиенты».", "info");
+    return;
+  }
+  if (!standaloneCanOpen(pageN)) {
+    U("Раздел недоступен для этой роли в демо.", "info");
+    return;
+  }
+  ensureCabinetScreenForStandalone();
+  const q = new URLSearchParams(location.search);
+  if (pageN === 143) {
+    i.page = "partners";
+    if (se.open) _();
+    R();
+    const fromUrl = q.get("partner_id");
+    let partner = fromUrl ? P.find((p) => p.id === fromUrl) : null;
+    if (!partner) partner = P.find((p) => p.ready);
+    if (!partner) {
+      U("Нет готового партнёра в демо. Откройте «Партнёры» и нажмите имя в таблице.", "info");
+      return;
+    }
+    queueMicrotask(() => {
+      openPartnerCooperationEmbed(partner, "directory");
+      standaloneHost?.afterCabinetRender?.();
+    });
+    return;
+  }
+  if (pageN === 147) {
+    const walletNav = ["agent", "specialist"].includes(i.role) ? "bonus" : "settlements";
+    i.page = "wallet";
+    showWalletSection(i.role, walletNav);
+    R();
+    queueMicrotask(() => {
+      ensureStandaloneHost().openStandalone(147, {
+        embedCtx: resolveDeepLinkEmbedCtx(147, q),
+        returnCtx: { page: i.page, role: i.role },
+      });
+      standaloneHost?.afterCabinetRender?.();
+    });
+    return;
+  }
+  if (pageN === 144) {
+    U(
+      "Деталь покупки открывается из «Истории»: сначала список (147), затем выбранная операция.",
+      "info",
+    );
+    protoCabinetTocStandalone(147);
+    return;
+  }
+  const embedCtx = resolveDeepLinkEmbedCtx(pageN, q);
+  if (embedCtx?.purchaseSelectionRequired || embedCtx?.partnerSelectionRequired) {
+    U(embedCtx.naMessage, "info");
+    return;
+  }
+  if ([145, 146].includes(pageN)) {
+    if (pageN === 146) i.page = "clients";
+    else i.page = "wallet";
+    R();
+  }
+  queueMicrotask(() => {
+    ensureStandaloneHost().openStandalone(pageN, {
+      embedCtx,
+      returnCtx: { page: i.page, role: i.role },
+    });
+    standaloneHost?.afterCabinetRender?.();
+  });
+}
+window.__protoCabinetTocStandalone = protoCabinetTocStandalone;
 function standaloneCanOpen(pageN) {
   if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) return false;
   if (pageN === 141) {
@@ -5822,7 +5959,17 @@ R();
         U("Страницы 141 и 142 открываются только в релизе R2 из раздела «Клиенты».", "info");
         return;
       }
-      const embedCtx = resolveDeepLinkEmbedCtx(pageN, q);
+      let openPageN = pageN;
+      let embedCtx = resolveDeepLinkEmbedCtx(pageN, q);
+      if (pageN === 144 && embedCtx?.purchaseSelectionRequired) {
+        U(embedCtx.naMessage, "info");
+        openPageN = 147;
+        embedCtx = resolveDeepLinkEmbedCtx(147, q);
+      }
+      if (pageN === 143 && embedCtx?.partnerSelectionRequired) {
+        U(embedCtx.naMessage, "info");
+        return;
+      }
       if (embedCtx?.missingRepairObject) {
         U(embedCtx.naMessage || "Объект ремонта не найден.", "info");
         return;
@@ -5831,15 +5978,18 @@ R();
         U(embedCtx.naMessage, "info");
         return;
       }
-      if (!standaloneCanOpen(pageN)) return;
-      if (R2_REPAIR_OBJECT_PAGES.has(pageN) && k() && !employeeRepairScopeAllowsDemo(i.scope)) {
+      if (!standaloneCanOpen(openPageN)) {
+        U("Раздел недоступен для этой роли в демо.", "info");
+        return;
+      }
+      if (R2_REPAIR_OBJECT_PAGES.has(openPageN) && k() && !employeeRepairScopeAllowsDemo(i.scope)) {
         U(
           "Объекты ремонта недоступны в назначенной области сотрудника в демо. Смените область или откройте от имени роли с полным доступом.",
           "info",
         );
         return;
       }
-      if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
+      if (R2_REPAIR_OBJECT_PAGES.has(openPageN)) {
         i.page = "clients";
         R();
         if (embedCtx.repairObjectId) {
@@ -5847,10 +5997,12 @@ R();
         }
       }
       const extraQuery =
-        pageN === 143 && embedCtx.partnerId
+        openPageN === 143 && embedCtx.partnerId
           ? `partner_id=${encodeURIComponent(embedCtx.partnerId)}`
-          : "";
-      ensureStandaloneHost().openStandalone(pageN, {
+          : openPageN === 144 && embedCtx.purchaseCtx?.index != null
+            ? `purchase=${encodeURIComponent(String(embedCtx.purchaseCtx.index))}`
+            : "";
+      ensureStandaloneHost().openStandalone(openPageN, {
         returnCtx: {
           page: i.page,
           role: i.role,

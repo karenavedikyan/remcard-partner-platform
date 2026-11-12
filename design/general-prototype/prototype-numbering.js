@@ -228,11 +228,46 @@ const PAGE_DEFS = [
     r2: true,
     tocOpen: "В R1 скрыто. В R2 — Клиенты → Объекты и поручения → выбранный объект → 142",
   },
-  { n: 143, id: "partner:cooperation-detail", title: "Деталь сотрудничества", zone: "standalone", rel: "partner/partner-cooperation-detail.html" },
-  { n: 144, id: "partner:purchase-detail", title: "Деталь покупки", zone: "standalone", rel: "partner/partner-purchase-detail.html" },
-  { n: 145, id: "partner:reward-receipt", title: "Квитанция вознаграждения", zone: "standalone", rel: "partner/partner-reward-receipt.html" },
-  { n: 146, id: "partner:scan-transaction", title: "Сканер · эталон", zone: "standalone", rel: "partner/partner-scan-transaction.html" },
-  { n: 147, id: "partner:wallet-history", title: "История кошелька", zone: "standalone", rel: "partner/partner-wallet-history.html" },
+  {
+    n: 143,
+    id: "partner:cooperation-detail",
+    title: "Деталь сотрудничества",
+    zone: "standalone",
+    rel: "partner/partner-cooperation-detail.html",
+    cabinetEmbed: true,
+  },
+  {
+    n: 144,
+    id: "partner:purchase-detail",
+    title: "Деталь покупки",
+    zone: "standalone",
+    rel: "partner/partner-purchase-detail.html",
+    cabinetEmbed: true,
+  },
+  {
+    n: 145,
+    id: "partner:reward-receipt",
+    title: "Квитанция вознаграждения",
+    zone: "standalone",
+    rel: "partner/partner-reward-receipt.html",
+    cabinetEmbed: true,
+  },
+  {
+    n: 146,
+    id: "partner:scan-transaction",
+    title: "Сканер · эталон",
+    zone: "standalone",
+    rel: "partner/partner-scan-transaction.html",
+    cabinetEmbed: true,
+  },
+  {
+    n: 147,
+    id: "partner:wallet-history",
+    title: "История кошелька",
+    zone: "standalone",
+    rel: "partner/partner-wallet-history.html",
+    cabinetEmbed: true,
+  },
 ];
 // TOTAL 147
 
@@ -490,8 +525,44 @@ const PAGE_DEFS = [
   }
 
   const PARTNER_DEEP_OPEN = new Set(["clients", "care", "procurement"]);
+  const CABINET_EMBED_OPEN = {
+    139: "home",
+    140: "home",
+    141: "clients",
+    142: "clients",
+    143: "partners",
+    144: "wallet",
+    145: "wallet",
+    146: "clients",
+    147: "wallet",
+  };
+
+  function readLaunchRole() {
+    const rel = pathnameRel();
+    if (rel === "partner/index.html" || rel === "partner/roles.html") {
+      const roleEl = document.querySelector('[data-testid="scenario-role"]');
+      if (roleEl?.value) return roleEl.value;
+      const fromQs = new URLSearchParams(location.search).get("role");
+      if (fromQs) return fromQs;
+    }
+    const fromQs = new URLSearchParams(location.search).get("role");
+    return fromQs || "store";
+  }
+
+  function cabinetEmbedHref(page) {
+    const role = page.partnerRole || readLaunchRole();
+    const open = CABINET_EMBED_OPEN[page.n] || "home";
+    const params = new URLSearchParams({ role, open, proto_standalone: String(page.n) });
+    if (page.n === 144 && new URLSearchParams(location.search).get("purchase") != null) {
+      params.set("purchase", new URLSearchParams(location.search).get("purchase"));
+    }
+    return `${hubUrl("partner/index.html")}?${params}`;
+  }
 
   function pageHref(page) {
+    if (page.zone === "standalone" && page.cabinetEmbed && CABINET_EMBED_OPEN[page.n]) {
+      return cabinetEmbedHref(page);
+    }
     if (page.rel && page.zone !== "partner") return hubUrl(page.rel);
     if (page.zone === "partner" && page.partnerMode === "registration") return hubUrl("partner/index.html");
     if (page.partnerRole) {
@@ -588,6 +659,21 @@ const PAGE_DEFS = [
     }
     closeActiveAppDialogs();
     const rel = pathnameRel();
+    if (page.cabinetEmbed && CABINET_EMBED_OPEN[page.n]) {
+      ev?.preventDefault();
+      const onPartner = rel === "partner/roles.html" || rel === "partner/index.html";
+      if (!onPartner) {
+        location.href = cabinetEmbedHref(page);
+        return;
+      }
+      if (typeof window.__protoCabinetTocStandalone === "function") {
+        window.__protoCabinetTocStandalone(page.n);
+        scheduleRefresh();
+        return;
+      }
+      location.href = cabinetEmbedHref(page);
+      return;
+    }
     if (page.adminView) {
       ev?.preventDefault();
       const onAdmin = rel === "admin/index.html" || location.pathname.endsWith("/admin/index.html");

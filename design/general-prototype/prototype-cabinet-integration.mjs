@@ -33,6 +33,10 @@ assert.match(clientAppeals, /buildRepairEmbedCtx/, "client appeals hands off rep
 assert.match(roles, /R2_REPAIR_OBJECT_PAGES/, "roles gates 141/142 by release");
 assert.match(host, /pendingCtx\?\.r2Repair/, "141 workflowNA bypass for contextual R2 handoff");
 assert.match(numbering, /141[\s\S]*tocOpen[\s\S]*Объекты и поручения/, "TOC gates 141 to R2 cabinet path");
+assert.match(numbering, /cabinetEmbed:\s*true/, "numbered standalone pages use cabinet embed launch");
+assert.match(numbering, /function cabinetEmbedHref/, "TOC href routes 143-147 through partner cabinet");
+assert.match(roles, /__protoCabinetTocStandalone/, "in-cabinet TOC opens contextual embed host");
+assert.match(roles, /purchaseSelectionRequired/, "144 without selection defers to history");
 assert.match(clientAppeals, /agentClientsObserverOnly/, "agent clients observer-only mode");
 assert.match(clientAppeals, /ca-observer-repair-na/, "observer client card explains 142 unavailability without CTA");
 assert.doesNotMatch(
