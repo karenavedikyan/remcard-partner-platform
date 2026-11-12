@@ -1,0 +1,218 @@
+/* Reviewer-only annotation layer — does not affect product layout or print */
+@media print {
+  .proto-num-root,
+  .proto-num-root * {
+    display: none !important;
+  }
+}
+
+.proto-num-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.proto-num-root.proto-num-off .proto-num-badge-layer {
+  visibility: hidden;
+}
+
+.proto-num-badge-layer {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.proto-num-badge {
+  position: absolute;
+  transform: translate(-4px, -4px);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  white-space: nowrap;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+  cursor: copy;
+}
+
+.proto-num-badge.proto-num-badge--dense {
+  font-size: 8px;
+  padding: 1px 3px;
+  opacity: 0.92;
+}
+
+.proto-num-badge.proto-num-badge--highlight {
+  background: #c12b2f;
+  outline: 2px solid #ffd700;
+  z-index: 2;
+}
+
+.proto-num-target-highlight {
+  outline: 2px solid #c12b2f !important;
+  outline-offset: 2px;
+}
+
+.proto-num-chrome {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 2147483001;
+}
+
+.proto-num-chrome button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+}
+
+.proto-num-chrome button:hover {
+  background: #f6f5f3;
+}
+
+.proto-num-chrome button[aria-pressed="false"] {
+  opacity: 0.85;
+}
+
+.proto-num-legend {
+  font-size: 11px;
+  color: #333;
+  background: rgb(255 255 255 / 94%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  max-width: min(280px, 90vw);
+}
+
+.proto-num-panel {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  max-height: min(70vh, 560px);
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 12px 0 0 0;
+  box-shadow: -8px -4px 32px rgb(0 0 0 / 18%);
+  display: none;
+  flex-direction: column;
+  pointer-events: auto;
+  z-index: 2147483002;
+}
+
+.proto-num-panel.is-open {
+  display: flex;
+}
+
+.proto-num-panel__head {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e5df;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.proto-num-panel__head h2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.proto-num-panel__head input {
+  flex: 1 1 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.proto-num-panel__meta {
+  font-size: 11px;
+  color: #555;
+  flex: 1 1 100%;
+}
+
+.proto-num-panel__list {
+  overflow: auto;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proto-num-panel__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+
+.proto-num-panel__item:hover {
+  background: #fbeeee;
+}
+
+.proto-num-panel__item code {
+  font-weight: 700;
+  color: #a72226;
+  white-space: nowrap;
+}
+
+.proto-num-panel__item span {
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proto-num-panel__actions {
+  padding: 10px 14px;
+  border-top: 1px solid #e5e5df;
+  display: flex;
+  gap: 8px;
+}
+
+.proto-num-panel__actions button {
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f8f8f7;
+  cursor: pointer;
+}
+
+.proto-num-clipboard-fallback {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
