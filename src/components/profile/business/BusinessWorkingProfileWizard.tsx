@@ -23,7 +23,11 @@ import {
   validateWorkingProfileDraft,
   workingProfileCabinetReady,
 } from "@/lib/profile-working-save";
-import type { WorkingProfileValidationScope } from "@/lib/working-profile-patch";
+import type {
+  WorkingProfileValidationIntent,
+  WorkingProfileValidationScope,
+  WorkingSaveOptions,
+} from "@/lib/working-profile-patch";
 import type { ProProfileResponse } from "@/lib/types";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { BusinessWorkingProfileFacts } from "./BusinessWorkingProfileFacts";
@@ -178,9 +182,9 @@ export function BusinessWorkingProfileWizard({
   };
 
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
-    const validationIntent = step < 3 ? "cabinet" : "activation";
+    const validationIntent: WorkingProfileValidationIntent = step < 3 ? "cabinet" : "activation";
     const validationScope = wizardValidationScope(step);
-    const saveOptions = {
+    const saveOptions: WorkingSaveOptions = {
       partnerSearchTouched: partnerSearchTouchedRef.current,
       validationIntent,
       validationScope,
