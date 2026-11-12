@@ -171,13 +171,13 @@ export type PartnershipUser = {
   organizationName?: string | null;
   organizationLogoUrl?: string | null;
   /**
-   * Optional counterparty profile fields — require GET /api/partnership/list enrichment (Stage B contract).
-   * Frontend-only until backend approval; never synthesize from `id`.
+   * Additive GET /api/partnership/list enrichment (authorized counterparty only).
+   * Never synthesize `publicId` from `id`; never fall back to registration contacts.
    */
   publicId?: string | null;
-  profileDescription?: string | null;
+  description?: string | null;
   partnershipContact?: PartnershipCooperationContact | null;
-  branchCities?: string[] | null;
+  areas?: string[] | null;
 };
 
 export type Partnership = {

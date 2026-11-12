@@ -31,10 +31,10 @@ function partnership(overrides: Partial<Partnership> = {}): Partnership {
       storeCategories: ["doors"],
       partnerType: "STORE",
       organizationName: "ООО Магазин",
-      publicId: "RC-DEMO-9001",
-      profileDescription: "Описание для сотрудничества",
+      publicId: "RC-TEST-9001",
+      description: "Описание для сотрудничества",
       partnershipContact: { name: "Отдел", phone: "+7", email: "a@b.invalid" },
-      branchCities: ["Казань", "Набережные Челны"],
+      areas: ["Казань", "Набережные Челны"],
     },
     proUser: {
       id: "agent-1",
@@ -54,7 +54,7 @@ function partnership(overrides: Partial<Partnership> = {}): Partnership {
 describe("buildCounterpartyProfileView", () => {
   it("shows publicId only when contract field is present", () => {
     const view = buildCounterpartyProfileView(partnership(), "agent-1");
-    expect(view.publicId).toBe("RC-DEMO-9001");
+    expect(view.publicId).toBe("RC-TEST-9001");
     const sparse = buildCounterpartyProfileView(
       partnership({
         storeUser: { ...partnership().storeUser, publicId: undefined },

@@ -1,33 +1,33 @@
 /**
- * Stage B read contract — frontend DTO only until GET /api/partnership/list enrichment is approved.
- * Do not add proxy routes or client fetches; reuse list payload nested storeUser/proUser.
+ * Approved additive counterparty fields on GET /api/partnership/list (production92495f42).
+ * Frontend DTO only — no proxy or new routes.
  */
 
-/** Fields allowed on each counterparty `PartnershipUser` after additive list enrichment. */
 export const COUNTERPARTY_PROFILE_LIST_ENRICHMENT_ALLOWLIST = [
   "publicId",
-  "profileDescription",
+  "description",
   "partnershipContact",
-  "branchCities",
+  "areas",
 ] as const;
 
 export type CounterpartyProfileListEnrichmentField =
   (typeof COUNTERPARTY_PROFILE_LIST_ENRICHMENT_ALLOWLIST)[number];
 
-/**
- * Backend must scope values to the authenticated viewer's partnership row (no search/catalog leakage).
- * - `publicId`: same string as own profile (`profile.user.publicId`, RC-XXXX-YYYY); never internal id.
- * - `profileDescription`: cooperation-facing about text (not registration draft).
- * - `partnershipContact`: dedicated cooperation contact (not `/api/pro/profile` private fields).
- * - `branchCities`: geography beyond single `city` (branch/service area labels).
- */
 export const COUNTERPARTY_PROFILE_CONTRACT_REQUIRED = {
   route: "GET /api/partnership/list",
   nested: ["partnerships[].storeUser", "partnerships[].proUser"] as const,
-  additiveFields: COUNTERPARTY_PROFILE_LIST_ENRICHMENT_ALLOWLIST,
-  forbiddenClientSources: [
+  additiveFields: {
+    publicId: "string | null",
+    description: "string | null",
+    areas: "string[]",
+    partnershipContact: "{ name: string | null; phone: string | null; email: string | null }",
+  },
+  preservedExistingFields: ["city", "branches (server-side; surfaced via areas when enriched)"] as const,
+  forbiddenClientFallbacks: [
+    "registration/auth phone or email",
+    "internal user id as publicId",
     "GET /api/partnership/search",
-        "/partner/[id] public catalog",
-    "GET /api/pro/profile for counterparty id",
+    "public /partner/[id]",
+    "GET /api/pro/profile for counterparty",
   ] as const,
 } as const;

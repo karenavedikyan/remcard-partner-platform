@@ -46,10 +46,10 @@ function fieldInContract<K extends keyof PartnershipUser>(
 }
 
 function aboutCopy(user: PartnershipUser): CounterpartyProfileView["about"] {
-  if (!fieldInContract(user, "profileDescription")) {
+  if (!fieldInContract(user, "description")) {
     return { text: NO_CONTRACT_COPY, mode: "no-contract" };
   }
-  const text = user.profileDescription?.trim();
+  const text = user.description?.trim();
   if (!text) {
     return { text: "Партнёр пока не добавил описание.", mode: "partner-empty" };
   }
@@ -60,14 +60,14 @@ function geographyCopy(
   user: PartnershipUser,
   city: string | null,
 ): CounterpartyProfileView["geography"] {
-  if (!fieldInContract(user, "branchCities")) {
-    const cityTrim = city?.trim();
-    if (cityTrim) return { items: [cityTrim], mode: "value" };
-    return { items: [], mode: "no-contract" };
-  }
-  const branches = user.branchCities?.filter((c) => c?.trim()) ?? [];
-  if (branches.length) return { items: [...new Set(branches.map((c) => c.trim()))], mode: "value" };
   const cityTrim = city?.trim();
+  if (!fieldInContract(user, "areas")) {
+    if (cityTrim) return { items: [cityTrim], mode: "value" };
+    return { items: [], mode: "partner-empty" };
+  }
+  const areas = user.areas?.map((c) => c?.trim()).filter(Boolean) as string[];
+  const unique = [...new Set(areas)];
+  if (unique.length) return { items: unique, mode: "value" };
   if (cityTrim) return { items: [cityTrim], mode: "value" };
   return { items: [], mode: "partner-empty" };
 }
