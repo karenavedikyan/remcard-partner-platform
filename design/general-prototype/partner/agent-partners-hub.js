@@ -39,11 +39,6 @@ function ensureOverlay() {
   document.body.appendChild(el);
   if (!el.dataset.bound) {
     el.dataset.bound = "true";
-    el.addEventListener("submit", (event) => {
-      if (event.submitter?.closest?.("[data-invite-discard]")) return;
-      event.preventDefault();
-      requestAgentHubClose("close");
-    });
     el.addEventListener("cancel", (event) => {
       if (!inviteDirtyGetter()) return;
       event.preventDefault();
@@ -56,6 +51,12 @@ function ensureOverlay() {
       requestAgentHubClose("close");
     });
     el.addEventListener("click", (event) => {
+      const closeBtn = event.target.closest("[data-agent-hub-close]");
+      if (closeBtn) {
+        event.preventDefault();
+        requestAgentHubClose("close");
+        return;
+      }
       const tabBtn = event.target.closest("[data-agent-hub-tab]");
       if (tabBtn) {
         event.preventDefault();
@@ -149,14 +150,14 @@ export function openAgentPartnersHub({ tab = "find", title, body, wide = false, 
       ${tabButton("find", "Найти в RemCard", isFind)}
       ${tabButton("link", "Пригласить по ссылке", tab === "link")}
     </nav>`;
-  dialog.innerHTML = `<form method="dialog" class="agent-hub-sheet${wide ? " is-wide" : ""}${readyMode ? " is-ready" : ""}" data-ready-mode="${readyMode ? "true" : "false"}" data-hub-tab="${readyMode ? "ready" : tab}">
+  dialog.innerHTML = `<div class="agent-hub-sheet${wide ? " is-wide" : ""}${readyMode ? " is-ready" : ""}" data-ready-mode="${readyMode ? "true" : "false"}" data-hub-tab="${readyMode ? "ready" : tab}">
     <header class="agent-hub-header">
       <h2 id="agent-hub-title">${esc(modalTitle)}</h2>
-      <button type="submit" class="agent-hub-close" aria-label="Закрыть" data-testid="agent-hub-close">×</button>
+      <button type="button" class="agent-hub-close" data-agent-hub-close aria-label="Закрыть" data-testid="agent-hub-close">×</button>
     </header>
     ${tabsNav}
     <div class="agent-hub-body" data-testid="agent-hub-body">${body}</div>
-  </form>`;
+  </div>`;
   dialog.showModal();
   dialog.querySelector(".agent-hub-close")?.focus();
   return true;
