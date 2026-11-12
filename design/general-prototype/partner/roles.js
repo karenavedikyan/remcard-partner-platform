@@ -36,7 +36,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet } from "./client-appeals.js?v=ca13";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca14";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -3346,6 +3346,26 @@ function careConfig() {
     profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
   };
 }
+function mergeCatalogDirectionsForPayResume() {
+  const role = i.role;
+  if (!["store", "company", "specialist"].includes(role)) return;
+  if (!getPayProfileReturnContext(clientAppealsConfig().key)) return;
+  try {
+    const cat = Ge.catalogWizard.state();
+    if (!cat?.values) return;
+    const products = role === "specialist" ? [] : [...(cat.values.products || [])];
+    const services = [...(cat.values.services || [])];
+    i.drafts[role] = {
+      ...ie(),
+      products,
+      services,
+      stages: cat.values.stages || ie().stages || [],
+    };
+  } catch (_) {
+    /* catalog state unavailable */
+  }
+}
+
 function clientAppealsConfig() {
   return {
     key: `${i.role}:${i.role === "employee" ? employeeEmployerRole() || Y : "self"}`,
@@ -3356,6 +3376,23 @@ function clientAppealsConfig() {
     openProfile: () => {
       i.page = "profile";
       R();
+    },
+    openProfileForPayCategories: () => {
+      const tab = ["store", "company", "specialist"].includes(i.role) ? "catalog" : "basics";
+      Ge.selectTab(tab);
+      i.page = "profile";
+      i.notice =
+        "После сохранения категорий нажмите «Вернуться к оформлению покупки» в верхней подсказке.";
+      R();
+      requestAnimationFrame(() => {
+        if (tab === "catalog") {
+          document.querySelector('[data-direction-group="products"]')?.closest("details")?.setAttribute("open", true);
+          document.querySelector('[data-direction-group="services"]')?.closest("details")?.setAttribute("open", true);
+          document.querySelector('[data-catalog-panel="directions"]')?.scrollIntoView({ block: "start", behavior: "smooth" });
+        } else {
+          document.querySelector('[data-profile-step="basics"]')?.scrollIntoView({ block: "start", behavior: "smooth" });
+        }
+      });
     },
   };
 }
@@ -3759,6 +3796,10 @@ function R() {
     hydrateCabinet({ role: i.role, allowed: k() ? Te().filter((key) => ["bonus", "settlements", "history"].includes(key)) : ["bonus", "settlements", "history"], refresh: R, canCash: () => O("cash"), canTransfer: () => O("transfer"), employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) }),
     i.page === "profile" && i.screen === "cabinet")
   ) {
+    const payReturnBanner = renderPayProfileReturnBanner(clientAppealsConfig());
+    const mainEl = z.querySelector("#main");
+    mainEl?.querySelector("[data-pay-profile-return]")?.remove();
+    if (payReturnBanner) mainEl?.insertAdjacentHTML("afterbegin", payReturnBanner);
     hydrateProfileWizards();
     hydrateStageProposals(Le);
     hydrateCatalogWizard(Ge.catalogWizard);
@@ -4043,6 +4084,7 @@ document.addEventListener("change", (e) => {
     (C = null),
     (Z = !1),
     (i.role = e.target.value),
+    clearAllPayProfileReturnContexts(),
     (i.page = i.page === "profile" ? "profile" : "home"),
     (i.notice = ""),
     ["choose", "form"].includes(i.screen) && (i.screen = "choose"),
@@ -4096,6 +4138,27 @@ document.addEventListener("click", (e) => {
   let t = e.target.closest("[data-action]");
   if (!t) return;
   let [a, s] = t.dataset.action.split(":");
+  if (a === "pay-profile" && s === "resume") {
+    mergeCatalogDirectionsForPayResume();
+    resumePayProfileCategoriesTrip(clientAppealsConfig(), {
+      refresh: R,
+      notify: (m, tone) => U(m, tone || "success"),
+      clearNotice: () => {
+        i.notice = "";
+        Re();
+      },
+    });
+    i.page = "clients";
+    i.screen = "cabinet";
+    i.notice = "";
+    T();
+    return;
+  }
+  if (a === "pay-profile" && s === "abandon") {
+    clearPayProfileReturnContext(clientAppealsConfig().key);
+    z.querySelector("[data-pay-profile-return]")?.remove();
+    return;
+  }
   if (a === "partner-ledger" && (!k() || O("ledger"))) {
     const partner = P.find((partner) => partner.id === s);
     if (!partner) return;
@@ -4409,7 +4472,9 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       (i.notice = ""),
       T()),
     a === "nav" &&
-      (s === "clients" && (ge = null, resetClientAppealsNav(clientAppealsConfig())),
+      (s === "clients" &&
+        (ge = null,
+        !getPayProfileReturnContext(clientAppealsConfig().key) && resetClientAppealsNav(clientAppealsConfig())),
       (i.page = s),
       (i.notice = ""),
       ["bonus", "settlements"].includes(s) &&

@@ -1467,8 +1467,14 @@ function renderPayCategoryForm(config, appeal, formId) {
   const draft = initPayDraft(config, s, appeal);
   const cats = payCategoriesFor(config);
   if (!cats.length) {
-    return `<form class="stack ca-pay-form ca-pay-form--empty" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="notice">Добавьте категории товаров или услуг в профиле — без них нельзя указать состав оплаты.</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:profile">Перейти в профиль</button><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button></div></form>`;
+    const profileCta = canEditPayProfileCategories(config)
+      ? `<button type="button" class="btn ghost" data-ca-action="pay:profile-categories">Настроить категории в профиле</button>`
+      : `<p class="small muted">Категории для оплаты задаёт организация в профиле работодателя.</p>`;
+    return `<form class="stack ca-pay-form ca-pay-form--empty" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="notice">Добавьте категории товаров или услуг в профиле — без них нельзя указать состав оплаты.</p><div class="ca-form-actions">${profileCta}<button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button></div></form>`;
   }
+  const profileLink = canEditPayProfileCategories(config)
+    ? `<p class="ca-pay-profile-link"><button type="button" class="btn ghost small-btn" data-ca-action="pay:profile-categories">Настроить категории в профиле</button></p>`
+    : "";
   const accrualMode = payAccrualMode(appeal);
   const rowsHtml = draft.rows
     .map((row, i) => {
@@ -1485,7 +1491,7 @@ function renderPayCategoryForm(config, appeal, formId) {
     const p = parseAmountKopecks(r.amountRaw);
     return sum + (p.ok && !p.empty ? p.kopecks : 0);
   }, 0);
-  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — по направлениям из вашего профиля.</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button>${delayAll}<p class="ca-pay-total">Итого: <strong class="ca-pay-total-val">${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
+  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — по направлениям из вашего профиля.</p>${profileLink}${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button>${delayAll}<p class="ca-pay-total">Итого: <strong class="ca-pay-total-val">${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
 }
 
 function submitPaidCategoryForm(ev, config, hooks) {
@@ -1586,15 +1592,125 @@ function submitPaidCategoryForm(ev, config, hooks) {
   s.inlinePanel = null;
   s.inlineReview = null;
   s.payDraft = null;
+  clearPayProfileReturnContext(config.key);
   hooks.notify?.("Оплата зафиксирована");
   hooks.refresh();
 }
 
 let sharedDatasetEmpty = null;
 let sharedDatasetSeeded = false;
+/** @type {Map<string, {workspaceKey:string, role:string, appealId:string, formOrigin:string, detailSnapshot:object}>} */
+const payProfileReturnByKey = new Map();
 let cabinetHooks = null;
 function afterDataChange() {
   cabinetHooks?.refresh?.();
+}
+
+function canEditPayProfileCategories(config) {
+  if (config.readOnly) return false;
+  if (config.role === "employee") return false;
+  return ["store", "company", "specialist"].includes(config.role);
+}
+
+function clonePayDraft(draft) {
+  if (!draft) return null;
+  return structuredClone(draft);
+}
+
+function revalidatePayDraftAfterProfile(config, draft) {
+  if (!draft) return null;
+  const cats = payCategoriesFor(config);
+  const keys = new Set(cats.map((c) => c.key));
+  const clone = structuredClone(draft);
+  clone.formError = "";
+  const allCatsMissing = clone.rows.length > 0 && clone.rows.every((r) => !r.categoryKey);
+  clone.rows.forEach((row, i) => {
+    row.categoryError = "";
+    row.amountError = "";
+    row.delayError = "";
+    const norm = row.categoryKey ? normalizeRowCategoryKey(row.categoryKey, config) : "";
+    if (norm && !keys.has(norm)) {
+      row.categoryKey = "";
+      row.categoryError = "Категория больше не в профиле — выберите снова.";
+    } else if (norm) {
+      row.categoryKey = norm;
+      const cat = findPayCategory(config, norm);
+      if (cat) row.kind = cat.kind;
+    }
+    if (!row.categoryKey && cats.length && allCatsMissing && i === 0) {
+      row.categoryKey = cats[0].key;
+      row.kind = cats[0].kind;
+    }
+  });
+  return clone;
+}
+
+export function getPayProfileReturnContext(workspaceKey) {
+  return payProfileReturnByKey.get(workspaceKey) || null;
+}
+
+export function clearPayProfileReturnContext(workspaceKey) {
+  payProfileReturnByKey.delete(workspaceKey);
+}
+
+export function clearAllPayProfileReturnContexts() {
+  payProfileReturnByKey.clear();
+}
+
+export function renderPayProfileReturnBanner(config) {
+  const ctx = payProfileReturnByKey.get(config.key);
+  if (!ctx || ctx.role !== config.role) return "";
+  return `<aside class="panel stack ca-profile-return" data-pay-profile-return data-testid="ca-profile-return"><p class="notice accent">Вы настраиваете категории для оформления покупки. Отметьте товары и услуги в «Каталог RemCard» или в основных данных профиля, сохраните изменения, затем вернитесь к оплате. Введённые суммы и дата оплаты сохранены в черновике.</p><div class="ca-form-actions"><button type="button" class="btn primary" data-action="pay-profile:resume" data-testid="pay-profile-resume">Вернуться к оформлению покупки</button><button type="button" class="btn ghost" data-action="pay-profile:abandon" data-testid="pay-profile-abandon">Остаться в профиле</button></div></aside>`;
+}
+
+export function beginPayProfileCategoriesTrip(config, hooks) {
+  if (!canEditPayProfileCategories(config)) {
+    hooks.notify?.("Категории для оплаты настраивает владелец организации в профиле работодателя.", "info");
+    return;
+  }
+  const s = ws(config.key);
+  const appealId = s.payDraft?.appealId || s.selectedId;
+  const appeal = appeals.find((a) => a.id === appealId);
+  if (!appeal) return;
+  if (!s.payDraft || s.payDraft.appealId !== appeal.id) initPayDraft(config, s, appeal);
+  syncPayDraftFromDom(config, s);
+  const formOrigin = s.inlineReview?.stageId === SYSTEM.PAID ? "review-paid" : "inline-pay";
+  payProfileReturnByKey.set(config.key, {
+    workspaceKey: config.key,
+    role: config.role,
+    appealId: appeal.id,
+    formOrigin,
+    detailSnapshot: {
+      selectedId: appeal.id,
+      view: "detail",
+      inlinePanel: formOrigin === "inline-pay" ? "pay" : null,
+      inlineReview: formOrigin === "review-paid" ? { appealId: appeal.id, stageId: SYSTEM.PAID } : null,
+      payDraft: clonePayDraft(s.payDraft),
+    },
+  });
+  hooks.openProfileForPayCategories?.();
+}
+
+export function resumePayProfileCategoriesTrip(config, hooks) {
+  const ctx = payProfileReturnByKey.get(config.key);
+  if (!ctx || ctx.role !== config.role) {
+    clearPayProfileReturnContext(config.key);
+    return false;
+  }
+  if (!appeals.some((a) => a.id === ctx.appealId)) {
+    clearPayProfileReturnContext(config.key);
+    return false;
+  }
+  const s = ws(config.key);
+  const d = ctx.detailSnapshot;
+  s.view = d.view;
+  s.selectedId = d.selectedId;
+  s.inlinePanel = d.inlinePanel;
+  s.inlineReview = d.inlineReview ? { ...d.inlineReview } : null;
+  s.payDraft = revalidatePayDraftAfterProfile(config, d.payDraft);
+  hooks.notify?.("Черновик оплаты восстановлен. Проверьте категории из профиля.");
+  hooks.refresh?.();
+  return true;
 }
 
 // ── Cabinet integration ──
@@ -1711,6 +1827,7 @@ function ensureSeed(config) {
     sharedDatasetEmpty = empty;
     sharedDatasetSeeded = false;
     clearClientPurchaseLedger();
+    clearAllPayProfileReturnContexts();
     workspaces.forEach((w) => {
       w.seeded = false;
       w.datasetEmpty = null;
@@ -2393,6 +2510,10 @@ export function hydrateClientAppeals(hooks) {
 function handleCaAction(action, config, hooks) {
   const s = ws(config.key);
   hooks.clearNotice?.();
+  if (action === "pay:profile-categories") {
+    beginPayProfileCategoriesTrip(config, { ...hooks, openProfileForPayCategories: config.openProfileForPayCategories });
+    return;
+  }
   if (action.startsWith("nav:")) {
     const v = action.split(":")[1];
     if (v === "profile") {
@@ -2411,6 +2532,7 @@ function handleCaAction(action, config, hooks) {
       s.detailPickStage = false;
       s.showRefusal = null;
       s.payDraft = null;
+      clearPayProfileReturnContext(config.key);
     }
     hooks.refresh();
     return;
@@ -2454,6 +2576,7 @@ function handleCaAction(action, config, hooks) {
     s.showRefusal = null;
     s.inlineReview = null;
     s.payDraft = null;
+    clearPayProfileReturnContext(config.key);
     hooks.refresh();
     return;
   }

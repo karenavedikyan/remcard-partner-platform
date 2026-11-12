@@ -49,6 +49,8 @@ button.ca-row{font:inherit;color:inherit}
 [data-theme=dark] .ca-section .btn.primary{color:var(--onaccent,#271b1a)}
 [data-theme=dark] .ca-section .btn.primary:hover{color:var(--onaccent,#271b1a);filter:brightness(1.06)}
 .ca-section .linkbtn{display:none}
+.ca-profile-return{margin-bottom:var(--s4,16px)}
+.ca-pay-profile-link{margin:0 0 var(--s3,12px)}
 .page-header .ca-back{margin:0}
 .page-header:has(> .ca-back){display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nav nav" "head badge";gap:var(--s3,12px) var(--s4,16px);align-items:start}
 .page-header:has(> .ca-back)>.ca-back{grid-area:nav;justify-self:start}
