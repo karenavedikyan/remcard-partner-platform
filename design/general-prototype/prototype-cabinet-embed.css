@@ -105,10 +105,3 @@ html.cabinet-embed-mode .embed-supplemental-actions .btn {
   font: inherit;
   cursor: pointer;
 }
-
-html.cabinet-embed-mode[data-embed-readonly="1"] .wallet-accruals-history__filters,
-html.cabinet-embed-mode[data-embed-readonly="1"] #filter-button,
-html.cabinet-embed-mode[data-embed-readonly="1"] #clear-filters {
-  opacity: 0.45;
-  pointer-events: none;
-}

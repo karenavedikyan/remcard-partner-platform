@@ -26,6 +26,12 @@ assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");
 assert.match(numbering, /__protoCabinetEmbeddedPage/, "embedded page badge");
 assert.match(numbering, /proto-embed-change/, "parent listens embed badge changes");
+const embedCss = readFileSync(path.join(root, "prototype-cabinet-embed.css"), "utf8");
+assert.doesNotMatch(
+  embedCss,
+  /embed-readonly[\s\S]*#filter-button/,
+  "read-only embed must not block wallet history filters",
+);
 const numberingCss = readFileSync(path.join(root, "prototype-numbering.css"), "utf8");
 assert.match(numberingCss, /proto-cabinet-embed-host-active/, "reviewer dock above embed portal");
 assert.match(roles, /handleEmbedSupplementalAction/, "parent supplemental bridge");

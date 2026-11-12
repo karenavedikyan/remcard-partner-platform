@@ -212,9 +212,69 @@ try {
   assert.match(agent147.purpose || "", /вознагражден/i);
   assert.equal(agent147.iframeRole, "agent");
   assert.equal(agent147.srcRole, "agent");
+  const filterPe = await frame147.locator("#filter-button").evaluate((el) => getComputedStyle(el).pointerEvents);
+  assert.notEqual(filterPe, "none", "agent read-only wallet must keep filter control clickable");
+  await frame147.locator("#filter-button").click();
+  await frame147.locator("#filters:not([hidden])").waitFor({ timeout: 5000 });
+  assert.equal(await frame147.locator("#filter-button").getAttribute("aria-expanded"), "true");
+  await frame147.locator("#status").selectOption("active");
+  await frame147.locator("#result-count").waitFor({ timeout: 3000 });
   const src = await agentWallet.locator("[data-testid='cabinet-standalone-frame']").getAttribute("src");
   assert.ok(src?.includes("embed_role=agent"), "147 iframe must carry embed_role");
   await agentWallet.close();
+
+  const scanEmp = await browser.newPage();
+  await scanEmp.setViewportSize({ width: 1280, height: 900 });
+  await scanEmp.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
+  await scanEmp.evaluate(() => {
+    document.querySelector('[data-testid="scenario-role"]')?.dispatchEvent(new Event("change", { bubbles: true }));
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await scanEmp.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await scanEmp.evaluate(() => {
+    const review = document.querySelector("#review");
+    if (review && !review.open) review.open = true;
+  });
+  await scanEmp.waitForSelector('[data-testid="permission-clients"]', { timeout: 10000 });
+  for (const perm of [
+    "terms",
+    "sale",
+    "ledger",
+    "cash",
+    "transfer",
+    "recommend",
+    "team",
+    "catalog",
+    "own",
+  ]) {
+    const el = scanEmp.locator(`[data-testid="permission-${perm}"]`);
+    if (await el.count()) await el.setChecked(false);
+  }
+  await scanEmp.locator('[data-testid="permission-clients"]').setChecked(true);
+  await scanEmp.locator('[data-testid="permission-scan"]').setChecked(true);
+  await scanEmp.locator('[data-control="invite"]').selectOption("valid");
+  await scanEmp.waitForTimeout(300);
+  await scanEmp.goto(`${base}/partner/index.html?role=employee&open=clients&proto_standalone=146`, {
+    waitUntil: "load",
+  });
+  await scanEmp.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
+  const frame146 = scanEmp.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame146.locator("#pst-confirm").waitFor({ timeout: 8000 });
+  const scanUi = await frame146.locator("html").evaluate(() => {
+    const confirm = document.getElementById("pst-confirm");
+    const finish = document.getElementById("pst-review-finish");
+    const notice = document.querySelector(".pst-notice span");
+    return {
+      confirmDisabled: confirm?.disabled === true || confirm?.hasAttribute("disabled"),
+      confirmHidden: confirm?.hidden || confirm?.hasAttribute("hidden"),
+      finishHidden: finish?.hidden || finish?.hasAttribute("hidden"),
+      notice: notice?.textContent?.trim() || "",
+    };
+  });
+  assert.ok(scanUi.confirmDisabled && scanUi.confirmHidden, "scan-only employee: pst-confirm disabled and hidden");
+  assert.ok(scanUi.finishHidden, "scan-only employee: pst-review-finish hidden");
+  assert.match(scanUi.notice, /Подтверждение продажи недоступно|Просмотр макета/i);
+  await scanEmp.close();
 
   const chainPage = await browser.newPage();
   await chainPage.setViewportSize({ width: 1280, height: 900 });
