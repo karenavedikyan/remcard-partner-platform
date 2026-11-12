@@ -170,9 +170,11 @@ export function BusinessWorkingProfileWizard({
   };
 
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
+    const validationIntent = step < 3 ? "cabinet" : "activation";
     const err = validateWorkingProfileDraft(nextDraft, {
       profile: profileRef.current,
       partnerSearchTouched: partnerSearchTouchedRef.current,
+      validationIntent,
     });
     if (err) {
       setBanner({ kind: "error", text: err });
@@ -185,6 +187,7 @@ export function BusinessWorkingProfileWizard({
     try {
       const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft, {
         partnerSearchTouched: partnerSearchTouchedRef.current,
+        validationIntent,
       });
       if (!persistStillCurrent(generationAtStart, requestId)) {
         return false;

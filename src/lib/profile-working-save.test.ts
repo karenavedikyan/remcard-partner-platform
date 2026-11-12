@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { profileDraftFromProfile } from "./profile-draft-sync";
 import { validateWorkingProfileDraft } from "./profile-working-save";
 import type { ProfileDraft } from "./profile-save";
+import type { ProProfileResponse, WorkingProfileDto } from "./types";
 
 const base: ProfileDraft = {
   displayName: "Иван",
@@ -51,5 +53,135 @@ describe("validateWorkingProfileDraft", () => {
       primaryDirection: { kind: "service", id: "doors" },
     });
     expect(err).toBeNull();
+  });
+});
+
+function businessFixture(
+  partnerType: "STORE" | "COMPANY",
+  working: Partial<WorkingProfileDto> = {},
+): ProProfileResponse {
+  return {
+    organization: {
+      id: "org-wizard",
+      name: "Орг",
+      catalogStatus: "DRAFT",
+      partnerType,
+      branchCount: 0,
+    },
+    programs: [],
+    workingProfile: {
+      productCategoryIds: [],
+      serviceSpecializationIds: [],
+      navigatorStageIds: [],
+      effectiveProductCategoryIds: [],
+      effectiveServiceSpecializationIds: [],
+      effectiveNavigatorStageIds: [],
+      primaryDirection: null,
+      workingDirectionsTouched: false,
+      partnerSearchVisible: true,
+      partnerSearchOptIn: true,
+      partnerSearchOptInExplicit: true,
+      partnerWorkMode: null,
+      areas: [],
+      partnershipContactName: null,
+      partnershipContactPhone: null,
+      partnershipContactEmail: null,
+      ...working,
+    },
+    user: {
+      id: "u-wiz",
+      publicId: "RC-WIZ",
+      displayName: "Пётр",
+      city: "Краснодар",
+      role: "PRO",
+      partnerType,
+      partnerActivities: [partnerType],
+      catalogStatus: "DRAFT",
+      isPublic: false,
+      specializations: [],
+      description: null,
+      rejectionReason: null,
+      badges: [],
+      photoUrl: null,
+      storeCategories: [],
+      areas: [],
+      website: null,
+      telegram: null,
+      whatsapp: null,
+      instagram: null,
+      vk: null,
+      max: null,
+      yandex: null,
+      publicEmail: null,
+      publicPhone: null,
+      showFullName: false,
+    },
+  };
+}
+
+describe("validateWorkingProfileDraft validationIntent", () => {
+  it.each(["STORE", "COMPANY"] as const)(
+    "cabinet intent allows explicit ON without directions for %s",
+    (partnerType) => {
+      const profile = businessFixture(partnerType);
+      const draft = profileDraftFromProfile(profile);
+      expect(draft.partnerSearchOptIn).toBe(true);
+      expect(
+        validateWorkingProfileDraft(draft, {
+          profile,
+          partnerSearchTouched: false,
+          validationIntent: "cabinet",
+        }),
+      ).toBeNull();
+    },
+  );
+
+  it.each(["STORE", "COMPANY"] as const)(
+    "activation intent blocks explicit ON without directions for %s",
+    (partnerType) => {
+      const profile = businessFixture(partnerType);
+      const draft = profileDraftFromProfile(profile);
+      expect(
+        validateWorkingProfileDraft(draft, {
+          profile,
+          partnerSearchTouched: false,
+          validationIntent: "activation",
+        }),
+      ).toMatch(/видимости/);
+    },
+  );
+
+  it("AUTO profile skips search-direction rule for AUTO and OFF", () => {
+    const auto = businessFixture("STORE", {
+      partnerSearchOptInExplicit: false,
+      partnerSearchOptIn: false,
+      partnerSearchVisible: true,
+    });
+    const autoDraft = profileDraftFromProfile(auto);
+    const autoCtx = { profile: auto, partnerSearchTouched: false as const };
+    expect(
+      validateWorkingProfileDraft(autoDraft, { ...autoCtx, validationIntent: "activation" }),
+    ).toBeNull();
+
+    const off = businessFixture("STORE", {
+      partnerSearchOptIn: false,
+      partnerSearchOptInExplicit: true,
+      partnerSearchVisible: false,
+    });
+    expect(
+      validateWorkingProfileDraft(profileDraftFromProfile(off), {
+        profile: off,
+        validationIntent: "activation",
+        partnerSearchTouched: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("still requires basics on cabinet intent", () => {
+    const profile = businessFixture("STORE");
+    const draft: ProfileDraft = { ...profileDraftFromProfile(profile), city: "  " };
+    expect(
+      validateWorkingProfileDraft(draft, { profile, validationIntent: "cabinet" }),
+    ).toMatch(/город/);
   });
 });

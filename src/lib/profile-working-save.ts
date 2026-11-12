@@ -3,11 +3,16 @@ import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
-import { buildWorkingProfilePatchBody, type WorkingSaveOptions } from "@/lib/working-profile-patch";
+import {
+  buildWorkingProfilePatchBody,
+  type WorkingProfileValidationIntent,
+  type WorkingSaveOptions,
+} from "@/lib/working-profile-patch";
 
 export type WorkingProfileValidationContext = {
   profile: ProProfileResponse;
   partnerSearchTouched?: boolean;
+  validationIntent?: WorkingProfileValidationIntent;
 };
 
 export function validateWorkingProfileDraft(
@@ -31,10 +36,12 @@ export function validateWorkingProfileDraft(
   // A server-computed AUTO default is not an explicit search visibility choice.
   // Keep the historical strict default for callers without context,
   // and the minimum for a touched ON checkbox or an already explicit ON profile.
+  const intent: WorkingProfileValidationIntent = context?.validationIntent ?? "activation";
   const requiresSearchDirections =
-    !context ||
-    context.partnerSearchTouched === true ||
-    context.profile.workingProfile?.partnerSearchOptInExplicit === true;
+    intent !== "cabinet" &&
+    (!context ||
+      context.partnerSearchTouched === true ||
+      context.profile.workingProfile?.partnerSearchOptInExplicit === true);
   if (draft.partnerSearchOptIn && requiresSearchDirections && !hasDirections) {
     return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
   }
@@ -149,6 +156,7 @@ export async function persistWorkingProfileDraft(
   const validationError = validateWorkingProfileDraft(draft, {
     profile,
     partnerSearchTouched: options.partnerSearchTouched,
+    validationIntent: options.validationIntent,
   });
   if (validationError) {
     throw new RemcardApiError(400, validationError, null);

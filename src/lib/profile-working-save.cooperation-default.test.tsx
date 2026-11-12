@@ -158,12 +158,24 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     expect(calls).toEqual([]);
   });
 
-  it("retains the minimum for an already explicit ON profile during an unrelated save", async () => {
+  it("retains the minimum for an already explicit ON profile during activation save", async () => {
     current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
     await expect(persistWorkingProfileDraft(current, {
       ...profileDraftFromProfile(current), city: "Сочи",
-    })).rejects.toThrow(/категорию товаров или услуг/);
+    }, { validationIntent: "activation" })).rejects.toThrow(/категорию товаров или услуг/);
     expect(calls).toEqual([]);
+  });
+
+  it("allows wizard cabinet save for explicit ON legacy without directions", async () => {
+    current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
+    const result = await persistWorkingProfileDraft(current, {
+      ...profileDraftFromProfile(current), city: "Сочи",
+    }, { validationIntent: "cabinet" });
+    expect(calls).toEqual([
+      { method: "PATCH", path: "/api/remcard/api/pro/profile", body: { city: "Сочи" } },
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
+    ]);
+    expect(result.user.city).toBe("Сочи");
   });
 
   it("cannot remove the last direction from an existing explicit ON profile", async () => {

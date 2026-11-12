@@ -19,9 +19,16 @@ function primaryEqual(
   return a.kind === b.kind && a.id === b.id;
 }
 
+export type WorkingProfileValidationIntent = "cabinet" | "activation";
+
 export type WorkingSaveOptions = {
   /** User explicitly changed partner search visibility checkbox this session. */
   partnerSearchTouched?: boolean;
+  /**
+   * cabinet — wizard / intermediate saves: basics and contacts only.
+   * activation — final profile save or ProfileEditor: enforce search-direction rules.
+   */
+  validationIntent?: WorkingProfileValidationIntent;
 };
 
 export function buildWorkingProfilePatchBody(
