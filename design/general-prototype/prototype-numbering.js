@@ -390,6 +390,20 @@ const PAGE_DEFS = [
   const byN = new Map(PAGE_DEFS.map((p) => [p.n, p]));
   const byAdminView = new Map(PAGE_DEFS.filter((p) => p.adminView).map((p) => [p.adminView, p]));
 
+  function partnerNavAction(section, page) {
+    if (section === "bonus" || section === "settlements") return "wallet";
+    if (section === "clients" && page?.clientAppealsView === "scan") return "scanner";
+    return section;
+  }
+
+  function closeActiveAppDialogs() {
+    document.querySelectorAll(`dialog[open]:not([${UI_MARK}])`).forEach((dlg) => {
+      try {
+        if (typeof dlg.close === "function") dlg.close();
+      } catch (_) {}
+    });
+  }
+
   function pageHref(page) {
     if (page.rel && page.zone !== "partner") return hubUrl(page.rel);
     if (page.zone === "partner" && page.partnerMode === "registration") return hubUrl("partner/index.html");
@@ -417,6 +431,7 @@ const PAGE_DEFS = [
       ev?.preventDefault();
       return;
     }
+    closeActiveAppDialogs();
     const rel = pathnameRel();
     if (page.adminView) {
       ev?.preventDefault();
@@ -438,14 +453,17 @@ const PAGE_DEFS = [
     if (page.partnerRole && (rel === "partner/roles.html" || rel === "partner/index.html")) {
       ev?.preventDefault();
       const roleEl = document.querySelector('[data-testid="scenario-role"]');
-      if (roleEl) {
+      const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
+      if (roleEl && roleEl.value !== page.partnerRole) {
         roleEl.value = page.partnerRole;
         roleEl.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      document.querySelector('[data-testid="view-cabinet"]')?.click();
+      if (cabinetBtn && cabinetBtn.getAttribute("aria-pressed") !== "true") {
+        cabinetBtn.click();
+      }
       if (page.partnerSection && page.partnerSection !== "home") {
-        const navSection = page.partnerSection === "clients" && page.clientAppealsView === "scan" ? "scanner" : page.partnerSection;
-        document.querySelector(`[data-action="nav:${navSection}"]`)?.click();
+        const navKey = partnerNavAction(page.partnerSection, page);
+        document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
       }
       if (page.tocOpen) return;
       scheduleRefresh();

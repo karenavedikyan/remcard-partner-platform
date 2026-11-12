@@ -135,4 +135,9 @@ try {
   server.close();
 }
 
+const reviewerJs = readFileSync(new URL("./prototype-numbering.js", import.meta.url), "utf8");
+assert.match(reviewerJs, /partnerNavAction/, "wallet nav normalization");
+assert.match(reviewerJs, /closeActiveAppDialogs/, "close dialog before TOC nav");
+assert.match(reviewerJs, /nav:\$\{navKey\}/, "same-area partner uses nav key");
+
 console.log("prototype-numbering.browser: ok", { port, hostedPrefix: HOSTED_PREFIX });
