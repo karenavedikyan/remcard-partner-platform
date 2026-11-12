@@ -65,7 +65,12 @@
       var pageN = resolvePageFromHref(href);
       if (pageN) {
         e.preventDefault();
-        post({ type: "nav", pageN: pageN, query: "" });
+        try {
+          var u = new URL(href, window.location.href);
+          post({ type: "nav", pageN: pageN, query: u.search || "" });
+        } catch (_) {
+          post({ type: "nav", pageN: pageN, query: "" });
+        }
         return;
       }
       if (/index\.html|\.\.\//.test(href)) {

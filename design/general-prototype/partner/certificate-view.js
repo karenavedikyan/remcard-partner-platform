@@ -77,7 +77,7 @@ export function certificateCard(record, management = "") {
     <div class="rc-cert-code" data-testid="certificate-code">${esc(code)}</div>
     <button type="button" class="btn" data-certificate-copy="${esc(code)}">Скопировать код</button>
     ${management ? `<div class="rc-cert-management"><span class="small">Название для себя</span><strong>${esc(record.name)}</strong>${management}</div>` : ""}
-    </article><button type="button" class="btn" data-testid="certificate-public-view" data-action="proto-guest-preview:139">Посмотреть как клиент</button>
+    </article><button type="button" class="btn" data-testid="certificate-public-view" data-action="proto-guest-preview:139:${esc(record.id || record.displayCode || "demo")}">Посмотреть как клиент</button>
     <details class="rc-cert-details"><summary>Условия и информация о создании</summary><p>Создатель: ${esc(record.issuerNameSnapshot || "Не указан")} · ${esc(record.issuerTypeLabel || "Тип не указан")}</p><ul>${terms.map((item) => `<li>${esc(item.partnerName)} · ${esc(item.categoryName)}: скидка ${esc(item.discount)}%</li>`).join("")}</ul></details>
     <p class="small">А: агент · М: магазин · К: компания · С: специалист. Буква фиксируется при создании.</p>
     <p class="small">Демо: QR открывает публичный пример, не рабочий сертификат. Ссылка содержит только предложения и скидки, без бонусов и личных данных. Статус примера не синхронизируется с кабинетом.</p>

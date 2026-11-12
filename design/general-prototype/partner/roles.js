@@ -20,11 +20,11 @@ import {
   leaveCabinetPreviewDrafts,
 } from "./cabinet-preview-seeds.js";
 import {
-  initCabinetStandaloneHost,
+  createCabinetStandaloneHost,
   handleStandaloneHostClick,
   parseStandaloneDeepLink,
   waitForCabinetReady,
-} from "./cabinet-standalone-host.js?v=embed1";
+} from "./cabinet-standalone-host.js?v=embed2";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -2797,10 +2797,106 @@ function paintDirectoryResults() {
 function $t() {
   hubFindShell({ state: de, dictionary: Le, cities: [...new Set(P.map((e) => e.city))], typeLabels: Object.fromEntries(Object.entries(ee).map(([key, value]) => [key, value.label])), certReturn: !!Z, results: Ct });
 }
+let standaloneHost = null;
+function standaloneCanOpen(pageN) {
+  if (pageN === 141) return false;
+  if (pageN === 146 && i.role === "agent") return false;
+  if (k()) {
+    if (pageN === 143) return ue() || O("partners");
+    if (pageN === 146) return O("scan") || O("sale");
+    if ([147, 144, 145].includes(pageN)) return O("ledger") || O("bonus") || O("cash");
+    if ([139, 140, 142].includes(pageN)) return O("clients") || O("recommend");
+    return false;
+  }
+  if (pageN === 143) return ue() || i.role !== "employee";
+  if (pageN === 146) return i.role !== "agent" && (O("scan") || O("sale") || ["store", "company", "specialist"].includes(i.role));
+  if ([147, 144, 145].includes(pageN)) return ["store", "company", "specialist", "agent"].includes(i.role);
+  if ([139, 140, 142].includes(pageN)) return O("clients") || i.role === "agent" || O("recommend");
+  return true;
+}
+function resolveStandaloneEmbedPayload(pageN, ctx) {
+  if (pageN === 143 && ctx?.partnerId) {
+    const partner = P.find((p) => p.id === ctx.partnerId);
+    if (!partner) return null;
+    const catalog = G.find((l) => l.id === partner.id);
+    let categories = (catalog?.categories || []).map((c) => ({
+      name: c.name,
+      limit: c.limit,
+    }));
+    if (typeof coop !== "undefined" && coop?.ensure) {
+      const state = coop.ensure(partner.id);
+      const agreed = partner.ready ? state.agreed : null;
+      if (agreed?.length) {
+        categories = agreed.map((c) => ({ name: c.name, limit: c.limit }));
+      }
+    }
+    const paused =
+      typeof coop !== "undefined" && coop?.isPaused ? coop.isPaused(partner.id) : false;
+    return {
+      partner: {
+        name: partner.name,
+        city: partner.city,
+        typeLabel: ee[partner.type]?.label || "Партнёр",
+      },
+      categories,
+      paused,
+      partnerId: partner.id,
+    };
+  }
+  if (pageN === 139 && ctx?.record) {
+    return { record: ctx.record, displayCode: ctx.record.displayCode, partner: ctx.record.partner };
+  }
+  return ctx || null;
+}
+function ensureStandaloneHost() {
+  if (!standaloneHost) {
+    standaloneHost = createCabinetStandaloneHost({
+      getScreen: () => i.screen,
+      canOpen: (pageN) => standaloneCanOpen(pageN),
+      notify: (m, tone) => U(m, tone || "info"),
+      shouldResetOnRerender: () => i.screen !== "cabinet",
+      resolveEmbedPayload: resolveStandaloneEmbedPayload,
+      onCoopAction: (action, partnerId) => {
+        const partner = P.find((p) => p.id === partnerId);
+        if (!partner) return;
+        if (action === "edit-terms") coop.openTermChange?.(partner);
+        else if (action === "toggle-pause") {
+          if (coop.isPaused(partnerId)) coop.openResumeConfirm?.(partner);
+          else coop.openPauseConfirm?.(partner);
+        } else if (action === "certificate") {
+          standaloneHost.closeHost({ reset: true });
+          if (O("clients") && !coop.isPaused(partnerId)) {
+            ct();
+            document.querySelector('[data-action="action:recommend"]')?.click();
+          }
+        }
+        standaloneHost.refreshContext();
+      },
+      onReturn: (ctx) => {
+        if (ctx?.page) i.page = ctx.page;
+        T();
+      },
+    });
+  }
+  return standaloneHost;
+}
+function openPartnerCooperationEmbed(partner, collectionKey) {
+  if (!partner?.ready || !standaloneCanOpen(143)) return false;
+  if (se.open) _();
+  return ensureStandaloneHost().openStandalone(143, {
+    embedCtx: { partnerId: partner.id, collectionKey },
+    returnCtx: { page: i.page, partnerId: partner.id, collectionKey },
+    extraQuery: `partner_id=${encodeURIComponent(partner.id)}`,
+  });
+}
 function Ht(e, t = !1) {
   let a = P.find((s) => s.id === e);
-  a &&
-    E(
+  if (!a) return;
+  if (a.ready) {
+    openPartnerCooperationEmbed(a, "directory");
+    return;
+  }
+  E(
       a.name,
       `<span class="pill">${ee[a.type].label} \xB7 ${r(a.city)}</span><p>${r(a.topics.join(", "))}</p>${directoryFullDirections(a, Le, r)}${qt(a)}<p class="small">Демонстрационный профиль RemCard. Регистрация уже пройдена, повторно регистрироваться не нужно.</p>
     ${t ? `${a.ready ? '<p class="notice">У вас уже есть согласованные условия.</p>' : Ve(e) ? '<p class="notice">Приглашение ожидает ответа.</p>' : d("Предложить сотрудничество", `directory-invite:${e}`, "primary")}` : a.ready || Ve(e) ? '<p class="notice">Повторное приглашение не требуется.</p>' : `<form id="directory-invite-form" data-target="${e}" class="stack"><label class="field">Что предлагаете<input name="subject" required maxlength="160" value="Хочу рекомендовать ваши товары и услуги своим клиентам"></label><p class="notice">Приглашение адресовано этому профилю. Сотрудничество и условия требуют согласия партнёра.</p><button class="btn primary" type="submit">Отправить демоприглашение</button></form>`}
@@ -3295,7 +3391,7 @@ function legacyLa() {
                 : i.page === "partners"
                   ? `${ue() ? `<div class="row" style="margin-bottom:20px">${d("Найти в RemCard", "new-link:partner")}${d("Мои приглашения", "nav:links", "ghost")}</div>` : ""}${Ca()}`
                   : i.page === "scanner"
-                    ? `<section class="panel empty">${D("scan-line")}<h2>Проверка сертификата</h2><p class="muted">Проверьте условия до продажи. Сканирование само по себе не начисляет и не списывает бонусы.</p>${d("Открыть демонстрационный сертификат", "action:scan", "primary")}${d("Макет оформления покупки", "proto-standalone:146", "ghost")}</section>`
+                    ? `<section class="panel empty">${D("scan-line")}<h2>Проверка сертификата</h2><p class="muted">Проверьте условия до продажи. Сканирование само по себе не начисляет и не списывает бонусы.</p>${d("Открыть демонстрационный сертификат", "action:scan", "primary")}</section>`
                     : i.page === "settlements"
                       ? `<section class="panel stack"><h2>Взаиморасчёты ${k() ? "организации" : ""}</h2><p class="muted">Начисление при продаже и погашение при выплате являются разными операциями.</p><div class="notice">Нет демонстрационных обязательств к выплате.</div><div class="row">${O("cash") ? d("Пример выдачи наличных", "action:cash") : ""}${O("transfer") ? d("Пример фиксации перевода", "action:transfer") : ""}</div><small>${k() && !O("cash") && !O("transfer") ? "Вам доступен только просмотр. Права на выплаты не назначены." : "Перевод выполняется вне RemCard. Здесь фиксируется только уже выполненная выплата."}</small></section>`
                       : i.page === "team"
@@ -3464,6 +3560,16 @@ function clientAppealsConfig() {
     role: i.role,
     icon: D,
     readOnly: k() && !O("clients"),
+    onProtoStandalone: (pageN) => {
+      if (!standaloneCanOpen(pageN)) {
+        U("Раздел недоступен для этой роли в демо.", "info");
+        return;
+      }
+      ensureStandaloneHost().openStandalone(pageN, {
+        returnCtx: { page: i.page, role: i.role, source: "client-appeals" },
+        embedCtx: { source: "client-appeals", pageN },
+      });
+    },
     scanEntry: i.page === "scanner",
     exitScannerEntry: () => {
       resetClientAppealsNav(clientAppealsConfig());
@@ -3781,6 +3887,11 @@ function Oa(e, t, a) {
     Ne(t.id);
     return;
   }
+  if (t.ready) {
+    openPartnerCooperationEmbed(t, a);
+    coop.onPartnerOpened?.(t.id);
+    return;
+  }
   let s = i.invitations.find(
       (l) =>
         l.targetId === t.id &&
@@ -3791,7 +3902,7 @@ function Oa(e, t, a) {
     n = G.find((l) => l.id === t.id);
   E(
     t.name,
-    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${t.ready ? d("Актуальный макет условий", `proto-standalone:143:${t.id}`, "ghost") : ""}${t.partnershipNote ? `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(t.partnershipNote)}</p></section>` : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
+    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${t.partnershipNote ? `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(t.partnershipNote)}</p></section>` : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
   );
   se.querySelector(".dialog-body").insertAdjacentHTML("beforeend", `<div class="record-card-actions">${recordActionToolbar("partners", t, a, k() && !O("terms"), false, false)}</div>`);
   if (!k() || O("ledger"))
@@ -4013,6 +4124,7 @@ function R() {
       i.reviewOpen = a.target.open;
     }),
     be({ icons: ve }));
+  standaloneHost?.afterCabinetRender?.();
 }
 document.addEventListener("keydown", (e) => Ge.keydown(e));
 document.addEventListener("remcard:mobile-icons", () => be({ icons: ve }));
@@ -4276,26 +4388,6 @@ document.addEventListener("change", (e) => {
       (i.notice = ""),
       R()));
 });
-let standaloneHost = null;
-function ensureStandaloneHost() {
-  if (!standaloneHost) {
-    standaloneHost = initCabinetStandaloneHost({
-      getScreen: () => i.screen,
-      button: d,
-      notify: (m, tone) => U(m, tone || "info"),
-      onReturn: (ctx) => {
-        if (ctx?.reopenPartnerId) {
-          const partner = P.find((p) => p.id === ctx.reopenPartnerId);
-          if (partner) Oa("partners", partner, "partners");
-          return;
-        }
-        if (ctx?.page) i.page = ctx.page;
-        T();
-      },
-    });
-  }
-  return standaloneHost;
-}
 document.addEventListener("click", (e) => {
   if (Ge.click(e) || ce.click(e) || emptyStates.click(e)) return;
   coop.captureTriggerFromEvent?.(e);
@@ -4305,20 +4397,28 @@ document.addEventListener("click", (e) => {
       getPage: () => i.page,
       getRole: () => i.role,
       notify: (m, tone) => U(m, tone || "info"),
-      canOpen: (pageN) => {
-        if ([139, 140, 141, 142].includes(pageN)) {
-          return O("clients") || i.role === "agent" || O("recommend");
+      buildEmbedCtx: (pageN, suffix) => {
+        if (pageN === 139) {
+          const record =
+            B(suffix) ||
+            i.records[Number(suffix)] ||
+            i.records.find((rec) => rec.id === suffix || rec.displayCode === suffix);
+          return { recordId: suffix, record };
         }
-        if (pageN === 143) return !k() || ue() || O("partners");
-        if ([147, 144, 145].includes(pageN)) return !k() || O("ledger") || O("bonus") || O("cash");
-        if (pageN === 146) return O("scan") || O("sale");
-        return true;
+        if (pageN === 143) return { partnerId: suffix };
+        return { suffix };
       },
-      extraQuery: (pageN, suffix) => (pageN === 143 && suffix ? `partner_id=${encodeURIComponent(suffix)}` : ""),
-      buildReturnContext: (pageN, suffix) => ({
+      extraQuery: (pageN, suffix) => {
+        if (pageN === 143 && suffix) return `partner_id=${encodeURIComponent(suffix)}`;
+        if (pageN === 139 && suffix) return `cert_ref=${encodeURIComponent(suffix)}`;
+        return "";
+      },
+      buildReturnContext: (pageN, suffix, embedCtx) => ({
         page: i.page,
         role: i.role,
-        reopenPartnerId: pageN === 143 ? suffix : null,
+        partnerId: pageN === 143 ? suffix : undefined,
+        embedCtx,
+        collectionKey: i.page,
       }),
     })
   ) {
@@ -4349,6 +4449,7 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (a === "nav") {
+  standaloneHost?.resetHost();
     if (!navAllowedInRelease(s)) {
       U(
         "Раздел доступен в релизе 2 прототипа. Переключите «Релиз» в панели макета.",
@@ -4674,7 +4775,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       "Поделиться",
       `<label class="field">Готовый текст<textarea id="share-copy" rows="7" readonly>${r(l)}${n.proposedTerms ? `\n\nПредлагаемые условия:\n${r(n.proposedTerms)}\nУсловия требуют согласования обеими сторонами.` : ""}
 
-[Здесь будет ссылка. Сейчас это демонстрационный макет.]</textarea></label>${d("Скопировать текст", "copy-link-message", "primary")}<p class="small" id="copy-result" role="status">Настоящая ссылка в макете не создаётся.</p>${Z ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}`,
+[Здесь будет ссылка. Сейчас это демонстрационный макет.]</textarea></label>${d("Скопировать текст", "copy-link-message", "primary")}${n.kind === "certificate" ? d("Гостевой макет рекомендации", "proto-guest-preview:140", "ghost") : ""}<p class="small" id="copy-result" role="status">Настоящая ссылка в макете не создаётся.</p>${Z ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}`,
     );
   }
   if (a === "copy-link-message") {
@@ -4697,6 +4798,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       }));
   }
   if (a === "role") {
+    standaloneHost?.resetHost();
     if (entryState.registering) entryState.chosen = true;
     (i.role !== s && gt(s),
       i.role !== s &&
@@ -5195,8 +5297,13 @@ R();
       return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     })
     .then(() => {
-      ensureStandaloneHost().openStandalone(pageN, { returnCtx: { page: i.page } });
-      T();
+      if (standaloneCanOpen(pageN)) {
+        ensureStandaloneHost().openStandalone(pageN, {
+          returnCtx: { page: i.page, role: i.role },
+          embedCtx: { deepLink: true },
+        });
+        standaloneHost?.afterCabinetRender?.();
+      }
     })
     .catch(() => {});
 })();

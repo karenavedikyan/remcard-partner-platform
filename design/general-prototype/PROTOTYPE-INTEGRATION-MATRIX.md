@@ -6,7 +6,7 @@
 |---|-----|------|------------------------|:-----:|:-------:|:----------:|:-----:|:--------:|
 | 139 | partner:certificate-guest | `partner/certificate.html` | Сертификат → «Посмотреть как клиент» | ✓ clients | ✓ | ✓ | ✓ | ✓* |
 | 140 | partner:recommendation-guest | `partner/recommendation.html` | TOC / гостевой контекст рекомендации | ✓ | ✓ | ✓ | ✓ | N/A† |
-| 141 | partner:assignment-guest | `partner/assignment.html` | TOC / поручение (hash) | ✓ | ✓ | ✓ | N/A | N/A† |
+| 141 | partner:assignment-guest | `partner/assignment.html` | **N/A** — нет R2 handoff в ЛК; только TOC | — | — | — | — | — |
 | 142 | partner:observer-guest | `partner/observer.html` | Клиенты → наблюдение (гостевой макет) | ✓ | ✓ | N/A | N/A | ✓* |
 | 143 | partner:cooperation-detail | `partner/partner-cooperation-detail.html` | Партнёры → карточка → «Актуальный макет условий»; хаб `proto_standalone=143` | ✓ | ✓ | ✓ | ✓ | ✓* |
 | 144 | partner:purchase-detail | `partner/partner-purchase-detail.html` | Кошелёк → история (147) → покупка; хаб `proto_standalone=144` | ✓‡ | ✓‡ | ✓‡ | ✓‡ | ✓*‡ |

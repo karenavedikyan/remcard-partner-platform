@@ -77,5 +77,5 @@
     });
   });
   detail.addEventListener("close", () => byId("open-detail").focus());
-  openDialog("partner-dialog");
+  if (!new URLSearchParams(location.search).get("cabinet_embed")) openDialog("partner-dialog");
 })();

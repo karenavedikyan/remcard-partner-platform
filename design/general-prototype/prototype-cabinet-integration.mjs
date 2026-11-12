@@ -17,8 +17,9 @@ const numbering = readFileSync(path.join(root, "prototype-numbering.js"), "utf8"
 
 assert.match(host, /STANDALONE_BY_N/, "standalone catalog");
 assert.match(host, /cabinet_embed/, "embed query");
-assert.match(roles, /cabinet-standalone-host/, "roles imports host");
-assert.match(roles, /proto-standalone:143/, "partner cooperation embed action");
+assert.match(roles, /createCabinetStandaloneHost/, "roles imports portal host");
+assert.match(roles, /openPartnerCooperationEmbed/, "partner opens embed 143 directly");
+assert.match(host, /ev\.source !== frame\.contentWindow/, "message source guard");
 assert.match(roles, /handleStandaloneHostClick/, "roles wires standalone clicks");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");

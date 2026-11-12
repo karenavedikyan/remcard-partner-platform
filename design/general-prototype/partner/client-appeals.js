@@ -2353,7 +2353,8 @@ function renderObserverClientPage(config) {
   <section class="panel stack">
     <h3>Хронология (без внутренних заметок партнёра)</h3>
     <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
-  </section>`;
+  </section>
+  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Гостевой макет наблюдения</button></div>`;
 }
 
 function backLink(config, label, action) {
@@ -2640,7 +2641,7 @@ function renderScanInline(config) {
         `<label class="ca-option-card"><input type="radio" name="ca-scan-outcome" value="${val}" ${val === "new" ? "checked" : ""}><span class="ca-option-body"><span class="care-ico">${icon?.(ico) || ""}</span><span class="ca-option-text"><strong>${esc(title)}</strong><small class="muted">${esc(hint)}</small></span></span></label>`,
     )
     .join("");
-  return `<section class="panel stack ca-scan"><p class="small muted">Демо без камеры — исход проверки выбирается вручную.</p><div class="ca-option-grid">${cards}</div><div class="ca-scan-result" data-ca-scan-error hidden role="alert"></div><button type="button" class="btn primary" data-ca-action="scan:submit">Считать демосертификат</button></section>`;
+  return `<section class="panel stack ca-scan"><p class="small muted">Демо без камеры — исход проверки выбирается вручную.</p><div class="ca-option-grid">${cards}</div><div class="ca-scan-result" data-ca-scan-error hidden role="alert"></div><div class="ca-form-actions"><button type="button" class="btn primary" data-ca-action="scan:submit">Считать демосертификат</button><button type="button" class="btn ghost" data-ca-action="standalone:146">Макет оформления покупки</button></div></section>`;
 }
 
 function renderManualInline(config) {
@@ -2897,7 +2898,7 @@ function renderPurchaseInline(config, purchaseId) {
   const rows = appeal && bd?.rows?.length ? renderPayBreakdownList(appeal, bd.rows) : "";
   const showReward = purchase.rewardStatusLabel && appeal && canAccrueReferral(appeal) && !isManualAppeal(appeal);
   const manualNote = appeal && isManualAppeal(appeal) ? `<p class="small muted">Покупка без реферального начисления — в кошельке принимающего, без долга направившему.</p>` : "";
-  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма покупки</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${showReward ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}${manualNote}<p class="small muted">Те же события — в кошельке во вкладке «Взаиморасчёты» (направление «Я должен» / «Мне должны»).</p></section>`;
+  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма покупки</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${showReward ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}${manualNote}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:144">Детали покупки (макет)</button><button type="button" class="btn ghost" data-ca-action="standalone:145">Квитанция вознаграждения</button></div><p class="small muted">Те же события — в кошельке во вкладке «Взаиморасчёты» (направление «Я должен» / «Мне должны»).</p></section>`;
 }
 
 function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) {
@@ -3651,6 +3652,11 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action === "scan:submit") { runScanPage(config, hooks); return; }
+  if (action.startsWith("standalone:")) {
+    const pageN = Number(action.split(":")[1]);
+    if (pageN) config.onProtoStandalone?.(pageN, hooks);
+    return;
+  }
   if (action.startsWith("stage:next:")) {
     applyStageChangeCabinet(s.selectedId, action.split(":").slice(2).join(":"), false, config, hooks);
     return;
