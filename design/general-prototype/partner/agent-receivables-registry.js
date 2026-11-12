@@ -6,6 +6,7 @@ import {
   PARTNERS,
   ORDERS,
   filterOrders,
+  filterPartners,
   agentRegistryOverviewTotals,
   syncPartnerDebtFields,
 } from "./agent-receivables-registry-data.js";
@@ -114,25 +115,30 @@ function renderOverview(config, s) {
 }
 
 function renderPartners(config, s) {
-  const t = overviewTotals();
-  const partnerRows = PARTNERS.map(
-    (p) => `<button type="button" class="agent-registry-partner-row" data-agent-registry-action="partner:${p.id}" data-testid="agent-r05-partner-row">
+  const { rows, listTotal } = filterPartners(s);
+  const page = paginate(rows, s);
+  const partnerRows = page.items
+    .map(
+      (p) => `<button type="button" class="agent-registry-partner-row" data-agent-registry-action="partner:${p.id}" data-testid="agent-r05-partner-row">
       <span><strong>${esc(p.name)}</strong><small>${esc(p.city)} · ${p.orders} заказ(ов)</small></span>
-      <strong>${money(p.debt)}</strong>
+      <strong>${money(p.amount)}</strong>
     </button>`,
-  ).join("");
+    )
+    .join("");
   return `<section class="agent-receivables-registry settlement-demo" data-agent-receivables-registry data-testid="agent-r05-partners" data-ledger-view="${s.view}">
     ${btn("← К кошельку", "wallet-registry-back", "", true)}
     ${btn("← Все взаиморасчёты", "screen:overview")}
     <header class="agent-registry-focus">
       <span class="pw-label">Мне должны</span>
       <h2>Партнёры</h2>
-      <strong data-testid="ledger-totals">${money(t.confirmed)}</strong>
+      <strong data-testid="ledger-totals">${money(listTotal)}</strong>
     </header>
     ${viewToggle(s)}
     ${filtersBlock(s)}
-    <div class="agent-registry-partners" data-testid="ledger-partners">${partnerRows}</div>
-    ${pagination(s, PARTNERS.length)}
+    <div class="agent-registry-partners" data-testid="ledger-partners">${partnerRows || '<p class="pw-muted">Нет партнёров в текущем отборе</p>'}</div>
+    ${pagination(s, rows.length)}
+    ${btn(s.exportBusy ? "Готовим Excel…" : "Excel (.xlsx, весь отбор)", "export", s.exportBusy ? "disabled" : "")}
+    ${s.exportMessage ? `<p class="pw-footnote" role="status">${esc(s.exportMessage)}</p>` : ""}
   </section>`;
 }
 
@@ -223,6 +229,15 @@ export function hydrateAgentReceivablesRegistry(config, root = document) {
       s.page = 1;
       refresh();
     }
+  });
+
+  section.addEventListener("input", (event) => {
+    const el = event.target;
+    if (el.name !== "q") return;
+    const s = state(config);
+    s.q = el.value;
+    s.page = 1;
+    refresh();
   });
 
   section.addEventListener("click", (event) => {

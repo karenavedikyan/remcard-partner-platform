@@ -94,6 +94,40 @@ export function filterOrders(s) {
   return rows;
 }
 
+function orderAmountInPartnerList(o) {
+  if (o.status === "pending") return o.pending || 0;
+  return o.total;
+}
+
+/** Partner groups from the same order filter as the orders screen (optionally scoped to one partner). */
+export function filterPartners(s, groupAllPartners = true) {
+  const scope = groupAllPartners ? { ...s, partnerId: "" } : s;
+  const orders = filterOrders(scope);
+  const byPartner = new Map();
+  for (const o of orders) {
+    const agg = byPartner.get(o.partnerId) || { orders: 0, amount: 0, maxAt: 0 };
+    agg.orders += 1;
+    agg.amount += orderAmountInPartnerList(o);
+    agg.maxAt = Math.max(agg.maxAt, Date.parse(o.at));
+    byPartner.set(o.partnerId, agg);
+  }
+  let rows = PARTNERS.filter((p) => byPartner.has(p.id)).map((p) => {
+    const agg = byPartner.get(p.id);
+    return {
+      id: p.id,
+      name: p.name,
+      city: p.city,
+      orders: agg.orders,
+      amount: agg.amount,
+      maxAt: agg.maxAt,
+    };
+  });
+  if (s.sort === "debt-desc") rows.sort((a, b) => b.amount - a.amount);
+  if (s.sort === "date-desc") rows.sort((a, b) => b.maxAt - a.maxAt);
+  const listTotal = rows.reduce((n, r) => n + r.amount, 0);
+  return { rows, orders, listTotal };
+}
+
 export function syncPartnerDebtFields() {
   for (const p of PARTNERS) {
     const scoped = ORDERS.filter((o) => o.partnerId === p.id);

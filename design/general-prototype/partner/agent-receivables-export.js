@@ -1,10 +1,11 @@
 // Demo XLSX for agent receivables registry — whole current filter (all pages).
 import { loadExcelLibrary } from "./settlement-export.js";
-import { PARTNERS, filterOrders } from "./agent-receivables-registry-data.js";
+import { filterOrders, filterPartners } from "./agent-receivables-registry-data.js";
 
 function buildExportModel(s) {
   const rows = filterOrders(s);
-  const partners = PARTNERS.map((p) => {
+  const { rows: partnerRows } = filterPartners(s, !s.partnerId);
+  const partners = partnerRows.map((p) => {
     const scoped = rows.filter((o) => o.partnerId === p.id);
     const confirmed = scoped.filter((o) => o.status === "open").reduce((n, o) => n + o.total, 0);
     const pending = scoped.filter((o) => o.status === "pending").reduce((n, o) => n + o.pending, 0);
