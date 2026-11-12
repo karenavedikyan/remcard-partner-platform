@@ -982,6 +982,20 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
     return pipelineFor(partnerId).filter((id) => !isFinancialStage(id) && id !== SYSTEM.REFUSED);
   }
 
+  function bulkSelectedAppeals(s) {
+    return (s.bulkSelectedIds || [])
+      .map((id) => appeals.find((a) => a.id === id))
+      .filter(Boolean);
+  }
+
+  function bulkStageEditBlocked(selection) {
+    return selection.some((a) => isAppealLockedForBulkStage(a));
+  }
+
+  function canBulkIncomingMutate(config) {
+    return !config.readOnly && roleCaps(config.role).incoming;
+  }
+
   function filterAppeals(mode, configKey, opts = {}) {
     const lifecycle = opts.lifecycle ?? (mode === "incoming" && configKey ? "bucket" : "none");
     const s = configKey ? ws(configKey) : null;
@@ -1120,7 +1134,7 @@ function rowMetaSource(appeal, tab) {
 }
 
 function listKpis(config, tab) {
-  const list = filterAppeals(tab, config.key, { lifecycle: tab === "incoming" ? "active-only" : "none" });
+  const list = filterAppeals(tab, config.key, { lifecycle: "none" });
   const total = list.length;
   const inWork = list.filter((a) => isActiveAppeal(a)).length;
   const paid = list.filter((a) => appealReachedPaid(a)).length;
@@ -1913,21 +1927,26 @@ function renderBulkConfirmPanel(s) {
   return `<aside class="panel stack ca-bulk-confirm" role="status"><p>${esc(copy)}</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="bulk:confirm-no">Отмена</button><button type="button" class="btn primary" data-ca-action="bulk:confirm-yes">Подтвердить</button></div></aside>`;
 }
 
-function renderBulkEditPanel(config, count) {
-  const lockedHint =
-    count > 0
-      ? `<p class="small muted">Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат». Для оплаченных и закрытых обращений доступно только дополнение заметки.</p>`
-      : "";
+function renderBulkEditPanel(config, s, count) {
+  const selected = bulkSelectedAppeals(s);
+  const stageBlocked = bulkStageEditBlocked(selected);
+  const lockedHint = stageBlocked
+    ? `<p class="notice" role="status">В выборке есть оплаченные, отгруженные, с возвратом или закрытые обращения — рабочий этап для всей группы изменить нельзя. Доступно только служебная заметка.</p>`
+    : `<p class="small muted">Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат».</p>`;
   const options = bulkWorkingStageOptions(RECEIVING.id)
     .map((id) => {
       const label = systemLabel(id) || getWorkingStage(RECEIVING.id, id)?.label || id;
       return `<option value="${esc(id)}">${esc(label)}</option>`;
     })
     .join("");
-  return `<aside class="panel stack ca-bulk-edit" data-ca-bulk-edit><h3>Групповое изменение · ${count}</h3>${lockedHint}<label class="field">Этап работ<select name="bulk-stage"><option value="">Не менять</option>${options}</select><small class="input-hint">Только ваши рабочие этапы, без оплаты и отгрузки.</small></label><label class="field">Служебная заметка<textarea name="bulk-note" rows="2" maxlength="2000" placeholder="Текст для команды"></textarea></label><label class="field ca-check-line"><input type="checkbox" name="bulk-note-append" checked> Добавить к существующей заметке</label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="bulk:edit-cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="bulk:edit-apply">Применить</button></div></aside>`;
+  return `<aside class="panel stack ca-bulk-edit" data-ca-bulk-edit data-bulk-stage-blocked="${stageBlocked ? "1" : "0"}"><h3>Групповое изменение · ${count}</h3>${lockedHint}<label class="field">Этап работ<select name="bulk-stage" ${stageBlocked ? "disabled" : ""}><option value="">Не менять</option>${options}</select><small class="input-hint">${stageBlocked ? "Снимите из выборки закрытые обращения, чтобы менять этап." : "Только ваши рабочие этапы, без оплаты и отгрузки."}</small></label><label class="field">Служебная заметка<textarea name="bulk-note" rows="2" maxlength="2000" placeholder="Текст для команды"></textarea></label><label class="field ca-check-line"><input type="checkbox" name="bulk-note-append" checked> Добавить к существующей заметке</label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="bulk:edit-cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="bulk:edit-apply">Применить</button></div></aside>`;
 }
 
 function applyBulkArchiveDelete(config, hooks, kind) {
+  if (!canBulkIncomingMutate(config)) {
+    hooks.notify?.("Групповые действия недоступны в режиме просмотра.", "info");
+    return;
+  }
   const s = ws(config.key);
   const ids = [...(s.bulkSelectedIds || [])];
   if (!ids.length) return;
@@ -1968,11 +1987,19 @@ function applyBulkArchiveDelete(config, hooks, kind) {
 }
 
 function applyBulkEdit(config, hooks) {
+  if (!canBulkIncomingMutate(config)) {
+    hooks.notify?.("Групповое редактирование недоступно в режиме просмотра.", "info");
+    return;
+  }
   const s = ws(config.key);
   const ids = [...(s.bulkSelectedIds || [])];
   if (!ids.length) return;
+  const selection = bulkSelectedAppeals(s);
+  const stageBlocked = bulkStageEditBlocked(selection);
   const root = document.querySelector("[data-ca-bulk-edit]");
-  const stageId = root?.querySelector('[name="bulk-stage"]')?.value || "";
+  const rawStage = root?.querySelector('[name="bulk-stage"]')?.value || "";
+  const stageId =
+    stageBlocked || root?.dataset.bulkStageBlocked === "1" ? "" : rawStage;
   const note = root?.querySelector('[name="bulk-note"]')?.value?.trim() || "";
   const append = root?.querySelector('[name="bulk-note-append"]')?.checked !== false;
   if (!stageId && !note) {
@@ -1984,7 +2011,14 @@ function applyBulkEdit(config, hooks) {
     const appeal = appeals.find((a) => a.id === id);
     if (!appeal) return;
     let touched = false;
-    if (stageId && !isAppealLockedForBulkStage(appeal) && !isFinancialStage(stageId) && stageId !== SYSTEM.REFUSED) {
+    if (
+      stageId &&
+      !stageBlocked &&
+      !isAppealLockedForBulkStage(appeal) &&
+      !isFinancialStage(stageId) &&
+      stageId !== SYSTEM.REFUSED &&
+      appeal.stageId !== stageId
+    ) {
       const label = systemLabel(stageId) || getWorkingStage(appeal.receivingPartnerId, stageId)?.label || stageId;
       appeal.stageId = stageId;
       pushHistory(appeal, `Этап изменён: ${label} (групповое действие)`);
@@ -2024,9 +2058,7 @@ function renderListPage(config) {
   const selected = new Set((s.bulkSelectedIds || []).filter((id) => list.some((a) => a.id === id)));
   s.bulkSelectedIds = [...selected];
   const kpi = listKpis(config, tab);
-  const showKpi = tab !== "incoming" || (s.listBucket || "active") === "active";
-  const kpiStrip = showKpi
-    ? `<div class="ca-kpi-strip" role="list">${[
+  const kpiStrip = `<div class="ca-kpi-strip" role="list">${[
         ["В работе", kpi.inWork],
         ["Оплачено", kpi.paid],
         ["Отгружено", kpi.shipped],
@@ -2036,8 +2068,7 @@ function renderListPage(config) {
           ([label, val]) =>
             `<div class="ca-kpi panel" role="listitem"><span class="small muted">${esc(label)}</span><strong class="ca-kpi-val">${esc(String(val))}</strong></div>`,
         )
-        .join("")}</div>`
-    : "";
+        .join("")}</div>`;
   const bucket = s.listBucket || "active";
   const bucketTabs = bulkOn
     ? `<div class="ca-bucket-tabs ca-seg" role="tablist" aria-label="Список обращений"><button type="button" role="tab" aria-selected="${bucket === "active"}" data-ca-action="bucket:active">Активные</button><button type="button" role="tab" aria-selected="${bucket === "archive"}" data-ca-action="bucket:archive">Архив</button><button type="button" role="tab" aria-selected="${bucket === "trash"}" data-ca-action="bucket:trash">Корзина</button></div>`
@@ -2089,7 +2120,7 @@ function renderListPage(config) {
         <button type="button" class="btn ghost small-btn" data-ca-action="bulk:clear">Сбросить выбор</button>
       </div></motion>`.replace(/<motion/g, "<div").replace(/<\/motion>/g, "</div>")
       : "";
-  const bulkEdit = bulkOn && s.bulkPanel === "edit" && selCount > 0 ? renderBulkEditPanel(config, selCount) : "";
+  const bulkEdit = bulkOn && s.bulkPanel === "edit" && selCount > 0 ? renderBulkEditPanel(config, s, selCount) : "";
   const bulkConfirm = bulkOn ? renderBulkConfirmPanel(s) : "";
   const quietIcon = (name) => icon?.(name) || "";
   const analyticsBtn = `<button type="button" class="btn ghost ca-quiet-btn" data-ca-action="nav:analytics">${quietIcon("bar-chart-3")} Аналитика</button>`;
@@ -2741,6 +2772,7 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action === "bulk:edit-open") {
+    if (!canBulkIncomingMutate(config)) return;
     s.bulkPanel = "edit";
     s.bulkConfirm = null;
     hooks.refresh();
@@ -2756,21 +2788,25 @@ function handleCaAction(action, config, hooks) {
     return;
   }
   if (action === "bulk:archive-ask") {
+    if (!canBulkIncomingMutate(config)) return;
     s.bulkConfirm = { kind: "archive", count: (s.bulkSelectedIds || []).length };
     hooks.refresh();
     return;
   }
   if (action === "bulk:delete-ask") {
+    if (!canBulkIncomingMutate(config)) return;
     s.bulkConfirm = { kind: "delete", count: (s.bulkSelectedIds || []).length };
     hooks.refresh();
     return;
   }
   if (action === "bulk:unarchive-ask") {
+    if (!canBulkIncomingMutate(config)) return;
     s.bulkConfirm = { kind: "unarchive", count: (s.bulkSelectedIds || []).length };
     hooks.refresh();
     return;
   }
   if (action === "bulk:restore-ask") {
+    if (!canBulkIncomingMutate(config)) return;
     s.bulkConfirm = { kind: "restore", count: (s.bulkSelectedIds || []).length };
     hooks.refresh();
     return;
