@@ -319,6 +319,15 @@ function summary(s) {
     ${business(s.config.role) ? `<section class="pw-after"><div><h3>Хотите появиться в каталоге?</h3><p>Публикация добровольна. Публичную карточку можно подготовить отдельно.</p></div><button type="button" class="pw-btn" data-profile-action="tab" data-profile-id="catalog">Перейти к каталогу</button></section>` : s.config.role === "employee" ? employeeId(s) + employeeWork(s) : ""}
     <p class="pw-footnote">Демонстрационные данные хранятся только до обновления страницы.</p>`;
 }
+function wizardPayCategories(s) {
+  return `<div class="pw-layout pw-layout--pay-categories" data-testid="pw-pay-categories"><section class="pw-card pw-card--pay-categories">
+    <div class="pw-card-top"><span class="pw-kicker">Оформление покупки</span><span class="pw-label">Только категории</span></div>
+    <h2 id="pw-title" tabindex="-1">${s.config.role === "specialist" ? "Услуги для оплаты" : "Товары и услуги для оплаты"}</h2>
+    <p class="pw-muted">Отметьте направления, которые доступны для этой покупки. Имя, город и контакты профиля не меняются.</p>
+    <form data-pw-form novalidate>${activity(s)}
+    <div class="pw-actions"><div>${btn("Отменить", "cancel", "quiet")}</div><div><button type="submit" class="pw-btn primary" data-testid="pw-save-categories">Сохранить категории</button></div></div></form>
+    <p class="pw-demo-note">Демо: сохраняются только выбранные категории в макете.</p></section></div>`;
+}
 function wizard(s) {
   const spec = roles[s.config.role];
   const last = spec.steps.length - 1;
@@ -357,41 +366,71 @@ function wizard(s) {
 export function renderProfileWizard(config, mode = "overview") {
   const s = session(config);
   // Opening Basic data from the saved overview explicitly enters editing.
-  if (mode === "basics" && s.lastMode !== "basics" && !s.editing && !s.payCategoriesTrip) {
+  if (
+    mode === "basics" &&
+    s.lastMode !== "basics" &&
+    !s.editing &&
+    !s.payCategoriesTrip &&
+    !s.payCategoriesOnly
+  ) {
     s.editing = true;
     s.step = 0;
     s.draft = clone(s.saved);
   }
   s.lastMode = mode;
-  return `<div class="pw" data-profile-wizard="${config.role}">${s.editing ? wizard(s) : summary(s)}</div>`;
+  return `<div class="pw" data-profile-wizard="${config.role}">${
+    s.editing
+      ? s.payCategoriesOnly
+        ? wizardPayCategories(s)
+        : wizard(s)
+      : summary(s)
+  }</div>`;
 }
 
-/** Basics wizard → step with products/services (pay form), without catalog/publication. */
+export function syncProfileWizardSavedData(role, data) {
+  const s = sessions.get(role);
+  if (!s || (s.editing && !s.payCategoriesOnly)) return;
+  const next = {
+    products: [],
+    services: [],
+    stages: [],
+    partnerSearchOptIn: true,
+    ...clone(data),
+  };
+  s.saved = { ...clone(s.saved), ...next };
+  s.draft = clone(s.saved);
+}
+
+/** Basics wizard → categories step only (pay form), without full onboarding. */
 export function primeProfileWizardPayCategories(config) {
   const s = session(config);
-  const base = {
+  const incoming = {
     products: [],
     services: [],
     stages: [],
     partnerSearchOptIn: true,
     ...clone(config.data),
   };
-  s.saved = clone(base);
-  s.draft = clone(base);
+  s.saved = { ...clone(s.saved), ...incoming };
+  s.draft = clone(s.saved);
   s.editing = true;
-  s.step = config.role === "agent" ? 0 : 1;
+  s.step = 1;
   s.lastMode = "basics";
   s.payCategoriesTrip = true;
+  s.payCategoriesOnly = true;
   s.group = config.role === "specialist" ? "services" : "products";
   s.query = "";
   s.errors = {};
   s.message = "";
+  s.detailsOpen = (s.draft.stages || []).length > 0;
   return s;
 }
 
 export function clearProfileWizardPayCategoriesTrip(role) {
   const s = sessions.get(role);
-  if (s) s.payCategoriesTrip = false;
+  if (!s) return;
+  s.payCategoriesTrip = false;
+  s.payCategoriesOnly = false;
 }
 
 export function revertProfileWizardDraft(role) {
@@ -402,6 +441,7 @@ export function revertProfileWizardDraft(role) {
   s.draft = clone(s.saved);
   s.editing = false;
   s.payCategoriesTrip = false;
+  s.payCategoriesOnly = false;
   s.errors = {};
 }
 
@@ -635,15 +675,18 @@ export function hydrateProfileWizards() {
       } else if (action === "edit") {
         s.draft = clone(s.saved);
         s.editing = true;
+        s.payCategoriesOnly = false;
         s.step = 0;
         s.message = "";
       } else if (action === "cancel") {
+        const payOnly = s.payCategoriesOnly;
         s.draft = clone(s.saved);
         s.editing = false;
         s.payCategoriesTrip = false;
+        s.payCategoriesOnly = false;
         s.errors = {};
-        s.message = "Изменения отменены.";
-      } else if (action.startsWith("step-")) {
+        s.message = payOnly ? "" : "Изменения отменены.";
+      } else if (action.startsWith("step-") && !s.payCategoriesOnly) {
         const dest = Number(action.slice(5));
         if (dest > s.step && !validate(s, s.step)) {
           paint(s);
@@ -668,6 +711,25 @@ export function hydrateProfileWizards() {
       event.preventDefault();
       event.stopPropagation();
       capture(s, root);
+      if (s.payCategoriesOnly) {
+        s.saved = {
+          ...clone(s.saved),
+          products: [...(s.draft.products || [])],
+          services: [...(s.draft.services || [])],
+          stages: [...(s.draft.stages || [])],
+          primary: s.draft.primary || "",
+          dealServices: [...(s.draft.dealServices || [])],
+        };
+        s.draft = clone(s.saved);
+        s.config.save(clone(s.saved));
+        s.editing = false;
+        s.payCategoriesTrip = false;
+        s.payCategoriesOnly = false;
+        s.errors = {};
+        s.message = "";
+        paint(s);
+        return;
+      }
       if (!validate(s, s.step)) {
         paint(s);
         return;
@@ -695,6 +757,7 @@ export function hydrateProfileWizards() {
         s.config.save(clone(s.saved));
         s.editing = false;
         s.payCategoriesTrip = false;
+        s.payCategoriesOnly = false;
         s.message = "Профиль сохранён в макете. Рабочий ЛК не изменён.";
       }
       paint(s);

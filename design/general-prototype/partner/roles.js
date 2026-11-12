@@ -11,7 +11,9 @@ import {
   primeProfileWizardPayCategories,
   focusProfileWizardActivityStep,
   clearProfileWizardPayCategoriesTrip,
+  syncProfileWizardSavedData,
 } from "./profile-wizard.js";
+import { ensureCabinetPreviewDrafts } from "./cabinet-preview-seeds.js";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -39,7 +41,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca17";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca18";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -2107,6 +2109,15 @@ Object.defineProperty(i, "notice", {
 var Y = "company",
   Oe = () => i.drafts[Y] || {},
   ia = () => (Y === "store" ? ye.slice(0, 1) : ye);
+function applyCabinetPreviewSeeds(role = null) {
+  ensureCabinetPreviewDrafts(i, {
+    screen: i.screen,
+    registering: entryState.registering,
+    role,
+    employerKey: Y,
+  });
+  syncProfileWizardSavedData(role || i.role, ie());
+}
 Be.links = ["Приглашения", "link"];
 var ue = () => !k() || (J() && O("terms")),
   qe = () => ["store", "company"].includes(i.role) || (J() && O("team")),
@@ -3376,7 +3387,7 @@ function clientAppealsConfig() {
           refresh: R,
         });
         i.notice =
-          "Отметьте товары и услуги на шаге «Ассортимент» / «Направления», сохраните профиль, затем нажмите «Вернуться к оформлению покупки».";
+          "Отметьте категории и нажмите «Сохранить категории», затем «Вернуться к оформлению покупки».";
       } else {
         i.notice =
           "После настройки категорий нажмите «Вернуться к оформлению покупки» в подсказке выше.";
@@ -4077,6 +4088,7 @@ document.addEventListener("change", (e) => {
     (Z = !1),
     (i.role = e.target.value),
     clearAllPayProfileReturnContexts(),
+    i.screen === "cabinet" && applyCabinetPreviewSeeds(e.target.value),
     (i.page = i.page === "profile" ? "profile" : "home"),
     (i.notice = ""),
     ["choose", "form"].includes(i.screen) && (i.screen = "choose"),
@@ -4508,6 +4520,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
     a === "view" &&
       ((i.screen = s === "cabinet" ? "cabinet" : "welcome"),
       s !== "cabinet" && (entryState.returning = false, entryState.accepted = false, entryState.invite = false, entryState.registering = false),
+      s === "cabinet" && applyCabinetPreviewSeeds(),
       (i.page = "home"),
       (i.notice = ""),
       T()),
@@ -4908,6 +4921,8 @@ if (["store", "company"].includes(i.role)) Y = i.role;
   if (role && ["store", "company", "agent", "specialist", "employee"].includes(role)) i.role = role;
   i.screen = "cabinet";
   i.page = "clients";
+  applyCabinetPreviewSeeds(i.role);
 })();
+if (i.screen === "cabinet") applyCabinetPreviewSeeds(i.role);
 yt();
 R();

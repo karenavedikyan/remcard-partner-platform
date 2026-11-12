@@ -1660,7 +1660,7 @@ export function clearAllPayProfileReturnContexts() {
 export function renderPayProfileReturnBanner(config) {
   const ctx = payProfileReturnByKey.get(config.key);
   if (!ctx || ctx.role !== config.role) return "";
-  return `<aside class="panel stack ca-profile-return" data-pay-profile-return data-testid="ca-profile-return"><p class="notice accent">Вы настраиваете категории для оформления покупки. В «Основных данных» отметьте товары и услуги на шаге «Ассортимент» или «Направления», сохраните профиль, затем вернитесь к оплате. Суммы и дата оплаты остаются в черновике.</p><div class="ca-form-actions"><button type="button" class="btn primary" data-action="pay-profile:resume" data-testid="pay-profile-resume">Вернуться к оформлению покупки</button><button type="button" class="btn ghost" data-action="pay-profile:abandon" data-testid="pay-profile-abandon">Остаться в профиле</button></div></aside>`;
+  return `<aside class="panel stack ca-profile-return" data-pay-profile-return data-testid="ca-profile-return"><p class="notice accent">Выберите или уточните категории для этой покупки и нажмите «Сохранить категории». Суммы, даты и черновик оплаты не меняются. Затем вернитесь к оформлению покупки.</p><div class="ca-form-actions"><button type="button" class="btn primary" data-action="pay-profile:resume" data-testid="pay-profile-resume">Вернуться к оформлению покупки</button><button type="button" class="btn ghost" data-action="pay-profile:abandon" data-testid="pay-profile-abandon">Остаться в профиле</button></div></aside>`;
 }
 
 export function beginPayProfileCategoriesTrip(config, hooks) {

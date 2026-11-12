@@ -988,6 +988,9 @@
   color: var(--pw-muted);
   font-size: var(--pw-sm);
 }
+.pw-layout--pay-categories {
+  grid-template-columns: minmax(0, 1fr);
+}
 .pw-layout {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
