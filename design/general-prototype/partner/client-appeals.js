@@ -1008,13 +1008,18 @@ function renderListPage(config) {
         `<div class="ca-kpi panel" role="listitem"><span class="small muted">${esc(label)}</span><strong class="ca-kpi-val">${esc(String(val))}</strong></div>`,
     )
     .join("")}</div>`;
+  const metaHeader = tab === "outgoing" ? "Принимает" : "Источник";
+  const listHead =
+    list.length > 0
+      ? `<div class="ca-row ca-row--head" role="presentation"><span class="ca-row-name small muted">Клиент</span><span class="ca-row-request small muted">Запрос</span><span class="ca-row-meta small muted">${esc(metaHeader)}</span><span class="ca-row-status small muted">Статус</span><span class="ca-row-amount small muted">Сумма</span><span class="ca-row-age small muted">Создано</span><span class="ca-chev" aria-hidden="true"></span></div>`
+      : "";
   const rows = list
     .map((a) => {
       const amt =
         a.paidAmount != null
           ? `<span class="ca-amount">${esc(a.paidAmount.toLocaleString("ru-RU"))} ₽</span>`
           : `<span class="ca-amount ca-amount--empty">—</span>`;
-      return `<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong>${pillHtml(a)}</span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span>${amt}<span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button>`;
+      return `<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button>`;
     })
     .join("");
   const tabs =
@@ -1036,7 +1041,7 @@ function renderListPage(config) {
         : readOnly
           ? `<p class="notice">Только просмотр: изменять статусы и заметки нельзя.</p>`
           : "";
-  return `${tabs}${kpiStrip}${actions}<div class="ca-filters row"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field">Источник<select data-ca-input="source"></select></label>` : ""}</div>${empty || `<div class="ca-rows">${rows}</div>`}`;
+  return `${tabs}${kpiStrip}${actions}<div class="ca-filters row"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field">Источник<select data-ca-input="source"></select></label>` : ""}</div>${empty || `<div class="ca-rows">${listHead}${rows}</div>`}`;
 }
 
 export function renderClientAppeals(config) {
