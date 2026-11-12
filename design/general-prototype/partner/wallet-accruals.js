@@ -1080,9 +1080,13 @@ export function renderWalletAccruals(config, options = {}) {
   const edition = getCardEdition();
   const activeDirection = incomingOnly ? "in" : getActiveDirection(config);
   const overview = overviewFor(config, incomingOnly);
+  const agentFixedDemo = config.role === "agent";
   const scenarioOptions = Object.entries(ACCRUAL_SCENARIOS)
     .map(([id, label]) => `<option value="${id}" ${st.scenario === id ? "selected" : ""}>${esc(label)}</option>`)
     .join("");
+  const scenarioDemoBar = agentFixedDemo
+    ? `<div class="wallet-accruals-demo-bar" data-testid="wallet-accruals-demo-bar"><span class="pw-label">DEMO</span><span class="wallet-accruals-agent-demo-label" data-testid="wallet-accrual-scenario-label">Демонстрационные начисления агента</span><span class="pw-label sr-only">Сценарий не переключается: суммы совпадают с реестром начислений агента.</span></div>`
+    : `<div class="wallet-accruals-demo-bar" data-testid="wallet-accruals-demo-bar"><span class="pw-label">DEMO · сценарий</span><label class="wallet-accruals-scenario"><span class="sr-only">Сценарий демонстрации</span><select data-accrual-scenario data-testid="wallet-accrual-scenario">${scenarioOptions}</select></label></div>`;
   const cardSummary = activeDirection === "in" ? overview.receivable : overview.payable;
   const cardPrefix = activeDirection === "in" ? "receivable" : "payable";
   const cardTitle = DIRECTION_LABELS[activeDirection];
@@ -1103,12 +1107,7 @@ export function renderWalletAccruals(config, options = {}) {
   return `<section class="wallet-accruals" data-wallet-accruals data-testid="wallet-accruals" data-incoming-only="${incomingOnly}" data-card-edition="${edition}" data-active-direction="${activeDirection}">
     <div class="wallet-accruals-layout">
       <div class="wallet-accruals-main">
-        <div class="wallet-accruals-demo-bar" data-testid="wallet-accruals-demo-bar">
-          <span class="pw-label">DEMO · сценарий</span>
-          <label class="wallet-accruals-scenario"><span class="sr-only">Сценарий демонстрации</span>
-            <select data-accrual-scenario data-testid="wallet-accrual-scenario">${scenarioOptions}</select>
-          </label>
-        </div>
+        ${scenarioDemoBar}
         ${renderEditionSelector(edition)}
         ${renderDirectionToggle(incomingOnly, activeDirection)}
         <div class="wallet-accruals-cards ${incomingOnly ? "incoming-only" : ""}" data-testid="wallet-brand-card">
