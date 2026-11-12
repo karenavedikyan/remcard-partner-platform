@@ -46,6 +46,64 @@ body {
   background: var(--pp-bg);
 }
 
+.pp-cabinet {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 14px 0;
+}
+
+.pp-cabinet-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--pp-line);
+}
+
+.pp-brand {
+  margin: 0;
+  font-size: var(--pp-sm);
+  font-weight: 800;
+  color: var(--pp-text);
+}
+
+.pp-brand span {
+  color: var(--pp-muted);
+  font-weight: 600;
+}
+
+.pp-main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pp-main-nav a {
+  min-height: 40px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--pp-muted);
+  font: 700 var(--pp-sm) var(--pp-font);
+  text-decoration: none;
+}
+
+.pp-main-nav a:hover {
+  background: var(--pp-soft);
+  color: var(--pp-text);
+}
+
+.pp-main-nav a[aria-current="page"] {
+  border-color: var(--pp-line);
+  background: var(--pp-panel);
+  color: var(--pp-accent);
+}
+
 .pp-shell {
   max-width: 920px;
   margin: 0 auto;

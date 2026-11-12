@@ -1,6 +1,13 @@
-# Partner profile preview (Stage A)
+# Partner cabinet static previews
 
-Static prototype for «Партнёры → профиль контрагента». No backend, no build.
+Design-only HTML prototypes. No backend, no build, no production code.
+
+| Entry | Topic |
+|-------|--------|
+| `index.html` | Партнёры → профиль контрагента (Stage A) |
+| `clients.html` | Клиенты → входящие/исходящие обращения по сертификатам (прототип) |
+
+Подробнее по клиентам: `CLIENTS-FLOW.md`.
 
 ## Open locally
 

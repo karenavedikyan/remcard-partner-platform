@@ -1,0 +1,604 @@
+.cl-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 14px 48px;
+  min-width: 0;
+}
+
+.cl-toolbar h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.2rem, 4vw, 1.55rem);
+  font-weight: 800;
+}
+
+.cl-context-line {
+  margin: 0 0 12px;
+  font-size: var(--pp-sm);
+  color: var(--pp-muted);
+}
+
+.cl-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--pp-line);
+  padding-bottom: 8px;
+}
+
+.cl-tab {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--pp-muted);
+  font: 700 var(--pp-sm) var(--pp-font);
+  cursor: pointer;
+}
+
+.cl-tab[aria-selected="true"] {
+  color: var(--pp-accent);
+  border-color: var(--pp-line);
+  border-bottom-color: var(--pp-panel);
+  background: var(--pp-panel);
+  margin-bottom: -1px;
+}
+
+.cl-tab:focus-visible {
+  outline: 3px solid var(--pp-accent);
+  outline-offset: 2px;
+}
+
+.cl-panel--hidden {
+  display: none;
+}
+
+.cl-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 720px) {
+  .cl-controls {
+    grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.7fr) auto;
+    align-items: end;
+  }
+
+  #panel-outgoing .cl-controls {
+    grid-template-columns: minmax(0, 1.2fr) minmax(110px, 0.55fr) minmax(140px, 0.75fr);
+  }
+}
+
+.cl-search-wrap {
+  min-width: 0;
+}
+
+.cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cl-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cl-field-label {
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-muted);
+}
+
+.cl-input,
+.cl-select,
+.cl-textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--pp-line);
+  border-radius: 8px;
+  background: var(--pp-panel);
+  color: var(--pp-text);
+  font: 600 var(--pp-sm) var(--pp-font);
+}
+
+.cl-textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.cl-btn-primary {
+  border-color: var(--pp-accent);
+  background: var(--pp-accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-theme="dark"] .cl-btn-primary {
+  color: #1a1c20;
+}
+
+.cl-btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.cl-icon {
+  flex-shrink: 0;
+}
+
+.cl-readonly-hint {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--pp-soft);
+  font-size: var(--pp-xs);
+  color: var(--pp-muted);
+}
+
+.cl-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cl-empty {
+  padding: 24px 16px;
+  text-align: center;
+  border: 1px dashed var(--pp-line);
+  border-radius: var(--pp-radius);
+  color: var(--pp-muted);
+  font-size: var(--pp-sm);
+}
+
+.cl-table-wrap {
+  display: none;
+  overflow-x: auto;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  background: var(--pp-panel);
+}
+
+@media (min-width: 720px) {
+  .cl-table-wrap {
+    display: block;
+  }
+
+  .cl-cards-only {
+    display: none;
+  }
+}
+
+.cl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--pp-sm);
+}
+
+.cl-table th,
+.cl-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--pp-line);
+  vertical-align: top;
+}
+
+.cl-table th {
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-muted);
+  background: var(--pp-soft);
+  white-space: nowrap;
+}
+
+.cl-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.cl-table button.cl-row-link {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cl-table tbody tr:hover {
+  background: var(--pp-soft);
+}
+
+.cl-card {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  background: var(--pp-panel);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cl-card:focus-visible,
+.cl-table button.cl-row-link:focus-visible {
+  outline: 3px solid var(--pp-accent);
+  outline-offset: 2px;
+}
+
+.cl-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.cl-card-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--pp-base);
+  overflow-wrap: anywhere;
+}
+
+.cl-badge {
+  font-size: var(--pp-xs);
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--pp-soft);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.cl-badge--accent {
+  background: var(--pp-tint);
+  color: var(--pp-accent);
+}
+
+.cl-meta {
+  margin: 0;
+  font-size: var(--pp-xs);
+  color: var(--pp-muted);
+  overflow-wrap: anywhere;
+}
+
+.cl-dialog {
+  border: 0;
+  padding: 0;
+  margin: auto;
+  max-width: min(640px, calc(100vw - 20px));
+  width: 100%;
+  max-height: min(94vh, 900px);
+  background: transparent;
+  color: var(--pp-text);
+  color-scheme: light;
+}
+
+.cl-dialog--wide {
+  max-width: min(720px, calc(100vw - 20px));
+}
+
+html[data-theme="dark"] .cl-dialog {
+  color-scheme: dark;
+}
+
+.cl-dialog::backdrop {
+  background: rgba(20, 22, 26, 0.5);
+}
+
+.cl-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: min(94vh, 900px);
+  border: 1px solid var(--pp-line);
+  border-radius: 16px;
+  background: var(--pp-panel);
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+}
+
+.cl-detail .cl-dialog-inner {
+  max-width: min(720px, 100vw);
+}
+
+.cl-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--pp-line);
+  background: var(--pp-soft);
+}
+
+.cl-dialog-title {
+  margin: 0;
+  font-size: var(--pp-base);
+  font-weight: 800;
+}
+
+.cl-dialog-body {
+  padding: 12px 14px;
+  overflow: auto;
+  min-width: 0;
+}
+
+.cl-dialog-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--pp-line);
+  background: var(--pp-soft);
+}
+
+.cl-icon-btn {
+  min-width: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
+.cl-detail-head {
+  margin-bottom: 12px;
+}
+
+.cl-detail-head h2 {
+  margin: 0 0 6px;
+  font-size: var(--pp-lg);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.cl-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.cl-subtab {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-panel);
+  font: 700 var(--pp-xs) var(--pp-font);
+  cursor: pointer;
+}
+
+.cl-subtab[aria-selected="true"] {
+  border-color: var(--pp-accent);
+  background: var(--pp-tint);
+  color: var(--pp-accent);
+}
+
+.cl-cert-block {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--pp-line);
+  border-radius: 10px;
+  background: var(--pp-soft);
+  font-size: var(--pp-sm);
+}
+
+.cl-cert-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+@media (min-width: 520px) {
+  .cl-cert-row {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+.cl-cert-label {
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-muted);
+}
+
+.cl-readonly-value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: var(--pp-xs);
+}
+
+.cl-work-actions {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.cl-status-picker {
+  display: grid;
+  gap: 6px;
+}
+
+.cl-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.cl-timeline li {
+  padding-left: 14px;
+  border-left: 2px solid var(--pp-line);
+}
+
+.cl-timeline time {
+  display: block;
+  font-size: var(--pp-xs);
+  color: var(--pp-muted);
+}
+
+.cl-timeline p {
+  margin: 4px 0 0;
+  font-size: var(--pp-sm);
+}
+
+.cl-wait-block {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--pp-accent);
+  background: var(--pp-tint);
+  font-size: var(--pp-sm);
+}
+
+.cl-wait-block strong {
+  color: var(--pp-accent);
+}
+
+.cl-note {
+  margin: 0 0 10px;
+  font-size: var(--pp-sm);
+  color: var(--pp-muted);
+}
+
+.cl-note--legal {
+  font-size: var(--pp-xs);
+  margin-top: 8px;
+}
+
+.cl-qr-frame {
+  display: grid;
+  place-items: center;
+  margin: 12px auto;
+  padding: 16px;
+  width: min(100%, 220px);
+  border: 2px dashed var(--pp-line);
+  border-radius: 12px;
+  color: var(--pp-muted);
+}
+
+.cl-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.cl-fieldset legend {
+  margin-bottom: 8px;
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-muted);
+}
+
+.cl-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: var(--pp-sm);
+}
+
+.cl-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cl-form-error {
+  margin: 8px 0 0;
+  font-size: var(--pp-sm);
+  color: var(--pp-accent);
+  font-weight: 700;
+}
+
+.cl-settings-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pp-line);
+}
+
+.cl-settings-section h3 {
+  margin: 0 0 8px;
+  font-size: var(--pp-sm);
+  font-weight: 800;
+}
+
+.cl-system-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: var(--pp-sm);
+}
+
+.cl-system-tag {
+  font-size: var(--pp-xs);
+  color: var(--pp-muted);
+}
+
+.cl-stage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.cl-private-tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cl-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 719px) {
+  .cl-detail.cl-dialog {
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+  }
+
+  .cl-detail .cl-dialog-inner {
+    border-radius: 0;
+    max-height: 100%;
+    height: 100%;
+  }
+}
