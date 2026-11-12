@@ -137,7 +137,7 @@ describe("validateWorkingProfileDraft validationIntent", () => {
   );
 
   it.each(["STORE", "COMPANY"] as const)(
-    "activation intent blocks explicit ON without directions for %s",
+    "activation allows untouched legacy explicit ON without directions for %s",
     (partnerType) => {
       const profile = businessFixture(partnerType);
       const draft = profileDraftFromProfile(profile);
@@ -146,10 +146,46 @@ describe("validateWorkingProfileDraft validationIntent", () => {
           profile,
           partnerSearchTouched: false,
           validationIntent: "activation",
+          validationScope: "full",
         }),
-      ).toMatch(/видимости/);
+      ).toBeNull();
     },
   );
+
+  it("activation blocks touched explicit ON without directions", () => {
+    const profile = businessFixture("STORE");
+    const draft = profileDraftFromProfile(profile);
+    expect(
+      validateWorkingProfileDraft(draft, {
+        profile,
+        partnerSearchTouched: true,
+        validationIntent: "activation",
+        validationScope: "full",
+      }),
+    ).toMatch(/видимости/);
+  });
+
+  it("activation blocks removing last direction while search stays ON", () => {
+    const profile = businessFixture("STORE", {
+      productCategoryIds: ["doors"],
+      effectiveProductCategoryIds: ["doors"],
+    });
+    const draft = { ...profileDraftFromProfile(profile), productCategoryIds: [] };
+    expect(
+      validateWorkingProfileDraft(draft, {
+        profile,
+        partnerSearchTouched: false,
+        validationIntent: "activation",
+        validationScope: "full",
+      }),
+    ).toMatch(/видимости/);
+  });
+
+  it("contextless default validation stays strict for explicit ON without directions", () => {
+    const profile = businessFixture("STORE");
+    const draft = profileDraftFromProfile(profile);
+    expect(validateWorkingProfileDraft(draft)).toMatch(/видимости/);
+  });
 
   it("AUTO profile skips search-direction rule for AUTO and OFF", () => {
     const auto = businessFixture("STORE", {

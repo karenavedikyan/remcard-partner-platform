@@ -17,6 +17,28 @@ export type WorkingProfileValidationContext = {
   validationScope?: WorkingProfileValidationScope;
 };
 
+function workingDirectionsRegressed(saved: ProfileDraft, draft: ProfileDraft): boolean {
+  const savedHad =
+    saved.productCategoryIds.length > 0 || saved.serviceSpecializationIds.length > 0;
+  const draftHas =
+    draft.productCategoryIds.length > 0 || draft.serviceSpecializationIds.length > 0;
+  return savedHad && !draftHas;
+}
+
+/** Strict when enabling search or stripping directions; not for untouched incomplete explicit ON. */
+function requiresSearchDirectionsOnSave(
+  draft: ProfileDraft,
+  context: WorkingProfileValidationContext | undefined,
+  intent: WorkingProfileValidationIntent,
+): boolean {
+  if (intent === "cabinet") return false;
+  if (!context) return true;
+  if (context.partnerSearchTouched === true) return true;
+  const saved = profileDraftFromProfile(context.profile);
+  if (workingDirectionsRegressed(saved, draft)) return true;
+  return false;
+}
+
 export function validateWorkingProfileDraft(
   draft: ProfileDraft,
   context?: WorkingProfileValidationContext,
@@ -35,16 +57,12 @@ export function validateWorkingProfileDraft(
   }
   const hasDirections =
     draft.productCategoryIds.length > 0 || draft.serviceSpecializationIds.length > 0;
-  // A server-computed AUTO default is not an explicit search visibility choice.
-  // Keep the historical strict default for callers without context,
-  // and the minimum for a touched ON checkbox or an already explicit ON profile.
   const intent: WorkingProfileValidationIntent = context?.validationIntent ?? "activation";
-  const requiresSearchDirections =
-    intent !== "cabinet" &&
-    (!context ||
-      context.partnerSearchTouched === true ||
-      context.profile.workingProfile?.partnerSearchOptInExplicit === true);
-  if (draft.partnerSearchOptIn && requiresSearchDirections && !hasDirections) {
+  if (
+    draft.partnerSearchOptIn &&
+    !hasDirections &&
+    requiresSearchDirectionsOnSave(draft, context, intent)
+  ) {
     return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
   }
   const scope: WorkingProfileValidationScope = context?.validationScope ?? "full";

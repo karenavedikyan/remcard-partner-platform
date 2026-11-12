@@ -116,8 +116,9 @@ describe("BusinessWorkingProfileWizard step 0 explicit ON legacy", () => {
     },
   );
 
-  it("STORE step 3 still blocks final save without directions when explicit ON", async () => {
+  it("STORE step 3 final save succeeds for untouched legacy explicit ON without categories", async () => {
     const user = userEvent.setup();
+    persist.mockResolvedValue(legacyExplicitOnProfile("STORE"));
     render(
       <BusinessWorkingProfileWizard
         initialProfile={legacyExplicitOnProfile("STORE")}
@@ -127,24 +128,39 @@ describe("BusinessWorkingProfileWizard step 0 explicit ON legacy", () => {
         forceStep={3}
       />,
     );
+    await user.click(screen.getByRole("button", { name: /Сохранить профиль/i }));
+    await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+    expect(persist.mock.calls[0]![2]).toMatchObject({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
+    expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
+  });
+
+  it("STORE step 3 blocks when user toggles search ON without directions", async () => {
+    const user = userEvent.setup();
+    const offProfile = {
+      ...legacyExplicitOnProfile("STORE"),
+      workingProfile: {
+        ...legacyExplicitOnProfile("STORE").workingProfile!,
+        partnerSearchOptIn: false,
+        partnerSearchVisible: false,
+        partnerSearchOptInExplicit: true,
+      },
+    };
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={offProfile}
+        partnerType="STORE"
+        basicsEditable
+        forceEditing
+        forceStep={3}
+      />,
+    );
+    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: /Сохранить профиль/i }));
     expect(await screen.findByText(/Для видимости в поиске укажите/)).toBeTruthy();
     expect(persist).not.toHaveBeenCalled();
-  });
-
-  it("shows real validation error text matching server 400 copy", async () => {
-    const user = userEvent.setup();
-    render(
-      <BusinessWorkingProfileWizard
-        initialProfile={legacyExplicitOnProfile("STORE")}
-        partnerType="STORE"
-        basicsEditable
-        forceEditing
-        forceStep={3}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: /Сохранить профиль/i }));
-    const banner = await screen.findByText(/Для видимости в поиске укажите хотя бы одну категорию товаров или услуг/);
-    expect(banner).toBeInTheDocument();
   });
 });

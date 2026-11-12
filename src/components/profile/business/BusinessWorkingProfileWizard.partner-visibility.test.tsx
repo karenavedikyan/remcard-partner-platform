@@ -140,7 +140,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
   });
 
-  it("binds direct validation to the current profile ref, not stale initial AUTO state", async () => {
+  it("allows save on explicit ON profile ref without directions when visibility untouched", async () => {
     const user = userEvent.setup();
     const initial = storeProfile({
       ...withoutDirections, partnerSearchOptInExplicit: false, partnerSearchVisible: true,
@@ -156,14 +156,15 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
         ...initial.workingProfile!, partnerSearchOptInExplicit: true, partnerSearchOptIn: true,
       },
     };
+    persist.mockResolvedValue(refreshed);
     rerender(
       <BusinessWorkingProfileWizard
         initialProfile={refreshed} partnerType="STORE" basicsEditable forceEditing forceStep={3}
       />,
     );
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
-    expect(await screen.findByText(/Для видимости в поиске укажите/)).toBeTruthy();
-    expect(persist).not.toHaveBeenCalled();
+    await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
   });
 
   it("requires directions after explicitly returning AUTO checkbox to ON", async () => {
