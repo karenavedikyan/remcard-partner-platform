@@ -102,7 +102,10 @@ export function renderClientPurchaseLedgerRow(entry, direction) {
         <span class="wallet-accrual-row__sub">${subMain}</span>
         <span class="wallet-accrual-row__sub wallet-accrual-row__date">${formatShortDate(entry.paidAt)} · ${esc(status)}</span>
       </span>
-      ${amountRub}
+      <span class="wallet-client-purchase__summary-end">
+        ${amountRub}
+        <span class="wallet-client-purchase__affordance"><span class="wallet-client-purchase__chev" aria-hidden="true"></span><span class="wallet-client-purchase__affordance-text--closed">Подробнее</span><span class="wallet-client-purchase__affordance-text--open">Свернуть</span></span>
+      </span>
     </summary>
     <div class="wallet-client-purchase__detail">
       <dl class="wallet-client-purchase__facts">

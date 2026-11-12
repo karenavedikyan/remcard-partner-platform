@@ -1583,24 +1583,119 @@
   }
 }
 
+/* Client purchase rows: block layout — do not inherit 2-col grid from .wallet-accrual-row */
+.wallet-accruals-history__list details.wallet-client-purchase.wallet-accrual-row {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  cursor: default;
+}
+
+.wallet-accruals-history__list details.wallet-client-purchase.wallet-accrual-row:hover {
+  transform: none;
+}
+
 .wallet-client-purchase__summary {
   list-style: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
+  gap: 10px 12px;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
 }
 
 .wallet-client-purchase__summary::-webkit-details-marker {
   display: none;
 }
 
+.wallet-client-purchase__summary .wallet-accrual-row__main {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wallet-client-purchase__summary .wallet-accrual-row__title,
+.wallet-client-purchase__summary .wallet-accrual-row__sub,
+.wallet-client-purchase__summary .wallet-accrual-row__date {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.wallet-client-purchase__summary-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wallet-client-purchase__summary .wallet-status-badge {
+  justify-self: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wallet-client-purchase__affordance {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--wallet-accrual-ink-muted, #5a6068);
+  white-space: nowrap;
+}
+
+[data-theme=dark] .wallet-client-purchase__affordance {
+  color: var(--wallet-accrual-ink-muted-on-dark, #b8c0ca);
+}
+
+.wallet-client-purchase__chev {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+  margin-top: -2px;
+}
+
+.wallet-client-purchase[open] .wallet-client-purchase__chev {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+.wallet-client-purchase__affordance-text--open {
+  display: none;
+}
+
+.wallet-client-purchase[open] .wallet-client-purchase__affordance-text--closed {
+  display: none;
+}
+
+.wallet-client-purchase[open] .wallet-client-purchase__affordance-text--open {
+  display: inline;
+}
+
 .wallet-client-purchase__detail {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--pw-border, #e6e8ec);
+  overflow-wrap: anywhere;
 }
 
 [data-theme=dark] .wallet-client-purchase__detail {
@@ -1612,16 +1707,28 @@
   gap: 8px;
   margin: 0 0 10px;
   font-size: 0.875rem;
+  min-width: 0;
 }
 
 .wallet-client-purchase__facts > div {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
 }
 
 .wallet-client-purchase__facts dt {
+  flex-shrink: 0;
   color: var(--wallet-accrual-ink-muted, #5a6068);
+}
+
+.wallet-client-purchase__facts dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .wallet-client-purchase__cats {
@@ -1631,17 +1738,59 @@
   display: grid;
   gap: 6px;
   font-size: 0.875rem;
+  min-width: 0;
 }
 
 .wallet-client-purchase__cats li {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
+  min-width: 0;
+}
+
+.wallet-client-purchase__cats li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .wallet-client-purchase__terms {
   font-size: 0.75rem;
   text-align: right;
-  max-width: 9rem;
+  max-width: 11rem;
   line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .wallet-client-purchase__summary-end {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .wallet-client-purchase__affordance {
+    white-space: normal;
+  }
+
+  .wallet-client-purchase__facts > div {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .wallet-client-purchase__facts dd {
+    text-align: left;
+  }
+
+  .wallet-client-purchase__cats li {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .wallet-client-purchase__terms {
+    text-align: left;
+    max-width: 100%;
+  }
 }
