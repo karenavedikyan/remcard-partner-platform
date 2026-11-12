@@ -1804,11 +1804,21 @@ function ws(key) {
       bulkSelectedIds: [],
       bulkPanel: null,
       bulkConfirm: null,
+      clientsPreviewMode: false,
+      clientsDirection: "incoming",
+      observerPartnerId: null,
+      observerClientId: null,
+      observerQ: "",
+      observerPeriod: "all",
     });
   }
   const s = workspaces.get(key);
   if (!s.listBucket) s.listBucket = "active";
   if (!s.bulkSelectedIds) s.bulkSelectedIds = [];
+  if (s.clientsPreviewMode == null) s.clientsPreviewMode = false;
+  if (!s.clientsDirection) s.clientsDirection = "incoming";
+  if (s.observerQ == null) s.observerQ = "";
+  if (!s.observerPeriod) s.observerPeriod = "all";
   if (!s.partnerOverlay) s.partnerOverlay = { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] };
   return s;
 }
@@ -1833,6 +1843,13 @@ const PAGE_TITLES = {
   settings: "Этапы и причины",
   purchase: "Покупка",
   analytics: "Аналитика",
+  "observer-partner": "Клиенты у партнёра",
+  "observer-client": "Статус направления",
+};
+
+const PARTNER_OBSERVER_META = {
+  "DEMO-PARTNER-017": { category: "Мебель и кухни на заказ" },
+  "DEMO-PARTNER-022": { category: "Офисная и корпоративная мебель" },
 };
 
 export function clientAppealsPageTitle(config) {
@@ -1841,12 +1858,29 @@ export function clientAppealsPageTitle(config) {
     const appeal = appeals.find((a) => a.id === s.selectedId);
     if (appeal) return appeal.clientName;
   }
+  if (s.view === "observer-partner" && s.observerPartnerId) {
+    return PARTNERS[s.observerPartnerId]?.name || PAGE_TITLES["observer-partner"];
+  }
+  if (s.view === "observer-client" && s.observerClientId) {
+    const appeal = appeals.find((a) => a.id === s.observerClientId);
+    if (appeal) return appeal.clientName;
+  }
+  if (s.view === "list" && previewShowsObserverList(config)) return "Мои клиенты у партнёров";
   return PAGE_TITLES[s.view] || "Клиенты";
 }
 
 export function clientAppealsPageMuted(config) {
   const s = ws(config.key);
   const appeal = s.selectedId ? appeals.find((a) => a.id === s.selectedId) : null;
+  if (s.view === "observer-partner" || s.view === "observer-client") {
+    return "Только просмотр: статусы и покупки по вашим направлениям, без внутренних заметок партнёра.";
+  }
+  if (s.view === "list" && previewShowsObserverList(config)) {
+    return "Сводка по партнёрам, куда вы направляли клиентов. Read-only демо.";
+  }
+  if (s.view === "list" && s.clientsPreviewMode) {
+    return "Сравните привычный список с новым видом направлений у партнёров.";
+  }
   if (s.view === "list") return "Покупатели вашего магазина и история их обращений.";
   if (s.view === "detail" && appeal) return `Обращение ${appeal.id} · ${sourceDisplay(appeal)}`;
   if (s.view === "scan") return "Сканер создаст обращение или откроет уже существующее.";
@@ -1867,6 +1901,8 @@ export function clientAppealsHeaderPill(config) {
 export function clientAppealsSubpageBack(config) {
   const s = ws(config.key);
   if (s.view === "list") return "";
+  if (s.view === "observer-partner") return backLink(config, "К партнёрам", "nav:observer-list");
+  if (s.view === "observer-client") return backLink(config, "К списку клиентов", "nav:observer-partner");
   if (s.view === "detail") return backLink(config, "К списку клиентов", "nav:list");
   if (s.view === "purchase") return backLink(config, "К обращению", "nav:detail");
   return backLink(config, "К списку клиентов", "nav:list");
@@ -1890,6 +1926,14 @@ function ensureSeed(config) {
     workspaces.forEach((w) => {
       w.seeded = false;
       w.datasetEmpty = null;
+      w.clientsPreviewMode = false;
+      w.clientsDirection = "incoming";
+      w.observerPartnerId = null;
+      w.observerClientId = null;
+      w.observerQ = "";
+      w.observerPeriod = "all";
+      if (w.view === "observer-partner" || w.view === "observer-client") w.view = "list";
+      clearBulkSelection(w);
     });
   }
   const needsGlobalSeed = !sharedDatasetSeeded;
@@ -1908,9 +1952,266 @@ function ensureSeed(config) {
   }
 }
 
+function clientsPreviewEligible(role, readOnly) {
+  if (readOnly) return false;
+  return ["store", "company", "specialist", "agent", "employee"].includes(role);
+}
+
+function clearObserverNav(s) {
+  s.observerPartnerId = null;
+  s.observerClientId = null;
+}
+
+function clearClientsPreviewNav(s) {
+  clearObserverNav(s);
+  if (s.view === "observer-partner" || s.view === "observer-client") s.view = "list";
+}
+
+function ownReferredAppeals() {
+  return appeals.filter(
+    (a) => a.referrerPartnerId === REFERRER_VIEWER.id && hasCertificateFlow(a) && PARTNERS[a.receivingPartnerId],
+  );
+}
+
+function observerPeriodCutoff(period) {
+  if (period === "all") return null;
+  const d = new Date();
+  const days = period === "30" ? 30 : period === "90" ? 90 : 0;
+  if (!days) return null;
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+function filterObserverAppeals(s, list) {
+  const q = (s.observerQ || "").trim().toLowerCase();
+  const cutoff = observerPeriodCutoff(s.observerPeriod || "all");
+  let out = list.slice();
+  if (cutoff) out = out.filter((a) => new Date(a.updatedAt) >= cutoff);
+  if (!q) return out;
+  return out.filter((a) => {
+    const partner = PARTNERS[a.receivingPartnerId];
+    const hay = [
+      a.clientName,
+      a.interest,
+      a.certificateId,
+      a.id,
+      partner?.name,
+      partner?.city,
+      PARTNER_OBSERVER_META[a.receivingPartnerId]?.category,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function partnerAppealStats(list) {
+  const total = list.length;
+  const inWork = list.filter((a) => isActiveAppeal(a)).length;
+  const purchases = list.filter((a) => appealReachedPaid(a)).length;
+  const refusals = list.filter((a) => a.stageId === SYSTEM.REFUSED).length;
+  const lastUpdate = list.reduce((max, a) => (max > a.updatedAt ? max : a.updatedAt), "");
+  return { total, inWork, purchases, refusals, lastUpdate, conv: safePct(purchases, total) };
+}
+
+function isPublicReferrerHistoryEntry(entry, appeal) {
+  const t = String(entry.text || "");
+  if (/служебн|заметк|группов|архив|корзин|скрыто|перемещено|вручную/i.test(t)) return false;
+  if (/этап изменён/i.test(t)) return false;
+  if (/создано обращение по сертификату/i.test(t)) return true;
+  if (/^статус:/i.test(t)) return true;
+  if (entry.reason && /отказ/i.test(t)) return true;
+  if (/^отказ$/i.test(t) && appeal.refusedReason) return true;
+  if (/оплачено/i.test(t)) return true;
+  if (/отгружено/i.test(t)) return true;
+  if (/возврат/i.test(t)) return true;
+  return false;
+}
+
+function publicHistoryLine(entry, appeal) {
+  const t = String(entry.text || "").trim();
+  if (entry.reason && /отказ/i.test(t)) return `Отказ: ${entry.reason}`;
+  if (/^отказ$/i.test(t) && appeal.refusedReason) return `Отказ: ${appeal.refusedReason}`;
+  if (/оплачено/i.test(t)) return "Оплачено";
+  if (/отгружено/i.test(t)) return "Отгружено";
+  if (/возврат/i.test(t)) return "Возврат";
+  if (/^статус:/i.test(t)) return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+  if (/создано обращение/i.test(t)) return "Создано обращение по сертификату";
+  return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+}
+
+function publicReferrerTimeline(appeal) {
+  return (appeal.history || [])
+    .filter((e) => isPublicReferrerHistoryEntry(e, appeal))
+    .map((e) => ({ at: e.at, text: publicHistoryLine(e, appeal) }));
+}
+
+function purchaseSummaryForReferrer(appeal) {
+  const label = paidLabelForAppeal(appeal);
+  if (!label) return null;
+  return { amountLabel: label, note: "Сумма покупки у партнёра (не вознаграждение)" };
+}
+
+function renderClientsPreviewToggle(config) {
+  if (!clientsPreviewEligible(config.role, config.readOnly)) return "";
+  const s = ws(config.key);
+  const on = Boolean(s.clientsPreviewMode);
+  return `<section class="panel ca-preview-opt-in" data-testid="ca-clients-preview-toggle">
+    <div class="ca-preview-opt-in__row">
+      <label class="ca-preview-switch">
+        <input type="checkbox" data-ca-input="preview-mode" ${on ? "checked" : ""} aria-describedby="ca-preview-opt-in-desc">
+        <span class="ca-preview-switch__ui" aria-hidden="true"></span>
+        <span class="ca-preview-switch__label">Новый вид: клиенты у партнёров</span>
+      </label>
+      <span class="pill ca-preview-badge">На просмотр</span>
+    </div>
+    <p class="small muted" id="ca-preview-opt-in-desc">Включите, чтобы сравнить текущий раздел с read-only списком партнёров и статусов ваших направлений. Обычный режим не меняется, пока переключатель выключен.</p>
+  </section>`;
+}
+
+function renderClientsDirectionTabs(config) {
+  const s = ws(config.key);
+  if (!s.clientsPreviewMode) return "";
+  const caps = roleCaps(config.role);
+  if (config.role === "agent") return "";
+  if (!caps.incoming) return "";
+  const dir = s.clientsDirection === "at-partners" ? "at-partners" : "incoming";
+  return `<div class="ca-tabs wallet-direction__tabs ca-preview-directions" role="tablist" data-testid="ca-clients-directions" aria-label="Направление клиентов">
+    <button type="button" class="wallet-direction__tab${dir === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${dir === "incoming"}" data-ca-action="direction:incoming">Клиенты у меня</button>
+    <button type="button" class="wallet-direction__tab${dir === "at-partners" ? " is-active" : ""}" role="tab" aria-selected="${dir === "at-partners"}" data-ca-action="direction:at-partners">Мои клиенты у партнёров</button>
+  </div>`;
+}
+
+function previewShowsObserverList(config) {
+  const s = ws(config.key);
+  if (!s.clientsPreviewMode) return false;
+  if (config.role === "agent") return true;
+  return s.clientsDirection === "at-partners";
+}
+
+function renderObserverPartnersList(config) {
+  const s = ws(config.key);
+  const base = ownReferredAppeals();
+  const filtered = filterObserverAppeals(s, base);
+  const byPartner = new Map();
+  filtered.forEach((a) => {
+    if (!byPartner.has(a.receivingPartnerId)) byPartner.set(a.receivingPartnerId, []);
+    byPartner.get(a.receivingPartnerId).push(a);
+  });
+  const cards = [...byPartner.entries()]
+    .map(([partnerId, list]) => {
+      const partner = PARTNERS[partnerId] || { name: "Партнёр", city: "" };
+      const meta = PARTNER_OBSERVER_META[partnerId];
+      const stats = partnerAppealStats(list);
+      const last = stats.lastUpdate ? formatAgeSince(stats.lastUpdate).replace("создания", "обновления") : "—";
+      return `<button type="button" class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card" data-ca-action="observer:partner:${esc(partnerId)}">
+        <div class="ca-observer-partner-card__head">
+          <strong>${esc(partner.name)}</strong>
+          <span class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</span>
+        </div>
+        <dl class="ca-observer-stats">
+          <div><dt>Направлено</dt><dd>${stats.total}</dd></div>
+          <div><dt>В работе</dt><dd>${stats.inWork}</dd></div>
+          <div><dt>Покупки</dt><dd>${stats.purchases}</dd></div>
+          <div><dt>Отказы</dt><dd>${stats.refusals}</dd></div>
+        </dl>
+        <p class="small muted ca-observer-card-foot">Конверсия в покупку: ${esc(stats.conv)} · Обновлено: ${esc(last)}</p>
+      </button>`;
+    })
+    .join("");
+  const period = s.observerPeriod || "all";
+  const filters = `<div class="ca-filters panel ca-observer-filters">
+    <label class="field ca-search">Поиск партнёра или клиента<input type="search" data-ca-input="observer-q" value="${esc(s.observerQ || "")}" placeholder="Имя, партнёр, сертификат"></label>
+    <label class="field ca-filter">Период<select data-ca-input="observer-period">
+      <option value="all" ${period === "all" ? "selected" : ""}>Всё время</option>
+      <option value="30" ${period === "30" ? "selected" : ""}>30 дней</option>
+      <option value="90" ${period === "90" ? "selected" : ""}>90 дней</option>
+    </select></label>
+  </div>`;
+  const empty =
+    !cards &&
+    `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Здесь появятся партнёры, которым вы направляли клиентов по сертификату. Демо показывает только ваши направления (${esc(REFERRER_VIEWER.name)}).</p></section>`;
+  return `${renderClientsDirectionTabs(config)}<header class="ca-observer-heading stack"><h2 class="ca-observer-title">Мои клиенты у партнёров</h2><p class="small muted">Демо-данные: видны только обращения, где направивший — ${esc(REFERRER_VIEWER.name)}. Без редактирования статусов партнёра.</p></header>${filters}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
+}
+
+function renderObserverPartnerPage(config) {
+  const s = ws(config.key);
+  const partnerId = s.observerPartnerId;
+  const partner = partnerId ? PARTNERS[partnerId] : null;
+  if (!partnerId || !partner) {
+    s.view = "list";
+    return renderObserverPartnersList(config);
+  }
+  const list = filterObserverAppeals(
+    s,
+    ownReferredAppeals().filter((a) => a.receivingPartnerId === partnerId),
+  );
+  const stats = partnerAppealStats(list);
+  const meta = PARTNER_OBSERVER_META[partnerId];
+  const rows = list
+    .map((a) => {
+      const purchase = purchaseSummaryForReferrer(a);
+      const amt = purchase
+        ? `<span class="ca-amount">${esc(purchase.amountLabel)}</span><span class="small muted">покупка</span>`
+        : `<span class="ca-amount ca-amount--empty">—</span>`;
+      return `<button type="button" class="ca-row ca-observer-client-row" data-testid="ca-observer-client-row" data-ca-action="observer:client:${esc(a.id)}">
+        <span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span>
+        <span class="ca-row-request muted small">${esc(a.interest || "—")}</span>
+        <span class="ca-row-status">${pillHtml(a)}</span>
+        <span class="ca-row-amount">${amt}</span>
+        <span class="ca-row-age muted small">${esc(formatAgeSince(a.updatedAt).replace("создания", "обновления"))}</span>
+        <span class="ca-chev" aria-hidden="true">›</span>
+      </button>`;
+    })
+    .join("");
+  return `<header class="ca-observer-partner-head stack"><h2>${esc(partner.name)}</h2><p class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</p>
+    <p class="small">Ваши направления: ${stats.total} · в работе ${stats.inWork} · покупок ${stats.purchases} · отказов ${stats.refusals}</p></header>
+    <div class="ca-observer-client-rows">${rows || '<p class="muted panel">Нет обращений по выбранным фильтрам.</p>'}</div>`;
+}
+
+function renderObserverClientPage(config) {
+  const s = ws(config.key);
+  const appeal = appeals.find((a) => a.id === s.observerClientId);
+  if (!appeal || appeal.referrerPartnerId !== REFERRER_VIEWER.id) {
+    s.view = "observer-partner";
+    return renderObserverPartnerPage(config);
+  }
+  const partner = PARTNERS[appeal.receivingPartnerId];
+  const timeline = publicReferrerTimeline(appeal);
+  const purchase = purchaseSummaryForReferrer(appeal);
+  const tl = timeline
+    .map(
+      (e) =>
+        `<li class="ca-tl-item"><span class="ca-tl-dot" aria-hidden="true"></span><div>
+          <time class="small muted" datetime="${esc(e.at)}">${esc(new Date(e.at).toLocaleString("ru-RU"))}</time>
+          <p>${esc(e.text)}</p>
+        </div></li>`,
+    )
+    .join("");
+  return `<section class="panel stack ca-observer-client">
+    <p class="small muted">Партнёр: ${esc(partner?.name || "—")} · только ваше направление</p>
+    <h2>${esc(appeal.clientName)}</h2>
+    <p class="muted">${esc(appeal.interest || "")}</p>
+  </section>
+  <section class="panel stack">
+    <h3>Кратко</h3>
+    <dl class="ca-dl">
+      <div><dt>Сертификат</dt><dd>${esc(appeal.certificateId || "—")}</dd></div>
+      <div><dt>Статус у партнёра</dt><dd>${pillHtml(appeal)}</dd></div>
+      ${purchase ? `<div><dt>Покупка</dt><dd>${esc(purchase.amountLabel)}</dd></div>` : ""}
+    </dl>
+    ${purchase ? `<p class="small muted">${esc(purchase.note)}</p>` : ""}
+  </section>
+  <section class="panel stack">
+    <h3>Хронология (без внутренних заметок партнёра)</h3>
+    <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
+  </section>`;
+}
+
 function backLink(config, label, action) {
   const icon = config.icon?.("arrow-left") || "←";
-  return `<button type="button" class="ca-back" data-ca-action="${action}">${icon} ${esc(label)}</button>`;
+  return `<button type="button" class="ca-back" data-ca-action="${action}" data-testid="ca-clients-back">${icon} ${esc(label)}</button>`;
 }
 
 function renderBulkConfirmPanel(s) {
@@ -2092,10 +2393,10 @@ function renderListPage(config) {
       return `<div class="ca-row-lane">${check}<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button></div>`;
     })
     .join("");
-  const tabs =
-    caps.incoming && caps.outgoing
-      ? `<div class="ca-tabs wallet-direction__tabs" role="tablist"><button type="button" class="wallet-direction__tab${tab === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${tab === "incoming"}" data-ca-action="tab:incoming">Пришли ко мне · ${incomingList.length}</button><button type="button" class="wallet-direction__tab${tab === "outgoing" ? " is-active" : ""}" role="tab" aria-selected="${tab === "outgoing"}" data-ca-action="tab:outgoing">Я направил · ${outgoingList.length}</button></div>`
-      : "";
+  const showLegacyOutgoingTab = caps.incoming && caps.outgoing && !s.clientsPreviewMode;
+  const tabs = showLegacyOutgoingTab
+    ? `<div class="ca-tabs wallet-direction__tabs" role="tablist"><button type="button" class="wallet-direction__tab${tab === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${tab === "incoming"}" data-ca-action="tab:incoming">Пришли ко мне · ${incomingList.length}</button><button type="button" class="wallet-direction__tab${tab === "outgoing" ? " is-active" : ""}" role="tab" aria-selected="${tab === "outgoing"}" data-ca-action="tab:outgoing">Я направил · ${outgoingList.length}</button></div>`
+    : "";
   const emptyIcon = icon?.("inbox") || "";
   const emptyTitle =
     bucket === "archive" ? "В архиве пока пусто" : bucket === "trash" ? "Корзина пуста" : "Пока нет обращений";
@@ -2139,7 +2440,7 @@ function renderListPage(config) {
       ? `<label class="ca-bulk-select-all-mobile"><input type="checkbox" data-ca-bulk-select-all aria-label="Выбрать все" ${allChecked ? "checked" : ""}> Выбрать все</label>`
       : "";
   const rowsWrap = list.length ? `<div class="ca-rows${bulkOn ? " ca-rows--bulk" : ""}">${listHead}${rows}</div>` : "";
-  return `${tabs}${bucketTabs}${kpiStrip}${actions}${bulkConfirm}${bulkBar}${bulkEdit}${filters}${bulkSelectAllMobile}${empty || rowsWrap}`;
+  return `${renderClientsDirectionTabs(config)}${tabs}${bucketTabs}${kpiStrip}${actions}${bulkConfirm}${bulkBar}${bulkEdit}${filters}${bulkSelectAllMobile}${empty || rowsWrap}`;
 }
 
 export function renderClientAppeals(config) {
@@ -2153,7 +2454,17 @@ export function renderClientAppeals(config) {
     RECEIVING.id = viewer.id;
     RECEIVING.name = viewer.name;
   }
-  if (s.view === "list") return `<div class="stack ca-section" data-ca-root>${renderListPage(config)}</div>`;
+  const previewChrome = renderClientsPreviewToggle(config);
+  if (s.view === "list") {
+    const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
+    return `<div class="stack ca-section" data-ca-root>${previewChrome}${body}</div>`;
+  }
+  if (s.view === "observer-partner") {
+    return `<div class="stack ca-section" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
+  }
+  if (s.view === "observer-client") {
+    return `<div class="stack ca-section" data-ca-root data-testid="ca-observer-client-page">${renderObserverClientPage(config)}</div>`;
+  }
   if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${renderScanInline(config)}</div>`;
   if (s.view === "manual") return `<div class="stack ca-section" data-ca-root>${renderManualInline(config)}</div>`;
   if (s.view === "settings") return `<div class="stack ca-section" data-ca-root>${renderSettingsInline(config)}</div>`;
@@ -2627,6 +2938,7 @@ export function resetClientAppealsNav(config) {
   s.inlinePanel = null;
   s.detailPickStage = false;
   s.showRefusal = null;
+  clearObserverNav(s);
   clearBulkSelection(s);
 }
 
@@ -2683,6 +2995,7 @@ export function hydrateClientAppeals(hooks) {
     if (t.matches('[data-ca-input="q"]')) { s.listQ = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="status"]')) { s.listStatus = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; clearBulkSelection(s); hooks.refresh(); }
+    if (t.matches('[data-ca-input="observer-q"]')) { s.observerQ = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
     if (t.matches("#ca-manual-form [name]")) syncManualDraftFromDom(s);
@@ -2712,6 +3025,28 @@ export function hydrateClientAppeals(hooks) {
       const list = filterAppeals("incoming", config.key);
       s.bulkSelectedIds = t.checked ? list.map((a) => a.id) : [];
       s.bulkConfirm = null;
+      hooks.refresh();
+      return;
+    }
+    if (t.matches('[data-ca-input="preview-mode"]')) {
+      const next = t.checked;
+      s.clientsPreviewMode = next;
+      if (next) {
+        if (config.role === "agent") s.clientsDirection = "at-partners";
+        clearClientsPreviewNav(s);
+        clearBulkSelection(s);
+        s.view = "list";
+      } else {
+        s.clientsDirection = "incoming";
+        clearClientsPreviewNav(s);
+        clearBulkSelection(s);
+        s.view = "list";
+      }
+      hooks.refresh();
+      return;
+    }
+    if (t.matches('[data-ca-input="observer-period"]')) {
+      s.observerPeriod = t.value || "all";
       hooks.refresh();
       return;
     }
@@ -2760,6 +3095,39 @@ export function hydrateClientAppeals(hooks) {
 function handleCaAction(action, config, hooks) {
   const s = ws(config.key);
   hooks.clearNotice?.();
+  if (action === "direction:incoming") {
+    if (!s.clientsPreviewMode) return;
+    s.clientsDirection = "incoming";
+    clearObserverNav(s);
+    clearBulkSelection(s);
+    s.view = "list";
+    s.tab = "incoming";
+    activeTab = "incoming";
+    hooks.refresh();
+    return;
+  }
+  if (action === "direction:at-partners") {
+    if (!s.clientsPreviewMode) return;
+    s.clientsDirection = "at-partners";
+    clearObserverNav(s);
+    clearBulkSelection(s);
+    s.view = "list";
+    hooks.refresh();
+    return;
+  }
+  if (action.startsWith("observer:partner:")) {
+    s.observerPartnerId = action.split(":")[2];
+    s.observerClientId = null;
+    s.view = "observer-partner";
+    hooks.refresh();
+    return;
+  }
+  if (action.startsWith("observer:client:")) {
+    s.observerClientId = action.split(":")[2];
+    s.view = "observer-client";
+    hooks.refresh();
+    return;
+  }
   if (action === "pay:profile-categories") {
     beginPayProfileCategoriesTrip(config, { ...hooks, openProfileForPayCategories: config.openProfileForPayCategories });
     return;
@@ -2832,6 +3200,18 @@ function handleCaAction(action, config, hooks) {
       config.openProfile?.();
       return;
     }
+    if (v === "observer-list") {
+      s.view = "list";
+      clearObserverNav(s);
+      hooks.refresh();
+      return;
+    }
+    if (v === "observer-partner") {
+      s.view = "observer-partner";
+      s.observerClientId = null;
+      hooks.refresh();
+      return;
+    }
     if (v === "detail") s.view = "detail";
     else s.view = v;
     if (v === "list") {
@@ -2844,6 +3224,7 @@ function handleCaAction(action, config, hooks) {
       s.detailPickStage = false;
       s.showRefusal = null;
       s.payDraft = null;
+      clearObserverNav(s);
       clearPayProfileReturnContext(config.key);
     }
     hooks.refresh();
