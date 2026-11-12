@@ -231,15 +231,6 @@ export function hydrateAgentReceivablesRegistry(config, root = document) {
     }
   });
 
-  section.addEventListener("input", (event) => {
-    const el = event.target;
-    if (el.name !== "q") return;
-    const s = state(config);
-    s.q = el.value;
-    s.page = 1;
-    refresh();
-  });
-
   section.addEventListener("click", (event) => {
     const btnEl = event.target.closest("[data-agent-registry-action]");
     if (!btnEl) return;

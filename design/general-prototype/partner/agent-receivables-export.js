@@ -1,6 +1,6 @@
 // Demo XLSX for agent receivables registry — whole current filter (all pages).
 import { loadExcelLibrary } from "./settlement-export.js";
-import { filterOrders, filterPartners } from "./agent-receivables-registry-data.js";
+import { PARTNERS, filterOrders, filterPartners } from "./agent-receivables-registry-data.js";
 
 function buildExportModel(s) {
   const rows = filterOrders(s);
