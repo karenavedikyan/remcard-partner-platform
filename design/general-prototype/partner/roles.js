@@ -2408,7 +2408,7 @@ var wt = (e) =>
   rt = (e) =>
     (i.role === "agent" &&
       {
-        home: "Сертификаты",
+        home: "Главная",
         recommendations: "Сертификаты",
         bonus: "Бонусы",
         profile: "Профиль",
@@ -5055,15 +5055,40 @@ var coop = initCooperationControls({
 
 initializeEntry(i);
 if (["store", "company"].includes(i.role)) Y = i.role;
-(function clientAppealsDeepLink() {
+(function prototypeCabinetDeepLink() {
   const q = new URLSearchParams(location.search);
-  if (q.get("open") !== "clients") return;
+  const open = q.get("open");
+  if (!open) return;
   const role = q.get("role");
-  if (role && ["store", "company", "agent", "specialist", "employee"].includes(role)) i.role = role;
-  i.screen = "cabinet";
-  i.page = "clients";
-  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
-  syncPreviewProfileWizards(i.role);
+  const allowedRoles = ["store", "company", "agent", "specialist", "employee"];
+  if (role && allowedRoles.includes(role)) {
+    i.role = role;
+    if (["store", "company"].includes(role)) Y = role;
+  }
+  const r2Opens = new Set(["care", "procurement"]);
+  if (open === "clients") {
+    i.screen = "cabinet";
+    i.page = "clients";
+    enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
+    syncPreviewProfileWizards(i.role);
+    return;
+  }
+  if (r2Opens.has(open)) {
+    if (!role) {
+      i.role = "store";
+      Y = "store";
+    }
+    i.screen = "cabinet";
+    enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
+    syncPreviewProfileWizards(i.role);
+    if (prototypeRelease() !== 2) {
+      i.page = "home";
+      i.notice =
+        "«Забота» и «Закупки» открываются в релизе 2. Добавьте rc_demo_release=2 к ссылке или выберите R2 в панели макета.";
+    } else {
+      i.page = open;
+    }
+  }
 })();
 if (i.screen === "cabinet") {
   applyCabinetPreviewSeeds(i.role);

@@ -28,7 +28,8 @@ Legend: **Module** = routed through cabinet shell (`roles.js`) into an existing 
 | --- | --- |
 | `partner/roles.js` | Scanner route, `receivingScannerEligible`, `action:scan` |
 | `partner/client-appeals.js` | `primeClientAppealsScan`, scan entry back / `nav:cabinet` |
-| `design/general-prototype/index.html` | R2 links with `?rc_demo_release=2` |
+| `design/general-prototype/index.html` | R2 deep links `?rc_demo_release=2&role=store&open=care|procurement` |
+| `partner/roles.js` (boot) | `open=clients|care|procurement` + `role=` → cabinet + `enterCabinetPreviewDrafts`; R1 `open=care|procurement` → home + notice |
 
 ## Honest gaps (not production parity)
 
