@@ -1,6 +1,6 @@
 /* Клиенты и обращения в кабинете партнёра. Демо, in-memory. Без диалогов — только страницы. */
 import { emptyDatasetOn } from "./empty-states.js?v=es2";
-import { upsertPaidPurchaseLedger } from "./client-purchase-ledger.js";
+import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-purchase-ledger.js";
 
 
   const WAIT_DAYS = 14;
@@ -521,7 +521,18 @@ import { upsertPaidPurchaseLedger } from "./client-purchase-ledger.js";
       return tail && tail !== WALLET_VOCAB.purchasePaid ? `Покупка без реферального начисления · ${tail}` : "Покупка без реферального начисления";
     }
     if (appeal.stageId === SYSTEM.RETURN) return wallet.purchaseFulfillmentLabel || WALLET_VOCAB.fullReturn;
-    if (appeal.shippedAt || appeal.stageId === SYSTEM.SHIPPED) return wallet.purchaseFulfillmentLabel || WALLET_VOCAB.fulfilled;
+    if (appeal.shippedAt || appeal.stageId === SYSTEM.SHIPPED) {
+      const base = wallet.purchaseFulfillmentLabel || WALLET_VOCAB.fulfilled;
+      if (canAccrueReferral(appeal)) {
+        const reward = wallet.rewardStatusLabel;
+        const wait =
+          wallet.waitDaysLeft != null && wallet.waitDaysLeft > 0
+            ? ` · осталось ${wallet.waitDaysLeft} дн. до подтверждения начисления`
+            : "";
+        return reward ? `${base} · ${reward}${wait}` : base;
+      }
+      return base;
+    }
     return "Оплачено · ожидает передачи";
   }
 
@@ -529,18 +540,32 @@ import { upsertPaidPurchaseLedger } from "./client-purchase-ledger.js";
     if (!canAccrueReferral(appeal)) return null;
     if (appeal.stageId === SYSTEM.RETURN) return `${WALLET_VOCAB.fullReturn} · ${WALLET_VOCAB.rewardReview}`;
     if (!appeal.shippedAt && appeal.stageId !== SYSTEM.SHIPPED) return "Покупка оплачена · начисление ожидает передачи";
-    if ((wallet.waitDaysLeft ?? 0) > 0) return wallet.rewardStatusLabel || WALLET_VOCAB.rewardPending;
-    return wallet.rewardStatusLabel || WALLET_VOCAB.confirmedCalc;
+    const reward = wallet.rewardStatusLabel || WALLET_VOCAB.rewardPending;
+    if ((wallet.waitDaysLeft ?? 0) > 0) return `${reward} · осталось ${wallet.waitDaysLeft} дн.`;
+    return reward || WALLET_VOCAB.confirmedCalc;
+  }
+
+  function ledgerCategoryRows(appeal) {
+    if (!appeal.purchaseBreakdown?.rows?.length) return [];
+    const referral = canAccrueReferral(appeal) && !isManualAppeal(appeal);
+    return appeal.purchaseBreakdown.rows.map((r) => {
+      const snap = referral ? rowAccrualSnapshot(r, appeal) : null;
+      const delayTotal = r.accrualDelayDays ?? (referral ? WAIT_DAYS : null);
+      return {
+        categoryKey: r.categoryKey,
+        categoryLabel: r.categoryLabel,
+        amountLabel: formatRubFromKopecks(r.amountKopecks),
+        delayDays: delayTotal,
+        accrualPhase: referral ? snap?.phase || "handoff" : "n/a",
+        accrualStateText: referral ? snap?.text || "ожидает передачи" : "",
+        daysLeft: snap?.daysLeft ?? null,
+        delayTotal: snap?.delayDays ?? delayTotal,
+      };
+    });
   }
 
   function pushLedgerFromAppeal(appeal, wallet) {
     if (!appeal.ledgerRecorded || !appeal.paidAt || !appeal.purchaseId) return;
-    const rows = appeal.purchaseBreakdown?.rows?.map((r) => ({
-      categoryKey: r.categoryKey,
-      categoryLabel: r.categoryLabel,
-      amountLabel: formatRubFromKopecks(r.amountKopecks),
-      delayDays: payDelaySummaryDays(r),
-    }));
     upsertPaidPurchaseLedger({
       purchaseId: appeal.purchaseId,
       appealId: appeal.id,
@@ -556,8 +581,10 @@ import { upsertPaidPurchaseLedger } from "./client-purchase-ledger.js";
       receivingPartnerName: PARTNERS[appeal.receivingPartnerId]?.name || "—",
       receiverStatus: receiverLedgerStatus(appeal, wallet),
       referrerStatus: referrerLedgerStatus(appeal, wallet),
+      rewardStatusLabel: canAccrueReferral(appeal) ? wallet.rewardStatusLabel || null : null,
+      waitDaysLeft: canAccrueReferral(appeal) ? wallet.waitDaysLeft ?? null : null,
       fulfillmentPhase: ledgerFulfillmentPhase(appeal, wallet),
-      categoryRows: rows || [],
+      categoryRows: ledgerCategoryRows(appeal),
     });
   }
 
@@ -1538,7 +1565,8 @@ function submitPaidCategoryForm(ev, config, hooks) {
   hooks.refresh();
 }
 
-let lastDatasetEmpty = null;
+let sharedDatasetEmpty = null;
+let sharedDatasetSeeded = false;
 let cabinetHooks = null;
 function afterDataChange() {
   cabinetHooks?.refresh?.();
@@ -1644,28 +1672,38 @@ export function clientAppealsSubpageBack(config) {
   return backLink(config, "К списку клиентов", "nav:list");
 }
 
-function ensureSeed(config) {
-  const s = ws(config.key);
-  const empty = emptyDatasetOn();
-  if (lastDatasetEmpty !== empty) {
-    lastDatasetEmpty = empty;
-    workspaces.forEach((w) => {
-      w.seeded = false;
-    });
-  }
-  if (s.seeded && s.datasetEmpty === empty) {
-    if (!s.funnelPreset) applyFunnelPreset(s, "30");
-    return;
-  }
-  s.datasetEmpty = empty;
-  s.seeded = true;
+function resetSharedAppealsDataset(empty) {
   appeals = [];
   Object.keys(walletPurchases).forEach((k) => delete walletPurchases[k]);
   appealIdSeq = 1100;
   if (!empty) seedAppeals();
-  if (!s.funnelPreset) applyFunnelPreset(s, "30");
-  const caps = roleCaps(config.role);
-  if (!caps.incoming) s.tab = "outgoing";
+}
+
+function ensureSeed(config) {
+  const s = ws(config.key);
+  const empty = emptyDatasetOn();
+  if (sharedDatasetEmpty !== empty) {
+    sharedDatasetEmpty = empty;
+    sharedDatasetSeeded = false;
+    clearClientPurchaseLedger();
+    workspaces.forEach((w) => {
+      w.seeded = false;
+      w.datasetEmpty = null;
+    });
+  }
+  const needsGlobalSeed = !sharedDatasetSeeded;
+  const needsWorkspaceInit = !s.seeded || s.datasetEmpty !== empty;
+  if (needsWorkspaceInit) {
+    s.datasetEmpty = empty;
+    s.seeded = true;
+    if (!s.funnelPreset) applyFunnelPreset(s, "30");
+    const caps = roleCaps(config.role);
+    if (!caps.incoming) s.tab = "outgoing";
+  }
+  if (needsGlobalSeed) {
+    sharedDatasetSeeded = true;
+    resetSharedAppealsDataset(empty);
+  }
 }
 
 function backLink(config, label, action) {
@@ -2658,6 +2696,12 @@ function syncSettingsDraftFromWorkspace(s) {
   });
   document.querySelectorAll(".reason-label").forEach((input, i) => {
     if (s.settingsDraft.refusalReasons[i] != null) s.settingsDraft.refusalReasons[i] = input.value;
+  });
+}
+
+export function refreshClientPurchaseLedgerForWallet() {
+  appeals.forEach((a) => {
+    if (a.ledgerRecorded && a.paidAt) syncWalletFromAppeal(a);
   });
 }
 

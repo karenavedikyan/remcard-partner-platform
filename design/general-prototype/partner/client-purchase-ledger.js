@@ -13,6 +13,10 @@ export function upsertPaidPurchaseLedger(entry) {
   byPurchaseId.set(entry.purchaseId, { ...prev, ...entry, updatedAt: Date.now() });
 }
 
+export function clearClientPurchaseLedger() {
+  byPurchaseId.clear();
+}
+
 export function resolveWalletViewerPartnerId(config) {
   let role = config.role;
   if (role === "employee" && typeof config.employerRole === "function") {
@@ -63,10 +67,13 @@ function formatShortDate(iso) {
 function breakdownHtml(rows) {
   if (!rows?.length) return "";
   const items = rows
-    .map(
-      (row) =>
-        `<li><span>${esc(row.categoryLabel || row.categoryKey)}</span><span>${esc(row.amountLabel || "")}${row.delayDays != null ? ` · срок ${esc(String(row.delayDays))} дн.` : ""}</span></li>`,
-    )
+    .map((row) => {
+      const accrual =
+        row.accrualPhase && row.accrualPhase !== "n/a"
+          ? ` · ${esc(row.accrualStateText || row.accrualPhase)}`
+          : "";
+      return `<li><span>${esc(row.categoryLabel || row.categoryKey)}</span><span>${esc(row.amountLabel || "")}${accrual}</span></li>`;
+    })
     .join("");
   return `<ul class="wallet-client-purchase__cats">${items}</ul>`;
 }
@@ -105,6 +112,7 @@ export function renderClientPurchaseLedgerRow(entry, direction) {
         <div><dt>Клиент</dt><dd>${esc(entry.clientName)}</dd></div>
         ${entry.certificateId ? `<div><dt>Сертификат</dt><dd>${esc(entry.certificateId)}</dd></div>` : ""}
         <div><dt>Статус</dt><dd>${esc(status)}</dd></div>
+        ${entry.referralEligible && entry.rewardStatusLabel ? `<div><dt>Начисление</dt><dd>${esc(entry.rewardStatusLabel)}${entry.waitDaysLeft != null && entry.waitDaysLeft > 0 ? ` · осталось ${esc(String(entry.waitDaysLeft))} дн.` : ""}</dd></div>` : ""}
         ${direction === "in" ? `<div><dt>Вознаграждение</dt><dd>По согласованным условиям</dd></div>` : ""}
       </dl>
       ${breakdownHtml(entry.categoryRows)}

@@ -360,6 +360,7 @@ function renderHistoryPanel(config, incomingOnly, activeDirection) {
     st.historyFilter = "all";
   }
   const visible = filterHistoryRows(allRows, filter, incomingOnly);
+  config.refreshClientPurchaseLedger?.();
   const fetchLedger =
     typeof config.clientPurchaseLedgerRows === "function"
       ? (dir) => config.clientPurchaseLedgerRows(dir)
