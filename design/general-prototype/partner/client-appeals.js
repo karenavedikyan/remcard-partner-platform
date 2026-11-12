@@ -548,9 +548,22 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
   function ledgerCategoryRows(appeal) {
     if (!appeal.purchaseBreakdown?.rows?.length) return [];
     const referral = canAccrueReferral(appeal) && !isManualAppeal(appeal);
+    const afterReturn = referral && appeal.stageId === SYSTEM.RETURN;
     return appeal.purchaseBreakdown.rows.map((r) => {
-      const snap = referral ? rowAccrualSnapshot(r, appeal) : null;
       const delayTotal = r.accrualDelayDays ?? (referral ? WAIT_DAYS : null);
+      if (afterReturn) {
+        return {
+          categoryKey: r.categoryKey,
+          categoryLabel: r.categoryLabel,
+          amountLabel: formatRubFromKopecks(r.amountKopecks),
+          delayDays: delayTotal,
+          accrualPhase: "return",
+          accrualStateText: WALLET_VOCAB.rewardReview,
+          daysLeft: null,
+          delayTotal,
+        };
+      }
+      const snap = referral ? rowAccrualSnapshot(r, appeal) : null;
       return {
         categoryKey: r.categoryKey,
         categoryLabel: r.categoryLabel,
