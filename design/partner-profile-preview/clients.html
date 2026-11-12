@@ -36,8 +36,14 @@
 
       <div class="cl-toolbar">
         <h1>Клиенты</h1>
+        <p class="cl-actor-badge" id="actor-badge"></p>
         <p class="cl-context-line" id="context-line"></p>
       </div>
+
+      <details class="cl-funnel" id="cohort-funnel">
+        <summary>Воронка за период (демо, компактно)</summary>
+        <div class="cl-funnel-body" id="funnel-body"></div>
+      </details>
 
       <div class="cl-tabs" role="tablist" aria-label="Ракурс по клиентам">
         <button type="button" class="cl-tab" role="tab" id="tab-incoming" aria-selected="true" aria-controls="panel-incoming">
@@ -58,7 +64,12 @@
             <span class="cl-field-label">Статус</span>
             <select id="filter-status-incoming" class="cl-select"></select>
           </label>
+          <label class="cl-field">
+            <span class="cl-field-label">Источник</span>
+            <select id="filter-source-incoming" class="cl-select"></select>
+          </label>
           <div class="cl-actions">
+            <button type="button" class="pp-btn" id="btn-add-client">Добавить клиента</button>
             <button type="button" class="pp-btn cl-btn-primary" id="btn-scan">
               <svg class="cl-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M4 7V5a2 2 0 0 1 2-2h2M4 17v2a2 2 0 0 0 2 2h2m8-16h2a2 2 0 0 1 2 2v2m-4 12h2a2 2 0 0 0 2-2v-2M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -85,8 +96,12 @@
             <span class="cl-field-label">Принимающий партнёр</span>
             <select id="filter-partner-outgoing" class="cl-select"></select>
           </label>
+          <label class="cl-field">
+            <span class="cl-field-label">Источник</span>
+            <select id="filter-source-outgoing" class="cl-select"></select>
+          </label>
         </div>
-        <p class="cl-readonly-hint">Только просмотр: статусы и заметки принимающего партнёра недоступны.</p>
+        <p class="cl-readonly-hint" id="outgoing-scope-hint">Только просмотр: статусы и заметки принимающего партнёра недоступны.</p>
         <div id="list-outgoing" class="cl-list" aria-live="polite"></div>
       </div>
     </div>
@@ -186,6 +201,52 @@
           <button type="submit" class="pp-btn cl-btn-primary">Подтвердить</button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog id="manual-dialog" class="cl-dialog" aria-labelledby="manual-title">
+      <form class="cl-dialog-inner" id="manual-form">
+        <header class="cl-dialog-head">
+          <h2 id="manual-title" class="cl-dialog-title">Добавить клиента вручную</h2>
+          <button type="button" class="pp-btn pp-btn--quiet cl-icon-btn" id="manual-close" aria-label="Закрыть">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </header>
+        <div class="cl-dialog-body">
+          <p class="cl-note">Без сертификата: демо-обращение без referrer. Контакт и источник необязательны.</p>
+          <label class="cl-field">
+            <span class="cl-field-label">Имя клиента</span>
+            <input type="text" class="cl-input" id="manual-name" required maxlength="120" />
+          </label>
+          <label class="cl-field">
+            <span class="cl-field-label">Контакт (необязательно)</span>
+            <input type="text" class="cl-input" id="manual-contact" maxlength="80" placeholder="+7 900 000-00-00" />
+          </label>
+          <label class="cl-field">
+            <span class="cl-field-label">Источник</span>
+            <select id="manual-source" class="cl-select"></select>
+          </label>
+          <p id="manual-error" class="cl-form-error" role="alert" hidden></p>
+        </div>
+        <footer class="cl-dialog-foot">
+          <button type="button" class="pp-btn" id="manual-cancel">Отмена</button>
+          <button type="submit" class="pp-btn cl-btn-primary">Создать обращение</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="wallet-dialog" class="cl-dialog cl-dialog--wide" aria-labelledby="wallet-title">
+      <div class="cl-dialog-inner">
+        <header class="cl-dialog-head">
+          <h2 id="wallet-title" class="cl-dialog-title">Кошелёк · просмотр покупки (демо)</h2>
+          <button type="button" class="pp-btn pp-btn--quiet cl-icon-btn" id="wallet-close" aria-label="Закрыть">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </header>
+        <div class="cl-dialog-body" id="wallet-body"></div>
+        <footer class="cl-dialog-foot">
+          <button type="button" class="pp-btn cl-btn-primary" id="wallet-done">Закрыть</button>
+        </footer>
+      </div>
     </dialog>
 
     <script src="clients.js" defer></script>

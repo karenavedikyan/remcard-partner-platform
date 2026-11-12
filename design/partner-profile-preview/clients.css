@@ -12,9 +12,87 @@
 }
 
 .cl-context-line {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-size: var(--pp-sm);
   color: var(--pp-muted);
+}
+
+.cl-actor-badge {
+  margin: 0 0 6px;
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-soft);
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  color: var(--pp-accent);
+}
+
+.cl-funnel {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  background: var(--pp-panel);
+  font-size: var(--pp-sm);
+}
+
+.cl-funnel summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cl-funnel-body {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  color: var(--pp-muted);
+}
+
+.cl-funnel-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cl-funnel-row strong {
+  color: var(--pp-text);
+}
+
+.cl-wallet-card {
+  padding: 12px;
+  border: 1px solid var(--pp-line);
+  border-radius: 10px;
+  background: var(--pp-soft);
+  display: grid;
+  gap: 8px;
+  font-size: var(--pp-sm);
+}
+
+.cl-wallet-kind {
+  font-size: var(--pp-xs);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.cl-wallet-kind--purchase {
+  color: var(--pp-text);
+}
+
+.cl-wallet-kind--referral {
+  color: var(--pp-accent);
+}
+
+.cl-paid-row {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--pp-line);
+  background: var(--pp-panel);
+  font-size: var(--pp-sm);
 }
 
 .cl-tabs {
@@ -63,12 +141,16 @@
 
 @media (min-width: 720px) {
   .cl-controls {
-    grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.7fr) auto;
+    grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(100px, 0.5fr)) minmax(120px, 0.55fr) auto;
     align-items: end;
   }
 
   #panel-outgoing .cl-controls {
-    grid-template-columns: minmax(0, 1.2fr) minmax(110px, 0.55fr) minmax(140px, 0.75fr);
+    grid-template-columns: minmax(0, 1fr) repeat(3, minmax(96px, 0.45fr));
+  }
+
+  #panel-outgoing .cl-readonly-hint {
+    grid-column: 1 / -1;
   }
 }
 
