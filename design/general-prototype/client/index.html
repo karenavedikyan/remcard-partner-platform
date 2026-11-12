@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <script src="../preview-memory.js"></script>
+  <link rel="stylesheet" href="../prototype-numbering.css?v=ann2">
+  <script src="../prototype-numbering.js?v=ann2" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>RemCard · сайт для клиентов (прототип)</title>
+</head>
+<body>
+  <main id="main" role="main">
+    <section class="panel">
+      <h1>Клиентский прототип</h1>
+      <p class="muted">Полный SPA подставляется при сборке артефакта. Маршрут в hash: <code id="route-hint"></code></p>
+      <nav aria-label="Демо-разделы">
+        <a href="#/catalog">Каталог</a> ·
+        <a href="#/navigator">Навигатор</a> ·
+        <a href="#/care">Забота</a> ·
+        <a href="#/calc/materials">Калькулятор</a>
+      </nav>
+    </section>
+  </main>
+  <script>
+    document.getElementById("route-hint").textContent = location.hash || "(пусто)";
+    window.addEventListener("hashchange", function () {
+      document.getElementById("route-hint").textContent = location.hash || "(пусто)";
+    });
+  </script>
+</body>
+</html>

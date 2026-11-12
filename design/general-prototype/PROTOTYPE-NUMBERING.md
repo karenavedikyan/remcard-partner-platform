@@ -17,16 +17,11 @@
 
 Один и тот же экран после перезагрузки даёт те же номера; смена роли/раздела/R2 — другой `page4`, номера не смешиваются между экранами.
 
-## Покрытие в репозитории (13 HTML)
+## Покрытие HTML (15)
 
-Подключены: `index.html`, все `partner/*.html` (в т.ч. roles, legacy, certificate, observer, assignment, purchase/reward/cooperation/scanner/wallet).
+`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann2`.
 
-`client/index.html` и `admin/index.html` в git отсутствуют (подставляются при сборке артефакта). Добавьте в `<head>` после `preview-memory.js`:
-
-```html
-<link rel="stylesheet" href="../prototype-numbering.css?v=ann1">
-<script src="../prototype-numbering.js?v=ann1" defer></script>
-```
+Клиент/админ в репозитории — минимальные оболочки для hash-маршрутов и пространств 2/4; полный SPA остаётся в артефакте сборки.
 
 ## UI
 
@@ -37,7 +32,8 @@
 - Не трогает `textContent` продукта, `pointer-events: none` на слое (кроме кнопок ревью и маркеров для копирования).
 - `MutationObserver` — новые dialog/шаги SPA пересчитываются.
 - Нет `localStorage` / fetch / сервера; состояние только в памяти вкладки.
-- Реестр для отладки: `window.__protoNumRegistry`.
+- Реестр: `window.__protoNumRegistry` (ref, label, stableKey, pageState, location); поиск элемента: `window.__protoNumResolve(ref)` или атрибут `data-proto-number` на целевом узле.
+- Самотест ключей: `node prototype-numbering.selftest.mjs`.
 
 ## Ограничения
 

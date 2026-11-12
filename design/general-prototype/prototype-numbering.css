@@ -1,57 +1,44 @@
-/* Reviewer-only annotation layer — does not affect product layout or print */
 @media print {
-  .proto-num-root,
-  .proto-num-root * {
+  .proto-num-badges-host,
+  .proto-num-chrome,
+  .proto-num-panel {
     display: none !important;
   }
 }
 
-.proto-num-root {
+html.proto-num-off .proto-num-badges-host {
+  visibility: hidden;
+}
+
+.proto-num-badges-host {
   position: fixed;
   inset: 0;
   z-index: 2147483000;
   pointer-events: none;
-  font-family: "Manrope", system-ui, sans-serif;
-}
-
-.proto-num-root.proto-num-off .proto-num-badge-layer {
-  visibility: hidden;
-}
-
-.proto-num-badge-layer {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .proto-num-badge {
-  position: absolute;
-  transform: translate(-4px, -4px);
-  font-size: 10px;
+  position: fixed;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.15;
   letter-spacing: -0.02em;
-  padding: 2px 4px;
+  padding: 2px 5px;
   border-radius: 4px;
   background: #1a1a1a;
   color: #fff;
   border: 1px solid #fff;
   box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
   white-space: nowrap;
-  max-width: 11rem;
+  max-width: 10.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: auto;
-  cursor: copy;
+  pointer-events: none;
+  user-select: none;
 }
 
-.proto-num-badge.proto-num-badge--dense {
-  font-size: 8px;
-  padding: 1px 3px;
-  opacity: 0.92;
-}
-
-.proto-num-badge.proto-num-badge--highlight {
+.proto-num-badge--highlight {
   background: #c12b2f;
   outline: 2px solid #ffd700;
   z-index: 2;
@@ -70,8 +57,8 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  z-index: 2147483002;
   pointer-events: auto;
-  z-index: 2147483001;
 }
 
 .proto-num-chrome button {
@@ -92,37 +79,36 @@
 }
 
 .proto-num-chrome button[aria-pressed="false"] {
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .proto-num-legend {
   font-size: 11px;
-  color: #333;
-  background: rgb(255 255 255 / 94%);
+  color: #222;
+  background: rgb(255 255 255 / 96%);
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid #ddd;
-  max-width: min(280px, 90vw);
+  max-width: min(320px, 90vw);
 }
 
 .proto-num-panel {
   position: fixed;
   right: 0;
   bottom: 0;
-  width: min(420px, 100vw);
-  max-height: min(70vh, 560px);
+  width: min(440px, 100vw);
+  max-height: min(72vh, 580px);
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 12px 0 0 0;
   box-shadow: -8px -4px 32px rgb(0 0 0 / 18%);
-  display: none;
+  display: flex;
   flex-direction: column;
-  pointer-events: auto;
-  z-index: 2147483002;
+  z-index: 2147483003;
 }
 
-.proto-num-panel.is-open {
-  display: flex;
+.proto-num-panel[hidden] {
+  display: none !important;
 }
 
 .proto-num-panel__head {
@@ -138,7 +124,7 @@
   font-size: 14px;
   font-weight: 700;
   margin: 0;
-  flex: 1 1 auto;
+  flex: 1 1 100%;
 }
 
 .proto-num-panel__head input {
@@ -172,11 +158,12 @@
   border-bottom: 1px solid #eee;
   cursor: pointer;
   font-size: 12px;
-  text-align: left;
 }
 
-.proto-num-panel__item:hover {
+.proto-num-panel__item:hover,
+.proto-num-panel__item:focus {
   background: #fbeeee;
+  outline: none;
 }
 
 .proto-num-panel__item code {
@@ -185,17 +172,13 @@
   white-space: nowrap;
 }
 
-.proto-num-panel__item span {
-  color: #333;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .proto-num-panel__actions {
   padding: 10px 14px;
   border-top: 1px solid #e5e5df;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  align-items: flex-start;
 }
 
 .proto-num-panel__actions button {
@@ -208,11 +191,22 @@
   cursor: pointer;
 }
 
-.proto-num-clipboard-fallback {
-  position: fixed;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+.proto-num-panel__copy-status {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 11px;
+  color: #444;
+}
+
+.proto-num-panel__copy-field {
+  flex: 1 1 100%;
+  width: 100%;
+  min-height: 4.5rem;
+  font: inherit;
+  font-size: 11px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+  user-select: text;
 }

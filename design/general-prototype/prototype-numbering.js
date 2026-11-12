@@ -1,17 +1,15 @@
 /**
  * RemCard general-prototype reviewer numbering (annotation-only, in-memory).
- * Namespaces: 1=general hub, 2=client, 3=partner, 4=admin.
  */
 (function () {
   "use strict";
 
-  const ROOT_CLASS = "proto-num-root";
-  const NS_LABELS = {
-    1: "general",
-    2: "client",
-    3: "partner",
-    4: "admin",
-  };
+  const UI_ATTR = "data-proto-numbering-ui";
+  const TARGET_ATTR = "data-proto-number";
+  const BADGE_HOST_CLASS = "proto-num-badges-host";
+  const TRANSIENT_CLASS = /^(is-|has-|was-|js-|proto-num-|open$|selected$|active$|pressed$|highlight|current$|disabled$|loading$|pending$|checked$)/i;
+
+  const NS_LABELS = { 1: "общий вход", 2: "клиент", 3: "партнёр", 4: "админ" };
 
   const CANDIDATE_SELECTOR = [
     "main",
@@ -33,6 +31,11 @@
     "tr",
     "th",
     "td",
+    "strong",
+    "small",
+    "span",
+    "div.stat",
+    "div.step",
     ".nav-btn",
     ".btn",
     "button",
@@ -46,6 +49,11 @@
     "dialog",
     "img",
     "svg",
+    "[role='button']",
+    "[role='tab']",
+    "[role='dialog']",
+    "[role='link']",
+    "[role='menuitem']",
     "[data-testid]",
     "[data-action]",
     ".stat",
@@ -56,35 +64,33 @@
     ".wallet-accrual-row",
     "table",
     ".role-grid",
-    ".step",
     ".proto-launch",
     ".role",
+    ".work-row",
+    ".nav-stage-button",
   ].join(",");
 
-  const SKIP_TAGS = new Set([
-    "SCRIPT",
-    "STYLE",
-    "NOSCRIPT",
-    "LINK",
-    "META",
-    "TITLE",
-    "HEAD",
-  ]);
+  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "LINK", "META", "TITLE", "HEAD"]);
 
   let enabled = true;
   let panelOpen = false;
-  let dense = false;
-  let rootEl = null;
-  let badgeLayer = null;
+  let badgeHost = null;
+  let chromeEl = null;
   let panelEl = null;
+  let toggleBtn = null;
+  let panelBtn = null;
   let searchEl = null;
   let listEl = null;
   let metaEl = null;
+  let copyStatusEl = null;
+  let copyFieldEl = null;
   let registry = [];
+  let registryByRef = new Map();
   let highlightEl = null;
   let observer = null;
   let rescanTimer = null;
   let scrollBound = false;
+  let scanning = false;
 
   function fnv1a(str) {
     let h = 2166136261;
@@ -93,6 +99,14 @@
       h = Math.imul(h, 16777619);
     }
     return h >>> 0;
+  }
+
+  function isAnnotationUi(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.hasAttribute(UI_ATTR)) return true;
+    if (el.classList?.contains(BADGE_HOST_CLASS)) return true;
+    if (el.hasAttribute(TARGET_ATTR) && el.classList?.contains("proto-num-badge")) return true;
+    return !!el.closest(`[${UI_ATTR}]`);
   }
 
   function detectNamespace() {
@@ -104,21 +118,37 @@
   }
 
   function pageFileKey() {
-    const p = location.pathname || "";
-    const file = p.split("/").pop() || "index.html";
+    const file = (location.pathname || "").split("/").pop() || "index.html";
     return file.replace(/\.html?$/i, "");
+  }
+
+  function filteredSearchParams() {
+    const allow = new Set(["rc_demo_release", "role", "open", "demo"]);
+    const q = new URLSearchParams(location.search);
+    const parts = [];
+    allow.forEach((k) => {
+      const v = q.get(k);
+      if (v != null && v !== "") parts.push(`${k}=${v}`);
+    });
+    parts.sort();
+    return parts.join("&");
   }
 
   function readPrototypeState() {
     const bits = [];
     const role = document.querySelector('[data-testid="scenario-role"]');
-    if (role && role.value) bits.push(`role=${role.value}`);
+    if (role?.value) bits.push(`role=${role.value}`);
     const rel = document.querySelector('[data-testid="prototype-release"]');
-    if (rel && rel.value) bits.push(`release=${rel.value}`);
-    const nav = document.querySelector(".nav-btn[aria-current='page']");
+    if (rel?.value) bits.push(`release=${rel.value}`);
+    const nav =
+      document.querySelector(".nav-btn[aria-current='page']") ||
+      document.querySelector(".nav-stage-button.selected") ||
+      document.querySelector("[data-action^='wf-nav-'].selected") ||
+      document.querySelector(".sidebar nav .nav-btn[aria-current='page']");
     if (nav) {
-      const act = nav.getAttribute("data-action") || nav.dataset.action;
+      const act = nav.getAttribute("data-action");
       if (act) bits.push(`nav=${act}`);
+      else bits.push(`navtext=${(nav.textContent || "").trim().slice(0, 40)}`);
     }
     const viewCab = document.querySelector('[data-action="view:cabinet"][aria-pressed="true"]');
     if (viewCab) bits.push("screen=cabinet");
@@ -126,15 +156,10 @@
     if (viewReg) bits.push("screen=registration");
     const hash = location.hash || "";
     if (hash) bits.push(`hash=${hash}`);
-    const qs = location.search || "";
-    if (qs) bits.push(`q=${qs}`);
-    const openDlg = document.querySelector("dialog[open]");
-    if (openDlg && openDlg.id) bits.push(`dialog=${openDlg.id}`);
-    const caRoot = document.querySelector("[data-ca-root]");
-    if (caRoot) {
-      const v = document.querySelector("#main h1")?.textContent?.trim().slice(0, 48);
-      if (v) bits.push(`ca=${v}`);
-    }
+    const fs = filteredSearchParams();
+    if (fs) bits.push(`qs=${fs}`);
+    const legacyNav = document.querySelector("#app .nav a.active, #app .nav-link.is-active");
+    if (legacyNav?.getAttribute("href")) bits.push(`legacynav=${legacyNav.getAttribute("href")}`);
     return bits.join("|");
   }
 
@@ -148,17 +173,111 @@
     return `${ns}.${p}.${e}`;
   }
 
-  function inAnnotationLayer(el) {
-    return !!el.closest(`.${ROOT_CLASS}`);
+  function stableClassToken(el) {
+    return [...el.classList]
+      .filter((c) => c && !TRANSIENT_CLASS.test(c) && !c.startsWith("proto-num-"))
+      .sort()
+      .slice(0, 3)
+      .join(".");
+  }
+
+  function directLabelText(el) {
+    if (el.getAttribute("aria-label")) return el.getAttribute("aria-label").trim();
+    let out = "";
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) out += node.textContent;
+    }
+    return out.trim().replace(/\s+/g, " ");
+  }
+
+  function isTextLeaf(el) {
+    const tag = el.tagName;
+    return ["SPAN", "SMALL", "STRONG", "EM", "B", "I", "LABEL", "P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TH", "TD"].includes(tag);
+  }
+
+  function ancestorContext(el) {
+    const parts = [];
+    let node = el.parentElement;
+    let depth = 0;
+    while (node && node !== document.body && depth < 12) {
+      if (isAnnotationUi(node)) break;
+      if (SKIP_TAGS.has(node.tagName)) {
+        node = node.parentElement;
+        continue;
+      }
+      let part = node.tagName.toLowerCase();
+      if (node.id) part += `#${node.id}`;
+      const tid = node.getAttribute("data-testid");
+      if (tid) part += `[tid=${tid}]`;
+      const act = node.getAttribute("data-action");
+      if (act) part += `[act=${act}]`;
+      const role = node.getAttribute("role");
+      if (role) part += `[role=${role}]`;
+      if (node.tagName === "DIALOG") {
+        const title =
+          node.getAttribute("aria-labelledby") ||
+          node.querySelector("h2, h3, #accrual-panel-title")?.textContent?.trim().slice(0, 40) ||
+          node.id ||
+          "dialog";
+        part += `{dlg:${title}}`;
+      }
+      const sc = stableClassToken(node);
+      if (sc) part += `.${sc}`;
+      const idx = node.parentElement ? [...node.parentElement.children].indexOf(node) : 0;
+      parts.unshift(`${part}~${idx}`);
+      node = node.parentElement;
+      depth++;
+    }
+    return parts.join("/");
+  }
+
+  function stableKey(el) {
+    const bits = [];
+    if (el.id) bits.push(`id:${el.id}`);
+    const tid = el.getAttribute("data-testid");
+    if (tid) bits.push(`testid:${tid}`);
+    const action = el.getAttribute("data-action");
+    if (action) bits.push(`action:${action}`);
+    const name = el.getAttribute("name");
+    if (name) bits.push(`name:${name}`);
+    const type = el.getAttribute("type");
+    if (type) bits.push(`type:${type}`);
+    const role = el.getAttribute("role");
+    if (role) bits.push(`role:${role}`);
+    if (el.tagName === "A") bits.push(`href:${el.getAttribute("href") ?? ""}`);
+    const aria = el.getAttribute("aria-label");
+    if (aria) bits.push(`aria:${aria.slice(0, 80)}`);
+    bits.push(`tag:${el.tagName.toLowerCase()}`);
+    bits.push(`path:${ancestorContext(el)}`);
+    const parent = el.parentElement;
+    const sibIdx = parent ? [...parent.children].indexOf(el) : 0;
+    bits.push(`sib:${sibIdx}`);
+    if (isTextLeaf(el)) {
+      const label = directLabelText(el);
+      if (label) bits.push(`label:${label.slice(0, 80)}`);
+    }
+    return bits.join("|");
+  }
+
+  function inClosedDialog(el) {
+    const dlg = el.closest("dialog");
+    return dlg && !dlg.open;
   }
 
   function isVisible(el) {
-    if (!el || !el.getBoundingClientRect) return false;
-    if (inAnnotationLayer(el)) return false;
+    if (!el?.getBoundingClientRect) return false;
+    if (isAnnotationUi(el)) return false;
+    if (inClosedDialog(el)) return false;
     const st = getComputedStyle(el);
     if (st.display === "none" || st.visibility === "hidden") return false;
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
+  }
+
+  function intersectsViewport(r, pad = 0) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    return r.bottom >= -pad && r.right >= -pad && r.top <= vh + pad && r.left <= vw + pad;
   }
 
   function interactiveAncestor(el) {
@@ -167,62 +286,35 @@
     );
   }
 
-  function semanticDescriptor(el) {
-    if (el.id) return `id:${el.id}`;
-    const testId = el.getAttribute("data-testid");
-    if (testId) return `testid:${testId}`;
-    const action = el.getAttribute("data-action");
-    if (action) return `action:${action}`;
-    const name = el.getAttribute("name");
-    if (name) return `name:${name}`;
-    if (el.tagName === "A") {
-      const href = el.getAttribute("href") || "";
-      return `a:${href.split("#")[0].split("?")[0]}`;
-    }
-    const aria = el.getAttribute("aria-label");
-    if (aria) return `aria:${aria.slice(0, 80)}`;
-    const tag = el.tagName.toLowerCase();
-    const role = el.getAttribute("role") || "";
-    const cls = [...el.classList].sort().slice(0, 4).join(".");
-    let idx = 0;
-    const parent = el.parentElement;
-    if (parent) {
-      idx = [...parent.children].filter((c) => c.tagName === el.tagName).indexOf(el);
-    }
-    const text = (el.innerText || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 50);
-    return `t:${tag}|r:${role}|c:${cls}|i:${idx}|x:${text}`;
-  }
-
   function shouldNumber(el, labeledInputs) {
     if (!el || SKIP_TAGS.has(el.tagName)) return false;
-    if (inAnnotationLayer(el)) return false;
+    if (isAnnotationUi(el)) return false;
     if (el.closest("[hidden], template")) return false;
     if (!isVisible(el)) return false;
-
-    const tag = el.tagName;
-    if (tag === "LABEL") {
+    if (el.tagName === "LABEL") {
       const f = el.htmlFor;
       if (f && labeledInputs.has(f)) return false;
     }
-
     const outer = interactiveAncestor(el);
     if (outer && outer !== el) {
-      const outerTag = outer.tagName;
-      if (outerTag === "BUTTON" || outerTag === "A" || outer.classList.contains("btn")) {
+      if (
+        outer.tagName === "BUTTON" ||
+        outer.tagName === "A" ||
+        outer.classList.contains("btn") ||
+        outer.classList.contains("nav-btn")
+      ) {
         return false;
       }
     }
-
-    if (tag === "P" || tag === "SPAN" || tag === "SMALL") {
-      const t = (el.textContent || "").trim();
-      if (t.length < 2) return false;
+    if (el.tagName === "SPAN" || el.tagName === "SMALL" || el.tagName === "STRONG") {
+      if ((el.textContent || "").trim().length < 2) return false;
+      if (el.children.length > 0 && !el.getAttribute("role")) return false;
     }
-
-    if (tag === "DIV" && !el.classList.length && !el.id && !el.getAttribute("data-testid")) {
-      const t = (el.textContent || "").trim();
-      if (t.length < 3 && !el.querySelector(CANDIDATE_SELECTOR)) return false;
+    if (el.tagName === "DIV" && el.classList.contains("stat")) return true;
+    if (el.tagName === "DIV" && !el.id && !el.getAttribute("data-testid") && !el.getAttribute("data-action")) {
+      const t = directLabelText(el);
+      if (t.length < 3 && !el.querySelector("button, a, input, select, h1, h2, h3, [data-action]")) return false;
     }
-
     return true;
   }
 
@@ -231,173 +323,241 @@
     if (aria) return aria.trim();
     const tid = el.getAttribute("data-testid");
     if (tid) return `[${tid}]`;
-    const text = (el.innerText || el.textContent || "").trim().replace(/\s+/g, " ");
-    if (text) return text.slice(0, 120);
+    const label = directLabelText(el);
+    if (label) return label.slice(0, 120);
+    const action = el.getAttribute("data-action");
+    if (action) return action;
     return `<${el.tagName.toLowerCase()}>`;
   }
 
   function locationHint(el) {
-    const main = el.closest("main, #main, #app, [role='main']");
-    const region = main?.id || main?.className?.toString().split(/\s+/)[0] || "body";
+    const dlg = el.closest("dialog[open]");
+    if (dlg) {
+      const t = dlg.querySelector("h2, h3")?.textContent?.trim().slice(0, 40) || dlg.id || "modal";
+      return `модальное · ${t}`;
+    }
     const nav = document.querySelector(".nav-btn[aria-current='page']");
     const page = nav?.textContent?.trim() || pageFileKey();
+    const region = el.closest("main, #main, #app, section.panel")?.id || "экран";
     return `${page} · ${region}`;
+  }
+
+  function clearTargetMarkers() {
+    document.querySelectorAll(`[${TARGET_ATTR}]`).forEach((el) => {
+      if (!isAnnotationUi(el)) el.removeAttribute(TARGET_ATTR);
+    });
   }
 
   function collectTargets() {
     const labeledInputs = new Set();
     document.querySelectorAll("label[for]").forEach((lb) => {
-      const id = lb.htmlFor;
-      if (id) labeledInputs.add(id);
+      if (!isAnnotationUi(lb) && lb.htmlFor) labeledInputs.add(lb.htmlFor);
     });
-
-    const seen = new Set();
     const out = [];
     document.querySelectorAll(CANDIDATE_SELECTOR).forEach((el) => {
       if (!shouldNumber(el, labeledInputs)) return;
-      const key = semanticDescriptor(el);
-      if (seen.has(key)) return;
-      seen.add(key);
       out.push(el);
     });
-
-    if (dense || out.length > 220) dense = true;
-    else dense = out.length > 120;
     return out;
   }
 
   function buildRegistry() {
+    scanning = true;
+    clearTargetMarkers();
     const ns = detectNamespace();
     const stateKey = pageStateKey(ns);
     const pageHash = fnv1a(stateKey);
     const items = [];
-    const usedRefs = new Map();
+    const usedRefs = new Set();
 
     collectTargets().forEach((el) => {
-      const elemSeed = `${stateKey}|${semanticDescriptor(el)}`;
-      let elemHash = fnv1a(elemSeed);
+      const sk = stableKey(el);
+      const seed = `${stateKey}|${sk}`;
+      let elemHash = fnv1a(seed);
       let ref = formatRef(ns, pageHash, elemHash);
-      while (usedRefs.has(ref)) {
+      let guard = 0;
+      while (usedRefs.has(ref) && guard < 32) {
         elemHash += 1;
         ref = formatRef(ns, pageHash, elemHash);
+        guard++;
       }
-      usedRefs.set(ref, true);
+      usedRefs.add(ref);
+      el.setAttribute(TARGET_ATTR, ref);
       items.push({
         ref,
         ns,
         el,
-        snippet: snippet(el),
+        label: snippet(el),
+        stableKey: sk,
         location: locationHint(el),
-        stateKey,
+        pageState: stateKey,
       });
     });
 
     items.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     registry = items;
+    registryByRef = new Map(items.map((i) => [i.ref, i]));
     window.__protoNumRegistry = {
       ns,
       nsLabel: NS_LABELS[ns],
-      stateKey,
+      pageState: stateKey,
       page: pageFileKey(),
-      state: readPrototypeState(),
+      logicalState: readPrototypeState(),
       count: items.length,
-      items: items.map(({ ref, snippet, location, stateKey: sk }) => ({
+      items: items.map(({ ref, label, stableKey: sk, location, pageState }) => ({
         ref,
-        snippet,
+        label,
+        stableKey: sk,
         location,
-        stateKey: sk,
+        pageState,
       })),
+      resolve(ref) {
+        const hit = registryByRef.get(String(ref).trim());
+        if (!hit?.el?.isConnected) return null;
+        return {
+          ref: hit.ref,
+          label: hit.label,
+          stableKey: hit.stableKey,
+          pageState: hit.pageState,
+          location: hit.location,
+          element: hit.el,
+        };
+      },
     };
+    window.__protoNumResolve = window.__protoNumRegistry.resolve;
+    scanning = false;
     return items;
   }
 
   function clearHighlights() {
-    if (highlightEl) {
-      highlightEl.classList.remove("proto-num-target-highlight");
-      highlightEl = null;
-    }
-    badgeLayer?.querySelectorAll(".proto-num-badge--highlight").forEach((b) => {
+    highlightEl?.classList.remove("proto-num-target-highlight");
+    highlightEl = null;
+    badgeHost?.querySelectorAll(".proto-num-badge--highlight").forEach((b) => {
       b.classList.remove("proto-num-badge--highlight");
     });
   }
 
   function highlightRef(ref) {
-    const item = registry.find((r) => r.ref === ref);
-    if (!item || !item.el.isConnected) return;
+    const item = registryByRef.get(ref);
+    if (!item?.el?.isConnected) return;
     clearHighlights();
     highlightEl = item.el;
     highlightEl.classList.add("proto-num-target-highlight");
     highlightEl.scrollIntoView({ block: "center", behavior: "smooth" });
-    const badge = badgeLayer?.querySelector(`[data-proto-ref="${ref}"]`);
-    badge?.classList.add("proto-num-badge--highlight");
+    badgeHost?.querySelector(`[data-proto-ref="${CSS.escape(ref)}"]`)?.classList.add("proto-num-badge--highlight");
   }
 
-  function copyText(text) {
-    const ta = document.querySelector(".proto-num-clipboard-fallback");
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => {
-        if (ta) {
-          ta.value = text;
-          ta.select();
-          try {
-            document.execCommand("copy");
-          } catch (e) {
-            /* noop */
-          }
-        }
-      });
-      return;
+  function setCopyFeedback(ok, text) {
+    if (copyStatusEl) {
+      copyStatusEl.textContent = ok
+        ? "Скопировано в буфер."
+        : "Буфер недоступен — выделите текст в поле ниже.";
     }
-    if (ta) {
-      ta.value = text;
-      ta.select();
+    if (copyFieldEl) {
+      copyFieldEl.value = text;
+      copyFieldEl.hidden = false;
+    }
+  }
+
+  async function copyText(text) {
+    if (copyFieldEl) copyFieldEl.value = text;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopyFeedback(true, text);
+        return;
+      }
+    } catch (e) {
+      /* fallback */
+    }
+    if (copyFieldEl) {
+      copyFieldEl.hidden = false;
+      copyFieldEl.focus();
+      copyFieldEl.select();
       try {
-        document.execCommand("copy");
-      } catch (e) {
-        /* noop */
+        const ok = document.execCommand("copy");
+        setCopyFeedback(ok, text);
+      } catch (e2) {
+        setCopyFeedback(false, text);
       }
     }
   }
 
-  function renderBadges() {
-    if (!badgeLayer) return;
-    badgeLayer.innerHTML = "";
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
+  function placeBadges() {
+    if (!badgeHost || !enabled) return;
+    badgeHost.textContent = "";
+    const placed = [];
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 4;
+    const badgeW = 92;
+    const badgeH = 16;
+
+    function overlaps(x, y) {
+      return placed.some(
+        (p) => x < p.x + badgeW + margin && x + badgeW + margin > p.x && y < p.y + badgeH + margin && y + badgeH + margin > p.y,
+      );
+    }
 
     registry.forEach((item) => {
       if (!item.el.isConnected || !isVisible(item.el)) return;
       const r = item.el.getBoundingClientRect();
-      const badge = document.createElement("button");
-      badge.type = "button";
-      badge.className = `proto-num-badge${dense ? " proto-num-badge--dense" : ""}`;
+      if (!intersectsViewport(r, 8)) return;
+      let x = Math.min(Math.max(r.left, 2), vw - badgeW - 2);
+      let y = Math.max(r.top, 2);
+      let tries = 0;
+      while (overlaps(x, y) && tries < 12) {
+        y += badgeH + 2;
+        if (y > r.bottom + 40) {
+          y = Math.max(r.top, 2);
+          x += badgeW / 2;
+        }
+        tries++;
+      }
+      if (y > vh - badgeH) y = Math.max(2, vh - badgeH - 2);
+      const badge = document.createElement("span");
+      badge.className = "proto-num-badge";
       badge.dataset.protoRef = item.ref;
-      badge.title = `${item.ref} · ${item.snippet}`;
+      badge.title = `${item.ref} · ${item.label}`;
       badge.textContent = item.ref;
-      badge.style.left = `${r.left + scrollX}px`;
-      badge.style.top = `${r.top + scrollY}px`;
-      badge.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        copyText(item.ref);
-        highlightRef(item.ref);
-      });
-      badgeLayer.appendChild(badge);
+      badge.setAttribute("aria-hidden", "true");
+      badge.style.left = `${x}px`;
+      badge.style.top = `${y}px`;
+      badgeHost.appendChild(badge);
+      placed.push({ x, y });
     });
   }
 
   function renderIndexList(filter) {
     if (!listEl) return;
     const q = (filter || "").trim().toLowerCase();
-    listEl.innerHTML = "";
+    listEl.textContent = "";
     registry.forEach((item) => {
-      const hay = `${item.ref} ${item.snippet} ${item.location}`.toLowerCase();
+      const hay = `${item.ref} ${item.label} ${item.location} ${item.stableKey}`.toLowerCase();
       if (q && !hay.includes(q)) return;
       const li = document.createElement("li");
       li.className = "proto-num-panel__item";
-      li.innerHTML = `<code>${item.ref}</code><span>${item.snippet} <small style="color:#888">· ${item.location}</small></span>`;
-      li.addEventListener("click", () => {
+      li.tabIndex = 0;
+      li.setAttribute("role", "button");
+      const code = document.createElement("code");
+      code.textContent = item.ref;
+      const span = document.createElement("span");
+      const main = document.createTextNode(`${item.label} `);
+      const small = document.createElement("small");
+      small.style.color = "#888";
+      small.textContent = `· ${item.location}`;
+      span.append(main, small);
+      li.append(code, span);
+      const activate = () => {
         highlightRef(item.ref);
         copyText(item.ref);
+      };
+      li.addEventListener("click", activate);
+      li.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          activate();
+        }
       });
       listEl.appendChild(li);
     });
@@ -406,80 +566,97 @@
   function updateMeta() {
     if (!metaEl) return;
     const ns = detectNamespace();
-    metaEl.textContent = `${NS_LABELS[ns] || ns} · ${pageFileKey()} · ${readPrototypeState() || "—"} · ${registry.length} элементов`;
+    metaEl.textContent = `${NS_LABELS[ns] || ns} · ${pageFileKey()} · ${readPrototypeState() || "—"} · ${registry.length} в индексе`;
   }
 
   function rescan() {
     if (!enabled) {
-      badgeLayer.innerHTML = "";
+      badgeHost && (badgeHost.textContent = "");
       return;
     }
     buildRegistry();
-    renderBadges();
+    placeBadges();
     updateMeta();
     if (panelOpen) renderIndexList(searchEl?.value || "");
   }
 
   function scheduleRescan() {
+    if (scanning) return;
     clearTimeout(rescanTimer);
-    rescanTimer = setTimeout(rescan, 280);
+    rescanTimer = setTimeout(rescan, 320);
+  }
+
+  function mutationIsRelevant(mutation) {
+    if (scanning) return false;
+    const targets = [mutation.target, ...mutation.addedNodes, ...mutation.removedNodes];
+    for (const node of targets) {
+      if (!node || node.nodeType !== 1) continue;
+      if (isAnnotationUi(node)) return false;
+    }
+    if (mutation.type === "attributes") {
+      if (mutation.attributeName === TARGET_ATTR) return false;
+      if (mutation.attributeName === "class" && mutation.target?.hasAttribute?.(TARGET_ATTR)) {
+        const cls = mutation.target.classList;
+        const onlyHighlight =
+          cls.length <= 2 &&
+          (cls.contains("proto-num-target-highlight") || cls.length === 0);
+        if (onlyHighlight) return false;
+      }
+    }
+    return true;
   }
 
   function bindScroll() {
     if (scrollBound) return;
     scrollBound = true;
-    window.addEventListener(
-      "scroll",
-      () => {
-        requestAnimationFrame(renderBadges);
-      },
-      { passive: true, capture: true },
-    );
-    window.addEventListener(
-      "resize",
-      () => {
-        scheduleRescan();
-      },
-      { passive: true },
-    );
+    const onScroll = () => requestAnimationFrame(placeBadges);
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    window.addEventListener("resize", () => scheduleRescan(), { passive: true });
   }
 
-  function ensureChrome() {
-    if (rootEl) return;
-    rootEl = document.createElement("div");
-    rootEl.className = ROOT_CLASS;
-    rootEl.setAttribute("aria-hidden", "true");
+  function ensureUi() {
+    if (chromeEl) return;
 
-    badgeLayer = document.createElement("div");
-    badgeLayer.className = "proto-num-badge-layer";
-    rootEl.appendChild(badgeLayer);
+    badgeHost = document.createElement("div");
+    badgeHost.className = BADGE_HOST_CLASS;
+    badgeHost.setAttribute(UI_ATTR, "");
+    badgeHost.setAttribute("aria-hidden", "true");
 
-    const chrome = document.createElement("div");
-    chrome.className = "proto-num-chrome";
+    chromeEl = document.createElement("div");
+    chromeEl.className = "proto-num-chrome";
+    chromeEl.setAttribute(UI_ATTR, "");
 
     const legend = document.createElement("div");
     legend.className = "proto-num-legend";
-    legend.textContent = "1 general · 2 client · 3 partner · 4 admin";
+    legend.textContent =
+      "Пространства: 1 — общий вход, 2 — клиент, 3 — партнёр, 4 — админ";
 
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.textContent = "Номера: вкл";
-    toggle.setAttribute("aria-pressed", "true");
-    toggle.addEventListener("click", () => {
+    toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.textContent = "Номера: вкл";
+    toggleBtn.setAttribute("aria-pressed", "true");
+    toggleBtn.addEventListener("click", () => {
       enabled = !enabled;
-      toggle.setAttribute("aria-pressed", enabled ? "true" : "false");
-      toggle.textContent = enabled ? "Номера: вкл" : "Номера: выкл";
-      rootEl.classList.toggle("proto-num-off", !enabled);
+      toggleBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
+      toggleBtn.textContent = enabled ? "Номера: вкл" : "Номера: выкл";
+      document.documentElement.classList.toggle("proto-num-off", !enabled);
       if (enabled) rescan();
-      else badgeLayer.innerHTML = "";
+      else {
+        badgeHost.textContent = "";
+        clearTargetMarkers();
+      }
     });
 
-    const openPanel = document.createElement("button");
-    openPanel.type = "button";
-    openPanel.textContent = "Список номеров";
-    openPanel.addEventListener("click", () => {
+    panelBtn = document.createElement("button");
+    panelBtn.type = "button";
+    panelBtn.textContent = "Список номеров";
+    panelBtn.setAttribute("aria-expanded", "false");
+    panelBtn.setAttribute("aria-controls", "proto-num-panel");
+    panelBtn.addEventListener("click", () => {
       panelOpen = !panelOpen;
+      panelBtn.setAttribute("aria-expanded", panelOpen ? "true" : "false");
       panelEl.classList.toggle("is-open", panelOpen);
+      panelEl.toggleAttribute("hidden", !panelOpen);
       if (panelOpen) {
         rescan();
         renderIndexList(searchEl?.value || "");
@@ -487,68 +664,87 @@
       }
     });
 
-    chrome.append(legend, toggle, openPanel);
-    rootEl.appendChild(chrome);
+    chromeEl.append(legend, toggleBtn, panelBtn);
 
     panelEl = document.createElement("div");
+    panelEl.id = "proto-num-panel";
     panelEl.className = "proto-num-panel";
-    panelEl.innerHTML = `
-      <div class="proto-num-panel__head">
-        <h2>Индекс номеров (текущий экран)</h2>
-        <input type="search" placeholder="Поиск по номеру или тексту…" autocomplete="off" />
-        <div class="proto-num-panel__meta"></div>
-      </div>
-      <ul class="proto-num-panel__list"></ul>
-      <div class="proto-num-panel__actions">
-        <button type="button" data-copy-index>Скопировать индекс</button>
-        <button type="button" data-close-panel>Закрыть</button>
-      </div>`;
+    panelEl.setAttribute(UI_ATTR, "");
+    panelEl.setAttribute("hidden", "");
+    panelEl.setAttribute("role", "region");
+    panelEl.setAttribute("aria-label", "Индекс номеров прототипа");
 
-    searchEl = panelEl.querySelector("input");
-    metaEl = panelEl.querySelector(".proto-num-panel__meta");
-    listEl = panelEl.querySelector(".proto-num-panel__list");
+    const head = document.createElement("div");
+    head.className = "proto-num-panel__head";
+    const h2 = document.createElement("h2");
+    h2.textContent = "Индекс номеров (текущий экран)";
+    searchEl = document.createElement("input");
+    searchEl.type = "search";
+    searchEl.placeholder = "Поиск по номеру или тексту…";
+    searchEl.autocomplete = "off";
+    metaEl = document.createElement("div");
+    metaEl.className = "proto-num-panel__meta";
+    head.append(h2, searchEl, metaEl);
 
-    searchEl.addEventListener("input", () => renderIndexList(searchEl.value));
-    panelEl.querySelector("[data-close-panel]").addEventListener("click", () => {
-      panelOpen = false;
-      panelEl.classList.remove("is-open");
-    });
-    panelEl.querySelector("[data-copy-index]").addEventListener("click", () => {
+    listEl = document.createElement("ul");
+    listEl.className = "proto-num-panel__list";
+
+    const actions = document.createElement("div");
+    actions.className = "proto-num-panel__actions";
+    copyStatusEl = document.createElement("p");
+    copyStatusEl.className = "proto-num-panel__copy-status";
+    copyStatusEl.setAttribute("aria-live", "polite");
+    copyFieldEl = document.createElement("textarea");
+    copyFieldEl.className = "proto-num-panel__copy-field";
+    copyFieldEl.readOnly = true;
+    copyFieldEl.hidden = true;
+    copyFieldEl.setAttribute("aria-label", "Поле для ручного копирования номера");
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.textContent = "Скопировать индекс";
+    copyBtn.addEventListener("click", () => {
       const lines = registry.map(
-        (r) => `${r.ref}\t${r.snippet}\t${r.location}\t${r.stateKey}`,
+        (r) => `${r.ref}\t${r.label}\t${r.location}\t${r.stableKey}`,
       );
       copyText(lines.join("\n"));
     });
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "Закрыть";
+    closeBtn.addEventListener("click", () => {
+      panelOpen = false;
+      panelBtn.setAttribute("aria-expanded", "false");
+      panelEl.classList.remove("is-open");
+      panelEl.setAttribute("hidden", "");
+    });
+    actions.append(copyStatusEl, copyFieldEl, copyBtn, closeBtn);
 
-    const fallback = document.createElement("textarea");
-    fallback.className = "proto-num-clipboard-fallback";
-    fallback.setAttribute("aria-hidden", "true");
-    fallback.setAttribute("tabindex", "-1");
+    panelEl.append(head, listEl, actions);
+    searchEl.addEventListener("input", () => renderIndexList(searchEl.value));
 
-    document.body.appendChild(fallback);
-    document.body.appendChild(rootEl);
-    document.body.appendChild(panelEl);
+    document.body.append(badgeHost, chromeEl, panelEl);
   }
 
   function startObserver() {
     if (observer) return;
-    observer = new MutationObserver(() => scheduleRescan());
-    observer.observe(document.body, {
+    observer = new MutationObserver((records) => {
+      if (scanning) return;
+      if (records.every((m) => !mutationIsRelevant(m))) return;
+      scheduleRescan();
+    });
+    observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class", "style", "hidden", "open", "aria-current", "aria-pressed"],
+      attributeFilter: ["class", "hidden", "open", "aria-current", "aria-pressed", "aria-expanded", "aria-selected", "aria-hidden"],
     });
   }
 
   function init() {
-    ensureChrome();
+    ensureUi();
     bindScroll();
     startObserver();
     rescan();
-    document.addEventListener("click", (ev) => {
-      if (ev.target.closest(`.${ROOT_CLASS}`)) return;
-    });
     window.addEventListener("hashchange", scheduleRescan);
     window.addEventListener("popstate", scheduleRescan);
   }
