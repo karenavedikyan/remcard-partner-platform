@@ -1,6 +1,6 @@
 /**
- * Synthetic Navigator-style gate: legacy explicit ON + empty categories rejects
- * profile PATCH without workingProfileSaveIntent cabinet (pre–intent-aware route).
+ * Synthetic Navigator PATCH semantics (c439e519-style): infer strictness from body,
+ * not client-only markers.
  */
 import http from "node:http";
 import type { AddressInfo } from "node:net";
@@ -74,21 +74,30 @@ let calls: WireCall[] = [];
 let baseUrl: string;
 const nativeFetch = globalThis.fetch;
 
-function projectedExplicitOnMinimumViolated(body: Record<string, unknown> | null): boolean {
-  const w = current.workingProfile;
-  if (!w?.partnerSearchOptInExplicit || !w.partnerSearchOptIn) return false;
-  const hasCategories =
-    (w.productCategoryIds?.length ?? 0) > 0 || (w.serviceSpecializationIds?.length ?? 0) > 0;
-  if (hasCategories) return false;
-  if (body?.workingProfileSaveIntent === "cabinet") return false;
-  if (body?.partnerSearchOptIn === true) return true;
-  if (
-    Array.isArray(body?.productCategoryIds) &&
-    (body.productCategoryIds as string[]).length === 0
-  ) {
-    return true;
+function validateNavigatorPatch(body: Record<string, unknown> | null): string | null {
+  const keys = body ? Object.keys(body) : [];
+  if (keys.length === 0) {
+    return "Нет полей для обновления.";
   }
-  return true;
+  if (body!.workingProfileSaveIntent != null) {
+    return "Unexpected workingProfileSaveIntent";
+  }
+  const w = current.workingProfile;
+  const hasCategories =
+    (w?.productCategoryIds?.length ?? 0) > 0 || (w?.serviceSpecializationIds?.length ?? 0) > 0;
+  const incompleteExplicitOn =
+    Boolean(w?.partnerSearchOptInExplicit && w.partnerSearchOptIn && !hasCategories);
+  if (body!.partnerSearchOptIn === true && incompleteExplicitOn) {
+    return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
+  }
+  if (
+    incompleteExplicitOn &&
+    Array.isArray(body!.productCategoryIds) &&
+    (body!.productCategoryIds as string[]).length === 0
+  ) {
+    return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
+  }
+  return null;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -101,15 +110,8 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(payload));
   };
   if (req.url === "/api/remcard/api/pro/profile" && req.method === "PATCH") {
-    if (projectedExplicitOnMinimumViolated(body)) {
-      return send(
-        {
-          error:
-            "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.",
-        },
-        400,
-      );
-    }
+    const err = validateNavigatorPatch(body);
+    if (err) return send({ error: err }, 400);
     if (Object.hasOwn(body!, "city")) {
       current.user.city = body!.city as string;
     }
@@ -145,27 +147,35 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("Navigator explicitON wire contract", () => {
-  it("rejects city-only PATCH without cabinet intent (legacy route behavior)", async () => {
+describe("Navigator PATCH semantics wire contract", () => {
+  it("rejects empty PATCH body", async () => {
     const res = await fetch(`${baseUrl}/api/remcard/api/pro/profile`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ city: "Сочи" }),
+      body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
-    const payload = (await res.json()) as { error: string };
-    expect(payload.error).toMatch(/категорию товаров или услуг/);
-    expect(calls[0]?.body).toEqual({ city: "Сочи" });
+    expect((await res.json()) as { error: string }).error).toMatch(/Нет полей/);
   });
 
-  it("permits city-only PATCH when body carries workingProfileSaveIntent cabinet", async () => {
+  it("permits incremental city-only PATCH without invented marker", async () => {
     const draft = { ...profileDraftFromProfile(current), city: "Сочи" };
-    const result = await persistWorkingProfileDraft(current, draft, { validationIntent: "cabinet" });
-    expect(calls[0]?.body).toEqual({
-      city: "Сочи",
-      workingProfileSaveIntent: "cabinet",
+    const result = await persistWorkingProfileDraft(current, draft, {
+      validationIntent: "cabinet",
+      validationScope: "basics",
     });
+    expect(calls[0]?.body).toEqual({ city: "Сочи" });
+    expect(calls[0]?.body).not.toHaveProperty("workingProfileSaveIntent");
     expect(result.user.city).toBe("Сочи");
+  });
+
+  it("client does not PATCH when draft matches server on cabinet step", async () => {
+    const draft = profileDraftFromProfile(current);
+    await persistWorkingProfileDraft(current, draft, {
+      validationIntent: "cabinet",
+      validationScope: "basics",
+    });
+    expect(calls.filter((c) => c.method === "PATCH")).toHaveLength(0);
   });
 
   it("rejects activation enable without categories on the wire", async () => {
@@ -178,19 +188,8 @@ describe("Navigator explicitON wire contract", () => {
       persistWorkingProfileDraft(current, draft, {
         partnerSearchTouched: true,
         validationIntent: "activation",
+        validationScope: "full",
       }),
-    ).rejects.toThrow(/категорию товаров или услуг/);
-    expect(calls).toEqual([]);
-  });
-
-  it("rejects clearing last category on valid visible explicit profile", async () => {
-    current = explicitOnIncomplete({
-      productCategoryIds: ["doors"],
-      effectiveProductCategoryIds: ["doors"],
-    });
-    const draft = { ...profileDraftFromProfile(current), productCategoryIds: [] };
-    await expect(
-      persistWorkingProfileDraft(current, draft, { validationIntent: "activation" }),
     ).rejects.toThrow(/категорию товаров или услуг/);
     expect(calls).toEqual([]);
   });

@@ -181,7 +181,33 @@ describe("validateWorkingProfileDraft validationIntent", () => {
     const profile = businessFixture("STORE");
     const draft: ProfileDraft = { ...profileDraftFromProfile(profile), city: "  " };
     expect(
-      validateWorkingProfileDraft(draft, { profile, validationIntent: "cabinet" }),
+      validateWorkingProfileDraft(draft, {
+        profile,
+        validationIntent: "cabinet",
+        validationScope: "basics",
+      }),
     ).toMatch(/город/);
+  });
+
+  it("basics scope ignores legacy phone without partnership contact name", () => {
+    const profile = businessFixture("STORE", {
+      partnershipContactPhone: "+79001112233",
+      partnershipContactName: null,
+    });
+    const draft = profileDraftFromProfile(profile);
+    expect(
+      validateWorkingProfileDraft(draft, {
+        profile,
+        validationIntent: "cabinet",
+        validationScope: "basics",
+      }),
+    ).toBeNull();
+    expect(
+      validateWorkingProfileDraft(draft, {
+        profile,
+        validationIntent: "cabinet",
+        validationScope: "contacts",
+      }),
+    ).toMatch(/контактное лицо/);
   });
 });

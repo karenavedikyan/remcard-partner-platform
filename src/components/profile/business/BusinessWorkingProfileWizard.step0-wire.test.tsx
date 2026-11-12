@@ -1,7 +1,5 @@
 /**
  * @vitest-environment jsdom
- *
- * Step-0 Continue against real persistWorkingProfileDraft + synthetic Navigator wire.
  */
 import http from "node:http";
 import type { AddressInfo } from "node:net";
@@ -43,7 +41,7 @@ function storeExplicitOnEmptyCategories(): ProProfileResponse {
       partnerWorkMode: null,
       areas: [],
       partnershipContactName: null,
-      partnershipContactPhone: null,
+      partnershipContactPhone: "+79001112233",
       partnershipContactEmail: null,
     },
     user: {
@@ -93,30 +91,19 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(payload));
   };
   if (req.url === "/api/remcard/api/pro/profile" && req.method === "PATCH") {
-    const w = current.workingProfile;
-    if (
-      w?.partnerSearchOptInExplicit &&
-      w.partnerSearchOptIn &&
-      (w.productCategoryIds?.length ?? 0) === 0 &&
-      body?.workingProfileSaveIntent !== "cabinet"
-    ) {
-      return send(
-        { error: "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг." },
-        400,
-      );
+    const keys = body ? Object.keys(body) : [];
+    if (keys.length === 0) {
+      return send({ error: "Нет полей для обновления." }, 400);
     }
-    if (body && Object.hasOwn(body, "city")) {
-      current.user.city = body.city as string;
+    if (Object.hasOwn(body!, "city")) {
+      current.user.city = body!.city as string;
     }
     return send({ user: current.user });
   }
   if (req.url === "/api/remcard/api/pro/profile" && req.method === "GET") {
     return send(current);
   }
-  if (req.url === "/api/remcard/api/pro/organization" && req.method === "GET") {
-    return send({ organization: current.organization });
-  }
-  if (req.url === "/api/remcard/api/pro/organization" && req.method === "PATCH") {
+  if (req.url?.startsWith("/api/remcard/api/pro/organization")) {
     return send({ organization: current.organization });
   }
   return send({ error: "Unexpected" }, 500);
@@ -139,7 +126,24 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("BusinessWorkingProfileWizard step0 wire PATCH", () => {
-  it("emits cabinet-tagged city PATCH and reaches directions step", async () => {
+  it("no-op Continue advances without profile PATCH", async () => {
+    const user = userEvent.setup();
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={current}
+        partnerType="STORE"
+        basicsEditable
+        forceEditing
+        forceStep={0}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Продолжить/i }));
+    expect(await screen.findByTestId("business-profile-directions-panel")).toBeInTheDocument();
+    expect(calls.filter((c) => c.path === "/api/remcard/api/pro/profile" && c.method === "PATCH"))
+      .toHaveLength(0);
+  });
+
+  it("changed city emits ordinary PATCH without invented fields", async () => {
     const user = userEvent.setup();
     render(
       <BusinessWorkingProfileWizard
@@ -154,15 +158,37 @@ describe("BusinessWorkingProfileWizard step0 wire PATCH", () => {
     await user.clear(city);
     await user.type(city, "Сочи");
     await user.click(screen.getByRole("button", { name: /Продолжить/i }));
-    await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (c) =>
+            c.path === "/api/remcard/api/pro/profile" &&
+            c.method === "PATCH" &&
+            c.body?.city === "Сочи",
+        ),
+      ).toBe(true),
+    );
     const profilePatch = calls.find(
       (c) => c.path === "/api/remcard/api/pro/profile" && c.method === "PATCH",
     );
-    expect(profilePatch?.body).toEqual({
-      city: "Сочи",
-      workingProfileSaveIntent: "cabinet",
-    });
-    expect(profilePatch?.body?.partnerSearchOptIn).toBeUndefined();
+    expect(profilePatch?.body).toEqual({ city: "Сочи" });
+    expect(profilePatch?.body).not.toHaveProperty("workingProfileSaveIntent");
+    expect(profilePatch?.body).not.toHaveProperty("partnerSearchOptIn");
+  });
+
+  it("step0 does not require partnership contact name when phone saved on server", async () => {
+    const user = userEvent.setup();
+    render(
+      <BusinessWorkingProfileWizard
+        initialProfile={current}
+        partnerType="STORE"
+        basicsEditable
+        forceEditing
+        forceStep={0}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Продолжить/i }));
+    expect(screen.queryByText(/контактное лицо/i)).toBeNull();
     expect(await screen.findByTestId("business-profile-directions-panel")).toBeInTheDocument();
   });
 });

@@ -135,6 +135,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: false,
       validationIntent: "activation",
+      validationScope: "full",
     });
     expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
   });
@@ -204,6 +205,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: false,
       validationIntent: "activation",
+      validationScope: "full",
     });
   });
 
@@ -240,6 +242,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: false,
       validationIntent: "activation",
+      validationScope: "full",
     });
 
     await user.click(screen.getByRole("checkbox"));
@@ -248,6 +251,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[1][2]).toEqual({
       partnerSearchTouched: true,
       validationIntent: "activation",
+      validationScope: "full",
     });
     expect(persist.mock.calls[1][1].partnerSearchOptIn).toBe(true);
   });
@@ -269,6 +273,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: true,
       validationIntent: "activation",
+      validationScope: "full",
     });
     expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(false);
   });
@@ -294,6 +299,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: false,
       validationIntent: "activation",
+      validationScope: "full",
     });
   });
 
@@ -338,6 +344,7 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(persist.mock.calls[0][2]).toEqual({
       partnerSearchTouched: false,
       validationIntent: "activation",
+      validationScope: "full",
     });
   });
 

@@ -105,7 +105,6 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     }, { partnerSearchTouched: false });
     expect(calls).toEqual([
       { method: "PATCH", path: "/api/remcard/api/auth/me", body: { displayName: "Пётр" } },
-      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
     ]);
     expect(result.user.displayName).toBe("Пётр");
     expect(result.workingProfile?.partnerSearchOptInExplicit).toBe(false);
@@ -170,31 +169,22 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
     const result = await persistWorkingProfileDraft(current, {
       ...profileDraftFromProfile(current), city: "Сочи",
-    }, { validationIntent: "cabinet" });
+    }, { validationIntent: "cabinet", validationScope: "basics" });
     expect(calls).toEqual([
-      {
-        method: "PATCH",
-        path: "/api/remcard/api/pro/profile",
-        body: { city: "Сочи", workingProfileSaveIntent: "cabinet" },
-      },
+      { method: "PATCH", path: "/api/remcard/api/pro/profile", body: { city: "Сочи" } },
       { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
     ]);
     expect(result.user.city).toBe("Сочи");
+    expect(calls[0].body).not.toHaveProperty("workingProfileSaveIntent");
   });
 
-  it("emits activation intent on explicit visibility toggle PATCH", async () => {
-    current = fixture({
-      partnerSearchVisible: false,
-      productCategoryIds: ["doors"],
-      effectiveProductCategoryIds: ["doors"],
+  it("skips profile PATCH when cabinet scope has no deltas", async () => {
+    current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
+    await persistWorkingProfileDraft(current, profileDraftFromProfile(current), {
+      validationIntent: "cabinet",
+      validationScope: "basics",
     });
-    await persistWorkingProfileDraft(current, {
-      ...profileDraftFromProfile(current), partnerSearchOptIn: true,
-    }, { partnerSearchTouched: true, validationIntent: "activation" });
-    expect(calls[0].body).toEqual({
-      partnerSearchOptIn: true,
-      workingProfileSaveIntent: "activation",
-    });
+    expect(calls).toEqual([]);
   });
 
   it("cannot remove the last direction from an existing explicit ON profile", async () => {

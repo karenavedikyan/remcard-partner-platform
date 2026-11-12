@@ -6,6 +6,7 @@ import type { ProProfileResponse } from "@/lib/types";
 import {
   buildWorkingProfilePatchBody,
   type WorkingProfileValidationIntent,
+  type WorkingProfileValidationScope,
   type WorkingSaveOptions,
 } from "@/lib/working-profile-patch";
 
@@ -13,6 +14,7 @@ export type WorkingProfileValidationContext = {
   profile: ProProfileResponse;
   partnerSearchTouched?: boolean;
   validationIntent?: WorkingProfileValidationIntent;
+  validationScope?: WorkingProfileValidationScope;
 };
 
 export function validateWorkingProfileDraft(
@@ -45,7 +47,9 @@ export function validateWorkingProfileDraft(
   if (draft.partnerSearchOptIn && requiresSearchDirections && !hasDirections) {
     return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
   }
-  if (draft.primaryDirection) {
+  const scope: WorkingProfileValidationScope = context?.validationScope ?? "full";
+  const scopeAllowsPrimary = scope === "directions" || scope === "contacts" || scope === "full";
+  if (scopeAllowsPrimary && draft.primaryDirection) {
     const inProducts =
       draft.primaryDirection.kind === "product" &&
       draft.productCategoryIds.includes(draft.primaryDirection.id);
@@ -56,10 +60,13 @@ export function validateWorkingProfileDraft(
       return "Основное направление должно быть среди выбранных товаров или услуг.";
     }
   }
-  const hasContactPhone = draft.partnershipContactPhone.trim().length > 0;
-  const hasContactEmail = draft.partnershipContactEmail.trim().length > 0;
-  if ((hasContactPhone || hasContactEmail) && !draft.partnershipContactName.trim()) {
-    return "Укажите контактное лицо для сотрудничества.";
+  const scopeAllowsContacts = scope === "contacts" || scope === "full";
+  if (scopeAllowsContacts) {
+    const hasContactPhone = draft.partnershipContactPhone.trim().length > 0;
+    const hasContactEmail = draft.partnershipContactEmail.trim().length > 0;
+    if ((hasContactPhone || hasContactEmail) && !draft.partnershipContactName.trim()) {
+      return "Укажите контактное лицо для сотрудничества.";
+    }
   }
   return null;
 }
@@ -157,6 +164,7 @@ export async function persistWorkingProfileDraft(
     profile,
     partnerSearchTouched: options.partnerSearchTouched,
     validationIntent: options.validationIntent,
+    validationScope: options.validationScope,
   });
   if (validationError) {
     throw new RemcardApiError(400, validationError, null);
@@ -175,8 +183,9 @@ export async function persistWorkingProfileDraft(
   }
 
   const patchBody = buildWorkingProfilePatchBody(profile, draft, options);
+  const wroteProfilePatch = Object.keys(patchBody).length > 0;
 
-  if (Object.keys(patchBody).length > 0) {
+  if (wroteProfilePatch) {
     await remcardFetch<{ user: ProProfileResponse["user"] }>("/api/pro/profile", {
       method: "PATCH",
       body: patchBody,
@@ -187,9 +196,39 @@ export async function persistWorkingProfileDraft(
     await persistOrganizationFromDraft(draft, profile);
   }
 
-  const refreshed = await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" });
+  const refreshed =
+    wroteProfilePatch || trimmedName !== (profile.user.displayName ?? "").trim()
+      ? await remcardFetch<ProProfileResponse>("/api/pro/profile", { method: "GET" })
+      : profile;
   return {
     ...refreshed,
     user: { ...refreshed.user, displayName: trimmedName },
   };
+}
+
+/** True when persist would PATCH profile, auth display name, or organization. */
+export function workingProfilePersistWouldWrite(
+  profile: ProProfileResponse,
+  draft: ProfileDraft,
+  options: WorkingSaveOptions = {},
+): boolean {
+  if (draft.displayName.trim() !== (profile.user.displayName ?? "").trim()) return true;
+  if (Object.keys(buildWorkingProfilePatchBody(profile, draft, options)).length > 0) return true;
+  if (draft.partnerType !== "STORE" && draft.partnerType !== "COMPANY") return false;
+
+  const saved = profileDraftFromProfile(profile);
+  const orgName = draft.organizationName.trim();
+  const savedOrgName = profile.organization?.name?.trim() ?? "";
+  if (orgName && orgName !== savedOrgName) return true;
+
+  if (profile.organization) {
+    if (draft.website.trim() !== saved.website.trim()) return true;
+    if (draft.telegram.trim() !== saved.telegram.trim()) return true;
+  }
+
+  const needsOrgBeforeProfile =
+    Boolean(options.partnerSearchTouched && draft.partnerSearchOptIn);
+  if (!needsOrgBeforeProfile && orgName.length >= 2 && !profile.organization) return true;
+
+  return false;
 }

@@ -21,14 +21,18 @@ function primaryEqual(
 
 export type WorkingProfileValidationIntent = "cabinet" | "activation";
 
+/** Which wizard slice is being saved (local validation only; never sent on PATCH). */
+export type WorkingProfileValidationScope = "basics" | "directions" | "contacts" | "full";
+
 export type WorkingSaveOptions = {
   /** User explicitly changed partner search visibility checkbox this session. */
   partnerSearchTouched?: boolean;
   /**
-   * cabinet — wizard / intermediate saves: basics and contacts only.
+   * cabinet — wizard intermediate steps.
    * activation — final profile save or ProfileEditor: enforce search-direction rules.
    */
   validationIntent?: WorkingProfileValidationIntent;
+  validationScope?: WorkingProfileValidationScope;
 };
 
 export function buildWorkingProfilePatchBody(
@@ -95,10 +99,6 @@ export function buildWorkingProfilePatchBody(
     if (draft.telegram.trim() !== saved.telegram.trim()) {
       body.telegram = draft.telegram.trim() || null;
     }
-  }
-
-  if (options.validationIntent) {
-    body.workingProfileSaveIntent = options.validationIntent;
   }
 
   return body;

@@ -128,7 +128,7 @@ describe("buildWorkingProfilePatchBody", () => {
     expect(body.partnerSearchOptIn).toBe(false);
   });
 
-  it("tags cabinet incremental PATCH for Navigator intent-aware validation", () => {
+  it("does not emit client-only markers on cabinet incremental PATCH", () => {
     const body = buildWorkingProfilePatchBody(
       profile,
       {
@@ -162,7 +162,8 @@ describe("buildWorkingProfilePatchBody", () => {
       },
       { validationIntent: "cabinet" },
     );
-    expect(body).toEqual({ city: "Сочи", workingProfileSaveIntent: "cabinet" });
+    expect(body).toEqual({ city: "Сочи" });
+    expect(body).not.toHaveProperty("workingProfileSaveIntent");
     expect(body.partnerSearchOptIn).toBeUndefined();
     expect(body.productCategoryIds).toBeUndefined();
   });
