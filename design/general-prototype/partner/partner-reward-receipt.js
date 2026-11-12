@@ -372,10 +372,25 @@
     initStaticFields();
     renderState();
     state.lastFocus = el.openPurchases;
-    openDialog();
+    const cabinetEmbed = (() => {
+      try {
+        return new URLSearchParams(window.location.search).get("cabinet_embed") === "1";
+      } catch (_) {
+        return false;
+      }
+    })();
+    const embedSnapshot = !!window.__protoReceiptEmbedSnapshot;
+    const embedDismissBound = !!window.__protoReceiptEmbedDismissBound;
+    if (cabinetEmbed && embedSnapshot) {
+      state.dialogOpen = el.overlay ? !el.overlay.hidden : true;
+    } else {
+      openDialog();
+    }
 
-    el.close?.addEventListener("click", closeDialog);
-    el.ok?.addEventListener("click", closeDialog);
+    if (!embedDismissBound) {
+      el.close?.addEventListener("click", closeDialog);
+      el.ok?.addEventListener("click", closeDialog);
+    }
     el.openPurchases?.addEventListener("click", openDialog);
     el.theme?.addEventListener("click", toggleTheme);
     document.querySelectorAll('input[name="prr-state"]').forEach((input) => {

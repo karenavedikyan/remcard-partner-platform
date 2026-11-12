@@ -447,6 +447,7 @@ try {
   );
   const frame145 = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
   await frame145.locator("#prr-cert-code", { hasText: "RC-X9Z0WZ" }).waitFor({ timeout: 10000 });
+  await frame145.locator("#prr-amount", { hasText: /\+\s*0/ }).waitFor({ timeout: 8000 });
   const hero145 = (await frame145.locator("#prr-hero-label").textContent())?.trim() || "";
   assert.match(hero145, /профклиенту/i, `145 hero label, got: ${hero145}`);
   const amt145 = (await frame145.locator("#prr-amount").textContent()) || "";
@@ -455,7 +456,16 @@ try {
   const calc145 = await frame145.locator("#prr-calc-text").textContent();
   assert.match(calc145 || "", /недоступна/i);
   assert.doesNotMatch(calc145 || "", /115.?000/);
-  await frame145.locator("#prr-ok").click();
+  const quickOk = await chainPage.evaluate(() => {
+    const frame = document.querySelector("[data-testid='cabinet-standalone-frame']");
+    if (!frame?.contentDocument) return { clicked: false };
+    const win = frame.contentWindow;
+    const ok = frame.contentDocument.getElementById("prr-ok");
+    if (!ok || ok.closest("#prr-overlay")?.hidden) return { clicked: false };
+    ok.click();
+    return { clicked: true, bound: !!win?.__protoReceiptEmbedDismissBound };
+  });
+  assert.ok(quickOk.clicked && quickOk.bound, "145 embed dismiss capture must be live before deferred native");
   await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
     timeout: 10000,
   });

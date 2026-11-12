@@ -72,6 +72,7 @@ const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "
 assert.match(embedChild, /replace:/, "embed child posts replace nav");
 assert.match(host, /replace:\s*!!data\.replace/, "host honors replace nav");
 const receiptEmbed = readFileSync(path.join(root, "partner/partner-reward-receipt-embed.js"), "utf8");
+assert.match(receiptEmbed, /__protoReceiptEmbedDismissBound/, "145 early embed dismiss before native defer");
 assert.match(receiptEmbed, /Начисление профклиенту/, "145 merchant hero copy");
 assert.match(receiptEmbed, /детализация расчёта недоступна/, "145 hides borrowed calc breakdown");
 assert.match(

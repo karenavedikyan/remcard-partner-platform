@@ -5,6 +5,58 @@
   const money = (n) => (Number.isFinite(n) ? n.toLocaleString("ru-RU") : "0") + " ₽";
   const pageN = Number(params.get("proto_n") || 145);
 
+  let embedDismissCaptureBound = false;
+
+  function dismissEmbedReceipt() {
+    if (window.__protoReceiptEmbedDismissInFlight) return;
+    window.__protoReceiptEmbedDismissInFlight = true;
+    try {
+      if (typeof window.__protoCabinetEmbedBack === "function") {
+        window.__protoCabinetEmbedBack();
+      }
+    } finally {
+      requestAnimationFrame(() => {
+        window.__protoReceiptEmbedDismissInFlight = false;
+      });
+    }
+  }
+
+  function bindEmbedDismissCapture() {
+    if (embedDismissCaptureBound) return;
+    const overlay = document.getElementById("prr-overlay");
+    if (!overlay) return;
+    embedDismissCaptureBound = true;
+    window.__protoReceiptEmbedDismissBound = true;
+    overlay.addEventListener(
+      "click",
+      (e) => {
+        const hit =
+          e.target.closest?.("#prr-ok, #prr-close") ||
+          (e.target.id === "prr-close" ? e.target : null);
+        if (!hit) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        dismissEmbedReceipt();
+      },
+      true,
+    );
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key !== "Escape") return;
+        const ov = document.getElementById("prr-overlay");
+        if (!ov || ov.hidden) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        dismissEmbedReceipt();
+      },
+      true,
+    );
+  }
+
+  bindEmbedDismissCapture();
+
   function hideFact(id) {
     const node = document.getElementById(id);
     if (!node) return;
@@ -119,6 +171,7 @@
     const overlay = document.getElementById("prr-overlay");
     const mainTable = document.querySelector(".prr-panel");
     if (mainTable) mainTable.setAttribute("hidden", "");
+    bindEmbedDismissCapture();
     if (overlay) overlay.hidden = false;
   }
 
