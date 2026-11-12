@@ -2003,7 +2003,16 @@ var z = document.querySelector("#app"),
       cta: "Создать сертификат",
       task: "Создайте сертификат для клиента",
       taskCopy: "Выберите партнёра и поделитесь сертификатом.",
-      nav: ["home", "clients", "bonus", "procurement", "care", "profile"],
+      nav: [
+        "home",
+        "clients",
+        "partners",
+        "recommendations",
+        "bonus",
+        "procurement",
+        "care",
+        "profile",
+      ],
     },
     employee: {
       label: "Сотрудник",
@@ -2424,36 +2433,49 @@ var wt = (e) =>
   ca = () => (i.theme === "dark" ? "Светлая тема" : "Тёмная тема"),
   da = () =>
     '<a class="brand" href="./roles.html" aria-label="RemCard: начало прототипа"><svg viewBox="0 0 36 36" role="img" aria-label="RemCard"><rect width="36" height="36" rx="10" fill="currentColor"/><path d="M10 26V12l8-5 8 5v14h-5v-8h-6v8z" fill="none" stroke="var(--onaccent)" stroke-width="2.2" stroke-linejoin="round"/></svg><span>remcard<em>.</em><small>для партнёров</small></span></a>';
+const R2_NAV_KEYS = new Set(["procurement", "care"]);
+function prototypeRelease() {
+  const raw =
+    typeof window !== "undefined" && window.rcDemoMemory?.getItem?.("rc_release");
+  return raw === "2" ? 2 : 1;
+}
+function filterNavByRelease(keys) {
+  if (prototypeRelease() === 2) return keys;
+  return keys.filter((key) => !R2_NAV_KEYS.has(key));
+}
+function navAllowedInRelease(pageKey) {
+  if (prototypeRelease() === 2) return true;
+  return !R2_NAV_KEYS.has(pageKey);
+}
 function Te() {
+  let keys;
   if (!k()) {
     let a = [...ee[i.role].nav];
-    return (
-      i.role !== "agent" &&
-        (ue() || qe()) &&
-        a.splice(a.length - 1, 0, "links"),
-      [...new Set([...a, "wallet", ...(ue() ? ["partners"] : [])])]
-    );
-  }
-  if (!J()) return ["home", "profile"];
-  let e = i.permissions,
-    t = ["home"];
-  return (
-    ["clients", "scan", "sale", "terms"].some((a) => e.has(a)) &&
+    i.role !== "agent" &&
+      (ue() || qe()) &&
+      a.splice(a.length - 1, 0, "links");
+    keys = [...new Set([...a, "wallet", ...(ue() ? ["partners"] : [])])];
+  } else if (!J()) {
+    keys = ["home", "profile"];
+  } else {
+    let e = i.permissions,
+      t = ["home"];
+    (["clients", "scan", "sale", "terms"].some((a) => e.has(a)) &&
       t.push("partners"),
-    e.has("clients") && t.push("clients", "recommendations"),
-    (O("scan") || O("sale")) && t.push("scanner"),
-    e.has("own") && t.push("history"),
-    ["ledger", "cash", "transfer"].some((a) => e.has(a)) &&
-      t.push("settlements"),
-    e.has("team") && t.push("team"),
-    (ue() || qe()) && t.push("links"),
-    (e.has("terms") || e.has("catalog")) && t.push("procurement"),
-    (e.has("terms") || e.has("catalog") || e.has("sale")) && t.push("care"),
-    t.push("profile"),
-    t.includes("settlements") &&
-      t.push("wallet"),
-    t
-  );
+      e.has("clients") && t.push("clients", "recommendations"),
+      (O("scan") || O("sale")) && t.push("scanner"),
+      e.has("own") && t.push("history"),
+      ["ledger", "cash", "transfer"].some((a) => e.has(a)) &&
+        t.push("settlements"),
+      e.has("team") && t.push("team"),
+      (ue() || qe()) && t.push("links"),
+      (e.has("terms") || e.has("catalog")) && t.push("procurement"),
+      (e.has("terms") || e.has("catalog") || e.has("sale")) && t.push("care"),
+      t.push("profile"),
+      t.includes("settlements") && t.push("wallet"),
+      (keys = t));
+  }
+  return filterNavByRelease(keys);
 }
 function pa(e) {
   const items = [
@@ -2477,7 +2499,11 @@ function pa(e) {
           ["bonus", "settlements"].includes(i.page)) ||
         (key === "partners" && i.page === "links" && !qe());
       const label = key === "links" ? "Приглашения сотрудников" : key === "history" && k() ? "Мои операции" : rt(key);
-      return `<button class="nav-btn" data-action="nav:${key}" data-testid="nav-${key}" ${current ? 'aria-current="page"' : ""}>${D(Be[key][1])}${label}</button>`;
+      const r2Mark =
+        prototypeRelease() === 2 && R2_NAV_KEYS.has(key)
+          ? ' <span class="pill" style="font-size:10px;padding:2px 6px;margin-left:4px">R2</span>'
+          : "";
+      return `<button class="nav-btn" data-action="nav:${key}" data-testid="nav-${key}" ${current ? 'aria-current="page"' : ""}>${D(Be[key][1])}${label}${r2Mark}</button>`;
     })
     .join("");
 }
@@ -3034,7 +3060,7 @@ function va() {
    )
    .join(
      "",
-   )}</select></label>${i.screen === "cabinet" ? renderDatasetControl() : ""}${k() ? `<label>Работодатель \xB7 демосценарий<select data-control="employer" aria-label="Работодатель в демосценарии"><option value="company" ${Y === "company" ? "selected" : ""}>Компания</option><option value="store" ${Y === "store" ? "selected" : ""}>Магазин</option></select></label>` : ""}${d(D("list-checks") + " Поля и логика", "matrix", "ghost")}</div>`;
+   )}</select></label><label>Релиз<select data-control="prototype-release" data-testid="prototype-release" aria-label="Релиз прототипа"><option value="1" ${prototypeRelease() === 1 ? "selected" : ""}>R1 · основной кабинет</option><option value="2" ${prototypeRelease() === 2 ? "selected" : ""}>R2 · закупки и забота</option></select></label>${i.screen === "cabinet" ? renderDatasetControl() : ""}${k() ? `<label>Работодатель \xB7 демосценарий<select data-control="employer" aria-label="Работодатель в демосценарии"><option value="company" ${Y === "company" ? "selected" : ""}>Компания</option><option value="store" ${Y === "store" ? "selected" : ""}>Магазин</option></select></label>` : ""}${d(D("list-checks") + " Поля и логика", "matrix", "ghost")}</div>`;
 }
 function ba() {
   return `<main id="main" class="registration" tabindex="-1"><div class="intro"><span class="eyebrow">Первый вход \xB7 шаг 1 из 2</span><h1>Как вы будете работать в RemCard?</h1><p class="muted">Настроим кабинет под ваши задачи. Не будем показывать всё сразу.</p></div><div class="role-grid">${Object.entries(
@@ -3273,9 +3299,29 @@ function La() {
     const emptyHtml = renderEmptyState({ page: emptyStates_page(), role: i.role, employerRole: employeeEmployerRole() || (k() && J() ? Y : null) });
     if (emptyHtml) return emptyHtml;
   }
-  if (i.page === "care") return renderCareSection(careConfig());
-  if (i.page === "procurement") return renderProcurementSection(careConfig());
-  if (i.page === "home" && !(k() && !J())) return legacyLa() + procurementHomeTeaser(careConfig()) + careHomeTeaser(careConfig());
+  if (i.page === "care" || i.page === "procurement") {
+    if (prototypeRelease() !== 2) {
+      const prev = i.page;
+      i.page = "home";
+      if (!i.notice) {
+        i.notice =
+          prev === "procurement"
+            ? "Закупки доступны в релизе 2 прототипа. Переключите «Релиз» в панели макета."
+            : "«Забота RemCard» доступна в релизе 2 прототипа. Переключите «Релиз» в панели макета.";
+      }
+      return legacyLa();
+    }
+    return i.page === "care"
+      ? renderCareSection(careConfig())
+      : renderProcurementSection(careConfig());
+  }
+  if (i.page === "home" && !(k() && !J())) {
+    const r2Teasers =
+      prototypeRelease() === 2
+        ? procurementHomeTeaser(careConfig()) + careHomeTeaser(careConfig())
+        : "";
+    return legacyLa() + r2Teasers;
+  }
   if (i.page === "profile") return ja();
   if (i.page === "links" && qe())
     return `<section class="stack"><div>${d("Пригласить сотрудника", "new-link:employee")}</div>${je(
@@ -3417,6 +3463,13 @@ function Ia() {
   if (i.page === "links" && qe()) {
     i.page = "profile";
     Ge.selectTab("team");
+  }
+  if (prototypeRelease() !== 2 && R2_NAV_KEYS.has(i.page)) {
+    i.page = "home";
+    if (!i.notice) {
+      i.notice =
+        "Закупки и «Забота RemCard» — только в релизе 2. Выберите R2 в панели макета.";
+    }
   }
   return (
     e.includes(i.page) || (i.page = "home"),
@@ -4135,6 +4188,22 @@ document.addEventListener("change", (e) => {
       (i.notice =
         "Рабочий филиал изменён в макете. Общая область доступа осталась прежней."),
       R()),
+    t === "prototype-release" &&
+      ((() => {
+        const v = e.target.value === "2" ? "2" : "1";
+        window.rcDemoMemory?.setItem?.("rc_release", v);
+        if (v === "1" && R2_NAV_KEYS.has(i.page)) {
+          i.page = "home";
+          i.notice =
+            "Закупки и «Забота RemCard» перенесены в релиз 2. Вы вернулись на главную.";
+        } else {
+          i.notice =
+            v === "2"
+              ? "Показаны разделы релиза 2: закупки и забота RemCard."
+              : "";
+        }
+        R();
+      })()),
     a &&
       ((i.role = "employee"),
       (i.invite = "valid"),
@@ -4177,6 +4246,13 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (a === "nav") {
+    if (!navAllowedInRelease(s)) {
+      U(
+        "Раздел доступен в релизе 2 прототипа. Переключите «Релиз» в панели макета.",
+        "info",
+      );
+      return;
+    }
     const resolvedPage = ["bonus", "settlements"].includes(s)
       ? "wallet"
       : s === "links" && !qe()
