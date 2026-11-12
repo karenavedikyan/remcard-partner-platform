@@ -179,6 +179,15 @@ dialog.proto-page-dialog-host > .proto-page-panel[data-open="true"] {
   }
 }
 
+/* Cabinet embed host: keep reviewer dock/TOC above portal iframe */
+html.proto-cabinet-embed-host-active .proto-page-flow {
+  z-index: 5001;
+}
+
+html.proto-cabinet-embed-host-active .proto-page-panel {
+  z-index: 5002;
+}
+
 html[data-theme="dark"] .proto-page-badge,
 html[data-theme="dark"] .proto-page-toc-btn {
   background: rgba(28, 28, 36, 0.92);

@@ -101,6 +101,7 @@ export function createCabinetStandaloneHost(config) {
     notify,
     onReturn,
     onCoopAction,
+    onSupplementalAction,
     resolveEmbedPayload,
     shouldResetOnRerender,
   } = config;
@@ -143,6 +144,25 @@ export function createCabinetStandaloneHost(config) {
     return 0;
   }
 
+  function reviewerDockBottomReserve(viewportHeight) {
+    const flow = document.querySelector(".proto-page-flow");
+    let reserve = 0;
+    if (flow) {
+      const fr = flow.getBoundingClientRect();
+      if (fr.height > 4 && fr.top < viewportHeight) {
+        reserve = Math.max(reserve, viewportHeight - fr.top + 8);
+      }
+    }
+    const panel = document.querySelector('.proto-page-panel[data-open="true"]');
+    if (panel) {
+      const pr = panel.getBoundingClientRect();
+      if (pr.height > 4 && pr.top < viewportHeight) {
+        reserve = Math.max(reserve, viewportHeight - pr.top + 8);
+      }
+    }
+    return reserve;
+  }
+
   function reposition() {
     if (hostEl.hidden) return;
     const target = contentTarget();
@@ -154,7 +174,7 @@ export function createCabinetStandaloneHost(config) {
     const vv = window.visualViewport;
     const viewportTop = vv?.offsetTop ?? 0;
     const viewportHeight = vv?.height ?? window.innerHeight;
-    const bottomInset = mobileBottomInset();
+    const bottomInset = Math.max(mobileBottomInset(), reviewerDockBottomReserve(viewportHeight));
     const top = Math.max(viewportTop, rect.top);
     const barH = hostEl.querySelector(".cabinet-standalone-host__bar")?.offsetHeight || 48;
     const available = viewportHeight - bottomInset - (top - viewportTop) - 4;
@@ -165,7 +185,7 @@ export function createCabinetStandaloneHost(config) {
     hostEl.style.width = `${rect.width}px`;
     hostEl.style.height = `${height}px`;
     hostEl.style.maxHeight = `${height}px`;
-    hostEl.style.zIndex = "1200";
+    hostEl.style.zIndex = "1100";
     const frameH = Math.max(80, height - barH);
     frame.style.height = `${frameH}px`;
     frame.style.maxHeight = `${frameH}px`;
@@ -235,6 +255,7 @@ export function createCabinetStandaloneHost(config) {
   function closeHost({ back = false, reset = false } = {}) {
     hostEl.hidden = true;
     document.querySelector(".shell")?.classList.remove("cabinet-standalone-active");
+    document.documentElement.classList.remove("proto-cabinet-embed-host-active");
     frame.removeAttribute("src");
     openPageN = null;
     openQuery = "";
@@ -286,6 +307,7 @@ export function createCabinetStandaloneHost(config) {
     openQuery = extraQuery;
     syncEmbeddedPageBadge(pageN);
     document.querySelector(".shell")?.classList.add("cabinet-standalone-active");
+    document.documentElement.classList.add("proto-cabinet-embed-host-active");
     hostEl.hidden = false;
     watchLayout();
     reposition();
@@ -330,6 +352,10 @@ export function createCabinetStandaloneHost(config) {
       if (!onCoopAction?.(data.action, data.partnerId, openCtx)) return;
       sendContextToFrame();
     }
+    if (data.type === "supplemental") {
+      if (!onSupplementalAction?.(data, openCtx)) return;
+      sendContextToFrame();
+    }
   }
 
   window.addEventListener("message", handleHostMessage);
@@ -367,6 +393,7 @@ export function createCabinetStandaloneHost(config) {
         syncEmbeddedPageBadge(null);
         frame.removeAttribute("src");
         unwatchLayout();
+        document.documentElement.classList.remove("proto-cabinet-embed-host-active");
       }
       if (reason && notify) notify(reason, "info");
     },

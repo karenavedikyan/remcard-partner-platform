@@ -3014,8 +3014,10 @@ function standaloneCanOpen(pageN) {
   if ([139, 140, 142].includes(pageN)) return O("clients") || i.role === "agent" || O("recommend");
   return true;
 }
-function buildCooperationEmbedSections(partner) {
+function buildCooperationEmbedSections(partner, ctx = {}) {
   if (!partner) return "";
+  const collectionKey = ctx.collectionKey || "directory";
+  const readOnly = k() && !O("terms");
   const chunks = [coop.counterpartyProfileHtml(partner)];
   if (partner.partnershipNote) {
     chunks.push(
@@ -3032,9 +3034,95 @@ function buildCooperationEmbedSections(partner) {
     );
   }
   chunks.push(
+    `<div class="embed-supplemental-actions" data-testid="embed-supplemental-actions">${recordActionToolbar("partners", partner, collectionKey, readOnly, false, false)}${!k() || O("ledger") ? d("Взаиморасчёты с партнёром", `partner-ledger:${partner.id}`, "primary") : ""}</div>`,
+  );
+  chunks.push(
     '<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>',
   );
   return chunks.join("");
+}
+function handleEmbedSupplementalAction(data, embedCtx) {
+  const partnerId = data?.partnerId || embedCtx?.partnerId;
+  const partner = P.find((p) => p.id === partnerId);
+  if (!partner) return false;
+  const collectionKey = embedCtx?.collectionKey || data.collKey || "directory";
+  if (data.kind === "action" && data.action) {
+    const [a, s] = data.action.split(":");
+    if (a === "coop-copy-id") {
+      const code = `RC-${String(partner.id).replace(/[^a-z0-9]/gi, "").slice(0, 8).toUpperCase() || "DEMO"}`;
+      void navigator.clipboard?.writeText(code).then(
+        () => U("ID скопирован · демо", "success"),
+        () => U("Скопируйте ID вручную из карточки", "info"),
+      );
+      return true;
+    }
+    if (
+      ["coop-change-terms", "coop-view-terms", "coop-pause", "coop-resume"].includes(a)
+    ) {
+      if (!ue() || (k() && !O("terms"))) return false;
+      const state = coop.ensure(partner.id);
+      if (a === "coop-change-terms") {
+        if (state.cooperation === "paused") {
+          U("Сначала возобновите сотрудничество", "info");
+          return true;
+        }
+        coop.openTermChange(partner);
+        return true;
+      }
+      if (a === "coop-view-terms") {
+        coop.openTermChange(partner, { viewOnly: true });
+        return true;
+      }
+      if (a === "coop-pause") {
+        coop.openPauseConfirm(partner);
+        return true;
+      }
+      if (a === "coop-resume") {
+        coop.openResumeConfirm(partner);
+        return true;
+      }
+    }
+    if (a === "partner-ledger") {
+      if (k() && !O("ledger")) return false;
+      openSettlementPartner(
+        { role: i.role, employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) },
+        partner.id,
+        partner.name,
+      );
+      openWalletMasterLedger(i.role);
+      if (se.open) _();
+      standaloneHost.closeHost({ reset: true });
+      i.page = "wallet";
+      T();
+      document.querySelector("[data-testid=settlement-demo] h2")?.scrollIntoView({ block: "start", behavior: "auto" });
+      return true;
+    }
+    return false;
+  }
+  if (data.kind === "record") {
+    const action =
+      data.collAction === "archive" && partner.archived ? "restore" : data.collAction;
+    const readOnly = k() && !O("terms");
+    if (readOnly && ["share", "rename", "archive", "restore", "delete"].includes(action)) {
+      U("Доступен только просмотр. Управление выполняет уполномоченный сотрудник.", "info");
+      return false;
+    }
+  if (["archive", "restore", "delete"].includes(action)) {
+      const reason = nt("partners", partner, action);
+      if (reason) {
+        E("Действие недоступно", `<p class="notice">${r(reason)}</p>`);
+        return false;
+      }
+      ae(collectionKey, action, [partner.id]);
+      Ma();
+      T();
+      standaloneHost?.refreshContext();
+      return true;
+    }
+    openRecordUtility("partners", partner, action, collectionKey);
+    return true;
+  }
+  return false;
 }
 function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
   if (pageN === 143 && ctx?.partnerId) {
@@ -3074,7 +3162,8 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       paused,
       partnerId: partner.id,
       permissions,
-      sectionsHtml: buildCooperationEmbedSections(partner),
+      sectionsHtml: buildCooperationEmbedSections(partner, ctx),
+      collectionKey: ctx?.collectionKey || "directory",
     });
   }
   if (pageN === 139 && ctx?.record) {
@@ -3134,6 +3223,8 @@ function ensureStandaloneHost() {
         standaloneHost.refreshContext();
         return true;
       },
+      onSupplementalAction: (data, embedCtx) =>
+        handleEmbedSupplementalAction(data, { ...embedCtx, partnerId: data.partnerId || embedCtx?.partnerId }),
       onReturn: (ctx) => {
         if (!ctx) return;
         if (ctx.kind === "embed-chain" && ctx.pageN) {

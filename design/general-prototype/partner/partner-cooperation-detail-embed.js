@@ -127,6 +127,50 @@
       mount.innerHTML = payload.sectionsHtml;
       mount.hidden = false;
     }
+    wireSupplementalActions();
+  }
+
+  function wireSupplementalActions() {
+    const root = document.querySelector(".embed-supplemental-actions");
+    if (!root || root.dataset.wired === "1") return;
+    root.dataset.wired = "1";
+    root.addEventListener(
+      "click",
+      (e) => {
+        const coll = e.target.closest("[data-coll-item-action]");
+        if (coll) {
+          e.preventDefault();
+          e.stopPropagation();
+          post({
+            type: "supplemental",
+            kind: "record",
+            partnerId: window.__protoEmbedPartnerId || "",
+            collKey: coll.getAttribute("data-coll-key") || "directory",
+            collAction: coll.getAttribute("data-coll-item-action"),
+            collId: coll.getAttribute("data-coll-id"),
+          });
+          return;
+        }
+        const act = e.target.closest("[data-action]");
+        if (!act) return;
+        const action = act.getAttribute("data-action") || "";
+        if (
+          !/^(coop-copy-id|partner-ledger|coop-change-terms|coop-view-terms|coop-pause|coop-resume):/.test(
+            action,
+          )
+        )
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        post({
+          type: "supplemental",
+          kind: "action",
+          action,
+          partnerId: window.__protoEmbedPartnerId || action.split(":")[1] || "",
+        });
+      },
+      true,
+    );
   }
 
   window.addEventListener("message", (ev) => {

@@ -245,6 +245,36 @@ try {
   });
   await chainPage.close();
 
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 375, height: 812 },
+  ]) {
+    const dockPage = await browser.newPage();
+    await dockPage.setViewportSize(viewport);
+    await dockPage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
+    await dockPage.evaluate(() => document.querySelector('[data-testid="view-cabinet"]')?.click());
+    await dockPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+    await dockPage.locator('[data-action="nav:partners"], [data-action="nav:links"]').first().click();
+    await dockPage.waitForSelector("[data-coll-open]", { timeout: 10000 });
+    await dockPage.locator("[data-coll-open]").first().click();
+    await dockPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])");
+    const dockZ = await dockPage.evaluate(() => {
+      const flow = document.querySelector(".proto-page-flow");
+      const host = document.querySelector("[data-testid='cabinet-standalone-host']");
+      if (!flow || !host) return null;
+      const fz = Number.parseInt(getComputedStyle(flow).zIndex, 10);
+      const hz = Number.parseInt(getComputedStyle(host).zIndex, 10);
+      return { flowZ: fz, hostZ: hz, hostActive: document.documentElement.classList.contains("proto-cabinet-embed-host-active") };
+    });
+    assert.ok(dockZ?.hostActive, `embed host class at ${viewport.width}px`);
+    assert.ok(dockZ && dockZ.flowZ > dockZ.hostZ, `reviewer dock above portal at ${viewport.width}px`);
+    const flowBox = await dockPage.locator(".proto-page-flow").boundingBox();
+    const hostBox = await dockPage.locator("[data-testid='cabinet-standalone-host']").boundingBox();
+    assert.ok(flowBox && hostBox, `dock and host measurable at ${viewport.width}px`);
+    assert.ok(hostBox.y + hostBox.height <= flowBox.y + 2, `embed ends above reviewer dock at ${viewport.width}px`);
+    await dockPage.close();
+  }
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

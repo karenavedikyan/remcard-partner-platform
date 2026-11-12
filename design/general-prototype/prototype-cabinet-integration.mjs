@@ -26,6 +26,12 @@ assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");
 assert.match(numbering, /__protoCabinetEmbeddedPage/, "embedded page badge");
 assert.match(numbering, /proto-embed-change/, "parent listens embed badge changes");
+const numberingCss = readFileSync(path.join(root, "prototype-numbering.css"), "utf8");
+assert.match(numberingCss, /proto-cabinet-embed-host-active/, "reviewer dock above embed portal");
+assert.match(roles, /handleEmbedSupplementalAction/, "parent supplemental bridge");
+assert.match(roles, /embed-supplemental-actions/, "143 supplemental toolbar html");
+const embed143 = readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8");
+assert.match(embed143, /type: "supplemental"/, "143 posts supplemental actions");
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
 assert.match(walletHistory, /wallet-open-receipt-145/, "147 accrual detail opens receipt 145");
 

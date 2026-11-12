@@ -86,6 +86,26 @@ html.cabinet-embed-mode .embed-supplemental .fold-list {
   font: inherit;
 }
 
+html.cabinet-embed-mode .embed-supplemental-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+html.cabinet-embed-mode .embed-supplemental-actions .certificate-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+html.cabinet-embed-mode .embed-supplemental-actions .certificate-list-action,
+html.cabinet-embed-mode .embed-supplemental-actions .btn {
+  font: inherit;
+  cursor: pointer;
+}
+
 html.cabinet-embed-mode[data-embed-readonly="1"] .wallet-accruals-history__filters,
 html.cabinet-embed-mode[data-embed-readonly="1"] #filter-button,
 html.cabinet-embed-mode[data-embed-readonly="1"] #clear-filters {
