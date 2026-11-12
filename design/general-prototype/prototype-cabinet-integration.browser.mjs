@@ -576,6 +576,55 @@ try {
     await dockPage.close();
   }
 
+  const r2Page = await browser.newPage();
+  await r2Page.setViewportSize({ width: 1280, height: 900 });
+  await enterCabinet(r2Page, "store");
+  await r2Page.evaluate(() => {
+    window.rcDemoMemory?.setItem?.("rc_release", "2");
+    const el = document.querySelector('[data-testid="prototype-release"]');
+    if (el) {
+      el.value = "2";
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  await r2Page.waitForTimeout(300);
+  await r2Page.locator('[data-action="nav:clients"]').click();
+  await r2Page.waitForSelector('[data-testid="ca-r2-repair-entry"]', { timeout: 10000 });
+  await r2Page.locator('[data-ca-action="nav:repair-objects"]').click();
+  await r2Page.waitForSelector('[data-testid="ca-r2-repair-page"]');
+  await r2Page.locator('[data-testid="ca-r2-object-r2-obj-krd-aurora"]').click();
+  await r2Page.locator('[data-testid="ca-r2-open-142"]').click();
+  await r2Page.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 10000 });
+  const embed142 = r2Page.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await embed142.locator("body").waitFor({ timeout: 8000 });
+  const storedY = await r2Page.evaluate(() => window.scrollY);
+  await r2Page.locator('[data-testid="proto-standalone-back"]').click();
+  await r2Page.waitForSelector('[data-testid="ca-r2-object-detail"]', { timeout: 10000 });
+  const afterBack = await r2Page.evaluate(() => ({
+    view: document.querySelector('[data-testid="ca-r2-repair-page"]') != null,
+    selected: document.querySelector('[data-testid="ca-r2-object-r2-obj-krd-aurora"]')?.classList.contains("is-selected"),
+  }));
+  assert.ok(afterBack.view && afterBack.selected, "back restores R2 repair object context");
+  await r2Page.locator('[data-testid="ca-r2-object-r2-obj-ekb-draft"]').click();
+  const asgDisabled = await r2Page.locator('[data-testid="ca-r2-open-141"]').isDisabled();
+  assert.ok(asgDisabled, "no assignment fixture keeps 141 disabled");
+  await r2Page.evaluate(() => {
+    window.rcDemoMemory?.setItem?.("rc_release", "1");
+    const el = document.querySelector('[data-testid="prototype-release"]');
+    if (el) {
+      el.value = "1";
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  await r2Page.waitForFunction(
+    () => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden !== false,
+    null,
+    { timeout: 5000 },
+  );
+  const r1Entry = await r2Page.$('[data-testid="ca-r2-repair-entry"]');
+  assert.equal(r1Entry, null, "R1 hides repair objects entry");
+  await r2Page.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

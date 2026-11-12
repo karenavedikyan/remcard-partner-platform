@@ -257,12 +257,19 @@ export function createCabinetStandaloneHost(config) {
     return false;
   }
 
-  function assertCanOpen(pageN) {
+  function assertCanOpen(pageN, embedCtx = null) {
     if (!STANDALONE_BY_N[pageN]) return deny(pageN);
+    const pendingCtx = embedCtx || openCtx;
     if (STANDALONE_BY_N[pageN].workflowNA) {
-      return deny(pageN, "Маршрут поручения (141) в прототипе только для согласования по TOC, без рабочего R2-сценария в ЛК.");
+      const r2Repair = pendingCtx?.r2Repair && pendingCtx?.guestHash;
+      if (!(pageN === 141 && r2Repair)) {
+        return deny(
+          pageN,
+          "Маршрут поручения (141) в прототипе только для согласования по TOC, без рабочего R2-сценария в ЛК.",
+        );
+      }
     }
-    if (typeof canOpen === "function" && !canOpen(pageN, openCtx)) return deny(pageN);
+    if (typeof canOpen === "function" && !canOpen(pageN, pendingCtx)) return deny(pageN);
     return true;
   }
 
@@ -344,7 +351,7 @@ export function createCabinetStandaloneHost(config) {
     { extraQuery = "", returnCtx = null, chain = false, replace = false, embedCtx = null } = {},
   ) {
     if (config.getEmbedGuardKey) embedGuardKey = config.getEmbedGuardKey();
-    if (!assertCanOpen(pageN)) return false;
+    if (!assertCanOpen(pageN, embedCtx)) return false;
     if (getScreen?.() !== "cabinet") {
       return deny(pageN, "Сначала откройте кабинет в режиме просмотра.");
     }
@@ -402,8 +409,8 @@ export function createCabinetStandaloneHost(config) {
       return;
     }
     if (data.type === "nav" && data.pageN) {
-      if (!assertCanOpen(Number(data.pageN))) return;
       const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
+      if (!assertCanOpen(Number(data.pageN), nextCtx)) return;
       doOpen(Number(data.pageN), {
         extraQuery: data.query || "",
         chain: !data.replace,
@@ -521,8 +528,11 @@ export function prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, h
       delete nextEmbed.record;
     }
   }
-  if (pageN === 142) {
+  if (pageN === 142 && !nextEmbed.guestHash) {
     delete nextEmbed.observerModel;
+  }
+  if (pageN === 141 && nextEmbed.guestHash) {
+    nextEmbed.r2Repair = true;
   }
   if ([139, 140].includes(pageN) && hooks.closeSourceDialog?.()) {
     if (record?.id) nextReturn.restoreCertificateId = record.id;

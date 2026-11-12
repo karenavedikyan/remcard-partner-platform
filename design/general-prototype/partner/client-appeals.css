@@ -261,3 +261,9 @@ button.ca-row{font:inherit;color:inherit}
   .ca-observer-client-row .ca-row-age{grid-area:date;justify-self:end;align-self:end;text-align:right}
   .ca-observer-client-row .ca-chev{grid-area:chev}
 }
+.ca-r2-repair-entry{margin-bottom:var(--s4,16px)}
+.ca-r2-object-grid{display:grid;gap:var(--s3,12px)}
+.ca-r2-object-card{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.ca-r2-object-card.is-selected{border-color:color-mix(in srgb,var(--brand,var(--accent)) 45%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--brand,var(--accent)) 18%,transparent)}
+.ca-r2-object-select{display:grid;gap:var(--s2,8px);width:100%;text-align:left;padding:var(--s4,16px);border:0;background:transparent;cursor:pointer;font:inherit;color:inherit}
+.ca-r2-object-detail{margin-top:var(--s4,16px)}

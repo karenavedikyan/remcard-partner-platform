@@ -5,6 +5,12 @@ import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
 } from "./guest-embed-payloads.js";
+import {
+  buildRepairEmbedCtx,
+  filterRepairObjects,
+  isPrototypeR2Release,
+  repairObjectById,
+} from "./repair-objects-r2.js";
 
 
   const WAIT_DAYS = 14;
@@ -1814,6 +1820,8 @@ function ws(key) {
       observerClientId: null,
       observerQ: "",
       observerPeriod: "all",
+      r2ObjectId: null,
+      repairObjectsQ: "",
     });
   }
   const s = workspaces.get(key);
@@ -1823,8 +1831,73 @@ function ws(key) {
   if (!s.clientsDirection) s.clientsDirection = "incoming";
   if (s.observerQ == null) s.observerQ = "";
   if (!s.observerPeriod) s.observerPeriod = "all";
+  if (s.r2ObjectId === undefined) s.r2ObjectId = null;
+  if (s.repairObjectsQ == null) s.repairObjectsQ = "";
   if (!s.partnerOverlay) s.partnerOverlay = { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] };
   return s;
+}
+
+function repairObjectsNavAllowed(config) {
+  if (!isPrototypeR2Release()) return false;
+  if (config.role === "agent") return true;
+  if (config.readOnly) return false;
+  return true;
+}
+
+function renderRepairObjectsListEntry(config) {
+  if (!isPrototypeR2Release()) return "";
+  if (!repairObjectsNavAllowed(config)) {
+    return `<section class="panel stack ca-r2-repair-entry" data-testid="ca-r2-repair-na"><p class="eyebrow">R2</p><h2 class="h3">Объекты и поручения</h2><p class="muted">Раздел недоступен без права «Клиенты» в демо-роли.</p></section>`;
+  }
+  return `<section class="panel stack ca-r2-repair-entry" data-testid="ca-r2-repair-entry"><p class="eyebrow">R2 · Navigator</p><h2 class="h3">Объекты и поручения</h2><p class="muted">Контекстный handoff в кабинет: поручение (141) и наблюдение за объектом (142). Не подменяет список обращений.</p><div class="ca-form-actions"><button type="button" class="btn primary" data-ca-action="nav:repair-objects">Открыть объекты</button></div></section>`;
+}
+
+function renderRepairObjectsPage(config) {
+  const s = ws(config.key);
+  if (!repairObjectsNavAllowed(config)) {
+    return `<section class="panel stack ca-r2-repair-empty"><h2>Объекты недоступны</h2><p class="muted">Для этой демо-роли нет доступа к объектам ремонта.</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:list">К обращениям</button></div></section>`;
+  }
+  const rows = filterRepairObjects(s.repairObjectsQ);
+  const selected = s.r2ObjectId ? repairObjectById(s.r2ObjectId) : null;
+  const cards = rows
+    .map((row) => {
+      const picked = s.r2ObjectId === row.id;
+      const noAsg = !row.assignment;
+      return `<article class="ca-r2-object-card ${picked ? "is-selected" : ""}" data-testid="ca-r2-object-${row.id}"><button type="button" class="ca-r2-object-select" data-ca-action="repair:select" data-ca-value="${esc(row.id)}"><strong>${esc(row.name)}</strong><span class="small muted">${esc(row.address)}</span><span class="small">Клиент: ${esc(row.clientLabel)} · ${esc(row.clientRelation)}</span><span class="pill neutral">${esc(row.stageLabel)}</span>${noAsg ? '<span class="pill">Без поручения</span>' : ""}</button></article>`;
+    })
+    .join("");
+  const empty = rows.length
+    ? ""
+    : `<section class="panel empty ca-empty"><h2>Объекты не найдены</h2><p class="muted">Измените поиск или сбросьте фильтр.</p><button type="button" class="btn ghost" data-ca-action="repair:reset-q">Сбросить поиск</button></section>`;
+  const detail = selected
+    ? `<section class="panel stack ca-r2-object-detail" data-testid="ca-r2-object-detail"><h2>Выбранный объект</h2><p><strong>${esc(selected.name)}</strong></p><p class="muted">${esc(selected.address)}</p><p class="small muted">ID: ${esc(selected.id)} · ${esc(selected.clientRelation)}</p><div class="ca-form-actions"><button type="button" class="btn primary" data-ca-action="repair:open-142" data-testid="ca-r2-open-142">Наблюдение (142)</button><button type="button" class="btn ghost" data-ca-action="repair:open-141" data-testid="ca-r2-open-141" ${selected.assignment && config.role !== "agent" ? "" : "disabled"}>${config.role === "agent" ? "Поручение недоступно агенту" : selected.assignment ? "Поручение (141)" : "Поручение недоступно"}</button></div>${selected.assignment ? "" : '<p class="small muted">Для этого объекта нет демо-поручения — проверьте пустое состояние.</p>'}</section>`
+    : `<section class="panel ca-r2-object-detail"><p class="muted">Выберите объект, чтобы открыть поручение или наблюдение.</p></section>`;
+  return `<div class="stack ca-r2-repair-page" data-testid="ca-r2-repair-page">${backLink(config, "К обращениям", "nav:list")}<section class="panel"><label class="field ca-search">Поиск<input type="search" data-ca-input="repair-objects-q" value="${esc(s.repairObjectsQ)}" placeholder="ID, адрес или клиент"></label></section>${empty || `<div class="ca-r2-object-grid">${cards}</div>`}${detail}</div>`;
+}
+
+export function snapshotClientAppealsRepairState(config) {
+  const s = ws(config.key);
+  return {
+    view: s.view || "list",
+    r2ObjectId: s.r2ObjectId || null,
+    repairObjectsQ: s.repairObjectsQ || "",
+    listQ: s.listQ || "",
+    tab: s.tab || "incoming",
+    scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+  };
+}
+
+export function restoreClientAppealsRepairState(config, snap) {
+  if (!snap) return;
+  const s = ws(config.key);
+  s.view = snap.view || "repair-objects";
+  s.r2ObjectId = snap.r2ObjectId || null;
+  s.repairObjectsQ = snap.repairObjectsQ || "";
+  if (snap.listQ != null) s.listQ = snap.listQ;
+  if (snap.tab) s.tab = snap.tab;
+  requestAnimationFrame(() => {
+    if (Number.isFinite(snap.scrollY)) window.scrollTo({ top: snap.scrollY, behavior: "instant" });
+  });
 }
 
 function roleCaps(role) {
@@ -1849,6 +1922,7 @@ const PAGE_TITLES = {
   analytics: "Аналитика",
   "observer-partner": "Клиенты у партнёра",
   "observer-client": "Статус направления",
+  "repair-objects": "Объекты и поручения",
 };
 
 const SENDER_LIST_MUTED =
@@ -1914,6 +1988,7 @@ export function clientAppealsPageMuted(config) {
   if (s.view === "settings") return "Настройте путь клиента под свой бизнес. Изменения видны только вам.";
   if (s.view === "analytics") return "Как обращения превращаются в покупки.";
   if (s.view === "purchase" && s.purchaseViewId) return `Покупка ${s.purchaseViewId} · как в кошельке`;
+  if (s.view === "repair-objects") return "Выбранный объект задаёт контекст для 141 и 142.";
   return "";
 }
 
@@ -1934,6 +2009,7 @@ export function clientAppealsSubpageBack(config) {
   }
   if (s.view === "detail") return backLink(config, "К списку клиентов", "nav:list");
   if (s.view === "purchase") return backLink(config, "К обращению", "nav:detail");
+  if (s.view === "repair-objects") return backLink(config, "К обращениям", "nav:list");
   return backLink(config, "К списку клиентов", "nav:list");
 }
 
@@ -2358,7 +2434,7 @@ function renderObserverClientPage(config) {
     <h3>Хронология (без внутренних заметок партнёра)</h3>
     <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
   </section>
-  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Наблюдение за объектом (142)</button><p class="small muted">Н/Д из обращений: передачи объекта ремонта Navigator нет. Полный макет 142 — в оглавлении прототипа.</p></div>`;
+  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Наблюдение за объектом (142)</button><p class="small muted">Н/Д из обращений: нет handoff объекта Navigator. В R2 откройте раздел «Объекты и поручения» в списке клиентов.</p></div>`;
 }
 
 function backLink(config, label, action) {
@@ -2610,8 +2686,9 @@ export function renderClientAppeals(config) {
   const previewChrome = renderClientsPreviewToggle(config);
   const rootClass = observerSectionClass(config, s);
   if (s.view === "list") {
+    const r2Entry = renderRepairObjectsListEntry(config);
     const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
-    return `<div class="${rootClass}" data-ca-root>${previewChrome}${body}</div>`;
+    return `<div class="${rootClass}" data-ca-root>${previewChrome}${r2Entry}${body}</div>`;
   }
   if (s.view === "observer-partner" && previewShowsObserverList(config) && observerActionsAllowed(config)) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
@@ -2628,6 +2705,9 @@ export function renderClientAppeals(config) {
   if (s.view === "settings") return `<div class="stack ca-section" data-ca-root>${renderSettingsInline(config)}</div>`;
   if (s.view === "purchase") return `<div class="stack ca-section" data-ca-root>${renderPurchaseInline(config, s.purchaseViewId)}</div>`;
   if (s.view === "analytics") return `<div class="stack ca-section" data-ca-root>${renderFunnelPage(config)}</div>`;
+  if (s.view === "repair-objects") {
+    return `<div class="stack ca-section ca-section--repair-objects" data-ca-root>${renderRepairObjectsPage(config)}</div>`;
+  }
   if (s.view === "detail" && s.selectedId) return `<div class="stack ca-section" data-ca-root>${renderDetailPage(config, s.selectedId)}</div>`;
   s.view = "list";
   return renderClientAppeals(config);
@@ -3107,6 +3187,13 @@ export function primeClientAppealsView(config, view) {
   s.selectedId = null;
 }
 
+export function primeClientAppealsRepairObject(config, objectId, view = "repair-objects") {
+  ensureSeed(config);
+  const s = ws(config.key);
+  s.view = view;
+  s.r2ObjectId = objectId || null;
+}
+
 /** Cabinet scanner nav: full client-appeals scan flow (demo outcomes, category, purchase). */
 export function primeClientAppealsScan(config) {
   const s = ws(config.key);
@@ -3161,7 +3248,7 @@ export function hydrateClientAppeals(hooks) {
     const action = btn.getAttribute("data-ca-action");
     const tabAttr = btn.getAttribute("data-ca-tab");
     if (tabAttr) s.tab = tabAttr;
-    handleCaAction(action, config, hooks);
+    handleCaAction(action, config, hooks, btn);
   });
   root.addEventListener("input", (e) => {
     const t = e.target;
@@ -3170,6 +3257,7 @@ export function hydrateClientAppeals(hooks) {
     if (t.matches('[data-ca-input="status"]')) { s.listStatus = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="observer-q"]')) { s.observerQ = t.value; hooks.refresh(); }
+    if (t.matches('[data-ca-input="repair-objects-q"]')) { s.repairObjectsQ = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
     if (t.matches("#ca-manual-form [name]")) syncManualDraftFromDom(s);
@@ -3271,7 +3359,40 @@ export function hydrateClientAppeals(hooks) {
   });
 }
 
-function handleCaAction(action, config, hooks) {
+function openRepairStandalonePage(pageN, config, hooks) {
+  if (!isPrototypeR2Release()) {
+    hooks.notify?.("Маршруты 141 и 142 доступны в релизе R2 через «Объекты и поручения».", "info");
+    return;
+  }
+  if (!repairObjectsNavAllowed(config)) {
+    hooks.notify?.("Раздел объектов недоступен без права «Клиенты» в демо.", "info");
+    return;
+  }
+  const s = ws(config.key);
+  if (!s.r2ObjectId) {
+    hooks.notify?.("Сначала выберите объект ремонта.", "info");
+    return;
+  }
+  if (pageN === 141 && config.role === "agent") {
+    hooks.notify?.("Поручения в демо открывает принимающий партнёр, не агент.", "info");
+    return;
+  }
+  const embedCtx = buildRepairEmbedCtx(pageN, s.r2ObjectId);
+  if (embedCtx.missingRepairObject || embedCtx.assignmentUnavailable) {
+    hooks.notify?.(embedCtx.naMessage, "info");
+    return;
+  }
+  if (!embedCtx.guestHash) {
+    hooks.notify?.("Нет демо-снимка для выбранного объекта.", "info");
+    return;
+  }
+  config.onProtoStandalone?.(pageN, {
+    embedCtx,
+    returnSnapshot: snapshotClientAppealsRepairState(config),
+  });
+}
+
+function handleCaAction(action, config, hooks, triggerEl = null) {
   const s = ws(config.key);
   hooks.clearNotice?.();
   if (action === "direction:incoming") {
@@ -3405,6 +3526,15 @@ function handleCaAction(action, config, hooks) {
       hooks.refresh();
       return;
     }
+    if (v === "repair-objects") {
+      if (!repairObjectsNavAllowed(config)) {
+        hooks.notify?.("Раздел объектов недоступен для этой демо-роли.", "info");
+        return;
+      }
+      s.view = "repair-objects";
+      hooks.refresh();
+      return;
+    }
     if (v === "detail") s.view = "detail";
     else s.view = v;
     if (v === "list") {
@@ -3422,6 +3552,29 @@ function handleCaAction(action, config, hooks) {
       if (config.scanEntry) config.onScanNavList?.();
     }
     hooks.refresh();
+    return;
+  }
+  if (action === "repair:select") {
+    const id = triggerEl?.getAttribute("data-ca-value") || "";
+    if (!repairObjectById(id)) {
+      hooks.notify?.("Объект не найден в демо-снимке.", "info");
+      return;
+    }
+    s.r2ObjectId = id;
+    hooks.refresh();
+    return;
+  }
+  if (action === "repair:reset-q") {
+    s.repairObjectsQ = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "repair:open-141") {
+    openRepairStandalonePage(141, config, hooks);
+    return;
+  }
+  if (action === "repair:open-142") {
+    openRepairStandalonePage(142, config, hooks);
     return;
   }
   if (action.startsWith("analytics-tab:")) {
@@ -3759,13 +3912,25 @@ export function buildClientAppealsStandaloneEmbedCtx(pageN, config) {
     pageN,
     designExample: true,
   };
+  if ((pageN === 141 || pageN === 142) && isPrototypeR2Release() && s.r2ObjectId) {
+    return buildRepairEmbedCtx(pageN, s.r2ObjectId);
+  }
+  if (pageN === 141) {
+    return {
+      source: "client-appeals",
+      pageN,
+      observerUnavailable: true,
+      naMessage:
+        "Поручение (141) из обращений недоступно. В релизе R2 выберите объект в «Объекты и поручения».",
+    };
+  }
   if (pageN === 142) {
     return {
       source: "client-appeals",
       pageN,
       observerUnavailable: true,
       naMessage:
-        "Наблюдение за объектом ремонта (142) из обращений недоступно: нет handoff объекта Navigator. Откройте запись 142 в оглавлении прототипа.",
+        "Наблюдение за объектом ремонта (142) из обращений недоступно: нет handoff объекта Navigator. В R2 используйте «Объекты и поручения».",
     };
   }
   const purchaseId = s.purchaseViewId;

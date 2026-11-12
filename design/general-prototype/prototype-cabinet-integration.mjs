@@ -11,6 +11,8 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 const host = readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8");
 const roles = readFileSync(path.join(root, "partner/roles.js"), "utf8");
+const repairR2 = readFileSync(path.join(root, "partner/repair-objects-r2.js"), "utf8");
+const clientAppeals = readFileSync(path.join(root, "partner/client-appeals.js"), "utf8");
 const wallet = readFileSync(path.join(root, "partner/wallet-accruals.js"), "utf8");
 const index = readFileSync(path.join(root, "index.html"), "utf8");
 const numbering = readFileSync(path.join(root, "prototype-numbering.js"), "utf8");
@@ -23,6 +25,13 @@ assert.match(host, /ev\.source !== frame\.contentWindow/, "message source guard"
 assert.match(host, /addEventListener\("scroll", onOuterScroll/, "portal follows document scroll");
 assert.match(host, /removeEventListener\("scroll", onOuterScroll/, "document scroll listener cleaned up");
 assert.match(roles, /handleStandaloneHostClick/, "roles wires standalone clicks");
+assert.match(repairR2, /REPAIR_OBJECT_FIXTURES/, "R2 repair object fixtures");
+assert.match(repairR2, /r2-obj-ekb-draft/, "fixture without assignment");
+assert.match(clientAppeals, /ca-r2-repair-entry/, "clients list R2 repair entry");
+assert.match(clientAppeals, /buildRepairEmbedCtx/, "client appeals hands off repair embed ctx");
+assert.match(roles, /R2_REPAIR_OBJECT_PAGES/, "roles gates 141/142 by release");
+assert.match(host, /pendingCtx\?\.r2Repair/, "141 workflowNA bypass for contextual R2 handoff");
+assert.match(numbering, /141[\s\S]*tocOpen[\s\S]*Объекты и поручения/, "TOC gates 141 to R2 cabinet path");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");

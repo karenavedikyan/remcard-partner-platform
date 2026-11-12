@@ -25,7 +25,7 @@ import {
   parseStandaloneDeepLink,
   prepareGuestStandaloneOpen,
   waitForCabinetReady,
-} from "./cabinet-standalone-host.js?v=embed5";
+} from "./cabinet-standalone-host.js?v=embed6";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -53,7 +53,8 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx } from "./client-appeals.js?v=ca29";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca30";
+import { buildRepairEmbedCtx, R2_REPAIR_OBJECT_PAGES } from "./repair-objects-r2.js";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -3010,10 +3011,20 @@ function resolveDeepLinkEmbedCtx(pageN, q) {
       };
     }
   }
+  if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
+    const objectId = q.get("repair_object") || q.get("r2_object") || "";
+    return buildRepairEmbedCtx(pageN, objectId, { deepLink: true });
+  }
   return { deepLink: true };
 }
 function standaloneCanOpen(pageN) {
-  if (pageN === 141) return false;
+  if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) return false;
+  if (pageN === 141) {
+    if (prototypeRelease() !== 2) return false;
+    if (i.role === "agent") return false;
+    if (k()) return O("clients");
+    return O("clients") || O("recommend");
+  }
   if (pageN === 146 && i.role === "agent") return false;
   if (k()) {
     if (pageN === 143) return ue() || employeeCanViewPartners();
@@ -3201,11 +3212,20 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
   if (pageN === 140 && ctx?.guestHash) {
     return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
   }
+  if (pageN === 141 && ctx?.guestHash) {
+    return embedPayloadEnvelope(pageN, ctx, {
+      guestReady: true,
+      r2Repair: !!ctx.r2Repair,
+      guestHash: ctx.guestHash,
+    });
+  }
   if (pageN === 142 && ctx?.guestHash) {
     return embedPayloadEnvelope(pageN, ctx, {
       guestReady: true,
       designExample: !!ctx.designExample,
       naReason: ctx.naReason || "",
+      readOnlyObserver: !!ctx.readOnlyObserver,
+      guestHash: ctx.guestHash,
     });
   }
   if (pageN === 140 && ctx?.designExample) {
@@ -3268,6 +3288,15 @@ function ensureStandaloneHost() {
           if (ctx.page) i.page = ctx.page;
           T();
           queueMicrotask(() => Ne(ctx.restoreCertificateId));
+          return;
+        }
+        if (ctx.restoreRepair) {
+          i.page = ctx.page === "scanner" ? "clients" : ctx.page || "clients";
+          T();
+          queueMicrotask(() => {
+            restoreClientAppealsRepairState(clientAppealsConfig(), ctx.restoreRepair);
+            standaloneHost?.afterCabinetRender?.();
+          });
           return;
         }
         if (ctx.kind === "embed-chain" && ctx.pageN) {
@@ -3969,18 +3998,35 @@ function clientAppealsConfig() {
     role: i.role,
     icon: D,
     readOnly: k() && !O("clients"),
-    onProtoStandalone: (pageN) => {
+    onProtoStandalone: (pageN, extra = {}) => {
+      if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
+        U("Страницы 141 и 142 доступны в релизе R2 через «Объекты и поручения».", "info");
+        return;
+      }
       if (!standaloneCanOpen(pageN)) {
         U("Раздел недоступен для этой роли в демо.", "info");
         return;
       }
-      const embedCtx = buildClientAppealsStandaloneEmbedCtx(pageN, clientAppealsConfig());
-      if (embedCtx?.observerUnavailable) {
-        U(embedCtx.naMessage, "info");
+      const embedCtx = extra.embedCtx || buildClientAppealsStandaloneEmbedCtx(pageN, clientAppealsConfig());
+      if (embedCtx?.observerUnavailable || embedCtx?.assignmentUnavailable || embedCtx?.missingRepairObject) {
+        U(embedCtx.naMessage || "Раздел недоступен в этом контексте.", "info");
         return;
       }
+      if (R2_REPAIR_OBJECT_PAGES.has(pageN) && !embedCtx?.guestHash) {
+        U("Нет контекста объекта. Выберите объект в «Объекты и поручения».", "info");
+        return;
+      }
+      const cfg = clientAppealsConfig();
       ensureStandaloneHost().openStandalone(pageN, {
-        returnCtx: { page: i.page, role: i.role, source: "client-appeals", pageN },
+        returnCtx: {
+          page: i.page,
+          role: i.role,
+          source: "client-appeals",
+          pageN,
+          restoreRepair:
+            extra.returnSnapshot ||
+            (embedCtx.r2Repair ? snapshotClientAppealsRepairState(cfg) : null),
+        },
         embedCtx,
       });
     },
@@ -4738,6 +4784,7 @@ document.addEventListener("change", (e) => {
     (C = null),
     (Z = !1),
     (i.role = e.target.value),
+    standaloneHost?.closeHost({ reset: true }),
     clearAllPayProfileReturnContexts(),
     i.screen === "cabinet" && applyCabinetPreviewSeeds(e.target.value),
     (i.page = i.page === "profile" ? "profile" : "home"),
@@ -4777,6 +4824,7 @@ document.addEventListener("change", (e) => {
       ((() => {
         const v = e.target.value === "2" ? "2" : "1";
         window.rcDemoMemory?.setItem?.("rc_release", v);
+        standaloneHost?.closeHost({ reset: true });
         if (v === "1" && R2_NAV_KEYS.has(i.page)) {
           i.page = "home";
           i.notice =
@@ -5736,14 +5784,39 @@ R();
       return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     })
     .then(() => {
-      if (!standaloneCanOpen(pageN)) return;
+      if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
+        U("Страницы 141 и 142 открываются только в релизе R2 из раздела «Клиенты».", "info");
+        return;
+      }
       const embedCtx = resolveDeepLinkEmbedCtx(pageN, q);
+      if (embedCtx?.missingRepairObject) {
+        U(embedCtx.naMessage || "Объект ремонта не найден.", "info");
+        return;
+      }
+      if (embedCtx?.assignmentUnavailable) {
+        U(embedCtx.naMessage, "info");
+        return;
+      }
+      if (!standaloneCanOpen(pageN)) return;
+      if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
+        i.page = "clients";
+        R();
+        if (embedCtx.repairObjectId) {
+          primeClientAppealsRepairObject(clientAppealsConfig(), embedCtx.repairObjectId);
+        }
+      }
       const extraQuery =
         pageN === 143 && embedCtx.partnerId
           ? `partner_id=${encodeURIComponent(embedCtx.partnerId)}`
           : "";
       ensureStandaloneHost().openStandalone(pageN, {
-        returnCtx: { page: i.page, role: i.role },
+        returnCtx: {
+          page: i.page,
+          role: i.role,
+          restoreRepair: embedCtx.r2Repair
+            ? snapshotClientAppealsRepairState(clientAppealsConfig())
+            : null,
+        },
         embedCtx,
         extraQuery,
       });
