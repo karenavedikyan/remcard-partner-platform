@@ -155,7 +155,7 @@ describe("Navigator PATCH semantics wire contract", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
-    expect((await res.json()) as { error: string }).error).toMatch(/Нет полей/);
+    expect(((await res.json()) as { error: string }).error).toMatch(/Нет полей/);
   });
 
   it("permits incremental city-only PATCH without invented marker", async () => {
