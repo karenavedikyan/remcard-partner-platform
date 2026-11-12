@@ -53,7 +53,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca30";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca31";
 import { buildRepairEmbedCtx, R2_REPAIR_OBJECT_PAGES } from "./repair-objects-r2.js";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
@@ -3992,6 +3992,24 @@ function careConfig() {
     profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
   };
 }
+window.__protoApplyClientAppealsPage = (page) => {
+  if (!page?.partnerRole || page.partnerSection !== "clients" || !page.clientAppealsView) return;
+  if (i.role !== page.partnerRole || i.screen !== "cabinet") return;
+  const cfg = clientAppealsConfig();
+  if (page.partnerRole === "agent") {
+    if (page.clientAppealsView === "observer-partner" || page.clientAppealsView === "observer-client") {
+      primeClientAppealsView(cfg, page.clientAppealsView);
+    } else {
+      primeAgentObserverClientsFlow(cfg);
+    }
+    R();
+    return;
+  }
+  if (page.clientAppealsView === "scan") primeClientAppealsScan(cfg);
+  else primeClientAppealsView(cfg, page.clientAppealsView);
+  R();
+};
+
 function clientAppealsConfig() {
   return {
     key: `${i.role}:${i.role === "employee" ? employeeEmployerRole() || Y : "self"}`,

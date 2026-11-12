@@ -32,6 +32,10 @@ assert.match(clientAppeals, /buildRepairEmbedCtx/, "client appeals hands off rep
 assert.match(roles, /R2_REPAIR_OBJECT_PAGES/, "roles gates 141/142 by release");
 assert.match(host, /pendingCtx\?\.r2Repair/, "141 workflowNA bypass for contextual R2 handoff");
 assert.match(numbering, /141[\s\S]*tocOpen[\s\S]*Объекты и поручения/, "TOC gates 141 to R2 cabinet path");
+assert.match(clientAppeals, /agentClientsObserverOnly/, "agent clients observer-only mode");
+assert.match(clientAppeals, /ca-observer-partners-list/, "observer partners list test id");
+assert.match(clientAppeals, /if \(agentClientsObserverOnly\(config\)\) return;/, "blocks agent legacy client nav handlers");
+assert.match(numbering, /partner:agent:clients-list[\s\S]*Мои клиенты у партнёров/, "page 106 titles agent observer list");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");

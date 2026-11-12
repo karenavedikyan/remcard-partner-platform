@@ -105,13 +105,83 @@ const PAGE_DEFS = [
   { n: 103, id: "partner:company:clients-analytics", title: "Кабинет компании · Аналитика", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
   { n: 104, id: "partner:company:clients-observer-partner", title: "Кабинет компании · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
   { n: 105, id: "partner:company:clients-observer-client", title: "Кабинет компании · Статус направления", zone: "partner", r2: false, partnerRole: "company", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
-  { n: 106, id: "partner:agent:clients-list", title: "Кабинет агента · Клиенты", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "list" },
-  { n: 107, id: "partner:agent:clients-detail", title: "Кабинет агента · Обращение", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "detail", tocOpen: "Раздел «Клиенты» → строка обращения" },
-  { n: 108, id: "partner:agent:clients-scan", title: "Кабинет агента · Сканировать сертификат", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "scan", tocOpen: "«Клиенты» или «Сканер» → «Сканировать сертификат»" },
-  { n: 109, id: "partner:agent:clients-manual", title: "Кабинет агента · Добавить клиента", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "manual", tocOpen: "«Клиенты» → «Добавить клиента»" },
-  { n: 110, id: "partner:agent:clients-settings", title: "Кабинет агента · Этапы и причины", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "settings", tocOpen: "«Клиенты» → «Этапы и причины»" },
-  { n: 111, id: "partner:agent:clients-purchase", title: "Кабинет агента · Покупка", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "purchase", tocOpen: "Карточка обращения → покупка" },
-  { n: 112, id: "partner:agent:clients-analytics", title: "Кабинет агента · Аналитика", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "analytics", tocOpen: "«Клиенты» → «Аналитика»" },
+  {
+    n: 106,
+    id: "partner:agent:clients-list",
+    title: "Кабинет агента · Мои клиенты у партнёров",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "list",
+    tocOpen: "Единственный режим «Клиенты» для агента: список партнёров (read-only)",
+  },
+  {
+    n: 107,
+    id: "partner:agent:clients-detail",
+    title: "Кабинет агента · Обращение",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "detail",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
+  {
+    n: 108,
+    id: "partner:agent:clients-scan",
+    title: "Кабинет агента · Сканировать сертификат",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "scan",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
+  {
+    n: 109,
+    id: "partner:agent:clients-manual",
+    title: "Кабинет агента · Добавить клиента",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "manual",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
+  {
+    n: 110,
+    id: "partner:agent:clients-settings",
+    title: "Кабинет агента · Этапы и причины",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "settings",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
+  {
+    n: 111,
+    id: "partner:agent:clients-purchase",
+    title: "Кабинет агента · Покупка",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "purchase",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
+  {
+    n: 112,
+    id: "partner:agent:clients-analytics",
+    title: "Кабинет агента · Аналитика",
+    zone: "partner",
+    r2: false,
+    partnerRole: "agent",
+    partnerSection: "clients",
+    clientAppealsView: "analytics",
+    tocOpen: "У агента недоступно: только «Мои клиенты у партнёров» (стр. 106, 113–114)",
+  },
   { n: 113, id: "partner:agent:clients-observer-partner", title: "Кабинет агента · Клиенты у партнёра", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "observer-partner", tocOpen: "Вкладка «Мои клиенты у партнёров» → партнёр" },
   { n: 114, id: "partner:agent:clients-observer-client", title: "Кабинет агента · Статус направления", zone: "partner", r2: false, partnerRole: "agent", partnerSection: "clients", clientAppealsView: "observer-client", tocOpen: "Список направлений → клиент" },
   { n: 115, id: "partner:employee:clients-list", title: "Кабинет сотрудника · Клиенты", zone: "partner", r2: false, partnerRole: "employee", partnerSection: "clients", clientAppealsView: "list", tocOpen: "В базовом ЛК сотрудника только «Главная» и «Профиль»; экран по демо-правам работодателя." },
@@ -334,6 +404,7 @@ const PAGE_DEFS = [
   function readClientAppealsView() {
     if (document.querySelector('[data-testid="ca-observer-partner-page"]')) return "observer-partner";
     if (document.querySelector('[data-testid="ca-observer-client-page"]')) return "observer-client";
+    if (document.querySelector('[data-testid="ca-observer-partners-list"]')) return "list";
     const root = document.querySelector("[data-ca-root]");
     if (!root) return null;
     if (root.querySelector(".ca-scan")) return "scan";
@@ -486,6 +557,9 @@ const PAGE_DEFS = [
       return;
     }
     applyPartnerCabinetNav(page);
+    queueMicrotask(() => {
+      window.__protoApplyClientAppealsPage?.(page);
+    });
   }
 
   function initDeferredProtoPageNav() {

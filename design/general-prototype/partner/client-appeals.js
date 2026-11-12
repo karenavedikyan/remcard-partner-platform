@@ -1930,10 +1930,39 @@ const SENDER_LIST_MUTED =
 const RECEIVER_LIST_MUTED =
   "Покупатели вашего магазина и история их обращений.";
 
+function agentClientsObserverOnly(config) {
+  return config.role === "agent";
+}
+
+function primeAgentObserverClients(config) {
+  const s = ws(config.key);
+  s.clientsPreviewMode = true;
+  s.clientsDirection = "at-partners";
+  s.tab = "outgoing";
+}
+
+function coerceAgentClientsView(config) {
+  if (!agentClientsObserverOnly(config)) return;
+  primeAgentObserverClients(config);
+  const s = ws(config.key);
+  const allowed = new Set(["list", "observer-partner", "observer-client", "repair-objects"]);
+  if (!allowed.has(s.view)) {
+    s.view = "list";
+    s.selectedId = null;
+    s.purchaseViewId = null;
+    s.inlineReview = null;
+    s.inlinePanel = null;
+    s.detailPickStage = false;
+    s.showRefusal = null;
+    s.payDraft = null;
+    clearBulkSelection(s);
+  }
+}
+
 function clientsListIsSenderView(config) {
   const s = ws(config.key);
   const caps = roleCaps(config.role);
-  if (config.role === "agent") return true;
+  if (config.role === "agent") return false;
   const tab =
     caps.incoming && caps.outgoing
       ? s.tab || "incoming"
@@ -2078,6 +2107,10 @@ function resetObserverFilters(s) {
 }
 
 function syncClientsPreviewAccess(config) {
+  if (agentClientsObserverOnly(config)) {
+    coerceAgentClientsView(config);
+    return;
+  }
   if (clientsPreviewEligible(config.role, config.readOnly)) return;
   const s = ws(config.key);
   const hadPreview =
@@ -2095,6 +2128,7 @@ function syncClientsPreviewAccess(config) {
 }
 
 function observerActionsAllowed(config) {
+  if (agentClientsObserverOnly(config)) return true;
   const s = ws(config.key);
   return clientsPreviewEligible(config.role, config.readOnly) && Boolean(s.clientsPreviewMode);
 }
@@ -2230,6 +2264,7 @@ function purchaseSummaryForReferrer(appeal) {
 }
 
 function renderClientsPreviewToggle(config) {
+  if (agentClientsObserverOnly(config)) return "";
   if (!clientsPreviewEligible(config.role, config.readOnly)) return "";
   const s = ws(config.key);
   const on = Boolean(s.clientsPreviewMode);
@@ -2264,19 +2299,23 @@ function previewOpensObserverDirection(role) {
 }
 
 function previewShowsObserverList(config) {
+  if (agentClientsObserverOnly(config)) return ws(config.key).view === "list";
   if (!clientsPreviewEligible(config.role, config.readOnly)) return false;
   const s = ws(config.key);
   if (!s.clientsPreviewMode) return false;
-  if (config.role === "agent") return true;
   return s.clientsDirection === "at-partners";
 }
 
 function observerSectionClass(config, s) {
+  const agentObserver =
+    agentClientsObserverOnly(config) &&
+    ["list", "observer-partner", "observer-client", "repair-objects"].includes(s.view);
   const eligible = clientsPreviewEligible(config.role, config.readOnly);
   const observer =
-    eligible &&
-    s.clientsPreviewMode &&
-    (previewShowsObserverList(config) || s.view === "observer-partner" || s.view === "observer-client");
+    agentObserver ||
+    (eligible &&
+      s.clientsPreviewMode &&
+      (previewShowsObserverList(config) || s.view === "observer-partner" || s.view === "observer-client"));
   return observer ? "stack ca-section ca-section--observer" : "stack ca-section";
 }
 
@@ -2308,10 +2347,11 @@ function renderObserverFilterChips(s) {
 }
 
 function renderObserverPartnersList(config) {
-  if (!clientsPreviewEligible(config.role, config.readOnly) || !ws(config.key).clientsPreviewMode) {
-    return renderListPage(config);
-  }
   const s = ws(config.key);
+  const useObserver =
+    agentClientsObserverOnly(config) ||
+    (clientsPreviewEligible(config.role, config.readOnly) && s.clientsPreviewMode);
+  if (!useObserver) return renderListPage(config);
   const base = ownReferredAppeals();
   const filtered = filterObserverAppeals(s, base);
   const byPartner = new Map();
@@ -2345,7 +2385,7 @@ function renderObserverPartnersList(config) {
       ? renderObserverFiltersEmpty()
       : `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Пример ваших направлений · демоданные</p></section>`
     : "";
-  return `${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
+  return `<div data-testid="ca-observer-partners-list">${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}</div>`;
 }
 
 function renderObserverPartnerPage(config) {
@@ -2690,13 +2730,20 @@ export function renderClientAppeals(config) {
     const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
     return `<div class="${rootClass}" data-ca-root>${previewChrome}${r2Entry}${body}</div>`;
   }
-  if (s.view === "observer-partner" && previewShowsObserverList(config) && observerActionsAllowed(config)) {
+  if (
+    s.view === "observer-partner" &&
+    observerActionsAllowed(config) &&
+    (agentClientsObserverOnly(config) || previewShowsObserverList(config))
+  ) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
   }
   if (s.view === "observer-client" && observerActionsAllowed(config)) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${previewChrome}${renderObserverClientPage(config)}</div>`;
   }
-  if (s.view === "observer-partner" || s.view === "observer-client") {
+  if (
+    !agentClientsObserverOnly(config) &&
+    (s.view === "observer-partner" || s.view === "observer-client")
+  ) {
     clearClientsPreviewNav(s);
     return renderClientAppeals(config);
   }
@@ -3167,9 +3214,19 @@ function submitManualPage(ev, config, hooks) {
   hooks.refresh();
 }
 
+export function primeAgentObserverClientsFlow(config) {
+  ensureSeed(config);
+  coerceAgentClientsView(config);
+  const s = ws(config.key);
+  s.view = "list";
+  clearObserverNav(s);
+  clearBulkSelection(s);
+}
+
 export function resetClientAppealsNav(config) {
   const s = ws(config.key);
   s.view = "list";
+  if (agentClientsObserverOnly(config)) primeAgentObserverClients(config);
   s.selectedId = null;
   s.purchaseViewId = null;
   s.inlineReview = null;
@@ -3181,6 +3238,13 @@ export function resetClientAppealsNav(config) {
 }
 
 export function primeClientAppealsView(config, view) {
+  if (agentClientsObserverOnly(config)) {
+    primeAgentObserverClientsFlow(config);
+    if (view === "observer-partner" || view === "observer-client") {
+      ws(config.key).view = view;
+    }
+    return;
+  }
   const s = ws(config.key);
   s.view = view;
   if (view === "list") resetClientAppealsNav(config);
@@ -3291,6 +3355,10 @@ export function hydrateClientAppeals(hooks) {
       return;
     }
     if (t.matches('[data-ca-input="preview-mode"]')) {
+      if (agentClientsObserverOnly(config)) {
+        t.checked = true;
+        return;
+      }
       if (!clientsPreviewEligible(config.role, config.readOnly)) {
         syncClientsPreviewAccess(config);
         hooks.refresh();
@@ -3396,6 +3464,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   const s = ws(config.key);
   hooks.clearNotice?.();
   if (action === "direction:incoming") {
+    if (agentClientsObserverOnly(config)) return;
     if (!observerActionsAllowed(config)) return;
     s.clientsDirection = "incoming";
     clearObserverNav(s);
@@ -3407,6 +3476,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
     return;
   }
   if (action === "direction:at-partners") {
+    if (agentClientsObserverOnly(config)) return;
     if (!observerActionsAllowed(config)) return;
     s.clientsDirection = "at-partners";
     clearObserverNav(s);
@@ -3506,6 +3576,12 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   }
   if (action.startsWith("nav:")) {
     const v = action.split(":")[1];
+    if (agentClientsObserverOnly(config) && ["scan", "manual", "settings", "analytics", "detail", "purchase"].includes(v)) {
+      hooks.notify?.("Для агента доступен только просмотр направлений у партнёров.", "info");
+      primeAgentObserverClientsFlow(config);
+      hooks.refresh();
+      return;
+    }
     if (v === "profile") {
       config.openProfile?.();
       return;
@@ -3796,6 +3872,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
     return;
   }
   if (action.startsWith("open:")) {
+    if (agentClientsObserverOnly(config)) return;
     s.selectedId = action.split(":")[1];
     activeTab = s.tab;
     s.view = "detail";
