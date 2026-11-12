@@ -389,7 +389,10 @@ dialog.pr-invite-dialog{width:min(620px,calc(100% - 32px));max-height:94dvh}
 .pr-invite-share{width:100%}
 .pr-invite-after summary{font-size:var(--text-xs);color:var(--muted);cursor:pointer}
 .pr-invite-after .pr-invite-next{margin-top:var(--s4)}
+.dialog-body .section-title{font-weight:650;font-size:var(--text-sm);margin:0 0 8px}
+.dialog-body .meta-block{font-size:var(--text-sm);line-height:1.55;margin:0;color:var(--text)}
 dialog.agent-partners-hub{border:none;padding:0;max-width:min(960px,calc(100% - 24px));width:100%;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.agent-hub-sheet.is-ready .agent-hub-header h2{font-size:var(--text-lg)}
 .agent-hub-sheet{display:grid;gap:var(--s4);padding:var(--s5);max-height:92dvh;overflow:auto}
 .agent-hub-sheet.is-wide{min-width:min(920px,calc(100vw - 32px))}
 .agent-hub-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
