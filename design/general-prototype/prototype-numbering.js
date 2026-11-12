@@ -1,1174 +1,339 @@
 /**
- * RemCard general-prototype reviewer numbering (annotation-only, in-memory).
+ * Prototype reviewer: one stable page number per logical screen.
+ * See PROTOTYPE-PAGES.md.
  */
-(function () {
-  "use strict";
+(function protoPageNumbering() {
+  if (typeof window === "undefined" || window.__protoPageNumberingBooted) return;
+  window.__protoPageNumberingBooted = true;
 
-  const UI_ATTR = "data-proto-numbering-ui";
-  const TARGET_ATTR = "data-proto-number";
-  const BADGE_HOST_CLASS = "proto-num-badges-host";
-  const TRANSIENT_CLASS = /^(is-|has-|was-|js-|proto-num-|open$|selected$|active$|pressed$|highlight|current$|disabled$|loading$|pending$|checked$)/i;
+  const ROOT_MARKER = "design/general-prototype/";
 
-  const NS_LABELS = { 1: "общий вход", 2: "клиент", 3: "партнёр", 4: "админ" };
-
-  const CANDIDATE_SELECTOR = [
-    "main",
-    "[role='main']",
-    "#main",
-    "#app",
-    ".content",
-    "section",
-    "article",
-    ".panel",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "p",
-    "li",
-    "tr",
-    "th",
-    "td",
-    "strong",
-    "small",
-    "span",
-    "div.stat",
-    "div.step",
-    ".nav-btn",
-    ".btn",
-    "button",
-    "a[href]",
-    "input",
-    "select",
-    "textarea",
-    "label",
-    "details",
-    "summary",
-    "dialog",
-    "img",
-    "svg",
-    "[role='button']",
-    "[role='tab']",
-    "[role='dialog']",
-    "[role='link']",
-    "[role='menuitem']",
-    "[data-testid]",
-    "[data-action]",
-    ".stat",
-    ".action-line",
-    ".hero-task",
-    ".ca-row",
-    ".collection-open",
-    ".wallet-accrual-row",
-    "table",
-    ".role-grid",
-    ".proto-launch",
-    ".role",
-    ".work-row",
-    ".nav-stage-button",
-  ].join(",");
-
-  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "LINK", "META", "TITLE", "HEAD"]);
-
-  let enabled = true;
-  let panelOpen = false;
-  let badgeHost = null;
-  let chromeEl = null;
-  let panelEl = null;
-  let toggleBtn = null;
-  let panelBtn = null;
-  let searchEl = null;
-  let listEl = null;
-  let metaEl = null;
-  let copyStatusEl = null;
-  let copyFieldEl = null;
-  let registry = [];
-  let registryByRef = new Map();
-  let highlightEl = null;
-  let observer = null;
-  let rescanTimer = null;
-  let scrollBound = false;
-  let scanning = false;
-  let modalDockSyncBound = false;
-  /** @type {HTMLDialogElement | null} */
-  let dockedDialog = null;
-  let lastAppModalOpen = false;
-
-  function fnv1a(str) {
-    let h = 2166136261;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = Math.imul(h, 16777619);
+  function hubPath(rel) {
+    const here = location.pathname;
+    const idx = here.indexOf(ROOT_MARKER);
+    if (idx >= 0) {
+      const base = here.slice(0, idx + ROOT_MARKER.length);
+      return base + rel.replace(/^\//, "");
     }
-    return h >>> 0;
+    return "../".repeat(6) + rel.replace(/^\//, "");
   }
 
-  function isAnnotationUi(el) {
-    if (!el || el.nodeType !== 1) return false;
-    if (el.hasAttribute(UI_ATTR)) return true;
-    if (el.classList?.contains(BADGE_HOST_CLASS)) return true;
-    if (el.hasAttribute(TARGET_ATTR) && el.classList?.contains("proto-num-badge")) return true;
-    return !!el.closest(`[${UI_ATTR}]`);
+  function partnerCabinet(section, role) {
+    const params = new URLSearchParams({ role });
+    if (section && section !== "home") params.set("open", section);
+    return `${hubPath("partner/roles.html")}?${params}`;
   }
 
-  function detectNamespace() {
-    const p = (location.pathname || "").toLowerCase();
-    if (p.includes("/client/")) return 2;
-    if (p.includes("/partner/")) return 3;
-    if (p.includes("/admin/")) return 4;
-    return 1;
-  }
+  const PAGES = [
+    { n: 1, id: "hub", title: "Общий вход прототипа", href: () => hubPath("index.html") },
+    { n: 2, id: "client:catalog", title: "Клиент · каталог", href: () => `${hubPath("client/index.html")}#/catalog`, clientHash: "catalog" },
+    { n: 3, id: "client:navigator", title: "Клиент · навигатор ремонта", href: () => `${hubPath("client/index.html")}#/navigator`, clientHash: "navigator" },
+    { n: 4, id: "client:care", title: "Клиент · забота", href: () => `${hubPath("client/index.html")}#/care`, clientHash: "care" },
+    { n: 5, id: "client:calc", title: "Клиент · калькулятор материалов", href: () => `${hubPath("client/index.html")}#/calc/materials`, clientHash: "calc/materials" },
+    { n: 6, id: "partner:registration", title: "Партнёр · регистрация и вход", href: () => hubPath("partner/index.html") },
+    { n: 7, id: "partner:specialist:home", title: "Кабинет специалиста · главная", role: "specialist", section: "home" },
+    { n: 8, id: "partner:specialist:clients", title: "Кабинет специалиста · клиенты", role: "specialist", section: "clients" },
+    { n: 9, id: "partner:specialist:partners", title: "Кабинет специалиста · партнёры", role: "specialist", section: "partners" },
+    { n: 10, id: "partner:specialist:recommendations", title: "Кабинет специалиста · сертификаты", role: "specialist", section: "recommendations" },
+    { n: 11, id: "partner:specialist:bonus", title: "Кабинет специалиста · бонусы", role: "specialist", section: "bonus" },
+    { n: 12, id: "partner:specialist:scanner", title: "Кабинет специалиста · сканер", role: "specialist", section: "scanner" },
+    { n: 13, id: "partner:specialist:procurement", title: "Кабинет специалиста · закупки (R2)", role: "specialist", section: "procurement", r2: true },
+    { n: 14, id: "partner:specialist:care", title: "Кабинет специалиста · забота (R2)", role: "specialist", section: "care", r2: true },
+    { n: 15, id: "partner:specialist:profile", title: "Кабинет специалиста · профиль", role: "specialist", section: "profile" },
+    { n: 16, id: "partner:store:home", title: "Кабинет магазина · главная", role: "store", section: "home" },
+    { n: 17, id: "partner:store:clients", title: "Кабинет магазина · клиенты", role: "store", section: "clients" },
+    { n: 18, id: "partner:store:recommendations", title: "Кабинет магазина · сертификаты", role: "store", section: "recommendations" },
+    { n: 19, id: "partner:store:partners", title: "Кабинет магазина · партнёры", role: "store", section: "partners" },
+    { n: 20, id: "partner:store:scanner", title: "Кабинет магазина · сканер", role: "store", section: "scanner" },
+    { n: 21, id: "partner:store:history", title: "Кабинет магазина · история", role: "store", section: "history" },
+    { n: 22, id: "partner:store:settlements", title: "Кабинет магазина · кошелёк", role: "store", section: "settlements" },
+    { n: 23, id: "partner:store:procurement", title: "Кабинет магазина · закупки (R2)", role: "store", section: "procurement", r2: true },
+    { n: 24, id: "partner:store:care", title: "Кабинет магазина · забота (R2)", role: "store", section: "care", r2: true },
+    { n: 25, id: "partner:store:profile", title: "Кабинет магазина · профиль", role: "store", section: "profile" },
+    { n: 26, id: "partner:company:home", title: "Кабинет компании · главная", role: "company", section: "home" },
+    { n: 27, id: "partner:company:recommendations", title: "Кабинет компании · сертификаты", role: "company", section: "recommendations" },
+    { n: 28, id: "partner:company:partners", title: "Кабинет компании · партнёры", role: "company", section: "partners" },
+    { n: 29, id: "partner:company:clients", title: "Кабинет компании · клиенты", role: "company", section: "clients" },
+    { n: 30, id: "partner:company:scanner", title: "Кабинет компании · сканер", role: "company", section: "scanner" },
+    { n: 31, id: "partner:company:history", title: "Кабинет компании · история", role: "company", section: "history" },
+    { n: 32, id: "partner:company:settlements", title: "Кабинет компании · кошелёк", role: "company", section: "settlements" },
+    { n: 33, id: "partner:company:team", title: "Кабинет компании · сотрудники", role: "company", section: "team" },
+    { n: 34, id: "partner:company:procurement", title: "Кабинет компании · закупки (R2)", role: "company", section: "procurement", r2: true },
+    { n: 35, id: "partner:company:care", title: "Кабинет компании · забота (R2)", role: "company", section: "care", r2: true },
+    { n: 36, id: "partner:company:profile", title: "Кабинет компании · профиль", role: "company", section: "profile" },
+    { n: 37, id: "partner:agent:home", title: "Кабинет агента · главная", role: "agent", section: "home" },
+    { n: 38, id: "partner:agent:clients", title: "Кабинет агента · клиенты", role: "agent", section: "clients" },
+    { n: 39, id: "partner:agent:partners", title: "Кабинет агента · партнёры", role: "agent", section: "partners" },
+    { n: 40, id: "partner:agent:recommendations", title: "Кабинет агента · сертификаты", role: "agent", section: "recommendations" },
+    { n: 41, id: "partner:agent:bonus", title: "Кабинет агента · бонусы", role: "agent", section: "bonus" },
+    { n: 42, id: "partner:agent:procurement", title: "Кабинет агента · закупки (R2)", role: "agent", section: "procurement", r2: true },
+    { n: 43, id: "partner:agent:care", title: "Кабинет агента · забота (R2)", role: "agent", section: "care", r2: true },
+    { n: 44, id: "partner:agent:profile", title: "Кабинет агента · профиль", role: "agent", section: "profile" },
+    { n: 45, id: "partner:employee:home", title: "Кабинет сотрудника · главная", role: "employee", section: "home" },
+    { n: 46, id: "partner:employee:partners", title: "Кабинет сотрудника · партнёры", role: "employee", section: "partners" },
+    { n: 47, id: "partner:employee:clients", title: "Кабинет сотрудника · клиенты", role: "employee", section: "clients" },
+    { n: 48, id: "partner:employee:scanner", title: "Кабинет сотрудника · сканер", role: "employee", section: "scanner" },
+    { n: 49, id: "partner:employee:history", title: "Кабинет сотрудника · история", role: "employee", section: "history" },
+    { n: 50, id: "partner:employee:settlements", title: "Кабинет сотрудника · взаиморасчёты", role: "employee", section: "settlements" },
+    { n: 51, id: "partner:employee:team", title: "Кабинет сотрудника · команда", role: "employee", section: "team" },
+    { n: 52, id: "partner:employee:procurement", title: "Кабинет сотрудника · закупки (R2)", role: "employee", section: "procurement", r2: true },
+    { n: 53, id: "partner:employee:care", title: "Кабинет сотрудника · забота (R2)", role: "employee", section: "care", r2: true },
+    { n: 54, id: "partner:employee:profile", title: "Кабинет сотрудника · профиль", role: "employee", section: "profile" },
+    { n: 55, id: "partner:legacy", title: "Партнёр · legacy", href: () => hubPath("partner/legacy.html") },
+    { n: 56, id: "partner:certificate-guest", title: "Гостевой сертификат", href: () => hubPath("partner/certificate.html") },
+    { n: 57, id: "partner:recommendation-guest", title: "Гостевая рекомендация", href: () => hubPath("partner/recommendation.html") },
+    { n: 58, id: "partner:assignment-guest", title: "Поручение исполнителю", href: () => hubPath("partner/assignment.html") },
+    { n: 59, id: "partner:observer-guest", title: "Наблюдение за объектом", href: () => hubPath("partner/observer.html") },
+    { n: 60, id: "partner:cooperation-detail", title: "Деталь сотрудничества", href: () => hubPath("partner/partner-cooperation-detail.html") },
+    { n: 61, id: "partner:purchase-detail", title: "Деталь покупки", href: () => hubPath("partner/partner-purchase-detail.html") },
+    { n: 62, id: "partner:reward-receipt", title: "Квитанция вознаграждения", href: () => hubPath("partner/partner-reward-receipt.html") },
+    { n: 63, id: "partner:scan-transaction", title: "Сканер · эталон", href: () => hubPath("partner/partner-scan-transaction.html") },
+    { n: 64, id: "partner:wallet-history", title: "История кошелька", href: () => hubPath("partner/partner-wallet-history.html") },
+    { n: 65, id: "admin:moderation", title: "Админ · модерация", href: () => `${hubPath("admin/index.html")}#/moderation`, adminHash: "moderation" },
+    { n: 66, id: "admin:catalog", title: "Админ · каталог", href: () => `${hubPath("admin/index.html")}#/catalog`, adminHash: "catalog" },
+    { n: 67, id: "admin:partners", title: "Админ · партнёры", href: () => `${hubPath("admin/index.html")}#/partners`, adminHash: "partners" },
+  ];
 
-  function pageFileKey() {
-    const file = (location.pathname || "").split("/").pop() || "index.html";
-    return file.replace(/\.html?$/i, "");
-  }
-
-  function filteredSearchParams() {
-    const allow = new Set(["rc_demo_release", "role", "open", "demo"]);
-    const q = new URLSearchParams(location.search);
-    const parts = [];
-    allow.forEach((k) => {
-      const v = q.get(k);
-      if (v != null && v !== "") parts.push(`${k}=${v}`);
-    });
-    parts.sort();
-    return parts.join("&");
-  }
-
-  function appendClientAdminSpaState(bits, ns) {
-    if (ns !== 2 && ns !== 4) return;
-    const go =
-      document.querySelector('[data-action="go"][aria-current="page"]') ||
-      document.querySelector('[data-action="go"][aria-selected="true"]') ||
-      document.querySelector('[data-action="go"].is-active[data-view]') ||
-      document.querySelector('nav [data-action="go"].is-active') ||
-      document.querySelector('[data-action="go"].is-active');
-    if (go) {
-      const view = go.getAttribute("data-view") || "";
-      if (view) bits.push(`view=${view}`);
-      const href = go.getAttribute("href") || "";
-      if (!view && href.startsWith("#")) {
-        const route = href.replace(/^#\/?/, "").split(/[?#]/)[0];
-        if (route) bits.push(`route=${route}`);
-      }
-      if (!view && !href) {
-        bits.push(`navtext=${(go.textContent || "").trim().slice(0, 40)}`);
-      }
-    }
-    const shellView =
-      document.querySelector("main[data-view], #app[data-view], [data-admin-screen], [data-client-screen]");
-    if (shellView) {
-      const sv =
-        shellView.getAttribute("data-view") ||
-        shellView.getAttribute("data-admin-screen") ||
-        shellView.getAttribute("data-client-screen");
-      if (sv) bits.push(`screen=${sv}`);
-    }
-    const hashRoute = (location.hash || "").replace(/^#\/?/, "").split(/[?]/)[0];
-    if (hashRoute && hashRoute !== "/" && !bits.some((b) => b.startsWith("route=") || b.startsWith("view="))) {
-      bits.push(`hashroute=${hashRoute}`);
-    }
-    const sub =
-      document.querySelector("[data-subview][aria-current='true'], [data-subview].is-active, [data-panel][aria-current='page']");
-    if (sub) {
-      const subId = sub.getAttribute("data-subview") || sub.getAttribute("data-panel");
-      if (subId) bits.push(`sub=${subId}`);
-    }
-    const entity =
-      document.querySelector(
-        "[data-entity-id][data-detail-open], [data-admin-entity-id], [data-testid='admin-entity-detail'], [data-testid*='detail-panel']",
-      ) || document.querySelector("dialog[open] [data-entity-id], dialog[open] [data-id]");
-    if (entity) {
-      const eid =
-        entity.getAttribute("data-entity-id") ||
-        entity.getAttribute("data-admin-entity-id") ||
-        entity.getAttribute("data-id") ||
-        entity.getAttribute("data-testid");
-      if (eid) bits.push(`entity=${String(eid).slice(0, 48)}`);
-    }
-    const openDlg = document.querySelector(`dialog[open]:not([${UI_ATTR}])`);
-    if (openDlg) {
-      const dlgTitle =
-        openDlg.querySelector("h1, h2, [aria-labelledby]")?.textContent?.trim().slice(0, 40) ||
-        openDlg.getAttribute("aria-label")?.slice(0, 40) ||
-        openDlg.id ||
-        "dialog";
-      bits.push(`dlg=${dlgTitle}`);
-    }
-  }
-
-  function readPrototypeState() {
-    const bits = [];
-    const ns = detectNamespace();
-    appendClientAdminSpaState(bits, ns);
-    const role = document.querySelector('[data-testid="scenario-role"]');
-    if (role?.value) bits.push(`role=${role.value}`);
-    const rel = document.querySelector('[data-testid="prototype-release"]');
-    if (rel?.value) bits.push(`release=${rel.value}`);
-    const nav =
-      document.querySelector(".nav-btn[aria-current='page']") ||
-      document.querySelector(".nav-stage-button.selected") ||
-      document.querySelector("[data-action^='wf-nav-'].selected") ||
-      document.querySelector(".sidebar nav .nav-btn[aria-current='page']");
-    if (nav) {
-      const act = nav.getAttribute("data-action");
-      if (act) bits.push(`nav=${act}`);
-      else bits.push(`navtext=${(nav.textContent || "").trim().slice(0, 40)}`);
-    }
-    const viewCab = document.querySelector('[data-action="view:cabinet"][aria-pressed="true"]');
-    if (viewCab) bits.push("screen=cabinet");
-    const viewReg = document.querySelector('[data-action="view:registration"][aria-pressed="true"]');
-    if (viewReg) bits.push("screen=registration");
-    const hash = location.hash || "";
-    if (hash && !bits.some((b) => b.startsWith("hashroute="))) bits.push(`hash=${hash}`);
-    const fs = filteredSearchParams();
-    if (fs) bits.push(`qs=${fs}`);
-    const legacyNav = document.querySelector(
-      "#app .nav a.active, #app .nav-link.is-active, .nav a.is-active, a.nav-link.is-active",
-    );
-    if (legacyNav?.getAttribute("href")) bits.push(`legacynav=${legacyNav.getAttribute("href")}`);
-    return bits.join("|");
-  }
-
-  function pageStateKey(ns) {
-    return `${ns}|${pageFileKey()}|${readPrototypeState()}`;
-  }
-
-  function formatRef(ns, pageHash, elemHash) {
-    const p = (pageHash % 10000).toString().padStart(4, "0");
-    const e = (elemHash % 100000).toString().padStart(5, "0");
-    return `${ns}.${p}.${e}`;
-  }
-
-  function stableClassToken(el) {
-    return [...el.classList]
-      .filter((c) => c && !TRANSIENT_CLASS.test(c) && !c.startsWith("proto-num-"))
-      .sort()
-      .slice(0, 3)
-      .join(".");
-  }
-
-  function directLabelText(el) {
-    if (el.getAttribute("aria-label")) return el.getAttribute("aria-label").trim();
-    let out = "";
-    for (const node of el.childNodes) {
-      if (node.nodeType === Node.TEXT_NODE) out += node.textContent;
-    }
-    return out.trim().replace(/\s+/g, " ");
-  }
-
-  function associatedLabelText(el) {
-    if (el.id) {
-      const forLabel = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-      if (forLabel && !isAnnotationUi(forLabel)) {
-        const t = (forLabel.innerText || forLabel.textContent || "").trim().replace(/\s+/g, " ");
-        if (t) return t;
-      }
-    }
-    const wrap = el.closest("label");
-    if (wrap && !isAnnotationUi(wrap)) {
-      const clone = wrap.cloneNode(true);
-      clone.querySelectorAll("input, select, textarea, button").forEach((n) => n.remove());
-      const t = (clone.textContent || "").trim().replace(/\s+/g, " ");
-      if (t) return t;
-    }
-    return "";
-  }
-
-  /** Visible / accessible copy for reviewer search — does not affect stableKey. */
-  function visibleLabelText(el) {
-    const labelledBy = el.getAttribute("aria-labelledby");
-    if (labelledBy) {
-      const text = labelledBy
-        .split(/\s+/)
-        .map((id) => document.getElementById(id))
-        .filter((node) => node && !isAnnotationUi(node))
-        .map((node) => (node.innerText || node.textContent || "").trim())
-        .filter(Boolean)
-        .join(" ")
-        .replace(/\s+/g, " ");
-      if (text) return text;
-    }
-    const assoc = associatedLabelText(el);
-    if (assoc) return assoc;
-    const placeholder = el.getAttribute("placeholder");
-    if (placeholder && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
-      return placeholder.trim();
-    }
-    const title = el.getAttribute("title");
-    if (title) return title.trim();
-    const direct = directLabelText(el);
-    if (direct) return direct;
-    const nested = (el.innerText || el.textContent || "").trim().replace(/\s+/g, " ");
-    return nested;
-  }
-
-  function isTextLeaf(el) {
-    const tag = el.tagName;
-    return ["SPAN", "SMALL", "STRONG", "EM", "B", "I", "LABEL", "P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TH", "TD"].includes(tag);
-  }
-
-  function ancestorContext(el) {
-    const parts = [];
-    let node = el.parentElement;
-    let depth = 0;
-    while (node && node !== document.body && depth < 12) {
-      if (isAnnotationUi(node)) break;
-      if (SKIP_TAGS.has(node.tagName)) {
-        node = node.parentElement;
-        continue;
-      }
-      let part = node.tagName.toLowerCase();
-      if (node.id) part += `#${node.id}`;
-      const tid = node.getAttribute("data-testid");
-      if (tid) part += `[tid=${tid}]`;
-      const act = node.getAttribute("data-action");
-      if (act) part += `[act=${act}]`;
-      const role = node.getAttribute("role");
-      if (role) part += `[role=${role}]`;
-      if (node.tagName === "DIALOG") {
-        const title =
-          node.getAttribute("aria-labelledby") ||
-          node.querySelector("h2, h3, #accrual-panel-title")?.textContent?.trim().slice(0, 40) ||
-          node.id ||
-          "dialog";
-        part += `{dlg:${title}}`;
-      }
-      const sc = stableClassToken(node);
-      if (sc) part += `.${sc}`;
-      const idx = node.parentElement ? [...node.parentElement.children].indexOf(node) : 0;
-      parts.unshift(`${part}~${idx}`);
-      node = node.parentElement;
-      depth++;
-    }
-    return parts.join("/");
-  }
-
-  function stableKey(el) {
-    const bits = [];
-    if (el.id) bits.push(`id:${el.id}`);
-    const tid = el.getAttribute("data-testid");
-    if (tid) bits.push(`testid:${tid}`);
-    const action = el.getAttribute("data-action");
-    if (action) bits.push(`action:${action}`);
-    const name = el.getAttribute("name");
-    if (name) bits.push(`name:${name}`);
-    const type = el.getAttribute("type");
-    if (type) bits.push(`type:${type}`);
-    const role = el.getAttribute("role");
-    if (role) bits.push(`role:${role}`);
-    if (el.tagName === "A") bits.push(`href:${el.getAttribute("href") ?? ""}`);
-    const aria = el.getAttribute("aria-label");
-    if (aria) bits.push(`aria:${aria.slice(0, 80)}`);
-    bits.push(`tag:${el.tagName.toLowerCase()}`);
-    bits.push(`path:${ancestorContext(el)}`);
-    const parent = el.parentElement;
-    const sibIdx = parent ? [...parent.children].indexOf(el) : 0;
-    bits.push(`sib:${sibIdx}`);
-    if (isTextLeaf(el)) {
-      const label = directLabelText(el);
-      if (label) bits.push(`label:${label.slice(0, 80)}`);
-    }
-    return bits.join("|");
-  }
-
-  function inClosedDialog(el) {
-    const dlg = el.closest("dialog");
-    return dlg && !dlg.open;
-  }
-
-  function isVisible(el) {
-    if (!el?.getBoundingClientRect) return false;
-    if (isAnnotationUi(el)) return false;
-    if (inClosedDialog(el)) return false;
-    const st = getComputedStyle(el);
-    if (st.display === "none" || st.visibility === "hidden") return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
-  }
-
-  function intersectsViewport(r, pad = 0) {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    return r.bottom >= -pad && r.right >= -pad && r.top <= vh + pad && r.left <= vw + pad;
-  }
-
-  function rectsIntersect(a, b, pad = 0) {
-    return (
-      a.left - pad < b.right + pad &&
-      a.right + pad > b.left - pad &&
-      a.top - pad < b.bottom + pad &&
-      a.bottom + pad > b.top - pad
-    );
-  }
-
-  function badgeBox(x, y, w, h) {
-    return { left: x, top: y, right: x + w, bottom: y + h, width: w, height: h };
-  }
-
-  const PROTECTED_CONTROL_SELECTOR =
-    "button, a[href], input:not([type='hidden']), select, textarea, label, summary, td, th, caption, [role='button'], [role='link'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio'], .btn, .nav-btn, .nav-link, [data-action], [contenteditable='true']";
-
-  function collectProtectedRects() {
-    const rects = [];
-    const rectKeys = new Set();
-    const pushRect = (r) => {
-      if (!r || r.width < 1 || r.height < 1) return;
-      if (!intersectsViewport(r, 4)) return;
-      const key = `${Math.round(r.left)}:${Math.round(r.top)}:${Math.round(r.width)}:${Math.round(r.height)}`;
-      if (rectKeys.has(key)) return;
-      rectKeys.add(key);
-      rects.push({
-        left: r.left,
-        top: r.top,
-        right: r.right,
-        bottom: r.bottom,
-        width: r.width,
-        height: r.height,
-      });
-    };
-
-    const textWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        if (!node.textContent || !/\S/.test(node.textContent)) return NodeFilter.FILTER_REJECT;
-        const parent = node.parentElement;
-        if (!parent || isAnnotationUi(parent) || parent.closest(`[${UI_ATTR}]`)) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        if (!isVisible(parent)) return NodeFilter.FILTER_REJECT;
-        const st = getComputedStyle(parent);
-        if (st.display === "none" || st.visibility === "hidden") return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    });
-    while (textWalker.nextNode()) {
-      const range = document.createRange();
-      try {
-        range.selectNodeContents(textWalker.currentNode);
-        for (const r of range.getClientRects()) pushRect(r);
-      } catch {
-        /* skip detached */
-      }
-    }
-
-    document.querySelectorAll(PROTECTED_CONTROL_SELECTOR).forEach((el) => {
-      if (isAnnotationUi(el) || el.closest(`[${UI_ATTR}]`)) return;
-      if (!isVisible(el)) return;
-      pushRect(el.getBoundingClientRect());
-    });
-
-    return rects;
-  }
-
-  function badgeHitsProtected(x, y, w, h, protectedRects, pad = 2) {
-    const box = badgeBox(x, y, w, h);
-    for (const r of protectedRects) {
-      if (rectsIntersect(box, r, pad)) return true;
-    }
-    return false;
-  }
-
-  function badgeMetricsForRef(ref) {
-    const baseH = window.matchMedia("(max-width: 640px)").matches ? 18 : 16;
-    const w = Math.min(118, Math.max(90, Math.ceil(ref.length * 6.4) + 12));
-    return { badgeW: w, badgeH: baseH };
-  }
-
-  function interactiveAncestor(el) {
-    return el.closest(
-      "button, a[href], label, summary, [role='button'], [role='link'], .nav-btn, .btn",
-    );
-  }
-
-  function shouldNumber(el, labeledInputs) {
-    if (!el || SKIP_TAGS.has(el.tagName)) return false;
-    if (isAnnotationUi(el)) return false;
-    if (el.closest("[hidden], template")) return false;
-    if (!isVisible(el)) return false;
-    if (el.tagName === "LABEL") {
-      const f = el.htmlFor;
-      if (f && labeledInputs.has(f)) return false;
-    }
-    const outer = interactiveAncestor(el);
-    if (outer && outer !== el) {
-      if (
-        outer.tagName === "BUTTON" ||
-        outer.tagName === "A" ||
-        outer.classList.contains("btn") ||
-        outer.classList.contains("nav-btn")
-      ) {
-        return false;
-      }
-    }
-    if (el.tagName === "SPAN" || el.tagName === "SMALL" || el.tagName === "STRONG") {
-      if ((el.textContent || "").trim().length < 2) return false;
-      if (el.children.length > 0 && !el.getAttribute("role")) return false;
-    }
-    if (el.tagName === "DIV" && el.classList.contains("stat")) return true;
-    if (el.tagName === "DIV" && !el.id && !el.getAttribute("data-testid") && !el.getAttribute("data-action")) {
-      const t = directLabelText(el);
-      if (t.length < 3 && !el.querySelector("button, a, input, select, h1, h2, h3, [data-action]")) return false;
-    }
-    return true;
-  }
-
-  function snippet(el) {
-    const aria = el.getAttribute("aria-label");
-    if (aria) return aria.trim();
-    const visible = visibleLabelText(el);
-    if (visible) return visible.slice(0, 120);
-    const tid = el.getAttribute("data-testid");
-    if (tid) return `[${tid}]`;
-    const action = el.getAttribute("data-action");
-    if (action) return action;
-    return `<${el.tagName.toLowerCase()}>`;
-  }
-
-  function locationHint(el) {
-    const dlg = el.closest("dialog[open]");
-    if (dlg) {
-      const t = dlg.querySelector("h2, h3")?.textContent?.trim().slice(0, 40) || dlg.id || "modal";
-      return `модальное · ${t}`;
-    }
-    const nav = document.querySelector(".nav-btn[aria-current='page']");
-    const page = nav?.textContent?.trim() || pageFileKey();
-    const region = el.closest("main, #main, #app, section.panel")?.id || "экран";
-    return `${page} · ${region}`;
-  }
-
-  function clearTargetMarkers() {
-    document.querySelectorAll(`[${TARGET_ATTR}]`).forEach((el) => {
-      if (!isAnnotationUi(el)) el.removeAttribute(TARGET_ATTR);
-    });
-  }
-
-  function collectTargets() {
-    const labeledInputs = new Set();
-    document.querySelectorAll("label[for]").forEach((lb) => {
-      if (!isAnnotationUi(lb) && lb.htmlFor) labeledInputs.add(lb.htmlFor);
-    });
-    const out = [];
-    document.querySelectorAll(CANDIDATE_SELECTOR).forEach((el) => {
-      if (!shouldNumber(el, labeledInputs)) return;
-      out.push(el);
-    });
-    return out;
-  }
-
-  function buildRegistry() {
-    scanning = true;
-    clearTargetMarkers();
-    const ns = detectNamespace();
-    const stateKey = pageStateKey(ns);
-    const pageHash = fnv1a(stateKey);
-    const items = [];
-    const usedRefs = new Set();
-
-    collectTargets().forEach((el) => {
-      const sk = stableKey(el);
-      const seed = `${stateKey}|${sk}`;
-      let elemHash = fnv1a(seed);
-      let ref = formatRef(ns, pageHash, elemHash);
-      let guard = 0;
-      while (usedRefs.has(ref) && guard < 32) {
-        elemHash += 1;
-        ref = formatRef(ns, pageHash, elemHash);
-        guard++;
-      }
-      usedRefs.add(ref);
-      el.setAttribute(TARGET_ATTR, ref);
-      items.push({
-        ref,
-        ns,
-        el,
-        label: snippet(el),
-        stableKey: sk,
-        location: locationHint(el),
-        pageState: stateKey,
-      });
-    });
-
-    items.sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
-    registry = items;
-    registryByRef = new Map(items.map((i) => [i.ref, i]));
-    window.__protoNumRegistry = {
-      ns,
-      nsLabel: NS_LABELS[ns],
-      pageState: stateKey,
-      page: pageFileKey(),
-      logicalState: readPrototypeState(),
-      count: items.length,
-      items: items.map(({ ref, label, stableKey: sk, location, pageState }) => ({
-        ref,
-        label,
-        stableKey: sk,
-        location,
-        pageState,
-      })),
-      resolve(ref) {
-        const hit = registryByRef.get(String(ref).trim());
-        if (!hit?.el?.isConnected) return null;
-        return {
-          ref: hit.ref,
-          label: hit.label,
-          stableKey: hit.stableKey,
-          pageState: hit.pageState,
-          location: hit.location,
-          element: hit.el,
-        };
-      },
-    };
-    window.__protoNumResolve = window.__protoNumRegistry.resolve;
-    scanning = false;
-    return items;
-  }
-
-  function clearHighlights() {
-    highlightEl?.classList.remove("proto-num-target-highlight");
-    highlightEl = null;
-    badgeHost?.querySelectorAll(".proto-num-badge--highlight").forEach((b) => {
-      b.classList.remove("proto-num-badge--highlight");
-    });
-  }
-
-  function highlightRef(ref) {
-    const item = registryByRef.get(ref);
-    if (!item?.el?.isConnected) return;
-    clearHighlights();
-    highlightEl = item.el;
-    highlightEl.classList.add("proto-num-target-highlight");
-    highlightEl.scrollIntoView({ block: "center", behavior: "smooth" });
-    badgeHost?.querySelector(`[data-proto-ref="${CSS.escape(ref)}"]`)?.classList.add("proto-num-badge--highlight");
-  }
-
-  function setCopyFeedback(ok, text) {
-    if (copyStatusEl) {
-      copyStatusEl.textContent = ok
-        ? "Скопировано в буфер."
-        : "Буфер недоступен — выделите текст в поле ниже.";
-    }
-    if (copyFieldEl) {
-      copyFieldEl.value = text;
-      copyFieldEl.hidden = false;
-    }
-  }
-
-  async function copyText(text) {
-    if (copyFieldEl) copyFieldEl.value = text;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setCopyFeedback(true, text);
-        return;
-      }
-    } catch (e) {
-      /* fallback */
-    }
-    if (copyFieldEl) {
-      copyFieldEl.hidden = false;
-      copyFieldEl.focus();
-      copyFieldEl.select();
-      try {
-        const ok = document.execCommand("copy");
-        setCopyFeedback(ok, text);
-      } catch (e2) {
-        setCopyFeedback(false, text);
-      }
-    }
-  }
-
-  function placeBadges() {
-    if (!badgeHost || !enabled) return;
-    badgeHost.textContent = "";
-    const placed = [];
-    const protectedRects = collectProtectedRects();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const margin = 4;
-    let visible = 0;
-    let hidden = 0;
-
-    function clampPosition(x, y, badgeW, badgeH) {
-      return [
-        Math.min(Math.max(x, 2), vw - badgeW - 2),
-        Math.min(Math.max(y, 2), vh - badgeH - 2),
-      ];
-    }
-
-    function overlapsPlaced(x, y, badgeW, badgeH) {
-      const box = badgeBox(x, y, badgeW, badgeH);
-      return placed.some((p) =>
-        rectsIntersect(box, badgeBox(p.x, p.y, p.w, p.h), margin),
-      );
-    }
-
-    const protectPad = window.matchMedia("(max-width: 640px)").matches ? 3 : 2;
-
-    function slotOk(x, y, badgeW, badgeH) {
-      return (
-        !overlapsPlaced(x, y, badgeW, badgeH) &&
-        !badgeHitsProtected(x, y, badgeW, badgeH, protectedRects, protectPad)
-      );
-    }
-
-    registry.forEach((item) => {
-      if (!item.el.isConnected || !isVisible(item.el)) return;
-      const r = item.el.getBoundingClientRect();
-      if (!intersectsViewport(r, 8)) return;
-      const { badgeW, badgeH } = badgeMetricsForRef(item.ref);
-      const candidates = [
-        [r.right - badgeW - 2, r.top - badgeH - 2],
-        [r.right - badgeW - 2, r.bottom + 2],
-        [r.left, r.bottom + 2],
-        [r.left, r.top - badgeH - 2],
-        [r.right + 2, r.top],
-        [r.left - badgeW - 2, r.top],
-        [r.right + 2, r.bottom - badgeH],
-        [r.left - badgeW - 2, r.bottom - badgeH - 2],
-      ];
-      let x = 0;
-      let y = 0;
-      let found = false;
-      for (const [cx, cy] of candidates) {
-        const [px, py] = clampPosition(cx, cy, badgeW, badgeH);
-        if (slotOk(px, py, badgeW, badgeH)) {
-          x = px;
-          y = py;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        for (let ring = 1; ring <= 10 && !found; ring++) {
-          for (let tries = 0; tries < 12; tries++) {
-            const angle = (tries / 12) * Math.PI * 2;
-            const cx = r.left + r.width / 2 + Math.cos(angle) * (r.width / 2 + ring * (badgeH + 4)) - badgeW / 2;
-            const cy = r.top + r.height / 2 + Math.sin(angle) * (r.height / 2 + ring * (badgeH + 4)) - badgeH / 2;
-            const [px, py] = clampPosition(cx, cy, badgeW, badgeH);
-            if (slotOk(px, py, badgeW, badgeH)) {
-              x = px;
-              y = py;
-              found = true;
-              break;
-            }
-          }
-        }
-      }
-      if (!found || badgeHitsProtected(x, y, badgeW, badgeH, protectedRects, protectPad)) {
-        item.badgeHidden = true;
-        hidden += 1;
-        return;
-      }
-      item.badgeHidden = false;
-      visible += 1;
-      const badge = document.createElement("span");
-      badge.className = "proto-num-badge";
-      badge.dataset.protoRef = item.ref;
-      badge.title = `${item.ref} · ${item.label}`;
-      badge.textContent = item.ref;
-      badge.setAttribute("aria-hidden", "true");
-      badge.style.left = `${x}px`;
-      badge.style.top = `${y}px`;
-      badge.style.maxWidth = `${badgeW}px`;
-      badgeHost.appendChild(badge);
-      placed.push({ x, y, w: badgeW, h: badgeH });
-    });
-
-    if (window.__protoNumRegistry) {
-      window.__protoNumRegistry.badgePlacement = {
-        visible,
-        hidden,
-        protectedRects: protectedRects.length,
+  PAGES.forEach((p) => {
+    if (!p.href && p.role) {
+      p.href = () => {
+        let url = partnerCabinet(p.section, p.role);
+        if (p.r2) url += (url.includes("?") ? "&" : "?") + "rc_demo_release=2";
+        return url;
       };
     }
+  });
+
+  const byId = new Map(PAGES.map((p) => [p.id, p]));
+  const byN = new Map(PAGES.map((p) => [p.n, p]));
+
+  function normalizeRelPath() {
+    const path = location.pathname || "";
+    const idx = path.indexOf(ROOT_MARKER);
+    const rel = idx >= 0 ? path.slice(idx + ROOT_MARKER.length) : path.replace(/^\//, "");
+    return rel || "index.html";
   }
 
-  function renderIndexList(filter) {
-    if (!listEl) return;
-    const q = (filter || "").trim().toLowerCase();
-    listEl.textContent = "";
-    registry.forEach((item) => {
-      const hay = `${item.ref} ${item.label} ${item.location} ${item.stableKey}`.toLowerCase();
-      if (q && !hay.includes(q)) return;
-      const li = document.createElement("li");
-      li.className = "proto-num-panel__item";
-      li.tabIndex = 0;
-      li.setAttribute("role", "button");
-      const code = document.createElement("code");
-      code.textContent = item.ref;
-      const span = document.createElement("span");
-      const main = document.createTextNode(`${item.label} `);
-      const small = document.createElement("small");
-      small.style.color = "#888";
-      small.textContent = `· ${item.location}`;
-      span.append(main, small);
-      li.append(code, span);
-      const activate = () => {
-        highlightRef(item.ref);
-        copyText(item.ref);
-      };
-      li.addEventListener("click", activate);
-      li.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter" || ev.key === " ") {
-          ev.preventDefault();
-          activate();
-        }
-      });
-      listEl.appendChild(li);
+  function clientHashRoute() {
+    const raw = (location.hash || "").replace(/^#\/?/, "");
+    const route = raw.split("?")[0] || "catalog";
+    return route;
+  }
+
+  function adminHashRoute() {
+    const raw = (location.hash || "").replace(/^#\/?/, "");
+    return raw.split("?")[0] || "moderation";
+  }
+
+  const STANDALONE_MAP = {
+    "partner/legacy.html": "partner:legacy",
+    "partner/certificate.html": "partner:certificate-guest",
+    "partner/recommendation.html": "partner:recommendation-guest",
+    "partner/assignment.html": "partner:assignment-guest",
+    "partner/observer.html": "partner:observer-guest",
+    "partner/partner-cooperation-detail.html": "partner:cooperation-detail",
+    "partner/partner-purchase-detail.html": "partner:purchase-detail",
+    "partner/partner-reward-receipt.html": "partner:reward-receipt",
+    "partner/partner-scan-transaction.html": "partner:scan-transaction",
+    "partner/partner-wallet-history.html": "partner:wallet-history",
+  };
+
+  function partnerContextFromDom() {
+    const rel = normalizeRelPath();
+    const isPartnerSpa =
+      rel === "partner/index.html" ||
+      rel === "partner/roles.html" ||
+      rel.endsWith("/partner/index.html") ||
+      rel.endsWith("/partner/roles.html");
+    if (!isPartnerSpa) return null;
+
+    const qs = new URLSearchParams(location.search);
+    const qsRole = qs.get("role");
+    const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
+    const openFromQs = qs.get("open");
+
+    if (cabinetBtn) {
+      if (cabinetBtn.getAttribute("aria-pressed") !== "true" && !openFromQs) {
+        return { mode: "registration" };
+      }
+    } else if (!openFromQs && !document.querySelector(".cabinet-shell, aside.sidebar, .nav-btn")) {
+      return { mode: "registration" };
+    }
+
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    const role = (roleEl && roleEl.value) || qsRole || "store";
+
+    let section = qs.get("open") || "home";
+    const currentNav = document.querySelector(".nav-btn[aria-current='page']");
+    if (currentNav) {
+      const act = currentNav.getAttribute("data-action") || "";
+      const m = act.match(/^nav:(.+)$/);
+      if (m) section = m[1];
+    }
+    if (section === "links") section = "team";
+    if (section === "wallet") section = "settlements";
+    return { mode: "cabinet", role, section };
+  }
+
+  function resolveCurrentPage() {
+    const rel = normalizeRelPath();
+
+    if (rel === "index.html" || rel === "") return byId.get("hub");
+    if (rel === "client/index.html") {
+      const route = clientHashRoute();
+      const id =
+        route === "navigator"
+          ? "client:navigator"
+          : route.startsWith("care")
+            ? "client:care"
+            : route.startsWith("calc")
+              ? "client:calc"
+              : "client:catalog";
+      return byId.get(id);
+    }
+    if (rel === "admin/index.html") {
+      const route = adminHashRoute();
+      const id =
+        route === "catalog" ? "admin:catalog" : route === "partners" ? "admin:partners" : "admin:moderation";
+      return byId.get(id);
+    }
+    const standalone = STANDALONE_MAP[rel];
+    if (standalone) return byId.get(standalone);
+
+    const partner = partnerContextFromDom();
+    if (partner) {
+      if (partner.mode === "registration") return byId.get("partner:registration");
+      const id = `partner:${partner.role}:${partner.section}`;
+      return byId.get(id) || byId.get(`partner:${partner.role}:home`);
+    }
+
+    return byId.get("hub");
+  }
+
+  let badgeEl;
+  let panelEl;
+  let listEl;
+  let searchEl;
+  let tocBtn;
+  let scheduled = false;
+
+  function scheduleRefresh() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      refreshBadge();
     });
   }
 
-  function updateMeta() {
-    if (!metaEl) return;
-    const ns = detectNamespace();
-    metaEl.textContent = `${NS_LABELS[ns] || ns} · ${pageFileKey()} · ${readPrototypeState() || "—"} · ${registry.length} в индексе`;
+  function refreshBadge() {
+    const page = resolveCurrentPage();
+    if (!page || !badgeEl) return;
+    badgeEl.textContent = `Страница ${page.n} · ${page.title}`;
+    badgeEl.title = page.id;
+    window.__protoCurrentPage = page;
+    listEl?.querySelectorAll("a[data-current]").forEach((a) => a.removeAttribute("data-current"));
+    const link = listEl?.querySelector(`a[data-page-n="${page.n}"]`);
+    if (link) link.setAttribute("data-current", "true");
   }
 
-  function activeAppDialog() {
-    const open = document.querySelectorAll(`dialog[open]:not([${UI_ATTR}])`);
-    return open.length ? open[open.length - 1] : null;
+  function buildToc() {
+    listEl.innerHTML = PAGES.map(
+      (p) =>
+        `<li><a href="${escapeAttr(p.href())}" data-page-n="${p.n}"><span class="n">${p.n}</span> ${escapeHtml(p.title)}</a></li>`,
+    ).join("");
   }
 
-  function appModalOpen() {
-    return !!activeAppDialog();
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
 
-  function moveNodeIfNeeded(node, parent) {
-    if (!node || !parent || node.parentNode === parent) return false;
-    parent.append(node);
-    return true;
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
   }
 
-  function setClassMembership(el, className, present) {
-    if (!el?.classList) return false;
-    const has = el.classList.contains(className);
-    if (present === has) return false;
-    if (present) el.classList.add(className);
-    else el.classList.remove(className);
-    return true;
+  function togglePanel(open) {
+    const next = open ?? panelEl.getAttribute("data-open") !== "true";
+    panelEl.setAttribute("data-open", next ? "true" : "false");
+    tocBtn.setAttribute("aria-expanded", next ? "true" : "false");
+    if (next) searchEl.focus();
   }
 
-  function appendUiToBody() {
-    if (!badgeHost || !chromeEl || !panelEl) return;
-    moveNodeIfNeeded(badgeHost, document.body);
-    moveNodeIfNeeded(chromeEl, document.body);
-    moveNodeIfNeeded(panelEl, document.body);
-    if (dockedDialog) {
-      setClassMembership(dockedDialog, "proto-num-dialog-host", false);
-      dockedDialog = null;
-    }
-  }
+  function mountChrome() {
+    document.body.classList.add("proto-page-reviewer");
 
-  function mountAnnotationInDialog(dlg) {
-    if (!dlg || !badgeHost || !chromeEl || !panelEl) return;
-    if (dockedDialog && dockedDialog !== dlg) {
-      setClassMembership(dockedDialog, "proto-num-dialog-host", false);
-    }
-    dockedDialog = dlg;
-    setClassMembership(dlg, "proto-num-dialog-host", true);
-    moveNodeIfNeeded(badgeHost, dlg);
-    moveNodeIfNeeded(chromeEl, dlg);
-    if (panelOpen && !panelEl.hasAttribute("hidden")) {
-      moveNodeIfNeeded(panelEl, dlg);
-    } else {
-      moveNodeIfNeeded(panelEl, document.body);
-    }
-  }
+    const flow = document.createElement("div");
+    flow.className = "proto-page-flow";
+    flow.setAttribute("aria-hidden", "false");
 
-  function syncModalDock() {
-    const dlg = activeAppDialog();
-    setClassMembership(document.documentElement, "proto-num-modal-open", !!dlg);
-    if (dlg) mountAnnotationInDialog(dlg);
-    else appendUiToBody();
-  }
+    badgeEl = document.createElement("div");
+    badgeEl.className = "proto-page-badge";
+    badgeEl.setAttribute("aria-live", "polite");
 
-  function onAppModalTransition() {
-    syncModalDock();
-    const open = appModalOpen();
-    if (open !== lastAppModalOpen) {
-      lastAppModalOpen = open;
-      scheduleRescan();
-    } else {
-      requestAnimationFrame(placeBadges);
-    }
-  }
+    tocBtn = document.createElement("button");
+    tocBtn.type = "button";
+    tocBtn.className = "proto-page-toc-btn";
+    tocBtn.textContent = "Страницы";
+    tocBtn.setAttribute("aria-expanded", "false");
+    tocBtn.addEventListener("click", () => togglePanel());
 
-  function bindModalDockSync() {
-    if (modalDockSyncBound) return;
-    modalDockSyncBound = true;
-    document.addEventListener(
-      "toggle",
-      (ev) => {
-        if (ev.target instanceof HTMLDialogElement && !ev.target.hasAttribute(UI_ATTR)) {
-          onAppModalTransition();
-        }
-      },
-      true,
-    );
-    document.addEventListener(
-      "beforetoggle",
-      (ev) => {
-        if (
-          ev.target instanceof HTMLDialogElement &&
-          !ev.target.hasAttribute(UI_ATTR) &&
-          ev.newState === "open"
-        ) {
-          queueMicrotask(onAppModalTransition);
-        }
-      },
-      true,
-    );
-  }
-
-  function rescan() {
-    syncModalDock();
-    if (!enabled) {
-      badgeHost && (badgeHost.textContent = "");
-      return;
-    }
-    buildRegistry();
-    placeBadges();
-    updateMeta();
-    if (panelOpen) renderIndexList(searchEl?.value || "");
-  }
-
-  function scheduleRescan() {
-    if (scanning) return;
-    clearTimeout(rescanTimer);
-    rescanTimer = setTimeout(rescan, 320);
-  }
-
-  const DOCK_MARKER_CLASSES = new Set([
-    "proto-num-modal-open",
-    "proto-num-off",
-    "proto-num-dialog-host",
-  ]);
-
-  function classMutationIsDockMarkerOnly(mutation) {
-    if (mutation.type !== "attributes" || mutation.attributeName !== "class") return false;
-    const el = mutation.target;
-    if (el === document.documentElement) {
-      const prev = (mutation.oldValue || "").trim().split(/\s+/).filter(Boolean);
-      const next = [...el.classList];
-      const changed = [
-        ...next.filter((c) => !prev.includes(c)),
-        ...prev.filter((c) => !el.classList.contains(c)),
-      ];
-      return changed.length > 0 && changed.every((c) => DOCK_MARKER_CLASSES.has(c));
-    }
-    if (
-      el instanceof HTMLDialogElement &&
-      !el.hasAttribute(UI_ATTR)
-    ) {
-      const prev = (mutation.oldValue || "").trim().split(/\s+/).filter(Boolean);
-      const changed = [
-        ...[...el.classList].filter((c) => !prev.includes(c)),
-        ...prev.filter((c) => !el.classList.contains(c)),
-      ];
-      return (
-        changed.length > 0 &&
-        changed.every((c) => c === "proto-num-dialog-host")
-      );
-    }
-    return false;
-  }
-
-  function mutationIsRelevant(mutation) {
-    if (scanning) return false;
-    if (classMutationIsDockMarkerOnly(mutation)) return false;
-    if (mutation.type === "childList") {
-      const t = mutation.target;
-      if (t?.nodeType === 1) {
-        if (t.classList?.contains(BADGE_HOST_CLASS) || t.closest?.(`[${UI_ATTR}]`)) return false;
-      }
-    }
-    const targets = [mutation.target, ...mutation.addedNodes, ...mutation.removedNodes];
-    for (const node of targets) {
-      if (!node || node.nodeType !== 1) continue;
-      if (isAnnotationUi(node)) return false;
-      if (node.closest?.(`[${UI_ATTR}]`)) return false;
-    }
-    if (mutation.type === "attributes") {
-      if (mutation.attributeName === TARGET_ATTR) return false;
-      if (mutation.attributeName === "class" && mutation.target?.hasAttribute?.(TARGET_ATTR)) {
-        const cls = mutation.target.classList;
-        const onlyHighlight =
-          cls.length <= 2 &&
-          (cls.contains("proto-num-target-highlight") || cls.length === 0);
-        if (onlyHighlight) return false;
-      }
-    }
-    return true;
-  }
-
-  function bindScroll() {
-    if (scrollBound) return;
-    scrollBound = true;
-    const onScroll = () => requestAnimationFrame(placeBadges);
-    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
-    window.addEventListener("resize", () => scheduleRescan(), { passive: true });
-  }
-
-  function ensureUi() {
-    if (chromeEl) return;
-
-    badgeHost = document.createElement("div");
-    badgeHost.className = BADGE_HOST_CLASS;
-    badgeHost.setAttribute(UI_ATTR, "");
-    badgeHost.setAttribute("aria-hidden", "true");
-
-    chromeEl = document.createElement("div");
-    chromeEl.className = "proto-num-chrome";
-    chromeEl.setAttribute(UI_ATTR, "");
-
-    const LEGEND_TEXT =
-      "Пространства: 1 — общий вход, 2 — клиент, 3 — партнёр, 4 — админ";
-    const legend = document.createElement("div");
-    legend.className = "proto-num-legend";
-    legend.textContent = LEGEND_TEXT;
-
-    toggleBtn = document.createElement("button");
-    toggleBtn.type = "button";
-    toggleBtn.textContent = "Номера: вкл";
-    toggleBtn.setAttribute("aria-pressed", "true");
-    toggleBtn.addEventListener("click", () => {
-      enabled = !enabled;
-      toggleBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
-      toggleBtn.textContent = enabled ? "Номера: вкл" : "Номера: выкл";
-      document.documentElement.classList.toggle("proto-num-off", !enabled);
-      if (enabled) rescan();
-      else {
-        badgeHost.textContent = "";
-        clearTargetMarkers();
-      }
-    });
-
-    panelBtn = document.createElement("button");
-    panelBtn.type = "button";
-    panelBtn.textContent = "Список номеров";
-    panelBtn.setAttribute("aria-expanded", "false");
-    panelBtn.setAttribute("aria-controls", "proto-num-panel");
-    panelBtn.addEventListener("click", () => {
-      panelOpen = !panelOpen;
-      panelBtn.setAttribute("aria-expanded", panelOpen ? "true" : "false");
-      panelEl.classList.toggle("is-open", panelOpen);
-      panelEl.toggleAttribute("hidden", !panelOpen);
-      syncModalDock();
-      if (panelOpen) {
-        rescan();
-        renderIndexList(searchEl?.value || "");
-        searchEl?.focus();
-      }
-    });
-
-    chromeEl.append(legend, toggleBtn, panelBtn);
+    flow.append(badgeEl, tocBtn);
+    document.body.appendChild(flow);
 
     panelEl = document.createElement("div");
-    panelEl.id = "proto-num-panel";
-    panelEl.className = "proto-num-panel";
-    panelEl.setAttribute(UI_ATTR, "");
-    panelEl.setAttribute("hidden", "");
-    panelEl.setAttribute("role", "region");
-    panelEl.setAttribute("aria-label", "Индекс номеров прототипа");
+    panelEl.className = "proto-page-panel";
+    panelEl.setAttribute("data-open", "false");
+    panelEl.innerHTML = `<div class="proto-page-panel-head"><input class="proto-page-search" type="search" placeholder="Поиск по номеру или названию" autocomplete="off" /></div><ul class="proto-page-list"></ul>`;
+    document.body.appendChild(panelEl);
 
-    const head = document.createElement("div");
-    head.className = "proto-num-panel__head";
-    const h2 = document.createElement("h2");
-    h2.textContent = "Индекс номеров (текущий экран)";
-    const legendInPanel = document.createElement("details");
-    legendInPanel.className = "proto-num-panel__ns-legend";
-    legendInPanel.innerHTML = `<summary>Пространства номеров</summary><p>${LEGEND_TEXT}</p>`;
-    searchEl = document.createElement("input");
-    searchEl.type = "search";
-    searchEl.placeholder = "Поиск по номеру или тексту…";
-    searchEl.autocomplete = "off";
-    metaEl = document.createElement("div");
-    metaEl.className = "proto-num-panel__meta";
-    head.append(h2, legendInPanel, searchEl, metaEl);
+    searchEl = panelEl.querySelector(".proto-page-search");
+    listEl = panelEl.querySelector(".proto-page-list");
+    buildToc();
 
-    listEl = document.createElement("ul");
-    listEl.className = "proto-num-panel__list";
-
-    const actions = document.createElement("div");
-    actions.className = "proto-num-panel__actions";
-    copyStatusEl = document.createElement("p");
-    copyStatusEl.className = "proto-num-panel__copy-status";
-    copyStatusEl.setAttribute("aria-live", "polite");
-    copyFieldEl = document.createElement("textarea");
-    copyFieldEl.className = "proto-num-panel__copy-field";
-    copyFieldEl.readOnly = true;
-    copyFieldEl.hidden = true;
-    copyFieldEl.setAttribute("aria-label", "Поле для ручного копирования номера");
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.textContent = "Скопировать индекс";
-    copyBtn.addEventListener("click", () => {
-      const lines = registry.map(
-        (r) => `${r.ref}\t${r.label}\t${r.location}\t${r.stableKey}`,
-      );
-      copyText(lines.join("\n"));
+    searchEl.addEventListener("input", () => {
+      const q = searchEl.value.trim().toLowerCase();
+      listEl.querySelectorAll("li").forEach((li) => {
+        const text = li.textContent.toLowerCase();
+        li.hidden = q.length > 0 && !text.includes(q);
+      });
     });
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.textContent = "Закрыть";
-    closeBtn.addEventListener("click", () => {
-      panelOpen = false;
-      panelBtn.setAttribute("aria-expanded", "false");
-      panelEl.classList.remove("is-open");
-      panelEl.setAttribute("hidden", "");
-    });
-    actions.append(copyStatusEl, copyFieldEl, copyBtn, closeBtn);
 
-    panelEl.append(head, listEl, actions);
-    searchEl.addEventListener("input", () => renderIndexList(searchEl.value));
-
-    document.body.append(badgeHost, chromeEl, panelEl);
-    bindModalDockSync();
+    document.addEventListener(
+      "click",
+      (e) => {
+        if (panelEl.contains(e.target) || flow.contains(e.target)) return;
+        if (panelEl.getAttribute("data-open") === "true") togglePanel(false);
+      },
+      true,
+    );
   }
 
-  function startObserver() {
-    if (observer) return;
-    observer = new MutationObserver((records) => {
-      if (scanning) return;
-      if (records.every((m) => !mutationIsRelevant(m))) return;
-      scheduleRescan();
-    });
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeOldValue: true,
-      attributeFilter: [
-        "class",
-        "hidden",
-        "open",
-        "aria-current",
-        "aria-pressed",
-        "aria-expanded",
-        "aria-selected",
-        "aria-hidden",
-        "data-view",
-        "data-subview",
-        "data-detail-open",
-      ],
-    });
-  }
+  window.PROTOTYPE_PAGE_CATALOG = Object.freeze(PAGES.map((p) => ({ n: p.n, id: p.id, title: p.title })));
+  window.protoResolvePage = resolveCurrentPage;
+  window.protoPageByNumber = (n) => byN.get(Number(n));
 
-  function init() {
-    ensureUi();
-    bindScroll();
-    startObserver();
-    rescan();
-    window.addEventListener("hashchange", scheduleRescan);
-    window.addEventListener("popstate", scheduleRescan);
-  }
+  mountChrome();
+  refreshBadge();
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  window.addEventListener("hashchange", scheduleRefresh);
+  window.addEventListener("popstate", scheduleRefresh);
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (e.target.closest("[data-action^='nav:'], [data-action^='view:'], [data-testid^='nav-'], [data-control]")) {
+        scheduleRefresh();
+      }
+    },
+    true,
+  );
+
+  const appRoot = document.getElementById("app") || document.getElementById("main");
+  if (appRoot && typeof MutationObserver !== "undefined") {
+    let t = 0;
+    const mo = new MutationObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(scheduleRefresh, 280);
+    });
+    mo.observe(appRoot, { childList: true });
   }
 })();
