@@ -659,8 +659,12 @@ try {
   assert.equal(agentRows, null, "agent never shows flat appeals table");
   await agentPage.locator('[data-testid="ca-observer-partner-card"]').first().click();
   await agentPage.waitForSelector('[data-testid="ca-observer-client-row"]', { timeout: 8000 });
+  await agentPage.locator('[data-testid="ca-observer-client-row"]').first().click();
+  await agentPage.waitForSelector('[data-testid="ca-observer-client-page"]', { timeout: 8000 });
+  const agentR1RepairCta = await agentPage.$('[data-ca-action="standalone:142"]');
+  assert.equal(agentR1RepairCta, null, "R1 agent observer client hides 142 CTA entirely");
   await agentPage.locator('[data-testid="ca-clients-back"]').click();
-  await agentPage.waitForSelector('[data-testid="ca-observer-partners-list"]');
+  await agentPage.waitForSelector('[data-testid="ca-observer-partner-page"]', { timeout: 8000 });
   await agentPage.close();
 
   const r2Page = await browser.newPage();

@@ -8,6 +8,7 @@ import {
 import {
   buildRepairEmbedCtx,
   filterRepairObjects,
+  employeeRepairScopeAllowsDemo,
   isPrototypeR2Release,
   repairObjectById,
 } from "./repair-objects-r2.js";
@@ -1841,7 +1842,19 @@ function repairObjectsNavAllowed(config) {
   if (!isPrototypeR2Release()) return false;
   if (config.role === "agent") return true;
   if (config.readOnly) return false;
+  if (config.role === "employee") {
+    const scope = config.employeeAssignedScope?.() ?? "all";
+    return employeeRepairScopeAllowsDemo(scope);
+  }
   return true;
+}
+
+function repairObjectRowsForConfig(config, query) {
+  const rows = filterRepairObjects(query);
+  if (config.role !== "employee") return rows;
+  const scope = config.employeeAssignedScope?.() ?? "all";
+  if (employeeRepairScopeAllowsDemo(scope)) return rows;
+  return [];
 }
 
 function renderRepairObjectsListEntry(config) {
@@ -1857,7 +1870,7 @@ function renderRepairObjectsPage(config) {
   if (!repairObjectsNavAllowed(config)) {
     return `<section class="panel stack ca-r2-repair-empty"><h2>Объекты недоступны</h2><p class="muted">Для этой демо-роли нет доступа к объектам ремонта.</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:list">К обращениям</button></div></section>`;
   }
-  const rows = filterRepairObjects(s.repairObjectsQ);
+  const rows = repairObjectRowsForConfig(config, s.repairObjectsQ);
   const selected = s.r2ObjectId ? repairObjectById(s.r2ObjectId) : null;
   const cards = rows
     .map((row) => {
@@ -1866,9 +1879,13 @@ function renderRepairObjectsPage(config) {
       return `<article class="ca-r2-object-card ${picked ? "is-selected" : ""}" data-testid="ca-r2-object-${row.id}"><button type="button" class="ca-r2-object-select" data-ca-action="repair:select" data-ca-value="${esc(row.id)}"><strong>${esc(row.name)}</strong><span class="small muted">${esc(row.address)}</span><span class="small">Клиент: ${esc(row.clientLabel)} · ${esc(row.clientRelation)}</span><span class="pill neutral">${esc(row.stageLabel)}</span>${noAsg ? '<span class="pill">Без поручения</span>' : ""}</button></article>`;
     })
     .join("");
+  const scopeLimited =
+    config.role === "employee" && !employeeRepairScopeAllowsDemo(config.employeeAssignedScope?.() ?? "all");
   const empty = rows.length
     ? ""
-    : `<section class="panel empty ca-empty"><h2>Объекты не найдены</h2><p class="muted">Измените поиск или сбросьте фильтр.</p><button type="button" class="btn ghost" data-ca-action="repair:reset-q">Сбросить поиск</button></section>`;
+    : scopeLimited
+      ? `<section class="panel empty ca-empty" data-testid="ca-r2-repair-scope-empty"><h2>Нет объектов в назначенной области</h2><p class="muted">В демо объекты Navigator не привязаны к филиалу или узкой области сотрудника. Смените «Назначенную область» на «Вся организация» или откройте от имени роли с полным доступом к клиентам.</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:list">К обращениям</button></div></section>`
+      : `<section class="panel empty ca-empty"><h2>Объекты не найдены</h2><p class="muted">Измените поиск или сбросьте фильтр.</p><button type="button" class="btn ghost" data-ca-action="repair:reset-q">Сбросить поиск</button></section>`;
   const detail = selected
     ? `<section class="panel stack ca-r2-object-detail" data-testid="ca-r2-object-detail"><h2>Выбранный объект</h2><p><strong>${esc(selected.name)}</strong></p><p class="muted">${esc(selected.address)}</p><p class="small muted">ID: ${esc(selected.id)} · ${esc(selected.clientRelation)}</p><div class="ca-form-actions"><button type="button" class="btn primary" data-ca-action="repair:open-142" data-testid="ca-r2-open-142">Наблюдение (142)</button><button type="button" class="btn ghost" data-ca-action="repair:open-141" data-testid="ca-r2-open-141" ${selected.assignment && config.role !== "agent" ? "" : "disabled"}>${config.role === "agent" ? "Поручение недоступно агенту" : selected.assignment ? "Поручение (141)" : "Поручение недоступно"}</button></div>${selected.assignment ? "" : '<p class="small muted">Для этого объекта нет демо-поручения — проверьте пустое состояние.</p>'}</section>`
     : `<section class="panel ca-r2-object-detail"><p class="muted">Выберите объект, чтобы открыть поручение или наблюдение.</p></section>`;
@@ -2474,7 +2491,12 @@ function renderObserverClientPage(config) {
     <h3>Хронология (без внутренних заметок партнёра)</h3>
     <ul class="ca-timeline">${tl || "<li class=\"muted small\">Публичных событий пока нет.</li>"}</ul>
   </section>
-  <div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="standalone:142">Наблюдение за объектом (142)</button><p class="small muted">Н/Д из обращений: нет handoff объекта Navigator. В R2 откройте раздел «Объекты и поручения» в списке клиентов.</p></div>`;
+  ${renderObserverClientRepairFooter()}`;
+}
+
+function renderObserverClientRepairFooter() {
+  if (!isPrototypeR2Release()) return "";
+  return `<section class="panel stack ca-observer-repair-na" data-testid="ca-observer-repair-na"><p class="small muted">Наблюдение за объектом ремонта (142) из карточки направления недоступно: в демо нет связи обращения с объектом Navigator. Откройте «Объекты и поручения» в списке клиентов и выберите объект.</p></section>`;
 }
 
 function backLink(config, label, action) {
@@ -3441,6 +3463,10 @@ function openRepairStandalonePage(pageN, config, hooks) {
     hooks.notify?.("Сначала выберите объект ремонта.", "info");
     return;
   }
+  if (!repairObjectRowsForConfig(config, "").some((row) => row.id === s.r2ObjectId)) {
+    hooks.notify?.("Объект недоступен в назначенной области сотрудника в демо.", "info");
+    return;
+  }
   if (pageN === 141 && config.role === "agent") {
     hooks.notify?.("Поручения в демо открывает принимающий партнёр, не агент.", "info");
     return;
@@ -3634,6 +3660,10 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
     const id = triggerEl?.getAttribute("data-ca-value") || "";
     if (!repairObjectById(id)) {
       hooks.notify?.("Объект не найден в демо-снимке.", "info");
+      return;
+    }
+    if (!repairObjectRowsForConfig(config, "").some((row) => row.id === id)) {
+      hooks.notify?.("Объект недоступен в назначенной области сотрудника в демо.", "info");
       return;
     }
     s.r2ObjectId = id;

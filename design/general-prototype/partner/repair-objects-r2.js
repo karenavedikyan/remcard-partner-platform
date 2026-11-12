@@ -144,6 +144,11 @@ export function filterRepairObjects(query) {
   });
 }
 
+/** Demo repair fixtures have no per-branch mapping; scoped employees see an honest empty state. */
+export function employeeRepairScopeAllowsDemo(scope) {
+  return scope === "all" || scope === "office";
+}
+
 export function observerPublicModel(fixture) {
   if (!fixture) return null;
   return {

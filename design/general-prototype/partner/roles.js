@@ -53,8 +53,8 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca31";
-import { buildRepairEmbedCtx, R2_REPAIR_OBJECT_PAGES } from "./repair-objects-r2.js";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca32";
+import { buildRepairEmbedCtx, employeeRepairScopeAllowsDemo, R2_REPAIR_OBJECT_PAGES } from "./repair-objects-r2.js";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -3025,18 +3025,24 @@ function standaloneCanOpen(pageN) {
     if (k()) return O("clients");
     return O("clients") || O("recommend");
   }
+  if (pageN === 142) {
+    if (prototypeRelease() !== 2) return false;
+    if (k()) return O("clients");
+    if (i.role === "agent") return true;
+    return O("clients");
+  }
   if (pageN === 146 && i.role === "agent") return false;
   if (k()) {
     if (pageN === 143) return ue() || employeeCanViewPartners();
     if (pageN === 146) return O("scan") || O("sale");
     if ([147, 144, 145].includes(pageN)) return O("ledger") || O("bonus") || O("cash");
-    if ([139, 140, 142].includes(pageN)) return O("clients") || O("recommend");
+    if ([139, 140].includes(pageN)) return O("clients") || O("recommend");
     return false;
   }
   if (pageN === 143) return ue() || i.role !== "employee";
   if (pageN === 146) return i.role !== "agent" && (O("scan") || O("sale") || ["store", "company", "specialist"].includes(i.role));
   if ([147, 144, 145].includes(pageN)) return ["store", "company", "specialist", "agent"].includes(i.role);
-  if ([139, 140, 142].includes(pageN)) return O("clients") || i.role === "agent" || O("recommend");
+  if ([139, 140].includes(pageN)) return O("clients") || O("recommend");
   return true;
 }
 function buildCooperationEmbedSections(partner, ctx = {}) {
@@ -4017,6 +4023,7 @@ function clientAppealsConfig() {
     role: i.role,
     icon: D,
     readOnly: k() && !O("clients"),
+    employeeAssignedScope: () => (k() ? i.scope : "all"),
     onProtoStandalone: (pageN, extra = {}) => {
       if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
         U("Страницы 141 и 142 доступны в релизе R2 через «Объекты и поручения».", "info");
@@ -5825,6 +5832,13 @@ R();
         return;
       }
       if (!standaloneCanOpen(pageN)) return;
+      if (R2_REPAIR_OBJECT_PAGES.has(pageN) && k() && !employeeRepairScopeAllowsDemo(i.scope)) {
+        U(
+          "Объекты ремонта недоступны в назначенной области сотрудника в демо. Смените область или откройте от имени роли с полным доступом.",
+          "info",
+        );
+        return;
+      }
       if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
         i.page = "clients";
         R();
