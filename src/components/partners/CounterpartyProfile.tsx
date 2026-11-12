@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   buildCounterpartyProfileView,
@@ -34,6 +34,7 @@ function ChipList({ items, emptyCopy }: { items: string[]; emptyCopy: string }) 
 export function CounterpartyProfile({ partnership, listPrincipalId }: Props) {
   const view = buildCounterpartyProfileView(partnership, listPrincipalId);
   const inputId = useId();
+  const idInputRef = useRef<HTMLInputElement>(null);
   const [copyStatus, setCopyStatus] = useState<"" | "ok" | "fail">("");
 
   const copyPublicId = useCallback(async () => {
@@ -47,6 +48,11 @@ export function CounterpartyProfile({ partnership, listPrincipalId }: Props) {
       setCopyStatus("ok");
     } catch {
       setCopyStatus("fail");
+      const field = idInputRef.current;
+      if (field) {
+        field.focus();
+        field.select();
+      }
     }
   }, [view.publicId]);
 
@@ -85,6 +91,7 @@ export function CounterpartyProfile({ partnership, listPrincipalId }: Props) {
           <label htmlFor={inputId}>ID партнёра</label>
           <div className={styles.idRow}>
             <input
+              ref={idInputRef}
               id={inputId}
               className={styles.idInput}
               type="text"

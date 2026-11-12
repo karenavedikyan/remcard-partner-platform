@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildCounterpartyProfileView } from "@/lib/partners/build-counterparty-profile-view";
+import {
+  buildCounterpartyProfileView,
+  mergeCounterpartyGeography,
+} from "@/lib/partners/build-counterparty-profile-view";
 import type { Partnership } from "@/lib/types";
 
 function partnership(overrides: Partial<Partnership> = {}): Partnership {
@@ -80,5 +83,19 @@ describe("buildCounterpartyProfileView", () => {
     const view = buildCounterpartyProfileView(partnership(), "store-1");
     expect(view.personalAliasLine).toBe("Мой агент");
     expect(view.displayName).toBe("Агент");
+  });
+
+  it("merges city, areas, and branch cities without dropping base geography", () => {
+    const merged = mergeCounterpartyGeography({
+      id: "u1",
+      displayName: "X",
+      city: "Казань",
+      specializations: [],
+      storeCategories: [],
+      partnerType: "STORE",
+      areas: ["Татарстан", "Казань"],
+      branches: [{ address: "ул. Ленина", city: "Набережные Челны" }],
+    });
+    expect(merged).toEqual(["Казань", "Татарстан", "Набережные Челны"]);
   });
 });

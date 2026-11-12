@@ -56,19 +56,34 @@ function aboutCopy(user: PartnershipUser): CounterpartyProfileView["about"] {
   return { text, mode: "value" };
 }
 
-function geographyCopy(
-  user: PartnershipUser,
-  city: string | null,
-): CounterpartyProfileView["geography"] {
-  const cityTrim = city?.trim();
-  if (!fieldInContract(user, "areas")) {
-    if (cityTrim) return { items: [cityTrim], mode: "value" };
-    return { items: [], mode: "partner-empty" };
+export function mergeCounterpartyGeography(user: PartnershipUser): string[] {
+  const merged: string[] = [];
+  const cityTrim = user.city?.trim();
+  if (cityTrim) merged.push(cityTrim);
+  if (fieldInContract(user, "areas")) {
+    for (const area of user.areas ?? []) {
+      const trimmed = area?.trim();
+      if (trimmed) merged.push(trimmed);
+    }
   }
-  const areas = user.areas?.map((c) => c?.trim()).filter(Boolean) as string[];
-  const unique = [...new Set(areas)];
-  if (unique.length) return { items: unique, mode: "value" };
-  if (cityTrim) return { items: [cityTrim], mode: "value" };
+  for (const branch of user.branches ?? []) {
+    const branchCity = branch.city?.trim();
+    if (branchCity) merged.push(branchCity);
+  }
+  return [...new Set(merged)];
+}
+
+function geographyCopy(user: PartnershipUser): CounterpartyProfileView["geography"] {
+  const items = mergeCounterpartyGeography(user);
+  if (items.length) return { items, mode: "value" };
+  const hasListGeo =
+    Boolean(user.city?.trim()) ||
+    Boolean(user.branches?.some((b) => b.city?.trim())) ||
+    (fieldInContract(user, "areas") && Boolean(user.areas?.some((a) => a?.trim())));
+  if (hasListGeo) return { items: [], mode: "partner-empty" };
+  if (!fieldInContract(user, "areas") && !user.branches?.length && !user.city?.trim()) {
+    return { items: [], mode: "no-contract" };
+  }
   return { items: [], mode: "partner-empty" };
 }
 
@@ -151,7 +166,7 @@ export function buildCounterpartyProfileView(
     products: partnerProductLabels(partner),
     services: partnerServiceLabels(partner),
     renovationStages: partnerRenovationStageLabels(partner),
-    geography: geographyCopy(partner, partner.city),
+    geography: geographyCopy(partner),
     contact: contactCopy(partner),
     avatarInitials: initials(displayName),
     photoUrl: partner.photoUrl?.trim() || partner.organizationLogoUrl?.trim() || null,

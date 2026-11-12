@@ -156,11 +156,18 @@ export type PartnershipCooperationContact = {
   email: string | null;
 };
 
+export type PartnershipUserBranch = {
+  address: string;
+  city: string;
+};
+
 export type PartnershipUser = {
   id: string;
   displayName: string | null;
   photoUrl?: string | null;
   city: string | null;
+  /** Existing list read: branch geography (separate from additive `areas`). */
+  branches?: PartnershipUserBranch[] | null;
   specializations: string[];
   storeCategories: string[];
   partnerType: string | null;
