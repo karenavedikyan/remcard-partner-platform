@@ -172,10 +172,29 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
       ...profileDraftFromProfile(current), city: "Сочи",
     }, { validationIntent: "cabinet" });
     expect(calls).toEqual([
-      { method: "PATCH", path: "/api/remcard/api/pro/profile", body: { city: "Сочи" } },
+      {
+        method: "PATCH",
+        path: "/api/remcard/api/pro/profile",
+        body: { city: "Сочи", workingProfileSaveIntent: "cabinet" },
+      },
       { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
     ]);
     expect(result.user.city).toBe("Сочи");
+  });
+
+  it("emits activation intent on explicit visibility toggle PATCH", async () => {
+    current = fixture({
+      partnerSearchVisible: false,
+      productCategoryIds: ["doors"],
+      effectiveProductCategoryIds: ["doors"],
+    });
+    await persistWorkingProfileDraft(current, {
+      ...profileDraftFromProfile(current), partnerSearchOptIn: true,
+    }, { partnerSearchTouched: true, validationIntent: "activation" });
+    expect(calls[0].body).toEqual({
+      partnerSearchOptIn: true,
+      workingProfileSaveIntent: "activation",
+    });
   });
 
   it("cannot remove the last direction from an existing explicit ON profile", async () => {

@@ -97,5 +97,9 @@ export function buildWorkingProfilePatchBody(
     }
   }
 
+  if (options.validationIntent) {
+    body.workingProfileSaveIntent = options.validationIntent;
+  }
+
   return body;
 }
