@@ -418,7 +418,7 @@ function renderHistoryPanel(config, incomingOnly, activeDirection, options = {})
 
   const historyHub =
     options.historyHubLink !== false
-      ? `<a href="./partner-wallet-history.html" class="wallet-accruals-history__hub-link" data-testid="wallet-history-hub-link">Покупки и транзакции в разделе «История»</a>`
+      ? `<button type="button" class="wallet-accruals-history__hub-link" data-action="proto-standalone:147" data-testid="wallet-history-hub-link">Покупки и транзакции в разделе «История»</button>`
       : "";
 
   return `<aside class="wallet-accruals-history" data-testid="wallet-history" data-history-filter="${st.historyFilter}" data-history-direction="${direction}">

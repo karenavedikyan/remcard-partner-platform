@@ -1044,6 +1044,12 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   margin-bottom: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .wallet-accruals-history__hub-link:hover {

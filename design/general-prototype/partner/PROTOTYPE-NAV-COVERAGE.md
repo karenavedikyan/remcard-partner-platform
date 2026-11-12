@@ -34,6 +34,6 @@ Legend: **Module** = routed through cabinet shell (`roles.js`) into an existing 
 ## Honest gaps (not production parity)
 
 - **Recommendations** for receiving roles: still legacy certificate list, not a separate production module name.
-- **`partner-scan-transaction.html`**: standalone reference page; cabinet uses integrated `client-appeals` scan only.
+- **Standalone 139–147**: embedded in cabinet via `cabinet-standalone-host.js` (see `PROTOTYPE-INTEGRATION-MATRIX.md`). Scan production flow stays `client-appeals`; page **146** is an extra design preview from Сканер.
 - **Specialist** home hero still points at recommend flow, not scanner (by role copy).
 - Demo writes only; observer clients toggle unchanged.

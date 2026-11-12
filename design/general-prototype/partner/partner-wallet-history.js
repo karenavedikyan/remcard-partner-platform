@@ -73,7 +73,10 @@
   $("#clear-filters").addEventListener("click",()=>{$("#status").value="all";$("#from").value="";$("#to").value="";renderHistory();});
   $("#clear-search").addEventListener("click",()=>{$("#search").value="";renderHistory();$("#search").focus();});
   $("#open-related").addEventListener("click",()=>{
-    if(selectedAccrual===accruals[0]){location.href="partner-purchase-detail.html";}
+    if(selectedAccrual===accruals[0]){
+      if(window.__protoCabinetEmbedNavigate?.(144))return;
+      location.href="partner-purchase-detail.html";
+    }
     else{$("#search").value="RC-X9Z0WZ";$("#status").value="all";$("#from").value="";$("#to").value="";setView("purchases");}
   });
   ["#search","#status","#from","#to"].forEach(s=>$(s).addEventListener("input",renderHistory));

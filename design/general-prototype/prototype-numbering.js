@@ -363,6 +363,8 @@ const PAGE_DEFS = [
   }
 
   function resolveCurrentPage() {
+    const embedded = window.__protoCabinetEmbeddedPage;
+    if (embedded?.n && byN.get(embedded.n)) return byN.get(embedded.n);
     const rel = pathnameRel();
     if (rel === "index.html") return byId.get("hub");
     if (rel === "client/index.html") {

@@ -19,6 +19,12 @@ import {
   enterCabinetPreviewDrafts,
   leaveCabinetPreviewDrafts,
 } from "./cabinet-preview-seeds.js";
+import {
+  initCabinetStandaloneHost,
+  handleStandaloneHostClick,
+  parseStandaloneDeepLink,
+  waitForCabinetReady,
+} from "./cabinet-standalone-host.js?v=embed1";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -3289,7 +3295,7 @@ function legacyLa() {
                 : i.page === "partners"
                   ? `${ue() ? `<div class="row" style="margin-bottom:20px">${d("Найти в RemCard", "new-link:partner")}${d("Мои приглашения", "nav:links", "ghost")}</div>` : ""}${Ca()}`
                   : i.page === "scanner"
-                    ? `<section class="panel empty">${D("scan-line")}<h2>Проверка сертификата</h2><p class="muted">Проверьте условия до продажи. Сканирование само по себе не начисляет и не списывает бонусы.</p>${d("Открыть демонстрационный сертификат", "action:scan", "primary")}</section>`
+                    ? `<section class="panel empty">${D("scan-line")}<h2>Проверка сертификата</h2><p class="muted">Проверьте условия до продажи. Сканирование само по себе не начисляет и не списывает бонусы.</p>${d("Открыть демонстрационный сертификат", "action:scan", "primary")}${d("Макет оформления покупки", "proto-standalone:146", "ghost")}</section>`
                     : i.page === "settlements"
                       ? `<section class="panel stack"><h2>Взаиморасчёты ${k() ? "организации" : ""}</h2><p class="muted">Начисление при продаже и погашение при выплате являются разными операциями.</p><div class="notice">Нет демонстрационных обязательств к выплате.</div><div class="row">${O("cash") ? d("Пример выдачи наличных", "action:cash") : ""}${O("transfer") ? d("Пример фиксации перевода", "action:transfer") : ""}</div><small>${k() && !O("cash") && !O("transfer") ? "Вам доступен только просмотр. Права на выплаты не назначены." : "Перевод выполняется вне RemCard. Здесь фиксируется только уже выполненная выплата."}</small></section>`
                       : i.page === "team"
@@ -3785,7 +3791,7 @@ function Oa(e, t, a) {
     n = G.find((l) => l.id === t.id);
   E(
     t.name,
-    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${t.partnershipNote ? `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(t.partnershipNote)}</p></section>` : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
+    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${t.ready ? d("Актуальный макет условий", `proto-standalone:143:${t.id}`, "ghost") : ""}${t.partnershipNote ? `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(t.partnershipNote)}</p></section>` : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
   );
   se.querySelector(".dialog-body").insertAdjacentHTML("beforeend", `<div class="record-card-actions">${recordActionToolbar("partners", t, a, k() && !O("terms"), false, false)}</div>`);
   if (!k() || O("ledger"))
@@ -4270,10 +4276,54 @@ document.addEventListener("change", (e) => {
       (i.notice = ""),
       R()));
 });
+let standaloneHost = null;
+function ensureStandaloneHost() {
+  if (!standaloneHost) {
+    standaloneHost = initCabinetStandaloneHost({
+      getScreen: () => i.screen,
+      button: d,
+      notify: (m, tone) => U(m, tone || "info"),
+      onReturn: (ctx) => {
+        if (ctx?.reopenPartnerId) {
+          const partner = P.find((p) => p.id === ctx.reopenPartnerId);
+          if (partner) Oa("partners", partner, "partners");
+          return;
+        }
+        if (ctx?.page) i.page = ctx.page;
+        T();
+      },
+    });
+  }
+  return standaloneHost;
+}
 document.addEventListener("click", (e) => {
   if (Ge.click(e) || ce.click(e) || emptyStates.click(e)) return;
   coop.captureTriggerFromEvent?.(e);
   if (coop.handleClick(e)) return;
+  if (
+    handleStandaloneHostClick(e, ensureStandaloneHost(), {
+      getPage: () => i.page,
+      getRole: () => i.role,
+      notify: (m, tone) => U(m, tone || "info"),
+      canOpen: (pageN) => {
+        if ([139, 140, 141, 142].includes(pageN)) {
+          return O("clients") || i.role === "agent" || O("recommend");
+        }
+        if (pageN === 143) return !k() || ue() || O("partners");
+        if ([147, 144, 145].includes(pageN)) return !k() || O("ledger") || O("bonus") || O("cash");
+        if (pageN === 146) return O("scan") || O("sale");
+        return true;
+      },
+      extraQuery: (pageN, suffix) => (pageN === 143 && suffix ? `partner_id=${encodeURIComponent(suffix)}` : ""),
+      buildReturnContext: (pageN, suffix) => ({
+        page: i.page,
+        role: i.role,
+        reopenPartnerId: pageN === 143 ? suffix : null,
+      }),
+    })
+  ) {
+    return;
+  }
   let t = e.target.closest("[data-action]");
   if (!t) return;
   let [a, s] = t.dataset.action.split(":");
@@ -5117,3 +5167,36 @@ if (i.screen === "cabinet") {
 }
 yt();
 R();
+(function bootProtoStandaloneDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const pageN = parseStandaloneDeepLink(q);
+  if (!pageN) return;
+  if (i.screen !== "cabinet") {
+    i.screen = "cabinet";
+    enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
+    syncPreviewProfileWizards(i.role);
+  }
+  const open = q.get("open");
+  waitForCabinetReady({ getScreen: () => i.screen })
+    .then(() => {
+      if (open) {
+        const navKey =
+          open === "wallet" || open === "history"
+            ? ["agent", "specialist"].includes(i.role)
+              ? "bonus"
+              : "settlements"
+            : open === "partners"
+              ? "links"
+              : open;
+        if (typeof navAllowedInRelease === "function" && navAllowedInRelease(navKey)) {
+          document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
+        }
+      }
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    })
+    .then(() => {
+      ensureStandaloneHost().openStandalone(pageN, { returnCtx: { page: i.page } });
+      T();
+    })
+    .catch(() => {});
+})();
