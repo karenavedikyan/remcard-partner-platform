@@ -1139,6 +1139,18 @@ function payCategoriesFor(config) {
   return profilePayCategories(config);
 }
 
+function renderPayCategoryOptions(cats, selectedKey) {
+  const option = (c) =>
+    `<option value="${esc(c.key)}" ${selectedKey === c.key ? "selected" : ""}>${esc(c.label)}</option>`;
+  const goods = cats.filter((c) => c.group === "products");
+  const services = cats.filter((c) => c.group === "services");
+  let html = "";
+  if (goods.length) html += `<optgroup label="Товары">${goods.map(option).join("")}</optgroup>`;
+  if (services.length) html += `<optgroup label="Услуги">${services.map(option).join("")}</optgroup>`;
+  if (!html) return cats.map(option).join("");
+  return html;
+}
+
 function findPayCategory(config, key) {
   return payCategoriesFor(config).find((c) => c.key === key);
 }
@@ -1447,7 +1459,7 @@ function renderPayCategoryForm(config, appeal, formId) {
   const accrualMode = payAccrualMode(appeal);
   const rowsHtml = draft.rows
     .map((row, i) => {
-      const opts = cats.map((c) => `<option value="${esc(c.key)}" ${row.categoryKey === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("");
+      const opts = renderPayCategoryOptions(cats, row.categoryKey);
       const kindLabel = row.kind === "service" ? "Услуга" : "Товар";
       return `<div class="ca-pay-row panel" data-pay-row="${i}"><div class="ca-pay-row-top"><label class="field">Категория<select name="cat-${i}">${opts}</select><small class="input-hint muted"><span class="ca-pay-kind-badge">${esc(kindLabel)}</span> · из вашего профиля</small></label><button type="button" class="btn ghost icon-btn" data-ca-action="pay:remove-row:${i}" ${draft.rows.length < 2 ? "disabled" : ""} aria-label="Удалить">×</button></div>${row.categoryError ? `<p class="field-error" role="alert">${esc(row.categoryError)}</p>` : ""}<label class="field">Оплаченная сумма, ₽<input name="amount-${i}" inputmode="decimal" value="${esc(row.amountRaw)}" placeholder="0"></label>${row.amountError ? `<p class="field-error" role="alert">${esc(row.amountError)}</p>` : ""}${renderPayAccrualBlock(appeal, row, i)}</div>`;
     })
