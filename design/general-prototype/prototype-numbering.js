@@ -46,7 +46,7 @@ const PAGE_DEFS = [
   { n: 44, id: "admin:results", title: "Админ · результаты", zone: "admin", adminView: "results" },
   { n: 45, id: "admin:notifications", title: "Админ · уведомления", zone: "admin", adminView: "notifications" },
   { n: 46, id: "admin:settings", title: "Админ · настройки", zone: "admin", adminView: "settings" },
-  { n: 47, id: "partner:registration", title: "Партнёр · регистрация и вход", zone: "partner", rel: "partner/index.html", partnerMode: "registration" },
+  { n: 47, id: "partner:registration", title: "Партнёр · регистрация и вход", zone: "partner", partnerMode: "registration" },
   { n: 48, id: "partner:specialist:home", title: "Кабинет специалиста · главная", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "home" },
   { n: 49, id: "partner:specialist:partners", title: "Кабинет специалиста · партнёры", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "partners" },
   { n: 50, id: "partner:specialist:recommendations", title: "Кабинет специалиста · сертификаты", zone: "partner", r2: false, partnerRole: "specialist", partnerSection: "recommendations" },
@@ -275,7 +275,7 @@ const PAGE_DEFS = [
     const shell = document.querySelector("[data-admin-screen], main[data-view], #app[data-view]");
     const sv = shell?.getAttribute("data-admin-screen") || shell?.getAttribute("data-view");
     if (sv) return sv;
-    const hashView = (location.hash || "").replace(/^#\/?/, "").split("?")[0].replace(/^\/+/, "");
+    const hashView = (location.hash || "").slice(1).split("?")[0].replace(/^\/+/, "");
     const ADMIN_VIEWS = [
       "overview",
       "partners",
@@ -298,18 +298,20 @@ const PAGE_DEFS = [
     const cabinetBtn = document.querySelector('[data-testid="view-cabinet"]');
     const openFromQs = qs.get("open");
     if (cabinetBtn) {
-      if (cabinetBtn.getAttribute("aria-pressed") !== "true" && !openFromQs) return { mode: "registration" };
-    } else if (!openFromQs && !document.querySelector(".cabinet-shell, aside.sidebar, .mobile-navigation, .nav-btn")) {
-      return { mode: "registration" };
+      if (cabinetBtn.getAttribute("aria-pressed") !== "true") return { mode: "registration" };
+    } else if (!document.querySelector(".cabinet-shell, aside.sidebar, .mobile-navigation, .nav-btn")) {
+      if (!openFromQs) return { mode: "registration" };
     }
     const roleEl = document.querySelector('[data-testid="scenario-role"]');
     const role = (roleEl && roleEl.value) || qs.get("role") || "store";
-    let section = openFromQs || "home";
+    let section = "home";
     const currentNav = document.querySelector(".nav-btn[aria-current='page'], .sidebar .nav-btn[aria-current='page']");
     if (currentNav) {
       const act = currentNav.getAttribute("data-action") || "";
       const m = act.match(/^nav:(.+)$/);
       if (m) section = m[1];
+    } else if (openFromQs) {
+      section = openFromQs;
     }
     if (section === "wallet") {
       section = ["agent", "specialist"].includes(role) ? "bonus" : "settlements";
@@ -374,13 +376,13 @@ const PAGE_DEFS = [
       const view = readAdminView();
       return byAdminView.get(view) || byId.get("admin:overview");
     }
-    const standalone = PAGE_DEFS.find((p) => p.rel === rel);
-    if (standalone) return standalone;
     if (rel === "partner/index.html" || rel === "partner/roles.html") {
       const ctx = partnerContext();
       if (!ctx || ctx.mode === "registration") return byId.get("partner:registration");
       return resolvePartnerCabinetPage(ctx);
     }
+    const standalone = PAGE_DEFS.find((p) => p.zone === "standalone" && p.rel === rel);
+    if (standalone) return standalone;
     return byId.get("hub");
   }
 
@@ -406,7 +408,7 @@ const PAGE_DEFS = [
         return `${hubUrl("client/index.html")}#${path}`;
       }
     }
-    if (page.adminView) return `${hubUrl("admin/index.html")}#/${page.adminView}`;
+    if (page.adminView) return `${hubUrl("admin/index.html")}#${page.adminView}`;
     return hubUrl("index.html");
   }
 
@@ -426,7 +428,7 @@ const PAGE_DEFS = [
           scheduleRefresh();
           return;
         }
-        location.hash = `#/${page.adminView}`;
+        location.hash = `#${page.adminView}`;
         scheduleRefresh();
         return;
       }

@@ -96,9 +96,16 @@ try {
   pageId = await page.evaluate(() => window.protoResolvePage()?.id);
   assert.equal(pageId, "client:catalog-product");
 
-  await page.goto(`${hosted}/admin/index.html#/partners`, { waitUntil: "load" });
+  await page.goto(`${hosted}/admin/index.html#partners`, { waitUntil: "load" });
   pageId = await page.evaluate(() => window.protoResolvePage()?.id);
   assert.equal(pageId, "admin:partners");
+
+  await page.goto(`${base}/index.html`, { waitUntil: "load" });
+  const partnersTocHref = await page.evaluate(() => {
+    const a = document.querySelector('.proto-page-list a[data-page-id="admin:partners"]');
+    return a?.getAttribute("href") || "";
+  });
+  assert.ok(partnersTocHref.includes("#partners") && !partnersTocHref.includes("#/partners"), "admin TOC hash without slash");
 
   await page.goto(`${hosted}/admin/index.html`, { waitUntil: "load" });
   await page.click('[data-action="go"][data-view="partners"]');
@@ -117,11 +124,6 @@ try {
   for (const h of tocHrefs) {
     assert.doesNotMatch(h, /rc_demo_release/, `TOC href must not gate R2: ${h}`);
   }
-
-  await page.goto(`${hosted}/partner/roles.html?role=agent&open=bonus`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
-  pageId = await page.evaluate(() => window.protoResolvePage()?.id);
-  assert.equal(pageId, "partner:agent:bonus-accruals");
 
   await assertChromeIdle(page);
 
