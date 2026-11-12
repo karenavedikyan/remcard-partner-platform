@@ -4532,11 +4532,9 @@ ${n.targetId ? "Откройте приглашение в своём кабин
     a === "back" && ((i.screen = "choose"), T()),
     a === "view" &&
       (s === "cabinet"
-        ? (enterCabinetPreviewDrafts(i, {
-            employerKey: Y,
-            registering: entryState.registering,
-          }),
-          syncPreviewProfileWizards(),
+        ? (i.screen !== "cabinet" &&
+            (enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false }),
+            syncPreviewProfileWizards()),
           (i.screen = "cabinet"))
         : (i.screen === "cabinet" && (leaveCabinetPreviewDrafts(i), syncPreviewProfileWizards()),
           (i.screen = "welcome"),
@@ -4944,7 +4942,7 @@ if (["store", "company"].includes(i.role)) Y = i.role;
   if (role && ["store", "company", "agent", "specialist", "employee"].includes(role)) i.role = role;
   i.screen = "cabinet";
   i.page = "clients";
-  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: entryState.registering });
+  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: false });
   syncPreviewProfileWizards(i.role);
 })();
 if (i.screen === "cabinet") {
