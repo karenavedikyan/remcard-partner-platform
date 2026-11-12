@@ -474,6 +474,16 @@ function paint(s, focus = true) {
     `[data-profile-wizard="${s.config.role}"]`,
   );
   if (focus) {
+    const payReturn = !s.editing
+      ? document.querySelector("[data-pay-profile-return]")
+      : null;
+    if (payReturn) {
+      payReturn.scrollIntoView({ block: "start", behavior: "instant" });
+      payReturn
+        .querySelector('[data-action="pay-profile:resume"]')
+        ?.focus({ preventScroll: true });
+      return;
+    }
     const firstError = Object.keys(s.errors)[0];
     const target = root?.querySelector(
       firstError ? `#pw-${firstError}` : "#pw-title",
