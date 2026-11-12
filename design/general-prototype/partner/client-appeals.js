@@ -1847,6 +1847,24 @@ const PAGE_TITLES = {
   "observer-client": "Статус направления",
 };
 
+const SENDER_LIST_MUTED =
+  "Клиенты, которых вы направили партнёрам, и история их обращений.";
+const RECEIVER_LIST_MUTED =
+  "Покупатели вашего магазина и история их обращений.";
+
+function clientsListIsSenderView(config) {
+  const s = ws(config.key);
+  const caps = roleCaps(config.role);
+  if (config.role === "agent") return true;
+  const tab =
+    caps.incoming && caps.outgoing
+      ? s.tab || "incoming"
+      : caps.incoming
+        ? "incoming"
+        : "outgoing";
+  return tab === "outgoing" && caps.outgoing;
+}
+
 const PARTNER_OBSERVER_META = {
   "DEMO-PARTNER-017": { category: "Мебель и кухни на заказ" },
   "DEMO-PARTNER-022": { category: "Офисная и корпоративная мебель" },
@@ -1866,6 +1884,7 @@ export function clientAppealsPageTitle(config) {
     if (appeal) return appeal.clientName;
   }
   if (s.view === "list" && previewShowsObserverList(config)) return "Мои клиенты у партнёров";
+  if (s.view === "list" && clientsListIsSenderView(config)) return "Мои клиенты";
   return PAGE_TITLES[s.view] || "Клиенты";
 }
 
@@ -1882,7 +1901,9 @@ export function clientAppealsPageMuted(config) {
   if (s.view === "list" && s.clientsPreviewMode) {
     return "Сравните привычный список с видом направлений у партнёров.";
   }
-  if (s.view === "list") return "Покупатели вашего магазина и история их обращений.";
+  if (s.view === "list") {
+    return clientsListIsSenderView(config) ? SENDER_LIST_MUTED : RECEIVER_LIST_MUTED;
+  }
   if (s.view === "detail" && appeal) return `Обращение ${appeal.id} · ${sourceDisplay(appeal)}`;
   if (s.view === "scan") return "Сканер создаст обращение или откроет уже существующее.";
   if (s.view === "manual") return "Без сертификата: направившего, скидки и вознаграждения не будет.";
