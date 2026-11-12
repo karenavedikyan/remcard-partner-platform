@@ -1,4 +1,4 @@
-import { buildAccrualLines } from "./wallet-accruals-data.js";
+import { buildAccrualLines, buildAgentReceivableLines } from "./wallet-accruals-data.js";
 import {
   clientPurchaseLedgerRows,
   filterClientPurchaseLedgerRows,
@@ -114,6 +114,7 @@ export function setAccrualScenario(config, scenario) {
 }
 
 function linesFor(config) {
+  if (config.role === "agent") return buildAgentReceivableLines();
   return buildAccrualLines(getAccrualState(config).scenario);
 }
 

@@ -6,6 +6,51 @@ import { openAgentPartnersHub, agentPartnersLeadHtml } from "./agent-partners-hu
 let api = null; // { E, d, D, r, se, paint }
 let focusOutgoing = false;
 let inviteDraft = { step: 1, partner: "", subject: "", template: "", templateText: "", certificateReturn: false };
+let inviteDirty = false;
+
+export function partnerInviteIsDirty() {
+  return inviteDirty && !!document.querySelector('[data-testid="partner-invite-wizard"]');
+}
+
+export function clearPartnerInviteDraft() {
+  inviteDirty = false;
+  inviteDraft = { step: 1, partner: "", subject: "", template: "", templateText: "", certificateReturn: false };
+  resetInviteTerms();
+}
+
+function markInviteDirty() {
+  if (document.querySelector('[data-testid="partner-invite-wizard"]')) inviteDirty = true;
+}
+
+export function showPartnerInviteDiscardConfirm(onDiscard) {
+  const dialog = api?.se;
+  const body = dialog?.querySelector?.(".dialog-body");
+  if (!body || body.querySelector("[data-invite-discard-confirm]")) return;
+  body.insertAdjacentHTML(
+    "beforeend",
+    `<div class="coop-discard-confirm notice" role="alertdialog" data-invite-discard-confirm data-testid="partner-invite-discard-confirm">
+      <p><strong>Закрыть без сохранения?</strong></p>
+      <p class="small">Черновик приглашения к обсуждению будет потерян.</p>
+      <div class="row">
+        <button type="button" class="btn primary" data-invite-discard-keep>Продолжить редактирование</button>
+        <button type="button" class="btn ghost" data-invite-discard-close>Закрыть без сохранения</button>
+      </div>
+    </div>`,
+  );
+  const keep = body.querySelector("[data-invite-discard-keep]");
+  const discard = body.querySelector("[data-invite-discard-close]");
+  keep?.addEventListener("click", () => body.querySelector("[data-invite-discard-confirm]")?.remove(), { once: true });
+  discard?.addEventListener(
+    "click",
+    () => {
+      body.querySelector("[data-invite-discard-confirm]")?.remove();
+      clearPartnerInviteDraft();
+      onDiscard?.();
+    },
+    { once: true },
+  );
+  keep?.focus({ preventScroll: true });
+}
 const normalizePartnerName = value => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("ru").replace(/ё/g, "е");
 const isAgentInvite = () => api.getRole() === "agent";
 const invitePartner = () => api.getDirectory().find(partner => normalizePartnerName(partner.name) === normalizePartnerName(inviteDraft.partner));
@@ -122,7 +167,10 @@ export function compactPartnerCollection(html) {
 
 export function initPartnersRedesign(context) {
   api = context;
-  api.se.addEventListener("close", () => api.se.classList.remove("hub-wide"));
+  api.se.addEventListener("close", () => {
+    api.se.classList.remove("hub-wide", "pr-invite-dialog");
+    inviteDirty = false;
+  });
   document.addEventListener("submit", (event) => {
     if (event.target.id !== "partner-invite-step-form") return;
     event.preventDefault();
@@ -151,15 +199,18 @@ export function initPartnersRedesign(context) {
     if (["partnerAction", "partnerBenefit", "ownTerms"].includes(termKey)) {
       inviteDraft[termKey] = event.target.value;
       updateInviteTerms();
+      markInviteDirty();
       return;
     }
     if (event.target.matches("[data-invite-published]")) {
       inviteDraft.selectedTerms = [...api.se.querySelectorAll("[data-invite-published]:checked")].map(input => Number(input.dataset.invitePublished));
       updateInviteTerms();
+      markInviteDirty();
       return;
     }
     if (event.target.id !== "partner-invite-value" || !event.target.closest("#partner-invite-step-form")) return;
     event.target.setCustomValidity("");
+    markInviteDirty();
     if (inviteDraft.step === 1) inviteDraft.partner = event.target.value;
     if (inviteDraft.step === 2) {
       inviteDraft.subject = event.target.value;
@@ -213,6 +264,7 @@ export function openPartnerInviteWizard({ certificateReturn = false } = {}) {
     inviteDraft = { step: 1, partner: "", subject: "", template: "", templateText: "", certificateReturn: false };
     resetInviteTerms();
   }
+  inviteDirty = false;
   inviteDraft.role = api.getRole();
   inviteDraft.step = 1;
   inviteDraft.certificateReturn = certificateReturn;
@@ -253,10 +305,15 @@ function paintPartnerInviteStep() {
     body = body.replace('<input type="hidden" name="category"', `<input type="hidden" name="proposedTerms" value="${r(draft.terms?.trim() || "")}"><input type="hidden" name="category"`);
   }
   const stepHead = draft.step === 2 ? "" : `<div class="pr-invite-step-head"><span class="eyebrow">Шаг ${draft.step} из 3</span><h2>${title}</h2><p class="small">${intro}</p></div>`;
-  E("Пригласить по ссылке", `<section class="pr-invite-wizard" data-testid="partner-invite-wizard">${progress}${stepHead}${body}<p class="pr-invite-demo small">Только макет: реальные ссылки и уведомления не создаются.</p>${draft.certificateReturn ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}</section>`);
-  se.classList.add("pr-invite-dialog");
+  const wizardHtml = `<section class="pr-invite-wizard" data-testid="partner-invite-wizard">${progress}${stepHead}${body}<p class="pr-invite-demo small">Только макет: реальные ссылки и уведомления не создаются.</p>${draft.certificateReturn ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}</section>`;
+  if (isAgentInvite() && openAgentPartnersHub({ tab: "link", title: "Пригласить по ссылке", body: wizardHtml, wide: true })) {
+  } else {
+    E("Пригласить по ссылке", wizardHtml);
+    se.classList.add("pr-invite-dialog");
+  }
   if (draft.step !== 2) updateInviteTerms();
-  requestAnimationFrame(() => se.querySelector("#partner-invite-value")?.focus({preventScroll:true}));
+  const focusRoot = isAgentInvite() ? document.getElementById("agent-partners-hub") : se;
+  requestAnimationFrame(() => focusRoot?.querySelector("#partner-invite-value")?.focus({ preventScroll: true }));
 }
 
 export function recipientInvitationSummary({ invitation, sender }) {
@@ -266,9 +323,16 @@ export function recipientInvitationSummary({ invitation, sender }) {
 
 export function showPartnerInviteReady({ id, partner, subject, proposedTerms, certificateReturn }) {
   const { E, d, D, r, se } = api;
-  inviteDraft = {step:1,partner:"",subject:"",template:"",templateText:"",certificateReturn:false};
-  E("Приглашение создано", `<section class="pr-invite-wizard" data-testid="partner-invite-ready"><div class="pr-invite-ready-icon">${D("check")}</div><div class="pr-invite-step-head"><h2>Теперь передайте приглашение</h2><p class="small">Для «${r(partner)}» всё подготовлено. Нажмите «Поделиться», скопируйте текст и передайте знакомому.</p></div><div class="pr-invite-message"><span class="eyebrow">Пригласительное сообщение</span><p>${r(subject)}</p></div>${d("Поделиться приглашением", `link-share:${id}`, "primary pr-invite-share")}${d("Открыть карточку приглашения", `link-open:${id}`, "ghost")}<details class="pr-invite-after"><summary>Что будет после передачи приглашения</summary><ol class="pr-invite-next"><li><b>1</b><div><strong>Партнёр зарегистрируется</strong><p class="small">После обычного входа или регистрации он вернётся к вашему приглашению.</p></div></li><li><b>2</b><div><strong>Вы согласуете условия</strong><p class="small">Само приглашение не активирует сотрудничество и не устанавливает проценты.</p></div></li></ol></details>${certificateReturn ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}<p class="pr-invite-demo small">Это демонстрация. Реальная ссылка не создана, сообщение не отправлено. Приглашение сохранено только в памяти макета.</p></section>`);
-  if (proposedTerms) se.querySelector(".pr-invite-message").insertAdjacentHTML("afterend", `<div class="pr-invite-message"><span class="eyebrow">Предлагаемые условия</span><p>${r(proposedTerms)}</p></div>`);
+  clearPartnerInviteDraft();
+  const proposedBlock = proposedTerms
+    ? `<div class="pr-invite-message"><span class="eyebrow">Предлагаемые условия</span><p>${r(proposedTerms)}</p></div>`
+    : "";
+  const readyHtml = `<section class="pr-invite-wizard" data-testid="partner-invite-ready"><div class="pr-invite-ready-icon">${D("check")}</div><div class="pr-invite-step-head"><h2>Теперь передайте приглашение</h2><p class="small">Для «${r(partner)}» всё подготовлено. Нажмите «Поделиться», скопируйте текст и передайте знакомому.</p></div><div class="pr-invite-message"><span class="eyebrow">Пригласительное сообщение</span><p>${r(subject)}</p></div>${proposedBlock}${d("Поделиться приглашением", `link-share:${id}`, "primary pr-invite-share")}${d("Открыть карточку приглашения", `link-open:${id}`, "ghost")}<details class="pr-invite-after"><summary>Что будет после передачи приглашения</summary><ol class="pr-invite-next"><li><b>1</b><div><strong>Партнёр зарегистрируется</strong><p class="small">После обычного входа или регистрации он вернётся к вашему приглашению.</p></div></li><li><b>2</b><div><strong>Вы согласуете условия</strong><p class="small">Само приглашение не активирует сотрудничество и не устанавливает проценты.</p></div></li></ol></details>${certificateReturn ? d("Вернуться к сертификату", "cert-return", "ghost") : ""}<p class="pr-invite-demo small">Это демонстрация. Реальная ссылка не создана, сообщение не отправлено. Приглашение сохранено только в памяти макета.</p></section>`;
+  if (isAgentInvite() && openAgentPartnersHub({ tab: "link", body: readyHtml, readyMode: true })) {
+    if (se.open) se.close();
+    return;
+  }
+  E("Приглашение создано", readyHtml);
   se.classList.add("pr-invite-dialog");
 }
 

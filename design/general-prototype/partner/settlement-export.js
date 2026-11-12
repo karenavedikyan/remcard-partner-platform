@@ -120,7 +120,7 @@ export function createSettlementWorkbook(model, ExcelJS) {
   return wb;
 }
 let library;
-function loadExcel() {
+export function loadExcelLibrary() {
   if(globalThis.ExcelJS) return Promise.resolve(globalThis.ExcelJS);
   if(!library) library=new Promise((resolve,reject)=>{
     const script=document.createElement("script");
@@ -130,6 +130,9 @@ function loadExcel() {
     document.head.append(script);
   });
   return library;
+}
+function loadExcel() {
+  return loadExcelLibrary();
 }
 export async function downloadSettlementExport(s,role) {
   const model=buildSettlementExport(s,role);

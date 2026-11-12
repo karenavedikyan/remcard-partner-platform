@@ -7,6 +7,63 @@ export function buildAccrualLines(scenario) {
   return lines;
 }
 
+/** Agent wallet card totals align with agent-receivables-registry-data ORDERS. */
+export function buildAgentReceivableLines() {
+  return [
+    {
+      id: "agent-ord-101",
+      direction: "in",
+      purchaseId: "ЗАК-ДЕМО-101",
+      category: "Материалы",
+      partner: "Дом материалов",
+      gross: 7500,
+      confirmedUnpaid: 7500,
+      waitingConfirmation: 0,
+      suspended: 0,
+      paid: 0,
+      confirmDays: 7,
+      confirmDate: "2026-10-10",
+      handoverPending: false,
+      suspendedReason: null,
+      paidHistory: [],
+    },
+    {
+      id: "agent-ord-201",
+      direction: "in",
+      purchaseId: "ЗАК-ДЕМО-201",
+      category: "Плитка",
+      partner: "Керамика Юг",
+      gross: 4200,
+      confirmedUnpaid: 4200,
+      waitingConfirmation: 0,
+      suspended: 0,
+      paid: 0,
+      confirmDays: 7,
+      confirmDate: "2026-10-09",
+      handoverPending: false,
+      suspendedReason: null,
+      paidHistory: [],
+    },
+    {
+      id: "agent-ord-102",
+      direction: "in",
+      purchaseId: "ЗАК-ДЕМО-102",
+      category: "Освещение",
+      partner: "Дом материалов",
+      gross: 5000,
+      confirmedUnpaid: 0,
+      waitingConfirmation: 5000,
+      suspended: 0,
+      paid: 0,
+      confirmDays: 14,
+      confirmDate: "2026-10-12",
+      handoverPending: false,
+      suspendedReason: null,
+      paidHistory: [],
+    },
+  ];
+}
+
 function pendingOnlyLines() {
   return [
     {

@@ -1,5 +1,5 @@
 import { Z as ve, _ as be } from "./chunk-RVN7VNK5.js";
-import { initPartnersRedesign, renderPartnersRedesign, markOutgoingFocus, scrollToZone, hubChoose, hubFindShell, showcaseResults, compactPartnerCollection, openPartnerInviteWizard, showPartnerInviteReady, recipientInvitationSummary } from "./partners-redesign.js?v=coop3";
+import { initPartnersRedesign, renderPartnersRedesign, markOutgoingFocus, scrollToZone, hubChoose, hubFindShell, showcaseResults, compactPartnerCollection, openPartnerInviteWizard, showPartnerInviteReady, recipientInvitationSummary, partnerInviteIsDirty, showPartnerInviteDiscardConfirm, clearPartnerInviteDraft } from "./partners-redesign.js?v=coop4";
 import { initAgentPartnersHub, closeAgentPartnersHub } from "./agent-partners-hub.js";
 import { initCooperationControls, cooperationHasUnsavedDraft, requestClose } from "./cooperation-controls.js?v=coop8";
 import {
@@ -2648,6 +2648,8 @@ var G = [
       id: "materials",
       name: "Дом материалов",
       city: "Краснодар",
+      partnershipNote:
+        "Договорились в демо сценарии: приоритетная обработка заявок по напольным покрытиям до конца сезона. Только для макета.",
       categories: [
         {
           id: "floor",
@@ -2686,6 +2688,7 @@ var G = [
       type: e.id === "materials" ? "store" : "company",
       topics: e.categories.map((t) => t.name),
       ready: !0,
+      partnershipNote: e.partnershipNote,
     })),
     {
       id: "light",
@@ -3782,7 +3785,7 @@ function Oa(e, t, a) {
     n = G.find((l) => l.id === t.id);
   E(
     t.name,
-    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
+    `${coop.counterpartyProfileHtml(t)}<p class="muted">${r(t.city)} \xB7 ${r(t.topics.join(", "))}</p><span class="pill">${r(coop.decoratePartnerStatus(t, t.ready ? "Условия согласованы" : "Ожидает ответа"))}</span>${n ? `<section class="stack"><h3>Ваши условия по категориям</h3>${(t.ready ? coop.ensure(t.id).agreed : n.categories).map((l) => `<div class="term-summary"><strong>${r(l.name)}</strong><span>Скидка + бонус: <b>${l.limit}%</b></span></div>`).join("")}<small>Общий процент распределяется при создании сертификата.</small></section>` : s ? d("Посмотреть приглашение", `link-open:${s.id}`) : ""}${t.ready ? coop.cardBlockHtml(t) : ""}${t.partnershipNote ? `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(t.partnershipNote)}</p></section>` : ""}${qt(t)}${O("clients") && t.ready && !coop.isPaused(t.id) ? d("Создать сертификат", "action:recommend", "primary") : ""}${t.ready && coop.isPaused(t.id) ? '<p class="notice">Партнёр на паузе: новый сертификат недоступен. Старые записи и ссылки просмотра сохраняются.</p>' : ""}<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>`,
   );
   se.querySelector(".dialog-body").insertAdjacentHTML("beforeend", `<div class="record-card-actions">${recordActionToolbar("partners", t, a, k() && !O("terms"), false, false)}</div>`);
   if (!k() || O("ledger"))
@@ -4051,6 +4054,10 @@ function closeRoleDialog() {
     requestClose();
     return;
   }
+  if (partnerInviteIsDirty()) {
+    showPartnerInviteDiscardConfirm(() => _());
+    return;
+  }
   _();
 }
 se.addEventListener(
@@ -4063,7 +4070,10 @@ se.addEventListener("cancel", (event) => {
   // Escape while dirty/confirm: coop Escape keydown guard handles non-cancelable
   // CloseWatcher closes; still preventDefault whenever the event allows it.
   const protect =
-    cooperationHasUnsavedDraft() || !!se.querySelector(".coop-discard-confirm");
+    cooperationHasUnsavedDraft() ||
+    partnerInviteIsDirty() ||
+    !!se.querySelector(".coop-discard-confirm") ||
+    !!se.querySelector("[data-invite-discard-confirm]");
   if (!protect) return;
   if (event.cancelable) {
     event.preventDefault();
@@ -5025,6 +5035,8 @@ document.addEventListener("submit", (e) => {
 initPartnersRedesign({ E, d, D, r, se, getRole: () => i.role, getDirectory: () => P });
 initAgentPartnersHub({
   getRole: () => i.role,
+  inviteDirty: partnerInviteIsDirty,
+  clearInviteDraft: clearPartnerInviteDraft,
   onAction: (action) => {
     closeAgentPartnersHub();
     if (action === "partner-hub") $t();
