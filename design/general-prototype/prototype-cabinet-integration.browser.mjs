@@ -75,6 +75,53 @@ try {
         return row ? getComputedStyle(row).visibility === "hidden" : false;
       });
       assert.ok(mainObscured, "main content hidden under portal while embed open");
+      const htmlObscured = await page.evaluate(() => {
+        const children = [...document.querySelectorAll(".shell main.content > *, .shell .content.main > *")];
+        return (
+          document.documentElement.classList.contains("proto-cabinet-embed-host-active") &&
+          children.length > 0 &&
+          children.every((el) => getComputedStyle(el).visibility === "hidden")
+        );
+      });
+      assert.ok(htmlObscured, "html embed class hides stale main at desktop");
+      for (let i = 0; i < 2; i++) {
+        const themeNow = await page.evaluate(() => document.documentElement.dataset.theme);
+        if (themeNow === "dark") break;
+        await page.locator('[data-action="theme"]').click();
+      }
+      await page.waitForFunction(() => document.documentElement.dataset.theme === "dark", null, {
+        timeout: 5000,
+      });
+      const hostTheme = await page
+        .locator("[data-testid='cabinet-standalone-host']")
+        .getAttribute("data-embed-host-theme");
+      assert.equal(hostTheme, "dark", "portal host tracks dark theme");
+      const afterTheme = await page.evaluate(() => {
+        const children = [...document.querySelectorAll(".shell main.content > *, .shell .content.main > *")];
+        return {
+          htmlActive: document.documentElement.classList.contains("proto-cabinet-embed-host-active"),
+          hidden: children.filter((el) => getComputedStyle(el).visibility === "hidden").length,
+          total: children.length,
+        };
+      });
+      assert.ok(afterTheme.htmlActive, "embed host html class survives R()");
+      assert.equal(afterTheme.hidden, afterTheme.total, "stale main hidden after theme cycle");
+      const barChrome = await page
+        .locator("[data-testid='cabinet-standalone-host']")
+        .evaluate((host) => {
+          const back = host.querySelector('[data-testid="proto-standalone-back"]');
+          const title = host.querySelector("[data-standalone-title]");
+          const pick = (el) => (el ? getComputedStyle(el).color : "");
+          return {
+            hostTheme: host.dataset.embedHostTheme,
+            back: pick(back),
+            title: pick(title),
+            inkVar: getComputedStyle(host).getPropertyValue("--embed-host-ink").trim(),
+          };
+        });
+      assert.equal(barChrome.hostTheme, "dark");
+      assert.equal(barChrome.inkVar.toLowerCase(), "#f1f0eb", "portal exposes dark ink token on host");
+      assert.match(barChrome.title, /^rgb\(24[01],\s*24[01]/, `host title readable in dark, got ${barChrome.title}`);
       await page.evaluate(() => {
         window.__supplementalPostCount = 0;
         window.addEventListener("message", (ev) => {
@@ -456,6 +503,38 @@ try {
     { timeout: 10000 },
   );
   await chainPage.close();
+
+  const resizeThemePage = await browser.newPage();
+  await resizeThemePage.setViewportSize({ width: 1280, height: 900 });
+  await enterCabinet(resizeThemePage, "store");
+  await resizeThemePage.locator('[data-action="nav:partners"], [data-action="nav:links"]').first().click();
+  await resizeThemePage.waitForSelector("[data-coll-open]", { timeout: 10000 });
+  await resizeThemePage.locator("[data-coll-open]").first().click();
+  await resizeThemePage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])");
+  await resizeThemePage.setViewportSize({ width: 375, height: 812 });
+  await resizeThemePage.waitForTimeout(200);
+  const mobileObscured = await resizeThemePage.evaluate(() => {
+    const children = [...document.querySelectorAll(".shell main.content > *, .shell .content.main > *")];
+    return {
+      htmlActive: document.documentElement.classList.contains("proto-cabinet-embed-host-active"),
+      hidden: children.filter((el) => getComputedStyle(el).visibility === "hidden").length,
+      total: children.length,
+    };
+  });
+  assert.ok(mobileObscured.htmlActive, "html embed class after desktop→mobile resize");
+  assert.equal(mobileObscured.hidden, mobileObscured.total, "no stale table under dock on mobile");
+  await resizeThemePage.locator('[data-testid="proto-standalone-close"]').click();
+  await resizeThemePage.waitForFunction(
+    () => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
+    null,
+    { timeout: 10000 },
+  );
+  const restored = await resizeThemePage.evaluate(() => {
+    const children = [...document.querySelectorAll(".shell main.content > *, .shell .content.main > *")];
+    return children.every((el) => getComputedStyle(el).visibility !== "hidden");
+  });
+  assert.ok(restored, "main visibility restored after embed close");
+  await resizeThemePage.close();
 
   for (const viewport of [
     { width: 1280, height: 900 },

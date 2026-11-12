@@ -1,17 +1,34 @@
 .cabinet-standalone-host--portal {
+  --embed-host-bg: #f6f5f3;
+  --embed-host-surface: #fff;
+  --embed-host-ink: #242623;
+  --embed-host-muted: #61645f;
+  --embed-host-line: #dedfd9;
+  --embed-host-accent: #bb3035;
   box-shadow: 0 8px 32px rgba(39, 43, 36, 0.12);
-  border: 1px solid var(--line, #e5e5df);
+  border: 1px solid var(--embed-host-line);
   border-radius: 12px;
   overflow: hidden;
   z-index: 5000;
+}
+
+html[data-theme="dark"] .cabinet-standalone-host--portal {
+  --embed-host-bg: #181a19;
+  --embed-host-surface: #222523;
+  --embed-host-ink: #f1f0eb;
+  --embed-host-muted: #b5b9b2;
+  --embed-host-line: #454b45;
+  --embed-host-accent: #f49391;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
 .cabinet-standalone-host {
   z-index: 12;
   display: flex;
   flex-direction: column;
-  background: var(--bg, #f6f6f4);
+  background: var(--embed-host-bg, #f6f6f4);
   border-radius: inherit;
+  color: var(--embed-host-ink, #242623);
 }
 
 .cabinet-standalone-host[hidden] {
@@ -24,15 +41,33 @@
   gap: 0.75rem;
   flex-shrink: 0;
   padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid var(--line, #e5e5df);
-  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--embed-host-line, #dedfd9);
+  background: var(--embed-host-surface, #fff);
+  color: var(--embed-host-ink, #242623);
+}
+
+.cabinet-standalone-host__btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  color: var(--embed-host-ink, #242623) !important;
+  -webkit-text-fill-color: var(--embed-host-ink, #242623);
+  background: transparent;
+  border: 1px solid var(--embed-host-line, #dedfd9);
+}
+
+.cabinet-standalone-host__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--embed-host-line, #dedfd9) 35%, transparent);
 }
 
 .cabinet-standalone-host__title {
   flex: 1;
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--ink, #252923);
+  color: var(--embed-host-ink, #242623);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -43,16 +78,20 @@
   min-height: 0;
   width: 100%;
   border: 0;
-  background: var(--bg, #f6f6f4);
+  background: var(--embed-host-bg, #f6f6f4);
   overflow: hidden;
 }
 
 /* Keep main column geometry for portal math; hide stale list rows in the dock gap. */
+html.proto-cabinet-embed-host-active .shell main.content,
+html.proto-cabinet-embed-host-active .shell .content.main,
 .shell.cabinet-standalone-active main.content,
 .shell.cabinet-standalone-active .content.main {
-  background: var(--bg, #f6f6f4);
+  background: var(--embed-host-bg, var(--bg, #f6f6f4));
 }
 
+html.proto-cabinet-embed-host-active .shell main.content > *,
+html.proto-cabinet-embed-host-active .shell .content.main > *,
 .shell.cabinet-standalone-active main.content > *,
 .shell.cabinet-standalone-active .content.main > * {
   visibility: hidden;

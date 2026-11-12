@@ -41,10 +41,18 @@ assert.match(roles, /embed-supplemental-actions/, "143 supplemental toolbar html
 const embed143 = readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8");
 assert.match(embed143, /type: "supplemental"/, "143 posts supplemental actions");
 assert.match(embed143, /byId\("embed-supplemental"\)/, "143 supplemental delegate root");
+const hostCss = readFileSync(path.join(root, "partner/cabinet-standalone-host.css"), "utf8");
+assert.match(hostCss, /cabinet-standalone-active main\.content/, "hide stale main content under portal gap");
 assert.match(
-  readFileSync(path.join(root, "partner/cabinet-standalone-host.css"), "utf8"),
-  /cabinet-standalone-active main\.content/,
-  "hide stale main content under portal gap",
+  hostCss,
+  /html\.proto-cabinet-embed-host-active .shell main\.content/,
+  "html embed class hides stale main across theme rerender",
+);
+assert.match(hostCss, /--embed-host-ink/, "portal host uses explicit theme tokens");
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /syncEmbedShellChrome/,
+  "afterCabinetRender restores embed shell chrome",
 );
 const embedRole = readFileSync(path.join(root, "standalone-embed-role.js"), "utf8");
 assert.match(embedRole, /scanSaleRelockScheduled/, "146 sale guard coalesces relock rAF");

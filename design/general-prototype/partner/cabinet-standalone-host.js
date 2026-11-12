@@ -112,9 +112,9 @@ export function createCabinetStandaloneHost(config) {
   hostEl.hidden = true;
   hostEl.setAttribute("data-testid", "cabinet-standalone-host");
   hostEl.innerHTML = `<header class="cabinet-standalone-host__bar">
-      <button type="button" class="btn ghost" data-action="proto-standalone-back" data-testid="proto-standalone-back">Назад</button>
+      <button type="button" class="cabinet-standalone-host__btn" data-action="proto-standalone-back" data-testid="proto-standalone-back">Назад</button>
       <span class="cabinet-standalone-host__title" data-standalone-title></span>
-      <button type="button" class="btn ghost" data-action="proto-standalone-close" data-testid="proto-standalone-close">Закрыть</button>
+      <button type="button" class="cabinet-standalone-host__btn" data-action="proto-standalone-close" data-testid="proto-standalone-close">Закрыть</button>
     </header>
     <iframe class="cabinet-standalone-host__frame" title="Встроенный макет прототипа" sandbox="allow-scripts allow-same-origin allow-forms" data-testid="cabinet-standalone-frame"></iframe>`;
   document.body.appendChild(hostEl);
@@ -195,20 +195,34 @@ export function createCabinetStandaloneHost(config) {
     reposition();
   }
 
-  function watchLayout() {
-    if (resizeObserver) return;
-    resizeObserver = new ResizeObserver(() => reposition());
+  function observeLayoutTargets() {
+    if (!resizeObserver) return;
+    resizeObserver.disconnect();
     const shell = document.querySelector(".shell");
     if (shell) resizeObserver.observe(shell);
     const flow = document.querySelector(".proto-page-flow");
     if (flow) resizeObserver.observe(flow);
     const dockPanel = document.querySelector(".proto-page-panel");
     if (dockPanel) resizeObserver.observe(dockPanel);
-    window.addEventListener("resize", reposition);
-    window.addEventListener("scroll", onOuterScroll, { passive: true });
-    document.addEventListener("scroll", onOuterScroll, { passive: true, capture: true });
-    window.visualViewport?.addEventListener("resize", reposition);
-    window.visualViewport?.addEventListener("scroll", reposition);
+  }
+
+  function watchLayout() {
+    if (!resizeObserver) {
+      resizeObserver = new ResizeObserver(() => reposition());
+      window.addEventListener("resize", reposition);
+      window.addEventListener("scroll", onOuterScroll, { passive: true });
+      document.addEventListener("scroll", onOuterScroll, { passive: true, capture: true });
+      window.visualViewport?.addEventListener("resize", reposition);
+      window.visualViewport?.addEventListener("scroll", reposition);
+    }
+    observeLayoutTargets();
+  }
+
+  function syncEmbedShellChrome() {
+    if (hostEl.hidden) return;
+    document.documentElement.classList.add("proto-cabinet-embed-host-active");
+    document.querySelector(".shell")?.classList.add("cabinet-standalone-active");
+    observeLayoutTargets();
   }
 
   function unwatchLayout() {
@@ -281,9 +295,42 @@ export function createCabinetStandaloneHost(config) {
     }
   }
 
+  function syncHostThemeChrome(theme) {
+    const t = theme || currentTheme();
+    hostEl.dataset.embedHostTheme = t;
+    const tokens =
+      t === "dark"
+        ? { ink: "#f1f0eb", line: "#454b45", surface: "#222523", bg: "#181a19" }
+        : { ink: "#242623", line: "#dedfd9", surface: "#ffffff", bg: "#f6f5f3" };
+    hostEl.style.setProperty("--embed-host-ink", tokens.ink);
+    hostEl.style.setProperty("--embed-host-line", tokens.line);
+    hostEl.style.setProperty("--embed-host-surface", tokens.surface);
+    hostEl.style.setProperty("--embed-host-bg", tokens.bg);
+    const bar = hostEl.querySelector(".cabinet-standalone-host__bar");
+    if (bar) {
+      bar.style.backgroundColor = tokens.surface;
+      bar.style.borderColor = tokens.line;
+      bar.style.color = tokens.ink;
+    }
+    const chromeEls = [
+      hostEl.querySelector('[data-testid="proto-standalone-back"]'),
+      hostEl.querySelector('[data-testid="proto-standalone-close"]'),
+      hostEl.querySelector(".cabinet-standalone-host__title"),
+    ];
+    chromeEls.forEach((el) => {
+      if (!el) return;
+      el.style.color = tokens.ink;
+      if (el.tagName === "BUTTON") {
+        el.style.borderColor = tokens.line;
+        el.style.setProperty("-webkit-text-fill-color", tokens.ink);
+      }
+    });
+  }
+
   function syncThemeToFrame(theme) {
     if (hostEl.hidden) return;
     const t = theme || currentTheme();
+    syncHostThemeChrome(t);
     try {
       frame.contentWindow?.postMessage(
         { source: "proto-cabinet-host", type: "theme", theme: t },
@@ -328,6 +375,7 @@ export function createCabinetStandaloneHost(config) {
     document.querySelector(".shell")?.classList.add("cabinet-standalone-active");
     document.documentElement.classList.add("proto-cabinet-embed-host-active");
     hostEl.hidden = false;
+    syncHostThemeChrome();
     watchLayout();
     reposition();
     const guestHash = embedCtx?.guestHash;
@@ -433,6 +481,7 @@ export function createCabinetStandaloneHost(config) {
         notify?.("Встроенный макет закрыт: изменились роль или права.", "info");
         return;
       }
+      syncEmbedShellChrome();
       reposition();
       syncThemeToFrame();
     },
