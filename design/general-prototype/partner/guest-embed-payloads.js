@@ -129,6 +129,10 @@ export function clientAppealsPurchaseCtx(purchase, appeal, partnerName) {
         : "",
     designExample: false,
     sourceAppealId: appeal.id,
+    embedSnapshot: true,
+    hasCalcSnapshot: false,
+    hasRewardSnapshot: false,
+    rewardAmount: null,
   };
 }
 

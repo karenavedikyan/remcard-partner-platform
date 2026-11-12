@@ -72,13 +72,36 @@
       if (Number(data.pageN) !== 144) return;
       if (data.payload?.walletState) embedWalletState = data.payload.walletState;
       if (data.payload?.purchaseCtx?.certCode) embedCertCode = data.payload.purchaseCtx.certCode;
+      if (typeof window.__protoApplyPurchaseEmbedCtx === "function" && data.payload?.purchaseCtx) {
+        window.__protoApplyPurchaseEmbedCtx(data.payload);
+      }
     });
   }
 
+  function returnEmbedWalletHistoryDetail() {
+    if (!window.__protoCabinetEmbedNavigate) return false;
+    const state =
+      embedWalletState && typeof embedWalletState === "object"
+        ? { ...embedWalletState, view: embedWalletState.view || "detail" }
+        : { view: "detail" };
+    window.__protoCabinetEmbedNavigate(
+      147,
+      "",
+      {
+        walletState: state,
+        purchaseCtx: null,
+        receiptCtx: null,
+      },
+      { replace: true },
+    );
+    return true;
+  }
+
   byId("op-history").addEventListener("click", (e) => {
-    if (isCabinetEmbed && window.__protoCabinetEmbedBack?.()) {
+    if (isCabinetEmbed) {
       e.preventDefault();
-      return;
+      if (window.__protoCabinetEmbedBack?.()) return;
+      if (returnEmbedWalletHistoryDetail()) return;
     }
     showHistory(false);
   });

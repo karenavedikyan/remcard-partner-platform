@@ -98,7 +98,6 @@
   }
 
   function apply144(payload) {
-    var actor = payload.embedActor || {};
     var perms = payload.permissions || {};
     var ctx = payload.purchaseCtx || {};
     if (payload.designExample || ctx.designExample) {
@@ -114,23 +113,8 @@
         "Дизайн-макет без привязки к выбранной покупке в обращениях. Цифры на странице — демонстрационный пример.";
       return;
     }
-    var dir = document.querySelector(".op-direction");
-    if (dir && actor.directionLabel) dir.textContent = actor.directionLabel;
-    if (ctx.certCode) {
-      var doc = document.querySelector(".op-document strong");
-      if (doc) doc.textContent = ctx.certCode;
-    }
-    if (ctx.amount != null) {
-      var pay = document.querySelector(".op-payable");
-      if (pay) pay.textContent = Number(ctx.amount).toLocaleString("ru-RU") + " ₽";
-    }
-    if (ctx.partner) {
-      var part = document.querySelector(".op-participants strong");
-      if (part) part.textContent = ctx.partner;
-    }
-    var focus = document.getElementById("op-focus-label");
-    if (focus && (payload.role === "agent" || payload.role === "specialist")) {
-      focus.textContent = "Связанное начисление · просмотр";
+    if (typeof window.__protoApplyPurchaseEmbedCtx === "function" && ctx.embedSnapshot) {
+      window.__protoApplyPurchaseEmbedCtx(payload);
     }
     if (perms.viewOnly) {
       document.documentElement.dataset.embedReadonly = "1";

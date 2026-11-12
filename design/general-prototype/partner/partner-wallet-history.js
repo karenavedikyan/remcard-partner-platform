@@ -44,6 +44,10 @@
       certCode: WALLET_CERT,
       dateDisplay: row.display,
       id: row.id,
+      embedSnapshot: true,
+      hasCalcSnapshot: false,
+      hasRewardSnapshot: false,
+      rewardAmount: null,
     };
   }
   let theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

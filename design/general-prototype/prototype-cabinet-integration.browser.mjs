@@ -383,6 +383,11 @@ try {
     timeout: 10000,
   });
   const frame144a = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  const reward144 = (await frame144a.locator(".op-accrual-amount").textContent()) || "";
+  assert.doesNotMatch(reward144, /5\s*400/, `144 must not show default reward, got: ${reward144}`);
+  assert.ok(await frame144a.locator("#op-breakdown").isHidden(), "144 embed must hide calc breakdown");
+  const parts144 = (await frame144a.locator(".op-participants").textContent()) || "";
+  assert.doesNotMatch(parts144, /Сергей/i, "144 must not show default executor");
   await frame144a.locator("#op-history").click();
   await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
     timeout: 10000,
