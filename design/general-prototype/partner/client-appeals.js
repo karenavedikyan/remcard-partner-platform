@@ -1872,14 +1872,15 @@ export function clientAppealsPageTitle(config) {
 export function clientAppealsPageMuted(config) {
   const s = ws(config.key);
   const appeal = s.selectedId ? appeals.find((a) => a.id === s.selectedId) : null;
-  if (s.view === "observer-partner" || s.view === "observer-client") {
-    return "Только просмотр: статусы и покупки по вашим направлениям, без внутренних заметок партнёра.";
-  }
-  if (s.view === "list" && previewShowsObserverList(config)) {
-    return "Сводка по партнёрам, куда вы направляли клиентов. Read-only демо.";
+  if (
+    s.view === "observer-partner" ||
+    s.view === "observer-client" ||
+    (s.view === "list" && previewShowsObserverList(config))
+  ) {
+    return "Пример ваших направлений · демоданные";
   }
   if (s.view === "list" && s.clientsPreviewMode) {
-    return "Сравните привычный список с новым видом направлений у партнёров.";
+    return "Сравните привычный список с видом направлений у партнёров.";
   }
   if (s.view === "list") return "Покупатели вашего магазина и история их обращений.";
   if (s.view === "detail" && appeal) return `Обращение ${appeal.id} · ${sourceDisplay(appeal)}`;
@@ -1982,11 +1983,38 @@ function observerPeriodCutoff(period) {
   return d;
 }
 
+function referralDateIso(appeal) {
+  return appeal.createdAt || appeal.updatedAt;
+}
+
+function formatObserverDateTime(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("ru-RU", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function observerInWork(appeal) {
+  return (
+    appeal.stageId !== SYSTEM.REFUSED &&
+    appeal.stageId !== SYSTEM.RETURN &&
+    appeal.stageId !== SYSTEM.SHIPPED
+  );
+}
+
 function filterObserverAppeals(s, list) {
   const q = (s.observerQ || "").trim().toLowerCase();
   const cutoff = observerPeriodCutoff(s.observerPeriod || "all");
   let out = list.slice();
-  if (cutoff) out = out.filter((a) => new Date(a.updatedAt) >= cutoff);
+  if (cutoff) out = out.filter((a) => new Date(referralDateIso(a)) >= cutoff);
   if (!q) return out;
   return out.filter((a) => {
     const partner = PARTNERS[a.receivingPartnerId];
@@ -2008,43 +2036,53 @@ function filterObserverAppeals(s, list) {
 
 function partnerAppealStats(list) {
   const total = list.length;
-  const inWork = list.filter((a) => isActiveAppeal(a)).length;
-  const purchases = list.filter((a) => appealReachedPaid(a)).length;
+  const inWork = list.filter((a) => observerInWork(a)).length;
+  const paidThrough = list.filter((a) => appealReachedPaid(a)).length;
   const refusals = list.filter((a) => a.stageId === SYSTEM.REFUSED).length;
+  const returns = list.filter((a) => appealReachedReturn(a) || a.stageId === SYSTEM.RETURN).length;
   const lastUpdate = list.reduce((max, a) => (max > a.updatedAt ? max : a.updatedAt), "");
-  return { total, inWork, purchases, refusals, lastUpdate, conv: safePct(purchases, total) };
+  return { total, inWork, paidThrough, refusals, returns, lastUpdate, conv: safePct(paidThrough, total) };
 }
 
 function isPublicReferrerHistoryEntry(entry, appeal) {
-  const t = String(entry.text || "");
-  if (/служебн|заметк|группов|архив|корзин|скрыто|перемещено|вручную/i.test(t)) return false;
-  if (/этап изменён/i.test(t)) return false;
-  if (/создано обращение по сертификату/i.test(t)) return true;
+  const t = String(entry.text || "").trim();
+  if (!t) return false;
+  if (/служебн|заметк|архив|корзин|скрыто|перемещено|вручную/i.test(t)) return false;
+  if (/группов/i.test(t) && !/^этап изменён:/i.test(t)) return false;
+  if (/^этап изменён:/i.test(t)) return true;
   if (/^статус:/i.test(t)) return true;
+  if (/создано обращение по сертификату/i.test(t)) return true;
   if (entry.reason && /отказ/i.test(t)) return true;
   if (/^отказ$/i.test(t) && appeal.refusedReason) return true;
-  if (/оплачено/i.test(t)) return true;
-  if (/отгружено/i.test(t)) return true;
-  if (/возврат/i.test(t)) return true;
+  if (/^отказ:/i.test(t) && entry.reason) return true;
+  if (/^оплачено\b/i.test(t)) return true;
+  if (/^отгружено\b/i.test(t)) return true;
+  if (/^возврат/i.test(t)) return true;
   return false;
 }
 
 function publicHistoryLine(entry, appeal) {
   const t = String(entry.text || "").trim();
+  if (/^этап изменён:\s*/i.test(t)) {
+    const label = t.replace(/^этап изменён:\s*/i, "").replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+    return label ? `Этап: ${label}` : "";
+  }
+  if (/^статус:\s*/i.test(t)) return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+  if (/создано обращение по сертификату/i.test(t)) return "Создано обращение по сертификату";
   if (entry.reason && /отказ/i.test(t)) return `Отказ: ${entry.reason}`;
   if (/^отказ$/i.test(t) && appeal.refusedReason) return `Отказ: ${appeal.refusedReason}`;
-  if (/оплачено/i.test(t)) return "Оплачено";
-  if (/отгружено/i.test(t)) return "Отгружено";
-  if (/возврат/i.test(t)) return "Возврат";
-  if (/^статус:/i.test(t)) return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
-  if (/создано обращение/i.test(t)) return "Создано обращение по сертификату";
-  return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+  if (/^отказ:/i.test(t) && entry.reason) return `Отказ: ${entry.reason}`;
+  if (/^оплачено\b/i.test(t)) return "Оплачено";
+  if (/^отгружено\b/i.test(t)) return "Отгружено";
+  if (/^возврат/i.test(t)) return "Возврат";
+  return "";
 }
 
 function publicReferrerTimeline(appeal) {
   return (appeal.history || [])
     .filter((e) => isPublicReferrerHistoryEntry(e, appeal))
-    .map((e) => ({ at: e.at, text: publicHistoryLine(e, appeal) }));
+    .map((e) => ({ at: e.at, text: publicHistoryLine(e, appeal) }))
+    .filter((e) => e.text);
 }
 
 function purchaseSummaryForReferrer(appeal) {
@@ -2066,7 +2104,7 @@ function renderClientsPreviewToggle(config) {
       </label>
       <span class="pill ca-preview-badge">На просмотр</span>
     </div>
-    <p class="small muted" id="ca-preview-opt-in-desc">${on ? "Вы смотрите демо: только ваши направления по сертификату, без прав партнёра. Вкладка «Клиенты у меня» — прежний список." : "После включения сразу откроется список партнёров (read-only). Обычный раздел вернётся, если выключить переключатель."}</p>
+    <p class="small muted" id="ca-preview-opt-in-desc">${on ? "Пример ваших направлений · демоданные, без прав партнёра. «Клиенты у меня» — прежний список." : "После включения откроется список партнёров. Выключите, чтобы вернуться к обычному разделу."}</p>
   </section>`;
 }
 
@@ -2094,6 +2132,40 @@ function previewShowsObserverList(config) {
   return s.clientsDirection === "at-partners";
 }
 
+function observerSectionClass(config, s) {
+  const observer =
+    s.clientsPreviewMode &&
+    (previewShowsObserverList(config) || s.view === "observer-partner" || s.view === "observer-client");
+  return observer ? "stack ca-section ca-section--observer" : "stack ca-section";
+}
+
+function renderObserverFilters(s) {
+  const period = s.observerPeriod || "all";
+  return `<div class="ca-filters panel ca-observer-filters">
+    <label class="field ca-search">Поиск партнёра или клиента<input type="search" data-ca-input="observer-q" value="${esc(s.observerQ || "")}" placeholder="Имя, партнёр, сертификат"></label>
+    <label class="field ca-filter">Период направления<select data-ca-input="observer-period">
+      <option value="all" ${period === "all" ? "selected" : ""}>Всё время</option>
+      <option value="30" ${period === "30" ? "selected" : ""}>30 дней</option>
+      <option value="90" ${period === "90" ? "selected" : ""}>90 дней</option>
+    </select></label>
+  </div>`;
+}
+
+function renderObserverFilterChips(s) {
+  const chips = [];
+  const q = (s.observerQ || "").trim();
+  if (q) chips.push(`<button type="button" class="ca-chip" data-ca-action="observer:clear-q">Поиск: ${esc(q)} ×</button>`);
+  const period = s.observerPeriod || "all";
+  if (period !== "all") {
+    const labels = { "30": "30 дней", "90": "90 дней" };
+    chips.push(
+      `<button type="button" class="ca-chip" data-ca-action="observer:clear-period">Период: ${esc(labels[period] || period)} ×</button>`,
+    );
+  }
+  if (!chips.length) return "";
+  return `<div class="ca-observer-chips" data-testid="ca-observer-filter-chips">${chips.join("")}</div>`;
+}
+
 function renderObserverPartnersList(config) {
   const s = ws(config.key);
   const base = ownReferredAppeals();
@@ -2108,7 +2180,7 @@ function renderObserverPartnersList(config) {
       const partner = PARTNERS[partnerId] || { name: "Партнёр", city: "" };
       const meta = PARTNER_OBSERVER_META[partnerId];
       const stats = partnerAppealStats(list);
-      const last = stats.lastUpdate ? formatAgeSince(stats.lastUpdate).replace("создания", "обновления") : "—";
+      const last = formatObserverDateTime(stats.lastUpdate);
       return `<button type="button" class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card" data-ca-action="observer:partner:${esc(partnerId)}">
         <div class="ca-observer-partner-card__head">
           <strong>${esc(partner.name)}</strong>
@@ -2117,26 +2189,17 @@ function renderObserverPartnersList(config) {
         <dl class="ca-observer-stats">
           <div><dt>Направлено</dt><dd>${stats.total}</dd></div>
           <div><dt>В работе</dt><dd>${stats.inWork}</dd></div>
-          <div><dt>Покупки</dt><dd>${stats.purchases}</dd></div>
+          <div><dt>Дошли до оплаты</dt><dd>${stats.paidThrough}</dd></div>
           <div><dt>Отказы</dt><dd>${stats.refusals}</dd></div>
         </dl>
-        <p class="small muted ca-observer-card-foot">Конверсия в покупку: ${esc(stats.conv)} · Обновлено: ${esc(last)}</p>
+        <p class="small muted ca-observer-card-foot">Конверсия в оплату: ${esc(stats.conv)} · Возвратов: ${stats.returns} · Обновлено: ${esc(last)}</p>
       </button>`;
     })
     .join("");
-  const period = s.observerPeriod || "all";
-  const filters = `<div class="ca-filters panel ca-observer-filters">
-    <label class="field ca-search">Поиск партнёра или клиента<input type="search" data-ca-input="observer-q" value="${esc(s.observerQ || "")}" placeholder="Имя, партнёр, сертификат"></label>
-    <label class="field ca-filter">Период<select data-ca-input="observer-period">
-      <option value="all" ${period === "all" ? "selected" : ""}>Всё время</option>
-      <option value="30" ${period === "30" ? "selected" : ""}>30 дней</option>
-      <option value="90" ${period === "90" ? "selected" : ""}>90 дней</option>
-    </select></label>
-  </div>`;
   const empty =
     !cards &&
-    `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Здесь появятся партнёры, которым вы направляли клиентов по сертификату. Демо показывает только ваши направления (${esc(REFERRER_VIEWER.name)}).</p></section>`;
-  return `${renderClientsDirectionTabs(config)}<header class="ca-observer-heading stack"><h2 class="ca-observer-title">Мои клиенты у партнёров</h2><p class="notice ca-observer-intro" role="status">Только просмотр · демо · здесь только клиенты, которых направили вы (${esc(REFERRER_VIEWER.name)}), у принимающих партнёров. Статусы и покупки нельзя менять.</p></header>${filters}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
+    `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Пример ваших направлений · демоданные</p></section>`;
+  return `${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
 }
 
 function renderObserverPartnerPage(config) {
@@ -2157,21 +2220,25 @@ function renderObserverPartnerPage(config) {
     .map((a) => {
       const purchase = purchaseSummaryForReferrer(a);
       const amt = purchase
-        ? `<span class="ca-amount">${esc(purchase.amountLabel)}</span><span class="small muted">покупка</span>`
-        : `<span class="ca-amount ca-amount--empty">—</span>`;
+        ? `<span class="ca-row-amount ca-observer-purchase"><span class="ca-amount ca-observer-purchase__amount">${esc(purchase.amountLabel)}</span><span class="small muted ca-observer-purchase__label">Сумма покупки</span></span>`
+        : `<span class="ca-row-amount ca-observer-purchase"><span class="ca-amount ca-amount--empty">—</span></span>`;
       return `<button type="button" class="ca-row ca-observer-client-row" data-testid="ca-observer-client-row" data-ca-action="observer:client:${esc(a.id)}">
         <span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span>
         <span class="ca-row-request muted small">${esc(a.interest || "—")}</span>
         <span class="ca-row-status">${pillHtml(a)}</span>
-        <span class="ca-row-amount">${amt}</span>
-        <span class="ca-row-age muted small">${esc(formatAgeSince(a.updatedAt).replace("создания", "обновления"))}</span>
+        ${amt}
+        <span class="ca-row-age muted small">${esc(formatObserverDateTime(a.updatedAt))}</span>
         <span class="ca-chev" aria-hidden="true">›</span>
       </button>`;
     })
     .join("");
-  return `<header class="ca-observer-partner-head stack"><h2>${esc(partner.name)}</h2><p class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</p>
-    <p class="small">Ваши направления: ${stats.total} · в работе ${stats.inWork} · покупок ${stats.purchases} · отказов ${stats.refusals}</p></header>
-    <div class="ca-observer-client-rows">${rows || '<p class="muted panel">Нет обращений по выбранным фильтрам.</p>'}</div>`;
+  return `<div class="ca-observer-partner-head stack">
+    <p class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</p>
+    <p class="small">Направлено ${stats.total} · в работе ${stats.inWork} · дошли до оплаты ${stats.paidThrough} · возвратов ${stats.returns} · отказов ${stats.refusals}</p>
+  </div>
+  ${renderObserverFilters(s)}
+  ${renderObserverFilterChips(s)}
+  <div class="ca-observer-client-rows">${rows || '<p class="muted panel">Нет обращений по выбранным фильтрам.</p>'}</div>`;
 }
 
 function renderObserverClientPage(config) {
@@ -2194,9 +2261,8 @@ function renderObserverClientPage(config) {
     )
     .join("");
   return `<section class="panel stack ca-observer-client">
-    <p class="small muted">Партнёр: ${esc(partner?.name || "—")} · только ваше направление</p>
-    <h2>${esc(appeal.clientName)}</h2>
     <p class="muted">${esc(appeal.interest || "")}</p>
+    <p class="small muted">Партнёр: ${esc(partner?.name || "—")}</p>
   </section>
   <section class="panel stack">
     <h3>Кратко</h3>
@@ -2459,15 +2525,16 @@ export function renderClientAppeals(config) {
     RECEIVING.name = viewer.name;
   }
   const previewChrome = renderClientsPreviewToggle(config);
+  const rootClass = observerSectionClass(config, s);
   if (s.view === "list") {
     const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
-    return `<div class="stack ca-section" data-ca-root>${previewChrome}${body}</div>`;
+    return `<div class="${rootClass}" data-ca-root>${previewChrome}${body}</div>`;
   }
   if (s.view === "observer-partner") {
-    return `<div class="stack ca-section" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
+    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
   }
   if (s.view === "observer-client") {
-    return `<div class="stack ca-section" data-ca-root data-testid="ca-observer-client-page">${renderObserverClientPage(config)}</div>`;
+    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${previewChrome}${renderObserverClientPage(config)}</div>`;
   }
   if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${renderScanInline(config)}</div>`;
   if (s.view === "manual") return `<div class="stack ca-section" data-ca-root>${renderManualInline(config)}</div>`;
@@ -3129,6 +3196,16 @@ function handleCaAction(action, config, hooks) {
   if (action.startsWith("observer:client:")) {
     s.observerClientId = action.split(":")[2];
     s.view = "observer-client";
+    hooks.refresh();
+    return;
+  }
+  if (action === "observer:clear-q") {
+    s.observerQ = "";
+    hooks.refresh();
+    return;
+  }
+  if (action === "observer:clear-period") {
+    s.observerPeriod = "all";
     hooks.refresh();
     return;
   }

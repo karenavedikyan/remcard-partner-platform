@@ -240,14 +240,23 @@ button.ca-row{font:inherit;color:inherit}
 .ca-observer-stats dt{color:var(--muted);margin:0}
 .ca-observer-stats dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
 .ca-observer-card-foot{margin:0}
+.ca-section--observer{gap:var(--s4,16px)}
+.ca-section--observer .ca-preview-opt-in{margin-bottom:0}
+.ca-section--observer .ca-preview-directions,.ca-section--observer .ca-observer-filters{margin-bottom:0}
+.ca-observer-chips{display:flex;flex-wrap:wrap;gap:var(--s2,8px);margin:0}
+.ca-observer-partner-head{margin:0;gap:var(--s2,8px)}
 .ca-observer-client-rows{display:grid;gap:var(--s2,8px)}
-.ca-observer-client-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px minmax(72px,96px) minmax(64px,88px) 24px}
+.ca-observer-client-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px minmax(88px,112px) minmax(88px,120px) 24px;align-items:center}
+.ca-observer-client-row .ca-observer-purchase{display:grid;gap:2px;justify-items:end;text-align:right;min-width:0;align-self:center}
+.ca-observer-client-row .ca-observer-purchase__amount{white-space:nowrap;font-variant-numeric:tabular-nums}
+.ca-observer-client-row .ca-observer-purchase__label{display:block;line-height:1.25;font-size:var(--text-xs,.75rem)}
+.ca-observer-client-row .ca-row-age{justify-self:end;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.35;align-self:center}
 @media(max-width:1100px){
-  .ca-observer-client-row{grid-template-columns:minmax(0,1fr) 120px;grid-template-areas:"name status" "request status" "amount age" "chev chev";gap:var(--s2,8px) var(--s3,12px)}
+  .ca-observer-client-row{grid-template-columns:minmax(0,1fr) 120px;grid-template-areas:"name status" "request status" "purchase date" "chev chev";gap:var(--s2,8px) var(--s3,12px);align-items:start}
   .ca-observer-client-row .ca-row-name{grid-area:name}
   .ca-observer-client-row .ca-row-request{grid-area:request}
   .ca-observer-client-row .ca-row-status{grid-area:status}
-  .ca-observer-client-row .ca-row-amount{grid-area:amount;justify-self:start;text-align:left}
-  .ca-observer-client-row .ca-row-age{grid-area:age;text-align:right}
+  .ca-observer-client-row .ca-observer-purchase{grid-area:purchase;justify-items:start;text-align:left;align-self:start}
+  .ca-observer-client-row .ca-row-age{grid-area:date;justify-self:end;align-self:end;text-align:right}
   .ca-observer-client-row .ca-chev{grid-area:chev}
 }
