@@ -294,7 +294,7 @@ try {
   await scanEmp.locator('[data-ca-action="standalone:146"]').click();
   await scanEmp.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
   const frame146 = scanEmp.frameLocator("[data-testid='cabinet-standalone-frame']");
-  await frame146.locator("#pst-confirm").waitFor({ timeout: 8000 });
+  await frame146.locator("#pst-confirm").waitFor({ state: "attached", timeout: 8000 });
   const scanUi = await frame146.locator("html").evaluate(() => {
     const confirm = document.getElementById("pst-confirm");
     const finish = document.getElementById("pst-review-finish");
@@ -312,7 +312,37 @@ try {
     scanUi.notice,
     /Подтверждение продажи недоступно|Просмотр макета|Продажа и начисление/i,
   );
+  await frame146.locator("#pst-amt-doors").fill("1000");
+  await frame146.locator("#pst-confirm").click({ timeout: 2000, force: true }).catch(() => {});
+  const scanAfterCalc = await frame146.locator("html").evaluate(() => {
+    const confirm = document.getElementById("pst-confirm");
+    const overlay = document.getElementById("pst-overlay-review");
+    return {
+      confirmHidden: confirm?.hasAttribute("hidden") && confirm?.hasAttribute("data-embed-sale-locked"),
+      confirmDisplay: confirm ? getComputedStyle(confirm).display : "",
+      reviewOpen: overlay ? !overlay.hidden : false,
+      blockReason: document.getElementById("pst-block-reason")?.textContent?.trim() || "",
+    };
+  });
+  assert.equal(scanAfterCalc.confirmDisplay, "none", "scan-only: confirm stays hidden after calculator");
+  assert.ok(scanAfterCalc.confirmHidden, "scan-only: confirm stays sale-locked after edits");
+  assert.ok(!scanAfterCalc.reviewOpen, "scan-only: fill 1000 must not open review dialog");
+  assert.match(scanAfterCalc.blockReason, /Подтверждение продажи недоступно|Продажа и начисление/i);
   await scanEmp.close();
+
+  const saleStore = await browser.newPage();
+  await saleStore.setViewportSize({ width: 1280, height: 900 });
+  await saleStore.goto(`${base}/partner/index.html?role=store&open=clients&proto_standalone=146`, {
+    waitUntil: "load",
+  });
+  await saleStore.waitForSelector("[data-testid='cabinet-standalone-frame']", { timeout: 20000 });
+  const frame146Sale = saleStore.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame146Sale.locator("#pst-amt-doors").fill("1000");
+  await frame146Sale.locator("#pst-confirm:not([disabled])").click({ timeout: 8000 });
+  await frame146Sale.locator("#pst-overlay-review:not([hidden])").waitFor({ timeout: 5000 });
+  await frame146Sale.locator("#pst-review-finish").click();
+  await frame146Sale.locator("#pst-complete:not([hidden])").waitFor({ timeout: 5000 });
+  await saleStore.close();
 
   const scrollPage = await browser.newPage();
   await scrollPage.setViewportSize({ width: 1280, height: 720 });

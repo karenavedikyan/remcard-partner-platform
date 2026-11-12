@@ -1145,6 +1145,11 @@ details.pst-disclosure > summary:focus-visible {
 .pst-overlay[hidden] {
   display: none !important;
 }
+.pst-btn[hidden],
+.pst-btn[data-embed-sale-locked] {
+  display: none !important;
+  pointer-events: none !important;
+}
 .pst-dialog {
   width: min(100%, 480px);
   max-height: min(90dvh, 640px);

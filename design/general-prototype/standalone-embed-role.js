@@ -79,23 +79,129 @@
     el.setAttribute("hidden", "");
   }
 
+  var scan146GuardsReady = false;
+  var SCAN_SALE_ACTION_SELECTOR =
+    "#pst-confirm, #pst-cancel-confirm, #pst-review-finish, #pst-overlay-review .pst-dialog__actions .pst-btn--primary";
+
+  function embedCanConfirmSale() {
+    var perms = window.__protoEmbedPermissions;
+    return !!(perms && perms.canConfirmSale);
+  }
+
+  function lockScanSaleEl(el) {
+    if (!el) return;
+    el.disabled = true;
+    el.setAttribute("aria-disabled", "true");
+    el.setAttribute("hidden", "");
+    el.setAttribute("data-embed-sale-locked", "");
+  }
+
+  function releaseScanSaleEl(el) {
+    if (!el) return;
+    el.removeAttribute("data-embed-sale-locked");
+    el.removeAttribute("hidden");
+  }
+
+  function closeScanReviewIfOpen() {
+    var overlay = document.getElementById("pst-overlay-review");
+    if (!overlay || overlay.hidden) return;
+    overlay.hidden = true;
+    overlay.setAttribute("hidden", "");
+    var dialog = overlay.querySelector(".pst-dialog");
+    if (dialog && typeof dialog.blur === "function") dialog.blur();
+  }
+
+  function scanSaleLockedNotice() {
+    return "Просмотр макета. Подтверждение продажи недоступно без права «Продажа и начисление».";
+  }
+
+  function lockAllScanSaleActions(noticeText) {
+    if (embedCanConfirmSale()) return;
+    document.documentElement.dataset.embedSaleLocked = "1";
+    document.querySelectorAll(SCAN_SALE_ACTION_SELECTOR).forEach(lockScanSaleEl);
+    closeScanReviewIfOpen();
+    var reason = document.getElementById("pst-block-reason");
+    if (reason) reason.textContent = noticeText || scanSaleLockedNotice();
+  }
+
+  function releaseScanSaleActionLocks() {
+    delete document.documentElement.dataset.embedSaleLocked;
+    document.querySelectorAll("[data-embed-sale-locked]").forEach(releaseScanSaleEl);
+  }
+
+  function isScanSaleActionTarget(node) {
+    if (!node || !node.closest) return false;
+    return !!node.closest(SCAN_SALE_ACTION_SELECTOR);
+  }
+
+  function installScan146SaleGuards() {
+    if (scan146GuardsReady) return;
+    scan146GuardsReady = true;
+
+    document.addEventListener(
+      "click",
+      function (e) {
+        if (embedCanConfirmSale()) return;
+        if (!isScanSaleActionTarget(e.target)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        lockAllScanSaleActions();
+      },
+      true,
+    );
+
+    var scheduleRelock = function () {
+      if (embedCanConfirmSale()) return;
+      requestAnimationFrame(function () {
+        lockAllScanSaleActions();
+      });
+    };
+
+    var form = document.getElementById("pst-form");
+    if (form) {
+      form.addEventListener("input", scheduleRelock, true);
+      form.addEventListener("change", scheduleRelock, true);
+    }
+
+    function watchScanSaleNodes() {
+      var confirm = document.getElementById("pst-confirm");
+      if (confirm) {
+        new MutationObserver(scheduleRelock).observe(confirm, {
+          attributes: true,
+          attributeFilter: ["disabled", "aria-disabled", "hidden"],
+        });
+      }
+      var reviewActions = document.querySelector("#pst-overlay-review .pst-dialog__actions");
+      if (reviewActions) {
+        new MutationObserver(scheduleRelock).observe(reviewActions, {
+          childList: true,
+          subtree: true,
+        });
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", watchScanSaleNodes, { once: true });
+    } else {
+      watchScanSaleNodes();
+    }
+  }
+
   function apply146(payload) {
     var perms = payload.permissions || {};
     var actor = payload.embedActor || {};
+    window.__protoEmbedPermissions = Object.assign({}, perms);
     setReadOnlyFlag(perms);
+    installScan146SaleGuards();
     var title = document.querySelector(".pst-page-title");
     if (title && actor.scanTitle) title.textContent = actor.scanTitle;
+    var notice = document.querySelector(".pst-notice span");
+    var saleNotice = actor.saleReadOnlyNote || scanSaleLockedNotice();
     if (!perms.canConfirmSale) {
-      disableEl(document.getElementById("pst-confirm"));
-      disableEl(document.getElementById("pst-cancel-confirm"));
-      var reviewFinish = document.getElementById("pst-review-finish");
-      disableEl(reviewFinish);
-      var notice = document.querySelector(".pst-notice span");
-      if (notice) {
-        notice.textContent =
-          actor.saleReadOnlyNote ||
-          "Просмотр макета. Подтверждение продажи недоступно без права «Продажа и начисление».";
-      }
+      lockAllScanSaleActions(saleNotice);
+      if (notice) notice.textContent = saleNotice;
+    } else {
+      releaseScanSaleActionLocks();
     }
     document.documentElement.dataset.embedScanMode = perms.canScan ? "scan" : "view";
   }
@@ -167,6 +273,9 @@
 
   window.__protoEmbedApplyContext = function applyContext(payload, n) {
     var target = n || pageN;
+    if (payload && payload.permissions) {
+      window.__protoEmbedPermissions = Object.assign({}, payload.permissions);
+    }
     if (payload && payload.role) {
       document.documentElement.dataset.embedRole = payload.role;
     }
