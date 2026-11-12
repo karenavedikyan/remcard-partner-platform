@@ -1,3 +1,7 @@
+html {
+  color-scheme: light;
+}
+
 :root {
   --pp-accent: #c12b2f;
   --pp-text: #282b30;
@@ -16,6 +20,7 @@
 }
 
 html[data-theme="dark"] {
+  color-scheme: dark;
   --pp-accent: #ff9497;
   --pp-text: #f0f1f3;
   --pp-muted: #b1b6c0;
@@ -234,6 +239,25 @@ html[data-theme="dark"] .pp-partner-card {
   width: 100%;
   max-height: min(92vh, 900px);
   background: transparent;
+  color: var(--pp-text);
+  color-scheme: light;
+}
+
+html[data-theme="dark"] .pp-dialog {
+  color-scheme: dark;
+}
+
+.pp-dialog-inner,
+.pp-dialog-header,
+.pp-dialog-body,
+.pp-dialog #profile-dialog-body {
+  color: var(--pp-text);
+}
+
+.pp-dialog h2,
+.pp-dialog h3,
+#profile-dialog-title {
+  color: var(--pp-text);
 }
 
 .pp-dialog-inner {
@@ -315,6 +339,7 @@ html[data-theme="dark"] .pp-partner-card {
   font-weight: 800;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  color: var(--pp-text);
 }
 
 .pw-city-muted {
@@ -342,6 +367,7 @@ html[data-theme="dark"] .pp-partner-card {
   padding: 6px 10px;
   border-radius: 8px;
   background: var(--pp-soft);
+  color: var(--pp-text);
 }
 
 .pw-chips {
@@ -357,6 +383,7 @@ html[data-theme="dark"] .pp-partner-card {
   border-radius: 999px;
   border: 1px solid var(--pp-line);
   background: var(--pp-soft);
+  color: var(--pp-text);
 }
 
 .pw-summary-id {
