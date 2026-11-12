@@ -141,6 +141,8 @@ describe("BusinessWorkingProfileWizard step0 wire PATCH", () => {
     expect(await screen.findByTestId("business-profile-directions-panel")).toBeInTheDocument();
     expect(calls.filter((c) => c.path === "/api/remcard/api/pro/profile" && c.method === "PATCH"))
       .toHaveLength(0);
+    expect(calls.filter((c) => c.path === "/api/remcard/api/pro/profile" && c.method === "GET"))
+      .toHaveLength(1);
   });
 
   it("changed city emits ordinary PATCH without invented fields", async () => {

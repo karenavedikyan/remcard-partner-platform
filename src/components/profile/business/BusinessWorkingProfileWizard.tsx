@@ -22,7 +22,6 @@ import {
   persistWorkingProfileDraft,
   validateWorkingProfileDraft,
   workingProfileCabinetReady,
-  workingProfilePersistWouldWrite,
 } from "@/lib/profile-working-save";
 import type { WorkingProfileValidationScope } from "@/lib/working-profile-patch";
 import type { ProProfileResponse } from "@/lib/types";
@@ -195,10 +194,6 @@ export function BusinessWorkingProfileWizard({
     if (err) {
       setBanner({ kind: "error", text: err });
       return false;
-    }
-    if (step < 3 && !workingProfilePersistWouldWrite(profileRef.current, nextDraft, saveOptions)) {
-      setBanner(null);
-      return true;
     }
     const generationAtStart = persistGenerationRef.current;
     const requestId = ++persistRequestIdRef.current;

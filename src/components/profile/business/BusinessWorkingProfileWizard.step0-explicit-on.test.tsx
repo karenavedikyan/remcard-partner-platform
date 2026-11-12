@@ -105,11 +105,13 @@ describe("BusinessWorkingProfileWizard step 0 explicit ON legacy", () => {
         />,
       );
       await user.click(screen.getByRole("button", { name: /Продолжить/i }));
-      await waitFor(() =>
-        expect(screen.getByTestId("business-profile-directions-panel")).toBeInTheDocument(),
-      );
-      expect(persist).not.toHaveBeenCalled();
+      await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+      expect(persist.mock.calls[0]![2]).toMatchObject({
+        validationIntent: "cabinet",
+        validationScope: "basics",
+      });
       expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
+      expect(await screen.findByTestId("business-profile-directions-panel")).toBeInTheDocument();
       expect(await screen.findByTestId("business-profile-directions-panel")).toBeInTheDocument();
     },
   );

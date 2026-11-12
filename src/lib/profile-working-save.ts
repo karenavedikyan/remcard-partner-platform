@@ -201,30 +201,3 @@ export async function persistWorkingProfileDraft(
     user: { ...refreshed.user, displayName: trimmedName },
   };
 }
-
-/** True when persist would PATCH profile, auth display name, or organization. */
-export function workingProfilePersistWouldWrite(
-  profile: ProProfileResponse,
-  draft: ProfileDraft,
-  options: WorkingSaveOptions = {},
-): boolean {
-  if (draft.displayName.trim() !== (profile.user.displayName ?? "").trim()) return true;
-  if (Object.keys(buildWorkingProfilePatchBody(profile, draft, options)).length > 0) return true;
-  if (draft.partnerType !== "STORE" && draft.partnerType !== "COMPANY") return false;
-
-  const saved = profileDraftFromProfile(profile);
-  const orgName = draft.organizationName.trim();
-  const savedOrgName = profile.organization?.name?.trim() ?? "";
-  if (orgName && orgName !== savedOrgName) return true;
-
-  if (profile.organization) {
-    if (draft.website.trim() !== saved.website.trim()) return true;
-    if (draft.telegram.trim() !== saved.telegram.trim()) return true;
-  }
-
-  const needsOrgBeforeProfile =
-    Boolean(options.partnerSearchTouched && draft.partnerSearchOptIn);
-  if (!needsOrgBeforeProfile && orgName.length >= 2 && !profile.organization) return true;
-
-  return false;
-}
