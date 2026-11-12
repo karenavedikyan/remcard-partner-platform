@@ -1,0 +1,755 @@
+{
+  "version": 2,
+  "pageCount": 107,
+  "pages": [
+    {
+      "n": 1,
+      "id": "hub",
+      "title": "Общий вход прототипа",
+      "zone": "hub",
+      "r2": false
+    },
+    {
+      "n": 2,
+      "id": "client:home",
+      "title": "Клиент · главная",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 3,
+      "id": "client:login",
+      "title": "Клиент · вход",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 4,
+      "id": "client:register",
+      "title": "Клиент · регистрация",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 5,
+      "id": "client:catalog",
+      "title": "Клиент · каталог",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 6,
+      "id": "client:product",
+      "title": "Клиент · карточка товара",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 7,
+      "id": "client:client-retained",
+      "title": "Клиент · сохранённое (client-retained)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 8,
+      "id": "client:navigator",
+      "title": "Клиент · навигатор ремонта",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 9,
+      "id": "client:navigator-object",
+      "title": "Клиент · объект навигатора",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 10,
+      "id": "client:account",
+      "title": "Клиент · личный кабинет",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 11,
+      "id": "client:account-profile",
+      "title": "Клиент · профиль",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 12,
+      "id": "client:account-orders",
+      "title": "Клиент · заказы",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 13,
+      "id": "client:account-settings",
+      "title": "Клиент · настройки",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 14,
+      "id": "client:account-certificates",
+      "title": "Клиент · мои сертификаты",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 15,
+      "id": "client:cert",
+      "title": "Клиент · сертификат (витрина)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 16,
+      "id": "client:cert-detail",
+      "title": "Клиент · сертификат (код)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 17,
+      "id": "client:care",
+      "title": "Клиент · забота (R2)",
+      "zone": "client",
+      "r2": true
+    },
+    {
+      "n": 18,
+      "id": "client:calc",
+      "title": "Клиент · калькулятор",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 19,
+      "id": "client:calc-materials",
+      "title": "Клиент · калькулятор материалов",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 20,
+      "id": "client:calc-object",
+      "title": "Клиент · калькулятор объекта",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 21,
+      "id": "client:matcalc",
+      "title": "Клиент · matcalc",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 22,
+      "id": "client:matcalc-materials",
+      "title": "Клиент · matcalc материалы",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 23,
+      "id": "client:extras-projects",
+      "title": "Клиент · проекты (extras)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 24,
+      "id": "client:app",
+      "title": "Клиент · приложение (PWA)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 25,
+      "id": "client:cart",
+      "title": "Клиент · корзина",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 26,
+      "id": "client:checkout",
+      "title": "Клиент · оформление",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 27,
+      "id": "client:search",
+      "title": "Клиент · поиск",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 28,
+      "id": "client:partners",
+      "title": "Клиент · партнёры (демо)",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 29,
+      "id": "client:favorites",
+      "title": "Клиент · избранное",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 30,
+      "id": "client:compare",
+      "title": "Клиент · сравнение",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 31,
+      "id": "client:reviews",
+      "title": "Клиент · отзывы",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 32,
+      "id": "client:help",
+      "title": "Клиент · помощь",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 33,
+      "id": "client:privacy",
+      "title": "Клиент · конфиденциальность",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 34,
+      "id": "client:notifications",
+      "title": "Клиент · уведомления",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 35,
+      "id": "client:landing",
+      "title": "Клиент · лендинг",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 36,
+      "id": "client:retained",
+      "title": "Клиент · удерживаемый экран",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 37,
+      "id": "client:deal",
+      "title": "Клиент · сделка",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 38,
+      "id": "client:order",
+      "title": "Клиент · заказ",
+      "zone": "client",
+      "r2": false
+    },
+    {
+      "n": 39,
+      "id": "admin:overview",
+      "title": "Админ · обзор",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 40,
+      "id": "admin:partners",
+      "title": "Админ · партнёры",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 41,
+      "id": "admin:clients",
+      "title": "Админ · клиенты",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 42,
+      "id": "admin:team",
+      "title": "Админ · команда",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 43,
+      "id": "admin:tasks",
+      "title": "Админ · задачи",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 44,
+      "id": "admin:analytics",
+      "title": "Админ · аналитика",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 45,
+      "id": "admin:results",
+      "title": "Админ · результаты",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 46,
+      "id": "admin:notifications",
+      "title": "Админ · уведомления",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 47,
+      "id": "admin:settings",
+      "title": "Админ · настройки",
+      "zone": "admin",
+      "r2": false
+    },
+    {
+      "n": 48,
+      "id": "partner:registration",
+      "title": "Партнёр · регистрация и вход",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 49,
+      "id": "partner:specialist:home",
+      "title": "Кабинет специалиста · главная",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 50,
+      "id": "partner:specialist:clients",
+      "title": "Кабинет специалиста · клиенты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 51,
+      "id": "partner:specialist:partners",
+      "title": "Кабинет специалиста · партнёры",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 52,
+      "id": "partner:specialist:recommendations",
+      "title": "Кабинет специалиста · сертификаты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 53,
+      "id": "partner:specialist:bonus",
+      "title": "Кабинет специалиста · кошелёк",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 54,
+      "id": "partner:specialist:scanner",
+      "title": "Кабинет специалиста · сканер",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 55,
+      "id": "partner:specialist:procurement",
+      "title": "Кабинет специалиста · закупки (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 56,
+      "id": "partner:specialist:care",
+      "title": "Кабинет специалиста · забота (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 57,
+      "id": "partner:specialist:profile",
+      "title": "Кабинет специалиста · профиль",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 58,
+      "id": "partner:store:home",
+      "title": "Кабинет магазина · главная",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 59,
+      "id": "partner:store:clients",
+      "title": "Кабинет магазина · клиенты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 60,
+      "id": "partner:store:recommendations",
+      "title": "Кабинет магазина · сертификаты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 61,
+      "id": "partner:store:partners",
+      "title": "Кабинет магазина · партнёры",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 62,
+      "id": "partner:store:scanner",
+      "title": "Кабинет магазина · сканер",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 63,
+      "id": "partner:store:history",
+      "title": "Кабинет магазина · история",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 64,
+      "id": "partner:store:settlements",
+      "title": "Кабинет магазина · кошелёк",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 65,
+      "id": "partner:store:procurement",
+      "title": "Кабинет магазина · закупки (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 66,
+      "id": "partner:store:care",
+      "title": "Кабинет магазина · забота (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 67,
+      "id": "partner:store:profile",
+      "title": "Кабинет магазина · профиль",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 68,
+      "id": "partner:company:home",
+      "title": "Кабинет компании · главная",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 69,
+      "id": "partner:company:recommendations",
+      "title": "Кабинет компании · сертификаты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 70,
+      "id": "partner:company:partners",
+      "title": "Кабинет компании · партнёры",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 71,
+      "id": "partner:company:clients",
+      "title": "Кабинет компании · клиенты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 72,
+      "id": "partner:company:scanner",
+      "title": "Кабинет компании · сканер",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 73,
+      "id": "partner:company:history",
+      "title": "Кабинет компании · история",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 74,
+      "id": "partner:company:settlements",
+      "title": "Кабинет компании · кошелёк",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 75,
+      "id": "partner:company:team",
+      "title": "Кабинет компании · сотрудники",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 76,
+      "id": "partner:company:procurement",
+      "title": "Кабинет компании · закупки (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 77,
+      "id": "partner:company:care",
+      "title": "Кабинет компании · забота (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 78,
+      "id": "partner:company:profile",
+      "title": "Кабинет компании · профиль",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 79,
+      "id": "partner:agent:home",
+      "title": "Кабинет агента · главная",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 80,
+      "id": "partner:agent:clients",
+      "title": "Кабинет агента · клиенты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 81,
+      "id": "partner:agent:partners",
+      "title": "Кабинет агента · партнёры",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 82,
+      "id": "partner:agent:recommendations",
+      "title": "Кабинет агента · сертификаты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 83,
+      "id": "partner:agent:bonus",
+      "title": "Кабинет агента · кошелёк",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 84,
+      "id": "partner:agent:procurement",
+      "title": "Кабинет агента · закупки (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 85,
+      "id": "partner:agent:care",
+      "title": "Кабинет агента · забота (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 86,
+      "id": "partner:agent:profile",
+      "title": "Кабинет агента · профиль",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 87,
+      "id": "partner:employee:home",
+      "title": "Кабинет сотрудника · главная",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 88,
+      "id": "partner:employee:partners",
+      "title": "Кабинет сотрудника · партнёры",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 89,
+      "id": "partner:employee:clients",
+      "title": "Кабинет сотрудника · клиенты",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 90,
+      "id": "partner:employee:scanner",
+      "title": "Кабинет сотрудника · сканер",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 91,
+      "id": "partner:employee:history",
+      "title": "Кабинет сотрудника · история",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 92,
+      "id": "partner:employee:settlements",
+      "title": "Кабинет сотрудника · кошелёк",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 93,
+      "id": "partner:employee:team",
+      "title": "Кабинет сотрудника · сотрудники",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 94,
+      "id": "partner:employee:links",
+      "title": "Кабинет сотрудника · приглашения",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 95,
+      "id": "partner:employee:procurement",
+      "title": "Кабинет сотрудника · закупки (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 96,
+      "id": "partner:employee:care",
+      "title": "Кабинет сотрудника · забота (R2)",
+      "zone": "partner",
+      "r2": true
+    },
+    {
+      "n": 97,
+      "id": "partner:employee:profile",
+      "title": "Кабинет сотрудника · профиль",
+      "zone": "partner",
+      "r2": false
+    },
+    {
+      "n": 98,
+      "id": "partner:legacy",
+      "title": "Партнёр · legacy",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 99,
+      "id": "partner:certificate-guest",
+      "title": "Гостевой сертификат",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 100,
+      "id": "partner:recommendation-guest",
+      "title": "Гостевая рекомендация",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 101,
+      "id": "partner:assignment-guest",
+      "title": "Поручение исполнителю",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 102,
+      "id": "partner:observer-guest",
+      "title": "Наблюдение за объектом",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 103,
+      "id": "partner:cooperation-detail",
+      "title": "Деталь сотрудничества",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 104,
+      "id": "partner:purchase-detail",
+      "title": "Деталь покупки",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 105,
+      "id": "partner:reward-receipt",
+      "title": "Квитанция вознаграждения",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 106,
+      "id": "partner:scan-transaction",
+      "title": "Сканер · эталон",
+      "zone": "standalone",
+      "r2": false
+    },
+    {
+      "n": 107,
+      "id": "partner:wallet-history",
+      "title": "История кошелька",
+      "zone": "standalone",
+      "r2": false
+    }
+  ]
+}

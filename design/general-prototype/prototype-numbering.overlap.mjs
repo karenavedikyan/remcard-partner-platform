@@ -1,30 +1,29 @@
 /**
- * Partner cabinet section ids must match roles.js nav keys (no orphan catalogue rows).
- * Run: node prototype-numbering.overlap.mjs
+ * Partner catalogue sections align with roles.js nav keys.
  */
-import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
 
-const roles = readFileSync(new URL("./partner/roles.js", import.meta.url), "utf8");
-const src = readFileSync(new URL("./prototype-numbering.js", import.meta.url), "utf8");
-
-const navKeys = new Set([...roles.matchAll(/"([a-z]+)",\s*$/gm)].map((m) => m[1]));
-const beKeys = [...roles.matchAll(/^\s+([a-z]+):\s*\[/gm)].map((m) => m[1]);
-beKeys.forEach((k) => navKeys.add(k));
-
-const cabinetSections = [
-  ...src.matchAll(/partner:(?:specialist|store|company|agent|employee):([a-z]+)/g),
-].map((m) => m[1]);
-const uniqueSections = new Set(cabinetSections);
-
-for (const section of uniqueSections) {
-  if (section === "registration") continue;
-  const known =
-    navKeys.has(section) ||
-    ["wallet", "links"].includes(section) ||
-    roles.includes(`nav:${section}`) ||
-    roles.includes(`"${section}"`);
-  assert.ok(known, `catalogue section "${section}" should exist in partner nav`);
+function loadPageDefs(src) {
+  const start = src.indexOf("const PAGE_DEFS = [");
+  const end = src.indexOf("\n];", start) + 3;
+  const sandbox = vm.createContext({});
+  vm.runInContext(src.slice(start, end).replace(/^const PAGE_DEFS/, "var PAGE_DEFS"), sandbox);
+  return sandbox.PAGE_DEFS;
 }
 
-console.log("prototype-numbering.overlap: ok", { sections: [...uniqueSections].sort() });
+const roles = readFileSync(new URL("./partner/roles.js", import.meta.url), "utf8");
+const js = readFileSync(new URL("./prototype-numbering.js", import.meta.url), "utf8");
+const PAGE_DEFS = loadPageDefs(js);
+
+const navInRoles = new Set(
+  [...roles.matchAll(/nav:\s*\[\s*([\s\S]*?)\s*\]/g)].flatMap((m) => [...m[1].matchAll(/"([a-z]+)"/g)].map((x) => x[1])),
+);
+navInRoles.add("links");
+
+const sections = new Set(PAGE_DEFS.filter((p) => p.partnerSection).map((p) => p.partnerSection));
+for (const s of sections) {
+  assert.ok(navInRoles.has(s), `partner section ${s} missing from roles.js nav arrays`);
+}
+console.log("prototype-numbering.overlap: ok", { sections: [...sections].sort() });

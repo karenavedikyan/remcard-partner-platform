@@ -2,24 +2,57 @@
 <html lang="ru">
 <head>
   <script src="../preview-memory.js"></script>
-  <link rel="stylesheet" href="../prototype-numbering.css?v=book1">
-  <script src="../prototype-numbering.js?v=book1" defer></script>
+  <link rel="stylesheet" href="../prototype-numbering.css?v=book2">
+  <script src="../prototype-numbering.js?v=book2" defer></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>RemCard · кабинет администратора (прототип)</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:1rem;line-height:1.4}
+    .nav{display:flex;flex-wrap:wrap;gap:.35rem;margin:1rem 0}
+    .nav button{border:1px solid #ccc;background:#fff;padding:.4rem .65rem;border-radius:8px;cursor:pointer}
+    .nav button[aria-current=page]{background:#eef0ff;border-color:#88a}
+  </style>
 </head>
 <body>
-  <main id="main" role="main">
-    <section class="panel">
-      <h1>Админский прототип</h1>
-      <p class="muted">Полный кабинет подставляется при сборке артефакта. Нумерация пространства 4.</p>
-      <nav class="nav" aria-label="Демо-разделы">
-        <a class="nav-link is-active" href="#/moderation" data-testid="admin-nav-moderation">Модерация</a>
-        <a class="nav-link" href="#/catalog" data-testid="admin-nav-catalog">Каталог</a>
-        <a class="nav-link" href="#/partners" data-testid="admin-nav-partners">Партнёры</a>
-      </nav>
-    </section>
+  <main id="main" role="main" data-admin-screen="overview">
+    <h1>Админский прототип</h1>
+    <p class="muted">Полный кабинет подставляется при сборке артефакта. Активный раздел — по <code>data-view</code> и hash <code>#overview</code> … <code>#settings</code>.</p>
+    <nav class="nav" aria-label="Разделы админа">
+      <button type="button" data-action="go" data-view="overview" aria-current="page">Обзор</button>
+      <button type="button" data-action="go" data-view="partners">Партнёры</button>
+      <button type="button" data-action="go" data-view="clients">Клиенты</button>
+      <button type="button" data-action="go" data-view="team">Команда</button>
+      <button type="button" data-action="go" data-view="tasks">Задачи</button>
+      <button type="button" data-action="go" data-view="analytics">Аналитика</button>
+      <button type="button" data-action="go" data-view="results">Результаты</button>
+      <button type="button" data-action="go" data-view="notifications">Уведомления</button>
+      <button type="button" data-action="go" data-view="settings">Настройки</button>
+    </nav>
+    <p id="admin-route-hint"></p>
   </main>
+  <script>
+    const VIEWS = ["overview","partners","clients","team","tasks","analytics","results","notifications","settings"];
+  function syncFromHash() {
+    const view = (location.hash || "#/overview").replace(/^#\/?/, "").split("?")[0] || "overview";
+      const safe = VIEWS.includes(view) ? view : "overview";
+      document.querySelectorAll("[data-action=go]").forEach((btn) => {
+        const on = btn.getAttribute("data-view") === safe;
+        btn.setAttribute("aria-current", on ? "page" : "false");
+      });
+      const main = document.getElementById("main");
+      main.setAttribute("data-admin-screen", safe);
+      document.getElementById("admin-route-hint").textContent = "Текущий раздел: " + safe;
+    }
+    document.querySelector(".nav").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action=go]");
+      if (!btn) return;
+      const view = btn.getAttribute("data-view");
+      location.hash = "#/" + view;
+    });
+    window.addEventListener("hashchange", syncFromHash);
+    syncFromHash();
+  </script>
 </body>
 </html>

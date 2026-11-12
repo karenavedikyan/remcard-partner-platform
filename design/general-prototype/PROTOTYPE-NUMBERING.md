@@ -1,8 +1,10 @@
 # Нумерация прототипа (reviewer-only)
 
-**Актуальная модель — книжная:** один целый номер на логический экран (`1…67`). Полная таблица: **`PROTOTYPE-PAGES.md`**.
+**Актуальная модель — книжная:** один целый номер на логический экран (`1…107` на ветке book2). Полная таблица: **`PROTOTYPE-PAGES.md`**.
 
-Файлы: `prototype-numbering.js`, `prototype-numbering.css` в корне `design/general-prototype/`. Подключение в HTML: `?v=book1`.
+Файлы: `prototype-numbering.js`, `prototype-numbering.css` в корне `design/general-prototype/`. Подключение в HTML: `?v=book2`.
+
+Корень хаба выводится из `document.currentScript.src` (файл лежит в корне прототипа), без угадывания `../` по глубине — вложенный hosted-префикс (`/unique-id/…`) поддерживается в TOC и `pathnameRel`.
 
 На экране: «Страница N · краткое название» и кнопка «Страницы» (поиск + оглавление со ссылками). Маркеры на кнопках/блоках **убраны**.
 
@@ -22,7 +24,7 @@
 - `MutationObserver` — новые dialog/шаги SPA пересчитываются.
 - Нет `localStorage` / fetch / сервера; состояние только в памяти вкладки.
 - Реестр: `window.__protoNumRegistry` (ref, label, stableKey, pageState, location); поиск элемента: `window.__protoNumResolve(ref)` или атрибут `data-proto-number` на целевом узле.
-- Самотест ключей: `node prototype-numbering.selftest.mjs`.
+- Самотесты: `node design/general-prototype/prototype-numbering.selftest.mjs`, `stability.mjs`, `overlap.mjs`, `browser.mjs` (localhost + hosted prefix).
 
 ## Ограничения
 
