@@ -1936,7 +1936,7 @@ function renderNextStepCard(config, appeal, s, readOnly) {
     return `<section class="panel stack ca-next"><h3>Выбор этапа</h3><label class="field">Этап<select data-ca-input="detail-status">${statusOptions}</select></label><button type="button" class="btn ghost small-btn ca-chip--add" data-ca-action="stage:custom-toggle">+ Свой этап</button>${custom}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="stage:apply">Перевести</button></div></section>`;
   }
   if (appeal.stageId === SYSTEM.SHIPPED) {
-    return `<section class="panel stack ca-next"><h3>Ждём подтверждения начисления</h3>${renderWaitProgress(appeal)}<button type="button" class="linkbtn" data-ca-action="panel:return">Оформить возврат</button></section>`;
+    return `<section class="panel stack ca-next"><h3>Ждём подтверждения начисления</h3>${renderWaitProgress(appeal)}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:return">Оформить возврат</button></div></section>`;
   }
   if (appeal.stageId === SYSTEM.PAID) {
     return `<section class="panel stack ca-next"><h3>Оплачено · ждём отгрузку</h3><button type="button" class="btn primary" data-ca-action="stage:next:${SYSTEM.SHIPPED}">Отметить отгрузку</button></section>`;
