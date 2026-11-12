@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  if (new URLSearchParams(location.search).get("cabinet_embed") === "1") return;
   const byId = id => document.getElementById(id);
   const detail = byId("partner-dialog");
   const certificate = byId("certificate");

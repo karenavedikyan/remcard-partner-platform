@@ -20,8 +20,71 @@ html.cabinet-embed-mode a.skip {
 }
 
 html.cabinet-embed-mode .proto-page-flow,
-html.cabinet-embed-mode .proto-page-panel {
+html.cabinet-embed-mode .proto-page-panel,
+html.cabinet-embed-mode [data-proto-ui="flow"],
+html.cabinet-embed-mode [data-proto-ui="panel"] {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.cabinet-embed-mode main.page,
+html.cabinet-embed-mode .page-heading,
+html.cabinet-embed-mode .context {
+  display: none !important;
+}
+
+html.cabinet-embed-mode body {
+  overflow: auto;
+  height: 100%;
+  margin: 0;
+}
+
+html.cabinet-embed-cooperation-panel .partner-dialog.embed-cooperation-panel,
+html.cabinet-embed-mode dialog.partner-dialog.embed-cooperation-panel {
+  position: static !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  height: auto !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--bg, #f6f6f4) !important;
+}
+
+html.cabinet-embed-cooperation-panel .partner-dialog::backdrop,
+html.cabinet-embed-mode dialog.partner-dialog::backdrop {
+  display: none !important;
+}
+
+html.cabinet-embed-cooperation-panel #edit-dialog,
+html.cabinet-embed-cooperation-panel #pause-dialog,
+html.cabinet-embed-cooperation-panel #certificate-dialog {
+  display: none !important;
+}
+
+html.cabinet-embed-cooperation-panel .dialog-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  max-height: none;
+}
+
+html.cabinet-embed-mode .embed-supplemental {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+html.cabinet-embed-mode .embed-supplemental .counterparty-profile,
+html.cabinet-embed-mode .embed-supplemental .stack,
+html.cabinet-embed-mode .embed-supplemental .fold-list {
+  font: inherit;
 }
 
 html.cabinet-embed-mode[data-embed-readonly="1"] .wallet-accruals-history__filters,

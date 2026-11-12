@@ -32,9 +32,9 @@
     } catch (_) {}
   }
 
-  window.__protoCabinetEmbedNavigate = function embedNavigate(targetN, extraQuery) {
+  window.__protoCabinetEmbedNavigate = function embedNavigate(targetN, extraQuery, ctx) {
     if (window.parent === window) return false;
-    post({ type: "nav", pageN: Number(targetN), query: extraQuery || "" });
+    post({ type: "nav", pageN: Number(targetN), query: extraQuery || "", ctx: ctx || null });
     return true;
   };
 

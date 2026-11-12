@@ -20,6 +20,20 @@
       .join("");
   }
 
+  function setSpecializations(topics) {
+    const section = document.querySelector(".specialization");
+    if (!section || !topics?.length) return;
+    const heading = section.querySelector("h3");
+    section.innerHTML = "";
+    if (heading) section.appendChild(heading);
+    topics.forEach((topic) => {
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = topic;
+      section.appendChild(span);
+    });
+  }
+
   function applyPermissions(perms) {
     if (!perms) return;
     const hide = (id, allowed) => {
@@ -36,29 +50,58 @@
     hide("edit-terms", perms.editTerms);
     hide("pause", perms.pauseCoop);
     hide("certificate", perms.createCertificate);
-    const footer = document.querySelector(".dialog-footer");
-    if (footer && perms.viewOnly) {
-      footer.querySelectorAll("button").forEach((btn) => {
-        if (!perms.editTerms && btn.id === "edit-terms") btn.setAttribute("hidden", "");
-        if (!perms.pauseCoop && btn.id === "pause") btn.setAttribute("hidden", "");
-        if (!perms.createCertificate && btn.id === "certificate") btn.setAttribute("hidden", "");
-      });
-    }
+  }
+
+  function mountPanelMode() {
+    document.documentElement.classList.add("cabinet-embed-cooperation-panel");
+    document.querySelector("main.page")?.setAttribute("hidden", "");
+    ["edit-dialog", "pause-dialog", "certificate-dialog"].forEach((id) => {
+      const el = byId(id);
+      if (el) el.setAttribute("hidden", "");
+    });
+    const dialog = byId("partner-dialog");
+    if (!dialog) return;
+    dialog.classList.add("embed-cooperation-panel");
+    dialog.setAttribute("open", "");
+    byId("close-detail")?.setAttribute("hidden", "");
+    byId("theme")?.setAttribute("hidden", "");
+    const top = dialog.querySelector(".dialog-top p");
+    if (top) top.textContent = "Условия сотрудничества";
   }
 
   let lastPermissions = null;
+  let supplementalMount = byId("embed-supplemental");
+
+  function ensureSupplemental() {
+    if (supplementalMount) return supplementalMount;
+    const scroll = dialogScroll();
+    if (!scroll) return null;
+    supplementalMount = document.createElement("div");
+    supplementalMount.id = "embed-supplemental";
+    supplementalMount.className = "embed-supplemental";
+    scroll.appendChild(supplementalMount);
+    return supplementalMount;
+  }
+
+  function dialogScroll() {
+    return document.querySelector("#partner-dialog .dialog-scroll");
+  }
 
   function applyContext(payload) {
     lastPermissions = payload?.permissions || null;
     if (!payload?.partner) return;
+    mountPanelMode();
     if (payload.partnerId) window.__protoEmbedPartnerId = payload.partnerId;
     applyPermissions(payload.permissions);
     const p = payload.partner;
     const title = byId("partner-title");
     if (title) title.textContent = p.name || "Партнёр";
+    const avatar = document.querySelector(".identity .avatar");
+    if (avatar && p.avatarInitial) avatar.textContent = p.avatarInitial;
     document.querySelector(".identity-main p")?.replaceChildren(
       document.createTextNode(`${p.typeLabel || "Партнёр"} · ${p.city || ""}`),
     );
+    setSpecializations(p.topics);
     setRates(payload.categories);
     if (typeof payload.paused === "boolean") {
       const status = byId("partner-status");
@@ -79,9 +122,11 @@
       const cert = byId("certificate");
       if (cert) cert.disabled = payload.paused;
     }
-    document.querySelector(".list")?.setAttribute("hidden", "");
-    const dialog = byId("partner-dialog");
-    if (dialog && !dialog.open) dialog.showModal();
+    const mount = ensureSupplemental();
+    if (mount && payload.sectionsHtml) {
+      mount.innerHTML = payload.sectionsHtml;
+      mount.hidden = false;
+    }
   }
 
   window.addEventListener("message", (ev) => {
@@ -91,32 +136,31 @@
     applyContext(data.payload);
   });
 
-  function wireCoop(id, action) {
+  function wireCoopClick(id, action) {
     const el = byId(id);
     if (!el) return;
-    el.addEventListener("click", () => {
-      post({ type: "coop", action, partnerId: window.__protoEmbedPartnerId || "" });
-    });
+    el.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (lastPermissions) {
+          if (action === "edit-terms" && !lastPermissions.editTerms) return;
+          if (action === "toggle-pause" && !lastPermissions.pauseCoop) return;
+          if (action === "certificate" && !lastPermissions.createCertificate) return;
+        }
+        post({ type: "coop", action, partnerId: window.__protoEmbedPartnerId || "" });
+      },
+      true,
+    );
   }
 
   post({ type: "need-context", pageN: 143 });
   document.addEventListener("DOMContentLoaded", () => {
+    mountPanelMode();
     post({ type: "need-context", pageN: 143 });
-    const pause = byId("pause");
-    pause?.addEventListener("click", () => {
-      if (lastPermissions && !lastPermissions.pauseCoop) return;
-      post({ type: "coop", action: "toggle-pause", partnerId: window.__protoEmbedPartnerId || "" });
-    });
-    byId("edit-terms")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (lastPermissions && !lastPermissions.editTerms) return;
-      post({ type: "coop", action: "edit-terms", partnerId: window.__protoEmbedPartnerId || "" });
-    });
-    byId("certificate")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (lastPermissions && !lastPermissions.createCertificate) return;
-      post({ type: "coop", action: "certificate", partnerId: window.__protoEmbedPartnerId || "" });
-    });
+    wireCoopClick("pause", "toggle-pause");
+    wireCoopClick("edit-terms", "edit-terms");
+    wireCoopClick("certificate", "certificate");
   });
-
 })();

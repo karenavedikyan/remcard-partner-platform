@@ -118,9 +118,22 @@ export function createCabinetStandaloneHost(config) {
   let openQuery = "";
   let openCtx = null;
   let resizeObserver = null;
+  let embedGuardKey = "";
 
   function contentTarget() {
     return document.querySelector(".shell .content.main, .shell main.content, .shell .content");
+  }
+
+  function mobileBottomInset() {
+    const bar = document.querySelector(".sidebar.mobile-navigation");
+    if (!bar) return 0;
+    const rect = bar.getBoundingClientRect();
+    if (rect.width < 8) return 0;
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    if (rect.bottom >= vh - 2 && rect.top > vh * 0.45) {
+      return Math.min(rect.height, vh);
+    }
+    return 0;
   }
 
   function reposition() {
@@ -131,12 +144,24 @@ export function createCabinetStandaloneHost(config) {
       return;
     }
     const rect = target.getBoundingClientRect();
+    const vv = window.visualViewport;
+    const viewportTop = vv?.offsetTop ?? 0;
+    const viewportHeight = vv?.height ?? window.innerHeight;
+    const bottomInset = mobileBottomInset();
+    const top = Math.max(viewportTop, rect.top);
+    const barH = hostEl.querySelector(".cabinet-standalone-host__bar")?.offsetHeight || 48;
+    const available = viewportHeight - bottomInset - (top - viewportTop) - 4;
+    const height = Math.max(160, Math.min(available, viewportHeight - (top - viewportTop) - bottomInset));
     hostEl.style.position = "fixed";
     hostEl.style.left = `${rect.left}px`;
-    hostEl.style.top = `${rect.top}px`;
+    hostEl.style.top = `${top}px`;
     hostEl.style.width = `${rect.width}px`;
-    hostEl.style.height = `${rect.height}px`;
+    hostEl.style.height = `${height}px`;
+    hostEl.style.maxHeight = `${height}px`;
     hostEl.style.zIndex = "1200";
+    const frameH = Math.max(80, height - barH);
+    frame.style.height = `${frameH}px`;
+    frame.style.maxHeight = `${frameH}px`;
   }
 
   function watchLayout() {
@@ -145,13 +170,19 @@ export function createCabinetStandaloneHost(config) {
     const shell = document.querySelector(".shell");
     if (shell) resizeObserver.observe(shell);
     window.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("scroll", reposition);
   }
 
   function unwatchLayout() {
     resizeObserver?.disconnect();
     resizeObserver = null;
     window.removeEventListener("resize", reposition);
+    window.visualViewport?.removeEventListener("resize", reposition);
+    window.visualViewport?.removeEventListener("scroll", reposition);
     hostEl.style.cssText = "";
+    frame.style.height = "";
+    frame.style.maxHeight = "";
   }
 
   function pushReturn(ctx) {
@@ -210,8 +241,20 @@ export function createCabinetStandaloneHost(config) {
     }
   }
 
+  function syncThemeToFrame(theme) {
+    if (hostEl.hidden) return;
+    const t = theme || currentTheme();
+    try {
+      frame.contentWindow?.postMessage(
+        { source: "proto-cabinet-host", type: "theme", theme: t },
+        "*",
+      );
+    } catch (_) {}
+  }
+
   function doOpen(pageN, { extraQuery = "", returnCtx = null, chain = false, embedCtx = null } = {}) {
     if (embedCtx != null) openCtx = embedCtx;
+    if (config.getEmbedGuardKey) embedGuardKey = config.getEmbedGuardKey();
     if (!assertCanOpen(pageN)) return false;
     if (getScreen?.() !== "cabinet") {
       return deny(pageN, "Сначала откройте кабинет в режиме просмотра.");
@@ -263,11 +306,12 @@ export function createCabinetStandaloneHost(config) {
     }
     if (data.type === "nav" && data.pageN) {
       if (!assertCanOpen(Number(data.pageN))) return;
-      openCtx = data.ctx || openCtx;
+      const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
+      openCtx = nextCtx;
       doOpen(Number(data.pageN), {
         extraQuery: data.query || "",
         chain: true,
-        embedCtx: data.ctx || openCtx,
+        embedCtx: nextCtx,
       });
       return;
     }
@@ -282,6 +326,14 @@ export function createCabinetStandaloneHost(config) {
   }
 
   window.addEventListener("message", handleHostMessage);
+
+  try {
+    const themeObs = new MutationObserver(() => syncThemeToFrame());
+    themeObs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+  } catch (_) {}
 
   hostEl.addEventListener("click", (e) => {
     const back = e.target.closest('[data-action="proto-standalone-back"]');
@@ -311,24 +363,24 @@ export function createCabinetStandaloneHost(config) {
       }
       if (reason && notify) notify(reason, "info");
     },
-    syncTheme(theme) {
-      if (hostEl.hidden) return;
-      const t = theme || currentTheme();
-      try {
-        frame.contentWindow?.postMessage(
-          { source: "proto-cabinet-host", type: "theme", theme: t },
-          "*",
-        );
-      } catch (_) {}
-    },
+    syncTheme: syncThemeToFrame,
     afterCabinetRender() {
       if (hostEl.hidden) return;
-      if (shouldResetOnRerender?.()) {
+      const guardMismatch =
+        config.getEmbedGuardKey && embedGuardKey && config.getEmbedGuardKey() !== embedGuardKey;
+      if (shouldResetOnRerender?.() || guardMismatch) {
         closeHost({ reset: true });
+        embedGuardKey = "";
+        return;
+      }
+      if (openPageN && typeof canOpen === "function" && !canOpen(openPageN, openCtx)) {
+        closeHost({ reset: true });
+        embedGuardKey = "";
+        notify?.("Встроенный макет закрыт: изменились роль или права.", "info");
         return;
       }
       reposition();
-      syncTheme();
+      syncThemeToFrame();
     },
     isOpen: () => !hostEl.hidden,
     currentPageN: () => openPageN,

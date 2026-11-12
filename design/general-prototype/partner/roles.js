@@ -2857,7 +2857,29 @@ function standaloneCanOpen(pageN) {
   if ([139, 140, 142].includes(pageN)) return O("clients") || i.role === "agent" || O("recommend");
   return true;
 }
-function resolveStandaloneEmbedPayload(pageN, ctx) {
+function buildCooperationEmbedSections(partner) {
+  if (!partner) return "";
+  const chunks = [coop.counterpartyProfileHtml(partner)];
+  if (partner.partnershipNote) {
+    chunks.push(
+      `<section class="stack" data-testid="partner-detail-note"><p class="section-title">Комментарий</p><p class="meta-block">${r(partner.partnershipNote)}</p></section>`,
+    );
+  }
+  chunks.push(qt(partner));
+  if (!k() || O("ledger")) {
+    chunks.push(
+      settlementPartnerSummary(
+        { role: i.role, employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) },
+        partner.id,
+      ),
+    );
+  }
+  chunks.push(
+    '<p class="small" data-testid="counterparty-archive-pause-note">Архив в списке скрывает запись, но не меняет условия и не заменяет паузу сотрудничества. Пауза останавливает новые рекомендации; архив — только ваш список.</p>',
+  );
+  return chunks.join("");
+}
+function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
   if (pageN === 143 && ctx?.partnerId) {
     const partner = P.find((p) => p.id === ctx.partnerId);
     if (!partner) return null;
@@ -2879,23 +2901,47 @@ function resolveStandaloneEmbedPayload(pageN, ctx) {
     if (permissions.createCertificate && coop?.isPaused?.(partner.id)) {
       permissions.createCertificate = false;
     }
+    const topicLabels =
+      partner.topics?.length > 0
+        ? partner.topics
+        : (catalog?.categories || []).map((c) => c.name);
     return {
       partner: {
         name: partner.name,
         city: partner.city,
         typeLabel: ee[partner.type]?.label || "Партнёр",
+        avatarInitial: (partner.name || "P").trim().slice(0, 1).toUpperCase(),
+        topics: topicLabels,
       },
       categories,
       paused,
       partnerId: partner.id,
       permissions,
+      sectionsHtml: buildCooperationEmbedSections(partner),
     };
   }
   if (pageN === 139 && ctx?.record) {
-    return { record: ctx.record, displayCode: ctx.record.displayCode, partner: ctx.record.partner };
+    return {
+      record: ctx.record,
+      displayCode: ctx.record.displayCode,
+      partner: ctx.record.partner,
+      terms: ctx.record.terms || [],
+      name: ctx.record.name,
+      disabled: !!ctx.record.disabled,
+    };
   }
-  if ([147, 144, 145, 146].includes(pageN)) {
-    return { permissions: standaloneEmbedPermissions(pageN) };
+  if (pageN === 147) {
+    return {
+      permissions: standaloneEmbedPermissions(pageN),
+      walletState: ctx?.walletState || null,
+    };
+  }
+  if ([144, 145, 146].includes(pageN)) {
+    return {
+      permissions: standaloneEmbedPermissions(pageN),
+      purchaseCtx: ctx?.purchaseCtx || null,
+      receiptCtx: ctx?.receiptCtx || null,
+    };
   }
   return ctx || null;
 }
@@ -2904,6 +2950,8 @@ function ensureStandaloneHost() {
     standaloneHost = createCabinetStandaloneHost({
       getScreen: () => i.screen,
       canOpen: (pageN) => standaloneCanOpen(pageN),
+      getEmbedGuardKey: () =>
+        `${i.role}|${prototypeRelease()}|${[...i.permissions].sort().join(",")}|${Y}`,
       notify: (m, tone) => U(m, tone || "info"),
       shouldResetOnRerender: () => i.screen !== "cabinet",
       resolveEmbedPayload: resolveStandaloneEmbedPayload,
@@ -2912,10 +2960,10 @@ function ensureStandaloneHost() {
         if (!partner) return false;
         const perms = standaloneEmbedPermissions(143);
         if (action === "edit-terms") {
-          if (!perms.editTerms) return false;
+          if (!perms.editTerms || !ue()) return false;
           coop.openTermChange?.(partner);
         } else if (action === "toggle-pause") {
-          if (!perms.pauseCoop) return false;
+          if (!perms.pauseCoop || !ue()) return false;
           if (coop.isPaused(partnerId)) coop.openResumeConfirm?.(partner);
           else coop.openPauseConfirm?.(partner);
         } else if (action === "certificate") {
@@ -2930,7 +2978,20 @@ function ensureStandaloneHost() {
         return true;
       },
       onReturn: (ctx) => {
-        if (ctx?.page) i.page = ctx.page;
+        if (!ctx) return;
+        if (ctx.kind === "embed-chain" && ctx.pageN) {
+          if (ctx.page) i.page = ctx.page;
+          T();
+          queueMicrotask(() => {
+            ensureStandaloneHost().openStandalone(ctx.pageN, {
+              extraQuery: ctx.query || "",
+              embedCtx: ctx.ctx || {},
+            });
+            standaloneHost?.afterCabinetRender?.();
+          });
+          return;
+        }
+        if (ctx.page) i.page = ctx.page;
         T();
       },
     });

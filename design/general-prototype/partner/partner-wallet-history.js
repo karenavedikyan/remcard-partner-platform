@@ -82,4 +82,57 @@
   ["#search","#status","#from","#to"].forEach(s=>$(s).addEventListener("input",renderHistory));
   ["#close-dialog","#dialog-return"].forEach(s=>$(s).addEventListener("click",()=>$("#purchase-dialog").close()));
   setView("purchases");
+
+  const embedParams = new URLSearchParams(location.search);
+  if (embedParams.get("cabinet_embed") === "1") {
+    const post = (msg) => {
+      try {
+        parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
+      } catch (_) {}
+    };
+    const walletState = () => ({
+      view,
+      selectedAccrualId: selectedAccrual?.id || null,
+      search: $("#search").value,
+      status: $("#status").value,
+      from: $("#from").value,
+      to: $("#to").value,
+    });
+    const applyWalletState = (state) => {
+      if (!state) return;
+      if (state.search != null) $("#search").value = state.search;
+      if (state.status != null) $("#status").value = state.status;
+      if (state.from != null) $("#from").value = state.from;
+      if (state.to != null) $("#to").value = state.to;
+      if (state.selectedAccrualId) {
+        const hit = accruals.find((row) => row.id === state.selectedAccrualId);
+        if (hit) selectedAccrual = hit;
+      }
+      setView(state.view || "purchases");
+    };
+    window.addEventListener("message", (ev) => {
+      const data = ev.data;
+      if (!data || data.source !== "proto-cabinet-host" || data.type !== "context") return;
+      if (Number(data.pageN) !== 147) return;
+      applyWalletState(data.payload?.walletState);
+    });
+    post({ type: "need-context", pageN: 147 });
+    const openRelated = $("#open-related");
+    openRelated?.addEventListener(
+      "click",
+      () => {
+        if (selectedAccrual === accruals[0]) {
+          if (
+            window.__protoCabinetEmbedNavigate?.(144, "", {
+              walletState: walletState(),
+              purchaseCtx: { from: "wallet-147", accrualId: selectedAccrual.id },
+            })
+          ) {
+            return;
+          }
+        }
+      },
+      true,
+    );
+  }
 })();
