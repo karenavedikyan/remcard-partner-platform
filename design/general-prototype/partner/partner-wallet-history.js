@@ -14,6 +14,18 @@
   ];
   let view = "purchases",
     selectedAccrual = accruals[0];
+  let accrualOperationLabel = "Вознаграждение профклиенту";
+  const refreshAccrualDetailLabels = () => {
+    const focus = document.querySelector("#detail-view .receipt-focus > p:not(.main-amount)");
+    if (focus) focus.textContent = accrualOperationLabel;
+    document.querySelectorAll("#detail-view .receipt-meta > div").forEach((row) => {
+      const dt = row.querySelector("dt");
+      if (dt?.textContent?.trim() === "Тип") {
+        const dd = row.querySelector("dd");
+        if (dd) dd.textContent = accrualOperationLabel;
+      }
+    });
+  };
   const WALLET_CERT = "RC-X9Z0WZ";
   const embedParams = new URLSearchParams(location.search);
   const isCabinetEmbed = embedParams.get("cabinet_embed") === "1";
@@ -73,7 +85,7 @@
       const linkedPurchase=isPurchase&&index===0;
       const embedPurchaseAttrs =
         isCabinetEmbed && linkedPurchase ? ' data-proto-embed-ignore data-purchase-embed="0"' : "";
-      return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?embedPurchaseAttrs:`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":"Вознаграждение профклиенту"}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
+      return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?embedPurchaseAttrs:`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":accrualOperationLabel}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
     }).join("") : empty("Ничего не найдено","Измените запрос или выбранный период.",true);
   }
   let viewPurposeCopy = null;
@@ -99,6 +111,7 @@
       renderHistory();
     }
     if(view==="detail"){
+      refreshAccrualDetailLabels();
       $("#detail-date").textContent=selectedAccrual.display.replace(","," 2026,");
       $("#detail-id").textContent=selectedAccrual.id || "Номер этой записи не показан на снимке";
       const receiptBtn = $("#open-receipt");
@@ -172,6 +185,13 @@
     window.__protoWalletRefreshPurpose = (copy) => {
       viewPurposeCopy = copy;
       refreshViewPurpose();
+    };
+    window.__protoWalletSetAccrualLabels = (actor) => {
+      if (!actor) return;
+      if (actor.accrualOperationLabel) accrualOperationLabel = actor.accrualOperationLabel;
+      else if (actor.receiptMode === "earned") accrualOperationLabel = "Заработанное вознаграждение";
+      refreshAccrualDetailLabels();
+      if (view === "accruals") renderHistory();
     };
     $("#open-receipt")?.addEventListener("click", (e) => {
       e.preventDefault();

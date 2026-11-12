@@ -58,6 +58,9 @@
     if (typeof window.__protoWalletRefreshPurpose === "function" && actor.viewPurpose) {
       window.__protoWalletRefreshPurpose(actor.viewPurpose);
     }
+    if (typeof window.__protoWalletSetAccrualLabels === "function") {
+      window.__protoWalletSetAccrualLabels(actor);
+    }
     var fine = document.querySelector(".fine-print p");
     if (fine && actor.finePrint) fine.textContent = actor.finePrint;
     var ro = document.querySelector("#detail-view .read-only");

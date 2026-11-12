@@ -243,6 +243,10 @@ try {
   assert.match(agent147.purpose || "", /вознагражден/i);
   assert.equal(agent147.iframeRole, "agent");
   assert.equal(agent147.srcRole, "agent");
+  const agentAccrualRow = (
+    await frame147.locator("[data-accrual-row='0'] .operation-main strong").textContent()
+  )?.trim();
+  assert.match(agentAccrualRow || "", /Заработанное вознаграждение/);
   const filterPe = await frame147.locator("#filter-button").evaluate((el) => getComputedStyle(el).pointerEvents);
   assert.notEqual(filterPe, "none", "agent read-only wallet must keep filter control clickable");
   await frame147.locator("#filter-button").click();

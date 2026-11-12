@@ -2866,6 +2866,8 @@ function standaloneEmbedActor(pageN) {
     if (role === "agent") {
       return {
         ...base,
+        receiptMode: "earned",
+        accrualOperationLabel: "Заработанное вознаграждение",
         contextBadge: "АГЕНТ",
         subheading: "Заработанные вознаграждения",
         historyTitle: "История начислений",
@@ -2886,6 +2888,8 @@ function standaloneEmbedActor(pageN) {
     if (role === "specialist") {
       return {
         ...base,
+        receiptMode: "earned",
+        accrualOperationLabel: "Заработанное вознаграждение",
         contextBadge: "СПЕЦИАЛИСТ",
         subheading: "Бонусы и начисления",
         historyTitle: "История операций",
@@ -2904,6 +2908,7 @@ function standaloneEmbedActor(pageN) {
     if (["store", "company"].includes(role)) {
       return {
         ...base,
+        accrualOperationLabel: "Вознаграждение профклиенту",
         contextBadge: role === "store" ? "МАГАЗИН" : "КОМПАНИЯ",
         subheading: "Покупки и начисления",
         historyTitle: "История операций",
