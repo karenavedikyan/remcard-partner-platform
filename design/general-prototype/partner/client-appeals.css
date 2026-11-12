@@ -220,6 +220,7 @@ button.ca-row{font:inherit;color:inherit}
 .ca-preview-opt-in{padding:var(--s3,12px) var(--s4,16px);margin:0 0 var(--s4,16px);display:grid;gap:var(--s2,8px)}
 .ca-preview-opt-in__row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3,12px);justify-content:space-between}
 .ca-preview-badge{background:color-mix(in srgb,var(--brand,#c12b2f) 12%,var(--surface));color:var(--brand,#c12b2f);border:1px solid color-mix(in srgb,var(--brand) 28%,transparent);font-weight:700}
+[data-theme=dark] .ca-preview-badge{background:color-mix(in srgb,#f87171 20%,var(--surface));color:#fecaca;border-color:color-mix(in srgb,#f87171 42%,var(--line))}
 .ca-preview-switch{display:inline-flex;align-items:center;gap:var(--s3,12px);cursor:pointer;min-height:44px;font-weight:700;font-size:var(--text-sm,.875rem)}
 .ca-preview-switch input{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden}
 .ca-preview-switch__ui{width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex-shrink:0;transition:background .15s}

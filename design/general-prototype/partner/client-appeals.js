@@ -2591,7 +2591,7 @@ export function renderClientAppeals(config) {
     return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${previewChrome}${renderObserverClientPage(config)}</div>`;
   }
   if (s.view === "observer-partner" || s.view === "observer-client") {
-    syncClientsPreviewAccess(config);
+    clearClientsPreviewNav(s);
     return renderClientAppeals(config);
   }
   if (s.view === "scan") return `<div class="stack ca-section" data-ca-root>${renderScanInline(config)}</div>`;
