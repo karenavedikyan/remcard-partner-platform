@@ -461,7 +461,7 @@ const PAGE_DEFS = [
       if (cabinetBtn && cabinetBtn.getAttribute("aria-pressed") !== "true") {
         cabinetBtn.click();
       }
-      if (page.partnerSection && page.partnerSection !== "home") {
+      if (page.partnerSection) {
         const navKey = partnerNavAction(page.partnerSection, page);
         document.querySelector(`[data-action="nav:${navKey}"]`)?.click();
       }
