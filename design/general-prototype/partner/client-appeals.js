@@ -2066,7 +2066,7 @@ function renderClientsPreviewToggle(config) {
       </label>
       <span class="pill ca-preview-badge">На просмотр</span>
     </div>
-    <p class="small muted" id="ca-preview-opt-in-desc">Включите, чтобы сравнить текущий раздел с read-only списком партнёров и статусов ваших направлений. Обычный режим не меняется, пока переключатель выключен.</p>
+    <p class="small muted" id="ca-preview-opt-in-desc">${on ? "Вы смотрите демо: только ваши направления по сертификату, без прав партнёра. Вкладка «Клиенты у меня» — прежний список." : "После включения сразу откроется список партнёров (read-only). Обычный раздел вернётся, если выключить переключатель."}</p>
   </section>`;
 }
 
@@ -2081,6 +2081,10 @@ function renderClientsDirectionTabs(config) {
     <button type="button" class="wallet-direction__tab${dir === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${dir === "incoming"}" data-ca-action="direction:incoming">Клиенты у меня</button>
     <button type="button" class="wallet-direction__tab${dir === "at-partners" ? " is-active" : ""}" role="tab" aria-selected="${dir === "at-partners"}" data-ca-action="direction:at-partners">Мои клиенты у партнёров</button>
   </div>`;
+}
+
+function previewOpensObserverDirection(role) {
+  return ["store", "company", "specialist", "agent", "employee"].includes(role);
 }
 
 function previewShowsObserverList(config) {
@@ -2132,7 +2136,7 @@ function renderObserverPartnersList(config) {
   const empty =
     !cards &&
     `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Здесь появятся партнёры, которым вы направляли клиентов по сертификату. Демо показывает только ваши направления (${esc(REFERRER_VIEWER.name)}).</p></section>`;
-  return `${renderClientsDirectionTabs(config)}<header class="ca-observer-heading stack"><h2 class="ca-observer-title">Мои клиенты у партнёров</h2><p class="small muted">Демо-данные: видны только обращения, где направивший — ${esc(REFERRER_VIEWER.name)}. Без редактирования статусов партнёра.</p></header>${filters}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
+  return `${renderClientsDirectionTabs(config)}<header class="ca-observer-heading stack"><h2 class="ca-observer-title">Мои клиенты у партнёров</h2><p class="notice ca-observer-intro" role="status">Только просмотр · демо · здесь только клиенты, которых направили вы (${esc(REFERRER_VIEWER.name)}), у принимающих партнёров. Статусы и покупки нельзя менять.</p></header>${filters}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}`;
 }
 
 function renderObserverPartnerPage(config) {
@@ -3032,7 +3036,7 @@ export function hydrateClientAppeals(hooks) {
       const next = t.checked;
       s.clientsPreviewMode = next;
       if (next) {
-        if (config.role === "agent") s.clientsDirection = "at-partners";
+        if (previewOpensObserverDirection(config.role)) s.clientsDirection = "at-partners";
         clearClientsPreviewNav(s);
         clearBulkSelection(s);
         s.view = "list";

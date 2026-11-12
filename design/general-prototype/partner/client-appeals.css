@@ -228,6 +228,7 @@ button.ca-row{font:inherit;color:inherit}
 .ca-preview-switch input:checked+.ca-preview-switch__ui::after{transform:translateX(18px)}
 .ca-preview-switch input:focus-visible+.ca-preview-switch__ui{outline:2px solid color-mix(in srgb,var(--brand) 40%,transparent);outline-offset:2px}
 .ca-observer-heading{margin:0 0 var(--s4,16px)}
+.ca-observer-intro{margin:0;font-size:var(--text-sm,.875rem)}
 .ca-observer-title{margin:0;font-size:var(--text-lg,1.125rem)}
 .ca-observer-partner-grid{display:grid;gap:var(--s3,12px);grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
 .ca-observer-partner-card{display:grid;gap:var(--s3,12px);width:100%;text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:var(--s4,16px);background:var(--surface);transition:border-color .15s,background .15s;color:inherit;font:inherit}
