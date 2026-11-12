@@ -23,8 +23,12 @@ assert.match(src, /data-proto-number/, "targets must be marked");
 assert.match(src, /mutationIsRelevant/, "observer filter required");
 assert.match(css, /pointer-events:\s*none/, "badges must be non-interactive");
 assert.doesNotMatch(src, /seen\.has\(key\)/, "must not dedupe by semantic key alone");
-assert.match(src, /syncAnnotationTopLayer/, "must lift chrome during native modals");
-assert.match(src, /popover/, "must use manual popover top layer when supported");
+assert.match(src, /appendClientAdminSpaState/, "must read admin/client SPA view state");
+assert.match(src, /data-action="go"/, "admin go-nav selector");
+assert.match(src, /liftAnnotationUi/, "must lift chrome after modal in top layer");
+assert.match(src, /beforetoggle/, "must react before native dialog opens");
+assert.match(src, /overlapsTarget/, "must avoid badges over product text");
+assert.match(src, /badgeHidden/, "hidden badges stay in index");
 assert.match(css, /:popover-open/, "popover-open layout for reviewer chrome");
 
 console.log("prototype-numbering.selftest: ok");

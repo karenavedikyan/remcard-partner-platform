@@ -137,8 +137,72 @@
     return parts.join("&");
   }
 
+  function appendClientAdminSpaState(bits, ns) {
+    if (ns !== 2 && ns !== 4) return;
+    const go =
+      document.querySelector('[data-action="go"][aria-current="page"]') ||
+      document.querySelector('[data-action="go"][aria-selected="true"]') ||
+      document.querySelector('[data-action="go"].is-active[data-view]') ||
+      document.querySelector('nav [data-action="go"].is-active') ||
+      document.querySelector('[data-action="go"].is-active');
+    if (go) {
+      const view = go.getAttribute("data-view") || "";
+      if (view) bits.push(`view=${view}`);
+      const href = go.getAttribute("href") || "";
+      if (!view && href.startsWith("#")) {
+        const route = href.replace(/^#\/?/, "").split(/[?#]/)[0];
+        if (route) bits.push(`route=${route}`);
+      }
+      if (!view && !href) {
+        bits.push(`navtext=${(go.textContent || "").trim().slice(0, 40)}`);
+      }
+    }
+    const shellView =
+      document.querySelector("main[data-view], #app[data-view], [data-admin-screen], [data-client-screen]");
+    if (shellView) {
+      const sv =
+        shellView.getAttribute("data-view") ||
+        shellView.getAttribute("data-admin-screen") ||
+        shellView.getAttribute("data-client-screen");
+      if (sv) bits.push(`screen=${sv}`);
+    }
+    const hashRoute = (location.hash || "").replace(/^#\/?/, "").split(/[?]/)[0];
+    if (hashRoute && hashRoute !== "/" && !bits.some((b) => b.startsWith("route=") || b.startsWith("view="))) {
+      bits.push(`hashroute=${hashRoute}`);
+    }
+    const sub =
+      document.querySelector("[data-subview][aria-current='true'], [data-subview].is-active, [data-panel][aria-current='page']");
+    if (sub) {
+      const subId = sub.getAttribute("data-subview") || sub.getAttribute("data-panel");
+      if (subId) bits.push(`sub=${subId}`);
+    }
+    const entity =
+      document.querySelector(
+        "[data-entity-id][data-detail-open], [data-admin-entity-id], [data-testid='admin-entity-detail'], [data-testid*='detail-panel']",
+      ) || document.querySelector("dialog[open] [data-entity-id], dialog[open] [data-id]");
+    if (entity) {
+      const eid =
+        entity.getAttribute("data-entity-id") ||
+        entity.getAttribute("data-admin-entity-id") ||
+        entity.getAttribute("data-id") ||
+        entity.getAttribute("data-testid");
+      if (eid) bits.push(`entity=${String(eid).slice(0, 48)}`);
+    }
+    const openDlg = document.querySelector(`dialog[open]:not([${UI_ATTR}])`);
+    if (openDlg) {
+      const dlgTitle =
+        openDlg.querySelector("h1, h2, [aria-labelledby]")?.textContent?.trim().slice(0, 40) ||
+        openDlg.getAttribute("aria-label")?.slice(0, 40) ||
+        openDlg.id ||
+        "dialog";
+      bits.push(`dlg=${dlgTitle}`);
+    }
+  }
+
   function readPrototypeState() {
     const bits = [];
+    const ns = detectNamespace();
+    appendClientAdminSpaState(bits, ns);
     const role = document.querySelector('[data-testid="scenario-role"]');
     if (role?.value) bits.push(`role=${role.value}`);
     const rel = document.querySelector('[data-testid="prototype-release"]');
@@ -158,10 +222,12 @@
     const viewReg = document.querySelector('[data-action="view:registration"][aria-pressed="true"]');
     if (viewReg) bits.push("screen=registration");
     const hash = location.hash || "";
-    if (hash) bits.push(`hash=${hash}`);
+    if (hash && !bits.some((b) => b.startsWith("hashroute="))) bits.push(`hash=${hash}`);
     const fs = filteredSearchParams();
     if (fs) bits.push(`qs=${fs}`);
-    const legacyNav = document.querySelector("#app .nav a.active, #app .nav-link.is-active");
+    const legacyNav = document.querySelector(
+      "#app .nav a.active, #app .nav-link.is-active, .nav a.is-active, a.nav-link.is-active",
+    );
     if (legacyNav?.getAttribute("href")) bits.push(`legacynav=${legacyNav.getAttribute("href")}`);
     return bits.join("|");
   }
@@ -502,22 +568,66 @@
       );
     }
 
+    function overlapsTarget(x, y, rect) {
+      const pad = 3;
+      return !(
+        x + badgeW <= rect.left + pad ||
+        x >= rect.right - pad ||
+        y + badgeH <= rect.top + pad ||
+        y >= rect.bottom - pad
+      );
+    }
+
+    function clampPosition(x, y) {
+      return [
+        Math.min(Math.max(x, 2), vw - badgeW - 2),
+        Math.min(Math.max(y, 2), vh - badgeH - 2),
+      ];
+    }
+
     registry.forEach((item) => {
       if (!item.el.isConnected || !isVisible(item.el)) return;
       const r = item.el.getBoundingClientRect();
       if (!intersectsViewport(r, 8)) return;
-      let x = Math.min(Math.max(r.left, 2), vw - badgeW - 2);
-      let y = Math.max(r.top, 2);
-      let tries = 0;
-      while (overlaps(x, y) && tries < 12) {
-        y += badgeH + 2;
-        if (y > r.bottom + 40) {
-          y = Math.max(r.top, 2);
-          x += badgeW / 2;
+      const candidates = [
+        [r.right - badgeW - 2, r.top - badgeH - 2],
+        [r.right - badgeW - 2, r.bottom + 2],
+        [r.left, r.bottom + 2],
+        [r.left, r.top - badgeH - 2],
+        [r.right + 2, r.top],
+        [r.left - badgeW - 2, r.top],
+      ];
+      let x = 0;
+      let y = 0;
+      let found = false;
+      for (const [cx, cy] of candidates) {
+        const [px, py] = clampPosition(cx, cy);
+        if (!overlaps(px, py) && !overlapsTarget(px, py, r)) {
+          x = px;
+          y = py;
+          found = true;
+          break;
         }
-        tries++;
       }
-      if (y > vh - badgeH) y = Math.max(2, vh - badgeH - 2);
+      if (!found) {
+        for (let tries = 0; tries < 14; tries++) {
+          const [px, py] = clampPosition(
+            r.left + ((tries % 4) * badgeW) / 4,
+            r.top - badgeH - 2 - tries * (badgeH + 2),
+          );
+          if (!overlaps(px, py) && !overlapsTarget(px, py, r)) {
+            x = px;
+            y = py;
+            found = true;
+            break;
+          }
+        }
+      }
+      if (!found || overlapsTarget(x, y, r)) {
+        item.badgeHidden = true;
+        return;
+      }
+      item.badgeHidden = false;
       const badge = document.createElement("span");
       badge.className = "proto-num-badge";
       badge.dataset.protoRef = item.ref;
@@ -576,40 +686,85 @@
     return !!document.querySelector(`dialog[open]:not([${UI_ATTR}])`);
   }
 
-  function syncAnnotationTopLayer() {
-    const lift = appModalOpen();
+  function liftAnnotationUi() {
+    topLayerUi.forEach((el) => {
+      if (!el) return;
+      if (el === panelEl && panelEl.hasAttribute("hidden") && !panelOpen) {
+        try {
+          if (el.matches(":popover-open")) el.hidePopover();
+        } catch {
+          /* noop */
+        }
+        return;
+      }
+      try {
+        if (!el.matches(":popover-open")) el.showPopover();
+        if (el === chromeEl || el === panelEl) {
+          document.body.append(el);
+        }
+      } catch {
+        document.documentElement.classList.add("proto-num-popover-fallback");
+      }
+    });
+  }
+
+  function lowerAnnotationUi() {
     topLayerUi.forEach((el) => {
       if (!el) return;
       try {
-        if (lift) {
-          if (!el.matches(":popover-open")) el.showPopover();
-        } else if (el.matches(":popover-open")) {
-          el.hidePopover();
-        }
+        if (el.matches(":popover-open")) el.hidePopover();
       } catch {
-        /* popover unsupported */
+        /* noop */
       }
     });
+    document.documentElement.classList.remove("proto-num-popover-fallback");
+  }
+
+  function syncAnnotationTopLayer() {
+    const lift = appModalOpen();
+    document.documentElement.classList.toggle("proto-num-modal-open", lift);
+    if (lift) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          liftAnnotationUi();
+        });
+      });
+    } else {
+      lowerAnnotationUi();
+    }
   }
 
   function bindTopLayerSync() {
     if (topLayerSyncBound) return;
     topLayerSyncBound = true;
+    const onModalChange = () => {
+      syncAnnotationTopLayer();
+      scheduleRescan();
+    };
     document.addEventListener(
       "toggle",
       (ev) => {
         if (ev.target instanceof HTMLDialogElement && !ev.target.hasAttribute(UI_ATTR)) {
-          syncAnnotationTopLayer();
-          scheduleRescan();
+          onModalChange();
+        }
+      },
+      true,
+    );
+    document.addEventListener(
+      "beforetoggle",
+      (ev) => {
+        if (
+          ev.target instanceof HTMLDialogElement &&
+          !ev.target.hasAttribute(UI_ATTR) &&
+          ev.newState === "open"
+        ) {
+          queueMicrotask(onModalChange);
         }
       },
       true,
     );
     const obs = new MutationObserver(() => {
-      if (appModalOpen()) {
-        syncAnnotationTopLayer();
-        scheduleRescan();
-      }
+      if (appModalOpen()) onModalChange();
     });
     obs.observe(document.documentElement, {
       childList: true,
@@ -620,7 +775,7 @@
   }
 
   function markTopLayerPopover(el) {
-    if (!el || el.popover === "manual") return;
+    if (!el || el.getAttribute("popover") === "manual") return;
     el.setAttribute("popover", "manual");
     topLayerUi.push(el);
   }
@@ -798,7 +953,19 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class", "hidden", "open", "aria-current", "aria-pressed", "aria-expanded", "aria-selected", "aria-hidden"],
+      attributeFilter: [
+        "class",
+        "hidden",
+        "open",
+        "aria-current",
+        "aria-pressed",
+        "aria-expanded",
+        "aria-selected",
+        "aria-hidden",
+        "data-view",
+        "data-subview",
+        "data-detail-open",
+      ],
     });
   }
 

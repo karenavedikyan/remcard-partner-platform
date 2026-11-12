@@ -10,6 +10,11 @@ html.proto-num-off .proto-num-badges-host {
   visibility: hidden;
 }
 
+html.proto-num-popover-fallback.proto-num-modal-open .proto-num-chrome,
+html.proto-num-popover-fallback.proto-num-modal-open .proto-num-panel.is-open {
+  z-index: 2147483647;
+}
+
 .proto-num-badges-host {
   position: fixed;
   inset: 0;

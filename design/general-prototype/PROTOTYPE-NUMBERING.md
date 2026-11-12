@@ -19,9 +19,11 @@
 
 ## Покрытие HTML (15)
 
-`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann3`.
+`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann4`.
 
-При открытом нативном `<dialog showModal>` (кроме UI нумерации) панель, хром и маркеры поднимаются в top layer через `popover="manual"`, чтобы оставаться поверх модалки без перехвата фокуса продукта.
+Состояние экрана (`pageState`): для админ/клиентского SPA учитываются `[data-action="go"][data-view]` с `aria-current`, hash-маршрут, `data-subview`, открытая entity/detail и заголовок открытого `dialog` (например `view=partners` вместо голого `4|index|`).
+
+При нативном `<dialog showModal>` хром и панель индекса поднимаются в top layer (`popover="manual"`) **после** открытия диалога (double `rAF` + `beforetoggle`), без закрытия/изменения продуктового диалога. Маркеры на элементах: если позиция перекрывает текст цели — номер остаётся в индексе, визуальный badge скрывается (`badgeHidden`).
 
 Клиент/админ в репозитории — минимальные оболочки для hash-маршрутов и пространств 2/4; полный SPA остаётся в артефакте сборки.
 
