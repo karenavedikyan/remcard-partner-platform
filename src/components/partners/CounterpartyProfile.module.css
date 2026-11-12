@@ -1,7 +1,16 @@
 .root {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   color: var(--text);
+}
+
+.root,
+.root * {
+  box-sizing: border-box;
 }
 
 .summary {
@@ -9,13 +18,38 @@
   background: var(--surface, var(--bg));
   border-radius: 12px;
   padding: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .summaryHeader {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: start;
   margin-bottom: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.summaryHeader .avatar {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.summaryHeader .identity {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.summaryHeader .status {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-left: 0;
+  justify-self: start;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .avatar {
@@ -81,8 +115,6 @@
 }
 
 .status {
-  margin-left: auto;
-  flex-shrink: 0;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 6px 10px;
@@ -94,6 +126,8 @@
 .summaryId {
   padding-top: 10px;
   border-top: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .summaryId label {
@@ -105,14 +139,27 @@
 }
 
 .idRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.copyBtn {
+  min-height: 44px;
+  padding-left: 10px;
+  padding-right: 10px;
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 .idInput {
-  flex: 1;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -141,6 +188,9 @@
   border-radius: 10px;
   background: var(--surface, var(--bg));
   color: var(--text);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .section h3 {
@@ -195,14 +245,6 @@
   border: 1px solid var(--line);
   background: var(--soft, rgba(0, 0, 0, 0.04));
   color: var(--text);
-}
-
-@media (max-width: 480px) {
-  .summaryHeader {
-    flex-wrap: wrap;
-  }
-
-  .status {
-    margin-left: 0;
-  }
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }

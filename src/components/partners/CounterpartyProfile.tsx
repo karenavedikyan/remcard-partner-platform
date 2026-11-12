@@ -103,6 +103,7 @@ export function CounterpartyProfile({ partnership, listPrincipalId }: Props) {
             <Button
               type="button"
               variant="secondary"
+              className={styles.copyBtn}
               disabled={!view.publicId}
               onClick={() => void copyPublicId()}
               data-testid="counterparty-profile-copy-id"
