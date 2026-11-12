@@ -25,7 +25,7 @@
 ## Техника
 
 - Хост: `partner/cabinet-standalone-host.js` (+ CSS), портал на `document.body`, геометрия по **visual viewport** (не `scrollHeight` контента), прокрутка внутри iframe.
-- Дочерний: `prototype-cabinet-embed.js` — скрывает шапки standalone, блокирует storage/History API, `postMessage` для nav/back.
+- Дочерний: `prototype-cabinet-embed.js` + `standalone-embed-role.js` — скрывает шапки, `postMessage` nav/back, **роль/права** (`embedActor`, `permissions`) для 143–147; URL несёт `embed_role` / `embed_employer`.
 - Нумерация: при открытом embed `window.__protoCabinetEmbeddedPage` → бейдж **N** (страница хоста не перенумеровывается).
 - Возврат: стек в `rcDemoMemory` (`proto_embed_return_stack`), кнопки «Назад»/«Закрыть» в shell.
 

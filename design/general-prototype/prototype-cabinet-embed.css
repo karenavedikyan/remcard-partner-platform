@@ -29,8 +29,7 @@ html.cabinet-embed-mode [data-proto-ui="panel"] {
 }
 
 html.cabinet-embed-mode main.page,
-html.cabinet-embed-mode .page-heading,
-html.cabinet-embed-mode .context {
+html.cabinet-embed-mode main.page > .page-heading {
   display: none !important;
 }
 

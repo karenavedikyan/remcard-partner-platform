@@ -69,10 +69,14 @@ function currentTheme() {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
-function buildEmbedUrl(pageN, extraQuery = "") {
+function buildEmbedUrl(pageN, extraQuery = "", bridge = {}) {
   const def = STANDALONE_BY_N[pageN];
   if (!def) return null;
   const params = new URLSearchParams({ cabinet_embed: "1", proto_n: String(pageN) });
+  const role = bridge.getRole?.();
+  const employer = bridge.getEmployer?.();
+  if (role) params.set("embed_role", role);
+  if (employer) params.set("embed_employer", employer);
   if (extraQuery) {
     new URLSearchParams(extraQuery.startsWith("?") ? extraQuery.slice(1) : extraQuery).forEach((v, k) =>
       params.set(k, v),
@@ -91,6 +95,8 @@ function buildEmbedUrl(pageN, extraQuery = "") {
 export function createCabinetStandaloneHost(config) {
   const {
     getScreen,
+    getRole,
+    getEmployer,
     canOpen,
     notify,
     onReturn,
@@ -98,6 +104,7 @@ export function createCabinetStandaloneHost(config) {
     resolveEmbedPayload,
     shouldResetOnRerender,
   } = config;
+  const urlBridge = { getRole, getEmployer };
 
   const hostEl = document.createElement("div");
   hostEl.className = "cabinet-standalone-host cabinet-standalone-host--portal";
@@ -260,7 +267,7 @@ export function createCabinetStandaloneHost(config) {
       return deny(pageN, "Сначала откройте кабинет в режиме просмотра.");
     }
     const def = STANDALONE_BY_N[pageN];
-    const url = buildEmbedUrl(pageN, extraQuery);
+    const url = buildEmbedUrl(pageN, extraQuery, urlBridge);
     if (!url || !def) return false;
 
     if (chain && openPageN) {

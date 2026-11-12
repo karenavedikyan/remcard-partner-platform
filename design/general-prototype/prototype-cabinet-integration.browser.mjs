@@ -185,6 +185,37 @@ try {
   assert.ok(agentDenied, "agent must not keep embed 146 open via deep link");
   await denyPage.close();
 
+  const agentWallet = await browser.newPage();
+  await agentWallet.setViewportSize({ width: 1280, height: 900 });
+  await agentWallet.goto(`${base}/partner/index.html?role=agent`, { waitUntil: "load" });
+  await agentWallet.evaluate(() => {
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await agentWallet.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await agentWallet.evaluate(() =>
+    document.querySelector('[data-action="nav:bonus"], [data-action="nav:wallet"]')?.click(),
+  );
+  await agentWallet.waitForSelector("[data-testid='wallet-history-hub-link']", { timeout: 15000 });
+  await agentWallet.click("[data-testid='wallet-history-hub-link']");
+  await agentWallet.waitForSelector("[data-testid='cabinet-standalone-frame']", { timeout: 10000 });
+  const frame147 = agentWallet.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame147.locator(".context span").first().waitFor({ timeout: 8000 });
+  const agent147 = {
+    badge: (await frame147.locator(".context span").first().textContent())?.trim(),
+    purpose: (await frame147.locator("#view-purpose").textContent())?.trim(),
+    iframeRole: await frame147.locator("html").evaluate((el) => el.dataset.embedRole),
+    srcRole: await frame147.locator("html").evaluate(
+      () => new URLSearchParams(location.search).get("embed_role"),
+    ),
+  };
+  assert.equal(agent147.badge, "АГЕНТ");
+  assert.match(agent147.purpose || "", /вознагражден/i);
+  assert.equal(agent147.iframeRole, "agent");
+  assert.equal(agent147.srcRole, "agent");
+  const src = await agentWallet.locator("[data-testid='cabinet-standalone-frame']").getAttribute("src");
+  assert.ok(src?.includes("embed_role=agent"), "147 iframe must carry embed_role");
+  await agentWallet.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

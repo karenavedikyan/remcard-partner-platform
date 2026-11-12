@@ -2798,6 +2798,13 @@ function $t() {
   hubFindShell({ state: de, dictionary: Le, cities: [...new Set(P.map((e) => e.city))], typeLabels: Object.fromEntries(Object.entries(ee).map(([key, value]) => [key, value.label])), certReturn: !!Z, results: Ct });
 }
 let standaloneHost = null;
+const EMBED_ROLE_LABEL = {
+  store: "Магазин",
+  company: "Компания",
+  agent: "Агент",
+  specialist: "Специалист",
+  employee: "Сотрудник",
+};
 function standaloneEmbedPermissions(pageN) {
   if (pageN === 143) {
     const editTerms = ue();
@@ -2812,14 +2819,164 @@ function standaloneEmbedPermissions(pageN) {
     };
   }
   if ([147, 144, 145].includes(pageN)) {
-    const write = k() ? O("ledger") || O("cash") || O("transfer") : true;
-    return { viewOnly: !write, readOnlyWallet: !write };
+    if (i.role === "agent" || i.role === "specialist") {
+      return { viewOnly: true, readOnlyWallet: true, walletMode: "rewards" };
+    }
+    if (k()) {
+      const write = O("ledger") || O("cash") || O("transfer");
+      const canView = write || O("ledger") || O("bonus");
+      return {
+        viewOnly: !canView,
+        readOnlyWallet: !write,
+        walletMode: write ? "ledger" : O("bonus") ? "bonus" : "view",
+      };
+    }
+    return { viewOnly: false, readOnlyWallet: false, walletMode: "receiving" };
   }
   if (pageN === 146) {
-    const act = k() ? O("scan") || O("sale") : true;
-    return { viewOnly: !act };
+    if (i.role === "agent") {
+      return { viewOnly: true, canConfirmSale: false, canScan: false, canViewCertificate: false };
+    }
+    if (k()) {
+      const sale = O("sale");
+      const scan = O("scan");
+      return {
+        viewOnly: !sale,
+        canConfirmSale: sale,
+        canScan: scan,
+        canViewCertificate: scan || sale,
+      };
+    }
+    return { viewOnly: false, canConfirmSale: true, canScan: true, canViewCertificate: true };
   }
   return { viewOnly: false };
+}
+function standaloneEmbedActor(pageN) {
+  const role = i.role;
+  const roleLabel = EMBED_ROLE_LABEL[role] || role;
+  const base = { role, roleLabel, employerKey: Y };
+  if (pageN === 147) {
+    if (role === "agent") {
+      return {
+        ...base,
+        contextBadge: "АГЕНТ",
+        subheading: "Заработанные вознаграждения",
+        historyTitle: "История начислений",
+        defaultView: "accruals",
+        readOnlyDetail: true,
+        tabs: {
+          purchases: { visible: true, readOnly: true, label: "Связанные покупки" },
+          accruals: { visible: true, primary: true, label: "Начисления" },
+        },
+        viewPurpose: {
+          purchases: "Связанные покупки партнёров · только просмотр",
+          accruals: "По рекомендациям · сохранённые суммы вознаграждения",
+        },
+        finePrint:
+          "Демо: суммы как сохранено в кабинете, без пересчёта. Приём покупок и оформление продаж агенту недоступны.",
+      };
+    }
+    if (role === "specialist") {
+      return {
+        ...base,
+        contextBadge: "СПЕЦИАЛИСТ",
+        subheading: "Бонусы и начисления",
+        historyTitle: "История операций",
+        defaultView: "accruals",
+        readOnlyDetail: true,
+        tabs: {
+          purchases: { visible: true, readOnly: true, label: "Связанные покупки" },
+          accruals: { visible: true, primary: true, label: "Начисления" },
+        },
+        viewPurpose: {
+          purchases: "Связанные покупки · просмотр без приёма",
+          accruals: "Заработанные вознаграждения · сохранённые суммы",
+        },
+      };
+    }
+    if (["store", "company"].includes(role)) {
+      return {
+        ...base,
+        contextBadge: role === "store" ? "МАГАЗИН" : "КОМПАНИЯ",
+        subheading: "Покупки и начисления",
+        historyTitle: "История операций",
+        defaultView: "purchases",
+        tabs: {
+          purchases: { visible: true, primary: true, label: "Покупки" },
+          accruals: { visible: true, label: "Начисления" },
+        },
+        viewPurpose: {
+          purchases: "Принято у меня · суммы покупок после скидки",
+          accruals: "Исходящие вознаграждения профклиентам",
+        },
+      };
+    }
+    const receiving = k() && (O("ledger") || O("cash") || O("transfer"));
+    return {
+      ...base,
+      contextBadge: "СОТРУДНИК",
+      subheading: receiving ? "Взаиморасчёты" : "Бонусы",
+      defaultView: receiving ? "purchases" : "accruals",
+      viewPurpose: {
+        purchases: receiving
+          ? "Принято в назначенных филиалах · просмотр"
+          : "Покупки · недоступны без права взаиморасчётов",
+        accruals: "Начисления в рамках выданных прав",
+      },
+    };
+  }
+  if (pageN === 144) {
+    if (role === "agent" || role === "specialist") {
+      return {
+        ...base,
+        directionLabel: "Связанная покупка · просмотр",
+        readOnlyBanner: true,
+      };
+    }
+    return { ...base, directionLabel: "Принято у меня" };
+  }
+  if (pageN === 145) {
+    return {
+      ...base,
+      contextBadge: role === "agent" || role === "specialist" ? "ВОЗНАГРАЖДЕНИЕ" : "НАЧИСЛЕНИЕ",
+      receiptMode: role === "agent" || role === "specialist" ? "earned" : "merchant",
+    };
+  }
+  if (pageN === 146) {
+    const perms = standaloneEmbedPermissions(146);
+    return {
+      ...base,
+      scanTitle: perms.canConfirmSale ? "Оформление по сертификату" : "Сканер · просмотр макета",
+      saleReadOnlyNote: perms.canConfirmSale
+        ? ""
+        : perms.canScan
+          ? "Можно просмотреть сертификат. Подтверждение продажи только с правом «Продажа и начисление»."
+          : "Макет недоступен для оформления без прав сканирования и продажи.",
+    };
+  }
+  if (pageN === 143) {
+    return { ...base, cooperationMode: k() && !ue() ? "view" : "manage" };
+  }
+  return base;
+}
+function embedPayloadEnvelope(pageN, ctx, body = {}) {
+  const record = ctx?.record || null;
+  return {
+    ...body,
+    role: i.role,
+    roleLabel: EMBED_ROLE_LABEL[i.role] || i.role,
+    employerKey: Y,
+    permissions: body.permissions || standaloneEmbedPermissions(pageN),
+    embedActor: standaloneEmbedActor(pageN),
+    selectedRecord: record
+      ? {
+          id: record.id,
+          displayCode: record.displayCode,
+          partner: record.partner,
+          name: record.name,
+        }
+      : ctx?.recordId || null,
+  };
 }
 function employeeCanViewPartners() {
   return (
@@ -2905,7 +3062,7 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       partner.topics?.length > 0
         ? partner.topics
         : (catalog?.categories || []).map((c) => c.name);
-    return {
+    return embedPayloadEnvelope(pageN, ctx, {
       partner: {
         name: partner.name,
         city: partner.city,
@@ -2918,37 +3075,37 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       partnerId: partner.id,
       permissions,
       sectionsHtml: buildCooperationEmbedSections(partner),
-    };
+    });
   }
   if (pageN === 139 && ctx?.record) {
-    return {
+    return embedPayloadEnvelope(pageN, ctx, {
       record: ctx.record,
       displayCode: ctx.record.displayCode,
       partner: ctx.record.partner,
       terms: ctx.record.terms || [],
       name: ctx.record.name,
       disabled: !!ctx.record.disabled,
-    };
+    });
   }
   if (pageN === 147) {
-    return {
-      permissions: standaloneEmbedPermissions(pageN),
+    return embedPayloadEnvelope(pageN, ctx, {
       walletState: ctx?.walletState || null,
-    };
+    });
   }
   if ([144, 145, 146].includes(pageN)) {
-    return {
-      permissions: standaloneEmbedPermissions(pageN),
+    return embedPayloadEnvelope(pageN, ctx, {
       purchaseCtx: ctx?.purchaseCtx || null,
       receiptCtx: ctx?.receiptCtx || null,
-    };
+    });
   }
-  return ctx || null;
+  return embedPayloadEnvelope(pageN, ctx, ctx || {});
 }
 function ensureStandaloneHost() {
   if (!standaloneHost) {
     standaloneHost = createCabinetStandaloneHost({
       getScreen: () => i.screen,
+      getRole: () => i.role,
+      getEmployer: () => Y,
       canOpen: (pageN) => standaloneCanOpen(pageN),
       getEmbedGuardKey: () =>
         `${i.role}|${prototypeRelease()}|${[...i.permissions].sort().join(",")}|${Y}`,

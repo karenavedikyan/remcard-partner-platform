@@ -37,13 +37,25 @@
       return `<${linkedPurchase?'a href="partner-purchase-detail.html"':'button'} class="operation" ${isPurchase?(linkedPurchase?"":`data-purchase-row="${index}"`):`data-accrual-row="${index}"`}><div class="operation-main"><strong>${isPurchase?"Покупка по сертификату":"Вознаграждение профклиенту"}</strong><p class="row-partner">Партнёр: ${r.title}</p><p>RC-X9Z0WZ · ${r.display}</p></div><div class="operation-money"><strong>${money(r.amount)}</strong><small class="status ${isPurchase?"":"neutral"}">${isPurchase?"Подтверждена":"Начислено"}</small></div><span class="arrow" aria-hidden="true">›</span></${linkedPurchase?"a":"button"}>`;
     }).join("") : empty("Ничего не найдено","Измените запрос или выбранный период.",true);
   }
+  let viewPurposeCopy = null;
+  function refreshViewPurpose(){
+    const purpose = $("#view-purpose");
+    if (!purpose) return;
+    if (viewPurposeCopy && viewPurposeCopy[view]) {
+      purpose.textContent = viewPurposeCopy[view];
+      return;
+    }
+    purpose.textContent = view === "purchases"
+      ? "Принято у меня · суммы покупок после скидки"
+      : "Вознаграждения профклиентам · сохранённые суммы";
+  }
   function setView(next){
     view = next;
     $("#history-view").hidden=!["purchases","accruals"].includes(view);
     $("#detail-view").hidden=view!=="detail";
     document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===view)));
     if(["purchases","accruals"].includes(view)){
-      $("#view-purpose").textContent=view==="purchases"?"Принято у меня · суммы покупок после скидки":"Вознаграждения профклиентам · сохранённые суммы";
+      refreshViewPurpose();
       $("#status option[value=active]").textContent=view==="purchases"?"Подтверждена":"Начислено";
       renderHistory();
     }
@@ -85,11 +97,6 @@
 
   const embedParams = new URLSearchParams(location.search);
   if (embedParams.get("cabinet_embed") === "1") {
-    const post = (msg) => {
-      try {
-        parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
-      } catch (_) {}
-    };
     const walletState = () => ({
       view,
       selectedAccrualId: selectedAccrual?.id || null,
@@ -108,15 +115,15 @@
         const hit = accruals.find((row) => row.id === state.selectedAccrualId);
         if (hit) selectedAccrual = hit;
       }
-      setView(state.view || "purchases");
+      setView(state.view || view);
+      renderHistory();
     };
-    window.addEventListener("message", (ev) => {
-      const data = ev.data;
-      if (!data || data.source !== "proto-cabinet-host" || data.type !== "context") return;
-      if (Number(data.pageN) !== 147) return;
-      applyWalletState(data.payload?.walletState);
-    });
-    post({ type: "need-context", pageN: 147 });
+    window.__protoWalletApplyState = applyWalletState;
+    window.__protoWalletSetView = setView;
+    window.__protoWalletRefreshPurpose = (copy) => {
+      viewPurposeCopy = copy;
+      refreshViewPurpose();
+    };
     const openRelated = $("#open-related");
     openRelated?.addEventListener(
       "click",
