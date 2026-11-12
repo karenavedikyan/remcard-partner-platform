@@ -91,9 +91,10 @@
   let rescanTimer = null;
   let scrollBound = false;
   let scanning = false;
-  /** @type {HTMLElement[]} */
-  let topLayerUi = [];
-  let topLayerSyncBound = false;
+  let modalDockSyncBound = false;
+  /** @type {HTMLDialogElement | null} */
+  let dockedDialog = null;
+  let lastAppModalOpen = false;
 
   function fnv1a(str) {
     let h = 2166136261;
@@ -682,70 +683,63 @@
     metaEl.textContent = `${NS_LABELS[ns] || ns} · ${pageFileKey()} · ${readPrototypeState() || "—"} · ${registry.length} в индексе`;
   }
 
+  function activeAppDialog() {
+    const open = document.querySelectorAll(`dialog[open]:not([${UI_ATTR}])`);
+    return open.length ? open[open.length - 1] : null;
+  }
+
   function appModalOpen() {
-    return !!document.querySelector(`dialog[open]:not([${UI_ATTR}])`);
+    return !!activeAppDialog();
   }
 
-  function liftAnnotationUi() {
-    topLayerUi.forEach((el) => {
-      if (!el) return;
-      if (el === panelEl && panelEl.hasAttribute("hidden") && !panelOpen) {
-        try {
-          if (el.matches(":popover-open")) el.hidePopover();
-        } catch {
-          /* noop */
-        }
-        return;
-      }
-      try {
-        if (!el.matches(":popover-open")) el.showPopover();
-        if (el === chromeEl || el === panelEl) {
-          document.body.append(el);
-        }
-      } catch {
-        document.documentElement.classList.add("proto-num-popover-fallback");
-      }
-    });
+  function appendUiToBody() {
+    if (!badgeHost || !chromeEl || !panelEl) return;
+    document.body.append(badgeHost, chromeEl, panelEl);
+    dockedDialog?.classList.remove("proto-num-dialog-host");
+    dockedDialog = null;
   }
 
-  function lowerAnnotationUi() {
-    topLayerUi.forEach((el) => {
-      if (!el) return;
-      try {
-        if (el.matches(":popover-open")) el.hidePopover();
-      } catch {
-        /* noop */
-      }
-    });
-    document.documentElement.classList.remove("proto-num-popover-fallback");
-  }
-
-  function syncAnnotationTopLayer() {
-    const lift = appModalOpen();
-    document.documentElement.classList.toggle("proto-num-modal-open", lift);
-    if (lift) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          liftAnnotationUi();
-        });
-      });
+  function mountAnnotationInDialog(dlg) {
+    if (!dlg || !badgeHost || !chromeEl || !panelEl) return;
+    if (dockedDialog !== dlg) {
+      appendUiToBody();
+      dockedDialog = dlg;
+    }
+    dlg.classList.add("proto-num-dialog-host");
+    dlg.append(badgeHost, chromeEl);
+    if (panelOpen && !panelEl.hasAttribute("hidden")) {
+      dlg.append(panelEl);
     } else {
-      lowerAnnotationUi();
+      document.body.append(panelEl);
     }
   }
 
-  function bindTopLayerSync() {
-    if (topLayerSyncBound) return;
-    topLayerSyncBound = true;
-    const onModalChange = () => {
-      syncAnnotationTopLayer();
+  function syncModalDock() {
+    const dlg = activeAppDialog();
+    document.documentElement.classList.toggle("proto-num-modal-open", !!dlg);
+    if (dlg) mountAnnotationInDialog(dlg);
+    else appendUiToBody();
+  }
+
+  function onAppModalTransition() {
+    syncModalDock();
+    const open = appModalOpen();
+    if (open !== lastAppModalOpen) {
+      lastAppModalOpen = open;
       scheduleRescan();
-    };
+    } else {
+      requestAnimationFrame(placeBadges);
+    }
+  }
+
+  function bindModalDockSync() {
+    if (modalDockSyncBound) return;
+    modalDockSyncBound = true;
     document.addEventListener(
       "toggle",
       (ev) => {
         if (ev.target instanceof HTMLDialogElement && !ev.target.hasAttribute(UI_ATTR)) {
-          onModalChange();
+          onAppModalTransition();
         }
       },
       true,
@@ -758,30 +752,15 @@
           !ev.target.hasAttribute(UI_ATTR) &&
           ev.newState === "open"
         ) {
-          queueMicrotask(onModalChange);
+          queueMicrotask(onAppModalTransition);
         }
       },
       true,
     );
-    const obs = new MutationObserver(() => {
-      if (appModalOpen()) onModalChange();
-    });
-    obs.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["open"],
-    });
-  }
-
-  function markTopLayerPopover(el) {
-    if (!el || el.getAttribute("popover") === "manual") return;
-    el.setAttribute("popover", "manual");
-    topLayerUi.push(el);
   }
 
   function rescan() {
-    syncAnnotationTopLayer();
+    syncModalDock();
     if (!enabled) {
       badgeHost && (badgeHost.textContent = "");
       return;
@@ -800,10 +779,17 @@
 
   function mutationIsRelevant(mutation) {
     if (scanning) return false;
+    if (mutation.type === "childList") {
+      const t = mutation.target;
+      if (t?.nodeType === 1) {
+        if (t.classList?.contains(BADGE_HOST_CLASS) || t.closest?.(`[${UI_ATTR}]`)) return false;
+      }
+    }
     const targets = [mutation.target, ...mutation.addedNodes, ...mutation.removedNodes];
     for (const node of targets) {
       if (!node || node.nodeType !== 1) continue;
       if (isAnnotationUi(node)) return false;
+      if (node.closest?.(`[${UI_ATTR}]`)) return false;
     }
     if (mutation.type === "attributes") {
       if (mutation.attributeName === TARGET_ATTR) return false;
@@ -869,6 +855,7 @@
       panelBtn.setAttribute("aria-expanded", panelOpen ? "true" : "false");
       panelEl.classList.toggle("is-open", panelOpen);
       panelEl.toggleAttribute("hidden", !panelOpen);
+      syncModalDock();
       if (panelOpen) {
         rescan();
         renderIndexList(searchEl?.value || "");
@@ -934,12 +921,8 @@
     panelEl.append(head, listEl, actions);
     searchEl.addEventListener("input", () => renderIndexList(searchEl.value));
 
-    markTopLayerPopover(badgeHost);
-    markTopLayerPopover(chromeEl);
-    markTopLayerPopover(panelEl);
-
     document.body.append(badgeHost, chromeEl, panelEl);
-    bindTopLayerSync();
+    bindModalDockSync();
   }
 
   function startObserver() {

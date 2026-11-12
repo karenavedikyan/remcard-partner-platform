@@ -10,9 +10,29 @@ html.proto-num-off .proto-num-badges-host {
   visibility: hidden;
 }
 
-html.proto-num-popover-fallback.proto-num-modal-open .proto-num-chrome,
-html.proto-num-popover-fallback.proto-num-modal-open .proto-num-panel.is-open {
-  z-index: 2147483647;
+dialog.proto-num-dialog-host > .proto-num-badges-host {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+dialog.proto-num-dialog-host > .proto-num-chrome {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  top: auto;
+  right: auto;
+  z-index: 3;
+  inset: auto auto 12px 12px;
+}
+
+dialog.proto-num-dialog-host > .proto-num-panel:not([hidden]) {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  left: auto;
+  z-index: 4;
 }
 
 .proto-num-badges-host {
@@ -102,12 +122,6 @@ html.proto-num-popover-fallback.proto-num-modal-open .proto-num-panel.is-open {
   border-radius: 8px;
   border: 1px solid #ddd;
   max-width: min(320px, 90vw);
-}
-
-.proto-num-chrome:popover-open,
-.proto-num-badges-host:popover-open,
-.proto-num-panel:popover-open {
-  position: fixed;
 }
 
 .proto-num-panel {
