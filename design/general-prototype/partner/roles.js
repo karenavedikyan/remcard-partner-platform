@@ -45,7 +45,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca26";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts } from "./client-appeals.js?v=ca27";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -2447,6 +2447,24 @@ function navAllowedInRelease(pageKey) {
   if (prototypeRelease() === 2) return true;
   return !R2_NAV_KEYS.has(pageKey);
 }
+function receivingScannerEligible() {
+  if (i.role === "agent") return false;
+  if (k()) return J() && (O("scan") || O("sale"));
+  return ["specialist", "store", "company"].includes(i.role);
+}
+function openClientAppealsScanFlow() {
+  if (!receivingScannerEligible()) {
+    U("Сканер доступен ролям, которые принимают сертификаты у клиента.", "info");
+    return;
+  }
+  se.open && _();
+  ge = null;
+  primeClientAppealsScan(clientAppealsConfig());
+  i.page = "scanner";
+  i.screen = "cabinet";
+  i.notice = "";
+  T();
+}
 function Te() {
   let keys;
   if (!k()) {
@@ -3294,8 +3312,18 @@ function La() {
     canViewEmployerBank:
       k() && J() && ["ledger", "cash", "transfer"].some((a) => O(a)),
   };
-  if (i.page === "clients") return renderClientAppeals(clientAppealsConfig());
-  if (i.screen === "cabinet" && emptyStateActive(emptyStates_page()) && i.page !== "clients") {
+  if (i.page === "clients" || i.page === "scanner") {
+    if (i.page === "scanner" && !receivingScannerEligible()) {
+      i.page = "home";
+      return legacyLa();
+    }
+    return renderClientAppeals(clientAppealsConfig());
+  }
+  if (
+    i.screen === "cabinet" &&
+    emptyStateActive(emptyStates_page()) &&
+    !["clients", "scanner"].includes(i.page)
+  ) {
     const emptyHtml = renderEmptyState({ page: emptyStates_page(), role: i.role, employerRole: employeeEmployerRole() || (k() && J() ? Y : null) });
     if (emptyHtml) return emptyHtml;
   }
@@ -3425,6 +3453,19 @@ function clientAppealsConfig() {
     role: i.role,
     icon: D,
     readOnly: k() && !O("clients"),
+    scanEntry: i.page === "scanner",
+    exitScannerEntry: () => {
+      resetClientAppealsNav(clientAppealsConfig());
+      i.page = "home";
+      i.notice = "";
+      R();
+    },
+    onScanNavList: () => {
+      if (i.page === "scanner") {
+        i.page = "clients";
+        R();
+      }
+    },
     profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
     openProfile: () => {
       i.page = "profile";
@@ -3473,7 +3514,7 @@ function Ia() {
   }
   return (
     e.includes(i.page) || (i.page = "home"),
-    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header">${i.page === "clients" ? clientAppealsSubpageBack(clientAppealsConfig()) : ""}<div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : i.page === "clients" ? `${clientAppealsPageTitle(clientAppealsConfig())}${clientAppealsHeaderPill(clientAppealsConfig()) ? `<span class="ca-title-pill">${clientAppealsHeaderPill(clientAppealsConfig())}</span>` : ""}` : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : i.page === "clients" ? clientAppealsPageMuted(clientAppealsConfig()) : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
+    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header">${["clients", "scanner"].includes(i.page) ? clientAppealsSubpageBack(clientAppealsConfig()) : ""}<div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : ["clients", "scanner"].includes(i.page) ? `${clientAppealsPageTitle(clientAppealsConfig())}${clientAppealsHeaderPill(clientAppealsConfig()) ? `<span class="ca-title-pill">${clientAppealsHeaderPill(clientAppealsConfig())}</span>` : ""}` : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : ["clients", "scanner"].includes(i.page) ? clientAppealsPageMuted(clientAppealsConfig()) : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
   );
 }
 function Ea() {
@@ -4253,6 +4294,10 @@ document.addEventListener("click", (e) => {
       );
       return;
     }
+    if (s === "scanner") {
+      openClientAppealsScanFlow();
+      return;
+    }
     const resolvedPage = ["bonus", "settlements"].includes(s)
       ? "wallet"
       : s === "links" && !qe()
@@ -4272,6 +4317,9 @@ document.addEventListener("click", (e) => {
         clearPayProfileReturnContext(cfg.key);
         clearProfileWizardPayCategoriesTrip(i.role);
       }
+    }
+    if (i.page === "scanner" && s !== "scanner") {
+      resetClientAppealsNav(clientAppealsConfig());
     }
     if (s === "clients") {
       ge = null;
@@ -4686,11 +4734,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       ),
     a === "action" &&
       (s === "recommend" && ut(),
-      s === "scan" &&
-        E(
-          "Демонстрационный сертификат",
-          `<span class="pill good">Условия найдены \xB7 демо</span><h3>Дом материалов</h3><p>Материалы для ремонта \xB7 бонус партнёру 5%</p><p class="notice">Сканирование ничего не начисляет. Для начисления нужно отдельно оформить продажу.</p>${O("sale") ? d("Посмотреть оформление продажи", "sale-example", "primary") : '<p class="small">Право оформления продажи вам не назначено.</p>'}${ft()}`,
-        ),
+      s === "scan" && openClientAppealsScanFlow(),
       (s === "cash" || s === "transfer") &&
         E(
           s === "cash"

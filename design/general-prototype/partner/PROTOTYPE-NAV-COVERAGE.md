@@ -1,30 +1,38 @@
 # Partner prototype · navigation coverage (R1 default)
 
-Legend: **Live** = wired module in cabinet (`roles.js` shell). **Legacy** = `legacyLa()` fragments. **R2** = only when «Релиз → R2» in review toolbar (`rc_release` / `?rc_demo_release=2`).
+Legend: **Module** = routed through cabinet shell (`roles.js`) into an existing prototype module. **Legacy** = `legacyLa()` stub or dialog-only path. **R2** = visible only with «Релиз → R2» (`rc_release` / `?rc_demo_release=2`).
 
 | Section | Specialist | Store | Company | Agent | Employee |
 | --- | --- | --- | --- | --- | --- |
-| Home | Live | Live | Live | Live | Live (rights-based teasers; no R2 teasers in R1) |
-| Clients | Live (`client-appeals.js`) | Live | Live | Live (sender-only) | Live if `clients` permission |
-| Partners | Live (`partners-redesign.js`) | Live | Live | Live | Live if terms/scan/sale |
-| Recommendations | Live | Live | Live | Live | Live if `clients` |
-| Scanner | Legacy stub in `legacyLa` | Live route | Live | — | Live if scan/sale |
-| Wallet / bonus / settlements | Live (`wallet-accruals.js`) | Live | Live | Live (`bonus`) | Live if ledger rights |
-| Purchases / operation details | Via clients module | Via clients | Via clients | Via clients | Via clients |
-| Profile | Live (`profile-wizard.js`) | Live | Live | Live | Live |
-| Certificates | Live (agent home / cert flows) | — | — | Live | — |
-| Team / links | links → partners or profile | links | links | — | team in profile if `team` |
-| Закупки | R2 only (`procurement.js`) | R2 only | R2 only | R2 only | R2 if terms/catalog perm |
-| Забота RemCard | R2 only (`care-services.js`) | R2 only | R2 only | R2 only | R2 if terms/catalog/sale |
+| Home | Module | Module | Module | Module | Module (rights-based; no R2 teasers in R1) |
+| Clients | Module (`client-appeals.js`) | Module | Module | Module (sender-only / observer opt-in) | Module if `clients` |
+| Partners | Module (`partners-redesign.js`) | Module | Module | Module | Module if terms/scan/sale |
+| Recommendations / outgoing certs | Legacy list + `action:recommend` wizard | Legacy + recommend | Legacy + recommend | Module (cert list + recommend) | Legacy if `clients` |
+| Scanner (receive cert) | Module via `client-appeals` scan | Module | Module | — (not in nav) | Module if scan/sale |
+| Wallet / bonus / settlements | Module (`wallet-accruals.js`) | Module | Module | Module (incoming-only) | Module if ledger rights |
+| Purchases / operations detail | Module (appeal `purchase` + wallet txn panels) | Module | Module | Module (wallet → client-open) | Module |
+| Profile | Module (`profile-wizard.js`) | Module | Module | Module | Module |
+| Team / employee invites | — | links | links / team | — | profile tab if `team` |
+| Закупки | R2 · `procurement.js` | R2 | R2 | R2 | R2 if terms/catalog |
+| Забота RemCard | R2 · `care-services.js` | R2 | R2 | R2 | R2 if terms/catalog/sale |
 
-## Paths touched this pass
+## Scanner wiring (this pass)
 
-- `design/general-prototype/partner/roles.js` — release helpers, `Te()` filter, home teasers, nav guard, toolbar «Релиз», agent nav links
-- `design/general-prototype/partner/roles.html`, `partner/index.html` — cache bump `roles.js?v=nav-r1-20261112`
-- `design/general-prototype/preview-memory.js` — unchanged (already seeds `rc_release` from query)
+- Sidebar / mobile **Сканер** → `openClientAppealsScanFlow()` → `primeClientAppealsScan` → full scan UI (outcomes, appeal, categories, pay/delay).
+- Home CTA «Проверить сертификат» / employee hero / empty-state `action:scan` → same flow (no legacy dialog).
+- Back from scan entry: **К рабочим разделам** → home; list from scan entry → **Клиенты**.
 
-## Known gaps (not claimed 100% parity)
+## Paths
 
-- **Scanner** for specialist still partly legacy shell content vs production scanner.
-- **Employee** without full rights sees reduced nav; empty states from `empty-states.js`, not every production edge case.
-- **Production** financial write paths remain demo-only (no fake success).
+| Path | Change |
+| --- | --- |
+| `partner/roles.js` | Scanner route, `receivingScannerEligible`, `action:scan` |
+| `partner/client-appeals.js` | `primeClientAppealsScan`, scan entry back / `nav:cabinet` |
+| `design/general-prototype/index.html` | R2 links with `?rc_demo_release=2` |
+
+## Honest gaps (not production parity)
+
+- **Recommendations** for receiving roles: still legacy certificate list, not a separate production module name.
+- **`partner-scan-transaction.html`**: standalone reference page; cabinet uses integrated `client-appeals` scan only.
+- **Specialist** home hero still points at recommend flow, not scanner (by role copy).
+- Demo writes only; observer clients toggle unchanged.

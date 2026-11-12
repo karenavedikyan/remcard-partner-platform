@@ -1904,6 +1904,9 @@ export function clientAppealsSubpageBack(config) {
   if (s.view === "list") return "";
   if (s.view === "observer-partner") return backLink(config, "К партнёрам", "nav:observer-list");
   if (s.view === "observer-client") return backLink(config, "К списку клиентов", "nav:observer-partner");
+  if (s.view === "scan" && config.scanEntry) {
+    return backLink(config, "К рабочим разделам", "nav:cabinet");
+  }
   if (s.view === "detail") return backLink(config, "К списку клиентов", "nav:list");
   if (s.view === "purchase") return backLink(config, "К обращению", "nav:detail");
   return backLink(config, "К списку клиентов", "nav:list");
@@ -3078,6 +3081,22 @@ export function primeClientAppealsView(config, view) {
   s.selectedId = null;
 }
 
+/** Cabinet scanner nav: full client-appeals scan flow (demo outcomes, category, purchase). */
+export function primeClientAppealsScan(config) {
+  const s = ws(config.key);
+  s.tab = "incoming";
+  s.bucket = "active";
+  s.view = "scan";
+  s.selectedId = null;
+  s.purchaseViewId = null;
+  s.inlineReview = null;
+  s.inlinePanel = null;
+  s.detailPickStage = false;
+  s.showRefusal = null;
+  clearObserverNav(s);
+  clearBulkSelection(s);
+}
+
 export function hydrateClientAppeals(hooks) {
   cabinetHooks = hooks;
   const config = hooks.config();
@@ -3344,6 +3363,10 @@ function handleCaAction(action, config, hooks) {
       config.openProfile?.();
       return;
     }
+    if (v === "cabinet") {
+      config.exitScannerEntry?.();
+      return;
+    }
     if (v === "observer-list") {
       s.view = "list";
       clearObserverNav(s);
@@ -3370,6 +3393,7 @@ function handleCaAction(action, config, hooks) {
       s.payDraft = null;
       clearObserverNav(s);
       clearPayProfileReturnContext(config.key);
+      if (config.scanEntry) config.onScanNavList?.();
     }
     hooks.refresh();
     return;
