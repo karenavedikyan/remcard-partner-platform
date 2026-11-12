@@ -71,6 +71,28 @@ function hasMeaningfulIdentity(draft) {
   return Boolean(String(draft?.name || "").trim());
 }
 
+function cloneDraftMap(drafts) {
+  return structuredClone(drafts || {});
+}
+
+/** Switch preview to cabinet: stash registration drafts, restore cabinet snapshot or seed once. */
+export function enterCabinetPreviewDrafts(state, { employerKey = "company", registering = false } = {}) {
+  state.previewRegistrationDrafts = cloneDraftMap(state.drafts);
+  if (state.previewCabinetDrafts) {
+    state.drafts = cloneDraftMap(state.previewCabinetDrafts);
+  } else {
+    state.drafts = {};
+    ensureCabinetPreviewDrafts(state, { screen: "cabinet", registering, employerKey });
+    state.previewCabinetDrafts = cloneDraftMap(state.drafts);
+  }
+}
+
+/** Leave cabinet preview: persist cabinet edits, restore registration drafts (often blank). */
+export function leaveCabinetPreviewDrafts(state) {
+  state.previewCabinetDrafts = cloneDraftMap(state.drafts);
+  state.drafts = cloneDraftMap(state.previewRegistrationDrafts ?? {});
+}
+
 /**
  * @param {object} state - roles prototype root state (drafts, screen)
  * @param {{ screen: string, registering?: boolean, role?: string | null, employerKey?: string }} opts

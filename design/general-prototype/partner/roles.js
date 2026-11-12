@@ -13,7 +13,11 @@ import {
   clearProfileWizardPayCategoriesTrip,
   syncProfileWizardSavedData,
 } from "./profile-wizard.js";
-import { ensureCabinetPreviewDrafts } from "./cabinet-preview-seeds.js";
+import {
+  ensureCabinetPreviewDrafts,
+  enterCabinetPreviewDrafts,
+  leaveCabinetPreviewDrafts,
+} from "./cabinet-preview-seeds.js";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -2109,14 +2113,23 @@ Object.defineProperty(i, "notice", {
 var Y = "company",
   Oe = () => i.drafts[Y] || {},
   ia = () => (Y === "store" ? ye.slice(0, 1) : ye);
+function syncPreviewProfileWizards(role = null) {
+  const active = role || i.role;
+  for (const r of ["store", "company", "specialist", "agent", "employee"]) {
+    if (i.drafts[r]) syncProfileWizardSavedData(r, i.drafts[r]);
+  }
+  syncProfileWizardSavedData(active, ie());
+}
+
 function applyCabinetPreviewSeeds(role = null) {
+  if (i.screen !== "cabinet") return;
   ensureCabinetPreviewDrafts(i, {
     screen: i.screen,
     registering: entryState.registering,
     role,
     employerKey: Y,
   });
-  syncProfileWizardSavedData(role || i.role, ie());
+  syncPreviewProfileWizards(role);
 }
 Be.links = ["Приглашения", "link"];
 var ue = () => !k() || (J() && O("terms")),
@@ -4518,9 +4531,19 @@ ${n.targetId ? "Откройте приглашение в своём кабин
     (a === "continue" && ((i.screen = entryState.registering ? "entry-data" : "form"), (entryState.dataStep = 0), T()),
     a === "back" && ((i.screen = "choose"), T()),
     a === "view" &&
-      ((i.screen = s === "cabinet" ? "cabinet" : "welcome"),
-      s !== "cabinet" && (entryState.returning = false, entryState.accepted = false, entryState.invite = false, entryState.registering = false),
-      s === "cabinet" && applyCabinetPreviewSeeds(),
+      (s === "cabinet"
+        ? (enterCabinetPreviewDrafts(i, {
+            employerKey: Y,
+            registering: entryState.registering,
+          }),
+          syncPreviewProfileWizards(),
+          (i.screen = "cabinet"))
+        : (i.screen === "cabinet" && (leaveCabinetPreviewDrafts(i), syncPreviewProfileWizards()),
+          (i.screen = "welcome"),
+          (entryState.returning = false),
+          (entryState.accepted = false),
+          (entryState.invite = false),
+          (entryState.registering = false)),
       (i.page = "home"),
       (i.notice = ""),
       T()),
@@ -4921,8 +4944,11 @@ if (["store", "company"].includes(i.role)) Y = i.role;
   if (role && ["store", "company", "agent", "specialist", "employee"].includes(role)) i.role = role;
   i.screen = "cabinet";
   i.page = "clients";
-  applyCabinetPreviewSeeds(i.role);
+  enterCabinetPreviewDrafts(i, { employerKey: Y, registering: entryState.registering });
+  syncPreviewProfileWizards(i.role);
 })();
-if (i.screen === "cabinet") applyCabinetPreviewSeeds(i.role);
+if (i.screen === "cabinet") {
+  applyCabinetPreviewSeeds(i.role);
+}
 yt();
 R();
