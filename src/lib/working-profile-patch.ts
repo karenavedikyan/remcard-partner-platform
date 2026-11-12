@@ -19,9 +19,20 @@ function primaryEqual(
   return a.kind === b.kind && a.id === b.id;
 }
 
+export type WorkingProfileValidationIntent = "cabinet" | "activation";
+
+/** Which wizard slice is being saved (local validation only; never sent on PATCH). */
+export type WorkingProfileValidationScope = "basics" | "directions" | "contacts" | "full";
+
 export type WorkingSaveOptions = {
   /** User explicitly changed partner search visibility checkbox this session. */
   partnerSearchTouched?: boolean;
+  /**
+   * cabinet — wizard intermediate steps.
+   * activation — final profile save or ProfileEditor: enforce search-direction rules.
+   */
+  validationIntent?: WorkingProfileValidationIntent;
+  validationScope?: WorkingProfileValidationScope;
 };
 
 export function buildWorkingProfilePatchBody(

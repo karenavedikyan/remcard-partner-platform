@@ -801,6 +801,8 @@ function ProfileEditorInner({
     try {
       const next = await persistWorkingProfileDraft(profile, buildDraft(), {
         partnerSearchTouched: partnerSearchTouchedRef.current,
+        validationIntent: "activation",
+        validationScope: "full",
       });
       partnerSearchTouchedRef.current = false;
       applyProfile(next);

@@ -158,12 +158,52 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
     expect(calls).toEqual([]);
   });
 
-  it("retains the minimum for an already explicit ON profile during an unrelated save", async () => {
+  it("allows activation save for unchanged incomplete explicit ON when only city changes", async () => {
     current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
-    await expect(persistWorkingProfileDraft(current, {
+    const result = await persistWorkingProfileDraft(current, {
       ...profileDraftFromProfile(current), city: "Сочи",
-    })).rejects.toThrow(/категорию товаров или услуг/);
-    expect(calls).toEqual([]);
+    }, { validationIntent: "activation", validationScope: "full" });
+    expect(calls[0]).toEqual({
+      method: "PATCH", path: "/api/remcard/api/pro/profile", body: { city: "Сочи" },
+    });
+    expect(result.user.city).toBe("Сочи");
+    expect(result.workingProfile?.partnerSearchOptIn).toBe(true);
+    expect(result.workingProfile?.partnerSearchOptInExplicit).toBe(true);
+  });
+
+  it("final activation GET-only refresh for unchanged incomplete explicit ON", async () => {
+    current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
+    await persistWorkingProfileDraft(current, profileDraftFromProfile(current), {
+      validationIntent: "activation",
+      validationScope: "full",
+    });
+    expect(calls).toEqual([
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
+    ]);
+  });
+
+  it("allows wizard cabinet save for explicit ON legacy without directions", async () => {
+    current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
+    const result = await persistWorkingProfileDraft(current, {
+      ...profileDraftFromProfile(current), city: "Сочи",
+    }, { validationIntent: "cabinet", validationScope: "basics" });
+    expect(calls).toEqual([
+      { method: "PATCH", path: "/api/remcard/api/pro/profile", body: { city: "Сочи" } },
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
+    ]);
+    expect(result.user.city).toBe("Сочи");
+    expect(calls[0].body).not.toHaveProperty("workingProfileSaveIntent");
+  });
+
+  it("skips profile PATCH when cabinet scope has no deltas but still GET-refreshes", async () => {
+    current = fixture({ partnerSearchOptIn: true, partnerSearchOptInExplicit: true });
+    await persistWorkingProfileDraft(current, profileDraftFromProfile(current), {
+      validationIntent: "cabinet",
+      validationScope: "basics",
+    });
+    expect(calls).toEqual([
+      { method: "GET", path: "/api/remcard/api/pro/profile", body: null },
+    ]);
   });
 
   it("cannot remove the last direction from an existing explicit ON profile", async () => {
@@ -175,6 +215,26 @@ describe("cooperation AUTO default real working-profile HTTP save chain", () => 
       ...profileDraftFromProfile(current), productCategoryIds: [],
     })).rejects.toThrow(/категорию товаров или услуг/);
     expect(calls).toEqual([]);
+  });
+
+  it("AUTO untouched may remove last direction without emitting partnerSearchOptIn", async () => {
+    current = fixture({
+      partnerSearchOptInExplicit: false,
+      partnerSearchVisible: true,
+      productCategoryIds: ["doors"],
+      effectiveProductCategoryIds: ["doors"],
+    });
+    const result = await persistWorkingProfileDraft(current, {
+      ...profileDraftFromProfile(current),
+      productCategoryIds: [],
+    }, { validationIntent: "activation", validationScope: "full", partnerSearchTouched: false });
+    expect(calls[0]).toEqual({
+      method: "PATCH",
+      path: "/api/remcard/api/pro/profile",
+      body: { productCategoryIds: [] },
+    });
+    expect(calls[0].body).not.toHaveProperty("partnerSearchOptIn");
+    expect(result.workingProfile?.partnerSearchOptInExplicit).toBe(false);
   });
 
   it("serializes explicit ON when canonical directions are already present", async () => {

@@ -132,11 +132,15 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
     expect(persist.mock.calls[0][0]).toBe(initial);
     expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(true);
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
     expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
   });
 
-  it("binds direct validation to the current profile ref, not stale initial AUTO state", async () => {
+  it("allows save on explicit ON profile ref without directions when visibility untouched", async () => {
     const user = userEvent.setup();
     const initial = storeProfile({
       ...withoutDirections, partnerSearchOptInExplicit: false, partnerSearchVisible: true,
@@ -152,14 +156,15 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
         ...initial.workingProfile!, partnerSearchOptInExplicit: true, partnerSearchOptIn: true,
       },
     };
+    persist.mockResolvedValue(refreshed);
     rerender(
       <BusinessWorkingProfileWizard
         initialProfile={refreshed} partnerType="STORE" basicsEditable forceEditing forceStep={3}
       />,
     );
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
-    expect(await screen.findByText(/Для видимости в поиске укажите/)).toBeTruthy();
-    expect(persist).not.toHaveBeenCalled();
+    await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Для видимости в поиске укажите/)).toBeNull();
   });
 
   it("requires directions after explicitly returning AUTO checkbox to ON", async () => {
@@ -198,7 +203,11 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
     expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(false);
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
   });
 
   it("shows toggle on review step with prototype copy", async () => {
@@ -231,12 +240,20 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     );
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist).toHaveBeenCalled());
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
 
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist.mock.calls.length).toBe(2));
-    expect(persist.mock.calls[1][2]).toEqual({ partnerSearchTouched: true });
+    expect(persist.mock.calls[1][2]).toEqual({
+      partnerSearchTouched: true,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
     expect(persist.mock.calls[1][1].partnerSearchOptIn).toBe(true);
   });
 
@@ -254,7 +271,11 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist).toHaveBeenCalled());
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: true });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: true,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
     expect(persist.mock.calls[0][1].partnerSearchOptIn).toBe(false);
   });
 
@@ -276,7 +297,11 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     expect(screen.getByRole("checkbox")).toBeChecked();
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist).toHaveBeenCalled());
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
   });
 
   it("resets partner toggle after identity change while editing", async () => {
@@ -317,7 +342,11 @@ describe("BusinessWorkingProfileWizard partner visibility", () => {
     persist.mockReset();
     await user.click(screen.getByRole("button", { name: /^Сохранить$/ }));
     await waitFor(() => expect(persist).toHaveBeenCalled());
-    expect(persist.mock.calls[0][2]).toEqual({ partnerSearchTouched: false });
+    expect(persist.mock.calls[0][2]).toEqual({
+      partnerSearchTouched: false,
+      validationIntent: "activation",
+      validationScope: "full",
+    });
   });
 
   it("disables toggle when basics are readonly", async () => {

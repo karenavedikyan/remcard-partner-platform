@@ -12,7 +12,13 @@ import type { ProProfileResponse } from "@/lib/types";
 
 function buildFixtureProfile(
   partnerType: "STORE" | "COMPANY",
-  options: { noOrg?: boolean; catalogStatus?: string; organizationName?: string },
+  options: {
+    noOrg?: boolean;
+    catalogStatus?: string;
+    organizationName?: string;
+    /** DEV: legacy explicit partner search ON with empty working directions (step-0 bug repro). */
+    explicitOnEmptyDirs?: boolean;
+  },
 ): ProProfileResponse {
   const catalogStatus =
     options.catalogStatus === "PENDING" ? "PENDING" : ("DRAFT" as const);
@@ -39,7 +45,26 @@ function buildFixtureProfile(
           publicNavigatorStageIds: ["L1-7"],
         },
     programs: [],
-    workingProfile: {
+    workingProfile: options.explicitOnEmptyDirs
+      ? {
+          productCategoryIds: [],
+          serviceSpecializationIds: [],
+          navigatorStageIds: [],
+          primaryDirection: null,
+          effectiveProductCategoryIds: [],
+          effectiveServiceSpecializationIds: [],
+          effectiveNavigatorStageIds: [],
+          partnerSearchVisible: true,
+          partnerSearchOptIn: true,
+          partnerSearchOptInExplicit: true,
+          workingDirectionsTouched: false,
+          partnerWorkMode: "BOTH",
+          areas: [],
+          partnershipContactName: null,
+          partnershipContactPhone: null,
+          partnershipContactEmail: null,
+        }
+      : {
       productCategoryIds: ["doors"],
       serviceSpecializationIds: ["plumbing"],
       navigatorStageIds: ["L1-7"],
@@ -113,6 +138,8 @@ export default async function ProfileDevFixturePage(props: {
     noOrg?: string;
     catalogStatus?: string;
     orgName?: string;
+    /** DEV: `1` = explicit search ON, empty working directions, filled basics */
+    explicitOnEmptyDirs?: string;
   }>;
 }) {
   if (process.env.NODE_ENV === "production") {
@@ -133,10 +160,12 @@ export default async function ProfileDevFixturePage(props: {
   const noOrg = searchParams?.noOrg === "1";
   const catalogStatusParam = searchParams?.catalogStatus?.toUpperCase();
   const orgNameParam = searchParams?.orgName?.trim();
+  const explicitOnEmptyDirs = searchParams?.explicitOnEmptyDirs === "1";
   const fixtureProfile = buildFixtureProfile(partnerType, {
     noOrg,
     catalogStatus: catalogStatusParam,
     organizationName: orgNameParam,
+    explicitOnEmptyDirs,
   });
 
   const body = (
@@ -144,7 +173,11 @@ export default async function ProfileDevFixturePage(props: {
       <PageHeading
         eyebrow="Профиль партнёра"
         title="Профиль"
-        description="Dev-fixture в полном CabinetShell: STORE/COMPANY профиль и каталог RemCard."
+        description={
+          explicitOnEmptyDirs
+            ? "Dev QA: explicit search ON + пустой ассортимент. Пример: ?wizard=1&wizardStep=0&explicitOnEmptyDirs=1"
+            : "Dev-fixture в полном CabinetShell: STORE/COMPANY профиль и каталог RemCard."
+        }
       />
       <ProfileEditor
         initial={fixtureProfile}

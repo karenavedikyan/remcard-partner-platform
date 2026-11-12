@@ -127,4 +127,44 @@ describe("buildWorkingProfilePatchBody", () => {
     );
     expect(body.partnerSearchOptIn).toBe(false);
   });
+
+  it("does not emit client-only markers on cabinet incremental PATCH", () => {
+    const body = buildWorkingProfilePatchBody(
+      profile,
+      {
+        displayName: "Иван",
+        city: "Сочи",
+        description: "",
+        partnerType: "MASTER",
+        specializations: [],
+        storeCategories: [],
+        organizationName: "",
+        branchAddress: "",
+        website: "",
+        telegram: "",
+        publicEmail: "",
+        publicPhone: "",
+        catalogPublicName: "Иван",
+        showFullName: false,
+        catalogImageUrl: "",
+        productCategoryIds: ["doors"],
+        serviceSpecializationIds: ["tiles"],
+        navigatorStageIds: ["L1-7"],
+        primaryDirection: null,
+        partnerSearchOptIn: true,
+        partnerWorkMode: "",
+        areas: [],
+        partnershipContactName: "",
+        partnershipContactPhone: "",
+        partnershipContactEmail: "",
+        partnerActivities: [],
+        catalogCity: "",
+      },
+      { validationIntent: "cabinet" },
+    );
+    expect(body).toEqual({ city: "Сочи" });
+    expect(body).not.toHaveProperty("workingProfileSaveIntent");
+    expect(body.partnerSearchOptIn).toBeUndefined();
+    expect(body.productCategoryIds).toBeUndefined();
+  });
 });

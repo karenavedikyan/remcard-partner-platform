@@ -23,6 +23,11 @@ import {
   validateWorkingProfileDraft,
   workingProfileCabinetReady,
 } from "@/lib/profile-working-save";
+import type {
+  WorkingProfileValidationIntent,
+  WorkingProfileValidationScope,
+  WorkingSaveOptions,
+} from "@/lib/working-profile-patch";
 import type { ProProfileResponse } from "@/lib/types";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { BusinessWorkingProfileFacts } from "./BusinessWorkingProfileFacts";
@@ -33,6 +38,13 @@ import surfaceStyles from "./BusinessProfileSurface.module.css";
 import { ProfileSectionEmptyGate } from "@/components/profile/empty-state/ProfileSectionEmptyGate";
 import { businessProfileEmptyRole } from "@/components/profile/empty-state/profile-empty-copy";
 import { businessProfileShowEmptyIntro } from "@/components/profile/empty-state/business-profile-empty-intro";
+
+function wizardValidationScope(step: number): WorkingProfileValidationScope {
+  if (step === 0) return "basics";
+  if (step === 1) return "directions";
+  if (step === 2) return "contacts";
+  return "full";
+}
 
 const WORK_MODES = [
   { value: "", label: "Не указано" },
@@ -170,9 +182,18 @@ export function BusinessWorkingProfileWizard({
   };
 
   const persistServer = async (nextDraft: ProfileDraft): Promise<boolean> => {
+    const validationIntent: WorkingProfileValidationIntent = step < 3 ? "cabinet" : "activation";
+    const validationScope = wizardValidationScope(step);
+    const saveOptions: WorkingSaveOptions = {
+      partnerSearchTouched: partnerSearchTouchedRef.current,
+      validationIntent,
+      validationScope,
+    };
     const err = validateWorkingProfileDraft(nextDraft, {
       profile: profileRef.current,
       partnerSearchTouched: partnerSearchTouchedRef.current,
+      validationIntent,
+      validationScope,
     });
     if (err) {
       setBanner({ kind: "error", text: err });
@@ -183,9 +204,7 @@ export function BusinessWorkingProfileWizard({
     setSaving(true);
     setBanner(null);
     try {
-      const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft, {
-        partnerSearchTouched: partnerSearchTouchedRef.current,
-      });
+      const refreshed = await persistWorkingProfileDraft(profileRef.current, nextDraft, saveOptions);
       if (!persistStillCurrent(generationAtStart, requestId)) {
         return false;
       }

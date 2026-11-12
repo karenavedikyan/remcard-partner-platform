@@ -3,12 +3,44 @@ import { saveDisplayNameViaAuthMe } from "@/lib/onboarding-save";
 import { profileDraftFromProfile } from "@/lib/profile-draft-sync";
 import type { ProfileDraft } from "@/lib/profile-save";
 import type { ProProfileResponse } from "@/lib/types";
-import { buildWorkingProfilePatchBody, type WorkingSaveOptions } from "@/lib/working-profile-patch";
+import {
+  buildWorkingProfilePatchBody,
+  type WorkingProfileValidationIntent,
+  type WorkingProfileValidationScope,
+  type WorkingSaveOptions,
+} from "@/lib/working-profile-patch";
 
 export type WorkingProfileValidationContext = {
   profile: ProProfileResponse;
   partnerSearchTouched?: boolean;
+  validationIntent?: WorkingProfileValidationIntent;
+  validationScope?: WorkingProfileValidationScope;
 };
+
+function workingDirectionsRegressed(saved: ProfileDraft, draft: ProfileDraft): boolean {
+  const savedHad =
+    saved.productCategoryIds.length > 0 || saved.serviceSpecializationIds.length > 0;
+  const draftHas =
+    draft.productCategoryIds.length > 0 || draft.serviceSpecializationIds.length > 0;
+  return savedHad && !draftHas;
+}
+
+/** Strict when enabling search or stripping directions; not for untouched incomplete explicit ON. */
+function requiresSearchDirectionsOnSave(
+  draft: ProfileDraft,
+  context: WorkingProfileValidationContext | undefined,
+  intent: WorkingProfileValidationIntent,
+): boolean {
+  if (intent === "cabinet") return false;
+  if (!context) return true;
+  if (context.partnerSearchTouched === true) return true;
+  const saved = profileDraftFromProfile(context.profile);
+  if (workingDirectionsRegressed(saved, draft)) {
+    const w = context.profile.workingProfile;
+    return Boolean(w?.partnerSearchOptInExplicit && w.partnerSearchOptIn);
+  }
+  return false;
+}
 
 export function validateWorkingProfileDraft(
   draft: ProfileDraft,
@@ -28,17 +60,17 @@ export function validateWorkingProfileDraft(
   }
   const hasDirections =
     draft.productCategoryIds.length > 0 || draft.serviceSpecializationIds.length > 0;
-  // A server-computed AUTO default is not an explicit search visibility choice.
-  // Keep the historical strict default for callers without context,
-  // and the minimum for a touched ON checkbox or an already explicit ON profile.
-  const requiresSearchDirections =
-    !context ||
-    context.partnerSearchTouched === true ||
-    context.profile.workingProfile?.partnerSearchOptInExplicit === true;
-  if (draft.partnerSearchOptIn && requiresSearchDirections && !hasDirections) {
+  const intent: WorkingProfileValidationIntent = context?.validationIntent ?? "activation";
+  if (
+    draft.partnerSearchOptIn &&
+    !hasDirections &&
+    requiresSearchDirectionsOnSave(draft, context, intent)
+  ) {
     return "Для видимости в поиске укажите хотя бы одну категорию товаров или услуг.";
   }
-  if (draft.primaryDirection) {
+  const scope: WorkingProfileValidationScope = context?.validationScope ?? "full";
+  const scopeAllowsPrimary = scope === "directions" || scope === "contacts" || scope === "full";
+  if (scopeAllowsPrimary && draft.primaryDirection) {
     const inProducts =
       draft.primaryDirection.kind === "product" &&
       draft.productCategoryIds.includes(draft.primaryDirection.id);
@@ -49,10 +81,13 @@ export function validateWorkingProfileDraft(
       return "Основное направление должно быть среди выбранных товаров или услуг.";
     }
   }
-  const hasContactPhone = draft.partnershipContactPhone.trim().length > 0;
-  const hasContactEmail = draft.partnershipContactEmail.trim().length > 0;
-  if ((hasContactPhone || hasContactEmail) && !draft.partnershipContactName.trim()) {
-    return "Укажите контактное лицо для сотрудничества.";
+  const scopeAllowsContacts = scope === "contacts" || scope === "full";
+  if (scopeAllowsContacts) {
+    const hasContactPhone = draft.partnershipContactPhone.trim().length > 0;
+    const hasContactEmail = draft.partnershipContactEmail.trim().length > 0;
+    if ((hasContactPhone || hasContactEmail) && !draft.partnershipContactName.trim()) {
+      return "Укажите контактное лицо для сотрудничества.";
+    }
   }
   return null;
 }
@@ -149,6 +184,8 @@ export async function persistWorkingProfileDraft(
   const validationError = validateWorkingProfileDraft(draft, {
     profile,
     partnerSearchTouched: options.partnerSearchTouched,
+    validationIntent: options.validationIntent,
+    validationScope: options.validationScope,
   });
   if (validationError) {
     throw new RemcardApiError(400, validationError, null);
