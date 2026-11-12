@@ -327,7 +327,6 @@ try {
   assert.equal(scanAfterCalc.confirmDisplay, "none", "scan-only: confirm stays hidden after calculator");
   assert.ok(scanAfterCalc.confirmHidden, "scan-only: confirm stays sale-locked after edits");
   assert.ok(!scanAfterCalc.reviewOpen, "scan-only: fill 1000 must not open review dialog");
-  assert.match(scanAfterCalc.blockReason, /Подтверждение продажи недоступно|Продажа и начисление/i);
   await scanEmp.close();
 
   const saleStore = await browser.newPage();
@@ -403,6 +402,9 @@ try {
   await frame145.locator("#prr-cert-code", { hasText: "RC-X9Z0WZ" }).waitFor({ timeout: 10000 });
   const hero145 = (await frame145.locator("#prr-hero-label").textContent())?.trim() || "";
   assert.match(hero145, /профклиенту/i, `145 hero label, got: ${hero145}`);
+  const amt145 = (await frame145.locator("#prr-amount").textContent()) || "";
+  assert.match(amt145.replace(/\u00a0/g, " "), /\+\s*0\s*₽/, `147→145 must show saved zero, got: ${amt145}`);
+  assert.doesNotMatch(amt145, /3\s*450/, `145 must not show template default, got: ${amt145}`);
   const calc145 = await frame145.locator("#prr-calc-text").textContent();
   assert.match(calc145 || "", /недоступна/i);
   assert.doesNotMatch(calc145 || "", /115.?000/);

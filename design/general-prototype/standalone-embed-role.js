@@ -153,9 +153,9 @@
 
     var scheduleRelock = function () {
       if (embedCanConfirmSale()) return;
-      requestAnimationFrame(function () {
+      setTimeout(function () {
         lockAllScanSaleActions();
-      });
+      }, 0);
     };
 
     var form = document.getElementById("pst-form");

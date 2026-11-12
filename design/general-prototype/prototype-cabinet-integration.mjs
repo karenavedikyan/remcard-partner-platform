@@ -49,6 +49,11 @@ assert.match(
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
 assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");
+assert.match(
+  walletHistory,
+  /hasRewardSnapshot:\s*hasSavedReward/,
+  "147 accrualReceiptCtx marks saved wallet reward snapshot",
+);
 const purchaseDetail = readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8");
 assert.match(purchaseDetail, /__protoCabinetEmbedBack/, "144 history uses embed back to 147");
 assert.match(purchaseDetail, /replace:\s*true/, "144 document ops replace-navigate to 147");

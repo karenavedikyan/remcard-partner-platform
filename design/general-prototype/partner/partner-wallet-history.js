@@ -33,17 +33,23 @@
     if (!accrual) return null;
     const linkedPurchase = accrual === accruals[0] && purchases[0] ? purchases[0] : null;
     const relatedPurchasePayable = linkedPurchase ? linkedPurchase.amount : undefined;
+    const savedAmount = Number(accrual.amount);
+    const hasSavedReward =
+      accrual.id != null && Number.isFinite(savedAmount);
     return {
       accrualId: accrual.id,
       date: accrual.date,
       dateDisplay: accrual.display,
-      amount: accrual.amount,
+      amount: hasSavedReward ? savedAmount : null,
+      rewardAmount: hasSavedReward ? savedAmount : null,
+      hasRewardSnapshot: hasSavedReward,
       partner: accrual.title,
       certCode: WALLET_CERT,
       clientLabel: "Демо-клиент",
       relatedPurchasePayable,
       purchaseCtx: linkedPurchase ? purchaseRowCtx(0) : null,
       hasCalcSnapshot: false,
+      embedSnapshot: true,
     };
   }
   function purchaseRowCtx(index) {
