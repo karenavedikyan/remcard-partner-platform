@@ -191,12 +191,22 @@ export function createCabinetStandaloneHost(config) {
     frame.style.maxHeight = `${frameH}px`;
   }
 
+  function onOuterScroll() {
+    reposition();
+  }
+
   function watchLayout() {
     if (resizeObserver) return;
     resizeObserver = new ResizeObserver(() => reposition());
     const shell = document.querySelector(".shell");
     if (shell) resizeObserver.observe(shell);
+    const flow = document.querySelector(".proto-page-flow");
+    if (flow) resizeObserver.observe(flow);
+    const dockPanel = document.querySelector(".proto-page-panel");
+    if (dockPanel) resizeObserver.observe(dockPanel);
     window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", onOuterScroll, { passive: true });
+    document.addEventListener("scroll", onOuterScroll, { passive: true, capture: true });
     window.visualViewport?.addEventListener("resize", reposition);
     window.visualViewport?.addEventListener("scroll", reposition);
   }
@@ -205,6 +215,8 @@ export function createCabinetStandaloneHost(config) {
     resizeObserver?.disconnect();
     resizeObserver = null;
     window.removeEventListener("resize", reposition);
+    window.removeEventListener("scroll", onOuterScroll);
+    document.removeEventListener("scroll", onOuterScroll, { capture: true });
     window.visualViewport?.removeEventListener("resize", reposition);
     window.visualViewport?.removeEventListener("scroll", reposition);
     hostEl.style.cssText = "";

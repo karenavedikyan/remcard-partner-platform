@@ -279,6 +279,35 @@ try {
   );
   await scanEmp.close();
 
+  const scrollPage = await browser.newPage();
+  await scrollPage.setViewportSize({ width: 1280, height: 720 });
+  await scrollPage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
+  await scrollPage.evaluate(() => document.querySelector('[data-testid="view-cabinet"]')?.click());
+  await scrollPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await scrollPage.evaluate(() =>
+    document.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click(),
+  );
+  await scrollPage.locator("[data-testid='wallet-history-hub-link']").click();
+  await scrollPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
+  await scrollPage.evaluate(() => {
+    const main = document.querySelector(".shell .content, .shell main.content");
+    main?.scrollIntoView({ block: "end" });
+    window.scrollBy(0, 320);
+  });
+  await scrollPage.waitForTimeout(100);
+  await scrollPage.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await scrollPage.waitForTimeout(150);
+  const aligned = await scrollPage.evaluate(() => {
+    const host = document.querySelector("[data-testid='cabinet-standalone-host']");
+    const main = document.querySelector(".shell .content, .shell main.content");
+    if (!host || host.hidden || !main) return null;
+    const ht = host.getBoundingClientRect().top;
+    const mt = main.getBoundingClientRect().top;
+    return { hostTop: ht, mainTop: mt, delta: Math.abs(ht - mt) };
+  });
+  assert.ok(aligned && aligned.delta < 12, `portal must track main after document scroll (${JSON.stringify(aligned)})`);
+  await scrollPage.close();
+
   const chainPage = await browser.newPage();
   await chainPage.setViewportSize({ width: 1280, height: 900 });
   await chainPage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
