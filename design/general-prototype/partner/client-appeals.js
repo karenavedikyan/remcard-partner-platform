@@ -79,14 +79,42 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     const base = partnerSettings[partnerId];
     if (!base) return null;
     if (!appealsRenderConfig) return base;
-    const ov = ws(appealsRenderConfig.key).partnerOverlay;
-    if (!ov) return base;
+    const w = ws(appealsRenderConfig.key);
+    const local = w.partnerSettingsLocal;
+    const seed = local
+      ? JSON.parse(JSON.stringify(local))
+      : {
+          workingStages: [...(base.workingStages || [])],
+          refusalReasons: [...(base.refusalReasons || [])],
+          archivedStages: [...(base.archivedStages || [])],
+        };
+    const ov = w.partnerOverlay;
+    if (!ov) return seed;
     return {
-      ...base,
-      refusalReasons: dedupeCaseInsensitiveStrings([...(base.refusalReasons || []), ...(ov.refusalReasons || [])]),
-      workingStages: [...(base.workingStages || []), ...(ov.workingStages || [])],
-      archivedStages: base.archivedStages || [],
+      ...seed,
+      refusalReasons: dedupeCaseInsensitiveStrings([...(seed.refusalReasons || []), ...(ov.refusalReasons || [])]),
+      workingStages: [...(seed.workingStages || []), ...(ov.workingStages || [])],
+      archivedStages: seed.archivedStages || [],
     };
+  }
+
+  function formatRubInputFromKopecks(kopecks) {
+    if (!Number.isSafeInteger(kopecks)) return "";
+    const rub = Math.trunc(kopecks / 100);
+    const frac = kopecks % 100;
+    return frac === 0 ? String(rub) : `${rub},${String(frac).padStart(2, "0")}`;
+  }
+
+  function paidKopecksForAppeal(appeal) {
+    if (appeal.purchaseBreakdown?.totalKopecks != null) return appeal.purchaseBreakdown.totalKopecks;
+    if (appeal.paidAmountKopecks != null) return appeal.paidAmountKopecks;
+    if (appeal.paidAmount != null) return appeal.paidAmount * 100;
+    return null;
+  }
+
+  function paidLabelForAppeal(appeal) {
+    const k = paidKopecksForAppeal(appeal);
+    return k == null ? null : formatRubFromKopecks(k);
   }
 
   function parseAmountKopecks(raw) {
@@ -395,10 +423,8 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     if (walletPurchases[appeal.purchaseId]) {
       return walletPurchases[appeal.purchaseId];
     }
-    const amount =
-      appeal.paidAmount != null
-        ? `${appeal.paidAmount.toLocaleString("ru-RU")} ₽`
-        : "сумма в демо не зафиксирована";
+    const paidLabel = paidLabelForAppeal(appeal);
+    const amount = paidLabel || "сумма в демо не зафиксирована";
     walletPurchases[appeal.purchaseId] = {
       appealId: appeal.id,
       certificateId: appeal.certificateId || "—",
@@ -451,16 +477,11 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
           wallet.categoryBreakdown = appeal.purchaseBreakdown;
           wallet.rewardStatusLabel = aggregateRewardLabel(appeal) || WALLET_VOCAB.rewardPending;
           wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
-          const waiting = appeal.purchaseBreakdown.rows
-            .map((r) => rowAccrualSnapshot(r, appeal))
-            .filter((x) => x?.phase === "waiting");
-          if (waiting.length) {
-            const lefts = waiting.map((w) => {
-              const row = appeal.purchaseBreakdown.rows.find((r) => rowAccrualSnapshot(r, appeal) === w);
-              const delay = row?.accrualDelayDays ?? WAIT_DAYS;
-              const ship = row?.lineShippedAt || appeal.shippedAt;
-              return Math.max(0, delay - wholeDaysElapsed(ship, new Date().toISOString()));
-            });
+          const waitingRows = appeal.purchaseBreakdown.rows
+            .map((row) => ({ row, snap: rowAccrualSnapshot(row, appeal) }))
+            .filter((x) => x.snap?.phase === "waiting");
+          if (waitingRows.length) {
+            const lefts = waitingRows.map((x) => x.snap.daysLeft ?? 0);
             wallet.waitDaysLeft = Math.max(...lefts);
           } else {
             wallet.waitDaysLeft = 0;
@@ -894,7 +915,8 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     const walletExisted = Boolean(appeal.purchaseId);
     if (stageId === SYSTEM.PAID) {
       if (!appeal.paidAt && extra?.paidAt) appeal.paidAt = extra.paidAt;
-      if (appeal.paidAmount == null && extra?.amount != null) appeal.paidAmount = extra.amount;
+      if (extra?.paidAmountKopecks != null) appeal.paidAmountKopecks = extra.paidAmountKopecks;
+      else if (appeal.paidAmountKopecks == null && appeal.paidAmount == null && extra?.amount != null) appeal.paidAmount = extra.amount;
       if (!walletExisted) {
         ensureWalletPurchase(appeal);
         pushHistory(appeal, `Оплачено · покупка появилась в кошельке (${appeal.purchaseId})`);
@@ -1096,7 +1118,7 @@ function initPayDraft(s, appeal) {
       rows: appeal.purchaseBreakdown.rows.map((r) => ({
         rowId: r.rowId,
         categoryKey: r.categoryKey,
-        amountRaw: r.amountKopecks ? formatRubFromKopecks(r.amountKopecks).replace(" ₽", "") : "",
+        amountRaw: r.amountKopecks ? formatRubInputFromKopecks(r.amountKopecks) : "",
         kind: r.kind || "goods",
         delayDays: String(r.accrualDelayDays ?? 14),
         delayOpen: false,
@@ -1122,6 +1144,8 @@ function syncPayDraftFromDom(config, s) {
   const delayAll = form.querySelector('[name="delay-all"]');
   if (delayAll) s.payDraft.delayAll = delayAll.checked;
   s.payDraft.rows.forEach((row, i) => {
+    const details = form.querySelector(`[name="delay-${i}"]`)?.closest("details.ca-pay-delay");
+    if (details) row.delayOpen = details.open;
     row.amountRaw = form.querySelector(`[name="amount-${i}"]`)?.value ?? row.amountRaw;
     row.categoryKey = form.querySelector(`[name="cat-${i}"]`)?.value ?? row.categoryKey;
     row.kind = form.querySelector(`input[name="kind-${i}"]:checked`)?.value || row.kind;
@@ -1129,6 +1153,7 @@ function syncPayDraftFromDom(config, s) {
     const custom = form.querySelector('[name="custom-category"]');
     if (custom) s.payDraft.customCategoryText = custom.value;
   });
+  applyPayDelayAllSync(s);
 }
 
 function rowAccrualSnapshot(row, appeal) {
@@ -1137,7 +1162,7 @@ function rowAccrualSnapshot(row, appeal) {
   if (!ship) return { text: "ожидает передачи", phase: "handoff" };
   const delay = row.accrualDelayDays ?? WAIT_DAYS;
   const left = Math.max(0, delay - wholeDaysElapsed(ship, new Date().toISOString()));
-  if (left > 0) return { text: `осталось ${left} из ${delay} дней`, phase: "waiting" };
+  if (left > 0) return { text: `осталось ${left} из ${delay} дней`, phase: "waiting", daysLeft: left, delayDays: delay };
   return { text: "подтверждено", phase: "confirmed" };
 }
 
@@ -1158,11 +1183,56 @@ function savePurchaseBreakdown(appeal, rows, totalKopecks, paidIso) {
     totalKopecks,
     paidAt: paidIso,
   };
-  appeal.paidAmount = Math.round(totalKopecks / 100);
+  appeal.paidAmountKopecks = totalKopecks;
   const wallet = ensureWalletPurchase(appeal);
   wallet.amountLabel = formatRubFromKopecks(totalKopecks);
   wallet.categoryBreakdown = appeal.purchaseBreakdown;
   return wallet;
+}
+
+function payDelaySummaryDays(row) {
+  const p = parseDelayDays(row.delayDays);
+  return p.ok ? p.days : 14;
+}
+
+function applyPayDelayAllSync(s) {
+  if (!s.payDraft?.delayAll || !s.payDraft.rows.length) return;
+  const first = s.payDraft.rows[0].delayDays;
+  s.payDraft.rows.forEach((r, i) => {
+    if (i > 0) r.delayDays = first;
+  });
+}
+
+function applyPayDelayAllToDom(form, s) {
+  if (!form || !s.payDraft?.delayAll) return;
+  const first = s.payDraft.rows[0]?.delayDays ?? "14";
+  s.payDraft.rows.forEach((r, i) => {
+    if (i > 0) r.delayDays = first;
+    const inp = form.querySelector(`[name="delay-${i}"]`);
+    if (inp) inp.value = r.delayDays;
+  });
+  updatePayFormChromeInPlace(form, s);
+}
+
+function updatePayFormChromeInPlace(form, s) {
+  if (!form || !s.payDraft) return;
+  const totalEl = form.querySelector(".ca-pay-total-val");
+  if (totalEl) {
+    let sum = 0;
+    s.payDraft.rows.forEach((row) => {
+      const p = parseAmountKopecks(row.amountRaw);
+      if (p.ok && !p.empty) sum += p.kopecks;
+    });
+    totalEl.textContent = formatRubFromKopecks(sum);
+  }
+  s.payDraft.rows.forEach((row, i) => {
+    const sumEl = form.querySelector(`[data-pay-row="${i}"] .ca-pay-delay-sum`);
+    if (sumEl) sumEl.textContent = `Подтверждение начисления · ${formatDaysRu(payDelaySummaryDays(row))}`;
+    const kindHint = form.querySelector(`[data-pay-row="${i}"] .ca-pay-delay-body .ca-pay-kind-hint`);
+    if (kindHint) {
+      kindHint.textContent = row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара";
+    }
+  });
 }
 
 function renderPayCategoryForm(config, appeal, formId) {
@@ -1175,7 +1245,7 @@ function renderPayCategoryForm(config, appeal, formId) {
     .map((row, i) => {
       const delayLabel = manual
         ? ""
-        : `<details class="ca-pay-delay" ${row.delayOpen ? "open" : ""}><summary class="ca-pay-delay-sum">Подтверждение начисления · ${esc(formatDaysRu(Number(row.delayDays) || 14))}</summary><div class="ca-pay-delay-body"><label class="field">Подтвердить вознаграждение через, дней<input type="text" inputmode="numeric" name="delay-${i}" value="${esc(row.delayDays)}" maxlength="5"></label><p class="small muted">${row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара"}</p>${row.delayError ? `<p class="field-error" role="alert">${esc(row.delayError)}</p>` : ""}</div></details>`;
+        : `<details class="ca-pay-delay" ${row.delayOpen ? "open" : ""}><summary class="ca-pay-delay-sum">Подтверждение начисления · ${esc(formatDaysRu(payDelaySummaryDays(row)))}</summary><div class="ca-pay-delay-body"><label class="field">Подтвердить вознаграждение через, дней<input type="text" inputmode="numeric" name="delay-${i}" value="${esc(row.delayDays)}" maxlength="5"></label><p class="small muted ca-pay-kind-hint">${row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара"}</p>${row.delayError ? `<p class="field-error" role="alert">${esc(row.delayError)}</p>` : ""}</div></details>`;
       const opts = cats.map((c) => `<option value="${esc(c.key)}" ${row.categoryKey === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("");
       return `<div class="ca-pay-row panel" data-pay-row="${i}"><div class="ca-pay-row-top"><label class="field">Категория<select name="cat-${i}">${opts}</select><small class="input-hint muted">Демо-справочник, не условия сертификата</small></label><button type="button" class="btn ghost icon-btn" data-ca-action="pay:remove-row:${i}" ${draft.rows.length < 2 ? "disabled" : ""} aria-label="Удалить">×</button></div><label class="field">Оплаченная сумма, ₽<input name="amount-${i}" inputmode="decimal" value="${esc(row.amountRaw)}" placeholder="0"></label>${row.amountError ? `<p class="field-error" role="alert">${esc(row.amountError)}</p>` : ""}<div class="ca-pay-kind"><span class="small muted">Тип</span><label class="radio"><input type="radio" name="kind-${i}" value="goods" ${row.kind === "goods" ? "checked" : ""}> Товар</label><label class="radio"><input type="radio" name="kind-${i}" value="service" ${row.kind === "service" ? "checked" : ""}> Услуга</label></div>${delayLabel}</div>`;
     })
@@ -1191,7 +1261,7 @@ function renderPayCategoryForm(config, appeal, formId) {
     const p = parseAmountKopecks(r.amountRaw);
     return sum + (p.ok && !p.empty ? p.kopecks : 0);
   }, 0);
-  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — сумма по категориям (демо).</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-toggle">+ Своя категория</button>${customCat}${manualHint}${delayAll}<p class="ca-pay-total">Итого: <strong>${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
+  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — сумма по категориям (демо).</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-toggle">+ Своя категория</button>${customCat}${manualHint}${delayAll}<p class="ca-pay-total">Итого: <strong class="ca-pay-total-val">${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
 }
 
 function submitPaidCategoryForm(ev, config, hooks) {
@@ -1204,22 +1274,27 @@ function submitPaidCategoryForm(ev, config, hooks) {
   let total = 0;
   let hasPositive = false;
   const rowsOut = [];
+  let anyRowError = false;
   s.payDraft.formError = "";
-  s.payDraft.rows.forEach((row, i) => {
+  s.payDraft.rows.forEach((row) => {
     row.amountError = "";
     row.delayError = "";
+    const amountRaw = String(row.amountRaw ?? "").trim();
     const amount = parseAmountKopecks(row.amountRaw);
-    if (!amount.ok) {
+    if (amountRaw && !amount.ok) {
       row.amountError = amount.reason === "overflow" ? "Слишком большая сумма для демо." : "Введите сумму с не более чем двумя знаками после запятой.";
-      return;
+      anyRowError = true;
     }
-    if (!amount.empty && amount.kopecks > 0) hasPositive = true;
     if (!manual) {
       const delay = parseDelayDays(row.delayDays);
-      if (!delay.ok) row.delayError = delay.reason === "range" ? "Целое число дней 0–36 500." : "Укажите срок в днях.";
+      if (!delay.ok) {
+        row.delayError = delay.reason === "range" ? "Целое число дней 0–36 500." : "Укажите срок в днях.";
+        anyRowError = true;
+      }
     }
     if (row.amountError || row.delayError) return;
-    if (amount.empty || amount.kopecks <= 0) return;
+    if (!amount.ok || amount.empty || amount.kopecks <= 0) return;
+    hasPositive = true;
     total += amount.kopecks;
     if (total > Number(AMOUNT_MAX_KOPECKS)) s.payDraft.formError = "Слишком большая общая сумма.";
     const cat = payCategoriesFor(config).find((c) => c.key === row.categoryKey);
@@ -1233,6 +1308,10 @@ function submitPaidCategoryForm(ev, config, hooks) {
       lineShippedAt: appeal.purchaseBreakdown?.rows?.find((x) => x.rowId === row.rowId)?.lineShippedAt || null,
     });
   });
+  if (anyRowError) {
+    hooks.refresh();
+    return;
+  }
   if (s.payDraft.formError) { hooks.refresh(); return; }
   if (!hasPositive || !rowsOut.length) {
     s.payDraft.formError = "Укажите сумму хотя бы в одной категории.";
@@ -1257,7 +1336,9 @@ function submitPaidCategoryForm(ev, config, hooks) {
     return;
   }
   savePurchaseBreakdown(appeal, rowsOut, total, iso);
-  if (appeal.stageId !== SYSTEM.PAID) commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, amount: appeal.paidAmount, skipPaidHistory: rowsOut.length > 0 });
+  if (appeal.stageId !== SYSTEM.PAID) {
+    commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, paidAmountKopecks: total, skipPaidHistory: rowsOut.length > 0 });
+  }
   else {
     appeal.paidAt = iso;
     syncWalletFromAppeal(appeal);
@@ -1304,6 +1385,7 @@ function ws(key) {
       settingsDraft: null,
       showRefusal: null,
       notice: "",
+      partnerSettingsLocal: null,
       partnerOverlay: { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] },
       refusalDraft: { reason: "", comment: "", showCustom: false, customText: "", customError: "" },
       stageDraft: { selectedStageId: "", showCustom: false, customText: "", customError: "" },
@@ -1432,10 +1514,10 @@ function renderListPage(config) {
       : "";
   const rows = list
     .map((a) => {
-      const amt =
-        a.paidAmount != null
-          ? `<span class="ca-amount">${esc(a.paidAmount.toLocaleString("ru-RU"))} ₽</span>`
-          : `<span class="ca-amount ca-amount--empty">—</span>`;
+      const label = paidLabelForAppeal(a);
+      const amt = label
+        ? `<span class="ca-amount">${esc(label)}</span>`
+        : `<span class="ca-amount ca-amount--empty">—</span>`;
       return `<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button>`;
     })
     .join("");
@@ -1665,8 +1747,10 @@ function renderFunnelPage(config) {
   const paidN = cohort.filter((a) => appealReachedPaid(a)).length;
   const shippedN = cohort.filter((a) => appealReachedShipped(a)).length;
   const returnN = cohort.filter((a) => appealReachedReturn(a)).length;
-  const paidAmounts = cohort.filter((a) => a.paidAmount != null).map((a) => a.paidAmount);
-  const avgCheck = paidAmounts.length ? Math.round(paidAmounts.reduce((a, b) => a + b, 0) / paidAmounts.length).toLocaleString("ru-RU") + " ₽" : "—";
+  const paidKopecks = cohort.map((a) => paidKopecksForAppeal(a)).filter((k) => k != null);
+  const avgCheck = paidKopecks.length
+    ? formatRubFromKopecks(Math.round(paidKopecks.reduce((a, b) => a + b, 0) / paidKopecks.length))
+    : "—";
   const certCohort = cohort.filter((a) => hasCertificateFlow(a));
   const manualCohort = cohort.filter((a) => isManualAppeal(a));
   const certPaid = certCohort.filter((a) => appealReachedPaid(a)).length;
@@ -1914,7 +1998,6 @@ function submitManualPage(ev, config, hooks) {
     updatedAt: now,
     history: [{ at: now, author: "Менеджер", text: "Создано вручную без сертификата" }],
   });
-  const s = ws(config.key);
   s.selectedId = id;
   s.view = "detail";
   hooks.notify?.("Обращение создано");
@@ -1987,14 +2070,26 @@ export function hydrateClientAppeals(hooks) {
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
     if (t.matches("#ca-manual-form [name]")) syncManualDraftFromDom(s);
-    if (t.closest(".ca-pay-form")) syncPayDraftFromDom(config, s);
+    const payForm = t.closest(".ca-pay-form");
+    if (payForm) {
+      syncPayDraftFromDom(config, s);
+      if (s.payDraft?.delayAll && t.matches('[name^="delay-"]')) applyPayDelayAllSync(s);
+      applyPayDelayAllToDom(payForm, s);
+      updatePayFormChromeInPlace(payForm, s);
+    }
     if (t.closest("#ca-refusal-form")) syncRefusalDraftFromDom(s);
   });
   root.addEventListener("change", (e) => {
     const t = e.target;
     if (!root.contains(t)) return;
     if (t.matches('[data-ca-input="detail-status"]')) syncStageDraftFromDom(s);
-    if (t.closest(".ca-pay-form")) syncPayDraftFromDom(config, s);
+    const payForm = t.closest(".ca-pay-form");
+    if (payForm) {
+      syncPayDraftFromDom(config, s);
+      applyPayDelayAllSync(s);
+      applyPayDelayAllToDom(payForm, s);
+      updatePayFormChromeInPlace(payForm, s);
+    }
   });
   root.addEventListener("submit", (ev) => {
     if (ev.target?.id === "ca-manual-form") {
@@ -2226,12 +2321,13 @@ function handleCaAction(action, config, hooks) {
     syncPayDraftFromDom(config, s);
     if (!s.payDraft) return;
     const res = addWorkspacePayCategory(config, s.payDraft.customCategoryText);
+    const row = s.payDraft.rows[s.payDraft.rows.length - 1] || s.payDraft.rows[0];
     if (!res.ok) {
       s.payDraft.customCategoryError = res.error;
+      if (res.key && row) row.categoryKey = res.key;
       hooks.refresh();
       return;
     }
-    const row = s.payDraft.rows[s.payDraft.rows.length - 1] || s.payDraft.rows[0];
     if (row) row.categoryKey = res.category.key;
     s.payDraft.showCustomCategory = false;
     s.payDraft.customCategoryText = "";
@@ -2241,12 +2337,7 @@ function handleCaAction(action, config, hooks) {
   }
   if (action === "pay:delay-all-toggle") {
     syncPayDraftFromDom(config, s);
-    if (s.payDraft?.delayAll) {
-      const days = s.payDraft.rows[0]?.delayDays || "14";
-      s.payDraft.rows.forEach((r) => {
-        r.delayDays = days;
-      });
-    }
+    applyPayDelayAllSync(s);
     hooks.refresh();
     return;
   }
@@ -2372,7 +2463,7 @@ function handleCaAction(action, config, hooks) {
     }
     s.settingsDraft.workingStages.forEach((st, i) => { st.label = labels[i]; });
     s.settingsDraft.refusalReasons = reasons;
-    partnerSettings[RECEIVING.id] = s.settingsDraft;
+    s.partnerSettingsLocal = JSON.parse(JSON.stringify(s.settingsDraft));
     s.partnerOverlay.refusalReasons = [];
     s.partnerOverlay.workingStages = [];
     hooks.notify?.("Настройки сохранены");
