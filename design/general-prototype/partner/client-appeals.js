@@ -1,5 +1,6 @@
 /* Клиенты и обращения в кабинете партнёра. Демо, in-memory. Без диалогов — только страницы. */
 import { emptyDatasetOn } from "./empty-states.js?v=es2";
+import { upsertPaidPurchaseLedger } from "./client-purchase-ledger.js";
 
 
   const WAIT_DAYS = 14;
@@ -50,12 +51,6 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
     { key: "visit", label: "Личный визит" },
     { key: "ads", label: "Реклама" },
     { key: "other", label: "Другое" },
-  ];
-
-  const DEMO_PAY_CATEGORIES = [
-    { key: "doors", label: "Двери" },
-    { key: "floors", label: "Напольные покрытия" },
-    { key: "hardware", label: "Фурнитура и замки" },
   ];
 
   const AMOUNT_MAX_KOPECKS = BigInt(Number.MAX_SAFE_INTEGER);
@@ -464,6 +459,7 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
         wallet.rewardStatusLabel = WALLET_VOCAB.rewardReview;
         wallet.rewardDetailLabel = WALLET_VOCAB.pendingAmount;
       }
+      pushLedgerFromAppeal(appeal, wallet);
       return wallet;
     }
 
@@ -498,13 +494,71 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
           }
         }
       }
+      pushLedgerFromAppeal(appeal, wallet);
       return wallet;
     }
 
     if (paidOnly || appeal.stageId === SYSTEM.PAID || appeal.paidAt) {
       wallet.purchaseFulfillmentLabel = WALLET_VOCAB.awaitFulfillment;
     }
+    pushLedgerFromAppeal(appeal, wallet);
     return wallet;
+  }
+
+  function ledgerFulfillmentPhase(appeal, wallet) {
+    if (appeal.stageId === SYSTEM.RETURN) return "return";
+    if (appeal.shippedAt || appeal.stageId === SYSTEM.SHIPPED) {
+      if (canAccrueReferral(appeal) && !isManualAppeal(appeal) && (wallet.waitDaysLeft ?? 0) > 0) return "accrual_waiting";
+      if (canAccrueReferral(appeal) && !isManualAppeal(appeal)) return "accrual_confirmed";
+      return "fulfilled";
+    }
+    return "await_handoff";
+  }
+
+  function receiverLedgerStatus(appeal, wallet) {
+    if (isManualAppeal(appeal)) {
+      const tail = wallet.purchaseFulfillmentLabel;
+      return tail && tail !== WALLET_VOCAB.purchasePaid ? `Покупка без реферального начисления · ${tail}` : "Покупка без реферального начисления";
+    }
+    if (appeal.stageId === SYSTEM.RETURN) return wallet.purchaseFulfillmentLabel || WALLET_VOCAB.fullReturn;
+    if (appeal.shippedAt || appeal.stageId === SYSTEM.SHIPPED) return wallet.purchaseFulfillmentLabel || WALLET_VOCAB.fulfilled;
+    return "Оплачено · ожидает передачи";
+  }
+
+  function referrerLedgerStatus(appeal, wallet) {
+    if (!canAccrueReferral(appeal)) return null;
+    if (appeal.stageId === SYSTEM.RETURN) return `${WALLET_VOCAB.fullReturn} · ${WALLET_VOCAB.rewardReview}`;
+    if (!appeal.shippedAt && appeal.stageId !== SYSTEM.SHIPPED) return "Покупка оплачена · начисление ожидает передачи";
+    if ((wallet.waitDaysLeft ?? 0) > 0) return wallet.rewardStatusLabel || WALLET_VOCAB.rewardPending;
+    return wallet.rewardStatusLabel || WALLET_VOCAB.confirmedCalc;
+  }
+
+  function pushLedgerFromAppeal(appeal, wallet) {
+    if (!appeal.ledgerRecorded || !appeal.paidAt || !appeal.purchaseId) return;
+    const rows = appeal.purchaseBreakdown?.rows?.map((r) => ({
+      categoryKey: r.categoryKey,
+      categoryLabel: r.categoryLabel,
+      amountLabel: formatRubFromKopecks(r.amountKopecks),
+      delayDays: payDelaySummaryDays(r),
+    }));
+    upsertPaidPurchaseLedger({
+      purchaseId: appeal.purchaseId,
+      appealId: appeal.id,
+      clientName: appeal.clientName,
+      certificateId: isManualAppeal(appeal) ? null : appeal.certificateId || null,
+      receivingPartnerId: appeal.receivingPartnerId,
+      referrerPartnerId: appeal.referrerPartnerId || null,
+      referralEligible: canAccrueReferral(appeal),
+      manualEntry: isManualAppeal(appeal),
+      paidAt: appeal.paidAt,
+      totalRub: wallet.amountLabel,
+      totalKopecks: appeal.paidAmountKopecks,
+      receivingPartnerName: PARTNERS[appeal.receivingPartnerId]?.name || "—",
+      receiverStatus: receiverLedgerStatus(appeal, wallet),
+      referrerStatus: referrerLedgerStatus(appeal, wallet),
+      fulfillmentPhase: ledgerFulfillmentPhase(appeal, wallet),
+      categoryRows: rows || [],
+    });
   }
 
   function formatDateTime(iso) {
@@ -1021,9 +1075,65 @@ function refusalReasonsFor(config, partnerId) {
   ]);
 }
 
+function profilePayCategories(config) {
+  const profile = config.profile?.();
+  if (!profile?.dict) return [];
+  const { dict } = profile;
+  const role = config.role;
+  const productIds = role === "specialist" ? [] : [...(profile.products || [])];
+  const serviceIds = [...(profile.services || [])];
+  const out = [];
+  productIds.forEach((id) => {
+    const item = dict.products?.find((x) => x.id === id);
+    out.push({
+      key: `products:${id}`,
+      id,
+      group: "products",
+      label: item?.label || id,
+      kind: "goods",
+      inProfile: Boolean(item),
+    });
+  });
+  serviceIds.forEach((id) => {
+    const item = dict.services?.find((x) => x.id === id);
+    out.push({
+      key: `services:${id}`,
+      id,
+      group: "services",
+      label: item?.label || id,
+      kind: "service",
+      inProfile: Boolean(item),
+    });
+  });
+  return out;
+}
+
 function payCategoriesFor(config) {
-  const custom = ws(config.key).partnerOverlay?.payCategories || [];
-  return [...DEMO_PAY_CATEGORIES, ...custom];
+  return profilePayCategories(config);
+}
+
+function findPayCategory(config, key) {
+  return payCategoriesFor(config).find((c) => c.key === key);
+}
+
+function payAccrualMode(appeal) {
+  if (isManualAppeal(appeal)) return "manual";
+  if (!canAccrueReferral(appeal)) return "no-referrer";
+  return "accrual";
+}
+
+function accrualHintForKind(kind) {
+  return kind === "service" ? "После принятия работ" : "После передачи товара";
+}
+
+function normalizeRowCategoryKey(key, config) {
+  if (!key) return key;
+  if (String(key).includes(":")) return key;
+  const cats = payCategoriesFor(config);
+  const prod = cats.find((c) => c.group === "products" && c.id === key);
+  if (prod) return prod.key;
+  const svc = cats.find((c) => c.group === "services" && c.id === key);
+  return svc?.key || key;
 }
 
 function manualChannelsFor(config) {
@@ -1071,17 +1181,6 @@ function addWorkspaceChannel(config, label) {
   return { ok: true, channel: entry };
 }
 
-function addWorkspacePayCategory(config, label) {
-  const trimmed = label.trim();
-  if (!trimmed) return { ok: false, error: "Введите название категории." };
-  const all = payCategoriesFor(config);
-  const dupe = all.find((c) => c.label.toLowerCase() === trimmed.toLowerCase());
-  if (dupe) return { ok: false, error: "Такая категория уже есть.", existing: dupe.label, key: dupe.key };
-  const entry = { key: normalizeLabelKey(trimmed), label: trimmed };
-  ws(config.key).partnerOverlay.payCategories.push(entry);
-  return { ok: true, category: entry };
-}
-
 function syncRefusalDraftFromDom(s) {
   const form = document.getElementById("ca-refusal-form");
   if (!form || !s.refusalDraft) return;
@@ -1109,35 +1208,46 @@ function syncManualDraftFromDom(s) {
   if (custom) s.manualDraft.customChannelText = custom.value;
 }
 
-function defaultPayRow() {
-  return { rowId: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, categoryKey: "doors", amountRaw: "", kind: "goods", delayDays: "14", delayOpen: false, amountError: "", delayError: "" };
+function defaultPayRow(config) {
+  const first = payCategoriesFor(config)[0];
+  return {
+    rowId: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    categoryKey: first?.key || "",
+    amountRaw: "",
+    kind: first?.kind || "goods",
+    delayDays: "14",
+    amountError: "",
+    delayError: "",
+    categoryError: "",
+  };
 }
 
-function initPayDraft(s, appeal) {
+function initPayDraft(config, s, appeal) {
   if (s.payDraft && s.payDraft.appealId === appeal.id) return s.payDraft;
   if (appeal.purchaseBreakdown?.rows?.length) {
     s.payDraft = {
       appealId: appeal.id,
       paidDate: appeal.paidAt ? appeal.paidAt.slice(0, 10) : todayYmd(),
       delayAll: false,
-      rows: appeal.purchaseBreakdown.rows.map((r) => ({
-        rowId: r.rowId,
-        categoryKey: r.categoryKey,
-        amountRaw: r.amountKopecks ? formatRubInputFromKopecks(r.amountKopecks) : "",
-        kind: r.kind || "goods",
-        delayDays: String(r.accrualDelayDays ?? 14),
-        delayOpen: false,
-        amountError: "",
-        delayError: "",
-      })),
+      rows: appeal.purchaseBreakdown.rows.map((r) => {
+        const key = normalizeRowCategoryKey(r.categoryKey, config);
+        const cat = findPayCategory(config, key);
+        return {
+          rowId: r.rowId,
+          categoryKey: key,
+          amountRaw: r.amountKopecks ? formatRubInputFromKopecks(r.amountKopecks) : "",
+          kind: cat?.kind || r.kind || "goods",
+          delayDays: String(r.accrualDelayDays ?? 14),
+          amountError: "",
+          delayError: "",
+          categoryError: "",
+        };
+      }),
       formError: "",
-      showCustomCategory: false,
-      customCategoryText: "",
-      customCategoryError: "",
     };
     return s.payDraft;
   }
-  s.payDraft = { appealId: appeal.id, paidDate: todayYmd(), delayAll: false, rows: [defaultPayRow()], formError: "", showCustomCategory: false, customCategoryText: "", customCategoryError: "" };
+  s.payDraft = { appealId: appeal.id, paidDate: todayYmd(), delayAll: false, rows: [defaultPayRow(config)], formError: "" };
   return s.payDraft;
 }
 
@@ -1149,16 +1259,24 @@ function syncPayDraftFromDom(config, s) {
   const delayAll = form.querySelector('[name="delay-all"]');
   if (delayAll) s.payDraft.delayAll = delayAll.checked;
   s.payDraft.rows.forEach((row, i) => {
-    const details = form.querySelector(`[name="delay-${i}"]`)?.closest("details.ca-pay-delay");
-    if (details) row.delayOpen = details.open;
     row.amountRaw = form.querySelector(`[name="amount-${i}"]`)?.value ?? row.amountRaw;
     row.categoryKey = form.querySelector(`[name="cat-${i}"]`)?.value ?? row.categoryKey;
-    row.kind = form.querySelector(`input[name="kind-${i}"]:checked`)?.value || row.kind;
     row.delayDays = form.querySelector(`[name="delay-${i}"]`)?.value ?? row.delayDays;
-    const custom = form.querySelector('[name="custom-category"]');
-    if (custom) s.payDraft.customCategoryText = custom.value;
+    const cat = findPayCategory(config, row.categoryKey);
+    if (cat) row.kind = cat.kind;
   });
   applyPayDelayAllSync(s);
+}
+
+function renderPayAccrualBlock(appeal, row, i) {
+  const mode = payAccrualMode(appeal);
+  if (mode === "manual") {
+    return `<div class="ca-pay-accrual ca-pay-accrual--na"><p class="ca-pay-accrual-title"><strong>Не применяется: покупка без сертификата</strong></p><p class="small muted">Начисление по рекомендации и срок активации не задаются — вознаграждение направившему не рассчитывается.</p></div>`;
+  }
+  if (mode === "no-referrer") {
+    return `<div class="ca-pay-accrual ca-pay-accrual--na"><p class="ca-pay-accrual-title"><strong>Не применяется: нет направившего</strong></p><p class="small muted">По этому обращению нет партнёра-направившего — срок активации начисления не задаётся.</p></div>`;
+  }
+  return `<div class="ca-pay-accrual"><label class="field">Срок активации начисления, дней<input type="text" inputmode="numeric" name="delay-${i}" value="${esc(row.delayDays)}" maxlength="5" autocomplete="off"></label><p class="small muted ca-pay-kind-hint">${esc(accrualHintForKind(row.kind))}</p>${row.delayError ? `<p class="field-error" role="alert">${esc(row.delayError)}</p>` : ""}</div>`;
 }
 
 function rowAccrualSnapshot(row, appeal) {
@@ -1242,6 +1360,7 @@ function savePurchaseBreakdown(appeal, rows, totalKopecks, paidIso) {
     paidAt: paidIso,
   };
   appeal.paidAmountKopecks = totalKopecks;
+  appeal.ledgerRecorded = true;
   const wallet = ensureWalletPurchase(appeal);
   wallet.amountLabel = formatRubFromKopecks(totalKopecks);
   wallet.categoryBreakdown = appeal.purchaseBreakdown;
@@ -1284,42 +1403,37 @@ function updatePayFormChromeInPlace(form, s) {
     totalEl.textContent = formatRubFromKopecks(sum);
   }
   s.payDraft.rows.forEach((row, i) => {
-    const sumEl = form.querySelector(`[data-pay-row="${i}"] .ca-pay-delay-sum`);
-    if (sumEl) sumEl.textContent = `Подтверждение начисления · ${formatDaysRu(payDelaySummaryDays(row))}`;
-    const kindHint = form.querySelector(`[data-pay-row="${i}"] .ca-pay-delay-body .ca-pay-kind-hint`);
-    if (kindHint) {
-      kindHint.textContent = row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара";
-    }
+    const kindHint = form.querySelector(`[data-pay-row="${i}"] .ca-pay-kind-hint`);
+    if (kindHint) kindHint.textContent = accrualHintForKind(row.kind);
+    const kindBadge = form.querySelector(`[data-pay-row="${i}"] .ca-pay-kind-badge`);
+    if (kindBadge) kindBadge.textContent = row.kind === "service" ? "Услуга" : "Товар";
   });
 }
 
 function renderPayCategoryForm(config, appeal, formId) {
   const s = ws(config.key);
-  const draft = initPayDraft(s, appeal);
-  const manual = isManualAppeal(appeal);
+  const draft = initPayDraft(config, s, appeal);
   const cats = payCategoriesFor(config);
-  const catOptions = cats.map((c) => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join("");
+  if (!cats.length) {
+    return `<form class="stack ca-pay-form ca-pay-form--empty" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="notice">Добавьте категории товаров или услуг в профиле — без них нельзя указать состав оплаты.</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="nav:profile">Перейти в профиль</button><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button></div></form>`;
+  }
+  const accrualMode = payAccrualMode(appeal);
   const rowsHtml = draft.rows
     .map((row, i) => {
-      const delayLabel = manual
-        ? ""
-        : `<details class="ca-pay-delay" ${row.delayOpen ? "open" : ""}><summary class="ca-pay-delay-sum">Подтверждение начисления · ${esc(formatDaysRu(payDelaySummaryDays(row)))}</summary><div class="ca-pay-delay-body"><label class="field">Подтвердить вознаграждение через, дней<input type="text" inputmode="numeric" name="delay-${i}" value="${esc(row.delayDays)}" maxlength="5"></label><p class="small muted ca-pay-kind-hint">${row.kind === "service" ? "Отсчёт после принятия работ" : "Отсчёт после передачи товара"}</p>${row.delayError ? `<p class="field-error" role="alert">${esc(row.delayError)}</p>` : ""}</div></details>`;
       const opts = cats.map((c) => `<option value="${esc(c.key)}" ${row.categoryKey === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("");
-      return `<div class="ca-pay-row panel" data-pay-row="${i}"><div class="ca-pay-row-top"><label class="field">Категория<select name="cat-${i}">${opts}</select><small class="input-hint muted">Демо-справочник, не условия сертификата</small></label><button type="button" class="btn ghost icon-btn" data-ca-action="pay:remove-row:${i}" ${draft.rows.length < 2 ? "disabled" : ""} aria-label="Удалить">×</button></div><label class="field">Оплаченная сумма, ₽<input name="amount-${i}" inputmode="decimal" value="${esc(row.amountRaw)}" placeholder="0"></label>${row.amountError ? `<p class="field-error" role="alert">${esc(row.amountError)}</p>` : ""}<div class="ca-pay-kind"><span class="small muted">Тип</span><label class="radio"><input type="radio" name="kind-${i}" value="goods" ${row.kind === "goods" ? "checked" : ""}> Товар</label><label class="radio"><input type="radio" name="kind-${i}" value="service" ${row.kind === "service" ? "checked" : ""}> Услуга</label></div>${delayLabel}</div>`;
+      const kindLabel = row.kind === "service" ? "Услуга" : "Товар";
+      return `<div class="ca-pay-row panel" data-pay-row="${i}"><div class="ca-pay-row-top"><label class="field">Категория<select name="cat-${i}">${opts}</select><small class="input-hint muted"><span class="ca-pay-kind-badge">${esc(kindLabel)}</span> · из вашего профиля</small></label><button type="button" class="btn ghost icon-btn" data-ca-action="pay:remove-row:${i}" ${draft.rows.length < 2 ? "disabled" : ""} aria-label="Удалить">×</button></div>${row.categoryError ? `<p class="field-error" role="alert">${esc(row.categoryError)}</p>` : ""}<label class="field">Оплаченная сумма, ₽<input name="amount-${i}" inputmode="decimal" value="${esc(row.amountRaw)}" placeholder="0"></label>${row.amountError ? `<p class="field-error" role="alert">${esc(row.amountError)}</p>` : ""}${renderPayAccrualBlock(appeal, row, i)}</div>`;
     })
     .join("");
-  const customCat = draft.showCustomCategory
-    ? `<div class="ca-custom-inline"><label class="field">Своя категория<input name="custom-category" maxlength="80" value="${esc(draft.customCategoryText)}"></label><small class="input-hint">Сохранится в ваших вариантах.</small>${draft.customCategoryError ? `<p class="field-error" role="alert">${esc(draft.customCategoryError)}</p>` : ""}<span class="ca-form-actions"><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-cancel">Отмена</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-add">Добавить</button></span></div>`
-    : "";
-  const manualHint = manual ? `<p class="notice">Без сертификата: вознаграждение не начисляется.</p>` : "";
-  const delayAll = manual
-    ? ""
-    : `<label class="check"><input type="checkbox" name="delay-all" ${draft.delayAll ? "checked" : ""} data-ca-action="pay:delay-all-toggle"> Этот срок для всех категорий</label>`;
+  const delayAll =
+    accrualMode === "accrual" && draft.rows.length > 1
+      ? `<label class="check"><input type="checkbox" name="delay-all" ${draft.delayAll ? "checked" : ""} data-ca-action="pay:delay-all-toggle"> Этот срок для всех категорий</label>`
+      : "";
   const totalPreview = draft.rows.reduce((sum, r) => {
     const p = parseAmountKopecks(r.amountRaw);
     return sum + (p.ok && !p.empty ? p.kopecks : 0);
   }, 0);
-  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — сумма по категориям (демо).</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button><button type="button" class="btn ghost small-btn" data-ca-action="pay:custom-toggle">+ Своя категория</button>${customCat}${manualHint}${delayAll}<p class="ca-pay-total">Итого: <strong class="ca-pay-total-val">${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
+  return `<form class="stack ca-pay-form" id="${esc(formId)}" data-ca-pay-form="${esc(appeal.id)}"><p class="small muted">Сумма покупки — по направлениям из вашего профиля.</p>${rowsHtml}<button type="button" class="btn ghost small-btn" data-ca-action="pay:add-row">+ Добавить категорию</button>${delayAll}<p class="ca-pay-total">Итого: <strong class="ca-pay-total-val">${esc(formatRubFromKopecks(totalPreview))}</strong></p><label class="field">Дата оплаты<input type="date" name="review-date" max="${todayYmd()}" value="${esc(draft.paidDate)}" required></label>${draft.formError ? `<p class="field-error" role="alert">${esc(draft.formError)}</p>` : ""}<div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="panel:cancel">Отмена</button><button type="submit" class="btn primary">Зафиксировать оплату</button></div></form>`;
 }
 
 function submitPaidCategoryForm(ev, config, hooks) {
@@ -1328,7 +1442,13 @@ function submitPaidCategoryForm(ev, config, hooks) {
   syncPayDraftFromDom(config, s);
   const appeal = appeals.find((a) => a.id === s.payDraft?.appealId);
   if (!appeal || !s.payDraft) return;
-  const manual = isManualAppeal(appeal);
+  const cats = payCategoriesFor(config);
+  if (!cats.length) {
+    s.payDraft.formError = "Добавьте категории в профиле.";
+    hooks.refresh();
+    return;
+  }
+  const accrualMode = payAccrualMode(appeal);
   let total = 0;
   let hasPositive = false;
   const rowsOut = [];
@@ -1337,32 +1457,40 @@ function submitPaidCategoryForm(ev, config, hooks) {
   s.payDraft.rows.forEach((row) => {
     row.amountError = "";
     row.delayError = "";
+    row.categoryError = "";
+    const cat = findPayCategory(config, row.categoryKey);
+    if (!cat?.inProfile) {
+      row.categoryError = "Эта категория недоступна. Выберите направление из профиля или обновите профиль.";
+      anyRowError = true;
+    } else {
+      row.kind = cat.kind;
+    }
     const amountRaw = String(row.amountRaw ?? "").trim();
     const amount = parseAmountKopecks(row.amountRaw);
     if (amountRaw && !amount.ok) {
       row.amountError = amount.reason === "overflow" ? "Слишком большая сумма для демо." : "Введите сумму с не более чем двумя знаками после запятой.";
       anyRowError = true;
     }
-    if (!manual) {
+    if (accrualMode === "accrual" && (amountRaw || cat)) {
       const delay = parseDelayDays(row.delayDays);
       if (!delay.ok) {
         row.delayError = delay.reason === "range" ? "Целое число дней 0–36 500." : "Укажите срок в днях.";
         anyRowError = true;
       }
     }
-    if (row.amountError || row.delayError) return;
+    if (row.amountError || row.delayError || row.categoryError) return;
     if (!amount.ok || amount.empty || amount.kopecks <= 0) return;
+    if (!cat) return;
     hasPositive = true;
     total += amount.kopecks;
     if (total > Number(AMOUNT_MAX_KOPECKS)) s.payDraft.formError = "Слишком большая общая сумма.";
-    const cat = payCategoriesFor(config).find((c) => c.key === row.categoryKey);
     rowsOut.push({
       rowId: row.rowId,
       categoryKey: row.categoryKey,
-      categoryLabel: cat?.label || row.categoryKey,
+      categoryLabel: cat.label,
       amountKopecks: amount.kopecks,
-      kind: row.kind,
-      accrualDelayDays: manual ? 0 : parseDelayDays(row.delayDays).days,
+      kind: cat.kind,
+      accrualDelayDays: accrualMode === "accrual" ? parseDelayDays(row.delayDays).days : 0,
       lineShippedAt: appeal.purchaseBreakdown?.rows?.find((x) => x.rowId === row.rowId)?.lineShippedAt || null,
     });
   });
@@ -1776,7 +1904,7 @@ function renderReviewInline(config, s, appeal) {
   const maxYmd = todayYmd();
   if (pr.stageId === SYSTEM.PAID) {
     const appealObj = appeal || appeals.find((a) => a.id === pr.appealId);
-    if (appealObj) initPayDraft(s, appealObj);
+    if (appealObj) initPayDraft(config, s, appealObj);
     return `<h3>${esc(label)}</h3>${renderPayCategoryForm(config, appealObj, "ca-review-form")}<p class="field-error" id="ca-review-error" hidden role="alert"></p>`;
   }
   let fields = "";
@@ -1893,7 +2021,8 @@ function renderPurchaseInline(config, purchaseId) {
   const bd = appeal?.purchaseBreakdown || purchase.categoryBreakdown;
   const rows = appeal && bd?.rows?.length ? renderPayBreakdownList(appeal, bd.rows) : "";
   const showReward = purchase.rewardStatusLabel && appeal && canAccrueReferral(appeal) && !isManualAppeal(appeal);
-  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${showReward ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}<a class="btn ghost" href="./partner-wallet-history.html">История кошелька</a></section>`;
+  const manualNote = appeal && isManualAppeal(appeal) ? `<p class="small muted">Покупка без реферального начисления — в кошельке принимающего, без долга направившему.</p>` : "";
+  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма покупки</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${showReward ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}${manualNote}<p class="small muted">Те же события — в кошельке во вкладке «Взаиморасчёты» (направление «Я должен» / «Мне должны»).</p></section>`;
 }
 
 function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) {
@@ -1907,7 +2036,7 @@ function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) 
   }
   if (!fromRefusal && needsReview(stageId)) {
     s.inlineReview = { appealId, stageId };
-    if (stageId === SYSTEM.PAID) initPayDraft(s, appeal);
+    if (stageId === SYSTEM.PAID) initPayDraft(config, s, appeal);
     hooks.refresh();
     return;
   }
@@ -2203,6 +2332,10 @@ function handleCaAction(action, config, hooks) {
   hooks.clearNotice?.();
   if (action.startsWith("nav:")) {
     const v = action.split(":")[1];
+    if (v === "profile") {
+      config.openProfile?.();
+      return;
+    }
     if (v === "detail") s.view = "detail";
     else s.view = v;
     if (v === "list") {
@@ -2236,7 +2369,8 @@ function handleCaAction(action, config, hooks) {
     s.detailPickStage = false;
     s.inlineReview = null;
     const appeal = appeals.find((a) => a.id === s.selectedId);
-    if (appeal) initPayDraft(s, appeal);
+    s.payDraft = null;
+    if (appeal) initPayDraft(config, s, appeal);
     hooks.refresh();
     return;
   }
@@ -2364,7 +2498,12 @@ function handleCaAction(action, config, hooks) {
   }
   if (action === "pay:add-row") {
     syncPayDraftFromDom(config, s);
-    if (s.payDraft) s.payDraft.rows.push(defaultPayRow());
+    const cats = payCategoriesFor(config);
+    if (!cats.length) {
+      hooks.notify?.("Добавьте категории в профиле", "error");
+      return;
+    }
+    if (s.payDraft) s.payDraft.rows.push(defaultPayRow(config));
     hooks.refresh();
     return;
   }
@@ -2372,40 +2511,6 @@ function handleCaAction(action, config, hooks) {
     syncPayDraftFromDom(config, s);
     const idx = Number(action.split(":")[2]);
     if (s.payDraft && s.payDraft.rows.length > 1) s.payDraft.rows.splice(idx, 1);
-    hooks.refresh();
-    return;
-  }
-  if (action === "pay:custom-toggle") {
-    syncPayDraftFromDom(config, s);
-    if (s.payDraft) s.payDraft.showCustomCategory = !s.payDraft.showCustomCategory;
-    hooks.refresh();
-    return;
-  }
-  if (action === "pay:custom-cancel") {
-    syncPayDraftFromDom(config, s);
-    if (s.payDraft) {
-      s.payDraft.showCustomCategory = false;
-      s.payDraft.customCategoryText = "";
-      s.payDraft.customCategoryError = "";
-    }
-    hooks.refresh();
-    return;
-  }
-  if (action === "pay:custom-add") {
-    syncPayDraftFromDom(config, s);
-    if (!s.payDraft) return;
-    const res = addWorkspacePayCategory(config, s.payDraft.customCategoryText);
-    const row = s.payDraft.rows[s.payDraft.rows.length - 1] || s.payDraft.rows[0];
-    if (!res.ok) {
-      s.payDraft.customCategoryError = res.error;
-      if (res.key && row) row.categoryKey = res.key;
-      hooks.refresh();
-      return;
-    }
-    if (row) row.categoryKey = res.category.key;
-    s.payDraft.showCustomCategory = false;
-    s.payDraft.customCategoryText = "";
-    s.payDraft.customCategoryError = "";
     hooks.refresh();
     return;
   }

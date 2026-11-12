@@ -1,5 +1,10 @@
 import { buildAccrualLines } from "./wallet-accruals-data.js";
 import {
+  clientPurchaseLedgerRows,
+  filterClientPurchaseLedgerRows,
+  renderClientPurchaseLedgerRow,
+} from "./client-purchase-ledger.js";
+import {
   ACCRUAL_DEMO_ANCHOR,
   ACCRUAL_SCENARIOS,
   accrualOverview,
@@ -355,6 +360,12 @@ function renderHistoryPanel(config, incomingOnly, activeDirection) {
     st.historyFilter = "all";
   }
   const visible = filterHistoryRows(allRows, filter, incomingOnly);
+  const fetchLedger =
+    typeof config.clientPurchaseLedgerRows === "function"
+      ? (dir) => config.clientPurchaseLedgerRows(dir)
+      : (dir) => clientPurchaseLedgerRows(config, dir);
+  const clientLedger = filterClientPurchaseLedgerRows(fetchLedger(direction), filter);
+  const clientLedgerHtml = clientLedger.map((entry) => renderClientPurchaseLedgerRow(entry, direction)).join("");
   const total = sumHistoryRowAmounts(visible);
   const filters =
     direction === "in"
@@ -376,30 +387,32 @@ function renderHistoryPanel(config, incomingOnly, activeDirection) {
     })
     .join("");
 
-  const list = visible.length
-    ? visible
-        .map((r) =>
-          renderAccrualRow({
-            line: {
-              id: r.lineId,
-              category: r.category,
-              partner: r.partner,
-              purchaseId: r.purchaseId,
-              gross: r.gross,
-              confirmDays: r.confirmDays,
-              confirmDate: r.confirmDate,
-              suspendedReason: r.suspendedReason,
-            },
-            amount: r.amount,
-            kind: r.kind,
-            sortDate: r.sortDate,
-            action: txnActionFromHistoryRow(r),
-            testid: `wallet-history-row-${r.lineId}-${r.kind}`,
-            strikethrough: r.kind === "return",
-          }),
-        )
-        .join("")
-    : `<p class="wallet-accruals-history__empty pw-muted">Операций пока нет</p>`;
+  const demoList = visible
+    .map((r) =>
+      renderAccrualRow({
+        line: {
+          id: r.lineId,
+          category: r.category,
+          partner: r.partner,
+          purchaseId: r.purchaseId,
+          gross: r.gross,
+          confirmDays: r.confirmDays,
+          confirmDate: r.confirmDate,
+          suspendedReason: r.suspendedReason,
+        },
+        amount: r.amount,
+        kind: r.kind,
+        sortDate: r.sortDate,
+        action: txnActionFromHistoryRow(r),
+        testid: `wallet-history-row-${r.lineId}-${r.kind}`,
+        strikethrough: r.kind === "return",
+      }),
+    )
+    .join("");
+  const list =
+    clientLedgerHtml || demoList
+      ? `${clientLedgerHtml}${demoList}`
+      : `<p class="wallet-accruals-history__empty pw-muted">Операций пока нет</p>`;
 
   return `<aside class="wallet-accruals-history" data-testid="wallet-history" data-history-filter="${st.historyFilter}" data-history-direction="${direction}">
     <div class="wallet-accruals-history__header">

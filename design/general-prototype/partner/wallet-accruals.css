@@ -1582,3 +1582,66 @@
     grid-template-columns: 1fr;
   }
 }
+
+.wallet-client-purchase__summary {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.wallet-client-purchase__summary::-webkit-details-marker {
+  display: none;
+}
+
+.wallet-client-purchase__detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pw-border, #e6e8ec);
+}
+
+[data-theme=dark] .wallet-client-purchase__detail {
+  border-top-color: var(--pw-border, #2a2f36);
+}
+
+.wallet-client-purchase__facts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.875rem;
+}
+
+.wallet-client-purchase__facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wallet-client-purchase__facts dt {
+  color: var(--wallet-accrual-ink-muted, #5a6068);
+}
+
+.wallet-client-purchase__cats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+}
+
+.wallet-client-purchase__cats li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wallet-client-purchase__terms {
+  font-size: 0.75rem;
+  text-align: right;
+  max-width: 9rem;
+  line-height: 1.3;
+}

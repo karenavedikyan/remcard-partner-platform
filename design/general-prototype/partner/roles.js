@@ -36,7 +36,8 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView } from "./client-appeals.js?v=ca8";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView } from "./client-appeals.js?v=ca9";
+import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
 import {
@@ -3321,6 +3322,7 @@ function La() {
       allowed,
       transactions,
       bonusTotal: i.role === "agent" ? pe(Wt()) : "",
+      clientPurchaseLedgerRows: (direction) => clientPurchaseLedgerRows(config, direction),
       legacy: (page) => {
         const previous = i.page;
         i.page = page;
@@ -3349,6 +3351,11 @@ function clientAppealsConfig() {
     role: i.role,
     icon: D,
     readOnly: k() && !O("clients"),
+    profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
+    openProfile: () => {
+      i.page = "profile";
+      R();
+    },
   };
 }
 function Ia() {
