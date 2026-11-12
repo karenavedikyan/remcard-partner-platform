@@ -168,5 +168,5 @@ export function closeAgentPartnersHub() {
 }
 
 export function agentPartnersLeadHtml() {
-  return "Магазины и компании, которым вы рекомендуете клиентов. Поиск и приглашения — в отдельном окне, как в AgentPartnersHub.";
+  return "Магазины и компании, которым вы рекомендуете клиентов. Поиск на платформе и приглашение по ссылке — в отдельном окне.";
 }

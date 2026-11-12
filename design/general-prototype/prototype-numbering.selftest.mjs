@@ -36,5 +36,7 @@ assert.match(src, /setClassMembership/, "dock class markers must be idempotent")
 assert.match(src, /classMutationIsDockMarkerOnly/, "ignore own dock marker class mutations");
 assert.match(src, /attributeOldValue:\s*true/, "class diff for dock markers");
 assert.match(css, /proto-num-dialog-host/, "dialog-docked chrome positioning");
+assert.match(src, /function visibleLabelText/, "snippet must prefer visible text");
+assert.match(src, /const visible = visibleLabelText\(el\)/, "visible text before testid in snippet");
 
 console.log("prototype-numbering.selftest: ok");

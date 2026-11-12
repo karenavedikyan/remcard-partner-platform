@@ -105,7 +105,32 @@ function fields(d) {
 function details(r) {
   return `<dl class="pw-facts"><div><dt>Тип получателя</dt><dd>${types[r.type]}</dd></div><div><dt>Получатель</dt><dd>${esc(r.recipient)}</dd></div><div><dt>Банк</dt><dd>${esc(r.bank)}</dd></div><div><dt>БИК</dt><dd>${esc(r.bik)}</dd></div><div><dt>Счёт</dt><dd>${esc(r.account)}</dd></div><div><dt>Корреспондентский счёт</dt><dd>${esc(r.correspondent)}</dd></div>${r.inn ? `<div><dt>ИНН</dt><dd>${esc(r.inn)}</dd></div>` : ""}${r.type === "company" && r.kpp ? `<div><dt>КПП</dt><dd>${esc(r.kpp)}</dd></div>` : ""}</dl>`;
 }
+function renderAgentWalletRequisitesDisabled() {
+  const selected = {
+    id: "agent-demo",
+    type: "person",
+    recipient: "Иванова Анна Сергеевна",
+    label: "Основной счёт · демо",
+    bank: "Демобанк",
+    account: "40817810000000001234",
+  };
+  const disabled = "disabled";
+  return `<section class="pw pw-card cab-bank cab-bank-agent-disabled" data-bank-panel data-bank-owner="agent" data-bank-readonly="true" data-agent-requisites-disabled="true" data-testid="bank-panel">
+    <div class="pw-card-top"><h2>Куда получать оплату</h2><span class="pw-label">Изменения недоступны</span></div>
+    <div class="pw-field"><label for="bank-select-agent">Получатель оплаты</label><select id="bank-select-agent" data-testid="bank-select" ${disabled}>${`<option value="${selected.id}">${esc(selected.label)} · …${esc(selected.account.slice(-4))}</option>`}</select></div>
+    <div class="cab-bank-preview"><span class="pw-kicker">${types[selected.type]} · основные реквизиты</span><strong>${esc(selected.recipient)}</strong><p class="pw-muted">${esc(selected.bank)} · счёт …${esc(selected.account.slice(-4))}</p></div>
+    <div class="cab-actions">${button("Посмотреть полностью", "bank-expand:agent-demo", disabled)}${button("Скопировать реквизиты", "bank-copy:agent-demo", disabled)}${button("Применить для следующего расчёта", "bank-apply", disabled)}${button("Добавить реквизиты", "bank-add", disabled)}</div>
+    <p class="pw-footnote">Это реквизиты для получения оплаты, не вывод бонусов. Выбор не меняет уже оформленные счета и расчёты. Переводы в макете не выполняются.</p>
+    <p role="status" data-testid="bank-status"></p>
+    <p class="pw-footnote">В кошельке агента реквизиты показываются только для просмотра, как на рабочем сайте. Редактирование — в профиле, когда доступ открыт.</p>
+  </section>`;
+}
+
 export function renderBankDetails(config) {
+  const inWallet = config.location === "wallet";
+  if (config.role === "agent" && inWallet) {
+    return renderAgentWalletRequisitesDisabled();
+  }
   const readonly = config.role === "employee";
   const owner = readonly
     ? config.canViewEmployerBank
@@ -117,7 +142,6 @@ export function renderBankDetails(config) {
     s.records.find((r) => r.id === s.selected) ||
     s.records.find((r) => r.id === s.defaultId) ||
     s.records[0];
-  const inWallet = config.location === "wallet";
   let content = "";
   if (s.draft && !readonly) {
     const d = s.draft;
@@ -184,9 +208,13 @@ export function renderWallet(config) {
   s.wallet = active;
   const incomingOnly = config.role === "agent";
   const masterLedger =
-    config.allowed.includes("settlements") ||
-    (config.role !== "employee" &&
-      ["store", "company", "specialist", "agent"].includes(config.role));
+    config.role !== "agent" &&
+    (config.allowed.includes("settlements") ||
+      (config.role !== "employee" &&
+        ["store", "company", "specialist"].includes(config.role)));
+  if (config.role === "agent" && s.walletSubview === "master-ledger") {
+    s.walletSubview = null;
+  }
   let panel = "";
   if (s.wallet === "settlements") {
     if (s.walletSubview === "master-ledger" && masterLedger) {

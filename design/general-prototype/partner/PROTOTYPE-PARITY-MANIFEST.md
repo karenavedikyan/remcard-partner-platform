@@ -12,10 +12,10 @@ Prototype remains **synthetic in-memory** — no API, payouts, DB, or deploy.
 | 2a | `AgentReceivablesWallet` → `WalletPrototypeShell` (tabs **Взаиморасчёты** / **Реквизиты**) | `renderWallet` tablist | **Matched** |
 | 2b | `BusinessOwnerWallet` / `SpecialistMasterWallet` → `WalletPrototypeShell` | same | **Matched** |
 | 2c | `SettlementsHub` (legacy hub shell) | Not on live path for store/company/agent in `page.tsx` (master-wallet / agent-r05) | **N/A (documented)** — hub obligations UI not duplicated; business roles use accruals workspace |
-| 3 | Settlements tab → `WalletAccrualsWorkspace` | `wallet-accruals.js` inside settlements panel | **Matched layout** |
+| 3 | Settlements tab → `WalletAccrualsWorkspace` (`AgentReceivablesWallet`: `incomingOnly` + `agentRegistry`, **no** `masterLedger`) | `wallet-accruals.js` inside settlements panel | **Matched** — agent: only **Реестр начислений агента** extension, no master-ledger link |
 | 4 | Workspace subview `master-ledger` | `wallet-open-master-ledger` → `settlement-demo.js` + **← К кошельку** | **Matched** — real Excel via `settlement-export.js` / ExcelJS vendor |
 | 5 | Workspace subview `agent-registry` → `AgentReceivablesHub` | `agent-receivables-registry.js` + `agent-receivables-export.js` | **Matched** — overview → partners → orders → detail; **real demo XLSX** for full current filter |
-| 6 | Requisites tab | `renderBankDetails` | **Matched** (demo validation) |
+| 6 | Requisites tab → `AgentPayoutRequisitesPanel disabled` | `renderBankDetails` agent branch | **Matched** — «Изменения недоступны», controls disabled (demo) |
 | 7 | `/history` from workspace | `wallet-history-hub-link` → `partner-wallet-history.html` | **Matched (entry)** — full history SPA not cloned |
 | 8 | Refresh notice / live payout errors | — | **N/A (documented)** — no network refresh or payout plumbing in prototype |
 | 9 | Employee org branch merge | `Te()` + employee wallet denied card when `settlements` not granted | **Matched (reachable)** — org partners copy via `renderPartnersRedesign` `employee: true` when `terms` permission |
@@ -45,4 +45,4 @@ Prototype remains **synthetic in-memory** — no API, payouts, DB, or deploy.
 Agent wallet: **Реестр начислений агента**; Excel export must download `.xlsx`.  
 Partner detail: open **Дом материалов** → **Комментарий** block.  
 Agent invite: **Пригласить по ссылке** → edit field → close → discard confirm.  
-Numbering: `?v=ann7` (`prototype-numbering.js`).
+Numbering: `?v=ann8` (`prototype-numbering.js` — snippet prefers visible text over `data-testid`).

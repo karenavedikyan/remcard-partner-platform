@@ -19,7 +19,7 @@
 
 ## Покрытие HTML (15)
 
-`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann7`.
+`index.html`, `client/index.html`, `admin/index.html`, все `partner/*.html` (13 страниц partner). Версия подключения: `?v=ann8`.
 
 Состояние экрана (`pageState`): для админ/клиентского SPA учитываются `[data-action="go"][data-view]` с `aria-current`, hash-маршрут, `data-subview`, открытая entity/detail и заголовок открытого `dialog` (например `view=partners` вместо голого `4|index|`).
 

@@ -260,6 +260,52 @@
     return out.trim().replace(/\s+/g, " ");
   }
 
+  function associatedLabelText(el) {
+    if (el.id) {
+      const forLabel = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+      if (forLabel && !isAnnotationUi(forLabel)) {
+        const t = (forLabel.innerText || forLabel.textContent || "").trim().replace(/\s+/g, " ");
+        if (t) return t;
+      }
+    }
+    const wrap = el.closest("label");
+    if (wrap && !isAnnotationUi(wrap)) {
+      const clone = wrap.cloneNode(true);
+      clone.querySelectorAll("input, select, textarea, button").forEach((n) => n.remove());
+      const t = (clone.textContent || "").trim().replace(/\s+/g, " ");
+      if (t) return t;
+    }
+    return "";
+  }
+
+  /** Visible / accessible copy for reviewer search — does not affect stableKey. */
+  function visibleLabelText(el) {
+    const labelledBy = el.getAttribute("aria-labelledby");
+    if (labelledBy) {
+      const text = labelledBy
+        .split(/\s+/)
+        .map((id) => document.getElementById(id))
+        .filter((node) => node && !isAnnotationUi(node))
+        .map((node) => (node.innerText || node.textContent || "").trim())
+        .filter(Boolean)
+        .join(" ")
+        .replace(/\s+/g, " ");
+      if (text) return text;
+    }
+    const assoc = associatedLabelText(el);
+    if (assoc) return assoc;
+    const placeholder = el.getAttribute("placeholder");
+    if (placeholder && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      return placeholder.trim();
+    }
+    const title = el.getAttribute("title");
+    if (title) return title.trim();
+    const direct = directLabelText(el);
+    if (direct) return direct;
+    const nested = (el.innerText || el.textContent || "").trim().replace(/\s+/g, " ");
+    return nested;
+  }
+
   function isTextLeaf(el) {
     const tag = el.tagName;
     return ["SPAN", "SMALL", "STRONG", "EM", "B", "I", "LABEL", "P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TH", "TD"].includes(tag);
@@ -472,10 +518,10 @@
   function snippet(el) {
     const aria = el.getAttribute("aria-label");
     if (aria) return aria.trim();
+    const visible = visibleLabelText(el);
+    if (visible) return visible.slice(0, 120);
     const tid = el.getAttribute("data-testid");
     if (tid) return `[${tid}]`;
-    const label = directLabelText(el);
-    if (label) return label.slice(0, 120);
     const action = el.getAttribute("data-action");
     if (action) return action;
     return `<${el.tagName.toLowerCase()}>`;
