@@ -7,8 +7,9 @@
 
 .cl-toolbar h1 {
   margin: 0 0 4px;
-  font-size: clamp(1.2rem, 4vw, 1.55rem);
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .cl-context-line {
@@ -43,11 +44,26 @@
   font-weight: 700;
 }
 
+.cl-funnel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: end;
+}
+
+.cl-funnel-filters .cl-field {
+  min-width: min(100%, 150px);
+  flex: 1 1 120px;
+}
+
 .cl-funnel-body {
   margin-top: 10px;
   display: grid;
   gap: 6px;
   color: var(--pp-muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .cl-funnel-row {
@@ -132,26 +148,48 @@
   display: none;
 }
 
-.cl-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
+.cl-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cl-actions--toolbar {
+  width: 100%;
+  justify-content: flex-end;
 }
 
 @media (min-width: 720px) {
-  .cl-controls {
-    grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(100px, 0.5fr)) minmax(120px, 0.55fr) auto;
+  .cl-actions--toolbar {
+    width: auto;
+  }
+}
+
+.cl-controls--filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .cl-controls--filters {
+    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(110px, 0.42fr));
     align-items: end;
   }
 
-  #panel-outgoing .cl-controls {
-    grid-template-columns: minmax(0, 1fr) repeat(3, minmax(96px, 0.45fr));
+  #panel-outgoing .cl-controls--filters {
+    grid-template-columns: minmax(0, 1.1fr) repeat(3, minmax(100px, 0.38fr));
   }
+}
 
-  #panel-outgoing .cl-readonly-hint {
-    grid-column: 1 / -1;
-  }
+.cl-wallet-inline {
+  min-height: 36px !important;
+  padding: 0 8px !important;
+  font-size: var(--pp-xs) !important;
 }
 
 .cl-search-wrap {
@@ -353,9 +391,15 @@ html[data-theme="dark"] .cl-btn-primary {
 
 .cl-meta {
   margin: 0;
-  font-size: var(--pp-xs);
+  font-size: 14px;
+  line-height: 1.45;
   color: var(--pp-muted);
   overflow-wrap: anywhere;
+}
+
+.cl-table {
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .cl-dialog {
@@ -642,10 +686,21 @@ html[data-theme="dark"] .cl-dialog {
 
 .cl-stage-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 6px;
   align-items: center;
   margin-bottom: 6px;
+}
+
+@media (max-width: 519px) {
+  .cl-stage-row {
+    grid-template-columns: minmax(0, 1fr) 1fr 1fr;
+  }
+
+  .cl-stage-row .stage-archive,
+  .cl-stage-row .reason-remove {
+    grid-column: 1 / -1;
+  }
 }
 
 .cl-private-tag {

@@ -2,6 +2,15 @@
   "use strict";
 
   const WAIT_DAYS = 14;
+  /** Зеркало prod: src/lib/history-labels.ts ORDER_STATUS_LABELS */
+  const ORDER_STATUS_LABELS = {
+    CONFIRMED: "Подтверждена",
+    COMPLETED: "Завершена",
+    RETURNED: "Возврат",
+    CANCELLED: "Отменена",
+  };
+  /** Зеркало prod: src/lib/history-accrual-display.ts (ожидание после отгрузки) */
+  const ACCRUAL_WAITING_LABEL = "Ожидает подтверждения";
   const RECEIVING = {
     id: "DEMO-PARTNER-017",
     name: 'РемТех на Ленина',
@@ -158,22 +167,152 @@
     return SOURCE_OPTIONS.find((s) => s.key === key)?.label || key;
   }
 
+  function isManualAppeal(appeal) {
+    return Boolean(appeal.manualEntry) || (!appeal.certificateId && appeal.sourceKey !== "scan");
+  }
+
+  function hasCertificateFlow(appeal) {
+    return Boolean(appeal.certificateId) && !isManualAppeal(appeal);
+  }
+
+  function canAccrueReferral(appeal) {
+    return hasCertificateFlow(appeal) && Boolean(appeal.referrerPartnerId && PARTNERS[appeal.referrerPartnerId]);
+  }
+
+  function sourceDisplay(appeal) {
+    if (isManualAppeal(appeal)) return "Добавлен вручную";
+    return sourceLabel(appeal.sourceKey);
+  }
+
+  function certListLine(appeal) {
+    if (isManualAppeal(appeal)) return "Без сертификата";
+    return `${appeal.certificateId} · скидка ${appeal.discountPercent}%`;
+  }
+
+  function counterpartyLine(appeal, mode) {
+    if (isManualAppeal(appeal) && mode === "incoming") return "Добавлен вручную";
+    if (mode === "incoming") {
+      const name = PARTNERS[appeal.referrerPartnerId]?.name;
+      return name ? `Направил: ${name}` : "—";
+    }
+    return `Принимает: ${PARTNERS[appeal.receivingPartnerId]?.name || "—"}`;
+  }
+
+  function formatAgeSince(iso) {
+    const days = daysBetween(iso, new Date().toISOString());
+    if (days <= 0) return "создано сегодня";
+    if (days === 1) return "1 день с создания";
+    if (days < 5) return `${days} дня с создания`;
+    return `${days} дн. с создания`;
+  }
+
+  function safePct(part, whole) {
+    if (!whole || whole <= 0 || part < 0) return "—";
+    return `${Math.round((part / whole) * 100)}%`;
+  }
+
+  function appealHasPaidPurchase(appeal) {
+    return Boolean(appeal.purchaseId || appeal.paidAt);
+  }
+
+  function isFinancialStage(stageId) {
+    return stageId === SYSTEM.PAID || stageId === SYSTEM.SHIPPED || stageId === SYSTEM.RETURN;
+  }
+
+  function canTransitionTo(appeal, stageId) {
+    if (!isFinancialStage(stageId)) return { ok: true };
+    if (stageId === SYSTEM.PAID) return { ok: true };
+    if (stageId === SYSTEM.SHIPPED) {
+      if (!appealHasPaidPurchase(appeal)) {
+        return { ok: false, msg: "Сначала зафиксируйте оплату — покупка в кошельке." };
+      }
+      return { ok: true };
+    }
+    if (stageId === SYSTEM.RETURN) {
+      if (!appeal.shippedAt) {
+        return { ok: false, msg: "Сначала зафиксируйте отгрузку." };
+      }
+      return { ok: true };
+    }
+    return { ok: true };
+  }
+
+  function dateOnlyMs(iso) {
+    const d = new Date(iso);
+    d.setHours(12, 0, 0, 0);
+    return d.getTime();
+  }
+
   function ensureWalletPurchase(appeal) {
+    if (appeal.purchaseId && walletPurchases[appeal.purchaseId]) {
+      return walletPurchases[appeal.purchaseId];
+    }
     if (!appeal.purchaseId) {
       appeal.purchaseId = `DEMO-PURCHASE-${appeal.id.replace(/\D/g, "").slice(-4) || "0000"}`;
     }
-    if (!walletPurchases[appeal.purchaseId]) {
-      const amount = appeal.paidAmount != null ? `${appeal.paidAmount.toLocaleString("ru-RU")} ₽` : "сумма в демо не зафиксирована";
-      walletPurchases[appeal.purchaseId] = {
-        kind: "client_purchase",
-        title: "Оплата покупки клиентом",
-        appealId: appeal.id,
-        amountLabel: amount,
-        statusLabel: "Проведена (демо)",
-        note: "Это платёж клиента магазину. Не путать с реферальным вознаграждением.",
-      };
+    if (walletPurchases[appeal.purchaseId]) {
+      return walletPurchases[appeal.purchaseId];
     }
+    const amount =
+      appeal.paidAmount != null
+        ? `${appeal.paidAmount.toLocaleString("ru-RU")} ₽`
+        : "сумма в демо не зафиксирована";
+    walletPurchases[appeal.purchaseId] = {
+      appealId: appeal.id,
+      certificateId: appeal.certificateId || "—",
+      referrerName: appeal.referrerPartnerId ? PARTNERS[appeal.referrerPartnerId]?.name || null : null,
+      orderStatusKey: "CONFIRMED",
+      orderStatusLabel: ORDER_STATUS_LABELS.CONFIRMED,
+      paidSummary: `Оплачено ${amount}`,
+      amountLabel: amount,
+      accrualStatusLabel: null,
+      accrualNote: null,
+      nextConfirmationAt: null,
+      waitDaysLeft: null,
+    };
     return walletPurchases[appeal.purchaseId];
+  }
+
+  /** Синхронизация демо-покупки с этапом обращения — без отдельной финансовой машины. */
+  function syncWalletFromAppeal(appeal) {
+    if (!appealHasPaidPurchase(appeal)) return null;
+    const wallet = ensureWalletPurchase(appeal);
+    if (appeal.stageId === SYSTEM.RETURN) {
+      wallet.orderStatusKey = "RETURNED";
+      wallet.orderStatusLabel = ORDER_STATUS_LABELS.RETURNED;
+      wallet.accrualStatusLabel = "Приостановлено";
+      wallet.accrualNote = "Приостановленная сумма начисления, не сумма покупки.";
+      wallet.nextConfirmationAt = null;
+      wallet.waitDaysLeft = null;
+      return wallet;
+    }
+    if (appeal.stageId === SYSTEM.SHIPPED && appeal.shippedAt) {
+      wallet.orderStatusKey = "COMPLETED";
+      wallet.orderStatusLabel = ORDER_STATUS_LABELS.COMPLETED;
+      if (canAccrueReferral(appeal)) {
+        wallet.accrualStatusLabel = ACCRUAL_WAITING_LABEL;
+        wallet.accrualNote = "Сумма ожидает подтверждения.";
+        wallet.nextConfirmationAt = addDays(appeal.shippedAt, WAIT_DAYS);
+        wallet.waitDaysLeft = daysBetween(new Date().toISOString(), wallet.nextConfirmationAt);
+      } else {
+        wallet.accrualStatusLabel = null;
+        wallet.accrualNote = null;
+        wallet.nextConfirmationAt = null;
+        wallet.waitDaysLeft = null;
+      }
+      return wallet;
+    }
+    if (appeal.paidAt || appeal.stageId === SYSTEM.PAID || appeal.stageId === SYSTEM.SHIPPED) {
+      wallet.orderStatusKey = "CONFIRMED";
+      wallet.orderStatusLabel = ORDER_STATUS_LABELS.CONFIRMED;
+      if (appeal.stageId !== SYSTEM.SHIPPED) {
+        wallet.accrualStatusLabel = null;
+        wallet.accrualNote = null;
+        wallet.nextConfirmationAt = null;
+        wallet.waitDaysLeft = null;
+      }
+    }
+    return wallet;
   }
 
   function formatDateTime(iso) {
@@ -261,11 +400,12 @@
   }
 
   function canRefuseFrom(appeal) {
+    if (appealHasPaidPurchase(appeal)) return false;
     const pipe = pipelineFor(appeal.receivingPartnerId);
     const idx = pipe.indexOf(appeal.stageId);
-    if (idx < 0) return false;
+    if (idx < 0 && appeal.stageId === SYSTEM.NEW) return true;
     const paidIdx = pipe.indexOf(SYSTEM.PAID);
-    return idx > 0 && idx < paidIdx;
+    return idx >= 0 && idx < paidIdx;
   }
 
   function pushHistory(appeal, text, reason) {
@@ -423,11 +563,12 @@
       {
         id: "DEMO-REQ-1077",
         clientName: "Виктор Рябов",
-        certificateId: "",
+        certificateId: null,
         receivingPartnerId: RECEIVING.id,
-        referrerPartnerId: "DEMO-NO-REFERRER",
-        discountPercent: 0,
-        certValidUntil: "",
+        referrerPartnerId: null,
+        manualEntry: true,
+        discountPercent: null,
+        certValidUntil: null,
         interest: "Уточнить на встрече",
         clientCity: "Казань",
         budgetHint: "не указан",
@@ -474,13 +615,17 @@
       a.purchaseId = a.purchaseId ?? m.purchaseId ?? null;
       a.createdAt = a.createdAt || m.createdAt || a.updatedAt;
       if (m.paidAmount != null) a.paidAmount = m.paidAmount;
-      if (a.purchaseId) ensureWalletPurchase(a);
     });
+    appeals.forEach((a) => syncWalletFromAppeal(a));
     appeals.find((a) => a.id === "DEMO-REQ-1020")?.history.splice(1, 1, {
       at: new Date(2026, 10, 8, 12, 0, 0).toISOString(),
       author: "Менеджер РемТех",
-      text: "Оплачено · создана демо-покупка в кошельке",
+      text: "Оплачено · покупка в кошельке (CONFIRMED)",
     });
+    const shipped = appeals.find((a) => a.id === "DEMO-REQ-1020");
+    if (shipped?.history[0]) {
+      shipped.history[0].text = "Отгружено · в кошельке начисление: Ожидает подтверждения (14 дн.)";
+    }
   }
 
   function allStatusOptions() {
@@ -511,7 +656,10 @@
       const el = document.getElementById(id);
       if (!el) return;
       const prev = el.value;
-      const options = id === "manual-source" ? SOURCE_OPTIONS.filter((s) => s.key !== "all") : SOURCE_OPTIONS;
+      const options =
+        id === "manual-source"
+          ? SOURCE_OPTIONS.filter((s) => s.key !== "all" && s.key !== "scan")
+          : SOURCE_OPTIONS;
       el.textContent = "";
       options.forEach((s) => {
         const opt = document.createElement("option");
@@ -589,18 +737,20 @@
 
     const cards = items
       .map((a) => {
-        const counterparty =
-          mode === "incoming"
-            ? `Рекомендовал: ${PARTNERS[a.referrerPartnerId]?.name || a.referrerPartnerId}`
-            : `Принимает: ${PARTNERS[a.receivingPartnerId]?.name || a.receivingPartnerId}`;
         return `<button type="button" class="cl-card" data-appeal-id="${esc(a.id)}" data-mode="${esc(mode)}">
           <div class="cl-card-head">
             <h3 class="cl-card-title">${esc(a.clientName)}</h3>
             <span class="cl-badge">${esc(stageLabel(a))}</span>
           </div>
-          <p class="cl-meta">${esc(a.id)} · ${esc(a.certificateId || "без сертификата")} · скидка ${esc(a.discountPercent)}%</p>
-          <p class="cl-meta">${esc(counterparty)}</p>
-          <p class="cl-meta">Источник: ${esc(sourceLabel(a.sourceKey))}</p>
+          <p class="cl-meta">${esc(a.id)} · ${esc(certListLine(a))}</p>
+          <p class="cl-meta">${esc(counterpartyLine(a, mode))}</p>
+          <p class="cl-meta">${esc(sourceDisplay(a))}</p>
+          ${
+            a.purchaseId
+              ? `<p class="cl-meta"><button type="button" class="pp-btn pp-btn--quiet cl-wallet-inline" data-wallet-purchase="${esc(a.purchaseId)}">Покупка в кошельке</button></p>`
+              : ""
+          }
+          <p class="cl-meta">Создано: ${esc(formatDateTime(a.createdAt))} · ${esc(formatAgeSince(a.createdAt))}</p>
           <p class="cl-meta">Обновлено: ${esc(formatDateTime(a.updatedAt))}</p>
         </button>`;
       })
@@ -608,17 +758,15 @@
 
     const rows = items
       .map((a) => {
-        const counterparty =
-          mode === "incoming"
-            ? PARTNERS[a.referrerPartnerId]?.name || a.referrerPartnerId
-            : PARTNERS[a.receivingPartnerId]?.name || a.receivingPartnerId;
-        const counterLabel = mode === "incoming" ? "Рекомендовал" : "Принимает";
+        const certCell = isManualAppeal(a)
+          ? "Без сертификата"
+          : `${a.certificateId}<br><span class="cl-meta">−${esc(a.discountPercent)}%</span>`;
         return `<tr>
-          <td><button type="button" class="cl-row-link" data-appeal-id="${esc(a.id)}" data-mode="${esc(mode)}">${esc(a.clientName)}<br><span class="cl-meta">${esc(a.id)}</span></button></td>
-          <td>${esc(counterLabel)}: ${esc(counterparty)}</td>
-          <td>${esc(a.certificateId)}<br><span class="cl-meta">−${esc(a.discountPercent)}%</span></td>
+          <td><button type="button" class="cl-row-link" data-appeal-id="${esc(a.id)}" data-mode="${esc(mode)}">${esc(a.clientName)}<br><span class="cl-meta">${esc(a.id)} · ${esc(formatAgeSince(a.createdAt))}</span></button></td>
+          <td>${esc(counterpartyLine(a, mode))}</td>
+          <td>${certCell}</td>
           <td><span class="cl-badge">${esc(stageLabel(a))}</span></td>
-          <td>${esc(formatDateTime(a.updatedAt))}</td>
+          <td>${esc(formatDateTime(a.createdAt))}<br><span class="cl-meta">обн. ${esc(formatDateTime(a.updatedAt))}</span></td>
         </tr>`;
       })
       .join("");
@@ -633,7 +781,7 @@
               <th>${mode === "incoming" ? "Рекомендовал" : "Принимает"}</th>
               <th>Сертификат</th>
               <th>Статус</th>
-              <th>Обновлено</th>
+              <th>Создано / обновлено</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -665,65 +813,94 @@
       if (inNote) inNote.hidden = true;
       if (outHint) {
         outHint.hidden = false;
-        outHint.textContent = `Только referral партнёра B: к A (${RECEIVING.name}) и к C (${DEMO_RECEIVER_C.name}). referral направившего D (${DEMO_REFERRER_D.name}) к A скрыты — их видит только вкладка принимающего A. Один объект обращения в памяти: смена статуса на A синхронно отражается у B. В продукте — один текущий аккаунт, без смены перспективы.`;
+        outHint.textContent = `Только направления партнёра B: к A (${RECEIVING.name}) и к C (${DEMO_RECEIVER_C.name}). Направления D (${DEMO_REFERRER_D.name}) к A скрыты — их видит только вкладка принимающего A. Один объект обращения в памяти: смена статуса на A синхронно отражается у B. В продукте — один текущий аккаунт, без смены перспективы.`;
       }
     }
     renderFunnel();
   }
 
-  function paidPurchaseHtml(appeal, readOnly) {
-    const everPaid =
-      appeal.stageId === SYSTEM.PAID ||
-      appeal.stageId === SYSTEM.SHIPPED ||
-      appeal.stageId === SYSTEM.RETURN ||
-      appeal.paidAt;
-    if (!everPaid || !appeal.purchaseId) return "";
-    const purchase = ensureWalletPurchase(appeal);
-    const link = readOnly
-      ? ""
-      : `<button type="button" class="pp-btn" id="detail-wallet" data-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>`;
+  function paidPurchaseHtml(appeal) {
+    syncWalletFromAppeal(appeal);
+    if (!appeal.purchaseId) return "";
+    const purchase = walletPurchases[appeal.purchaseId];
+    if (!purchase) return "";
     return `<div class="cl-paid-row">
-      <div><strong>Оплата клиентом</strong> · ${esc(purchase.amountLabel)}</div>
-      <div class="cl-meta">ID: ${esc(appeal.purchaseId)} — отдельно от реферального payout</div>
-      ${link}
+      <div class="cl-meta">Обращение ${esc(appeal.id)} · покупка ${esc(appeal.purchaseId)}</div>
+      <div><strong>Покупка в кошельке:</strong> ${esc(purchase.orderStatusLabel)} · ${esc(purchase.paidSummary)}</div>
+      <button type="button" class="pp-btn" id="detail-wallet" data-purchase="${esc(appeal.purchaseId)}">Покупка в кошельке</button>
+      <p class="cl-meta">Этап обращения «Оплачено» — операционный; финансовый статус только в покупке.</p>
     </div>`;
   }
 
   function waitBlockHtml(appeal) {
-    if (appeal.stageId !== SYSTEM.SHIPPED || !appeal.shippedAt) return "";
-    if (appeal.stageId === SYSTEM.RETURN) return "";
-    const releaseAt = addDays(appeal.shippedAt, WAIT_DAYS);
-    const left = daysBetween(new Date().toISOString(), releaseAt);
-    const walletPhase = left > 0 ? "Ожидание (кошелёк)" : "К подтверждению";
+    if (!canAccrueReferral(appeal)) return "";
+    const wallet = syncWalletFromAppeal(appeal);
+    if (!wallet?.accrualStatusLabel || appeal.stageId !== SYSTEM.SHIPPED) return "";
+    const left = wallet.waitDaysLeft != null ? Math.max(0, wallet.waitDaysLeft) : 0;
     return `<div class="cl-wait-block" role="status">
-      <div class="cl-wallet-kind cl-wallet-kind--referral">Реферальное вознаграждение (не покупка)</div>
-      <div>Отгрузка: <strong>${esc(formatDate(appeal.shippedAt))}</strong></div>
-      <div>Фаза после 14 дн.: <strong>${esc(walletPhase)}</strong>${left > 0 ? ` · осталось ${esc(String(left))} календ. дн.` : ""}</div>
-      <div>Дата перехода «К подтверждению»: ${esc(formatDate(releaseAt))}</div>
-      <p class="cl-note cl-note--legal">По предложению для владельца: «К подтверждению» — не автоматическая выплата; решение на согласовании. Тот же цикл, что в демо-кошельке.</p>
+      <div class="cl-wallet-kind cl-wallet-kind--referral">Начисление по покупке (кошелёк)</div>
+      <div>Статус начисления: <strong>${esc(wallet.accrualStatusLabel)}</strong></div>
+      <div>${esc(wallet.accrualNote || "")}${left > 0 ? ` Осталось ${esc(String(left))} из ${WAIT_DAYS} календ. дн.` : ""}</div>
+      ${
+        wallet.nextConfirmationAt
+          ? `<div class="cl-meta">Окончание ожидания (демо): ${esc(formatDate(wallet.nextConfirmationAt))}</div>`
+          : ""
+      }
+      <button type="button" class="pp-btn" data-purchase="${esc(appeal.purchaseId)}" id="detail-wallet-wait">Открыть покупку в кошельке</button>
+      <p class="cl-note cl-note--legal">Те же правила, что в существующем кошельке/истории (ожидание начисления). Без отдельной кнопки или этапа подтверждения в этом прототипе.</p>
     </div>`;
   }
 
   function renderFunnel() {
     const body = document.getElementById("funnel-body");
     if (!body) return;
-    const periodStart = new Date(2026, 9, 1);
-    const scoped =
+    const fromVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-from"))?.value;
+    const toVal = /** @type {HTMLInputElement|null} */ (document.getElementById("funnel-to"))?.value;
+    const periodStart = fromVal ? new Date(`${fromVal}T00:00:00`) : new Date(2026, 9, 1);
+    const periodEnd = toVal ? new Date(`${toVal}T23:59:59`) : new Date();
+    const sourceKey =
+      activeTab === "incoming"
+        ? document.getElementById("filter-source-incoming")?.value || "all"
+        : document.getElementById("filter-source-outgoing")?.value || "all";
+    let scoped =
       activeTab === "incoming"
         ? appeals.filter((a) => a.receivingPartnerId === RECEIVING.id)
         : appeals.filter((a) => a.referrerPartnerId === REFERRER_VIEWER.id);
-    const inPeriod = scoped.filter((a) => new Date(a.createdAt) >= periodStart);
-    const everPaid = inPeriod.filter(
-      (a) => a.paidAt || [SYSTEM.PAID, SYSTEM.SHIPPED, SYSTEM.RETURN].includes(a.stageId)
-    );
+    if (activeTab === "outgoing") {
+      const partner = document.getElementById("filter-partner-outgoing")?.value || "all";
+      if (partner !== "all") scoped = scoped.filter((a) => a.receivingPartnerId === partner);
+    }
+    if (sourceKey !== "all") scoped = scoped.filter((a) => a.sourceKey === sourceKey);
+    const inPeriod = scoped.filter((a) => {
+      const t = new Date(a.createdAt).getTime();
+      return t >= periodStart.getTime() && t <= periodEnd.getTime();
+    });
+    const everPaid = inPeriod.filter((a) => appealHasPaidPurchase(a));
     const everShipped = inPeriod.filter((a) => a.shippedAt || a.stageId === SYSTEM.SHIPPED);
     const returns = inPeriod.filter((a) => a.stageId === SYSTEM.RETURN);
+    const byReferrer = new Map();
+    if (activeTab === "incoming") {
+      inPeriod.forEach((a) => {
+        const key = isManualAppeal(a) ? "Добавлен вручную" : PARTNERS[a.referrerPartnerId]?.name || "—";
+        const row = byReferrer.get(key) || { created: 0, paid: 0 };
+        row.created += 1;
+        if (appealHasPaidPurchase(a)) row.paid += 1;
+        byReferrer.set(key, row);
+      });
+    }
+    const refRows = Array.from(byReferrer.entries())
+      .map(
+        ([name, row]) =>
+          `<div class="cl-funnel-row"><span>${esc(name)}</span><strong>${esc(String(row.created))} · оплата ${esc(safePct(row.paid, row.created))}</strong></div>`
+      )
+      .join("");
     body.innerHTML = `
-      <p class="cl-meta">Период: с 1 октября 2026 (демо). Возвраты считаются отдельно.</p>
-      <div class="cl-funnel-row"><span>Создано обращений</span><strong>${esc(String(inPeriod.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Когда-либо «Оплачено»</span><strong>${esc(String(everPaid.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Когда-либо «Отгружено»</span><strong>${esc(String(everShipped.length))}</strong></div>
-      <div class="cl-funnel-row"><span>Возврат (отдельно)</span><strong>${esc(String(returns.length))}</strong></div>`;
+      <p class="cl-meta">Когорта: уникальные обращения, созданные в выбранном периоде (фильтры списка учтены).</p>
+      <div class="cl-funnel-row"><span>Создано</span><strong>${esc(String(inPeriod.length))}</strong></div>
+      <div class="cl-funnel-row"><span>Когда-либо «Оплачено»</span><strong>${esc(String(everPaid.length))} · ${esc(safePct(everPaid.length, inPeriod.length))}</strong></div>
+      <div class="cl-funnel-row"><span>Когда-либо «Отгружено»</span><strong>${esc(String(everShipped.length))} · ${esc(safePct(everShipped.length, inPeriod.length))}</strong></div>
+      <div class="cl-funnel-row"><span>Возврат (отдельно)</span><strong>${esc(String(returns.length))}</strong></div>
+      ${activeTab === "incoming" && refRows ? `<p class="cl-meta" style="margin-top:8px">По направившему (в периоде)</p>${refRows}` : ""}`;
   }
 
   function renderDetail() {
@@ -731,26 +908,31 @@
     const appeal = appeals.find((a) => a.id === selectedAppealId);
     if (!body || !appeal) return;
     const readOnly = activeTab === "outgoing";
-    const referrer =
-      appeal.referrerPartnerId === "DEMO-NO-REFERRER"
-        ? { name: "Прямой клиент (без referrer)" }
-        : PARTNERS[appeal.referrerPartnerId];
     const receiver = PARTNERS[appeal.receivingPartnerId];
-    const certId = appeal.certificateId ? appeal.certificateId : "Без сертификата";
+    const manual = isManualAppeal(appeal);
+    const certExtra = manual
+      ? `
+          <div class="cl-cert-row"><span class="cl-cert-label">Сертификат</span><p class="cl-readonly-value">Без сертификата</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Вход</span><p class="cl-readonly-value">Добавлен вручную</p></div>`
+      : `
+          <div class="cl-cert-row"><span class="cl-cert-label">ID сертификата</span><p class="cl-readonly-value">${esc(appeal.certificateId)}</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Направил</span><p class="cl-readonly-value">${esc(PARTNERS[appeal.referrerPartnerId]?.name || "—")}</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Скидка</span><p class="cl-readonly-value">${esc(appeal.discountPercent)}%</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Действует до</span><p class="cl-readonly-value">${esc(formatDate(appeal.certValidUntil))}</p></div>`;
 
     const certTab = `
       <section aria-labelledby="cert-heading">
         <h3 id="cert-heading" class="cl-visually-hidden">Сертификат</h3>
         <div class="cl-cert-block">
           <div class="cl-cert-row"><span class="cl-cert-label">ID обращения</span><p class="cl-readonly-value">${esc(appeal.id)}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">ID сертификата</span><p class="cl-readonly-value">${esc(certId)}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Источник</span><p class="cl-readonly-value">${esc(sourceLabel(appeal.sourceKey))}</p></div>
+          ${certExtra}
+          <div class="cl-cert-row"><span class="cl-cert-label">Источник</span><p class="cl-readonly-value">${esc(sourceDisplay(appeal))}</p></div>
           <div class="cl-cert-row"><span class="cl-cert-label">Контакт</span><p class="cl-readonly-value">${esc(appeal.clientContact || "—")}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Рекомендовал</span><p class="cl-readonly-value">${esc(referrer?.name || appeal.referrerPartnerId)} · ${esc(appeal.referrerPartnerId)}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Клиент</span><p class="cl-readonly-value">${esc(appeal.clientName)} · ${esc(appeal.clientCity)} · ${esc(appeal.interest)} · ${esc(appeal.budgetHint)}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Скидка</span><p class="cl-readonly-value">${esc(appeal.discountPercent)}%</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Действует до</span><p class="cl-readonly-value">${esc(formatDate(appeal.certValidUntil))}</p></div>
-          <div class="cl-cert-row"><span class="cl-cert-label">Принимает</span><p class="cl-readonly-value">${esc(receiver?.name || appeal.receivingPartnerId)}</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Клиент</span><p class="cl-readonly-value">${esc(appeal.clientName)} · ${esc(appeal.clientCity)}</p></div>
+          ${manual || appeal.interest ? `<div class="cl-cert-row"><span class="cl-cert-label">Запрос</span><p class="cl-readonly-value">${esc(appeal.interest || "—")}</p></div>` : ""}
+          ${manual ? "" : `<div class="cl-cert-row"><span class="cl-cert-label">Бюджет (демо)</span><p class="cl-readonly-value">${esc(appeal.budgetHint)}</p></div>`}
+          <div class="cl-cert-row"><span class="cl-cert-label">Создано</span><p class="cl-readonly-value">${esc(formatDateTime(appeal.createdAt))} · ${esc(formatAgeSince(appeal.createdAt))}</p></div>
+          <div class="cl-cert-row"><span class="cl-cert-label">Принимает</span><p class="cl-readonly-value">${esc(receiver?.name || "—")}</p></div>
         </div>
       </section>`;
 
@@ -768,7 +950,7 @@
       const next = nextStageId(appeal);
       const nextLabel = next ? (systemLabel(next) || getWorkingStage(appeal.receivingPartnerId, next)?.label) : null;
       const statusOptions = pipelineFor(appeal.receivingPartnerId)
-        .filter((id) => id !== appeal.stageId)
+        .filter((id) => id !== appeal.stageId && canTransitionTo(appeal, id).ok)
         .map((id) => {
           const label = systemLabel(id) || getWorkingStage(appeal.receivingPartnerId, id)?.label || id;
           return `<option value="${esc(id)}">${esc(label)}</option>`;
@@ -779,8 +961,9 @@
         : "";
 
       workTab = `
-        ${paidPurchaseHtml(appeal, false)}
+        ${paidPurchaseHtml(appeal)}
         ${waitBlockHtml(appeal)}
+        <p id="detail-work-guard" class="cl-form-error" role="alert" hidden></p>
         <div class="cl-work-actions">
           ${nextLabel ? `<button type="button" class="pp-btn cl-btn-primary" id="detail-next" data-next="${esc(next)}">Следующий шаг: ${esc(nextLabel)}</button>` : ""}
           <div class="cl-status-picker">
@@ -811,7 +994,7 @@
         )
         .join("");
       workTab = `
-        ${paidPurchaseHtml(appeal, true)}
+        ${paidPurchaseHtml(appeal)}
         ${waitBlockHtml(appeal)}
         <p class="cl-readonly-hint">История и служебные заметки принимающего партнёра в этом прототипе скрыты.</p>
         <h3 style="margin:16px 0 8px;font-size:var(--pp-sm)">Публичные этапы</h3>
@@ -855,10 +1038,12 @@
       pushHistory(appeal, "Обновлена служебная заметка");
       renderDetail();
     });
-    document.getElementById("detail-wallet")?.addEventListener("click", (e) => {
+    const openFromBtn = (e) => {
       const id = /** @type {HTMLButtonElement} */ (e.currentTarget).getAttribute("data-purchase");
       if (id) openWalletDialog(id);
-    });
+    };
+    document.getElementById("detail-wallet")?.addEventListener("click", openFromBtn);
+    document.getElementById("detail-wallet-wait")?.addEventListener("click", openFromBtn);
   }
 
   function needsReview(stageId) {
@@ -868,6 +1053,15 @@
   function applyStageChange(appealId, stageId, fromRefusal) {
     const appeal = appeals.find((a) => a.id === appealId);
     if (!appeal || !stageId) return;
+    const guard = canTransitionTo(appeal, stageId);
+    if (!guard.ok) {
+      const work = document.getElementById("detail-work-guard");
+      if (work) {
+        work.hidden = false;
+        work.textContent = guard.msg;
+      }
+      return;
+    }
     if (!fromRefusal && needsReview(stageId)) {
       pendingReview = { appealId, stageId };
       openReviewDialog();
@@ -880,14 +1074,24 @@
     const label = systemLabel(stageId) || getWorkingStage(appeal.receivingPartnerId, stageId)?.label || stageId;
     appeal.stageId = stageId;
     if (stageId === SYSTEM.SHIPPED) {
-      appeal.shippedAt = todayIsoDate();
+      if (extra?.shippedAt) appeal.shippedAt = extra.shippedAt;
+      else if (!appeal.shippedAt) appeal.shippedAt = todayIsoDate();
     }
+  if (stageId === SYSTEM.RETURN && extra?.returnedAt) {
+      appeal.returnedAt = extra.returnedAt;
+    }
+    const walletExisted = Boolean(appeal.purchaseId);
     if (stageId === SYSTEM.PAID) {
-      if (extra?.paidAt) appeal.paidAt = extra.paidAt;
-      if (extra?.amount != null) appeal.paidAmount = extra.amount;
-      ensureWalletPurchase(appeal);
-      pushHistory(appeal, `Привязана демо-покупка ${appeal.purchaseId} (кошелёк)`);
+      if (!appeal.paidAt && extra?.paidAt) appeal.paidAt = extra.paidAt;
+      if (appeal.paidAmount == null && extra?.amount != null) appeal.paidAmount = extra.amount;
+      if (!walletExisted) {
+        ensureWalletPurchase(appeal);
+        pushHistory(appeal, `Оплачено · создана покупка ${appeal.purchaseId} в кошельке`);
+      } else if (!extra?.skipPaidHistory) {
+        pushHistory(appeal, `Статус обращения: ${label} (покупка ${appeal.purchaseId} без изменений)`);
+      }
     }
+    syncWalletFromAppeal(appeal);
     if (stageId === SYSTEM.REFUSED && extra?.reason) {
       appeal.refusedReason = extra.reason;
       pushHistory(appeal, "Отказ", extra.reason);
@@ -905,15 +1109,33 @@
     const purchase = walletPurchases[purchaseId];
     const body = document.getElementById("wallet-body");
     if (!purchase || !body) return;
+    const accrualBlock = purchase.accrualStatusLabel
+      ? `<div>
+        <div class="cl-wallet-kind cl-wallet-kind--referral">Начисление (не сумма покупки)</div>
+        <div>Статус: <strong>${esc(purchase.accrualStatusLabel)}</strong></div>
+        <div>${esc(purchase.accrualNote || "")}</div>
+        ${
+          purchase.nextConfirmationAt
+            ? `<div class="cl-meta">Окончание ${WAIT_DAYS}-дн. ожидания: ${esc(formatDate(purchase.nextConfirmationAt))}</div>`
+            : ""
+        }
+      </div>`
+      : `<p class="cl-meta">Начисление появится после отгрузки в существующем жизненном цикле кошелька.</p>`;
     body.innerHTML = `
       <div class="cl-wallet-card">
-        <span class="cl-wallet-kind cl-wallet-kind--purchase">${esc(purchase.title)}</span>
-        <div>ID: <strong>${esc(purchaseId)}</strong></div>
-        <div>Обращение: ${esc(purchase.appealId)}</div>
-        <div>Сумма (демо): ${esc(purchase.amountLabel)}</div>
-        <div>Статус: ${esc(purchase.statusLabel)}</div>
-        <p class="cl-note">${esc(purchase.note)}</p>
-        <p class="cl-note cl-note--legal">Реферальный payout по этой сделке живёт отдельной записью и попадает в 14-дневное ожидание только после отгрузки.</p>
+        <span class="cl-wallet-kind cl-wallet-kind--purchase">Покупка · Принято у меня (read-only)</span>
+        <div>ID покупки: <strong>${esc(purchaseId)}</strong></div>
+        <div>ID обращения: ${esc(purchase.appealId)}</div>
+        <div>ID сертификата: ${esc(purchase.certificateId)}</div>
+        ${
+          purchase.referrerName
+            ? `<div>Направил: ${esc(purchase.referrerName)}</div>`
+            : ""
+        }
+        <div>Статус покупки: <strong>${esc(purchase.orderStatusLabel)}</strong></div>
+        <div>${esc(purchase.paidSummary)}</div>
+        ${accrualBlock}
+        <p class="cl-note cl-note--legal">Демо-зеркало меток из репозитория: ORDER_STATUS_LABELS и «${esc(ACCRUAL_WAITING_LABEL)}» (history-labels / history-accrual-display). Без API и без прод-сайта.</p>
       </div>`;
     /** @type {HTMLDialogElement|null} */ (document.getElementById("wallet-dialog"))?.showModal();
   }
@@ -931,6 +1153,7 @@
   function submitManual(event) {
     event.preventDefault();
     const nameEl = /** @type {HTMLInputElement|null} */ (document.getElementById("manual-name"));
+    const interestEl = /** @type {HTMLInputElement|null} */ (document.getElementById("manual-interest"));
     const contactEl = /** @type {HTMLInputElement|null} */ (document.getElementById("manual-contact"));
     const sourceEl = /** @type {HTMLSelectElement|null} */ (document.getElementById("manual-source"));
     const err = document.getElementById("manual-error");
@@ -949,12 +1172,13 @@
     const created = {
       id,
       clientName: name,
-      certificateId: "",
+      certificateId: null,
       receivingPartnerId: RECEIVING.id,
-      referrerPartnerId: "DEMO-NO-REFERRER",
+      referrerPartnerId: null,
+      manualEntry: true,
       discountPercent: 0,
       certValidUntil: "",
-      interest: "—",
+      interest: interestEl?.value.trim() || "—",
       clientCity: RECEIVING.city,
       budgetHint: "—",
       stageId: SYSTEM.NEW,
@@ -1109,6 +1333,7 @@
           <input type="text" class="cl-input stage-label" value="${esc(stage.label)}" aria-label="Название этапа ${index + 1}" />
           <button type="button" class="pp-btn stage-up" aria-label="Выше">↑</button>
           <button type="button" class="pp-btn stage-down" aria-label="Ниже">↓</button>
+          <button type="button" class="pp-btn stage-archive" data-stage-index="${index}">В архив</button>
         </div>`;
       })
       .join("");
@@ -1138,6 +1363,11 @@
         <div id="reason-list">${reasons}</div>
         <button type="button" class="pp-btn" id="add-reason">Добавить причину</button>
       </section>
+      ${
+        settingsDraft.archivedStages?.length
+          ? `<section class="cl-settings-section"><h3>Архив этапов (история сохраняется)</h3><ul class="cl-meta">${settingsDraft.archivedStages.map((s) => `<li>${esc(s.label)}</li>`).join("")}</ul></section>`
+          : ""
+      }
       <p id="settings-error" class="cl-form-error" role="alert" hidden></p>`;
 
     body.querySelector("#add-stage")?.addEventListener("click", () => {
@@ -1179,7 +1409,15 @@
       btn.addEventListener("click", (e) => {
         const idx = Number(/** @type {HTMLElement} */ (e.currentTarget).getAttribute("data-reason-index"));
         const removed = settingsDraft.refusalReasons.splice(idx, 1)[0];
-        if (removed) settingsDraft.archivedStages.push({ id: `arch_${removed}`, label: removed });
+        if (removed) settingsDraft.archivedStages.push({ id: `arch_reason_${removed}`, label: `Причина: ${removed}` });
+        renderSettingsBody();
+      });
+    });
+    body.querySelectorAll(".stage-archive").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const idx = Number(/** @type {HTMLElement} */ (e.currentTarget).getAttribute("data-stage-index"));
+        const removed = settingsDraft.workingStages.splice(idx, 1)[0];
+        if (removed) settingsDraft.archivedStages.push(removed);
         renderSettingsBody();
       });
     });
@@ -1280,8 +1518,13 @@
     if (!pendingReview) return;
     const body = document.getElementById("review-body");
     const title = document.getElementById("review-title");
+    const reviewErr = document.getElementById("review-error");
     const appeal = appeals.find((a) => a.id === pendingReview.appealId);
     if (!body || !title || !appeal) return;
+    if (reviewErr) {
+      reviewErr.hidden = true;
+      reviewErr.textContent = "";
+    }
     const label = systemLabel(pendingReview.stageId) || pendingReview.stageId;
     title.textContent = `Подтверждение: ${label}`;
     let fields = "";
@@ -1289,7 +1532,7 @@
       fields = `<label class="cl-field"><span class="cl-field-label">Дата оплаты</span><input type="date" class="cl-input" id="review-date" required /></label>
         <label class="cl-field"><span class="cl-field-label">Сумма (демо, необязательно)</span><input type="number" class="cl-input" id="review-amount" min="0" step="1000" placeholder="Только для иллюстрации" /></label>`;
     } else if (pendingReview.stageId === SYSTEM.SHIPPED) {
-      fields = `<p class="cl-note">После отгрузки в демо запускается ${WAIT_DAYS}-дневное ожидание в кошельке для referral (не для покупки).</p>
+      fields = `<p class="cl-note">После отгрузки в демо — ожидание начисления в кошельке (${WAIT_DAYS} дн.), если есть направивший по сертификату.</p>
         <label class="cl-field"><span class="cl-field-label">Дата отгрузки</span><input type="date" class="cl-input" id="review-date" required /></label>`;
     } else if (pendingReview.stageId === SYSTEM.RETURN) {
       fields = `<p class="cl-note">Возврат приостанавливает демо-ожидание начисления. Расчёт удержаний не показан — открытый вопрос спецификации.</p>
@@ -1304,14 +1547,57 @@
     if (!pendingReview) return;
     const appeal = appeals.find((a) => a.id === pendingReview.appealId);
     const dateInput = /** @type {HTMLInputElement|null} */ (document.getElementById("review-date"));
-    if (!appeal || !dateInput?.value) return;
-    const iso = new Date(dateInput.value + "T12:00:00").toISOString();
+    const reviewErr = document.getElementById("review-error");
     const amountInput = /** @type {HTMLInputElement|null} */ (document.getElementById("review-amount"));
-    const extra = { paidAt: iso, amount: amountInput?.value ? Number(amountInput.value) : null };
-    if (pendingReview.stageId === SYSTEM.SHIPPED) {
-      appeal.shippedAt = iso;
+    if (!appeal || !dateInput?.value) {
+      if (reviewErr) {
+        reviewErr.hidden = false;
+        reviewErr.textContent = "Укажите дату.";
+      }
+      return;
     }
-    commitStageChange(appeal, pendingReview.stageId, pendingReview.stageId === SYSTEM.PAID ? extra : null);
+    const iso = new Date(dateInput.value + "T12:00:00").toISOString();
+    const createdMs = dateOnlyMs(appeal.createdAt);
+    const eventMs = dateOnlyMs(iso);
+    if (eventMs < createdMs) {
+      if (reviewErr) {
+        reviewErr.hidden = false;
+        reviewErr.textContent = "Дата не может быть раньше создания обращения.";
+      }
+      return;
+    }
+    let amount = null;
+    if (amountInput?.value.trim()) {
+      amount = Number(amountInput.value);
+      if (!Number.isFinite(amount) || amount < 0) {
+        if (reviewErr) {
+          reviewErr.hidden = false;
+          reviewErr.textContent = "Сумма должна быть неотрицательным числом.";
+        }
+        return;
+      }
+    }
+    if (pendingReview.stageId === SYSTEM.SHIPPED && appeal.paidAt && eventMs < dateOnlyMs(appeal.paidAt)) {
+      if (reviewErr) {
+        reviewErr.hidden = false;
+        reviewErr.textContent = "Дата отгрузки не может быть раньше оплаты.";
+      }
+      return;
+    }
+    if (pendingReview.stageId === SYSTEM.RETURN && appeal.shippedAt && eventMs < dateOnlyMs(appeal.shippedAt)) {
+      if (reviewErr) {
+        reviewErr.hidden = false;
+        reviewErr.textContent = "Дата возврата не может быть раньше отгрузки.";
+      }
+      return;
+    }
+    if (reviewErr) reviewErr.hidden = true;
+    const stage = pendingReview.stageId;
+    let extra = null;
+    if (stage === SYSTEM.PAID) extra = { paidAt: iso, amount };
+    else if (stage === SYSTEM.SHIPPED) extra = { shippedAt: iso };
+    else if (stage === SYSTEM.RETURN) extra = { returnedAt: iso };
+    commitStageChange(appeal, stage, extra);
     pendingReview = null;
     /** @type {HTMLDialogElement|null} */ (document.getElementById("review-dialog"))?.close();
   }
@@ -1336,8 +1622,29 @@
     if (selectedAppealId) renderDetail();
   }
 
+  let themeMemory = null;
+
+  function readStoredTheme() {
+    try {
+      const v = localStorage.getItem("pp-proto-theme");
+      if (v) themeMemory = v;
+      return v ?? themeMemory;
+    } catch {
+      return themeMemory;
+    }
+  }
+
+  function writeStoredTheme(value) {
+    themeMemory = value;
+    try {
+      localStorage.setItem("pp-proto-theme", value);
+    } catch {
+      /* opaque preview frame */
+    }
+  }
+
   function initTheme() {
-    const stored = localStorage.getItem("pp-proto-theme");
+    const stored = readStoredTheme();
     const dark = stored === "dark";
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     const btn = document.getElementById("theme-toggle");
@@ -1351,7 +1658,7 @@
     const dark = document.documentElement.getAttribute("data-theme") === "dark";
     const next = dark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("pp-proto-theme", next);
+    writeStoredTheme(next);
     const btn = document.getElementById("theme-toggle");
     if (btn) {
       btn.textContent = next === "dark" ? "Светлая тема" : "Тёмная тема";
@@ -1414,9 +1721,20 @@
     document.getElementById("detail-close")?.addEventListener("click", closeDetail);
 
     document.body.addEventListener("click", (e) => {
+      const walletBtn = /** @type {HTMLElement} */ (e.target).closest("[data-wallet-purchase]");
+      if (walletBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pid = walletBtn.getAttribute("data-wallet-purchase");
+        if (pid) openWalletDialog(pid);
+        return;
+      }
       const target = /** @type {HTMLElement} */ (e.target).closest("[data-appeal-id]");
       if (!target) return;
       openDetail(target.getAttribute("data-appeal-id"), target.getAttribute("data-mode") || "incoming");
+    });
+    ["funnel-from", "funnel-to"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("change", renderFunnel);
     });
 
     document.querySelectorAll("dialog").forEach((dialog) => {
