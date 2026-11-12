@@ -374,7 +374,7 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
     const toVal = s.funnelTo;
     const periodStart = fromVal ? new Date(`${fromVal}T00:00:00`) : new Date(2026, 9, 1);
     const periodEnd = toVal ? new Date(`${toVal}T23:59:59`) : new Date();
-    return filterAppeals(mode, configKey).filter((a) => {
+    return filterAppeals(mode, configKey, { lifecycle: "none" }).filter((a) => {
       const t = new Date(a.createdAt).getTime();
       return t >= periodStart.getTime() && t <= periodEnd.getTime();
     });
@@ -950,8 +950,40 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
     return true;
   }
 
+  function appealLifecycle(appeal, workspaceKey) {
+    if (!appeal.workspaceLifecycle) appeal.workspaceLifecycle = {};
+    if (!appeal.workspaceLifecycle[workspaceKey]) appeal.workspaceLifecycle[workspaceKey] = {};
+    return appeal.workspaceLifecycle[workspaceKey];
+  }
 
-  function filterAppeals(mode, configKey) {
+  function appealInBucket(appeal, workspaceKey, bucket) {
+    const lc = appeal.workspaceLifecycle?.[workspaceKey];
+    const archived = Boolean(lc?.archivedAt);
+    const deleted = Boolean(lc?.deletedAt);
+    if (bucket === "trash") return deleted;
+    if (bucket === "archive") return archived && !deleted;
+    return !archived && !deleted;
+  }
+
+  function clearBulkSelection(s) {
+    s.bulkSelectedIds = [];
+    s.bulkPanel = null;
+    s.bulkConfirm = null;
+  }
+
+  function isAppealLockedForBulkStage(appeal) {
+    if (appeal.stageId === SYSTEM.REFUSED || appeal.stageId === SYSTEM.RETURN) return true;
+    if (isFinancialStage(appeal.stageId)) return true;
+    if (appealHasPaidPurchase(appeal) || appeal.paidAt || appeal.shippedAt || appeal.returnedAt) return true;
+    return false;
+  }
+
+  function bulkWorkingStageOptions(partnerId) {
+    return pipelineFor(partnerId).filter((id) => !isFinancialStage(id) && id !== SYSTEM.REFUSED);
+  }
+
+  function filterAppeals(mode, configKey, opts = {}) {
+    const lifecycle = opts.lifecycle ?? (mode === "incoming" && configKey ? "bucket" : "none");
     const s = configKey ? ws(configKey) : null;
     const q = (s ? s.listQ : (document.getElementById(mode === "incoming" ? "search-incoming" : "search-outgoing")?.value || "")).trim().toLowerCase();
     const status = s ? s.listStatus : (document.getElementById(mode === "incoming" ? "filter-status-incoming" : "filter-status-outgoing")?.value || "Все статусы");
@@ -964,7 +996,13 @@ import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-pu
       const partner = document.getElementById("filter-partner-outgoing")?.value || "all";
       if (partner !== "all") list = list.filter((a) => a.receivingPartnerId === partner);
     }
-  list = list.filter((a) => {
+    if (lifecycle === "bucket" && configKey && mode === "incoming") {
+      const bucket = s?.listBucket || "active";
+      list = list.filter((a) => appealInBucket(a, configKey, bucket));
+    } else if (lifecycle === "active-only" && configKey && mode === "incoming") {
+      list = list.filter((a) => appealInBucket(a, configKey, "active"));
+    }
+    list = list.filter((a) => {
       if (!matchesSourceFilter(a, source)) return false;
       if (status !== "Все статусы" && stageLabel(a) !== status) return false;
       if (!q) return true;
@@ -1082,7 +1120,7 @@ function rowMetaSource(appeal, tab) {
 }
 
 function listKpis(config, tab) {
-  const list = filterAppeals(tab, config.key);
+  const list = filterAppeals(tab, config.key, { lifecycle: tab === "incoming" ? "active-only" : "none" });
   const total = list.length;
   const inWork = list.filter((a) => isActiveAppeal(a)).length;
   const paid = list.filter((a) => appealReachedPaid(a)).length;
@@ -1748,9 +1786,15 @@ function ws(key) {
       stageDraft: { selectedStageId: "", showCustom: false, customText: "", customError: "" },
       manualDraft: { name: "", interest: "", contact: "", source: "phone", showCustomChannel: false, customChannelText: "", customChannelError: "" },
       payDraft: null,
+      listBucket: "active",
+      bulkSelectedIds: [],
+      bulkPanel: null,
+      bulkConfirm: null,
     });
   }
   const s = workspaces.get(key);
+  if (!s.listBucket) s.listBucket = "active";
+  if (!s.bulkSelectedIds) s.bulkSelectedIds = [];
   if (!s.partnerOverlay) s.partnerOverlay = { refusalReasons: [], workingStages: [], manualChannels: [], payCategories: [] };
   return s;
 }
@@ -1842,6 +1886,7 @@ function ensureSeed(config) {
     if (!s.funnelPreset) applyFunnelPreset(s, "30");
     const caps = roleCaps(config.role);
     if (!caps.incoming) s.tab = "outgoing";
+    clearBulkSelection(s);
   }
   if (needsGlobalSeed) {
     sharedDatasetSeeded = true;
@@ -1854,31 +1899,154 @@ function backLink(config, label, action) {
   return `<button type="button" class="ca-back" data-ca-action="${action}">${icon} ${esc(label)}</button>`;
 }
 
+function renderBulkConfirmPanel(s) {
+  if (!s.bulkConfirm) return "";
+  const { kind, count } = s.bulkConfirm;
+  const copy =
+    kind === "archive"
+      ? `Переместить ${count} обращений в архив? Этапы и покупки не изменятся.`
+      : kind === "delete"
+        ? `Скрыть ${count} обращений в корзину? История, покупки и сертификаты сохранятся в демо.`
+        : kind === "unarchive"
+          ? `Вернуть ${count} обращений в активный список?`
+          : `Восстановить ${count} обращений из корзины?`;
+  return `<aside class="panel stack ca-bulk-confirm" role="status"><p>${esc(copy)}</p><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="bulk:confirm-no">Отмена</button><button type="button" class="btn primary" data-ca-action="bulk:confirm-yes">Подтвердить</button></div></aside>`;
+}
+
+function renderBulkEditPanel(config, count) {
+  const lockedHint =
+    count > 0
+      ? `<p class="small muted">Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат». Для оплаченных и закрытых обращений доступно только дополнение заметки.</p>`
+      : "";
+  const options = bulkWorkingStageOptions(RECEIVING.id)
+    .map((id) => {
+      const label = systemLabel(id) || getWorkingStage(RECEIVING.id, id)?.label || id;
+      return `<option value="${esc(id)}">${esc(label)}</option>`;
+    })
+    .join("");
+  return `<aside class="panel stack ca-bulk-edit" data-ca-bulk-edit><h3>Групповое изменение · ${count}</h3>${lockedHint}<label class="field">Этап работ<select name="bulk-stage"><option value="">Не менять</option>${options}</select><small class="input-hint">Только ваши рабочие этапы, без оплаты и отгрузки.</small></label><label class="field">Служебная заметка<textarea name="bulk-note" rows="2" maxlength="2000" placeholder="Текст для команды"></textarea></label><label class="field ca-check-line"><input type="checkbox" name="bulk-note-append" checked> Добавить к существующей заметке</label><div class="ca-form-actions"><button type="button" class="btn ghost" data-ca-action="bulk:edit-cancel">Отмена</button><button type="button" class="btn primary" data-ca-action="bulk:edit-apply">Применить</button></div></aside>`;
+}
+
+function applyBulkArchiveDelete(config, hooks, kind) {
+  const s = ws(config.key);
+  const ids = [...(s.bulkSelectedIds || [])];
+  if (!ids.length) return;
+  let n = 0;
+  ids.forEach((id) => {
+    const appeal = appeals.find((a) => a.id === id);
+    if (!appeal) return;
+    const lc = appealLifecycle(appeal, config.key);
+    if (kind === "archive") {
+      if (!lc.deletedAt) {
+        lc.archivedAt = new Date().toISOString();
+        pushHistory(appeal, "Перемещено в архив (групповое действие)");
+        n++;
+      }
+    } else if (kind === "delete") {
+      lc.deletedAt = new Date().toISOString();
+      pushHistory(appeal, "Скрыто в корзину (групповое действие)");
+      n++;
+    } else if (kind === "unarchive") {
+      if (lc.archivedAt) {
+        delete lc.archivedAt;
+        pushHistory(appeal, "Возвращено в активный список");
+        n++;
+      }
+    } else if (kind === "restore") {
+      if (lc.deletedAt) {
+        delete lc.deletedAt;
+        pushHistory(appeal, "Восстановлено из корзины");
+        n++;
+      }
+    }
+  });
+  clearBulkSelection(s);
+  s.bulkConfirm = null;
+  hooks.notify?.(n ? `Обновлено обращений: ${n}` : "Нет изменений");
+  afterDataChange();
+  hooks.refresh();
+}
+
+function applyBulkEdit(config, hooks) {
+  const s = ws(config.key);
+  const ids = [...(s.bulkSelectedIds || [])];
+  if (!ids.length) return;
+  const root = document.querySelector("[data-ca-bulk-edit]");
+  const stageId = root?.querySelector('[name="bulk-stage"]')?.value || "";
+  const note = root?.querySelector('[name="bulk-note"]')?.value?.trim() || "";
+  const append = root?.querySelector('[name="bulk-note-append"]')?.checked !== false;
+  if (!stageId && !note) {
+    hooks.notify?.("Укажите этап или заметку", "info");
+    return;
+  }
+  let changed = 0;
+  ids.forEach((id) => {
+    const appeal = appeals.find((a) => a.id === id);
+    if (!appeal) return;
+    let touched = false;
+    if (stageId && !isAppealLockedForBulkStage(appeal) && !isFinancialStage(stageId) && stageId !== SYSTEM.REFUSED) {
+      const label = systemLabel(stageId) || getWorkingStage(appeal.receivingPartnerId, stageId)?.label || stageId;
+      appeal.stageId = stageId;
+      pushHistory(appeal, `Этап изменён: ${label} (групповое действие)`);
+      touched = true;
+    }
+    if (note) {
+      const piece = note.slice(0, 2000);
+      appeal.privateNotes = append
+        ? [appeal.privateNotes, piece].filter(Boolean).join("\n").slice(0, 4000)
+        : piece;
+      pushHistory(appeal, "Обновлена служебная заметка (групповое действие)");
+      touched = true;
+    }
+    if (touched) changed++;
+  });
+  if (!changed) {
+    hooks.notify?.("Нет изменений для выбранных обращений", "info");
+    return;
+  }
+  clearBulkSelection(s);
+  s.bulkPanel = null;
+  hooks.notify?.(`Обновлено обращений: ${changed}`);
+  afterDataChange();
+  hooks.refresh();
+}
+
 function renderListPage(config) {
   const s = ws(config.key);
   const caps = roleCaps(config.role);
   const readOnly = config.readOnly;
   const icon = config.icon;
   const incomingList = filterAppeals("incoming", config.key);
-  const outgoingList = filterAppeals("outgoing", config.key);
+  const outgoingList = filterAppeals("outgoing", config.key, { lifecycle: "none" });
   const tab = caps.incoming && caps.outgoing ? s.tab : caps.incoming ? "incoming" : "outgoing";
   const list = tab === "incoming" ? incomingList : outgoingList;
+  const bulkOn = !readOnly && tab === "incoming";
+  const selected = new Set((s.bulkSelectedIds || []).filter((id) => list.some((a) => a.id === id)));
+  s.bulkSelectedIds = [...selected];
   const kpi = listKpis(config, tab);
-  const kpiStrip = `<div class="ca-kpi-strip" role="list">${[
-    ["В работе", kpi.inWork],
-    ["Оплачено", kpi.paid],
-    ["Отгружено", kpi.shipped],
-    ["Конверсия в оплату", kpi.conv],
-  ]
-    .map(
-      ([label, val]) =>
-        `<div class="ca-kpi panel" role="listitem"><span class="small muted">${esc(label)}</span><strong class="ca-kpi-val">${esc(String(val))}</strong></div>`,
-    )
-    .join("")}</div>`;
+  const showKpi = tab !== "incoming" || (s.listBucket || "active") === "active";
+  const kpiStrip = showKpi
+    ? `<div class="ca-kpi-strip" role="list">${[
+        ["В работе", kpi.inWork],
+        ["Оплачено", kpi.paid],
+        ["Отгружено", kpi.shipped],
+        ["Конверсия в оплату", kpi.conv],
+      ]
+        .map(
+          ([label, val]) =>
+            `<div class="ca-kpi panel" role="listitem"><span class="small muted">${esc(label)}</span><strong class="ca-kpi-val">${esc(String(val))}</strong></div>`,
+        )
+        .join("")}</div>`
+    : "";
+  const bucket = s.listBucket || "active";
+  const bucketTabs = bulkOn
+    ? `<div class="ca-bucket-tabs ca-seg" role="tablist" aria-label="Список обращений"><button type="button" role="tab" aria-selected="${bucket === "active"}" data-ca-action="bucket:active">Активные</button><button type="button" role="tab" aria-selected="${bucket === "archive"}" data-ca-action="bucket:archive">Архив</button><button type="button" role="tab" aria-selected="${bucket === "trash"}" data-ca-action="bucket:trash">Корзина</button></div>`
+    : "";
   const metaHeader = tab === "outgoing" ? "Принимает" : "Источник";
+  const allChecked = list.length > 0 && list.every((a) => selected.has(a.id));
   const listHead =
     list.length > 0
-      ? `<div class="ca-row ca-row--head" role="presentation"><span class="ca-row-name small muted">Клиент</span><span class="ca-row-request small muted">Запрос</span><span class="ca-row-meta small muted">${esc(metaHeader)}</span><span class="ca-row-status small muted">Статус</span><span class="ca-row-amount small muted">Сумма</span><span class="ca-row-age small muted">Создано</span><span class="ca-chev" aria-hidden="true"></span></div>`
+      ? `<div class="ca-row ca-row--head" role="presentation">${bulkOn ? `<label class="ca-row-check ca-row-check--head"><input type="checkbox" data-ca-bulk-select-all aria-label="Выбрать все видимые" ${allChecked ? "checked" : ""}></label>` : ""}<span class="ca-row-name small muted">Клиент</span><span class="ca-row-request small muted">Запрос</span><span class="ca-row-meta small muted">${esc(metaHeader)}</span><span class="ca-row-status small muted">Статус</span><span class="ca-row-amount small muted">Сумма</span><span class="ca-row-age small muted">Создано</span><span class="ca-chev" aria-hidden="true"></span></div>`
       : "";
   const rows = list
     .map((a) => {
@@ -1886,7 +2054,11 @@ function renderListPage(config) {
       const amt = label
         ? `<span class="ca-amount">${esc(label)}</span>`
         : `<span class="ca-amount ca-amount--empty">—</span>`;
-      return `<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button>`;
+      const checked = selected.has(a.id);
+      const check = bulkOn
+        ? `<label class="ca-row-check"><input type="checkbox" data-ca-bulk-id="${esc(a.id)}" aria-label="Выбрать ${esc(a.clientName)}" ${checked ? "checked" : ""}></label>`
+        : "";
+      return `<div class="ca-row-lane">${check}<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button></div>`;
     })
     .join("");
   const tabs =
@@ -1894,9 +2066,31 @@ function renderListPage(config) {
       ? `<div class="ca-tabs wallet-direction__tabs" role="tablist"><button type="button" class="wallet-direction__tab${tab === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${tab === "incoming"}" data-ca-action="tab:incoming">Пришли ко мне · ${incomingList.length}</button><button type="button" class="wallet-direction__tab${tab === "outgoing" ? " is-active" : ""}" role="tab" aria-selected="${tab === "outgoing"}" data-ca-action="tab:outgoing">Я направил · ${outgoingList.length}</button></div>`
       : "";
   const emptyIcon = icon?.("inbox") || "";
+  const emptyTitle =
+    bucket === "archive" ? "В архиве пока пусто" : bucket === "trash" ? "Корзина пуста" : "Пока нет обращений";
+  const emptyHint =
+    bucket === "archive"
+      ? "Сюда попадают обращения, с которыми вы закончили работу в списке."
+      : bucket === "trash"
+        ? "Удалённые в демо обращения можно восстановить отсюда."
+        : "Сканируйте сертификат или добавьте клиента — обращение появится в списке.";
   const empty =
     !list.length &&
-    `<section class="panel empty ca-empty"><div class="ca-empty-icon" aria-hidden="true">${emptyIcon}</div><h2>Пока нет обращений</h2><p class="muted">Сканируйте сертификат или добавьте клиента — обращение появится в списке.</p><div class="ca-actions-row">${!readOnly && caps.canReceive && tab === "incoming" ? `<button type="button" class="btn primary" data-ca-action="nav:scan">Сканировать сертификат</button><button type="button" class="btn ghost" data-ca-action="nav:manual">Добавить клиента</button>` : !readOnly && tab === "incoming" ? `<button type="button" class="btn primary" data-ca-action="nav:scan">Сканировать сертификат</button>` : ""}</div></section>`;
+    `<section class="panel empty ca-empty"><div class="ca-empty-icon" aria-hidden="true">${emptyIcon}</div><h2>${esc(emptyTitle)}</h2><p class="muted">${esc(emptyHint)}</p><div class="ca-actions-row">${!readOnly && caps.canReceive && tab === "incoming" && bucket === "active" ? `<button type="button" class="btn primary" data-ca-action="nav:scan">Сканировать сертификат</button><button type="button" class="btn ghost" data-ca-action="nav:manual">Добавить клиента</button>` : !readOnly && tab === "incoming" && bucket === "active" ? `<button type="button" class="btn primary" data-ca-action="nav:scan">Сканировать сертификат</button>` : ""}${bucket !== "active" ? `<button type="button" class="btn ghost" data-ca-action="bucket:active">К активным</button>` : ""}</div></section>`;
+  const selCount = selected.size;
+  const bulkBar =
+    bulkOn && selCount > 0
+      ? `<motion class="ca-bulk-bar panel" role="toolbar" aria-label="Групповые действия">
+      <span class="ca-bulk-count">Выбрано: <strong>${selCount}</strong></span>
+      <div class="ca-bulk-actions">
+        ${bucket === "active" ? `<button type="button" class="btn ghost small-btn" data-ca-action="bulk:edit-open">Редактировать</button><button type="button" class="btn ghost small-btn" data-ca-action="bulk:archive-ask">В архив</button><button type="button" class="btn ghost small-btn" data-ca-action="bulk:delete-ask">Удалить</button>` : ""}
+        ${bucket === "archive" ? `<button type="button" class="btn ghost small-btn" data-ca-action="bulk:unarchive-ask">Вернуть в активные</button><button type="button" class="btn ghost small-btn" data-ca-action="bulk:delete-ask">В корзину</button>` : ""}
+        ${bucket === "trash" ? `<button type="button" class="btn primary small-btn" data-ca-action="bulk:restore-ask">Восстановить</button>` : ""}
+        <button type="button" class="btn ghost small-btn" data-ca-action="bulk:clear">Сбросить выбор</button>
+      </div></motion>`.replace(/<motion/g, "<div").replace(/<\/motion>/g, "</div>")
+      : "";
+  const bulkEdit = bulkOn && s.bulkPanel === "edit" && selCount > 0 ? renderBulkEditPanel(config, selCount) : "";
+  const bulkConfirm = bulkOn ? renderBulkConfirmPanel(s) : "";
   const quietIcon = (name) => icon?.(name) || "";
   const analyticsBtn = `<button type="button" class="btn ghost ca-quiet-btn" data-ca-action="nav:analytics">${quietIcon("bar-chart-3")} Аналитика</button>`;
   const settingsBtn = `<button type="button" class="btn ghost ca-quiet-btn" data-ca-action="nav:settings">${quietIcon("settings-2")} Этапы и причины</button>`;
@@ -1909,7 +2103,8 @@ function renderListPage(config) {
           ? `<p class="notice">Только просмотр: изменять статусы и заметки нельзя.</p>`
           : "";
   const filters = `<div class="ca-filters panel"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field ca-filter">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field ca-filter">Источник<select data-ca-input="source"></select></label>` : ""}</div>`;
-  return `${tabs}${kpiStrip}${actions}${filters}${empty || `<div class="ca-rows">${listHead}${rows}</div>`}`;
+  const rowsWrap = list.length ? `<div class="ca-rows${bulkOn ? " ca-rows--bulk" : ""}">${listHead}${rows}</div>` : "";
+  return `${tabs}${bucketTabs}${kpiStrip}${actions}${bulkConfirm}${bulkBar}${bulkEdit}${filters}${empty || rowsWrap}`;
 }
 
 export function renderClientAppeals(config) {
@@ -2397,6 +2592,7 @@ export function resetClientAppealsNav(config) {
   s.inlinePanel = null;
   s.detailPickStage = false;
   s.showRefusal = null;
+  clearBulkSelection(s);
 }
 
 export function primeClientAppealsView(config, view) {
@@ -2438,6 +2634,7 @@ export function hydrateClientAppeals(hooks) {
   if (root.dataset.caBound === "1") return;
   root.dataset.caBound = "1";
   root.addEventListener("click", (e) => {
+    if (e.target.closest(".ca-row-check, [data-ca-bulk-id]")) return;
     const btn = e.target.closest("[data-ca-action]");
     if (!btn || !root.contains(btn)) return;
     const action = btn.getAttribute("data-ca-action");
@@ -2448,9 +2645,9 @@ export function hydrateClientAppeals(hooks) {
   root.addEventListener("input", (e) => {
     const t = e.target;
     if (!root.contains(t)) return;
-    if (t.matches('[data-ca-input="q"]')) { s.listQ = t.value; hooks.refresh(); }
-    if (t.matches('[data-ca-input="status"]')) { s.listStatus = t.value; hooks.refresh(); }
-    if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; hooks.refresh(); }
+    if (t.matches('[data-ca-input="q"]')) { s.listQ = t.value; clearBulkSelection(s); hooks.refresh(); }
+    if (t.matches('[data-ca-input="status"]')) { s.listStatus = t.value; clearBulkSelection(s); hooks.refresh(); }
+    if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
     if (t.matches("#ca-manual-form [name]")) syncManualDraftFromDom(s);
@@ -2466,6 +2663,23 @@ export function hydrateClientAppeals(hooks) {
   root.addEventListener("change", (e) => {
     const t = e.target;
     if (!root.contains(t)) return;
+    if (t.matches("[data-ca-bulk-id]")) {
+      const id = t.getAttribute("data-ca-bulk-id");
+      const set = new Set(s.bulkSelectedIds || []);
+      if (t.checked) set.add(id);
+      else set.delete(id);
+      s.bulkSelectedIds = [...set];
+      s.bulkConfirm = null;
+      hooks.refresh();
+      return;
+    }
+    if (t.matches("[data-ca-bulk-select-all]")) {
+      const list = filterAppeals("incoming", config.key);
+      s.bulkSelectedIds = t.checked ? list.map((a) => a.id) : [];
+      s.bulkConfirm = null;
+      hooks.refresh();
+      return;
+    }
     if (t.matches('[data-ca-input="detail-status"]')) syncStageDraftFromDom(s);
     const payForm = t.closest(".ca-pay-form");
     if (payForm) {
@@ -2513,6 +2727,63 @@ function handleCaAction(action, config, hooks) {
   hooks.clearNotice?.();
   if (action === "pay:profile-categories") {
     beginPayProfileCategoriesTrip(config, { ...hooks, openProfileForPayCategories: config.openProfileForPayCategories });
+    return;
+  }
+  if (action.startsWith("bucket:")) {
+    s.listBucket = action.split(":")[1] || "active";
+    clearBulkSelection(s);
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:clear") {
+    clearBulkSelection(s);
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:edit-open") {
+    s.bulkPanel = "edit";
+    s.bulkConfirm = null;
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:edit-cancel") {
+    s.bulkPanel = null;
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:edit-apply") {
+    applyBulkEdit(config, hooks);
+    return;
+  }
+  if (action === "bulk:archive-ask") {
+    s.bulkConfirm = { kind: "archive", count: (s.bulkSelectedIds || []).length };
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:delete-ask") {
+    s.bulkConfirm = { kind: "delete", count: (s.bulkSelectedIds || []).length };
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:unarchive-ask") {
+    s.bulkConfirm = { kind: "unarchive", count: (s.bulkSelectedIds || []).length };
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:restore-ask") {
+    s.bulkConfirm = { kind: "restore", count: (s.bulkSelectedIds || []).length };
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:confirm-no") {
+    s.bulkConfirm = null;
+    hooks.refresh();
+    return;
+  }
+  if (action === "bulk:confirm-yes") {
+    const kind = s.bulkConfirm?.kind;
+    if (!kind) return;
+    applyBulkArchiveDelete(config, hooks, kind);
     return;
   }
   if (action.startsWith("nav:")) {
@@ -2749,7 +3020,13 @@ function handleCaAction(action, config, hooks) {
     hooks.refresh();
     return;
   }
-  if (action.startsWith("tab:")) { s.tab = action.split(":")[1]; activeTab = s.tab; hooks.refresh(); return; }
+  if (action.startsWith("tab:")) {
+    s.tab = action.split(":")[1];
+    activeTab = s.tab;
+    clearBulkSelection(s);
+    hooks.refresh();
+    return;
+  }
   if (action.startsWith("open:")) {
     s.selectedId = action.split(":")[1];
     activeTab = s.tab;
