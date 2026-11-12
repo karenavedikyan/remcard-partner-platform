@@ -280,7 +280,10 @@ export function createCabinetStandaloneHost(config) {
     } catch (_) {}
   }
 
-  function doOpen(pageN, { extraQuery = "", returnCtx = null, chain = false, embedCtx = null } = {}) {
+  function doOpen(
+    pageN,
+    { extraQuery = "", returnCtx = null, chain = false, replace = false, embedCtx = null } = {},
+  ) {
     if (config.getEmbedGuardKey) embedGuardKey = config.getEmbedGuardKey();
     if (!assertCanOpen(pageN)) return false;
     if (getScreen?.() !== "cabinet") {
@@ -290,7 +293,7 @@ export function createCabinetStandaloneHost(config) {
     const url = buildEmbedUrl(pageN, extraQuery, urlBridge);
     if (!url || !def) return false;
 
-    if (chain && openPageN) {
+    if (!replace && chain && openPageN) {
       const leavingCtx = { ...(openCtx || {}) };
       if (embedCtx?.walletState != null) {
         leavingCtx.walletState = embedCtx.walletState;
@@ -342,7 +345,8 @@ export function createCabinetStandaloneHost(config) {
       const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
       doOpen(Number(data.pageN), {
         extraQuery: data.query || "",
-        chain: true,
+        chain: !data.replace,
+        replace: !!data.replace,
         embedCtx: nextCtx,
       });
       return;

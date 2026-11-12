@@ -41,12 +41,18 @@ assert.match(embed143, /type: "supplemental"/, "143 posts supplemental actions")
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
 assert.match(walletHistory, /data-purchase-embed/, "147 contextual purchase embed handler");
+const purchaseDetail = readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8");
+assert.match(purchaseDetail, /__protoCabinetEmbedBack/, "144 history uses embed back to 147");
+assert.match(purchaseDetail, /replace:\s*true/, "144 document ops replace-navigate to 147");
+const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
+assert.match(embedChild, /replace:/, "embed child posts replace nav");
+assert.match(host, /replace:\s*!!data\.replace/, "host honors replace nav");
 const receiptEmbed = readFileSync(path.join(root, "partner/partner-reward-receipt-embed.js"), "utf8");
 assert.match(receiptEmbed, /Начисление профклиенту/, "145 merchant hero copy");
 assert.match(receiptEmbed, /детализация расчёта недоступна/, "145 hides borrowed calc breakdown");
 assert.match(
   host,
-  /if \(chain && openPageN\)[\s\S]{0,400}if \(embedCtx != null\) openCtx = embedCtx;/,
+  /if \(!replace && chain && openPageN\)[\s\S]{0,450}if \(embedCtx != null\) openCtx = embedCtx;/,
   "chain push before ctx swap",
 );
 const walletHistoryHtml = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");

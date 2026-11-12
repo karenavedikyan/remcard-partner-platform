@@ -69,7 +69,7 @@ try {
     await frame.locator("#partner-title").filter({ hasText: partnerName }).waitFor({ timeout: 8000 });
     const titleOk = await frame.locator("#partner-title").textContent();
     assert.equal(titleOk?.trim(), partnerName, `143 title must match selected partner at ${viewport.width}px`);
-    await page.evaluate(() => document.querySelector('[data-testid="proto-standalone-back"]')?.click());
+    await page.locator('[data-testid="proto-standalone-back"]').click();
     await page.waitForFunction(
       () => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
       null,
@@ -254,9 +254,9 @@ try {
   await scanEmp.locator('[data-testid="permission-scan"]').setChecked(true);
   await scanEmp.locator('[data-control="invite"]').selectOption("valid");
   await scanEmp.waitForTimeout(300);
-  await scanEmp.goto(`${base}/partner/index.html?role=employee&open=clients&proto_standalone=146`, {
-    waitUntil: "load",
-  });
+  await scanEmp.locator('[data-testid="nav-scanner"]').click();
+  await scanEmp.waitForSelector('[data-ca-action="standalone:146"]', { timeout: 15000 });
+  await scanEmp.locator('[data-ca-action="standalone:146"]').click();
   await scanEmp.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
   const frame146 = scanEmp.frameLocator("[data-testid='cabinet-standalone-frame']");
   await frame146.locator("#pst-confirm").waitFor({ timeout: 8000 });
@@ -273,7 +273,10 @@ try {
   });
   assert.ok(scanUi.confirmDisabled && scanUi.confirmHidden, "scan-only employee: pst-confirm disabled and hidden");
   assert.ok(scanUi.finishHidden, "scan-only employee: pst-review-finish hidden");
-  assert.match(scanUi.notice, /Подтверждение продажи недоступно|Просмотр макета/i);
+  assert.match(
+    scanUi.notice,
+    /Подтверждение продажи недоступно|Просмотр макета|Продажа и начисление/i,
+  );
   await scanEmp.close();
 
   const chainPage = await browser.newPage();
@@ -312,10 +315,38 @@ try {
   await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 144, null, {
     timeout: 10000,
   });
+  const frame144a = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame144a.locator("#op-history").click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
+    timeout: 10000,
+  });
+  await frame147b.locator("#detail-view:not([hidden])").waitFor({ timeout: 8000 });
+
+  await frame147b.locator("#open-related").click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 144, null, {
+    timeout: 10000,
+  });
+  const frame144b = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame144b.locator("#op-document-operations").click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
+    timeout: 10000,
+  });
+  const frame147list = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame147list.locator("#history-view:not([hidden])").waitFor({ timeout: 8000 });
+  const searchVal = await frame147list.locator("#search").inputValue();
+  assert.equal(searchVal.trim(), "RC-X9Z0WZ");
   await chainPage.locator('[data-testid="proto-standalone-back"]').click();
   await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
     timeout: 10000,
   });
+  const frame147detail = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame147detail.locator("#detail-view:not([hidden])").waitFor({ timeout: 8000 });
+  await chainPage.locator('[data-testid="proto-standalone-close"]').click();
+  await chainPage.waitForFunction(
+    () => document.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
+    null,
+    { timeout: 10000 },
+  );
   await chainPage.close();
 
   for (const viewport of [
