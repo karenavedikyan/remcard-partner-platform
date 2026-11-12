@@ -917,9 +917,14 @@ import { emptyDatasetOn } from "./empty-states.js?v=es2";
       if (!appeal.paidAt && extra?.paidAt) appeal.paidAt = extra.paidAt;
       if (extra?.paidAmountKopecks != null) appeal.paidAmountKopecks = extra.paidAmountKopecks;
       else if (appeal.paidAmountKopecks == null && appeal.paidAmount == null && extra?.amount != null) appeal.paidAmount = extra.amount;
-      if (!walletExisted) {
+      if (extra?.paidHistoryLine) {
         ensureWalletPurchase(appeal);
-        pushHistory(appeal, `Оплачено · покупка появилась в кошельке (${appeal.purchaseId})`);
+        pushHistory(appeal, extra.paidHistoryLine);
+      } else if (!walletExisted) {
+        ensureWalletPurchase(appeal);
+        if (!extra?.skipPaidHistory) {
+          pushHistory(appeal, `Оплачено · покупка появилась в кошельке (${appeal.purchaseId})`);
+        }
       } else if (!extra?.skipPaidHistory) {
         pushHistory(appeal, `Статус обращения: ${label} (покупка ${appeal.purchaseId} без изменений)`);
       }
@@ -1166,6 +1171,59 @@ function rowAccrualSnapshot(row, appeal) {
   return { text: "подтверждено", phase: "confirmed" };
 }
 
+function categoryCountRu(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} категория`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} категории`;
+  return `${n} категорий`;
+}
+
+function paidHistoryLineFromPayment(totalKopecks, categoryCount, paidIso) {
+  return `Оплачено ${formatRubFromKopecks(totalKopecks)} · ${categoryCountRu(categoryCount)} · ${formatDate(paidIso)}`;
+}
+
+function categoryBreakdownDisplay(row, appeal) {
+  if (!canAccrueReferral(appeal) || isManualAppeal(appeal)) {
+    return {
+      accrual: false,
+      kindLabel: row.kind === "service" ? "Услуга" : "Товар",
+    };
+  }
+  const delay = row.accrualDelayDays ?? WAIT_DAYS;
+  const snap = rowAccrualSnapshot(row, appeal);
+  const phase = snap?.phase ?? "handoff";
+  const progressPct =
+    phase === "waiting" && snap?.delayDays
+      ? Math.round(((snap.delayDays - snap.daysLeft) / snap.delayDays) * 100)
+      : phase === "confirmed"
+        ? 100
+        : 0;
+  return {
+    accrual: true,
+    kindLabel: row.kind === "service" ? "Услуга" : "Товар",
+    delayDays: delay,
+    delaySaved: `Срок: ${formatDaysRu(delay)}`,
+    stateText: snap?.text ?? "ожидает передачи",
+    phase,
+    progressPct: Math.max(0, Math.min(100, progressPct)),
+  };
+}
+
+function renderPayBreakdownList(appeal, rows) {
+  if (!rows?.length) return "";
+  return `<ul class="ca-pay-breakdown">${rows
+    .map((row) => {
+      const meta = categoryBreakdownDisplay(row, appeal);
+      const accrualMeta = meta.accrual
+        ? `<span class="ca-bd-delay">${esc(meta.delaySaved)}</span><span class="ca-bd-state">${esc(meta.stateText)}</span>`
+        : `<span class="ca-bd-state">${esc(meta.kindLabel)}</span>`;
+      const kindPart = meta.accrual ? `<span class="ca-bd-kind">${esc(meta.kindLabel)}</span>` : "";
+      return `<li class="ca-pay-breakdown-item"><span class="ca-bd-main"><span class="ca-bd-cat">${esc(row.categoryLabel || row.categoryKey)}</span><span class="ca-amount ca-bd-amt">${esc(formatRubFromKopecks(row.amountKopecks))}</span></span><span class="ca-bd-meta small muted">${kindPart}${accrualMeta}</span></li>`;
+    })
+    .join("")}</ul>`;
+}
+
 function aggregateRewardLabel(appeal) {
   const bd = appeal.purchaseBreakdown;
   if (!bd?.rows?.length || !canAccrueReferral(appeal) || !appeal.shippedAt) return null;
@@ -1337,7 +1395,8 @@ function submitPaidCategoryForm(ev, config, hooks) {
   }
   savePurchaseBreakdown(appeal, rowsOut, total, iso);
   if (appeal.stageId !== SYSTEM.PAID) {
-    commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, paidAmountKopecks: total, skipPaidHistory: rowsOut.length > 0 });
+    const paidHistoryLine = paidHistoryLineFromPayment(total, rowsOut.length, iso);
+    commitStageChange(appeal, SYSTEM.PAID, { paidAt: iso, paidAmountKopecks: total, skipPaidHistory: true, paidHistoryLine });
   }
   else {
     appeal.paidAt = iso;
@@ -1620,11 +1679,33 @@ function renderPurchaseSideCard(appeal) {
 }
 
 function renderWaitProgress(appeal) {
-  const wallet = syncWalletFromAppeal(appeal);
+  syncWalletFromAppeal(appeal);
   if (appeal.stageId !== SYSTEM.SHIPPED) return "";
-  const left = wallet?.waitDaysLeft != null ? Math.max(0, Math.min(WAIT_DAYS, wallet.waitDaysLeft)) : referralWaitDaysLeft(appeal.shippedAt);
-  const pct = Math.round(((WAIT_DAYS - left) / WAIT_DAYS) * 100);
-  return `<div class="ca-wait-progress"><div class="ca-progress" aria-hidden="true"><i style="width:${pct}%"></i></div><p class="small muted">Осталось ${left} из ${WAIT_DAYS} календарных дней</p><p class="small muted">${esc(WALLET_CALENDAR_NOTE)}</p></div>`;
+  if (!canAccrueReferral(appeal) || isManualAppeal(appeal)) return "";
+  const rows = appeal.purchaseBreakdown?.rows;
+  if (rows?.length) {
+    const items = rows
+      .map((row) => {
+        const meta = categoryBreakdownDisplay(row, appeal);
+        if (!meta.accrual) return "";
+        const bar =
+          meta.phase === "waiting"
+            ? `<div class="ca-progress ca-progress--row" aria-hidden="true"><i style="width:${meta.progressPct}%"></i></div>`
+            : meta.phase === "confirmed"
+              ? `<div class="ca-progress ca-progress--row" aria-hidden="true"><i style="width:100%"></i></div>`
+              : "";
+        return `<li class="ca-wait-row"><span class="ca-wait-row-head"><strong>${esc(row.categoryLabel || row.categoryKey)}</strong><span class="small muted">${esc(meta.delaySaved)}</span></span>${bar}<p class="small muted ca-wait-row-state">${esc(meta.stateText)}</p></li>`;
+      })
+      .filter(Boolean)
+      .join("");
+    if (!items) return "";
+    return `<ul class="ca-wait-by-cat">${items}</ul><p class="small muted ca-wait-note">${esc(WALLET_CALENDAR_NOTE)}</p>`;
+  }
+  const wallet = walletPurchases[appeal.purchaseId];
+  const totalDelay = WAIT_DAYS;
+  const left = wallet?.waitDaysLeft != null ? Math.max(0, wallet.waitDaysLeft) : referralWaitDaysLeft(appeal.shippedAt);
+  const pct = totalDelay > 0 ? Math.round(((totalDelay - left) / totalDelay) * 100) : 100;
+  return `<div class="ca-wait-progress"><div class="ca-progress" aria-hidden="true"><i style="width:${pct}%"></i></div><p class="small muted">Осталось ${left} из ${totalDelay} календарных дней</p><p class="small muted">${esc(WALLET_CALENDAR_NOTE)}</p></div>`;
 }
 
 function renderPayInlineForm(config, appeal) {
@@ -1810,16 +1891,9 @@ function renderPurchaseInline(config, purchaseId) {
   if (!purchase) return `<section class="panel"><p class="notice">Покупка не найдена.</p></section>`;
   const appeal = appeals.find((a) => a.purchaseId === purchaseId);
   const bd = appeal?.purchaseBreakdown || purchase.categoryBreakdown;
-  const rows =
-    bd?.rows?.length > 0
-      ? `<ul class="ca-pay-breakdown">${bd.rows
-          .map(
-            (row) =>
-              `<li><span>${esc(row.categoryLabel || row.categoryKey)}</span><span class="ca-amount">${esc(formatRubFromKopecks(row.amountKopecks))}</span><span class="small muted">${row.kind === "service" ? "Услуга" : "Товар"}</span></li>`,
-          )
-          .join("")}</ul>`
-      : "";
-  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${purchase.rewardStatusLabel ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}<a class="btn ghost" href="./partner-wallet-history.html">История кошелька</a></section>`;
+  const rows = appeal && bd?.rows?.length ? renderPayBreakdownList(appeal, bd.rows) : "";
+  const showReward = purchase.rewardStatusLabel && appeal && canAccrueReferral(appeal) && !isManualAppeal(appeal);
+  return `<section class="panel stack ca-purchase"><dl class="ca-dl"><div><dt>ID</dt><dd>${esc(purchaseId)}</dd></div><div><dt>Оплата</dt><dd>${esc(purchase.purchasePaymentLabel)}</dd></div><div><dt>Сумма</dt><dd class="ca-amount">${esc(purchase.amountLabel)}</dd></div>${showReward ? `<div><dt>Вознаграждение</dt><dd>${esc(purchase.rewardStatusLabel)}</dd></div>` : ""}</dl>${rows}<a class="btn ghost" href="./partner-wallet-history.html">История кошелька</a></section>`;
 }
 
 function applyStageChangeCabinet(appealId, stageId, fromRefusal, config, hooks) {
