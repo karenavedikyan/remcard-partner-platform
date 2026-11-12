@@ -50,9 +50,10 @@ dialog.proto-num-dialog-host > .proto-num-panel:not([hidden]) {
   position: fixed;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   padding: 2px 5px;
+  min-height: 14px;
   border-radius: 4px;
   background: #1a1a1a;
   color: #fff;
@@ -64,6 +65,16 @@ dialog.proto-num-dialog-host > .proto-num-panel:not([hidden]) {
   text-overflow: ellipsis;
   pointer-events: none;
   user-select: none;
+}
+
+@media (max-width: 640px) {
+  .proto-num-badge {
+    font-size: 12px;
+    line-height: 1.25;
+    padding: 3px 6px;
+    min-height: 16px;
+    max-width: 12rem;
+  }
 }
 
 .proto-num-badge--highlight {

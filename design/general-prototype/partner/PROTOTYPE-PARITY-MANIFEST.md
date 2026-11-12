@@ -41,4 +41,4 @@ Prototype remains **synthetic in-memory** — no API, payouts, DB, or deploy.
 
 `partner/roles.html` → role → **Кошелёк** / **Партнёры**.  
 Store/company wallet: default **Взаиморасчёты** tab only. Agent: **Реестр начислений агента** opens dedicated registry subview (not «Получено» panel).  
-Numbering: `?v=ann6`.
+Numbering: `?v=ann7`.

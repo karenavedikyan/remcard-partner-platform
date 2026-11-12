@@ -350,6 +350,87 @@
     return r.bottom >= -pad && r.right >= -pad && r.top <= vh + pad && r.left <= vw + pad;
   }
 
+  function rectsIntersect(a, b, pad = 0) {
+    return (
+      a.left - pad < b.right + pad &&
+      a.right + pad > b.left - pad &&
+      a.top - pad < b.bottom + pad &&
+      a.bottom + pad > b.top - pad
+    );
+  }
+
+  function badgeBox(x, y, w, h) {
+    return { left: x, top: y, right: x + w, bottom: y + h, width: w, height: h };
+  }
+
+  const PROTECTED_CONTROL_SELECTOR =
+    "button, a[href], input:not([type='hidden']), select, textarea, label, summary, td, th, caption, [role='button'], [role='link'], [role='tab'], [role='menuitem'], [role='checkbox'], [role='radio'], .btn, .nav-btn, .nav-link, [data-action], [contenteditable='true']";
+
+  function collectProtectedRects() {
+    const rects = [];
+    const rectKeys = new Set();
+    const pushRect = (r) => {
+      if (!r || r.width < 1 || r.height < 1) return;
+      if (!intersectsViewport(r, 4)) return;
+      const key = `${Math.round(r.left)}:${Math.round(r.top)}:${Math.round(r.width)}:${Math.round(r.height)}`;
+      if (rectKeys.has(key)) return;
+      rectKeys.add(key);
+      rects.push({
+        left: r.left,
+        top: r.top,
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+      });
+    };
+
+    const textWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.textContent || !/\S/.test(node.textContent)) return NodeFilter.FILTER_REJECT;
+        const parent = node.parentElement;
+        if (!parent || isAnnotationUi(parent) || parent.closest(`[${UI_ATTR}]`)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (!isVisible(parent)) return NodeFilter.FILTER_REJECT;
+        const st = getComputedStyle(parent);
+        if (st.display === "none" || st.visibility === "hidden") return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    while (textWalker.nextNode()) {
+      const range = document.createRange();
+      try {
+        range.selectNodeContents(textWalker.currentNode);
+        for (const r of range.getClientRects()) pushRect(r);
+      } catch {
+        /* skip detached */
+      }
+    }
+
+    document.querySelectorAll(PROTECTED_CONTROL_SELECTOR).forEach((el) => {
+      if (isAnnotationUi(el) || el.closest(`[${UI_ATTR}]`)) return;
+      if (!isVisible(el)) return;
+      pushRect(el.getBoundingClientRect());
+    });
+
+    return rects;
+  }
+
+  function badgeHitsProtected(x, y, w, h, protectedRects, pad = 2) {
+    const box = badgeBox(x, y, w, h);
+    for (const r of protectedRects) {
+      if (rectsIntersect(box, r, pad)) return true;
+    }
+    return false;
+  }
+
+  function badgeMetricsForRef(ref) {
+    const baseH = window.matchMedia("(max-width: 640px)").matches ? 18 : 16;
+    const w = Math.min(118, Math.max(90, Math.ceil(ref.length * 6.4) + 12));
+    return { badgeW: w, badgeH: baseH };
+  }
+
   function interactiveAncestor(el) {
     return el.closest(
       "button, a[href], label, summary, [role='button'], [role='link'], .nav-btn, .btn",
@@ -557,39 +638,41 @@
     if (!badgeHost || !enabled) return;
     badgeHost.textContent = "";
     const placed = [];
+    const protectedRects = collectProtectedRects();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const margin = 4;
-    const badgeW = 92;
-    const badgeH = 16;
+    let visible = 0;
+    let hidden = 0;
 
-    function overlaps(x, y) {
-      return placed.some(
-        (p) => x < p.x + badgeW + margin && x + badgeW + margin > p.x && y < p.y + badgeH + margin && y + badgeH + margin > p.y,
-      );
-    }
-
-    function overlapsTarget(x, y, rect) {
-      const pad = 3;
-      return !(
-        x + badgeW <= rect.left + pad ||
-        x >= rect.right - pad ||
-        y + badgeH <= rect.top + pad ||
-        y >= rect.bottom - pad
-      );
-    }
-
-    function clampPosition(x, y) {
+    function clampPosition(x, y, badgeW, badgeH) {
       return [
         Math.min(Math.max(x, 2), vw - badgeW - 2),
         Math.min(Math.max(y, 2), vh - badgeH - 2),
       ];
     }
 
+    function overlapsPlaced(x, y, badgeW, badgeH) {
+      const box = badgeBox(x, y, badgeW, badgeH);
+      return placed.some((p) =>
+        rectsIntersect(box, badgeBox(p.x, p.y, p.w, p.h), margin),
+      );
+    }
+
+    const protectPad = window.matchMedia("(max-width: 640px)").matches ? 3 : 2;
+
+    function slotOk(x, y, badgeW, badgeH) {
+      return (
+        !overlapsPlaced(x, y, badgeW, badgeH) &&
+        !badgeHitsProtected(x, y, badgeW, badgeH, protectedRects, protectPad)
+      );
+    }
+
     registry.forEach((item) => {
       if (!item.el.isConnected || !isVisible(item.el)) return;
       const r = item.el.getBoundingClientRect();
       if (!intersectsViewport(r, 8)) return;
+      const { badgeW, badgeH } = badgeMetricsForRef(item.ref);
       const candidates = [
         [r.right - badgeW - 2, r.top - badgeH - 2],
         [r.right - badgeW - 2, r.bottom + 2],
@@ -597,13 +680,15 @@
         [r.left, r.top - badgeH - 2],
         [r.right + 2, r.top],
         [r.left - badgeW - 2, r.top],
+        [r.right + 2, r.bottom - badgeH],
+        [r.left - badgeW - 2, r.bottom - badgeH - 2],
       ];
       let x = 0;
       let y = 0;
       let found = false;
       for (const [cx, cy] of candidates) {
-        const [px, py] = clampPosition(cx, cy);
-        if (!overlaps(px, py) && !overlapsTarget(px, py, r)) {
+        const [px, py] = clampPosition(cx, cy, badgeW, badgeH);
+        if (slotOk(px, py, badgeW, badgeH)) {
           x = px;
           y = py;
           found = true;
@@ -611,24 +696,28 @@
         }
       }
       if (!found) {
-        for (let tries = 0; tries < 14; tries++) {
-          const [px, py] = clampPosition(
-            r.left + ((tries % 4) * badgeW) / 4,
-            r.top - badgeH - 2 - tries * (badgeH + 2),
-          );
-          if (!overlaps(px, py) && !overlapsTarget(px, py, r)) {
-            x = px;
-            y = py;
-            found = true;
-            break;
+        for (let ring = 1; ring <= 10 && !found; ring++) {
+          for (let tries = 0; tries < 12; tries++) {
+            const angle = (tries / 12) * Math.PI * 2;
+            const cx = r.left + r.width / 2 + Math.cos(angle) * (r.width / 2 + ring * (badgeH + 4)) - badgeW / 2;
+            const cy = r.top + r.height / 2 + Math.sin(angle) * (r.height / 2 + ring * (badgeH + 4)) - badgeH / 2;
+            const [px, py] = clampPosition(cx, cy, badgeW, badgeH);
+            if (slotOk(px, py, badgeW, badgeH)) {
+              x = px;
+              y = py;
+              found = true;
+              break;
+            }
           }
         }
       }
-      if (!found || overlapsTarget(x, y, r)) {
+      if (!found || badgeHitsProtected(x, y, badgeW, badgeH, protectedRects, protectPad)) {
         item.badgeHidden = true;
+        hidden += 1;
         return;
       }
       item.badgeHidden = false;
+      visible += 1;
       const badge = document.createElement("span");
       badge.className = "proto-num-badge";
       badge.dataset.protoRef = item.ref;
@@ -637,9 +726,18 @@
       badge.setAttribute("aria-hidden", "true");
       badge.style.left = `${x}px`;
       badge.style.top = `${y}px`;
+      badge.style.maxWidth = `${badgeW}px`;
       badgeHost.appendChild(badge);
-      placed.push({ x, y });
+      placed.push({ x, y, w: badgeW, h: badgeH });
     });
+
+    if (window.__protoNumRegistry) {
+      window.__protoNumRegistry.badgePlacement = {
+        visible,
+        hidden,
+        protectedRects: protectedRects.length,
+      };
+    }
   }
 
   function renderIndexList(filter) {

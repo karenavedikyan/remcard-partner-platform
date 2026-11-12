@@ -5,7 +5,7 @@
  */
 import { chromium } from "playwright";
 
-const URL = "http://127.0.0.1:8765/partner/index.html?open=clients&role=store&v=ann6";
+const URL = "http://127.0.0.1:8765/partner/index.html?open=clients&role=store&v=ann7";
 const SETTLE_MS = 1200;
 const FRAMES = 60;
 

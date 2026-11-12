@@ -27,7 +27,8 @@ assert.match(src, /appendClientAdminSpaState/, "must read admin/client SPA view 
 assert.match(src, /data-action="go"/, "admin go-nav selector");
 assert.match(src, /mountAnnotationInDialog/, "dock reviewer UI inside native dialog");
 assert.doesNotMatch(src, /showPopover/, "popover must not be used for modal chrome");
-assert.match(src, /overlapsTarget/, "must avoid badges over product text");
+assert.match(src, /collectProtectedRects/, "must precompute visible product text/control rects");
+assert.match(src, /badgeHitsProtected/, "reject badge slots intersecting protected rects");
 assert.match(src, /badgeHidden/, "hidden badges stay in index");
 assert.match(src, /BADGE_HOST_CLASS/, "badge host mutations filtered");
 assert.match(src, /moveNodeIfNeeded/, "dock append must be idempotent");
