@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Партнёры — демонстрационный профиль</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="pp-shell">
+      <div class="pp-demo-banner" role="note">
+        <div>
+          <strong>Демонстрационный профиль</strong>
+          <div>Данные вымышлены. Без API, без записи в прод.</div>
+        </div>
+        <button type="button" class="pp-btn pp-btn--quiet" id="theme-toggle">Тёмная тема</button>
+      </div>
+
+      <div class="pp-toolbar">
+        <h1>Партнёры</h1>
+        <div class="pp-toolbar-controls">
+          <div class="pp-view-toggle" role="group" aria-label="Вид списка">
+            <button type="button" class="pp-btn" data-view-mode="list" aria-pressed="true">Список</button>
+            <button type="button" class="pp-btn" data-view-mode="cards" aria-pressed="false">Карточки</button>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 12px; font-size: var(--pp-sm); color: var(--pp-muted)">
+        Вы (демо): <strong>Мария Орлова</strong>, специалист · Казань
+      </p>
+
+      <div id="partner-list" class="pp-list" data-view="list" aria-label="Активные партнёры"></div>
+    </div>
+
+    <dialog id="profile-dialog" class="pp-dialog" aria-labelledby="profile-dialog-title">
+      <div class="pp-dialog-inner">
+        <header class="pp-dialog-header">
+          <button type="button" class="pp-btn pp-btn--quiet" id="profile-close">← Назад к списку</button>
+          <h2 id="profile-dialog-title" style="margin: 0; font-size: var(--pp-sm); font-weight: 800">Профиль партнёра</h2>
+        </header>
+        <div class="pp-dialog-body">
+          <div class="pp-perspective">
+            <label for="perspective-select">Как видит партнёр</label>
+            <select id="perspective-select">
+              <option value="cabinet">Мой кабинет — профиль контрагента</option>
+              <option value="reciprocal">Зеркало — как контрагент видит меня</option>
+            </select>
+          </div>
+          <div id="profile-dialog-body"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
