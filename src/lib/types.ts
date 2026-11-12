@@ -150,6 +150,12 @@ export type PartnershipTerm = {
   minMargin: number | null;
 };
 
+export type PartnershipCooperationContact = {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+};
+
 export type PartnershipUser = {
   id: string;
   displayName: string | null;
@@ -164,6 +170,14 @@ export type PartnershipUser = {
   workingNavigatorStageIds?: string[];
   organizationName?: string | null;
   organizationLogoUrl?: string | null;
+  /**
+   * Optional counterparty profile fields — require GET /api/partnership/list enrichment (Stage B contract).
+   * Frontend-only until backend approval; never synthesize from `id`.
+   */
+  publicId?: string | null;
+  profileDescription?: string | null;
+  partnershipContact?: PartnershipCooperationContact | null;
+  branchCities?: string[] | null;
 };
 
 export type Partnership = {

@@ -2,19 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import {
-  PARTNERSHIP_STATUS_LABELS,
-  partnershipStatusTone,
-} from "@/lib/partnership-labels";
 import { getPartnershipUiActions, partnershipInviteTermsEmpty } from "@/lib/partnership-rules";
 import {
-  partnerListSubtitle,
-  partnerRowOfficialLine,
   partnerRowTitle,
-  partnerSpecializationFull,
   partnerTermsFullDetail,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
+import { CounterpartyProfile } from "@/components/partners/CounterpartyProfile";
 import { resolvePublicPartnerType } from "@/lib/agent-r04/partner-filters";
 import type { Partnership } from "@/lib/types";
 import {
@@ -24,7 +18,6 @@ import {
   unlockBodyScroll,
 } from "@/lib/dialog-focus";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   cooperationActionLabel,
   termChangeActionLabel,
@@ -147,15 +140,11 @@ export function PartnerPartnershipDetailDialog({
   if (!open || !partnership) return null;
 
   const listPrincipalId = listSubjectUserId?.trim() || meId;
-  const partner = partnershipPartnerProfile(partnership, listPrincipalId);
-  const statusLabel = PARTNERSHIP_STATUS_LABELS[partnership.status] ?? partnership.status;
   const actions = getPartnershipUiActions(partnership, listPrincipalId);
   const waiting = actions.filter((a) => a.kind === "waiting");
   const runnable = actions.filter((a) => a.kind !== "waiting");
   const hasActionCallbacks = Boolean(onRunAction || onOpenTermChange);
   const termsLines = partnerTermsFullDetail(partnership);
-  const specFull = partnerSpecializationFull(partner);
-  const official = partnerRowOfficialLine(partnership, listPrincipalId);
   const showAgentEmptyExplain = isEmptyAgentInviteRequest(partnership, meId);
 
   return (
@@ -199,13 +188,7 @@ export function PartnerPartnershipDetailDialog({
         </div>
 
         <div className={styles.body}>
-          {official ? (
-            <p className={styles.metaBlock}>
-              Официально: <strong>{official}</strong>
-            </p>
-          ) : null}
-          <p className={styles.metaBlock}>{partnerListSubtitle(partner)}</p>
-          <StatusBadge label={statusLabel} tone={partnershipStatusTone(partnership.status)} />
+          <CounterpartyProfile partnership={partnership} listPrincipalId={listPrincipalId} />
 
           {showAgentEmptyExplain ? (
             <p className={styles.explain} data-testid="partner-detail-agent-empty-hint">
@@ -213,11 +196,6 @@ export function PartnerPartnershipDetailDialog({
               персональное предложение с категориями и процентами или отклонить запрос.
             </p>
           ) : null}
-
-          <p className={styles.sectionTitle}>Специализации и категории</p>
-          <p className={styles.metaBlock}>
-            {specFull || "Специализация не указана"}
-          </p>
 
           <p className={styles.sectionTitle}>{compactCooperation ? "Ваши условия по категориям" : "Персональные условия"}</p>
           {termsLines.length ? (
