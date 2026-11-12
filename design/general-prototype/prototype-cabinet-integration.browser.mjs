@@ -274,6 +274,54 @@ try {
     document.querySelector('[data-action="nav:bonus"], [data-action="nav:wallet"]')?.click(),
   );
   await agentWallet.waitForSelector("[data-testid='wallet-history-hub-link']", { timeout: 15000 });
+  const agentWalletRibbon = (
+    await agentWallet.locator('[data-testid="wallet-receivable-ribbon"]').textContent()
+  )?.trim();
+  assert.equal(agentWalletRibbon, "Агент", "agent wallet card ribbon must match production fallbackRibbon");
+  assert.equal(
+    await agentWallet.locator("[data-wallet-accruals][data-agent-wallet='true']").count(),
+    1,
+    "agent wallet uses production shell layout marker",
+  );
+  assert.equal(
+    await agentWallet.locator(".wallet-accruals-editions").count(),
+    0,
+    "agent wallet must not show edition picker",
+  );
+  assert.equal(
+    await agentWallet.locator('[data-testid="wallet-receivable-demo-number"]').count(),
+    0,
+    "agent wallet must omit PAN like production without cardIdentifier",
+  );
+  const hubOverlapsEyebrow = await agentWallet.evaluate(() => {
+    const hub = document.querySelector('[data-testid="wallet-history-hub-link"]');
+    const eyebrow = document.querySelector(".wallet-accruals-history__eyebrow");
+    if (!hub || !eyebrow) return true;
+    const a = hub.getBoundingClientRect();
+    const b = eyebrow.getBoundingClientRect();
+    return a.bottom > b.top + 1 && a.top < b.bottom - 1 && !(a.right < b.left || a.left > b.right);
+  });
+  assert.equal(hubOverlapsEyebrow, false, "history hub link must not overlap История eyebrow at 1280");
+  await agentWallet.setViewportSize({ width: 375, height: 812 });
+  await agentWallet.waitForTimeout(300);
+  const hubOverlapsEyebrowMobile = await agentWallet.evaluate(() => {
+    const hub = document.querySelector('[data-testid="wallet-history-hub-link"]');
+    const eyebrow = document.querySelector(".wallet-accruals-history__eyebrow");
+    if (!hub || !eyebrow) return true;
+    const a = hub.getBoundingClientRect();
+    const b = eyebrow.getBoundingClientRect();
+    return a.bottom > b.top + 1 && a.top < b.bottom - 1 && !(a.right < b.left || a.left > b.right);
+  });
+  assert.equal(hubOverlapsEyebrowMobile, false, "history hub link must not overlap История eyebrow at 375");
+  await agentWallet.evaluate(() => {
+    document.querySelector('[data-action="theme"]')?.click();
+  });
+  await agentWallet.waitForTimeout(200);
+  const hubColorDark = await agentWallet.evaluate(() =>
+    getComputedStyle(document.querySelector('[data-testid="wallet-history-hub-link"]')).color,
+  );
+  assert.match(hubColorDark || "", /rgb\(127,\s*216,\s*201\)/, "dark theme history hub link teal");
+  await agentWallet.setViewportSize({ width: 1280, height: 900 });
   await agentWallet.click("[data-testid='wallet-history-hub-link']");
   await agentWallet.waitForSelector("[data-testid='cabinet-standalone-frame']", { timeout: 10000 });
   const frame147 = agentWallet.frameLocator("[data-testid='cabinet-standalone-frame']");

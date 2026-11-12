@@ -165,6 +165,7 @@ export function workspaceRibbonName(config) {
   const role = workspaceOwnerRole(config);
   if (role === "store") return "Мой магазин";
   if (role === "company") return "Моя компания";
+  if (role === "agent") return "Агент";
   return "Алексей";
 }
 
@@ -451,6 +452,7 @@ function renderCompactCard(config, direction, title, summary, testPrefix, incomi
   const amountLabel = direction === "in" ? "к получению:" : "к оплате:";
   const ribbonName = workspaceRibbonName(config);
   const demoNumber = demoPartnerCardNumber(config);
+  const showDemoPan = workspaceOwnerRole(config) !== "agent";
   const ariaDirection = direction === "in" ? "Мне должны" : "Я должен";
   return `<div class="wallet-accruals-card-column" data-testid="wallet-column-${variant}">
     <button type="button" class="wallet-rc-card wallet-rc-card--${edition}" data-accrual-action="detail:${direction}" data-testid="wallet-rc-${variant}-face" aria-label="${esc(ariaDirection)} · ${amountLabel.replace(":", "")} ${formatRub(summary.confirmedNow)} подтверждено, в ожидании ${formatRub(summary.waiting)}. Открыть детали">
@@ -470,7 +472,11 @@ function renderCompactCard(config, direction, title, summary, testPrefix, incomi
           <span class="wallet-rc-card__unit wallet-rc-card__unit--waiting" aria-hidden="true">₽</span>
         </div>
       </div>
-      <span class="wallet-rc-card__pan" aria-label="номер карты партнёра (демо)" data-testid="wallet-${testPrefix}-demo-number">${esc(demoNumber)}</span>
+      ${
+        showDemoPan
+          ? `<span class="wallet-rc-card__pan" aria-label="номер карты партнёра (демо)" data-testid="wallet-${testPrefix}-demo-number">${esc(demoNumber)}</span>`
+          : ""
+      }
     </button>
     ${renderQuickActions(direction, incomingOnly)}
   </div>`;
@@ -1077,16 +1083,19 @@ function panelContent(config, panel, overview, incomingOnly) {
 export function renderWalletAccruals(config, options = {}) {
   const incomingOnly = options.incomingOnly ?? config.role === "agent";
   const st = getAccrualState(config);
-  const edition = getCardEdition();
+  const agentProdShell = config.role === "agent" && incomingOnly;
+  const edition = agentProdShell ? "black" : getCardEdition();
   const activeDirection = incomingOnly ? "in" : getActiveDirection(config);
   const overview = overviewFor(config, incomingOnly);
-  const agentFixedDemo = config.role === "agent";
   const scenarioOptions = Object.entries(ACCRUAL_SCENARIOS)
     .map(([id, label]) => `<option value="${id}" ${st.scenario === id ? "selected" : ""}>${esc(label)}</option>`)
     .join("");
-  const scenarioDemoBar = agentFixedDemo
-    ? `<div class="wallet-accruals-demo-bar" data-testid="wallet-accruals-demo-bar"><span class="pw-label">DEMO</span><span class="wallet-accruals-agent-demo-label" data-testid="wallet-accrual-scenario-label">Демонстрационные начисления агента</span><span class="pw-label sr-only">Сценарий не переключается: суммы совпадают с реестром начислений агента.</span></div>`
+  const scenarioDemoBar = agentProdShell
+    ? ""
     : `<div class="wallet-accruals-demo-bar" data-testid="wallet-accruals-demo-bar"><span class="pw-label">DEMO · сценарий</span><label class="wallet-accruals-scenario"><span class="sr-only">Сценарий демонстрации</span><select data-accrual-scenario data-testid="wallet-accrual-scenario">${scenarioOptions}</select></label></div>`;
+  const agentDemoNotice = agentProdShell
+    ? `<p class="wallet-accruals-agent-demo-notice pw-muted" data-testid="wallet-accruals-demo-bar" role="note"><span class="pw-label">DEMO</span> Демонстрационные начисления агента. Сценарий не переключается.</p>`
+    : "";
   const cardSummary = activeDirection === "in" ? overview.receivable : overview.payable;
   const cardPrefix = activeDirection === "in" ? "receivable" : "payable";
   const cardTitle = DIRECTION_LABELS[activeDirection];
@@ -1104,17 +1113,33 @@ export function renderWalletAccruals(config, options = {}) {
     ? `<div class="wallet-accruals-extensions" data-testid="wallet-accruals-extensions">${extensionLinks}</div>`
     : "";
 
-  return `<section class="wallet-accruals" data-wallet-accruals data-testid="wallet-accruals" data-incoming-only="${incomingOnly}" data-card-edition="${edition}" data-active-direction="${activeDirection}">
-    <div class="wallet-accruals-layout">
-      <div class="wallet-accruals-main">
+  const compactCard = renderCompactCard(
+    config,
+    activeDirection,
+    cardTitle,
+    cardSummary,
+    cardPrefix,
+    incomingOnly,
+    edition,
+  );
+  const cardsColumn = `<div class="wallet-accruals-cards ${incomingOnly ? "incoming-only" : ""}" data-testid="wallet-brand-card">
+        ${compactCard}
+        ${agentProdShell ? extensions : ""}
+      </div>`;
+  const leftRail = agentProdShell
+    ? cardsColumn
+    : `<div class="wallet-accruals-main">
         ${scenarioDemoBar}
         ${renderEditionSelector(edition)}
         ${renderDirectionToggle(incomingOnly, activeDirection)}
-        <div class="wallet-accruals-cards ${incomingOnly ? "incoming-only" : ""}" data-testid="wallet-brand-card">
-          ${renderCompactCard(config, activeDirection, cardTitle, cardSummary, cardPrefix, incomingOnly, edition)}
-        </div>
+        ${cardsColumn}
         ${extensions}
-      </div>
+      </div>`;
+
+  return `<section class="wallet-accruals" data-wallet-accruals data-testid="wallet-accruals" data-incoming-only="${incomingOnly}" data-card-edition="${edition}" data-active-direction="${activeDirection}"${agentProdShell ? ' data-agent-wallet="true"' : ""}>
+    ${agentDemoNotice}
+    <div class="wallet-accruals-layout">
+      ${leftRail}
       ${renderHistoryPanel(config, incomingOnly, activeDirection, options)}
     </div>
     <dialog class="wallet-accrual-dialog" data-accrual-dialog aria-labelledby="accrual-panel-title">

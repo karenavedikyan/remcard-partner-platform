@@ -37,6 +37,9 @@ assert.match(clientAppeals, /ca-observer-partners-list/, "observer partners list
 assert.match(clientAppeals, /if \(agentClientsObserverOnly\(config\)\) return;/, "blocks agent legacy client nav handlers");
 assert.match(numbering, /partner:agent:clients-list[\s\S]*Мои клиенты у партнёров/, "page 106 titles agent observer list");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
+assert.match(wallet, /if \(role === "agent"\) return "Агент"/, "agent wallet card ribbon");
+assert.match(wallet, /data-agent-wallet="true"/, "agent wallet production shell marker");
+assert.match(wallet, /workspaceOwnerRole\(config\) !== "agent"/, "agent wallet omits demo PAN line");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");
 assert.match(numbering, /__protoCabinetEmbeddedPage/, "embedded page badge");
