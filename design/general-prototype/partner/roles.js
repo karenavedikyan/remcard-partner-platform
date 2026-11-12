@@ -36,6 +36,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView } from "./client-appeals.js?v=ca1";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
 import {
@@ -3239,7 +3240,8 @@ function La() {
     canViewEmployerBank:
       k() && J() && ["ledger", "cash", "transfer"].some((a) => O(a)),
   };
-  if (i.screen === "cabinet" && emptyStateActive(emptyStates_page())) {
+  if (i.page === "clients") return renderClientAppeals(clientAppealsConfig());
+  if (i.screen === "cabinet" && emptyStateActive(emptyStates_page()) && i.page !== "clients") {
     const emptyHtml = renderEmptyState({ page: emptyStates_page(), role: i.role, employerRole: employeeEmployerRole() || (k() && J() ? Y : null) });
     if (emptyHtml) return emptyHtml;
   }
@@ -3341,6 +3343,14 @@ function careConfig() {
     profile: () => ({ ...(k() ? Oe() : ie()), dict: Le }),
   };
 }
+function clientAppealsConfig() {
+  return {
+    key: `${i.role}:${i.role === "employee" ? employeeEmployerRole() || Y : "self"}`,
+    role: i.role,
+    icon: D,
+    readOnly: k() && !O("clients"),
+  };
+}
 function Ia() {
   let e = Te();
   if (i.page === "links" && qe()) {
@@ -3349,7 +3359,7 @@ function Ia() {
   }
   return (
     e.includes(i.page) || (i.page = "home"),
-    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header"><div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
+    `<div class="shell"><aside class="sidebar"><div class="workspace"><span class="eyebrow">${k() ? "Рабочее пространство" : "Ваше пространство"}</span><strong>${k() ? (J() ? r($e()) : "Ожидает приглашения") : ["store", "company"].includes(i.role) ? r($e()) : r(ke())}</strong><small>${k() ? (J() ? Se[i.preset].name : "Сотрудник") : ot()}</small></div><nav aria-label="Рабочие разделы">${pa(e)}</nav><div class="bottom"><small>Основное под рукой.<br>Дополнительные разделы в \xABЕщё\xBB.</small></div></aside><main id="main" class="content" tabindex="-1"><div class="page-header"><div><span class="eyebrow">${k() ? (J() ? r($e()) : "Вход в команду") : ot()}</span><h1>${i.page === "home" ? (k() ? "Ваш рабочий день" : i.role === "agent" ? "Сертификаты" : "Ваш кабинет") : i.page === "care" ? "Забота RemCard" : i.page === "procurement" ? "Закупки" : i.page === "clients" ? clientAppealsPageTitle(clientAppealsConfig()) : rt(i.page)}</h1><p class="muted">${i.page === "care" ? "Сервисы для клиентов и консалтинг для вас." : i.page === "procurement" ? "Поставщики, свободные ниши и заказы для вашего бизнеса." : i.page === "clients" ? clientAppealsPageMuted(clientAppealsConfig()) : k() ? (J() ? Se[i.preset].name : "Остался один шаг до работы в команде") : i.role === "agent" ? "Рекомендуйте. Делитесь. Получайте бонусы." : "Начните с того, что нужно вам сегодня."}</p></div>${emptyHeaderPill(emptyStates_page()) || '<span class="pill">Демо</span>'}</div>${ka()}${i.notice ? `<p class="notice accent" role="status" style="margin-bottom:24px">${r(i.notice)}</p>` : ""}${La()}</main></div>`
   );
 }
 function Ea() {
@@ -3729,6 +3739,7 @@ function R() {
     }),
     hydrateCareServices({ key: () => careConfig().key, refresh: R, notify: (m) => U(m, "success") }),
     hydrateProcurement({ key: () => careConfig().key, refresh: R, notify: (m, t) => U(m, t || "success"), openDialog: E, closeDialog: _ }),
+    hydrateClientAppeals({ config: () => clientAppealsConfig(), refresh: R, notify: (m, t) => U(m, t || "success") }),
     hydrateCabinet({ role: i.role, allowed: k() ? Te().filter((key) => ["bonus", "settlements", "history"].includes(key)) : ["bonus", "settlements", "history"], refresh: R, canCash: () => O("cash"), canTransfer: () => O("transfer"), employerRole: () => employeeEmployerRole() || (k() && J() ? Y : null) }),
     i.page === "profile" && i.screen === "cabinet")
   ) {
@@ -4090,11 +4101,25 @@ document.addEventListener("click", (e) => {
   }
   if (
     (ct(),
-    a === "client-add" && Bt(),
+    a === "client-add" &&
+      Te().includes("clients") &&
+      (se.open && _(),
+      (ge = null),
+      primeClientAppealsView(clientAppealsConfig(), "manual"),
+      (i.page = "clients"),
+      (i.screen = "cabinet"),
+      (i.notice = ""),
+      T()),
     a === "client-edit" && Bt(s),
     a === "client-open" &&
       Te().includes("clients") &&
-      (se.open && _(), (ge = s), (i.page = "clients"), (i.notice = ""), T()),
+      (se.open && _(),
+      (ge = null),
+      openClientAppealFromLegacy(s, { config: () => clientAppealsConfig(), refresh: R }, he(s)?.name),
+      (i.page = "clients"),
+      (i.screen = "cabinet"),
+      (i.notice = ""),
+      T()),
     a === "client-back" &&
       ((ge = null),
       (i.page = "clients"),
@@ -4376,7 +4401,7 @@ ${n.targetId ? "Откройте приглашение в своём кабин
       (i.notice = ""),
       T()),
     a === "nav" &&
-      (s === "clients" && (ge = null),
+      (s === "clients" && (ge = null, resetClientAppealsNav(clientAppealsConfig())),
       (i.page = s),
       (i.notice = ""),
       ["bonus", "settlements"].includes(s) &&
@@ -4776,5 +4801,13 @@ var coop = initCooperationControls({
 
 initializeEntry(i);
 if (["store", "company"].includes(i.role)) Y = i.role;
+(function clientAppealsDeepLink() {
+  const q = new URLSearchParams(location.search);
+  if (q.get("open") !== "clients") return;
+  const role = q.get("role");
+  if (role && ["store", "company", "agent", "specialist", "employee"].includes(role)) i.role = role;
+  i.screen = "cabinet";
+  i.page = "clients";
+})();
 yt();
 R();
