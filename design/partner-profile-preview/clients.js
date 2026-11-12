@@ -1789,31 +1789,10 @@
     if (selectedAppealId) renderDetail();
   }
 
-  let themeMemory = null;
-
-  function readStoredTheme() {
-    try {
-      const v = localStorage.getItem("pp-proto-theme");
-      if (v) themeMemory = v;
-      return v ?? themeMemory;
-    } catch {
-      return themeMemory;
-    }
-  }
-
-  function writeStoredTheme(value) {
-    themeMemory = value;
-    try {
-      localStorage.setItem("pp-proto-theme", value);
-    } catch {
-      /* opaque preview frame */
-    }
-  }
-
   function initTheme() {
-    const stored = readStoredTheme();
-    const dark = stored === "dark";
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    const attr = document.documentElement.getAttribute("data-theme");
+    const dark = attr === "dark";
+    if (!attr) document.documentElement.setAttribute("data-theme", "light");
     const btn = document.getElementById("theme-toggle");
     if (btn) {
       btn.textContent = dark ? "Светлая тема" : "Тёмная тема";
@@ -1825,7 +1804,6 @@
     const dark = document.documentElement.getAttribute("data-theme") === "dark";
     const next = dark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    writeStoredTheme(next);
     const btn = document.getElementById("theme-toggle");
     if (btn) {
       btn.textContent = next === "dark" ? "Светлая тема" : "Тёмная тема";
