@@ -92,9 +92,13 @@ try {
   const hubHref = await page.evaluate(() => window.protoHubUrl("index.html"));
   assert.ok(hubHref.includes(`${HOSTED_PREFIX}/index.html`), `hub under prefix: ${hubHref}`);
 
-  await page.goto(`${hosted}/client/index.html#/product/demo`, { waitUntil: "load" });
+  await page.goto(`${hosted}/client/index.html#/catalog/p/p004`, { waitUntil: "load" });
   pageId = await page.evaluate(() => window.protoResolvePage()?.id);
-  assert.equal(pageId, "client:product");
+  assert.equal(pageId, "client:catalog-product");
+
+  await page.goto(`${hosted}/admin/index.html#/partners`, { waitUntil: "load" });
+  pageId = await page.evaluate(() => window.protoResolvePage()?.id);
+  assert.equal(pageId, "admin:partners");
 
   await page.goto(`${hosted}/admin/index.html`, { waitUntil: "load" });
   await page.click('[data-action="go"][data-view="partners"]');
@@ -108,7 +112,7 @@ try {
     catalogLen: window.PROTOTYPE_PAGE_CATALOG?.length || 0,
     tocHrefs: [...document.querySelectorAll(".proto-page-list a")].map((a) => a.getAttribute("href") || ""),
   }));
-  assert.equal(catalogLen, 152);
+  assert.equal(catalogLen, 151);
   assert.ok(tocHrefs.length > 0);
   for (const h of tocHrefs) {
     assert.doesNotMatch(h, /rc_demo_release/, `TOC href must not gate R2: ${h}`);

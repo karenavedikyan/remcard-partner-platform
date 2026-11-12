@@ -16,7 +16,7 @@ function loadPageDefs(src) {
   return sandbox.PAGE_DEFS;
 }
 const PAGE_DEFS = loadPageDefs(js);
-assert.ok(Array.isArray(PAGE_DEFS) && PAGE_DEFS.length >= 150, "catalogue includes nested partner templates");
+assert.ok(Array.isArray(PAGE_DEFS) && PAGE_DEFS.length >= 151, "catalogue page count");
 
 for (let i = 0; i < PAGE_DEFS.length; i++) {
   assert.equal(PAGE_DEFS[i].n, i + 1, `consecutive n at index ${i}`);
@@ -24,7 +24,10 @@ for (let i = 0; i < PAGE_DEFS.length; i++) {
 assert.equal(new Set(PAGE_DEFS.map((p) => p.id)).size, PAGE_DEFS.length, "unique ids");
 
 const clientPages = PAGE_DEFS.filter((p) => p.zone === "client");
-assert.ok(clientPages.length >= 37, "client routes catalogue");
+assert.equal(clientPages.length, 36, "frozen client SPA templates");
+assert.equal(clientPages[0].n, 2, "client home is page 2");
+assert.equal(clientPages[0].id, "client:home");
+assert.ok(!PAGE_DEFS.some((p) => /client:(register|account|product|matcalc|checkout|retained)/.test(p.id)), "no fictional client ids");
 
 const caViews = new Set(["list", "detail", "scan", "manual", "settings", "purchase", "analytics", "observer-partner", "observer-client"]);
 const caPages = PAGE_DEFS.filter((p) => p.clientAppealsView);
@@ -34,6 +37,7 @@ for (const v of caViews) {
 }
 assert.match(js, /readClientAppealsView/, "DOM resolver for client-appeals");
 assert.match(js, /readWalletTemplate/, "DOM resolver for wallet templates");
+assert.match(js, /CLIENT_ROUTE_MATCHERS/, "authoritative client matchers");
 
 const adminViews = new Set(PAGE_DEFS.filter((p) => p.adminView).map((p) => p.adminView));
 for (const v of ["overview", "partners", "clients", "team", "tasks", "analytics", "results", "notifications", "settings"]) {

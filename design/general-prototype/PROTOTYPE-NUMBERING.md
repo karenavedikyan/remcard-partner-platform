@@ -1,6 +1,6 @@
 # Нумерация прототипа (reviewer-only)
 
-**Актуальная модель — книжная:** один целый номер на логический экран-шаблон (`1…152` на ветке book2). Полная таблица: **`PROTOTYPE-PAGES.md`**.
+**Актуальная модель — книжная:** один целый номер на логический экран-шаблон (`1…151` на ветке book2). Client — только маршруты frozen artifact (`CLIENT_ROUTE_MATCHERS`). Полная таблица: **`PROTOTYPE-PAGES.md`**.
 
 Файлы: `prototype-numbering.js`, `prototype-numbering.css` в корне `design/general-prototype/`. Подключение в HTML: `?v=book2`.
 
@@ -24,7 +24,7 @@
 - `MutationObserver` — новые dialog/шаги SPA пересчитываются.
 - Нет `localStorage` / fetch / сервера; состояние только в памяти вкладки.
 - Реестр: `window.__protoNumRegistry` (ref, label, stableKey, pageState, location); поиск элемента: `window.__protoNumResolve(ref)` или атрибут `data-proto-number` на целевом узле.
-- Самотесты: `node design/general-prototype/prototype-numbering.selftest.mjs`, `stability.mjs`, `overlap.mjs`, `browser.mjs` (localhost + hosted prefix).
+- Самотесты: `prototype-numbering.{selftest,stability,overlap,client-routes,browser}.mjs`.
 
 ## Ограничения
 
