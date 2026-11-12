@@ -1931,7 +1931,7 @@ function renderBulkEditPanel(config, s, count) {
   const selected = bulkSelectedAppeals(s);
   const stageBlocked = bulkStageEditBlocked(selected);
   const lockedHint = stageBlocked
-    ? `<p class="notice" role="status">В выборке есть оплаченные, отгруженные, с возвратом или закрытые обращения — рабочий этап для всей группы изменить нельзя. Доступно только служебная заметка.</p>`
+    ? `<p class="notice" role="status">В выборке есть оплаченные, отгруженные, с возвратом или закрытые обращения — рабочий этап для всей группы изменить нельзя. Можно добавить служебную заметку.</p>`
     : `<p class="small muted">Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат».</p>`;
   const options = bulkWorkingStageOptions(RECEIVING.id)
     .map((id) => {
@@ -2077,7 +2077,7 @@ function renderListPage(config) {
   const allChecked = list.length > 0 && list.every((a) => selected.has(a.id));
   const listHead =
     list.length > 0
-      ? `<div class="ca-row ca-row--head" role="presentation">${bulkOn ? `<label class="ca-row-check ca-row-check--head"><input type="checkbox" data-ca-bulk-select-all aria-label="Выбрать все видимые" ${allChecked ? "checked" : ""}></label>` : ""}<span class="ca-row-name small muted">Клиент</span><span class="ca-row-request small muted">Запрос</span><span class="ca-row-meta small muted">${esc(metaHeader)}</span><span class="ca-row-status small muted">Статус</span><span class="ca-row-amount small muted">Сумма</span><span class="ca-row-age small muted">Создано</span><span class="ca-chev" aria-hidden="true"></span></div>`
+      ? `<div class="ca-row ca-row--head" role="presentation">${bulkOn ? `<label class="ca-row-check ca-row-check--head ca-bulk-select-all-desktop"><input type="checkbox" data-ca-bulk-select-all aria-label="Выбрать все" ${allChecked ? "checked" : ""}></label>` : ""}<span class="ca-row-name small muted">Клиент</span><span class="ca-row-request small muted">Запрос</span><span class="ca-row-meta small muted">${esc(metaHeader)}</span><span class="ca-row-status small muted">Статус</span><span class="ca-row-amount small muted">Сумма</span><span class="ca-row-age small muted">Создано</span><span class="ca-chev" aria-hidden="true"></span></div>`
       : "";
   const rows = list
     .map((a) => {
@@ -2134,8 +2134,12 @@ function renderListPage(config) {
           ? `<p class="notice">Только просмотр: изменять статусы и заметки нельзя.</p>`
           : "";
   const filters = `<div class="ca-filters panel"><label class="field ca-search">Поиск<input type="search" data-ca-input="q" value="${esc(s.listQ)}" placeholder="Имя, сертификат или ID"></label><label class="field ca-filter">Статус<select data-ca-input="status"></select></label>${tab === "incoming" ? `<label class="field ca-filter">Источник<select data-ca-input="source"></select></label>` : ""}</div>`;
+  const bulkSelectAllMobile =
+    bulkOn && list.length
+      ? `<label class="ca-bulk-select-all-mobile"><input type="checkbox" data-ca-bulk-select-all aria-label="Выбрать все" ${allChecked ? "checked" : ""}> Выбрать все</label>`
+      : "";
   const rowsWrap = list.length ? `<div class="ca-rows${bulkOn ? " ca-rows--bulk" : ""}">${listHead}${rows}</div>` : "";
-  return `${tabs}${bucketTabs}${kpiStrip}${actions}${bulkConfirm}${bulkBar}${bulkEdit}${filters}${empty || rowsWrap}`;
+  return `${tabs}${bucketTabs}${kpiStrip}${actions}${bulkConfirm}${bulkBar}${bulkEdit}${filters}${bulkSelectAllMobile}${empty || rowsWrap}`;
 }
 
 export function renderClientAppeals(config) {
