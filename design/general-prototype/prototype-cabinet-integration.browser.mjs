@@ -216,6 +216,35 @@ try {
   assert.ok(src?.includes("embed_role=agent"), "147 iframe must carry embed_role");
   await agentWallet.close();
 
+  const chainPage = await browser.newPage();
+  await chainPage.setViewportSize({ width: 1280, height: 900 });
+  await chainPage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
+  await chainPage.evaluate(() => document.querySelector('[data-testid="view-cabinet"]')?.click());
+  await chainPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await chainPage.locator('[data-action="nav:settlements"], [data-action="nav:wallet"]').first().click();
+  await chainPage.locator("[data-testid='wallet-history-hub-link']").click();
+  await chainPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])");
+  const badge147 = await chainPage.evaluate(() => window.__protoCabinetEmbeddedPage?.n);
+  assert.equal(badge147, 147);
+  const frame147c = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame147c.locator(".history-tabs [data-view='accruals']").click();
+  await frame147c.locator("[data-accrual-row='0']").click();
+  await frame147c.locator("[data-testid='wallet-open-receipt-145']").click();
+  await chainPage.waitForFunction(
+    () => window.__protoCabinetEmbeddedPage?.n === 145,
+    null,
+    { timeout: 10000 },
+  );
+  const frame145 = chainPage.frameLocator("[data-testid='cabinet-standalone-frame']");
+  await frame145.locator("#prr-amount").waitFor({ timeout: 8000 });
+  const receiptText = await frame145.locator("#prr-cert-code").textContent();
+  assert.equal(receiptText?.trim(), "RC-X9Z0WZ");
+  await chainPage.locator('[data-testid="proto-standalone-back"]').click();
+  await chainPage.waitForFunction(() => window.__protoCabinetEmbeddedPage?.n === 147, null, {
+    timeout: 10000,
+  });
+  await chainPage.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

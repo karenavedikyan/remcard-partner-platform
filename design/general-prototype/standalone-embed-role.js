@@ -100,8 +100,25 @@
   function apply144(payload) {
     var actor = payload.embedActor || {};
     var perms = payload.permissions || {};
+    var ctx = payload.purchaseCtx || {};
     var dir = document.querySelector(".op-direction");
     if (dir && actor.directionLabel) dir.textContent = actor.directionLabel;
+    if (ctx.certCode) {
+      var doc = document.querySelector(".op-document strong");
+      if (doc) doc.textContent = ctx.certCode;
+    }
+    if (ctx.amount != null) {
+      var pay = document.querySelector(".op-payable");
+      if (pay) pay.textContent = Number(ctx.amount).toLocaleString("ru-RU") + " ₽";
+    }
+    if (ctx.partner) {
+      var part = document.querySelector(".op-participants strong");
+      if (part) part.textContent = ctx.partner;
+    }
+    var focus = document.getElementById("op-focus-label");
+    if (focus && (payload.role === "agent" || payload.role === "specialist")) {
+      focus.textContent = "Связанное начисление · просмотр";
+    }
     if (perms.viewOnly) {
       document.documentElement.dataset.embedReadonly = "1";
       var actions = document.querySelectorAll(".op-actions button, .op-actions a");
@@ -116,11 +133,18 @@
 
   function apply145(payload) {
     var actor = payload.embedActor || {};
-    var heading = document.querySelector(".prr-context span");
-    if (heading && actor.contextBadge) heading.textContent = actor.contextBadge;
     if (payload.permissions && payload.permissions.viewOnly) {
       document.documentElement.dataset.embedReadonly = "1";
     }
+    var title = document.getElementById("prr-dialog-title");
+    if (title) {
+      title.textContent =
+        actor.receiptMode === "earned"
+          ? "Квитанция заработанного вознаграждения"
+          : "Начисление по сертификату";
+    }
+    var topTitle = document.querySelector(".prr-top__title");
+    if (topTitle && actor.contextBadge) topTitle.textContent = actor.contextBadge;
   }
 
   window.__protoEmbedApplyContext = function applyContext(payload, n) {

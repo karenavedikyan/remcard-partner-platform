@@ -25,6 +25,9 @@ assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
 assert.match(index, /proto_standalone=143/, "hub launches cabinet 143");
 assert.doesNotMatch(index, /href="\.\/partner\/partner-cooperation-detail\.html"/, "no bare 143 hub link");
 assert.match(numbering, /__protoCabinetEmbeddedPage/, "embedded page badge");
+assert.match(numbering, /proto-embed-change/, "parent listens embed badge changes");
+const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
+assert.match(walletHistory, /wallet-open-receipt-145/, "147 accrual detail opens receipt 145");
 
 for (const n of [143, 144, 147]) {
   const file = {

@@ -720,6 +720,7 @@ const PAGE_DEFS = [
 
   window.addEventListener("hashchange", scheduleRefresh);
   window.addEventListener("popstate", scheduleRefresh);
+  window.addEventListener("proto-embed-change", scheduleRefresh);
   document.addEventListener(
     "change",
     (e) => {

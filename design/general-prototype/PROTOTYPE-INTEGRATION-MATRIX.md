@@ -10,7 +10,7 @@
 | 142 | partner:observer-guest | `partner/observer.html` | Клиенты → наблюдение (гостевой макет) | ✓ | ✓ | ✓ | N/A | ✓* |
 | 143 | partner:cooperation-detail | `partner/partner-cooperation-detail.html` | **Прямой первичный** путь: партнёры → готовый партнёр (embed 143); хаб `proto_standalone=143` | ✓ | ✓ | ✓ | ✓ | ✓* view |
 | 144 | partner:purchase-detail | `partner/partner-purchase-detail.html` | Кошелёк → история (147) → покупка; хаб `proto_standalone=144` | ✓‡ | ✓‡ | ✓‡ | ✓‡ | ✓*‡ |
-| 145 | partner:reward-receipt | `partner/partner-reward-receipt.html` | Цепочка 147 → начисление (встраиваемый переход) | ✓‡ | ✓‡ | ✓‡ | ✓‡ | ✓*‡ |
+| 145 | partner:reward-receipt | `partner/partner-reward-receipt.html` | 147 → деталь начисления → **«Квитанция начисления»** (`wallet-open-receipt-145`) | ✓‡ | ✓‡ | ✓‡ | ✓‡ | ✓*‡ |
 | 146 | partner:scan-transaction | `partner/partner-scan-transaction.html` | Сканер → «Макет оформления покупки»; хаб `proto_standalone=146` | ✓ scan/sale | ✓ | ✓ | **N/A** | ✓* |
 | 147 | partner:wallet-history | `partner/partner-wallet-history.html` | Кошелёк → «Покупки и транзакции в разделе История»; хаб `proto_standalone=147` | ✓ ledger | ✓ ledger | ✓ bonus | ✓ bonus | ✓* ledger |
 

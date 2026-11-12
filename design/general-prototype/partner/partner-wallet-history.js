@@ -12,7 +12,36 @@
     {date:"2026-11-10",display:"10 ноября, 09:23",amount:0,title:"Артем",id:null},
     {date:"2026-11-09",display:"9 ноября, 16:17",amount:0,title:"Артем",id:null}
   ];
-  let view = "purchases", selectedAccrual = accruals[0];
+  let view = "purchases",
+    selectedAccrual = accruals[0];
+  const WALLET_CERT = "RC-X9Z0WZ";
+  function accrualReceiptCtx(accrual) {
+    if (!accrual) return null;
+    const relatedPurchasePayable =
+      accrual === accruals[0] && purchases[0] ? purchases[0].amount : undefined;
+    return {
+      accrualId: accrual.id,
+      date: accrual.date,
+      dateDisplay: accrual.display,
+      amount: accrual.amount,
+      partner: accrual.title,
+      certCode: WALLET_CERT,
+      clientLabel: "Демо-клиент",
+      relatedPurchasePayable,
+    };
+  }
+  function purchaseRowCtx(index) {
+    const row = purchases[index];
+    if (!row) return null;
+    return {
+      index,
+      amount: row.amount,
+      partner: row.title,
+      certCode: WALLET_CERT,
+      dateDisplay: row.display,
+      id: row.id,
+    };
+  }
   let theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   const setTheme = () => {
     document.documentElement.dataset.theme = theme;
@@ -62,6 +91,8 @@
     if(view==="detail"){
       $("#detail-date").textContent=selectedAccrual.display.replace(","," 2026,");
       $("#detail-id").textContent=selectedAccrual.id || "Номер этой записи не показан на снимке";
+      const receiptBtn = $("#open-receipt");
+      if (receiptBtn) receiptBtn.hidden = !selectedAccrual.id;
       $("#open-related").innerHTML=selectedAccrual===accruals[0]?'Открыть связанную покупку <span aria-hidden="true">↗</span>':'Покупки по этому сертификату <span aria-hidden="true">↗</span>';
     }
     $("#main").focus({preventScroll:true});
@@ -124,20 +155,33 @@
       viewPurposeCopy = copy;
       refreshViewPurpose();
     };
-    const openRelated = $("#open-related");
-    openRelated?.addEventListener(
+    $("#open-receipt")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!selectedAccrual?.id) return;
+      window.__protoCabinetEmbedNavigate?.(145, "", {
+        walletState: { ...walletState(), view: "detail" },
+        receiptCtx: accrualReceiptCtx(selectedAccrual),
+      });
+    });
+    $("#open-related")?.addEventListener("click", (e) => {
+      if (selectedAccrual === accruals[0]) {
+        e.preventDefault();
+        window.__protoCabinetEmbedNavigate?.(144, "", {
+          walletState: walletState(),
+          purchaseCtx: purchaseRowCtx(0),
+        });
+      }
+    });
+    $("#history-rows")?.addEventListener(
       "click",
-      () => {
-        if (selectedAccrual === accruals[0]) {
-          if (
-            window.__protoCabinetEmbedNavigate?.(144, "", {
-              walletState: walletState(),
-              purchaseCtx: { from: "wallet-147", accrualId: selectedAccrual.id },
-            })
-          ) {
-            return;
-          }
-        }
+      (e) => {
+        const link = e.target.closest('a[href*="partner-purchase-detail"]');
+        if (!link) return;
+        e.preventDefault();
+        window.__protoCabinetEmbedNavigate?.(144, "", {
+          walletState: walletState(),
+          purchaseCtx: purchaseRowCtx(0),
+        });
       },
       true,
     );
