@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Карточка партнёра · RemCard, прототип</title>
+  <meta name="description" content="Прототип карточки партнёра: условия по категориям и действия по сотрудничеству. Только демонстрационные данные.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="partner-cooperation-detail.css">
+</head>
+<body>
+  <header class="preview-header">
+    <a class="back" href="../index.html">← Все прототипы</a>
+    <span class="brand">remcard<span>.</span></span>
+    <span class="preview-label">Карточка партнёра</span>
+  </header>
+  <main class="page">
+    <div class="page-heading"><div><p class="eyebrow">Личный кабинет партнёра</p><h1>Партнёры</h1></div><span class="demo-label">Прототип · демоданные</span></div>
+    <section class="list" aria-label="Демонстрационный список партнёров">
+      <div class="list-person"><span class="avatar" aria-hidden="true">А</span><div><strong>Артем</strong><p>Специалист · Краснодар</p></div><button class="button secondary" id="open-detail">Открыть карточку <span aria-hidden="true">↗</span></button></div>
+    </section>
+    <p class="page-note">Дизайн для согласования. Ничего не меняет в рабочем кабинете.</p>
+  </main>
+
+  <dialog id="partner-dialog" class="partner-dialog" aria-labelledby="partner-title">
+    <header class="dialog-top">
+      <p>Карточка партнёра</p>
+      <div class="top-actions">
+        <button class="icon-button" id="theme" aria-label="Включить тёмную тему" title="Переключить тему">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13a8.8 8.8 0 0 1-9.8-9.8A9 9 0 1 0 20.8 13Z"/></svg>
+        </button>
+        <button class="icon-button" id="close-detail" aria-label="Закрыть карточку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+      </div>
+    </header>
+    <div class="dialog-scroll">
+      <section class="identity" aria-label="Партнёр">
+        <div class="identity-main"><span class="avatar avatar-large" aria-hidden="true">А</span><div><h2 id="partner-title">Артем</h2><p>Специалист · Краснодар</p></div></div>
+        <span class="status" id="partner-status"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg><span>Активно</span></span>
+      </section>
+
+      <section class="specialization" aria-labelledby="specialization-heading">
+        <h3 id="specialization-heading">Специализации и категории</h3>
+        <span class="tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>Плитка</span>
+      </section>
+
+      <section class="terms" aria-labelledby="terms-heading">
+        <header class="section-head"><div><p class="eyebrow">Действующие условия</p><h3 id="terms-heading">Ваши условия по категориям</h3></div></header>
+        <dl class="rate-list">
+          <div class="rate-row">
+            <dt><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 21h14M7 21V3h10v18M10 12h.01"/></svg></span><span>Двери</span></dt>
+            <dd>15<span>%</span></dd>
+          </div>
+          <div class="rate-row">
+            <dt><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5-9 5-9-5Zm0 5 9 5 9-5M3 19l9 5 9-5" transform="translate(0 -2)"/></svg></span><span>Напольные покрытия</span></dt>
+            <dd>10<span>%</span></dd>
+          </div>
+          <div class="rate-row">
+            <dt><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg></span><span>Фурнитура и замки</span></dt>
+            <dd>15<span>%</span></dd>
+          </div>
+        </dl>
+        <details class="explanation">
+          <summary><span>Как работают проценты</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary>
+          <p>Процент по категории — общий лимит на скидку клиенту и вознаграждение партнёру. Его распределение задаётся при создании сертификата.</p>
+        </details>
+      </section>
+
+      <div class="draft-note" id="draft-note" role="status" hidden></div>
+      <div class="paused-note" id="paused-note" role="status" hidden>В демонстрации сотрудничество на паузе. Создание новых сертификатов недоступно.</div>
+
+      <section class="cooperation" aria-labelledby="cooperation-heading">
+        <div><h3 id="cooperation-heading">Сотрудничество</h3><p id="cooperation-hint">Условия согласованы, можно работать.</p></div>
+        <button class="quiet-button" id="pause">Приостановить</button>
+      </section>
+    </div>
+    <footer class="dialog-footer">
+      <div class="footer-actions">
+        <button class="button secondary" id="edit-terms"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg>Изменить условия</button>
+        <button class="button primary" id="certificate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Создать сертификат</button>
+      </div>
+      <p class="footer-note">Прототип · все действия демонстрационные</p>
+    </footer>
+  </dialog>
+
+  <dialog id="edit-dialog" class="sub-dialog" aria-labelledby="edit-title">
+    <form id="terms-form">
+      <header class="sub-heading"><div><p class="eyebrow">Предложение партнёру</p><h2 id="edit-title">Изменить условия</h2></div><button type="button" class="icon-button" data-close="edit-dialog" aria-label="Закрыть изменение условий">×</button></header>
+      <p class="sub-copy">Посмотрите, как будет выглядеть предложение. Действующие условия пока не изменятся.</p>
+      <div class="input-list">
+        <label for="rate-doors">Двери<span class="input-wrap"><input id="rate-doors" name="doors" type="number" min="0" max="100" step="0.1" value="15" required inputmode="decimal" aria-label="Двери, процент"><span>%</span></span></label>
+        <label for="rate-floor">Напольные покрытия<span class="input-wrap"><input id="rate-floor" name="floor" type="number" min="0" max="100" step="0.1" value="10" required inputmode="decimal" aria-label="Напольные покрытия, процент"><span>%</span></span></label>
+        <label for="rate-locks">Фурнитура и замки<span class="input-wrap"><input id="rate-locks" name="locks" type="number" min="0" max="100" step="0.1" value="15" required inputmode="decimal" aria-label="Фурнитура и замки, процент"><span>%</span></span></label>
+      </div>
+      <p class="sub-note">Только предпросмотр. Предложение никому не отправляется.</p>
+      <div class="sub-actions"><button type="button" class="button secondary" data-close="edit-dialog">Отмена</button><button type="submit" class="button primary">Показать предложение</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="pause-dialog" class="sub-dialog" aria-labelledby="pause-title">
+    <header class="sub-heading"><h2 id="pause-title">Приостановить сотрудничество?</h2><button class="icon-button" data-close="pause-dialog" aria-label="Закрыть подтверждение">×</button></header>
+    <p class="sub-copy">Новые сертификаты для Артема будут недоступны. Сотрудничество можно будет возобновить.</p>
+    <p class="sub-note">Демонстрация состояния. Реальное сотрудничество не изменится.</p>
+    <div class="sub-actions"><button class="button secondary" data-close="pause-dialog">Не приостанавливать</button><button class="button primary" id="confirm-pause">Приостановить в демо</button></div>
+  </dialog>
+
+  <dialog id="certificate-dialog" class="sub-dialog" aria-labelledby="certificate-title">
+    <header class="sub-heading"><div><p class="eyebrow">Следующий шаг</p><h2 id="certificate-title">Создание сертификата</h2></div><button class="icon-button" data-close="certificate-dialog" aria-label="Закрыть следующий шаг">×</button></header>
+    <p class="sub-copy">На сайте здесь откроется существующий сценарий создания сертификата для партнёра Артем с действующими условиями.</p>
+    <div class="demo-handoff"><strong>Двери 15% · Напольные покрытия 10% · Фурнитура и замки 15%</strong><p>Это только переход в макете. Сертификат не создан, клиентские данные не запрашиваются.</p></div>
+    <div class="sub-actions"><button class="button primary" data-close="certificate-dialog">Вернуться к партнёру</button></div>
+  </dialog>
+  <script src="partner-cooperation-detail.js"></script>
+</body>
+</html>

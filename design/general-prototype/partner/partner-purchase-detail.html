@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Детали операции · RemCard, прототип</title>
+  <meta name="description" content="Дизайн деталей покупки: сумма к оплате, вознаграждение по категориям и прозрачная разбивка. Демонстрационные данные со скриншота.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="partner-cooperation-detail.css">
+  <link rel="stylesheet" href="partner-purchase-detail-minimal.css">
+  <link rel="stylesheet" href="partner-purchase-detail-focus.css">
+</head>
+<body class="op-body">
+  <header class="op-top">
+    <a class="back" href="../index.html">← Все прототипы</a>
+    <a class="brand op-brand" href="../index.html" aria-label="RemCard, общий прототип">remcard<span>.</span></a>
+    <span class="op-top-label">Кабинет партнёра</span>
+    <button class="icon-button" id="op-theme" aria-label="Включить тёмную тему" title="Переключить тему"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 13a8.8 8.8 0 0 1-9.8-9.8A9 9 0 1 0 20.8 13Z"/></svg></button>
+  </header>
+
+  <main class="op-main">
+    <section id="op-detail" aria-labelledby="op-title">
+      <div class="op-page-nav"><button class="op-back" id="op-history">← К истории</button><span class="op-demo">Прототип</span></div>
+      <div class="op-title-row"><h1 id="op-title">Детали операции</h1></div>
+      <p class="op-document"><strong>RC-X9Z0WZ</strong><span class="op-document-separator">·</span><span class="op-direction">Принято у меня</span></p>
+      <div class="op-receipt">
+        <section class="op-focus" aria-labelledby="op-focus-label">
+          <h2 id="op-focus-label">Вознаграждение по операции</h2>
+          <p class="op-accrual-amount">5 400 <span>₽</span></p>
+          <p class="op-focus-note">Начисление сохранено.<br>Статус выплаты здесь не указан.</p>
+        </section>
+        <p class="op-purchase-context"><span>К оплате за покупку</span><strong class="op-payable">162 000 ₽</strong></p>
+        <p class="op-participants">Партнёр <strong>Артем</strong><span>·</span>Исполнитель <strong>Сергей</strong></p>
+        <details class="op-breakdown" id="op-breakdown">
+          <summary><span><span class="op-breakdown-label">Состав и расчёт</span><span class="op-breakdown-hint">Двери, фурнитура и замки</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary>
+          <div class="op-breakdown-body">
+            <dl class="op-total-lines"><div><dt>До скидки</dt><dd>180 000 ₽</dd></div><div><dt>Скидка клиенту</dt><dd>−18 000 ₽</dd></div></dl>
+            <article class="op-item" aria-labelledby="op-doors">
+              <h3 id="op-doors">Двери</h3>
+              <div class="op-calculation-content"><dl><div><dt>Скидка</dt><dd>150 000 ₽ × 10% = 15 000 ₽</dd></div><div><dt>К оплате за позицию</dt><dd>150 000 ₽ − 15 000 ₽ = 135 000 ₽</dd></div><div><dt>Вознаграждение</dt><dd>150 000 ₽ × 3% = 4 500 ₽</dd></div></dl></div>
+            </article>
+            <article class="op-item" aria-labelledby="op-locks">
+              <h3 id="op-locks">Фурнитура и замки</h3>
+              <div class="op-calculation-content"><dl><div><dt>Скидка</dt><dd>30 000 ₽ × 10% = 3 000 ₽</dd></div><div><dt>К оплате за позицию</dt><dd>30 000 ₽ − 3 000 ₽ = 27 000 ₽</dd></div><div><dt>Вознаграждение</dt><dd>30 000 ₽ × 3% = 900 ₽</dd></div></dl></div>
+            </article>
+            <p class="op-breakdown-note">Вознаграждение рассчитано от суммы до скидки. Общее начисление складывается из вознаграждений по двум категориям и не подтверждает выплату.</p>
+          </div>
+        </details>
+        <div class="op-summary-actions"><button class="button secondary" id="op-document-operations">Все операции по документу <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></div>
+      </div>
+    </section>
+
+    <section id="op-history-view" aria-labelledby="op-history-title" hidden>
+      <div class="op-page-nav"><button class="op-back" id="op-return-detail">← К деталям операции</button><span class="op-demo">Прототип · данные со скриншота</span></div>
+      <div class="op-title-row"><div><p class="eyebrow">Кабинет партнёра</p><h1 id="op-history-title">История операций</h1></div></div>
+      <div class="op-history-toolbar"><span id="op-history-filter">Все документы</span><button class="quiet-button" id="op-clear-filter" hidden>Показать всю историю</button></div>
+      <p class="op-history-notice">В макете показана только операция с вашего скриншота. Это не полный список операций компании и не реальные данные кабинета.</p>
+      <div class="op-history-card">
+        <div><p class="eyebrow">Принято у меня</p><h2>RC-X9Z0WZ</h2><p>Артем · исполнитель Сергей</p></div>
+        <dl><div><dt>К оплате</dt><dd>162 000 ₽</dd></div><div><dt>Сохранённое начисление</dt><dd>5 400 ₽</dd></div></dl>
+        <button class="button secondary" id="op-open-detail">Открыть операцию <span aria-hidden="true">↗</span></button>
+      </div>
+    </section>
+    <footer class="op-page-footer"><p>Демонстрационные данные. Реальных операций нет.</p><a href="partner-cooperation-detail.html">Карточка партнёра ↗</a></footer>
+  </main>
+  <script src="partner-purchase-detail.js"></script>
+</body>
+</html>

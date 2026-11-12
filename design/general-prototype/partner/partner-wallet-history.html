@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Покупки и начисления · RemCard, прототип</title>
+  <meta name="description" content="Дизайн покупок, начислений и деталей начисления для согласования. Кошелёк остаётся без изменений. Только демонстрационные данные.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="partner-wallet-history.css">
+  <script src="partner-wallet-history.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержимому</a>
+  <header class="top">
+    <a class="brand" href="../index.html" aria-label="RemCard, все прототипы">remcard<span>.</span></a>
+    <span class="cabinet-label">для партнёров</span>
+    <span class="prototype-label">Прототип · на согласование</span>
+    <button class="theme" id="theme" aria-label="Включить тёмную тему" title="Переключить тему">◐</button>
+  </header>
+  <main id="main" tabindex="-1">
+    <div class="context"><span>ОПТОВИК</span><span>Покупки и начисления</span></div>
+    <section id="history-view" aria-labelledby="history-title">
+      <div class="page-heading"><h1 id="history-title">История операций</h1></div>
+      <div class="history-tabs" role="group" aria-label="Тип операции"><button data-view="purchases" aria-pressed="true">Покупки <span>2</span></button><button data-view="accruals" aria-pressed="false">Начисления <span>4</span></button></div>
+      <p class="view-purpose" id="view-purpose">Принято у меня · суммы покупок после скидки</p>
+      <div class="toolbar">
+        <label class="search"><span class="sr-only">Поиск по партнёру или сертификату</span><input id="search" type="search" placeholder="Партнёр или сертификат" autocomplete="off"></label>
+        <button class="filter-button" id="filter-button" aria-expanded="false" aria-controls="filters">Фильтры <span id="filter-count" hidden></span><span aria-hidden="true">⌄</span></button>
+      </div>
+      <div id="filters" class="filters" hidden>
+        <label><span>Статус</span><select id="status"><option value="all">Все статусы</option><option value="active">Подтверждена</option><option value="paid">Выплачено</option></select></label>
+        <label><span>С даты</span><input id="from" type="date"></label><label><span>По дату</span><input id="to" type="date"></label>
+        <button class="text-button" id="clear-filters">Сбросить фильтры</button>
+      </div>
+      <div class="results-heading"><p id="result-count" role="status"></p><button class="text-button" id="clear-search">Сбросить поиск</button></div>
+      <div class="rows" id="history-rows"></div>
+      <details class="fine-print"><summary>Об истории <span aria-hidden="true">+</span></summary><p>Поиск и фильтры работают по загруженным записям. Покупки «Принято у меня» загружаются постранично; «По рекомендациям» охватывают до 200 последних заказов. Суммы показаны как сохранено, без пересчёта по текущим условиям.</p></details>
+    </section>
+    <section id="detail-view" aria-labelledby="detail-title" hidden>
+      <button class="back text-button" data-view="accruals">← К начислениям</button>
+      <div class="page-heading detail-heading"><h1 id="detail-title">Детали начисления</h1><span class="status neutral">Начислено</span></div>
+      <article class="receipt">
+        <div class="receipt-focus"><p>Вознаграждение профклиенту</p><p class="main-amount">0 <span>₽</span></p><p class="muted">Сохранённая сумма начисления, не сумма покупки.</p></div>
+        <dl class="receipt-meta"><div><dt>Партнёр</dt><dd>Артем</dd></div><div><dt>Сертификат</dt><dd>RC-X9Z0WZ</dd></div><div><dt>Дата начисления</dt><dd id="detail-date">10 ноября 2026, 15:48</dd></div><div><dt>Тип</dt><dd>Вознаграждение профклиенту</dd></div></dl>
+        <button class="primary-link" id="open-related">Открыть связанную покупку <span aria-hidden="true">↗</span></button>
+        <details class="technical"><summary>Номер начисления <span aria-hidden="true">+</span></summary><p id="detail-id">cmwaor7m00014o30k7lrqpa0s</p></details>
+      </article>
+      <p class="read-only">Режим просмотра. Финансовые действия недоступны.</p>
+    </section>
+    <footer><span>Демонстрационные данные · без реальных операций</span><a href="../index.html">Все прототипы ↗</a></footer>
+  </main>
+  <dialog id="purchase-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-heading"><h2 id="dialog-title">Покупка</h2><button class="close" id="close-dialog" aria-label="Закрыть">×</button></div>
+    <span class="status neutral" id="dialog-status">Подтверждена</span><p class="dialog-amount" id="dialog-amount"></p>
+    <dl class="receipt-meta"><div><dt>Партнёр</dt><dd id="dialog-partner"></dd></div><div><dt>Сертификат</dt><dd id="dialog-certificate"></dd></div><div><dt>Дата покупки</dt><dd id="dialog-order"></dd></div></dl>
+    <p class="muted" id="dialog-note"></p>
+    <button class="primary-link" id="dialog-return">Вернуться к истории</button>
+  </dialog>
+</body>
+</html>

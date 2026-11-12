@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сканер · оформление покупки — прототип</title>
+  <meta name="description" content="Прототип экрана партнёра после сканирования сертификата: оформление покупки по категориям.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./partner-scan-transaction.css">
+</head>
+<body class="pst-body">
+  <a class="pst-skip" href="#pst-main">К содержимому</a>
+  <header class="pst-top">
+    <a class="pst-brand" href="../index.html" aria-label="RemCard — на главную прототипа">remcard<i>.</i></a>
+    <p class="pst-top__title">Сканер · оформление покупки</p>
+    <div class="pst-top__actions">
+      <a class="pst-link-back" href="../index.html">
+        <svg class="pst-ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 6l-6 6 6 6-1.4 1.4-7.4-7.4 7.4-7.4z"/></svg>
+        К прототипу
+      </a>
+      <button type="button" class="pst-btn-icon" id="pst-theme" aria-label="Переключить тему">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 109 9 7 7 0 01-9-9z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="pst-wrap" id="pst-main">
+    <div class="pst-notice" role="note">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+      <span>Прототип. Покупки не создаются.</span>
+    </div>
+
+    <h1 class="pst-page-title">Оформление по сертификату</h1>
+    <p class="pst-page-lead">Скидка рассчитается автоматически.</p>
+
+    <div class="pst-layout" id="pst-workspace">
+      <aside class="pst-panel pst-panel--context" aria-labelledby="pst-context-title">
+        <h2 id="pst-context-title">Сертификат</h2>
+        <article class="pst-cert" aria-label="Демонстрационный сертификат клиента">
+          <p class="pst-sr-only">QR ведёт на демонстрационный URL example.com, не на действующий сертификат.</p>
+          <div class="pst-cert__orb pst-cert__orb--tr" aria-hidden="true"></div>
+          <div class="pst-cert__orb pst-cert__orb--bl" aria-hidden="true"></div>
+          <div class="pst-cert__head">
+            <span class="pst-cert__brand">remcard<span class="pst-cert__dot">.</span></span>
+            <span class="pst-cert__pill">Скидочный сертификат</span>
+          </div>
+          <p class="pst-cert__pct">до −10 %</p>
+          <p class="pst-cert__sub">у партнёров RemCard</p>
+          <div class="pst-cert__inset">
+            <div
+              class="pst-cert__qr"
+              role="img"
+              aria-label="Демонстрационный QR-код"
+              data-demo-qr-url="https://example.com/remcard-demo/RC-DEMO-7X4K"
+            >
+              <span class="pst-cert__qr-surface"><svg class="pst-cert__qr-svg" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="88" height="88" viewBox="0 0 41 41" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#1b1f1a" d="M4 4.5h7m2 0h2m5 0h1m1 0h4m1 0h1m2 0h7M4 5.5h1m5 0h1m3 0h3m2 0h1m2 0h1m2 0h1m2 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h3m2 0h1m1 0h2m1 0h1m1 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m1 0h2m2 0h1m2 0h1m2 0h1m2 0h1m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h3m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h3m3 0h1m4 0h1m1 0h4m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m1 0h1m2 0h3m1 0h1M4 12.5h1m1 0h5m4 0h1m1 0h2m2 0h1m1 0h2m1 0h2m2 0h5M4 13.5h6m1 0h1m1 0h3m1 0h1m2 0h5m2 0h1m2 0h2m1 0h2m1 0h1M5 14.5h1m4 0h4m1 0h7m2 0h1m1 0h1m3 0h1m1 0h1m1 0h2M9 15.5h1m1 0h2m1 0h4m1 0h6m4 0h2m1 0h3M6 16.5h2m2 0h1m3 0h1m1 0h1m1 0h1m1 0h1m2 0h7m2 0h2M4 17.5h1m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m2 0h1m2 0h3m1 0h2m1 0h2M4 18.5h1m1 0h3m1 0h1m3 0h1m3 0h3m3 0h3m1 0h3m2 0h1m1 0h1M5 19.5h1m1 0h2m2 0h2m1 0h1m4 0h1m5 0h2m1 0h3m1 0h1M5 20.5h2m1 0h3m1 0h1m2 0h1m2 0h2m1 0h1m6 0h2m1 0h2m3 0h1M7 21.5h2m2 0h1m4 0h2m4 0h2m1 0h1m1 0h1m2 0h2m1 0h2m1 0h1M5 22.5h2m1 0h4m3 0h5m2 0h1m1 0h2m5 0h2m1 0h1M4 23.5h1m1 0h1m4 0h2m1 0h3m1 0h3m3 0h3m1 0h9M4 24.5h4m1 0h2m1 0h3m1 0h4m2 0h2m1 0h1m2 0h3m2 0h1m1 0h2M4 25.5h2m2 0h1m3 0h3m2 0h1m1 0h2m3 0h1m1 0h3m7 0h1M4 26.5h1m1 0h1m3 0h1m1 0h5m4 0h3m2 0h4m5 0h1M4 27.5h1m2 0h3m1 0h1m3 0h1m4 0h1m2 0h3m1 0h3m1 0h4M4 28.5h1m2 0h1m1 0h2m1 0h1m2 0h2m1 0h1m2 0h1m1 0h1m2 0h1m1 0h5m1 0h1M12 29.5h2m6 0h5m3 0h1m3 0h1m1 0h1m1 0h1M4 30.5h7m4 0h5m1 0h1m2 0h1m1 0h3m1 0h1m1 0h1m1 0h2M4 31.5h1m5 0h1m1 0h3m3 0h1m2 0h4m2 0h2m3 0h4M4 32.5h1m1 0h3m1 0h1m1 0h1m1 0h4m1 0h2m2 0h4m1 0h6m1 0h2M4 33.5h1m1 0h3m1 0h1m1 0h4m2 0h2m2 0h1m2 0h1m2 0h2m2 0h1m3 0h1M4 34.5h1m1 0h3m1 0h1m1 0h2m1 0h2m2 0h2m1 0h1m1 0h1m4 0h3m2 0h1M4 35.5h1m5 0h1m4 0h2m1 0h2m5 0h2m3 0h1m1 0h1M4 36.5h7m1 0h1m3 0h1m1 0h4m4 0h1m2 0h3m3 0h1"/></svg></span>
+            </div>
+            <div class="pst-cert__code-col">
+              <span class="pst-cert__code-label">КОД</span>
+              <span class="pst-cert__code-value">RC-DEMO-7X4K</span>
+            </div>
+          </div>
+          <div class="pst-cert__foot">
+            <span class="pst-cert__term">до 31.12.2027</span>
+            <span class="pst-cert__status">Действует · 0 из 3</span>
+          </div>
+        </article>
+
+        <section class="pst-referrer" aria-labelledby="pst-referrer-title">
+          <div class="pst-referrer__head">
+            <h3 id="pst-referrer-title">Клиент от партнёра</h3>
+            <span class="pst-referrer__badge">Демо</span>
+          </div>
+          <dl class="pst-referrer__facts">
+            <div>
+              <dt>Тип партнёра</dt>
+              <dd>Специалист</dd>
+            </div>
+            <div>
+              <dt>Партнёр</dt>
+              <dd>Демопартнёр</dd>
+            </div>
+            <div>
+              <dt>Контакт</dt>
+              <dd><span class="pst-referrer__contact">partner@example.com</span></dd>
+            </div>
+          </dl>
+          <p class="pst-referrer__note">Демонстрационные данные · не для связи</p>
+        </section>
+
+        <p class="pst-scope">Принимается во всех филиалах вашей организации.</p>
+
+        <div class="pst-branch" role="status">
+          <small>Филиал операции</small>
+          <b>Демонстрационный филиал · Центральный</b>
+        </div>
+
+        <details class="pst-disclosure pst-disclosure--cert-more">
+          <summary class="pst-disclosure__btn">Подробнее о сертификате</summary>
+          <div class="pst-disclosure__panel pst-context-more">
+            <dl class="pst-context-more__facts">
+              <div><dt>Выпустил</dt><dd>Демо-профиль «Студия Ремонта»</dd></div>
+              <div><dt>Использований</dt><dd>0 из 3</dd></div>
+            </dl>
+            <p class="pst-context-more__label">Скидки по категориям</p>
+            <ul class="pst-terms-list">
+              <li><span>Двери</span><b>−10 %</b></li>
+              <li><span>Напольные покрытия</span><b>−7 %</b></li>
+              <li><span>Фурнитура и замки</span><b>−10 %</b></li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <section class="pst-panel pst-panel--form" aria-labelledby="pst-form-title">
+        <h2 id="pst-form-title">Введите суммы покупки</h2>
+        <p class="pst-form-lead">До скидки. Заполните только нужные категории.</p>
+
+        <form id="pst-form" novalidate action="#" method="get">
+          <fieldset class="pst-cat" data-cat="doors">
+            <legend class="pst-sr-only">Двери, скидка 10 %</legend>
+            <p class="pst-sr-only" id="pst-cat-doors-desc">Сумма по договору или чеку до скидки.</p>
+            <div class="pst-cat__head">
+              <h3 class="pst-cat__title" id="pst-cat-doors">Двери</h3>
+              <span class="pst-cat__disc">−10 %</span>
+            </div>
+            <div class="pst-field pst-field--amount" data-field="amount">
+              <label class="pst-sr-only" for="pst-amt-doors">Сумма до скидки, двери, рубли</label>
+              <input id="pst-amt-doors" name="doors" type="text" inputmode="decimal" autocomplete="off" placeholder="Сумма, ₽" aria-describedby="pst-cat-doors-desc">
+              <p class="pst-field__err" hidden></p>
+            </div>
+            <details class="pst-disclosure pst-disclosure--reward">
+              <summary class="pst-disclosure__btn pst-reward-summary" data-reward-summary="doors">
+                <span class="pst-reward-summary__main" data-reward-summary-text>Вознаграждение · 14 дней</span>
+                <span class="pst-reward-summary__edit" aria-hidden="true">Изменить</span>
+              </summary>
+              <div class="pst-disclosure__panel">
+                <div class="pst-radio-row" role="radiogroup" aria-label="Тип позиции — двери">
+                  <label class="pst-radio"><input type="radio" name="type-doors" value="goods" checked> Товар</label>
+                  <label class="pst-radio"><input type="radio" name="type-doors" value="service"> Услуга</label>
+                </div>
+                <div class="pst-field" data-field="delay">
+                  <label for="pst-delay-doors">Подтвердить вознаграждение через, дней</label>
+                  <input id="pst-delay-doors" type="text" inputmode="numeric" pattern="[0-9]*" value="14" data-delay autocomplete="off" aria-describedby="pst-delay-doors-hint">
+                  <p class="pst-field__hint" id="pst-delay-doors-hint">Целое число 0–36 500, по умолчанию 14.</p>
+                  <p class="pst-field__err" hidden></p>
+                </div>
+                <label class="pst-check" data-handoff-label="goods">
+                  <input type="checkbox" name="handoff-doors"> <span>Товар передан клиенту</span>
+                </label>
+                <p class="pst-hint" data-due-hint hidden></p>
+              </div>
+            </details>
+          </fieldset>
+
+          <fieldset class="pst-cat" data-cat="floors">
+            <legend class="pst-sr-only">Напольные покрытия, скидка 7 %</legend>
+            <p class="pst-sr-only" id="pst-cat-floors-desc">Ламинат, плитка, кварц-винил и аналогичные позиции.</p>
+            <div class="pst-cat__head">
+              <h3 class="pst-cat__title" id="pst-cat-floors">Напольные покрытия</h3>
+              <span class="pst-cat__disc">−7 %</span>
+            </div>
+            <div class="pst-field pst-field--amount" data-field="amount">
+              <label class="pst-sr-only" for="pst-amt-floors">Сумма до скидки, напольные покрытия, рубли</label>
+              <input id="pst-amt-floors" name="floors" type="text" inputmode="decimal" autocomplete="off" placeholder="Сумма, ₽" aria-describedby="pst-cat-floors-desc">
+              <p class="pst-field__err" hidden></p>
+            </div>
+            <details class="pst-disclosure pst-disclosure--reward">
+              <summary class="pst-disclosure__btn pst-reward-summary" data-reward-summary="floors">
+                <span class="pst-reward-summary__main" data-reward-summary-text>Вознаграждение · 14 дней</span>
+                <span class="pst-reward-summary__edit" aria-hidden="true">Изменить</span>
+              </summary>
+              <div class="pst-disclosure__panel">
+                <div class="pst-radio-row" role="radiogroup" aria-label="Тип позиции — напольные покрытия">
+                  <label class="pst-radio"><input type="radio" name="type-floors" value="goods" checked> Товар</label>
+                  <label class="pst-radio"><input type="radio" name="type-floors" value="service"> Услуга</label>
+                </div>
+                <div class="pst-field" data-field="delay">
+                  <label for="pst-delay-floors">Подтвердить вознаграждение через, дней</label>
+                  <input id="pst-delay-floors" type="text" inputmode="numeric" pattern="[0-9]*" value="14" data-delay autocomplete="off">
+                  <p class="pst-field__err" hidden></p>
+                </div>
+                <label class="pst-check" data-handoff-label="goods">
+                  <input type="checkbox" name="handoff-floors"> <span>Товар передан клиенту</span>
+                </label>
+                <p class="pst-hint" data-due-hint hidden></p>
+              </div>
+            </details>
+          </fieldset>
+
+          <fieldset class="pst-cat" data-cat="hardware">
+            <legend class="pst-sr-only">Фурнитура и замки, скидка 10 %</legend>
+            <p class="pst-sr-only" id="pst-cat-hardware-desc">Ручки, петли, замки и комплектующие.</p>
+            <div class="pst-cat__head">
+              <h3 class="pst-cat__title" id="pst-cat-hardware">Фурнитура и замки</h3>
+              <span class="pst-cat__disc">−10 %</span>
+            </div>
+            <div class="pst-field pst-field--amount" data-field="amount">
+              <label class="pst-sr-only" for="pst-amt-hardware">Сумма до скидки, фурнитура и замки, рубли</label>
+              <input id="pst-amt-hardware" name="hardware" type="text" inputmode="decimal" autocomplete="off" placeholder="Сумма, ₽" aria-describedby="pst-cat-hardware-desc">
+              <p class="pst-field__err" hidden></p>
+            </div>
+            <details class="pst-disclosure pst-disclosure--reward">
+              <summary class="pst-disclosure__btn pst-reward-summary" data-reward-summary="hardware">
+                <span class="pst-reward-summary__main" data-reward-summary-text>Вознаграждение · 14 дней</span>
+                <span class="pst-reward-summary__edit" aria-hidden="true">Изменить</span>
+              </summary>
+              <div class="pst-disclosure__panel">
+                <div class="pst-radio-row" role="radiogroup" aria-label="Тип позиции — фурнитура">
+                  <label class="pst-radio"><input type="radio" name="type-hardware" value="goods" checked> Товар</label>
+                  <label class="pst-radio"><input type="radio" name="type-hardware" value="service"> Услуга</label>
+                </div>
+                <div class="pst-field" data-field="delay">
+                  <label for="pst-delay-hardware">Подтвердить вознаграждение через, дней</label>
+                  <input id="pst-delay-hardware" type="text" inputmode="numeric" pattern="[0-9]*" value="14" data-delay autocomplete="off">
+                  <p class="pst-field__err" hidden></p>
+                </div>
+                <label class="pst-check" data-handoff-label="goods">
+                  <input type="checkbox" name="handoff-hardware"> <span>Товар передан клиенту</span>
+                </label>
+                <p class="pst-hint" data-due-hint hidden></p>
+              </div>
+            </details>
+          </fieldset>
+
+          <div class="pst-form-meta">
+            <label class="pst-check pst-check--quiet" id="pst-delay-all-wrap">
+              <input type="checkbox" id="pst-delay-all"> <span>Этот срок для всех категорий</span>
+            </label>
+            <p class="pst-form-note">Синхронизация с первой категорией (двери).</p>
+          </div>
+
+          <div class="pst-summary" aria-live="polite" aria-atomic="true">
+            <dl>
+              <div><dt>Сумма покупки</dt><dd id="pst-sum-gross">0 ₽</dd></div>
+              <div><dt>Скидка клиенту</dt><dd id="pst-sum-discount">0 ₽</dd></div>
+              <div class="pst-summary__due"><dt>К оплате (ориентир)</dt><dd id="pst-sum-due">0 ₽</dd></div>
+            </dl>
+          </div>
+          <p class="pst-block-reason" id="pst-block-reason" role="status">Укажите сумму хотя бы в одной категории, чтобы продолжить.</p>
+
+          <div class="pst-actions">
+            <button type="button" class="pst-btn pst-btn--ghost" id="pst-cancel">Отмена</button>
+            <button type="button" class="pst-btn pst-btn--primary" id="pst-confirm" disabled aria-disabled="true">Подтвердить покупку</button>
+          </div>
+        </form>
+
+        <div class="pst-done" id="pst-complete" hidden>
+          <b>Демонстрация завершена</b>
+          <p>Ни одна покупка не создана — это только макет. Нажмите «Начать заново», чтобы снова попробовать ввод.</p>
+          <button type="button" class="pst-btn pst-btn--primary" id="pst-restart">Начать заново</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="pst-overlay" id="pst-overlay-review" hidden role="presentation">
+    <div class="pst-dialog pst-dialog--review" role="dialog" aria-modal="true" aria-labelledby="pst-review-title" tabindex="-1">
+      <h2 id="pst-review-title">Проверьте покупку</h2>
+      <div
+        id="pst-review-body"
+        class="pst-review-body"
+        tabindex="0"
+        role="region"
+        aria-label="Детали покупки: суммы по категориям и итог к оплате"
+      ></div>
+      <div class="pst-dialog__actions">
+        <button type="button" class="pst-btn pst-btn--ghost" id="pst-review-back">Назад</button>
+        <button type="button" class="pst-btn pst-btn--primary" id="pst-review-finish">Завершить демонстрацию</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pst-overlay" id="pst-overlay-cancel" hidden role="presentation">
+    <div class="pst-dialog" role="dialog" aria-modal="true" aria-labelledby="pst-cancel-title" tabindex="-1">
+      <h2 id="pst-cancel-title">Отменить ввод?</h2>
+      <p>Суммы останутся в полях, пока вы явно не начнёте заново после демо.</p>
+      <div class="pst-dialog__actions">
+        <button type="button" class="pst-btn pst-btn--ghost" id="pst-cancel-back">Продолжить ввод</button>
+        <button type="button" class="pst-btn pst-btn--primary" id="pst-cancel-confirm">Да, отменить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./partner-scan-transaction.js" defer></script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  const DEFAULT_LINE_HEIGHT = 16;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  const PICK_CAPABILITIES = ["pick"];
+  const PICK_CHAIN_LENGTH = 4;
+  const PICK_MAX_TEXT_CHARS = 120;
+  const PICK_MAX_HTML_CHARS = 300;
+
+  function truncate(value, maxChars) {
+    return value.length > maxChars ? value.slice(0, maxChars - 1) + "…" : value;
+  }
+
+  function isPickableElement(element) {
+    return (
+      element instanceof Element &&
+      element !== document.documentElement &&
+      element !== document.body
+    );
+  }
+
+  function resolvePickTarget(x, y) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const element = document.elementFromPoint(x, y);
+    return isPickableElement(element) ? element.closest("svg") || element : null;
+  }
+
+  function pickLabel(element) {
+    if (element.id) return element.localName + "#" + element.id;
+    return [element.localName].concat(Array.from(element.classList).slice(0, 2)).join(".");
+  }
+
+  // Only attributes that help find the element in source. data-* values and URL
+  // query strings or fragments can carry tokens.
+  const PICK_ATTRIBUTES = new Set([
+    "id",
+    "class",
+    "name",
+    "type",
+    "role",
+    "alt",
+    "aria-label",
+    "href",
+    "src",
+  ]);
+
+  function pickAttributeValue(attribute) {
+    return attribute.name === "href" || attribute.name === "src"
+      ? attribute.value.split(/[?#]/)[0]
+      : attribute.value;
+  }
+
+  function describePickElement(element) {
+    const chain = [];
+    for (
+      let current = element;
+      isPickableElement(current) && chain.length < PICK_CHAIN_LENGTH;
+      current = current.parentElement
+    ) {
+      chain.unshift(current);
+    }
+    const attributes = Array.from(element.attributes)
+      .filter((attribute) => PICK_ATTRIBUTES.has(attribute.name))
+      .map((attribute) => ` ${attribute.name}="${pickAttributeValue(attribute).replace(/"/g, "&quot;")}"`)
+      .join("");
+    const text = (element.innerText || element.textContent || "").replace(/\s+/g, " ").trim();
+    return {
+      chain: chain.map(pickLabel),
+      html: truncate(`<${element.localName}${attributes}>`, PICK_MAX_HTML_CHARS),
+      text: text ? truncate(text, PICK_MAX_TEXT_CHARS) : undefined,
+    };
+  }
+
+  // Hover asks once per frame, and innerText on a large section forces layout,
+  // so only the rect is re-read while the pointer stays on the same element.
+  // Clicks ask for fresh details since the page may have changed the element.
+  let lastPick = null;
+
+  function describePickTarget(element, fresh) {
+    if (fresh || lastPick?.element !== element) {
+      lastPick = { element, details: describePickElement(element) };
+    }
+    const rect = element.getBoundingClientRect();
+    return {
+      rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      ...lastPick.details,
+    };
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+      capabilities: PICK_CAPABILITIES,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_PICK") {
+      const element = resolvePickTarget(event.data.x, event.data.y);
+      postToTrustedTop({
+        type: "INLINE_EDIT_PICK_RESULT",
+        seq: event.data.seq,
+        target: element ? describePickTarget(element, event.data.fresh === true) : null,
+      });
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_BY") {
+      const { deltaX, deltaY, deltaMode } = event.data;
+      if (!scrollForwarding || !Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return;
+      if (deltaMode !== 0 && deltaMode !== 1 && deltaMode !== 2) return;
+      const lineHeight =
+        parseFloat(getComputedStyle(document.documentElement).lineHeight) || DEFAULT_LINE_HEIGHT;
+      const scaleX = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerWidth : 1;
+      const scaleY = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerHeight : 1;
+      // The selection overlay receives the wheel event instead of this iframe.
+      // Instant scrolling preserves trackpad deltas even on smooth-scroll sites.
+      window.scrollBy({ left: deltaX * scaleX, top: deltaY * scaleY, behavior: "instant" });
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script></body>
+</html>

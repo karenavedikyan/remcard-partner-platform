@@ -1,0 +1,349 @@
+/* Cooperation controls — prototype only */
+
+.coop-list-btn {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.coop-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.coop-readonly-hint {
+  display: block;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+  max-width: 16rem;
+}
+
+.coop-block {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #e5e5df);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface, #fff) 92%, var(--offset, #f2f1ee));
+}
+
+.coop-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.coop-block-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.coop-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  background: var(--offset, #f2f1ee);
+  color: var(--ink, #252923);
+}
+
+.coop-pill.is-paused {
+  background: color-mix(in srgb, #b45309 18%, var(--surface, #fff));
+  color: #9a3412;
+}
+
+.coop-pill.is-pending {
+  background: color-mix(in srgb, #1d4ed8 14%, var(--surface, #fff));
+  color: #1e3a8a;
+}
+
+.coop-pill.is-active {
+  background: color-mix(in srgb, #15803d 12%, var(--surface, #fff));
+  color: #166534;
+}
+
+[data-theme="dark"] .coop-pill.is-paused {
+  color: #fdba74;
+  background: color-mix(in srgb, #b45309 28%, var(--surface, #202520));
+}
+
+[data-theme="dark"] .coop-pill.is-pending {
+  color: #93c5fd;
+  background: color-mix(in srgb, #1d4ed8 28%, var(--surface, #202520));
+}
+
+[data-theme="dark"] .coop-pill.is-active {
+  color: #86efac;
+  background: color-mix(in srgb, #15803d 24%, var(--surface, #202520));
+}
+
+.coop-demo-note {
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+}
+
+.coop-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coop-actions .btn {
+  min-height: 40px;
+}
+
+.coop-pending {
+  display: grid;
+  gap: 8px;
+}
+
+.coop-compare {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.coop-compare li {
+  margin: 0.2rem 0;
+}
+
+.coop-demo-side {
+  display: grid;
+  gap: 8px;
+}
+
+/* Keep the terms editor inside the dialog content box (no horizontal overflow). */
+.coop-term-modal {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-wrap: break-word;
+}
+
+.coop-term-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  /* Prefer adaptive layout over a horizontal scroll trap */
+  overflow-x: visible;
+}
+
+.coop-term-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.coop-term-table th,
+.coop-term-table td {
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid var(--line, #e5e5df);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: break-word;
+}
+
+.coop-term-table th:nth-child(1),
+.coop-term-table td:nth-child(1) {
+  width: 44%;
+}
+
+.coop-term-table th:nth-child(2),
+.coop-term-table td:nth-child(2) {
+  width: 22%;
+}
+
+.coop-term-table th:nth-child(3),
+.coop-term-table td:nth-child(3) {
+  width: 34%;
+}
+
+.coop-percent-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line, #e5e5df);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+}
+
+.coop-term-modal .form-footer,
+.coop-term-modal #coop-term-footer {
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* [hidden] must win over .row/.form-footer { display:flex } */
+.coop-term-modal #coop-term-footer[hidden],
+.coop-term-modal .form-footer[hidden] {
+  display: none !important;
+}
+
+.coop-term-modal[data-coop-discarding] .coop-percent-input {
+  pointer-events: none;
+}
+
+.coop-term-modal .form-footer .btn,
+.coop-term-modal #coop-term-footer .btn {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.coop-percent-input.is-invalid {
+  border-color: var(--primary, #c12b2f);
+}
+
+.coop-live-compare {
+  min-height: 1.25rem;
+}
+
+.coop-discard-confirm {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px 14px;
+}
+
+.coop-discard-confirm .row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coop-current-terms {
+  display: grid;
+  gap: 6px;
+}
+
+.coop-history ul {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+}
+
+.collection-row-action .coop-list-btn,
+.record-card-actions .coop-list-btn,
+.link-card .coop-list-btn {
+  font-size: var(--text-sm, 0.875rem);
+}
+
+/* Keep text actions wrapping on phone — no horizontal scroll trap */
+@media (max-width: 680px) {
+  .coop-block,
+  .coop-actions,
+  .record-card-actions,
+  .collection-row-action {
+    overflow-x: visible;
+  }
+
+  .coop-actions,
+  .coop-list-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .coop-actions .btn,
+  .coop-list-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Stack terms table into readable rows so 320/375 fit the dialog box */
+  .coop-term-table,
+  .coop-term-table thead,
+  .coop-term-table tbody,
+  .coop-term-table tr,
+  .coop-term-table th,
+  .coop-term-table td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .coop-term-table {
+    table-layout: auto;
+  }
+
+  .coop-term-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .coop-term-table tr {
+    margin: 0 0 0.75rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid var(--line, #e5e5df);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface, #fff) 92%, var(--offset, #f2f1ee));
+  }
+
+  .coop-term-table th,
+  .coop-term-table td,
+  .coop-term-table th:nth-child(1),
+  .coop-term-table td:nth-child(1),
+  .coop-term-table th:nth-child(2),
+  .coop-term-table td:nth-child(2),
+  .coop-term-table th:nth-child(3),
+  .coop-term-table td:nth-child(3) {
+    border: 0;
+    padding: 0.2rem 0;
+    font-size: var(--text-sm, 0.875rem);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .coop-term-table th {
+    font-weight: 700;
+    padding-bottom: 0.35rem;
+  }
+
+  .coop-term-table td:nth-child(2)::before {
+    content: "Сейчас: ";
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .coop-term-table td:nth-child(3)::before {
+    content: "Предлагаете: ";
+    display: block;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .coop-percent-input {
+    width: 100%;
+  }
+
+  .coop-term-modal .form-footer,
+  .coop-term-modal #coop-term-footer,
+  .coop-discard-confirm .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .coop-term-modal .form-footer .btn,
+  .coop-term-modal #coop-term-footer .btn,
+  .coop-discard-confirm .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
