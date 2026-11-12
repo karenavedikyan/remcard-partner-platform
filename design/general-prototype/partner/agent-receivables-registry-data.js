@@ -14,7 +14,7 @@ export const ORDERS = [
     client: "Клиент А.",
     total: 7500,
     status: "open",
-    pending: 1200,
+    pending: 0,
     suspended: 0,
     at: "2026-10-10T14:00:00+03:00",
     lines: [
