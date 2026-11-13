@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import {
   ObserverClientDetailMissing,
   ObserverClientDetailView,
+  resolveObserverClientBackFrom,
   resolveObserverClientBackLabel,
 } from "./ObserverClientDetailView";
 import {
@@ -43,6 +44,46 @@ describe("P4.ObserverClientDetailView", () => {
     expect(resolveObserverClientBackLabel("partners-list")).toBe("← К партнёрам");
     expect(resolveObserverClientBackLabel("flat-list")).toBe("← Назад к списку");
     expect(resolveObserverClientBackLabel(undefined, "← custom")).toBe("← custom");
+  });
+
+  it("resolveObserverClientBackFrom matches P3 nav slice", () => {
+    expect(resolveObserverClientBackFrom({ navPartnerId: "p1", layout: "list" })).toBe(
+      "partner-clients",
+    );
+    expect(resolveObserverClientBackFrom({ layout: "list" })).toBe("flat-list");
+    expect(resolveObserverClientBackFrom({ layout: "partners" })).toBe("partners-list");
+  });
+
+  it("shows grouped and flat visible back labels on detail", () => {
+    const { rerender } = render(
+      <ObserverClientDetailView
+        appeal={appeal}
+        partner={partner}
+        backFrom="partner-clients"
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("← К списку клиентов");
+    rerender(
+      <ObserverClientDetailView
+        appeal={appeal}
+        partner={partner}
+        backFrom="flat-list"
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("← Назад к списку");
+  });
+
+  it("keyboard Enter on missing client back", async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(
+      <ObserverClientDetailMissing clientId="x" backFrom="flat-list" onBack={onBack} />,
+    );
+    await user.tab();
+    await user.keyboard("{Enter}");
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("exposes appeal id for long identifiers", () => {

@@ -22,6 +22,21 @@ export function resolveObserverClientBackLabel(
   return "← Назад";
 }
 
+/** Input slice P3 can derive from `nav` + `layout` without importing nav types. */
+export type ObserverClientBackFromInput = {
+  /** Set when `openClientPage(id, nav.partnerId)` was used (partner drill). */
+  navPartnerId?: string;
+  layout?: "partners" | "list";
+};
+
+export function resolveObserverClientBackFrom(
+  input: ObserverClientBackFromInput,
+): ObserverClientBackFrom {
+  if (input.navPartnerId) return "partner-clients";
+  if (input.layout === "list") return "flat-list";
+  return "partners-list";
+}
+
 type Props = {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;
