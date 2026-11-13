@@ -66,14 +66,18 @@ export type ObserverAppealsFetchQuery = {
   limit?: number;
 };
 
-/** K2 actual list page (navigator @ 72193c78). */
+/** K2 actual list page (navigator @ 3c6ccc19; legacy `items` accepted). */
 export type K2ObserverAppealsListPage = {
-  items: unknown[];
+  appeals: unknown[];
+  partners: unknown[];
+  personalMeta?: Record<string, unknown | null>;
   page: number;
   limit: number;
   total: number;
   hasMore: boolean;
   empty?: boolean;
+  /** @deprecated transition — prefer `appeals`. */
+  items?: unknown[];
   receivingPartners?: unknown;
   receivingBranches?: unknown;
 };
@@ -134,6 +138,9 @@ export function resolveReceivingPrincipalId(row: Record<string, unknown>): strin
 function resolvePartnerMetaId(row: Record<string, unknown>): string {
   if (typeof row.receivingPartnerUserId === "string" && row.receivingPartnerUserId) {
     return row.receivingPartnerUserId;
+  }
+  if (typeof row.receivingPartnerId === "string" && row.receivingPartnerId) {
+    return row.receivingPartnerId;
   }
   if (typeof row.userId === "string" && row.userId) {
     return row.userId;
@@ -350,6 +357,7 @@ function parsePersonalMeta(
   const out: Record<string, ObserverPersonalMeta> = {};
   if (isRecord(record)) {
     for (const [appealId, value] of Object.entries(record)) {
+      if (value === null || value === undefined) continue;
       if (!isRecord(value)) continue;
       mergePersonalEntry(out, appealId, value, overlayVersions);
     }
@@ -375,14 +383,14 @@ function parseListPayload(payload: unknown): ParsedListBundle | { error: string 
   const personalMeta: Record<string, ObserverPersonalMeta> = {};
   const overlayVersions: Record<string, number> = {};
 
-  const itemRows = Array.isArray(payload.items)
-    ? payload.items
-    : Array.isArray(payload.appeals)
-      ? payload.appeals
+  const itemRows = Array.isArray(payload.appeals)
+    ? payload.appeals
+    : Array.isArray(payload.items)
+      ? payload.items
       : null;
 
   if (!itemRows) {
-    return { error: "Отсутствует items[] в ответе K2." };
+    return { error: "Отсутствует appeals[] в ответе K2." };
   }
 
   for (const row of itemRows) {
@@ -392,20 +400,27 @@ function parseListPayload(payload: unknown): ParsedListBundle | { error: string 
     extractOverlayFromItem(row, personalMeta, overlayVersions);
   }
 
+  if (Array.isArray(payload.partners)) {
+    mergePartners(partners, payload.partners);
+  }
   if (Array.isArray(payload.receivingPartners)) {
     mergePartners(partners, payload.receivingPartners);
   }
   if (Array.isArray(payload.receivingBranches)) {
     mergePartners(partners, payload.receivingBranches);
   }
-  if (Array.isArray(payload.partners)) {
-    mergePartners(partners, payload.partners);
-  }
   mergePartners(partners, itemRows, true);
 
+  if (isRecord(payload.personalMeta)) {
+    for (const [appealId, value] of Object.entries(payload.personalMeta)) {
+      if (value === null || value === undefined) continue;
+      if (!isRecord(value)) continue;
+      mergePersonalEntry(personalMeta, appealId, value, overlayVersions);
+    }
+  }
   Object.assign(
     personalMeta,
-    parsePersonalMeta(payload.personalMeta, payload.personalOverlays, overlayVersions),
+    parsePersonalMeta(undefined, payload.personalOverlays, overlayVersions),
   );
 
   const total = typeof payload.total === "number" ? payload.total : appeals.length;
@@ -417,7 +432,7 @@ function parseListPayload(payload: unknown): ParsedListBundle | { error: string 
   }
 
   if (total > 0 && appeals.length === 0) {
-    return { error: "Ответ K2: total>0, но items пуст." };
+    return { error: "Ответ K2: total>0, но appeals пуст." };
   }
 
   if (!empty && appeals.length === 0 && total === 0) {

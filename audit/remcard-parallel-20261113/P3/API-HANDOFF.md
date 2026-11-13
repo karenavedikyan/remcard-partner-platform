@@ -107,7 +107,9 @@ ObserverPersonalPersistResult =
 
 **Do not use** P5 draft paths `/api/pro/client-appeals/.../personal-overlay`.
 
-П3 adapter: `src/lib/clients-parity/observer-personal-api.ts` → `createObserverPersonalPersistenceCallbacks` (workspace default).
+П5 adapter (do not edit on П3): `src/lib/clients-parity/observer-personal-api.ts` @ `a7b111d2`.
+
+П3 bridge only: `src/components/clients/observer/createObserverPersonalPersistenceBridge.ts` → delegates to П5 exports; workspace wires overlay version refs + ListView callbacks (preserves selection on partial failure).
 
 ### 2.3 P5 follow-ups (out of П3)
 

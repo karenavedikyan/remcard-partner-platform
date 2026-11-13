@@ -15,7 +15,20 @@
 
 ## Observer list metadata
 
-`GET /api/pro/referred-appeals` (`items`, `receivingPartners[]`):
+`GET /api/pro/referred-appeals` (K2 @ `3c6ccc19`):
+
+```ts
+{
+  appeals: ClientAppealObserverReadDto[];
+  partners: ObserverReceivingPartnerSummary[]; // + receivingPartnerUserId when K8 6f09c23e lands
+  personalMeta: Record<string, PersonalMetaProjection | null>;
+  page; limit; total; hasMore; empty;
+}
+```
+
+Legacy `items[]` still parsed during transition.
+
+`receivingPartners[]` side-load (optional):
 
 ```ts
 receivingPartners: Array<{
@@ -39,5 +52,7 @@ receivingPartners: Array<{
 - Schema/migration edits (K8 only)
 - Eligibility changes, org backfill, finance formulas
 - Production DB apply
+
+**Integrate dependency:** `observer-personal-api.ts` @ P5 `a7b111d2` (not edited on П3 branch until Root merge).
 
 **Section acceptance:** not claimed.

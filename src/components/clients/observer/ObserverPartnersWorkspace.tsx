@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createObserverPersonalPersistenceCallbacks } from "@/lib/clients-parity/observer-personal-api";
+import { createObserverPersonalPersistenceBridge } from "./createObserverPersonalPersistenceBridge";
 import {
   fetchObserverReferredAppeals,
   type ObserverAppealsFetchErrorCode,
@@ -44,7 +44,7 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
 
   const defaultPersonalPersistence = useMemo(
     () =>
-      createObserverPersonalPersistenceCallbacks(
+      createObserverPersonalPersistenceBridge(
         () => overlayVersionsRef.current,
         (patch) => {
           overlayVersionsRef.current = { ...overlayVersionsRef.current, ...patch };

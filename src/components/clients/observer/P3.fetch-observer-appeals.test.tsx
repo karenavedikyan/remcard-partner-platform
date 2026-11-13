@@ -34,13 +34,60 @@ describe("P3 fetchObserverReferredAppeals", () => {
     expect(id).toBe("user-rcv");
   });
 
+  it("parses K2 3c6ccc19 envelope { appeals, partners, personalMeta, page… }", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            appeals: [
+              {
+                id: "a1",
+                clientDisplayName: "Иван",
+                receivingBranchId: "branch-9",
+                stageKey: "sys_new",
+                updatedAt: "2026-01-01T00:00:00.000Z",
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+            ],
+            partners: [
+              {
+                receivingBranchId: "branch-9",
+                displayName: "Магазин",
+                city: "Краснодар",
+                category: "Окна",
+              },
+            ],
+            personalMeta: {
+              a1: { alias: "Alias", tag: null, note: null, bucket: "active", version: 4 },
+            },
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            empty: false,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const res = await fetchObserverReferredAppeals();
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.appeals[0]?.receivingPartnerId).toBe("branch-9");
+      expect(res.partners[0]?.name).toBe("Магазин");
+      expect(res.personalMeta.a1?.alias).toBe("Alias");
+      expect(res.overlayVersions.a1).toBe(4);
+    }
+  });
+
   it("parses solo specialist list without branch (User principal only)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
         new Response(
           JSON.stringify({
-            items: [
+            appeals: [
               {
                 id: "a1",
                 clientDisplayName: "Иван",
@@ -50,17 +97,19 @@ describe("P3 fetchObserverReferredAppeals", () => {
                 createdAt: "2026-01-01T00:00:00.000Z",
               },
             ],
-            page: 1,
-            limit: 100,
-            total: 1,
-            hasMore: false,
-            receivingPartners: [
+            partners: [
               {
                 receivingPartnerUserId: "solo-user-1",
                 displayName: "Специалист Соло",
                 city: "Сочи",
               },
             ],
+            personalMeta: {},
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            empty: false,
           }),
           { status: 200 },
         ),
@@ -81,7 +130,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
       vi.fn(async () =>
         new Response(
           JSON.stringify({
-            items: [
+            appeals: [
               {
                 id: "a1",
                 clientDisplayName: "Иван",
@@ -92,11 +141,13 @@ describe("P3 fetchObserverReferredAppeals", () => {
                 personalOverlay: { alias: "Мой Иван", bucket: "active", version: 2 },
               },
             ],
+            partners: [{ receivingPartnerUserId: "p1", displayName: "Партнёр" }],
+            personalMeta: {},
             page: 1,
             limit: 100,
             total: 1,
             hasMore: false,
-            receivingPartners: [{ receivingPartnerUserId: "p1", displayName: "Партнёр" }],
+            empty: false,
           }),
           { status: 200 },
         ),
