@@ -8,6 +8,19 @@ import {
   type ReceivingAppealHistoryEntry,
 } from "./ReceivingAppealHistory";
 import { filterStageOptionsForDirectPatch } from "./receiving-detail-actions-contract";
+import {
+  RECEIVING_DETAIL_CONFLICT_RELOAD_LABEL,
+  RECEIVING_DETAIL_MANUAL_CERT_NOTE,
+  RECEIVING_DETAIL_MARK_PAID_LABEL,
+  RECEIVING_DETAIL_NOTES_PLACEHOLDER,
+  RECEIVING_DETAIL_NOTES_SAVE_LABEL,
+  RECEIVING_DETAIL_PURCHASE_HEADING,
+  RECEIVING_DETAIL_PURCHASE_LINK_PENDING,
+  RECEIVING_DETAIL_PURCHASE_MORE_LABEL,
+  RECEIVING_DETAIL_PURCHASE_UNAVAILABLE,
+  RECEIVING_DETAIL_STAGE_APPLY_LABEL,
+  RECEIVING_DETAIL_STAGE_SHIPPED_LABEL,
+} from "./receiving-detail-user-copy";
 
 const SYSTEM_STAGE_OPTIONS = [
   { id: "sys_new", label: "Новое обращение" },
@@ -188,7 +201,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                   disabled={actions.busy?.stage}
                   onClick={actions.shippedConfirm.onMarkShipped}
                 >
-                  Отметить отгрузку
+                  {RECEIVING_DETAIL_STAGE_SHIPPED_LABEL}
                 </button>
               ) : null}
               <label className={styles.field}>
@@ -238,7 +251,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                   });
                 }}
               >
-                {actions.busy?.stage ? "Сохраняем…" : "Перевести"}
+                {actions.busy?.stage ? "Сохраняем…" : RECEIVING_DETAIL_STAGE_APPLY_LABEL}
               </button>
               {actions.error?.stage ? (
                 <p className={styles.mutedSmall} role="alert" data-testid="ca-receiving-stage-error">
@@ -252,7 +265,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                         data-testid="ca-receiving-stage-retry"
                         onClick={actions.onConflict}
                       >
-                        Обновить карточку
+                        {RECEIVING_DETAIL_CONFLICT_RELOAD_LABEL}
                       </button>
                     </>
                   ) : null}
@@ -315,7 +328,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
             ) : (
               <div>
                 <dt>Сертификат</dt>
-                <dd className={styles.mutedSmall}>Без сертификата — направившего и скидки нет.</dd>
+                <dd className={styles.mutedSmall}>{RECEIVING_DETAIL_MANUAL_CERT_NOTE}</dd>
               </div>
             )}
             {props.appeal.paidDisplayLabel ? (
@@ -353,7 +366,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
           </dl>
 
           <section className={styles.blocked} data-testid="ca-receiving-purchase-panel">
-            <h3>Покупка</h3>
+            <h3>{RECEIVING_DETAIL_PURCHASE_HEADING}</h3>
             {props.appeal.purchaseOrderId && actions?.onOpenPurchaseOrder ? (
               <button
                 type="button"
@@ -362,12 +375,11 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 data-testid="ca-receiving-purchase-open"
                 onClick={actions.onOpenPurchaseOrder}
               >
-                Подробнее о покупке ({props.appeal.purchaseOrderId})
+                {RECEIVING_DETAIL_PURCHASE_MORE_LABEL}
               </button>
             ) : props.appeal.purchaseOrderId ? (
               <p className={styles.mutedSmall} data-testid="ca-receiving-purchase-order-hint">
-                Заказ {props.appeal.purchaseOrderId} — откройте деталь покупки в кошельке (P6
-                onOpenPurchaseOrder).
+                {RECEIVING_DETAIL_PURCHASE_LINK_PENDING}
               </p>
             ) : actions?.paidReview?.supported ? (
               <button
@@ -377,7 +389,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 data-testid="ca-receiving-paid-review"
                 onClick={actions.paidReview.onOpen}
               >
-                Отметить оплату
+                {RECEIVING_DETAIL_MARK_PAID_LABEL}
               </button>
             ) : actions?.markPaid?.supported ? (
               <button
@@ -387,13 +399,13 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 data-testid="ca-receiving-mark-paid"
                 onClick={actions.markPaid.onMarkPaid}
               >
-                Отметить оплату
+                {RECEIVING_DETAIL_MARK_PAID_LABEL}
               </button>
             ) : (
               <p className={styles.mutedSmall} data-testid="ca-receiving-purchase-unsupported">
                 {actions?.paidReview?.reason ??
                   actions?.markPaid?.reason ??
-                  "Оплата — через кошелёк/заказ (/scanner или история покупок), не PATCH этапа «Оплачено»."}
+                  RECEIVING_DETAIL_PURCHASE_UNAVAILABLE}
               </p>
             )}
           </section>
@@ -401,7 +413,6 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
           {!props.readOnly ? (
             <section className={styles.blocked} data-testid="ca-receiving-detail-notes">
               <h3>Заметки</h3>
-              <p className={styles.mutedSmall}>Только для вашей команды. Сохранение — profile PATCH (P6).</p>
               <label className={styles.field}>
                 <textarea
                   rows={3}
@@ -410,7 +421,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                   disabled={!actions?.onSavePrivateNotes || actions.busy?.notes}
                   data-ca-input="detail-notes"
                   data-testid="ca-receiving-notes-input"
-                  placeholder="Только для вашей команды"
+                  placeholder={RECEIVING_DETAIL_NOTES_PLACEHOLDER}
                 />
               </label>
               <button
@@ -421,7 +432,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 disabled={!actions?.onSavePrivateNotes || actions.busy?.notes}
                 onClick={() => actions?.onSavePrivateNotes?.(notesDraft)}
               >
-                {actions?.busy?.notes ? "Сохраняем…" : "Сохранить"}
+                {actions?.busy?.notes ? "Сохраняем…" : RECEIVING_DETAIL_NOTES_SAVE_LABEL}
               </button>
               {actions?.error?.notes ? (
                 <p className={styles.mutedSmall} role="alert" data-testid="ca-receiving-notes-error">
@@ -435,7 +446,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                         data-testid="ca-receiving-notes-retry"
                         onClick={actions.onConflict}
                       >
-                        Обновить карточку
+                        {RECEIVING_DETAIL_CONFLICT_RELOAD_LABEL}
                       </button>
                     </>
                   ) : null}

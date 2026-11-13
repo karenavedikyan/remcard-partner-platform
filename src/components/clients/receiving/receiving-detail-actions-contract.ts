@@ -8,11 +8,16 @@ import type {
   ReceivingAppealDetailReady,
 } from "./ReceivingAppealDetailView";
 import type { ReceivingAppealDetailMapped } from "./detail-contract-alignment";
+import {
+  RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE,
+  RECEIVING_DETAIL_PURCHASE_UNAVAILABLE,
+  RECEIVING_DETAIL_SHIPPED_UNAVAILABLE,
+} from "./receiving-detail-user-copy";
 
 export const RECEIVING_DETAIL_INTEGRATION_PINS = {
   p4Detail: "10c25fe6",
-  p6Host: "86251070",
-  p6Workspace: "78fd46e7",
+  p6Host: "d364a53c",
+  p6Workspace: "d364a53c",
   k1: "a71b8f37",
   k8: "8f4d336a",
   p1: "2b2b32b8",
@@ -52,15 +57,15 @@ export const RECEIVING_PURCHASE_PANEL_CALLBACK = "onOpenPurchaseOrder" as const;
 /** When appeal has no `purchaseOrderId` yet — scanner/order pipeline entry. */
 export const RECEIVING_ORDER_PIPELINE_CALLBACK = "onOpenOrderPipeline" as const;
 
-export const RECEIVING_MARK_PAID_ABSENT_REASON =
-  "Оплата не отмечается PATCH этапа «Оплачено» (K1: STAGE_REQUIRES_ORDER_PIPELINE). " +
-  `Нужен колбэк «${RECEIVING_ORDER_PIPELINE_CALLBACK}» (→ ${RECEIVING_APPEAL_ORDER_PIPELINE_HREF}) ` +
-  `или связанный заказ («${RECEIVING_PURCHASE_PANEL_CALLBACK}» → /history/purchases/:orderId).`;
+/** User-facing when `onOpenOrderPipeline` / `onOpenPurchaseOrder` missing (rendered in detail). */
+export const RECEIVING_MARK_PAID_ABSENT_REASON = RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE;
 
-export const RECEIVING_PAID_REVIEW_ABSENT_REASON =
-  "Категории/сумма — в существующем заказе кошелька и order pipeline, не в profile PATCH. " +
-  `Без заказа: «${RECEIVING_ORDER_PIPELINE_CALLBACK}»; с purchaseOrderId: «${RECEIVING_PURCHASE_PANEL_CALLBACK}» ` +
-  "(read-only деталь + `PurchaseReceivingClientPanel`; запись — PATCH /api/store/orders/:id/receiving-client, P6).";
+export const RECEIVING_PAID_REVIEW_ABSENT_REASON = RECEIVING_DETAIL_PURCHASE_UNAVAILABLE;
+
+/** Audit / P6 handoff only — not shown in product UI. */
+export const RECEIVING_MARK_PAID_ABSENT_TECH =
+  `K1 ${K1_STAGE_REQUIRES_ORDER_PIPELINE}: wire ${RECEIVING_ORDER_PIPELINE_CALLBACK} → ${RECEIVING_APPEAL_ORDER_PIPELINE_HREF} ` +
+  `or ${RECEIVING_PURCHASE_PANEL_CALLBACK} → receivingAppealPurchaseDetailHref(orderId).`;
 
 export function filterStageOptionsForDirectPatch<T extends { id: string }>(options: T[]): T[] {
   return options.filter((o) => !STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH.has(o.id));
@@ -138,7 +143,7 @@ export function buildReceivingAppealDetailReady(
               }
             : {
                 supported: false,
-                reason: "Сначала оплата в кошельке/заказе — прямой PATCH «Оплачено» недоступен (K1).",
+                reason: RECEIVING_DETAIL_SHIPPED_UNAVAILABLE,
               },
       };
 

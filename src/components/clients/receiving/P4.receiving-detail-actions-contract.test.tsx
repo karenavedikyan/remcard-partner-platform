@@ -1,13 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  K1_STAGE_REQUIRES_ORDER_PIPELINE,
-  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
   RECEIVING_MARK_PAID_ABSENT_REASON,
-  RECEIVING_ORDER_PIPELINE_CALLBACK,
+  RECEIVING_MARK_PAID_ABSENT_TECH,
   buildReceivingAppealDetailReady,
   filterStageOptionsForDirectPatch,
   receivingAppealPurchaseDetailHref,
 } from "./receiving-detail-actions-contract";
+import { RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE } from "./receiving-detail-user-copy";
 
 describe("P4.receiving-detail-actions-contract", () => {
   it("excludes sys_paid from direct PATCH stage picker options", () => {
@@ -23,11 +22,10 @@ describe("P4.receiving-detail-actions-contract", () => {
     expect(receivingAppealPurchaseDetailHref("ord-9")).toBe("/history/purchases/ord-9");
   });
 
-  it("mark paid absent cites order pipeline not stage PATCH", () => {
-    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(K1_STAGE_REQUIRES_ORDER_PIPELINE);
-    expect(RECEIVING_MARK_PAID_ABSENT_REASON).not.toMatch(/PATCH.*sys_paid/i);
-    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(RECEIVING_ORDER_PIPELINE_CALLBACK);
-    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
+  it("mark paid unavailable user copy is not technical", () => {
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toBe(RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE);
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).not.toMatch(/PATCH|P6|onOpen/i);
+    expect(RECEIVING_MARK_PAID_ABSENT_TECH).toMatch(/STAGE_REQUIRES_ORDER_PIPELINE/);
   });
 
   it("builds shipped only when paid projection exists", () => {
