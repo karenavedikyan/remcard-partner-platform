@@ -2,7 +2,7 @@
 
 ## RELEASE GATE (user priority — publish when ready)
 
-**`RELEASE-GATE.md` · NO-GO** until G1–G5 close. Navigator pin **`8137ddd1`** — P2 must re-prove (stale `3c37ca25` scan still MISSING).
+**`RELEASE-GATE.md` · NO-GO** until G1–G5 close. P2 **8137** matrix @ `ac2d4a7b` done — gate is **implementation**, not re-scan. Delta: **`NO-GO-DELTA-20261113-1730.md`**. **C04 not closed** (P6 `12aea875` rejected).
 
 ## REM-PUBLISH-RESIDUAL-V2 (2026-11-13)
 

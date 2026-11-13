@@ -1,17 +1,16 @@
 {
   "TIPS": {
     "P1": "20b93f87544ca0b59857be73ce46b2e62afe466e",
-    "P2_acceptance_branch": "1340a128e0e436b39d36feabb6b0c1a894b132a5",
-    "P2_residual_navigator_scan": "ea9bd5ddbb3598747c782eca720e2cfd3becb9ff",
-    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
-    "P4": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
+    "P2_matrix_8137": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
+    "P3": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
+    "P4": "ad7b0824b39ffedd576af84d18be64782611d6b5",
     "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P6_rejected_c04_attempt": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
+    "P6_last_accepted_baseline": "981c72aff23595d32e157dc9642e08c02a0cb70d",
     "P7": "43c6bd83a8f47f33f7cbdac40b6fb8192db65879",
-    "P7_css_product_pin": "c5c7f2091187565d5cf883a5ec18d3a2b4009d24",
-    "P8": "53a5ce7462197eac96019de4f114be92d534203d"
+    "P8": "3cf352ee32a585a15482ad6f2b09738a8423d475"
   },
-  "NAVIGATOR_RELEASE_USER_PIN": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
-  "NAVIGATOR_RELEASE_STALE_IN_P2_SCAN": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
-  "PRODUCTION": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
+  "NAVIGATOR_RELEASE": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "PRODUCTION": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "C04_status": "NOT_VERIFIED — P6 12aea875 REJECTED; do not close"
 }

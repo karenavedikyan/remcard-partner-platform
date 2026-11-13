@@ -9,42 +9,42 @@
 | | SHA |
 |---|-----|
 | Partner publication base | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
-| Navigator (user pin — **P2 must re-prove**) | `8137ddd1ae5bad880fa28df34bab04e460bf2bdd` |
+| Navigator (audited) | `8137ddd1ae5bad880fa28df34bab04e460bf2bdd` — P2 matrix @ `ac2d4a7b` |
 | Prototype | `3dc31836cd18d9209c20097f18b906dd276f7af6` |
-| Stale P2 scan (do not treat as pass) | `3c37ca25` / tree `3cb569ff` — still **MISSING** referred/personal |
+| P2 evidence file | `audit/.../P2/contract-operation-matrix-8137.md` |
 
 ## Owner tips (2026-11-13 PM fetch)
 
 | Owner | Tip | Notes |
 |-------|-----|-------|
 | P1 | `20b93f87` | Packaging manifest; `clientsSectionPublishable: false` |
-| P2 | `1340a128` (branch) / `ea9bd5dd` (2-06bf residual) | Contracts **ABSENT** @ navigator scan |
-| P3 | `9c3221ad` | **Product:** P4 `backFrom` integration in list |
-| P4 | `f7198e9d` | Docs handoff |
-| P5 | `dbbe4455` | Personal UI; save still blocked |
-| P6 | `981c72af` | Role/isolation component PASS |
-| P7 | `43c6bd83` | Audit-only residual measure; CSS pin `c5c7f209` |
-| P8 | `53a5ce74` → next commit | Ledger / gate |
+| P2 | `ac2d4a7b` | 8137 operation matrix; D1–D7 decisions |
+| P3 | `fe416e2b` | Fallback removed; P4 detail wiring WIP |
+| P4 | `ad7b0824` | `observerClientBackFrom`; resolver WIP |
+| P5 | `dbbe4455` | Personal UI; save blocked |
+| P6 | `12aea875` | C04 try **REJECTED** — hooks after agent return |
+| P7 | `43c6bd83` | Partial visual audit |
+| P8 | see git log | Ledger / gate |
 
-**Verified @ all above product tips:** `fetch-observer-appeals.ts` → `BLOCKED_CONTRACT`; `remcard-proxy.ts` — **no** `referred-appeals` / `client-appeals` / `personal-meta`.
+**Verified @ P3 `fe416e2b`:** `fetch-observer-appeals.ts` → `BLOCKED_CONTRACT`; proxy unchanged.
 
-**P8 check this pass:** `npx vitest run src/lib/clients-parity/contracts.test.ts` → **3/3 PASS** (blocker map only; **not** integration).
+**P8 check this pass:** read-only `git show` only (no test remeasurement).
 
 ---
 
 ## Ordered release gates (dependencies)
 
-### G1 — Contract & storage proof **(BLOCKING)**
+### G1 — Contract & storage **(BLOCKING — implementation, not discovery)**
 
 | | |
 |---|---|
-| **Owner** | **P2** then Backend |
-| **Scope** | C07–C24 receiving (specialist); C26–C34, C39–C40 referred list/detail; C35–C38 personal overlay |
-| **Status** | **BLOCKED** |
-| **Evidence now** | P2 `publication-residual-20261113-v2.md` @ MISSING on navigator scan; GitHub code search `referred-appeals` / `client-appeals` on `remcard-navigator`: **0** (2026-11-13 P8) |
-| **Stale vs reproduced** | Stale: pre-`8137ddd1` navigator SHA in older audits. **Reproduced failure (until disproven):** no partner-proxy routes + adapter blocked at `9c3221ad`/`43c6bd83`. |
-| **Proof to close** | P2: read-only inventory at **`8137ddd1`** with paths + route names; signed `contract-decisions.json` **minimal decisions** (not proposals). Backend: ship routes + schema **without** DB migrations in partner repo; P2 re-audits. |
-| **Next action** | Cursor task → **P2**: re-scan navigator `8137ddd1`, update `P2.navigator-evidence.json`; block Root until `MISSING` cleared or scoped honest UI-only publish. |
+| **Owner** | **Navigator backend** → partner proxy (P5/P6) |
+| **Scope** | C07–C24 receiving; C26–C34, C39–C40 referred; C35–C38 personal overlay |
+| **Status** | **BLOCKED** — contracts **proved missing** @ `8137ddd1`, not “unsearched” |
+| **Evidence now** | P2 tip **`ac2d4a7b`**: `contract-operation-matrix-8137.md`; minimal decisions **D1–D7**; Root confirmed **no** substitute via `CertificateUserAlias` / `CertificateProWorkspace` / `LeadAssignment` |
+| **Stale (withdrawn)** | “P2 must still scan 8137” — **closed** 2026-11-13 PM |
+| **Proof to close** | Ship D1–D5 routes + D4 storage (user/Root DB decision); D6 proxy + adapter `ok:true` smoke; P2 re-matrix at next navigator tip |
+| **Next action** | Backend implements; Root asks user on DB constraint; **do not** wire AgentClient CRUD as overlay |
 
 ### G2 — Actual integration **(BLOCKING — promised use)**
 
@@ -110,6 +110,6 @@ Counts unchanged from `requirement-ledger-publish-v2.json` after tip refresh:
 
 ## Cursor tasks to file (recommended)
 
-1. **P2:** Prove contracts @ navigator `8137ddd1` — update evidence JSON; no API product edits in partner repo until decisions approved.
+1. **Navigator backend:** Implement D1–D5 per `contract-operation-matrix-8137.md` @ P2 `ac2d4a7b`.
 2. **Backend:** Implement referred-appeals read + personal-meta overlay per P2 minimal decisions (separate repo).
 3. **Root:** Assemble allowlisted blobs; run G3/G4 mocked page QA; publish only when gates green.
