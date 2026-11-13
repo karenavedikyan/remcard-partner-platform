@@ -1,6 +1,8 @@
 # Root order-link glue (P8 delivery @ `cursor/remcard-p8-acceptance-20261113`)
 
-**Authorized:** SOURCE-only association; **no** DB/migrate/prod apply.
+**STATUS: REJECTED @ 2026-11-13 19:45 UTC** — Root will **not** select `528bdd2a`; use owner pins in **`GATE-REJECT-P8-GLUE-20261113-1945.md`**.
+
+**Authorized:** SOURCE-only association; **no** DB/migrate/prod apply. (Historical — superseded.)
 
 ## Delivered paths (this branch)
 
