@@ -29,14 +29,19 @@ export type ObserverAppealHistoryEntry = {
 };
 
 /**
- * Canonical partner identity for observer (P2 adapter — not User.id for receiving).
- * Prototype `receivingPartnerId` → **`receivingBranchId`**.
- * Prototype `referrerPartnerId` → **`referrerProUserId`** (certificate issuer).
+ * Trusted receiving principal + optional org/branch scope (K8 contract target).
+ * Prototype `receivingPartnerId` = **receiving principal `User.id`** (solo specialist has no org).
+ * `referrerPartnerId` = **`referrerProUserId`** (certificate issuer).
  */
-export type ObserverBranchPartnerIdentity = {
-  receivingBranchId: string;
-  receivingOrganizationId: string;
+export type ClientsReceivingPartnerIdentity = {
+  /** Required trusted column — actual receiving partner principal User.id */
+  receivingPartnerUserId: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
 };
+
+/** @deprecated Use ClientsReceivingPartnerIdentity */
+export type ObserverBranchPartnerIdentity = ClientsReceivingPartnerIdentity;
 
 /**
  * K2 observer wire allowlist (GAP-K8-D). P5/P6 map from this — never pass through full row.
@@ -46,8 +51,9 @@ export type ObserverAppealK2WireDto = {
   id: string;
   clientDisplayName: string;
   certificateId: string | null;
-  receivingBranchId: string;
-  receivingOrganizationId: string;
+  receivingPartnerUserId: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
   referrerProUserId: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   stageKey: string;
@@ -66,14 +72,18 @@ export type ObserverAppealK2WireDto = {
   manualSourceKey?: string | null;
 };
 
-/** Grouping card for observer list — branch display, not org owner User.id. */
-export type ObserverBranchPartnerMetaWire = {
-  receivingBranchId: string;
-  receivingOrganizationId: string;
+/** K2 list `receivingPartners[]` wire — group by receiving principal User.id. */
+export type ObserverReceivingPartnerMetaWire = {
+  receivingPartnerUserId: string;
   displayName: string;
   city?: string | null;
   category?: string | null;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
 };
+
+/** @deprecated Use ObserverReceivingPartnerMetaWire */
+export type ObserverBranchPartnerMetaWire = ObserverReceivingPartnerMetaWire;
 
 /**
  * Observer list row (partner UI). Maps from `ObserverAppealK2WireDto` via stable renames only.
@@ -82,8 +92,10 @@ export type ObserverReferredAppeal = {
   id: string;
   clientName: string;
   certificateId: string;
+  /** Prototype `receivingPartnerId` — trusted receiving principal User.id */
   receivingPartnerId: string;
   referrerPartnerId: string;
+  receivingBranchId?: string | null;
   interest?: string | null;
   clientCity?: string | null;
   budgetHint?: string | null;
@@ -98,8 +110,7 @@ export type ObserverReferredAppeal = {
   shippedAt?: string | null;
   paidAmount?: number | null;
   refusedReason?: string | null;
-  /** Settings scope helper until GAP-K8-E resolved; not shown as partner id in UI. */
-  receivingOrganizationId?: string;
+  receivingOrganizationId?: string | null;
 };
 
 /** Detail — adds immutable timeline (prototype `history[]`). */
@@ -110,12 +121,13 @@ export type ObserverReferredAppealDetail = ObserverReferredAppeal & {
 };
 
 export type ObserverPartnerMeta = {
-  /** Same as `receivingBranchId` (prototype receiving partner key). */
+  /** `receivingPartnerUserId` — prototype partner card key. */
   id: string;
   name: string;
   city?: string | null;
   category?: string | null;
-  receivingOrganizationId?: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
 };
 
 export type ObserverPartnerAppealStats = {
@@ -149,7 +161,7 @@ export type ClientsParityDirection = "incoming" | "at-partners";
  */
 export type K2ObserverListHttpResponse = {
   items: ObserverAppealK2WireDto[];
-  receivingBranches: ObserverBranchPartnerMetaWire[];
+  receivingPartners: ObserverReceivingPartnerMetaWire[];
   personalMeta?: Record<string, ObserverPersonalMeta>;
   page?: number;
   limit?: number;

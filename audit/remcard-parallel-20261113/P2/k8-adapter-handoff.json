@@ -13,25 +13,23 @@
   },
   "listResponseContract": {
     "k8Lib": "{ items, nextCursor }",
-    "k2HttpTarget": "{ items, receivingBranches, personalMeta?, page?, limit?, total?, hasMore?, nextCursor? }",
+    "k2HttpTarget": "{ items, receivingPartners, personalMeta?, page?, limit?, total?, hasMore?, nextCursor? }",
     "partnerP3": "{ appeals, partners, personalMeta?, nextCursor? }",
     "forbiddenNavigatorAlias": "appeals"
   },
   "partnerIdentity": {
     "receivingPartnerPrototypeKey": "receivingPartnerId",
-    "receivingCanonicalId": "receivingBranchId",
+    "receivingCanonicalId": "receivingPartnerUserId",
+    "receivingOptionalScope": ["receivingOrganizationId", "receivingBranchId"],
     "referrerPrototypeKey": "referrerPartnerId",
     "referrerCanonicalId": "referrerProUserId",
-    "forbiddenReceivingId": "User.id of org owner / store account"
+    "retractedP2Rule": "receivingPartnerId was incorrectly mapped to Branch.id only",
+    "soloSpecialistEvidence": "specialistR06Eligibility.ts — ineligible if owned Organization"
   },
-  "settingsScopeGapE": {
-    "prototype": "partnerSettings keyed by receivingPartnerId (per receiving partner row)",
-    "k8Candidate": "PartnerClientAppealPartnerSettings.organizationId",
-    "status": "UNRESOLVED",
-    "adapterUntilResolved": {
-      "listGroupBy": "receivingBranchId",
-      "settingsLookupKey": "receivingOrganizationId"
-    }
+  "settingsScope": {
+    "prototype": "partnerSettings[receivingPartnerId] = receiving principal User.id",
+    "k8Target": "PartnerClientAppealPartnerSettings.receivingPartnerUserId",
+    "k8DraftWrong": "organizationId @unique @ e11f7e59"
   },
   "paidAmountKopecksRule": "DTO-only via recordMap.ts (order join); not PartnerClientAppeal column — GAP-K8-F",
   "k2WireAllowlistType": "ObserverAppealK2WireDto",
@@ -77,7 +75,10 @@
   },
   "resolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D"],
   "unresolvedGaps": [
-    "GAP-K8-E",
+    "GAP-K8-J",
+    "GAP-K8-K",
+    "GAP-K8-L",
+    "GAP-K8-M",
     "GAP-K8-F",
     "GAP-K8-G",
     "GAP-K8-H",

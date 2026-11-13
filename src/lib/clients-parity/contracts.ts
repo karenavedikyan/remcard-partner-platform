@@ -7,6 +7,41 @@
 import { CLIENTS_APPEAL_SYSTEM_STAGE } from "./types";
 
 export const CLIENTS_PARITY_PROTOTYPE_SHA = "3dc31836cd18d9209c20097f18b906dd276f7af6";
+
+/**
+ * Receiving partner identity — frozen 2026-11-13 after Root + specialistR06Eligibility review.
+ * K8 revises additive schema/contract only; P2 inventory coordinates one DTO.
+ */
+export const CLIENTS_RECEIVING_IDENTITY = {
+  prototypeKey: "receivingPartnerId",
+  trustedColumn: "receivingPartnerUserId",
+  meaning: "User.id of receiving partner principal authorized via requireOwnerClientsContext",
+  optionalScope: ["receivingOrganizationId", "receivingBranchId"],
+  retractedRule: "P2 prior blanket map receivingPartnerId → Branch.id only",
+  soloSpecialist: {
+    source: "src/lib/specialistR06Eligibility.ts @ navigator",
+    eligibleWhen:
+      "feature on, not blocked, not employee, no owned Organization, userHasSpecialistActivity, not employed_view",
+    ineligibleReasons: ["org_owner", "employee", "employed_view", "not_specialist"],
+    receivingScope: "no mandatory org/branch — optional null on appeal row",
+  },
+  agent: "principalAgentObserverOnly — receiving CRM forbidden; observer read only",
+  businessOwner: "may bind optional org/branch when owned scope exists",
+  orgWorkplaceCrm:
+    "list may resolve authorized owner principal for CRM reads; observer personal writes = session viewerUserId only (never org list owner proxy)",
+  settingsScopeKey: "receivingPartnerUserId — prototype partnerSettings[receivingPartnerId]",
+  activeAppealPredicate:
+    "isActiveAppealStage: inactive only sys_refused | sys_return; separate receiving archive/trash lifecycle (GAP-K8-L)",
+} as const;
+
+export const CLIENTS_ACTIVE_CERTIFICATE_SLOT = {
+  naturalKey: "(certificateId, receivingPartnerUserId) with optional branch dimension when set",
+  k8DraftIndex:
+    "UNRESOLVED @ e11f7e59: partial unique on (certificateId, receivingBranchId) + archivedAt IS NULL",
+  stageFilter: "stageKey NOT IN sys_refused, sys_return — matches isActiveAppealStage",
+  lifecycleGap:
+    "Prototype findActiveAppeal does not treat receiver archive UI bucket like archivedAt; K8 must align before duplicate active referrals",
+} as const;
 export const CLIENTS_PARITY_PRODUCTION_BASE_SHA = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79";
 export const CLIENTS_NAVIGATOR_PREP_BASE_SHA = "8137ddd1ae5bad880fa28df34bab04e460bf2bdd";
 export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b85c6a86751868";
@@ -32,11 +67,13 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
     "src/lib/clients-parity/types.ts",
   ],
   auditReconcile: "audit/remcard-parallel-20261113/P2/K8-e11f7e59-list-response-reconcile-20261113.md",
+  identityCorrectionHandoff:
+    "audit/remcard-parallel-20261113/P2/K8-receiving-identity-correction-20261113.md",
 } as const;
 
 /**
  * One canonical list envelope per layer — no competing `{ appeals }` on K8 lib/receiving HTTP.
- * P5 maps navigator `items` → partner `appeals`; `receivingBranches` → `partners`.
+ * P3 maps navigator `items` → `appeals`; `receivingPartners` → `partners`.
  */
 export const CLIENTS_LIST_RESPONSE_CONTRACT = {
   k8LibReceiving: {
@@ -59,7 +96,7 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     route: "GET /api/pro/client-appeals/observer (canonical)",
     legacyInterimRoute: "/api/pro/referred-appeals",
     shape:
-      "{ items: ClientAppealObserverReadDto[], receivingBranches: ObserverBranchPartnerMetaWire[], personalMeta?: Record<string, ObserverPersonalMeta>, page?, limit?, total?, hasMore?, nextCursor? }",
+      "{ items: ClientAppealObserverReadDto[], receivingPartners: ObserverReceivingPartnerMetaWire[], personalMeta?: Record<string, ObserverPersonalMeta>, page?, limit?, total?, hasMore?, nextCursor? }",
     pagination: "page/limit until K2 converges with lib cursor; then nextCursor primary",
     paidAmountRule:
       "paidAmountKopecks is DTO-only from recordMap.ts (order.totalAmount); not a Prisma column select",
@@ -68,7 +105,12 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     owner: "K2",
     route: "GET /api/pro/referred-appeals",
     shape: "{ items, page, limit, total, hasMore, empty }",
-    missingForP3: ["receivingBranches", "personalMeta", "ClientAppealObserverReadDto allowlist fields"],
+    missingForP3: [
+      "receivingPartners (by User.id)",
+      "personalMeta",
+      "receivingPartnerUserId on items",
+      "ClientAppealObserverReadDto allowlist fields",
+    ],
     ormGap: "GAP-K8-F: OBSERVER_APPEAL_ROW_SELECT.paidAmountKopecks",
   },
   partnerP3Normalized: {
@@ -80,7 +122,7 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     mapsFromK2Http72193c78: {
       appeals: "items[] → ObserverReferredAppeal via OBSERVER_APPEAL_ADAPTER_MAP",
       partners:
-        "derive distinct receivingBranchId from items + branch display join (K2 list must supply branch meta — not invented defaults)",
+        "receivingPartners[] keyed by receivingPartnerUserId + profile display (not Branch.id mandatory)",
       personalMeta:
         "Record<appealId, ObserverPersonalMeta> from K2/K5 embed on list GET only; omit key when server sends none",
       pagination: "page, limit, total, hasMore (not cursor) until K2 converges with k8 lib",
@@ -202,10 +244,42 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K8-E",
     owner: "K8+K1",
     topic:
-      "PartnerClientAppealPartnerSettings keyed by organizationId vs prototype partnerSettings[receivingPartnerId] (branch)",
+      "PartnerClientAppealPartnerSettings keyed by organizationId vs prototype partnerSettings[receivingPartnerId]",
+    status: "SUPERSEDED_20261113",
+    p2AdapterRule: "Use receivingPartnerUserId per CLIENTS_RECEIVING_IDENTITY",
+  },
+  {
+    id: "GAP-K8-J",
+    owner: "K8",
+    topic:
+      "PartnerClientAppeal requires receivingOrganizationId + receivingBranchId NOT NULL — blocks eligible solo specialist (no owned org)",
     status: "UNRESOLVED",
-    p2AdapterRule:
-      "UI group by receivingBranchId; settings API keyed by org until product decides branch-level override",
+    requiredFix:
+      "Add receivingPartnerUserId NOT NULL; org/branch optional; receiving lists/queries keyed by principal",
+  },
+  {
+    id: "GAP-K8-K",
+    owner: "K8+K1",
+    topic:
+      "Receiving CRM / certificate create paths require owned org+branch — incompatible with solo specialist receiving",
+    status: "UNRESOLVED",
+    requiredFix: "K1 receiving gate: requireOwnerClientsContext receiving principal without forced Organization",
+  },
+  {
+    id: "GAP-K8-L",
+    owner: "K8",
+    topic:
+      "Active certificate partial unique uses archivedAt + branch; prototype findActiveAppeal vs receiving archive/trash buckets",
+    status: "UNRESOLVED",
+    requiredFix: "Align slot predicate with prototype before archive/trash allows duplicate active referral",
+  },
+  {
+    id: "GAP-K8-M",
+    owner: "K2",
+    topic:
+      "Observer list/by-partner @72193c78 filters receivingBranchId — must filter/group by receivingPartnerUserId",
+    status: "UNRESOLVED",
+    requiredFix: "Partner metadata from User profile; optional branch fields only when present",
   },
   {
     id: "GAP-K8-F",
@@ -220,7 +294,7 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K8-G",
     owner: "K2+K5",
     topic:
-      "K2 HTTP list missing receivingBranches + personalMeta required for P3 ObserverAppealsLoadResult",
+      "K2 HTTP list missing receivingPartners + personalMeta + receivingPartnerUserId on items",
     status: "UNRESOLVED",
     requiredFix:
       "Emit CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget fields on canonical observer GET",
@@ -255,25 +329,36 @@ export const CLIENTS_K8_OPEN_GAPS = CLIENTS_K8_UNRESOLVED_GAPS.filter(
 );
 
 export const CLIENTS_PARTNER_SETTINGS_SCOPE = {
-  prototype: "partnerSettings[receivingPartnerId] — one pipeline per receiving partner (demo id = branch storefront)",
-  k8Candidate629de67: "PartnerClientAppealPartnerSettings.organizationId @unique — shared across org branches",
-  p2Decision: "UNRESOLVED (GAP-K8-E): confirm org-wide vs per-branch before K1 working-stages CRUD",
-  appealRowAnchor: "receivingBranchId + receivingOrganizationId on PartnerClientAppeal",
+  prototype: "partnerSettings[receivingPartnerId] keyed by receiving principal User.id",
+  k8Target: "PartnerClientAppealPartnerSettings.receivingPartnerUserId @unique",
+  k8DraftWrong: "PartnerClientAppealPartnerSettings.organizationId @unique @ e11f7e59 migration",
+  p2Decision: "GAP-K8-J/K — K8 migrates settings FK to receivingPartnerUserId; org/branch optional metadata",
+  appealRowAnchor: "receivingPartnerUserId required; receivingOrganizationId/receivingBranchId optional",
 } as const;
 
-/** Stable P5/P6 adapter: K2 allowlist DTO → ObserverReferredAppeal (no User.id receiving identity). */
+/** Stable P3/P5 adapter: K2 allowlist DTO → ObserverReferredAppeal field renames only. */
 export const OBSERVER_APPEAL_ADAPTER_MAP = {
   id: "id",
   clientDisplayName: "clientName",
   stageKey: "stageId",
   referrerProUserId: "referrerPartnerId",
-  receivingBranchId: "receivingPartnerId",
+  receivingPartnerUserId: "receivingPartnerId",
+  receivingBranchId: "receivingBranchId",
   receivingOrganizationId: "receivingOrganizationId",
   orderId: "purchaseId",
   paidAmountKopecks: "paidAmount",
   createdAt: "referralAt",
   manualSourceKey: "manualEntry",
   originKind: "manualEntry",
+} as const;
+
+export const OBSERVER_PARTNER_META_ADAPTER_MAP = {
+  receivingPartnerUserId: "id",
+  displayName: "name",
+  city: "city",
+  category: "category",
+  receivingOrganizationId: "receivingOrganizationId",
+  receivingBranchId: "receivingBranchId",
 } as const;
 
 /** Navigator actual observer + personal routes @ K2/K5 drafts (not a deprecated alias). */
@@ -308,7 +393,7 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     authGate:
       "GAP-K8-1: align with ownerClientsAccess principal eligibility + referrerProUserId === viewer; resolveAppealAccess observer; read-only",
     notes:
-      "200: CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget (items[], receivingBranches[], personalMeta?). P5 → appeals/partners.",
+      "200: items[], receivingPartners[] by User.id, personalMeta?. P3 → appeals/partners.",
   },
   {
     method: "GET",
@@ -420,7 +505,7 @@ export const CLIENTS_DECISIONS = [
   {
     id: "D2",
     topic: "stageId",
-    p2Position: `System stages MUST use prototype ids: ${Object.values(CLIENTS_APPEAL_SYSTEM_STAGE).join(", ")}. Custom stages: workingStages[].id per receivingPartnerId.`,
+    p2Position: `System stages MUST use prototype ids: ${Object.values(CLIENTS_APPEAL_SYSTEM_STAGE).join(", ")}. Custom stages: workingStages[].id per receivingPartnerUserId (prototype receivingPartnerId).`,
     k8MustPublish: "Order/cert → stageId mapping table; no renaming to short new/paid in JSON",
   },
   {

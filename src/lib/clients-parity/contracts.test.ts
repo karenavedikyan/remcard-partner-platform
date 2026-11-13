@@ -11,7 +11,9 @@ import {
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
+  CLIENTS_RECEIVING_IDENTITY,
   OBSERVER_APPEAL_ADAPTER_MAP,
+  OBSERVER_PARTNER_META_ADAPTER_MAP,
   OBSERVER_P5_TO_K5_BATCH_ACTION,
   routesForBlocker,
 } from "./contracts";
@@ -44,13 +46,16 @@ describe("clients parity contracts", () => {
     expect(routesForBlocker("BLK-OBSERVER-REFERRED").length).toBeGreaterThanOrEqual(4);
     expect(CLIENTS_K8_UNRESOLVED_GAPS.length).toBeGreaterThanOrEqual(10);
     expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-P5-518f6dd8");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K8-J");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");
     expect(CLIENTS_SECTION_OWNERS.partnerProxyAllowlist).toBe("P1");
     expect(OBSERVER_P5_TO_K5_BATCH_ACTION["set-tag"]).toBe("setTag");
-    expect(CLIENTS_PARTNER_SETTINGS_SCOPE.p2Decision).toContain("UNRESOLVED");
-    expect(OBSERVER_APPEAL_ADAPTER_MAP.receivingBranchId).toBe("receivingPartnerId");
+    expect(CLIENTS_PARTNER_SETTINGS_SCOPE.p2Decision).toContain("receivingPartnerUserId");
+    expect(OBSERVER_APPEAL_ADAPTER_MAP.receivingPartnerUserId).toBe("receivingPartnerId");
+    expect(CLIENTS_RECEIVING_IDENTITY.trustedColumn).toBe("receivingPartnerUserId");
+    expect(OBSERVER_PARTNER_META_ADAPTER_MAP.receivingPartnerUserId).toBe("id");
     expect(CLIENTS_DECISIONS).toHaveLength(7);
   });
 
