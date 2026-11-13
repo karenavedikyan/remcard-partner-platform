@@ -42,6 +42,8 @@ export type ReceivingAppealListRow = {
   createdAt: string;
   updatedAt: string;
   manualEntry?: boolean;
+  /** K8 field required for bucket tabs — request in P2 if absent from first API draft. */
+  bucket?: ReceivingListBucket;
 };
 
 /** Detail — receiving-owner fields (never leak via observer/referrer DTO). P4 owner. */
@@ -85,6 +87,63 @@ export type ReceivingListFilters = {
   source: "all" | "cert" | "manual";
   bucket: ReceivingListBucket;
 };
+
+export const RECEIVING_LIST_SOURCE_OPTIONS = [
+  { key: "all" as const, label: "Все" },
+  { key: "cert" as const, label: "По сертификату" },
+  { key: "manual" as const, label: "Вручную" },
+];
+
+export const RECEIVING_MANUAL_CHANNEL_OPTIONS = [
+  { key: "phone" as const, label: "Звонок" },
+  { key: "messenger" as const, label: "Мессенджер" },
+  { key: "visit" as const, label: "Личный визит" },
+  { key: "ads" as const, label: "Реклама" },
+  { key: "other" as const, label: "Другое" },
+];
+
+const DEFAULT_STATUS_LABEL = "Все статусы";
+
+/** Client filter — prototype `filterAppeals(incoming)` (no network). */
+export function filterReceivingAppeals(
+  appeals: ReceivingAppealListRow[],
+  filters: ReceivingListFilters,
+  stageLabelById: (row: ReceivingAppealListRow) => string = (r) => r.stageId,
+): ReceivingAppealListRow[] {
+  let list = appeals.filter((a) => (a.bucket ?? "active") === filters.bucket);
+  if (filters.source === "cert") {
+    list = list.filter((a) => Boolean(a.certificateId) && !a.manualEntry);
+  } else if (filters.source === "manual") {
+    list = list.filter((a) => a.manualEntry);
+  }
+  if (filters.status !== DEFAULT_STATUS_LABEL) {
+    list = list.filter((a) => stageLabelById(a) === filters.status);
+  }
+  const q = filters.q.trim().toLowerCase();
+  if (q) {
+    list = list.filter((a) =>
+      [a.clientName, a.certificateId, a.id, a.interest, a.referrerPartnerId]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }
+  return list.sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+}
+
+export function receivingStatusFilterOptions(
+  appeals: ReceivingAppealListRow[],
+  stageLabelById: (row: ReceivingAppealListRow) => string,
+): string[] {
+  const labels = new Set<string>([DEFAULT_STATUS_LABEL]);
+  for (const a of appeals) {
+    labels.add(stageLabelById(a));
+  }
+  return [...labels];
+}
 
 export type ReceivingListKpis = {
   inWork: number;

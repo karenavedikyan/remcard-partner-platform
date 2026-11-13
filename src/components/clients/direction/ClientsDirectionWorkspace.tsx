@@ -7,6 +7,7 @@ import type { ClientsParityDirection } from "@/lib/clients-parity/types";
 import { ClientsDirectionTabs } from "./ClientsDirectionTabs";
 import { ObserverPartnersWorkspace } from "../observer/ObserverPartnersWorkspace";
 import { ReceivingAppealsWorkspace } from "@/components/clients/receiving/ReceivingAppealsWorkspace";
+import "@/components/clients/receiving/receiving.module.css";
 
 type Props = {
   accessMode: OwnerClientsAccessMode;
