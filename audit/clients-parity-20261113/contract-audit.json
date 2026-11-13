@@ -1,0 +1,113 @@
+{
+  "task": "REMCLIENTS-PARITY-20261113-V1",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "implCandidateSha": null,
+  "summary": {
+    "personalReferrerOverlayContractExists": false,
+    "agentClientCrudIsPersonalOverlay": false,
+    "blockedRequirementIds": ["C35", "C36", "C37", "C38", "C16", "C18"]
+  },
+  "contracts": [
+    {
+      "id": "agent-clients-list",
+      "method": "GET",
+      "path": "/api/pro/agent-clients",
+      "feHelper": "src/lib/agent-r03/api.ts#fetchAgentClients",
+      "scope": "read",
+      "ownership": "actor-owned agent client CRM",
+      "fields": ["displayName", "phone", "email", "city", "need", "note", "archivedAt", "certificateCount", "hasPurchases"],
+      "deleteSemantics": "n/a (list)",
+      "mapsToPrototype": "NOT equivalent to observer personal referral list",
+      "status": "AVAILABLE_WRONG_SEMANTICS_FOR_C26_C38"
+    },
+    {
+      "id": "agent-clients-create",
+      "method": "POST",
+      "path": "/api/pro/agent-clients",
+      "feHelper": "createAgentClient",
+      "scope": "write",
+      "ownership": "actor-owned",
+      "fields": ["displayName", "phone?", "email?", "city?", "need?", "note?"],
+      "mapsToPrototype": "Partial overlap with manual client create for agent CRM only; agent receiving manual (109) is EXCLUDED",
+      "status": "AVAILABLE_LIMITED"
+    },
+    {
+      "id": "agent-clients-patch",
+      "method": "PATCH",
+      "path": "/api/pro/agent-clients/:id",
+      "feHelper": "patchAgentClient",
+      "scope": "write",
+      "ownership": "actor-owned entity fields (not personal overlay)",
+      "fields": ["displayName", "phone", "email", "city", "need", "note", "action:archive|restore"],
+      "mapsToPrototype": "MUST NOT be used as personal alias/tag/note overlay (C35)",
+      "status": "AVAILABLE_WRONG_SEMANTICS"
+    },
+    {
+      "id": "agent-clients-delete",
+      "method": "DELETE",
+      "path": "/api/pro/agent-clients/:id",
+      "feHelper": "deleteAgentClient",
+      "scope": "write",
+      "ownership": "actor-owned entity",
+      "deleteSemantics": "entity delete — NOT personal trash (C37)",
+      "status": "BLOCKED_FOR_PERSONAL_TRASH"
+    },
+    {
+      "id": "agent-clients-batch",
+      "method": "POST",
+      "path": "/api/pro/agent-clients/batch",
+      "feHelper": "batchAgentClients",
+      "scope": "write",
+      "ownership": "actor-owned",
+      "fields": ["action: archive|restore|delete", "ids"],
+      "deleteSemantics": "batch entity archive/restore/delete — no personal trash bucket",
+      "status": "AVAILABLE_WRONG_SEMANTICS_FOR_C37"
+    },
+    {
+      "id": "agent-certificate-userAlias",
+      "method": "PATCH",
+      "path": "/api/pro/agent-certificates/:id",
+      "feHelper": "patchAgentCertificate",
+      "scope": "write",
+      "ownership": "certificate personal title-for-self",
+      "fields": ["userAlias", "archive/restore actions"],
+      "mapsToPrototype": "Not referral personal alias",
+      "status": "AVAILABLE_WRONG_ENTITY"
+    },
+    {
+      "id": "store-order-receiving-client",
+      "method": "PATCH",
+      "path": "/api/store/orders/:id/receiving-client",
+      "feHelper": "patchStoreOrderReceivingClient",
+      "scope": "write",
+      "ownership": "order ↔ agentClient link",
+      "fields": ["action:link|unlink", "agentClientId?", "expectedVersion"],
+      "mapsToPrototype": "Not appeals CRM / personal list",
+      "status": "AVAILABLE_UNRELATED"
+    },
+    {
+      "id": "observer-personal-meta",
+      "method": null,
+      "path": null,
+      "feHelper": null,
+      "scope": "missing",
+      "ownership": "would be referrer-private overlay on referral/appeal id",
+      "fields": ["alias", "tag", "note", "bucket:active|archived|trash", "beforeTrash"],
+      "prototypeSource": "design/general-prototype/partner/observer-personal-list.js",
+      "persistence": "prototype in-memory only; production contract absent",
+      "status": "BLOCKED_PERSISTENCE"
+    },
+    {
+      "id": "receiving-appeals-crm",
+      "method": null,
+      "path": null,
+      "feHelper": null,
+      "scope": "missing on FE proxy allowlist",
+      "ownership": "receiving partner appeals",
+      "fields": ["stages", "refusalReasons", "funnel", "scan/manual/purchase flows"],
+      "prototypeSource": "design/general-prototype/partner/client-appeals.js",
+      "status": "BLOCKED"
+    }
+  ]
+}

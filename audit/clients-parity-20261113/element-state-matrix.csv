@@ -1,0 +1,17 @@
+requirementId,page,role,release,mode,state,selectorOrAccessibleName,prototypeSource,implementationLocation,apiContract,expectedTransition,visualEvidence,functionalEvidence,status,blocker
+C02,106,agent,R1,observer-overview,,[data-testid=ca-observer-personal-tools],observer-personal-list.js + client-appeals.js,,missing personal overlay API,stay on my-clients-at-partners,,,NOT_STARTED,see 01-EARLY blockers; candidate SHA pending
+C05,107,agent,R1,excluded-receiving,,n/a receiving appeal,client-appeals.js (closed for agent),,server denial required,must not open receiving CRM,,,EXCLUDED,C02/C05 closed numbers 107-112
+C05,108,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
+C05,109,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
+C05,110,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
+C05,111,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
+C05,112,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
+C35,106,agent,R1,personal-edit,edit-form,[data-observer-personal-edit] alias/tag/note,observer-personal-list.js,,BLOCKED_PERSISTENCE,save personal only,,,BLOCKED,no referrer overlay API; agent-clients PATCH wrong semantics
+C36,106,agent,R1,personal-bulk-tag,,mass tag panel,observer-personal-list.js,,BLOCKED_PERSISTENCE,tag-only mass apply,,,BLOCKED,no tag field on AgentClientRow
+C37,106,agent,R1,personal-trash,,data-observer-action=move:trash,observer-personal-list.js,,BLOCKED,delete only from own list,,,BLOCKED,deleteAgentClient/batch delete ≠ personal trash
+C38,106,agent,R1,personal-persist,,workspace.observerPersonal.meta,observer-personal-list.js (in-memory demo),,BLOCKED_PERSISTENCE,survive reload,,,BLOCKED,localStorage forbidden; no user contract
+C16,83,specialist,R1,stages-settings,,nav:settings / settings:*,client-appeals.js,,BLOCKED,CRUD working stages,,,BLOCKED,no FE appeals/stages API on 57ca4680
+C18,85,specialist,R1,analytics,,renderFunnelPage,client-appeals.js,,BLOCKED,funnel metrics,,,BLOCKED,no analytics contract; do not copy demo arithmetic
+C56,*,*,R1,constraint,,n/a,spec,,constraint,no DB/rights/API invention,,,EXCLUDED,process constraint
+R2,141,*,R2,excluded,,repair:open-141,client-appeals.js,,,do not implement,,,EXCLUDED,R2 only
+R2,142,*,R2,excluded,,repair:open-142,client-appeals.js,,,do not implement,,,EXCLUDED,R2 only
