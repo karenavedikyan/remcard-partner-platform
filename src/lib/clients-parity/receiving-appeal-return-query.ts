@@ -1,16 +1,5 @@
-/**
- * Canonical receiving return path (Root/P4 contract). P1 mirror — do not import P4
- * receiving-appeal-navigation.ts into committed source.
- */
-export function receivingAppealReturnHref(appealId: string): string {
-  const params = new URLSearchParams({
-    direction: "receiving",
-    appealId,
-  });
-  return `/clients?${params.toString()}`;
-}
+/** P1: validate ?appealId= on purchase detail — no arbitrary return targets. */
 
-/** Safe appeal id from purchase-detail ?appealId=…; rejects external/arbitrary return targets. */
 export function parseReceivingAppealReturnId(
   raw: string | null | undefined,
 ): string | null {

@@ -8,12 +8,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { PurchaseAppealReturnLink } from "./PurchaseAppealReturnLink";
-import {
-  parseReceivingAppealReturnId,
-  receivingAppealReturnHref,
-} from "@/lib/clients-parity/receiving-appeal-return-href";
+import { receivingAppealReturnHref } from "@/components/clients/receiving/receiving-appeal-navigation";
+import { parseReceivingAppealReturnId } from "@/lib/clients-parity/receiving-appeal-return-query";
 
-describe("receivingAppealReturnHref (P1 / P4 contract mirror)", () => {
+describe("receivingAppealReturnHref (P4 canonical)", () => {
   it("builds receiving clients deep link with encoded appealId", () => {
     expect(receivingAppealReturnHref("appeal_1")).toBe(
       "/clients?direction=receiving&appealId=appeal_1",
@@ -24,7 +22,7 @@ describe("receivingAppealReturnHref (P1 / P4 contract mirror)", () => {
   });
 });
 
-describe("parseReceivingAppealReturnId", () => {
+describe("parseReceivingAppealReturnId (P1)", () => {
   it("accepts scoped tokens and rejects malformed or reserved ids", () => {
     expect(parseReceivingAppealReturnId("appeal_1")).toBe("appeal_1");
     expect(parseReceivingAppealReturnId("  appeal_2  ")).toBe("appeal_2");

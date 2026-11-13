@@ -95,10 +95,11 @@
     "ownerOnlyPaths": [
       "src/components/history/PurchaseAppealReturnLink.tsx",
       "src/components/history/P1.PurchaseAppealReturnLink.test.tsx",
-      "src/lib/clients-parity/receiving-appeal-return-href.ts",
+      "src/lib/clients-parity/receiving-appeal-return-query.ts",
       "src/components/history/PurchaseDetail.tsx"
     ],
-    "p4HrefPinLocalOnlyDoNotCommit": "receiving-appeal-navigation.ts @ 58088bd3",
+    "p4CanonicalHrefModule": "src/components/clients/receiving/receiving-appeal-navigation.ts",
+    "productionPurchaseDetailRestoredFrom": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
     "contractHref": "/clients?direction=receiving&appealId="
   },
   "k8NavigatorCandidatesNotAccepted": {

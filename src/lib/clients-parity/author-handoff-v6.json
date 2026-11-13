@@ -165,8 +165,8 @@
   "p1HistoryPurchaseAppealReturnLink": {
     "component": "src/components/history/PurchaseAppealReturnLink.tsx",
     "host": "src/components/history/PurchaseDetail.tsx",
-    "hrefMirror": "src/lib/clients-parity/receiving-appeal-return-href.ts",
-    "p4CanonicalLocalOnly": "receiving-appeal-navigation.ts @ 58088bd3 — never commit",
+    "queryParser": "src/lib/clients-parity/receiving-appeal-return-query.ts",
+    "p4CanonicalHref": "src/components/clients/receiving/receiving-appeal-navigation.ts",
     "queryParam": "appealId"
   },
   "p1ReceivingOrderLinkProxy": {
