@@ -6,6 +6,7 @@ import {
   buildReceivingBulkPatchIntents,
   type ReceivingAppealPatchIntent,
   type ReceivingBulkEditDraft,
+  type ReceivingBulkMutationResult,
 } from "@/components/clients/receiving/receiving-bulk-handoff";
 import {
   RECEIVING_SYSTEM_STAGE,
@@ -32,8 +33,13 @@ export function isReceivingAppealLockedForBulkStage(row: ReceivingAppealListRow)
   return locked.has(row.stageId);
 }
 
+/** K1 `isBulkStageAllowed` — PAID, SHIPPED, RETURN (no bulk stage transitions). */
 export function isReceivingFinancialStageKey(stageKey: string): boolean {
-  return stageKey === RECEIVING_SYSTEM_STAGE.PAID || stageKey === RECEIVING_SYSTEM_STAGE.SHIPPED;
+  return (
+    stageKey === RECEIVING_SYSTEM_STAGE.PAID ||
+    stageKey === RECEIVING_SYSTEM_STAGE.SHIPPED ||
+    stageKey === RECEIVING_SYSTEM_STAGE.RETURN
+  );
 }
 
 export function revisionFromReceivingDetailWire(wire: ReceivingAppealDetailWire): number {
@@ -78,6 +84,41 @@ export function receivingBulkProfileNotePatchFromSnapshot(
   };
 }
 
+export type ReceivingBulkIntentOutcome = {
+  appealId: string;
+  ok: boolean;
+  reason?: string;
+  message?: string;
+  /** Stage PATCH succeeded while a later step failed — list must refresh. */
+  stageApplied?: boolean;
+};
+
+export const RECEIVING_BULK_EXPECTED_REVISION_CONFLICT =
+  "Версия обращения не совпадает с выбранной записью. Обновите список." as const;
+
+/** P5 optional `expectedRevision` on intent — reject before any write when it disagrees with initial GET. */
+export function receivingBulkExpectedRevisionConflictsWithSnapshot(
+  body: ReceivingAppealPatchIntent["body"],
+  snapshot: ReceivingBulkNoteSnapshot,
+): boolean {
+  if (body.expectedRevision === undefined || body.expectedRevision === null) return false;
+  const expected =
+    typeof body.expectedRevision === "number"
+      ? body.expectedRevision
+      : Number(body.expectedRevision);
+  if (Number.isNaN(expected)) return false;
+  return expected !== snapshot.revision;
+}
+
+export function receivingBulkApplyNeedsListReload(outcomes: ReceivingBulkIntentOutcome[]): boolean {
+  return outcomes.some((o) => o.ok || o.stageApplied);
+}
+
+export type ReceivingBulkApplyRun = {
+  result: ReceivingBulkMutationResult;
+  outcomes: ReceivingBulkIntentOutcome[];
+};
+
 type DetailFetchResult = Awaited<ReturnType<typeof fetchReceivingAppealDetailWire>>;
 type PatchStageResult = Awaited<ReturnType<typeof patchReceivingAppealStageCas>>;
 type PatchProfileResult = Awaited<ReturnType<typeof patchReceivingAppealProfileCas>>;
@@ -98,7 +139,7 @@ export async function applyOneReceivingBulkIntent(
   intent: ReceivingAppealPatchIntent,
   row: ReceivingAppealListRow | undefined,
   deps: ReceivingBulkApplyTransportDeps = defaultBulkApplyTransport,
-): Promise<{ appealId: string; ok: boolean; reason?: string; message?: string }> {
+): Promise<ReceivingBulkIntentOutcome> {
   const { appealId, body } = intent;
   const detail = await deps.fetchDetail(appealId);
   if (!detail.ok) {
@@ -106,6 +147,15 @@ export async function applyOneReceivingBulkIntent(
   }
 
   let noteSnapshot = receivingBulkNoteSnapshotFromWire(detail.wire);
+  if (receivingBulkExpectedRevisionConflictsWithSnapshot(body, noteSnapshot)) {
+    return {
+      appealId,
+      ok: false,
+      reason: "version_conflict",
+      message: RECEIVING_BULK_EXPECTED_REVISION_CONFLICT,
+    };
+  }
+
   let stageMutated = false;
 
   if (
@@ -134,11 +184,12 @@ export async function applyOneReceivingBulkIntent(
         return {
           appealId,
           ok: false,
+          stageApplied: true,
           reason: refreshed.code ?? "ERROR",
           message: RECEIVING_BULK_STAGE_OK_NOTE_REFRESH_FAILED,
         };
       }
-      return { appealId, ok: true };
+      return { appealId, ok: true, stageApplied: true };
     }
     noteSnapshot = receivingBulkNoteSnapshotFromWire(refreshed.wire);
   }
@@ -158,13 +209,14 @@ export async function applyOneReceivingBulkIntent(
       return {
         appealId,
         ok: false,
+        stageApplied: stageMutated || undefined,
         reason: profRes.code === "CONFLICT" ? "version_conflict" : profRes.code,
         message: conflictMsg,
       };
     }
   }
 
-  return { appealId, ok: true };
+  return { appealId, ok: true, stageApplied: stageMutated || undefined };
 }
 
 /** Serial per-id PATCH — intents from P5 `buildReceivingBulkPatchIntents`. */
@@ -178,35 +230,33 @@ export async function applyReceivingBulkEditsPerId(
     stageLockedIds?: ReadonlySet<string>;
   },
   deps: ReceivingBulkApplyTransportDeps = defaultBulkApplyTransport,
-) {
+): Promise<ReceivingBulkApplyRun> {
   const built = buildReceivingBulkPatchIntents(ids, draft, {
     stageBlocked: ctx.stageBlocked,
     stageLockedIds: ctx.stageLockedIds,
   });
 
   if (built.validationError) {
-    return aggregateReceivingPatchResults(
-      ids.map((id) => ({
-        appealId: id,
-        ok: false,
-        reason: "validation",
-        message: built.validationError,
-      })),
-    );
+    const outcomes: ReceivingBulkIntentOutcome[] = ids.map((id) => ({
+      appealId: id,
+      ok: false,
+      reason: "validation",
+      message: built.validationError,
+    }));
+    return { result: aggregateReceivingPatchResults(outcomes), outcomes };
   }
 
   if (built.intents.length === 0) {
-    return aggregateReceivingPatchResults(
-      ids.map((id) => ({
-        appealId: id,
-        ok: false,
-        reason: "validation",
-        message: "Нет применимых изменений для выбранных записей.",
-      })),
-    );
+    const outcomes: ReceivingBulkIntentOutcome[] = ids.map((id) => ({
+      appealId: id,
+      ok: false,
+      reason: "validation",
+      message: "Нет применимых изменений для выбранных записей.",
+    }));
+    return { result: aggregateReceivingPatchResults(outcomes), outcomes };
   }
 
-  const outcomes: Array<{ appealId: string; ok: boolean; reason?: string; message?: string }> = [];
+  const outcomes: ReceivingBulkIntentOutcome[] = [];
   const byId = new Map(ctx.appeals.map((a) => [a.id, a]));
   for (const intent of built.intents) {
     outcomes.push(await applyOneReceivingBulkIntent(intent, byId.get(intent.appealId), deps));
@@ -224,5 +274,5 @@ export async function applyReceivingBulkEditsPerId(
     }
   }
 
-  return aggregateReceivingPatchResults(outcomes);
+  return { result: aggregateReceivingPatchResults(outcomes), outcomes };
 }

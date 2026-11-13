@@ -32,7 +32,8 @@ Any local `ReceivingBulkEditPanel.tsx` / `receiving-bulk-handoff.ts` content tha
 
 - `ReceivingAppealsWorkspace.tsx` — imports P5 panels + handoff normalizers; `isReceivingBatchProxyReady()` for contract state (P1 `0bb25b9b` allows batch when `isAllowedProxyRoute` true on this branch).
 - `ReceivingAppealsList.tsx` — mounts `ReceivingBulkActions` (not toolbar duplicate).
-- `src/lib/clients-parity/receiving-bulk-apply.ts` — serial PATCH transport via `buildReceivingBulkPatchIntents` / `aggregateReceivingPatchResults` only; maps `serviceNote` → K1 `privateNotes`. After stage PATCH, **must** re-GET and take `privateNotes` + `revision` from the same refreshed wire (`receivingBulkNoteSnapshotFromWire`); refresh fail + pending note → `RECEIVING_BULK_STAGE_OK_NOTE_REFRESH_FAILED` (no stale note merge).
+- `src/lib/clients-parity/receiving-bulk-apply.ts` — serial PATCH transport via P5 intents only. CAS: P5 `body.expectedRevision` vs initial GET → `RECEIVING_BULK_EXPECTED_REVISION_CONFLICT` before writes (no silent revision swap). Note snapshot single-wire rule; `stageApplied` + `receivingBulkApplyNeedsListReload` for workspace partial refresh. `isReceivingFinancialStageKey` includes RETURN (K1 bulk allowlist). No auto-retry.
+- `ReceivingAppealsWorkspace.tsx` — `executeBulkEdit` reloads when any outcome `ok || stageApplied`.
 - `src/lib/clients-parity/receiving-appeals-api.ts` — batch + CAS PATCH (unchanged owner).
 
 Branch may carry P5 files as **read-only mirror** for compile; Root replaces from P5 owner — P6 must not edit those paths.

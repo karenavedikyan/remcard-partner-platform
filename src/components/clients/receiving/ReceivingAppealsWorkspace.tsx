@@ -32,6 +32,7 @@ import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
 import {
   applyReceivingBulkEditsPerId,
   isReceivingAppealLockedForBulkStage,
+  receivingBulkApplyNeedsListReload,
 } from "@/lib/clients-parity/receiving-bulk-apply";
 import {
   normalizeReceivingBatchResponse,
@@ -188,7 +189,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       const stageLockedIds = new Set(
         selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
       );
-      const result = await applyReceivingBulkEditsPerId(ids, draft, {
+      const { result, outcomes } = await applyReceivingBulkEditsPerId(ids, draft, {
         appeals: data.appeals,
         workingStages: data.settings?.workingStages ?? [],
         stageBlocked,
@@ -197,7 +198,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       setBatchPending(false);
       const partialMsg = receivingBulkErrorMessage(result);
       if (partialMsg) setBatchPartial(partialMsg);
-      if (result.ok && result.updatedIds.length > 0) {
+      if (receivingBulkApplyNeedsListReload(outcomes)) {
         await reload();
       }
       setSelected((prev) => new Set(receivingBulkMergeSelection([...prev], result)));

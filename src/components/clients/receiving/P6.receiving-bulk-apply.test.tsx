@@ -26,6 +26,7 @@ describe("P6.receiving-bulk-apply", () => {
       }),
     ).toBe(true);
     expect(isReceivingFinancialStageKey(RECEIVING_SYSTEM_STAGE.PAID)).toBe(true);
+    expect(isReceivingFinancialStageKey(RECEIVING_SYSTEM_STAGE.RETURN)).toBe(true);
     expect(isReceivingFinancialStageKey("ws_measure")).toBe(false);
   });
 
