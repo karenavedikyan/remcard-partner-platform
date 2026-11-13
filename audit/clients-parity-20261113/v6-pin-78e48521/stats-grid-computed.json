@@ -1,0 +1,106 @@
+{
+  "measuredAt": "2026-11-13T10:39:51.903Z",
+  "candidateSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "prototypeReferenceSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "cssSource": "src/components/clients/observer/observer.module.css",
+  "selector": ".partnerCard .stats",
+  "records": [
+    {
+      "theme": "light",
+      "innerWidth": 1440,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "343px 343px 343px 343px",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "innerWidth": 1024,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "239px 239px 239px 239px",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "innerWidth": 768,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "175px 175px 175px 175px",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "innerWidth": 375,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "79.75px 79.75px 79.75px 79.75px",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "innerWidth": 360,
+      "expectedColumnCount": 2,
+      "columnCount": 2,
+      "gridTemplateColumns": "156px 156px",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "innerWidth": 320,
+      "expectedColumnCount": 2,
+      "columnCount": 2,
+      "gridTemplateColumns": "136px 136px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 1440,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "343px 343px 343px 343px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 1024,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "239px 239px 239px 239px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 768,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "175px 175px 175px 175px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 375,
+      "expectedColumnCount": 4,
+      "columnCount": 4,
+      "gridTemplateColumns": "79.75px 79.75px 79.75px 79.75px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 360,
+      "expectedColumnCount": 2,
+      "columnCount": 2,
+      "gridTemplateColumns": "156px 156px",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "innerWidth": 320,
+      "expectedColumnCount": 2,
+      "columnCount": 2,
+      "gridTemplateColumns": "136px 136px",
+      "pass": true
+    }
+  ],
+  "allPass": true
+}

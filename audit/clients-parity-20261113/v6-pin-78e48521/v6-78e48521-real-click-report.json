@@ -1,0 +1,510 @@
+{
+  "task": "REMCLIENTS-V6-COMPUTER-RESULTS",
+  "implCandidateSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+  "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "method": "Vite fixture harness + Playwright real clicks + boundingBox/getComputedStyle",
+  "acceptsOnly": "isolated mobile-row + KPI cascade regressions",
+  "samples": [
+    {
+      "theme": "light",
+      "width": 320,
+      "listKpi": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-light-320-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 65,
+          "y": 573.796875,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 48,
+          "y": 721.296875,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "listKpi": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-light-360-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 65,
+          "y": 574.796875,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 48,
+          "y": 648.296875,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 360,
+        "clientWidth": 360
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "listKpi": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-light-375-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 65,
+          "y": 870.296875,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 48,
+          "y": 648.296875,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 375,
+        "clientWidth": 375
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "listKpi": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-light-768-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 65,
+          "y": 631.796875,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 48,
+          "y": 404.296875,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 768,
+        "clientWidth": 768
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "listKpi": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-dark-320-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 65,
+          "y": 573.796875,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 260px",
+        "open": {
+          "x": 48,
+          "y": 721.296875,
+          "width": 260,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "listKpi": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-dark-360-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 65,
+          "y": 574.796875,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 300px",
+        "open": {
+          "x": 48,
+          "y": 648.296875,
+          "width": 300,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 360,
+        "clientWidth": 360
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "listKpi": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-dark-375-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 65,
+          "y": 870.296875,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 315px",
+        "open": {
+          "x": 48,
+          "y": 648.296875,
+          "width": 315,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 375,
+        "clientWidth": 375
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "listKpi": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 48,
+          "y": 206,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true,
+        "back": true,
+        "shot": "pin78-dark-768-partner.png"
+      },
+      "expanded": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 65,
+          "y": 631.796875,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "flat": {
+        "grid": "24px 708px",
+        "open": {
+          "x": 48,
+          "y": 404.296875,
+          "width": 708,
+          "height": 47.5
+        },
+        "geometryPass": true,
+        "nav": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "scroll": {
+        "scrollWidth": 768,
+        "clientWidth": 768
+      },
+      "note": "scrollWidth alone is not a pass criterion",
+      "ok": true
+    }
+  ],
+  "resizeKpi": [
+    {
+      "theme": "light",
+      "cols": [
+        {
+          "width": 1440,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 1024,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 768,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 375,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 360,
+          "cols": 2,
+          "expected": 2,
+          "ok": true
+        },
+        {
+          "width": 320,
+          "cols": 2,
+          "expected": 2,
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        }
+      ],
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "cols": [
+        {
+          "width": 1440,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 1024,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 768,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 375,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        },
+        {
+          "width": 360,
+          "cols": 2,
+          "expected": 2,
+          "ok": true
+        },
+        {
+          "width": 320,
+          "cols": 2,
+          "expected": 2,
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "cols": 4,
+          "expected": 4,
+          "ok": true
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "failures": 0,
+  "pass": true
+}

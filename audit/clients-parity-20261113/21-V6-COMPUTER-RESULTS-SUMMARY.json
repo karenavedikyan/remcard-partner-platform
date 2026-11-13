@@ -1,0 +1,41 @@
+{
+  "task": "REMCLIENTS-V6-COMPUTER-RESULTS",
+  "implCandidateSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+  "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "priorV5AuditorTipCannotCoverV6": "42f9fae9f87623b03184b1e3b0986458577712b0",
+  "laterTipNotPinned": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "computerAcceptedIsolatedRegressionsOnly": true,
+  "sectionAccepted": false,
+  "publication": false,
+  "isolatedAccepted": {
+    "mobileClientRowRealClick": true,
+    "kpiCascadeLiveResize": true,
+    "editCancelDiscard": true,
+    "saveDisabledUiOnly": true,
+    "componentTests_2files_8tests": true
+  },
+  "notAccepted": [
+    "fullVisualPrototypeParity",
+    "receivingSideCompletion",
+    "referredAppealsServerContract",
+    "personalOverlayPersistence",
+    "fullC01-C56Acceptance",
+    "wholeBranchTransfer"
+  ],
+  "forbiddenCompatStill": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH_DELETED",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "evidence": [
+    "19-V6-COMPUTER-RESULTS-78e48521.md",
+    "20-V6-SELECTED-FILE-MANIFEST.md",
+    "v6-pin-78e48521/",
+    "requirement-matrix-c01-c56.json"
+  ],
+  "note": "auditSha filled after content commit"
+}

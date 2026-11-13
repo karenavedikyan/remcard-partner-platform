@@ -1,14 +1,14 @@
 {
-  "task": "REMCLIENTS-V6-REAL-MOBILE-BLOCKER",
+  "task": "REMCLIENTS-V6-COMPUTER-RESULTS",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "implCandidateSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "implCandidateSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
   "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
-  "matrixEvaluatedAgainst": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "matrixEvaluatedAgainst": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
   "priorV3ImplShaDoNotCarry": "ffd4aa6130e92af5d95da21cfe5519133228a962",
   "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
   "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
-  "note": "V6: mobile grouped/flat client-row real-click PASS on 0729c12f; KPI cascade still PASS; packaging/contracts still blocked. TOTAL=56.",
+  "note": "V6 Computer Results: EXACT pin 78e48521. Isolated mobile-row+KPI PASS only. Packaging/contracts still FAIL/BLOCKED. Do not promote missing backend. TOTAL=56.",
   "counts": {
     "PASS_functional": 5,
     "PASS_safety": 4,
@@ -24,7 +24,7 @@
     {
       "id": "C01",
       "status": "FAIL",
-      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains on 0729c12f (V6 CSS-only for rows)."
+      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains at 78e48521 \u2014 whole-branch transfer forbidden."
     },
     {
       "id": "C02",
@@ -184,7 +184,7 @@
     {
       "id": "C29",
       "status": "PASS_functional",
-      "evidence": "Real Playwright clicks: partner\u2192client\u2192back at 320/360/375/768/1440 both themes; openWidth>0; edit/cancel + disabled save UI-only. Packaging FAIL remains C01. 17-V6.",
+      "evidence": "78e48521 real Playwright: partner/expanded/flat client open+back all 8 samples; open h=47.5; 375 w=315. Packaging still C01 FAIL.",
       "passKind": "functional"
     },
     {
@@ -195,7 +195,7 @@
     {
       "id": "C31",
       "status": "PASS_functional",
-      "evidence": "Partner page + expanded group + flat list client open geometry nonzero; real click nav OK on tip 0729c12f.",
+      "evidence": "78e48521 child bounds+real clicks PASS; scrollWidth alone not used as pass.",
       "passKind": "functional"
     },
     {
@@ -219,25 +219,25 @@
       "id": "C35",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "UI form exists; save disabled. No personal-meta API. Disabled save \u2260 persistence PASS."
+      "evidence": "Save disabled UI-only on all 8 samples; no personal-meta API. BLOCKED_PERSISTENCE. Do not map AgentClient delete."
     },
     {
       "id": "C36",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Mass tag edit has no endpoint; UI-only. BLOCKED_PERSISTENCE."
+      "evidence": "No mass tag persistence contract. BLOCKED_PERSISTENCE."
     },
     {
       "id": "C37",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "agent-clients archive/delete \u2260 personal trash-from-own-list. No personal-meta handlers."
+      "evidence": "AgentClient archive/delete \u2260 personal trash. BLOCKED_PERSISTENCE / semantic mismatch."
     },
     {
       "id": "C38",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "No production personal-meta contract; disabled save is UI-only BLOCKED_PERSISTENCE."
+      "evidence": "No production personal-meta contract; disabled save \u2260 PASS."
     },
     {
       "id": "C39",
@@ -259,13 +259,13 @@
     {
       "id": "C42",
       "status": "PASS_functional",
-      "evidence": "Fresh getComputedStyle + ListView mount: 768/375\u21924, \u2264360\u21922 both themes. 14-V5 + v5-computed/. Packaging still FAIL separately.",
+      "evidence": "KPI cascade at 78e48521: live resize 4/4/4/4/2/2/4 both themes.",
       "passKind": "functional"
     },
     {
       "id": "C43",
       "status": "PASS_functional",
-      "evidence": "Computed KPI column counts match prototype baseline at all 6 widths \u00d7 2 themes (v5-computed/stats-grid-computed.json allPass).",
+      "evidence": "Computed KPI + row geometry at 78e48521 (v6-pin-78e48521/).",
       "passKind": "functional"
     },
     {
@@ -281,7 +281,7 @@
     {
       "id": "C46",
       "status": "PASS_functional",
-      "evidence": "Six viewports \u00d72 themes KPI cols match prototype on isolated ListView mount (v5-isolated-mount-e4ddc098). Not a full pixel-parity PASS.",
+      "evidence": "Six-width KPI + four mobile widths\u00d72 themes real-click PASS at 78e48521; not full pixel parity.",
       "passKind": "functional"
     },
     {
@@ -338,6 +338,6 @@
       "passKind": "safety"
     }
   ],
-  "correctedFixSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "correctedFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
   "priorFailSha": "d1da948491293c1a8ba77d4854191347708b4379"
 }
