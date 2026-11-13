@@ -2,7 +2,9 @@
 
 **Root inspection (2026-11-13 20:41+ MSK):** `specialistR06Eligibility` — solo specialist eligible **only without** owned `Organization` (`ownedOrg` ⇒ ineligible org_owner); no employment. `requireOwnerClientsContext` already authorizes this principal.
 
-**Verdict:** K8 candidate `fc33b4fa` **REJECTED for identity** until revised. **Not** accepted contract. **No** prod migration approval.
+**Verdict (historical):** `fc33b4fa` **REJECTED** for Branch-required identity — **obsolete for current gate**.
+
+**Current K8 tip `6f09c23e`:** identity correction **present in source** (`IDENTITY_HANDOFF.md`, `contract.ts`). This is **not** whole-section acceptance, **not** prod contract, **not** migration approval. Current **NO-GO** driver includes **K8-GAP-7** (purchase projection), not identity FAIL on `fc33`.
 
 ---
 
@@ -48,8 +50,9 @@
 
 | Artifact | Status |
 |----------|--------|
-| `fc33b4fa` | **REJECTED** (identity) — prep authorized but **not accepted** |
+| `fc33b4fa` | **OBSOLETE** (identity defect) |
+| `6f09c23e` | Identity **corrected in source**; **GAP-7** blocks accept |
 | G7 prod DB | **NOT_STARTED** |
-| Partner UI publish | **NO-GO** until G3+G4+G5 after fix |
+| Whole Clients | **NO-GO** |
 
 **P8 checks:** read-only `contract.ts` + `HANDOFF.md` @ `fc33b4fa` (GitHub MCP). Partner `fetch-observer-appeals` unchanged `BLOCKED_CONTRACT`.
