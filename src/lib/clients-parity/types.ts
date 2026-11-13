@@ -22,12 +22,17 @@ export type ObserverAppealStageId = ClientsAppealSystemStageId | (string & {});
 
 export type ObserverAppealHistoryEntry = {
   at: string;
+  /** K8 wire: `authorLabel`; adapter maps to prototype `author`. */
   author: string;
   text: string;
   reason?: string;
 };
 
-/** List/drill row — prototype `Appeal` fields required for observer UI + stats. */
+/**
+ * Observer list row (partner UI). Maps from K8 `ClientAppealRecord` via adapter.
+ * `receivingPartnerId` holds **receivingBranchId** (prototype “partner” key).
+ * `referrerPartnerId` holds **referrerProUserId** (User.id).
+ */
 export type ObserverReferredAppeal = {
   id: string;
   clientName: string;
@@ -43,8 +48,6 @@ export type ObserverReferredAppeal = {
   discountPercent?: number | null;
   certValidUntil?: string | null;
   manualEntry?: boolean;
-  /** Receiving-partner CRM notes — read-only for observer; not personal overlay. */
-  privateNotes?: string | null;
   purchaseId?: string | null;
   paidAt?: string | null;
   shippedAt?: string | null;
@@ -52,15 +55,25 @@ export type ObserverReferredAppeal = {
   refusedReason?: string | null;
 };
 
+/** K2 wire shape — MUST NOT include receiving CRM tenant fields (GAP-K8-5). */
+export type ObserverClientAppealPublicDto = Omit<
+  ObserverReferredAppeal,
+  never
+> & {
+  /** Explicitly disallowed on observer wire — adapter strips if present in DB DTO. */
+  privateNotes?: never;
+  clientContact?: never;
+};
+
 /** Detail — adds immutable timeline (prototype `history[]`). */
-export type ObserverReferredAppealDetail = ObserverReferredAppeal & {
+export type ObserverReferredAppealDetail = ObserverClientAppealPublicDto & {
   history: ObserverAppealHistoryEntry[];
   createdAt: string;
   sourceKey?: string | null;
-  clientContact?: string | null;
 };
 
 export type ObserverPartnerMeta = {
+  /** Receiving branch id for grouping (K8 `receivingBranchId`). */
   id: string;
   name: string;
   city?: string | null;
@@ -85,7 +98,9 @@ export type ObserverPersonalMeta = {
   tag?: string | null;
   note?: string | null;
   bucket?: ObserverPersonalBucket;
+  /** K8 column `beforeTrashBucket`; lowercase in JSON at API boundary. */
   beforeTrash?: ObserverPersonalBucket | null;
+  version?: number;
 };
 
 export type ClientsParityDirection = "incoming" | "at-partners";

@@ -11,22 +11,60 @@ export const CLIENTS_PARITY_PRODUCTION_BASE_SHA = "57ca4680892ae16c62fc38d0ad2cc
 export const CLIENTS_NAVIGATOR_PREP_BASE_SHA = "8137ddd1ae5bad880fa28df34bab04e460bf2bdd";
 export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b85c6a86751868";
 
-/** K8 publishes backend SoT here (navigator); absent until K8 lands — do not duplicate DTOs elsewhere. */
+/**
+ * K8 navigator canonical module (CANDIDATE — not accepted release).
+ * Do not duplicate DTOs in partner-platform; mirror via adapter types only.
+ */
 export const CLIENTS_K8_SOURCE_OF_TRUTH = {
-  status: "NOT_PUBLISHED",
-  expectedNavigatorPaths: [
-    "docs/contracts/partner-clients-k8-core.md",
-    "docs/contracts/partner-clients-k8-core.json",
-    "prisma/migrations/*_partner_client_appeals_*",
-    "src/app/api/pro/referred-appeals/**",
-    "src/app/api/pro/client-appeals/**",
-    "src/lib/partnerClients/**",
-  ],
+  status: "DRAFT_K8_CANDIDATE",
+  navigatorBranch: "cursor/remcard-k8-acceptance-20261113",
+  handoffCommitSha: "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
+  schemaCoreCommitSha: "fc33b4fae859fb692757807c3b27696b66d57558",
+  canonicalModule: "src/lib/clientAppeals/contract.ts",
+  handoffDoc: "src/lib/clientAppeals/HANDOFF.md",
+  migrationDraft: "prisma/migrations/20261113203000_client_appeals/migration.sql",
   partnerInventoryPaths: [
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/types.ts",
   ],
+  auditReconcile: "audit/remcard-parallel-20261113/P2/K8-root-gaps-reconcile-20261113.md",
 } as const;
+
+export const CLIENTS_K8_UNRESOLVED_GAPS = [
+  {
+    id: "GAP-K8-1",
+    owner: "K8",
+    topic: "Observer auth must match ownerClientsAccess principal agent/specialist, not only BranchEmployee.canViewOwnOperations",
+    status: "UNRESOLVED",
+  },
+  {
+    id: "GAP-K8-2",
+    owner: "K8",
+    topic: "workingStages/refusalReasons/archivedStages persistence missing in fc33 schema",
+    status: "UNRESOLVED",
+  },
+  {
+    id: "GAP-K8-3",
+    owner: "K8",
+    topic: "Active cert appeal predicate + uniqueness (prototype findActiveAppeal vs isActiveCertificateAppealStage + take:5)",
+    status: "UNRESOLVED",
+  },
+  {
+    id: "GAP-K8-4",
+    owner: "Root+K1",
+    topic: "storeCertificateScan.ts hook integration (outside K8 allowlist); idempotent createAppealFromCertificate",
+    status: "UNRESOLVED",
+  },
+  {
+    id: "GAP-K8-5",
+    owner: "K2",
+    topic: "Observer GET DTO must strip privateNotes/clientContact; GET must never write",
+    status: "UNRESOLVED",
+  },
+] as const;
+
+/** Legacy path prefix — superseded by client-appeals/observer/* in K8 handoff. */
+export const CLIENTS_DEPRECATED_ROUTE_PREFIX = "/api/pro/referred-appeals";
 
 export type ContractRouteStatus =
   | "NOT_IMPLEMENTED"
@@ -39,7 +77,7 @@ export type ClientsCanonicalRoute = {
   path: string;
   blockerId: string;
   status: ContractRouteStatus;
-  owner: "K8" | "P5" | "P6";
+  owner: "K1" | "K2" | "K5" | "P5" | "P6";
   authGate: string;
   notes?: string;
 };
@@ -47,97 +85,99 @@ export type ClientsCanonicalRoute = {
 export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
   {
     method: "GET",
-    path: "/api/pro/referred-appeals",
+    path: "/api/pro/client-appeals/observer",
     blockerId: "BLK-OBSERVER-REFERRED",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
+    owner: "K2",
     authGate:
-      "getProfCabinetUser + referrer eligibility (R03 agent / R06 specialist); rows where certificate.referrerUserId === viewer; read-only",
-    notes: "Query: q, period, cursor, limit. 200: appeals[], partners[], nextCursor.",
+      "GAP-K8-1: align with ownerClientsAccess principal eligibility + referrerProUserId === viewer; resolveAppealAccess observer; read-only",
+    notes: "200: appeals[], branches[], personalMeta?, nextCursor. Wire: ObserverClientAppealPublicDto (GAP-K8-5).",
   },
   {
     method: "GET",
-    path: "/api/pro/referred-appeals/:id",
+    path: "/api/pro/client-appeals/observer/:appealId",
     blockerId: "BLK-OBSERVER-REFERRED",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Same as list; appeal.referrerPartnerId === viewer.id",
-    notes: "200: ObserverReferredAppealDetail incl. history[]",
+    owner: "K2",
+    authGate: "referrer row scope; must not write",
+    notes: "200: appeal + history[]; strip privateNotes/clientContact.",
   },
   {
     method: "GET",
-    path: "/api/pro/referred-appeals/by-partner/:partnerId",
+    path: "/api/pro/client-appeals/observer/by-branch/:receivingBranchId",
     blockerId: "BLK-OBSERVER-REFERRED",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Same as list; partnerId is receiving partner User.id",
+    owner: "K2",
+    authGate: "same as list; branch id not client-supplied partner guess",
   },
   {
     method: "PATCH",
-    path: "/api/pro/referred-appeals/:id/personal-meta",
+    path: "/api/pro/client-appeals/observer/:appealId/personal-meta",
     blockerId: "BLK-OBSERVER-PERSONAL-PERSIST",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Viewer is referrer; scope (viewerUserId, appealId)",
+    owner: "K5",
+    authGate: "viewerUserId + appealId; referrer scope",
     notes:
-      "Body: alias|null max100, tag|null max40, note|null max1000, bucket, beforeTrash. Must not PATCH AgentClient.",
+      "Body: alias, tag, note, bucket, beforeTrash, version. Table: PartnerClientAppealPersonalOverlay.",
   },
   {
     method: "POST",
-    path: "/api/pro/referred-appeals/personal-batch",
+    path: "/api/pro/client-appeals/observer/personal-batch",
     blockerId: "BLK-OBSERVER-PERSONAL-PERSIST",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Same as personal-meta",
-    notes: "Body: ids[], op set-tag|archive|trash|restore, tag? for set-tag",
+    owner: "K5",
+    authGate: "same as personal-meta",
+    notes: "Body: ids[], op set-tag|archive|trash|restore",
   },
   {
     method: "GET",
-    path: "/api/pro/client-appeals",
+    path: "/api/pro/client-appeals/receiving",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "PRO receiving partner; rows where receivingPartnerId === viewer",
+    owner: "K1",
+    authGate: "BranchEmployee canManageLeads on receiving branch (forbidden to agent-only observer)",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals",
+    path: "/api/pro/client-appeals/receiving",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Receiving partner; manualEntry appeals only",
+    owner: "K1",
+    authGate: "Receiving; manualEntry; cert create via GAP-K8-4 hook path",
   },
   {
     method: "PATCH",
-    path: "/api/pro/client-appeals/:id",
+    path: "/api/pro/client-appeals/receiving/:appealId",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Receiving owner; stage transitions per prototype canTransitionTo rules",
+    owner: "K1",
+    authGate: "Receiving; stage transitions per prototype canTransitionTo",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals/batch",
+    path: "/api/pro/client-appeals/receiving/batch",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
+    owner: "K1",
     authGate: "Receiving owner",
   },
   {
     method: "GET",
-    path: "/api/pro/client-appeals/working-stages",
+    path: "/api/pro/client-appeals/receiving/working-stages",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Receiving partner settings",
+    owner: "K1",
+    authGate: "Receiving branch settings",
+    notes: "BLOCKED until GAP-K8-2 schema",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals/working-stages",
+    path: "/api/pro/client-appeals/receiving/working-stages",
     blockerId: "BLK-RECEIVING-APPEALS",
     status: "NOT_IMPLEMENTED",
-    owner: "K8",
-    authGate: "Receiving partner settings",
+    owner: "K1",
+    authGate: "Receiving branch settings",
+    notes: "BLOCKED until GAP-K8-2 schema",
   },
 ];
 
@@ -146,8 +186,8 @@ export const CLIENTS_DECISIONS = [
     id: "D1",
     topic: "appealId",
     p2Position:
-      "Opaque string UUID in API (Prisma @id @default(uuid())). Natural key (certificateId + receivingPartnerId) only for dedup inside K8, never as client-facing id.",
-    k8MustPublish: "appeal id generation + uniqueness constraints",
+      "Opaque string id in API (K8 candidate: cuid). Dedup natural key (certificateId + receivingBranchId) inside transactions — GAP-K8-3.",
+    k8MustPublish: "appeal id + active uniqueness constraint",
   },
   {
     id: "D2",
@@ -159,8 +199,8 @@ export const CLIENTS_DECISIONS = [
     id: "D3",
     topic: "observer read auth",
     p2Position:
-      "Reuse existing prof eligibility (agent R03 / specialist R06) without new roles. Authorization = referrer on Certificate/appeal row, read-only. Not requireOwnerClientsContext (CRM owner). Org workplace context rejected for overlay writes (same as agent-clients mutations).",
-    k8MustPublish: "requireReferredAppealsListContext handler",
+      "Principal agent/specialist per ownerClientsAccess — NOT only BranchEmployee.canViewOwnOperations (GAP-K8-1). Referrer = referrerProUserId. Receiving uses canManageLeads on branch. No new permission bits.",
+    k8MustPublish: "requireClientAppealsObserverContext aligned with existing gates",
   },
   {
     id: "D4",
@@ -237,7 +277,7 @@ export const CLIENTS_CONTRACT_BLOCKERS: ContractBlocker[] = [
       (r) => `${r.method} ${r.path}`,
     ),
     evidence:
-      "Navigator 8137/89fb8e0: no client-appeals routes; partner remcard-proxy unwired.",
+      "K8 fc33 migration draft only; no K1 HTTP routes; GAP-K8-2 working-stages",
     implementationStatus: "PREP_AUTHORIZED_20261113",
   },
   {
@@ -261,7 +301,7 @@ export const CLIENTS_CONTRACT_BLOCKERS: ContractBlocker[] = [
       (r) => `${r.method} ${r.path}`,
     ),
     evidence:
-      "Prototype ownReferredAppeals(); navigator has no referred-appeals; fetch-observer-appeals BLOCKED.",
+      "K8 core lib only; K2 routes missing; fetch-observer-appeals BLOCKED; GAP-K8-1 GAP-K8-5",
     implementationStatus: "PREP_AUTHORIZED_20261113",
   },
   {
@@ -272,7 +312,7 @@ export const CLIENTS_CONTRACT_BLOCKERS: ContractBlocker[] = [
       (r) => r.blockerId === "BLK-OBSERVER-PERSONAL-PERSIST",
     ).map((r) => `${r.method} ${r.path}`),
     evidence:
-      "No overlay schema at 8137; UI uses notifyPersistenceBlock.",
+      "PartnerClientAppealPersonalOverlay in fc33 draft; K5 routes missing; UI notifyPersistenceBlock.",
     implementationStatus: "PREP_AUTHORIZED_20261113",
   },
 ];

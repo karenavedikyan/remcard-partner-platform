@@ -4,7 +4,7 @@
 
 **P2 tip (inventory):** `ac2d4a7b` → *this turn extends* `src/lib/clients-parity/{contracts,types}.ts`.
 
-**K8 source of truth:** **NOT FOUND** in `karenavedikyan/remcard-navigator` or partner-platform at audit time (`search_code`: `referred-appeals`, `ClientAppeal` → 0). P2 must not invent competing Prisma routes; K8 publishes under paths listed in `CLIENTS_K8_SOURCE_OF_TRUTH` in `contracts.ts`.
+**Superseded by:** `K8-root-gaps-reconcile-20261113.md` + `k8-adapter-handoff.json` (K8 candidate `16253b84` + `fc33b4fa` on `cursor/remcard-k8-acceptance-20261113`).
 
 ---
 

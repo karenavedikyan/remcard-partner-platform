@@ -152,8 +152,12 @@
   ],
   "noSchemaCompletePath": false,
   "noSchemaReason": "Historical @ 8137; user authorized API/migration prep 2026-11-13 — K8 implements, P2 inventory in contracts.ts/types.ts",
-  "k8HandoffDoc": "audit/remcard-parallel-20261113/P2/K8-reconcile-handoff-20261113.md",
-  "k8SourceStatus": "NOT_PUBLISHED",
+  "k8HandoffDoc": "audit/remcard-parallel-20261113/P2/K8-root-gaps-reconcile-20261113.md",
+  "k8AdapterHandoff": "audit/remcard-parallel-20261113/P2/k8-adapter-handoff.json",
+  "k8SourceStatus": "DRAFT_K8_CANDIDATE",
+  "k8HandoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
+  "k8SchemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+  "k8UnresolvedGaps": ["GAP-K8-1", "GAP-K8-2", "GAP-K8-3", "GAP-K8-4", "GAP-K8-5"],
   "partnerContractInventoryPaths": [
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/types.ts"

@@ -1,0 +1,40 @@
+{
+  "coordinator": "P2",
+  "k8Candidate": {
+    "branch": "cursor/remcard-k8-acceptance-20261113",
+    "handoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
+    "schemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+    "contractModule": "src/lib/clientAppeals/contract.ts"
+  },
+  "routeOwners": {
+    "K2": [
+      "GET /api/pro/client-appeals/observer",
+      "GET /api/pro/client-appeals/observer/:appealId",
+      "GET /api/pro/client-appeals/observer/by-branch/:receivingBranchId"
+    ],
+    "K5": [
+      "PATCH /api/pro/client-appeals/observer/:appealId/personal-meta",
+      "POST /api/pro/client-appeals/observer/personal-batch"
+    ],
+    "K1": [
+      "GET /api/pro/client-appeals/receiving",
+      "POST /api/pro/client-appeals/receiving",
+      "PATCH /api/pro/client-appeals/receiving/:appealId",
+      "POST /api/pro/client-appeals/receiving/batch",
+      "GET /api/pro/client-appeals/receiving/working-stages",
+      "POST /api/pro/client-appeals/receiving/working-stages"
+    ],
+    "P5_P6": ["remcard-proxy allowlist + adapters after K2/K5 routes"]
+  },
+  "fieldMapK8ToPartnerObserver": {
+    "clientDisplayName": "clientName",
+    "stageKey": "stageId",
+    "referrerProUserId": "referrerPartnerId",
+    "receivingBranchId": "receivingPartnerId",
+    "orderId": "purchaseId",
+    "authorLabel": "history[].author"
+  },
+  "stripOnObserverWire": ["privateNotes", "clientContact"],
+  "unresolvedGaps": ["GAP-K8-1", "GAP-K8-2", "GAP-K8-3", "GAP-K8-4", "GAP-K8-5"],
+  "sectionReady": false
+}
