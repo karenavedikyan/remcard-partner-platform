@@ -2,22 +2,24 @@
   "coordinator": "P2",
   "handoffDoc": "audit/remcard-parallel-20261113/P2/P2-CROSS-OWNER-HANDOFF-20261113.md",
   "navigatorFixedAssembly": {
-    "k8": "0f4fe83359491012c76597fa31ad10fa2a5e0a29",
-    "k1": "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
-    "k2": "df8ed8a524492ddad098beb3f9bf6f909017fbc4",
+    "k8": "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+    "k1": "a71b8f37f526d775cd99f0535705be678b72261e",
+    "k2": "c49d71dceae8e221fc3e321056b091d7e3347be5",
     "k5": "6c4444879d5651679c969b8009b3f39d05302c43"
   },
+  "rootPreparedSourceHandoff": "CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF @ contracts.ts",
+  "manualChannelsWire": "CLIENTS_MANUAL_CHANNELS_WIRE @ contracts.ts",
   "wholeSectionMatrix": "audit/remcard-parallel-20261113/P2/whole-section-unresolved-matrix.md",
   "k1ReceivingHandoff": "audit/remcard-parallel-20261113/P2/K1-83f279e8-receiving-envelope-handoff.md",
   "p4ObserverPrivacyHandoff": "audit/remcard-parallel-20261113/P2/P4-observer-privacy-timeline-handoff.md",
   "p6K1WireMapHandoff": "audit/remcard-parallel-20261113/P2/P6-K1-wire-map-handoff.md",
   "partnerOwnerTips": {
     "p1": "2b2b32b8",
-    "p2": "9f7c3755",
+    "p2": "5285f36e",
     "p3": "b85efb54",
-    "p4": "1850d088",
+    "p4": "10c25fe6",
     "p5": "6a72f353",
-    "p6": "4dca7af7"
+    "p6": "5092f756"
   },
   "receivingP6WireDefects": "src/lib/clients-parity/contracts.ts RECEIVING_P6_WIRE_DEFECTS",
   "prototypeOverlayInventory": "src/lib/clients-parity/contracts.ts CLIENTS_PROTOTYPE_PARTNER_OVERLAY",

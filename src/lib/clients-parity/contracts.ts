@@ -39,8 +39,8 @@ export const CLIENTS_OBSERVER_REFERRER_LIST_SCOPE = {
 export const CLIENTS_OBSERVER_PUBLIC_TIMELINE = {
   prototypeFns: ["isPublicReferrerHistoryEntry", "publicHistoryLine", "publicReferrerTimeline"],
   prototypeLines: "2299–2338",
-  k8Owner: "canonical helper from persisted history rows (K8 in progress)",
-  k2Consumer: "GET /api/pro/referred-appeals/:id maps via K8 helper — not raw DB text",
+  k8Owner: "projectObserverPublicHistory + referrerPublicHistory @ K8 8f4d336a",
+  k2Consumer: "GET /api/pro/referred-appeals/:id @ c49d71dc — projectObserverPublicHistory import",
   p4WireType: "ObserverPublicTimelineEvent[] in types.ts",
   wireFields: ["at", "text"],
   forbiddenOnObserverWire: ["authorLabel", "actorUserId", "reason", "id", "privateNotes"],
@@ -84,10 +84,13 @@ export const CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT = {
   },
   receivingDetailForbidden:
     "Never alias /api/pro/client-appeals/:id history to observer detail — receiving keeps authorLabel + full text",
-  k2GapAt78ce748d: {
-    deletedAtFilter: "where.deletedAt: null drops row when receiver trashed — violates ownReferredAppeals",
-    timelineLeak: "maps history select text without publicHistoryLine filter",
+  k2VerifiedAtc49d71dc: {
+    originKind: "CERTIFICATE on list + detail + by-partner",
+    deletedAt: "no receiver deletedAt/archivedAt on observer where (K8 buildObserverReferrerListWhere @ 8f4d336a)",
+    timeline: "projectObserverPublicHistory — ObserverPublicTimelineEvent[] wire",
+    exports: "requireObserverReferredAppealsRead in observerAccess.ts — not re-exported from route.ts",
   },
+  supersededGap78ce748d: "deletedAt filter + raw timeline — closed @ 8f4d336a + c49d71dc",
 } as const;
 
 /**
@@ -115,11 +118,30 @@ export const CLIENTS_RECEIVING_IDENTITY = {
   activeAppealPredicate:
     "isActiveAppealStage @ 6f09c23e; cert unique (certificateId, receivingPartnerUserId) stage-only filter (GAP-K8-L lifecycle)",
   k8IdentityTip: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
-  k8AssemblyTip: "0f4fe83359491012c76597fa31ad10fa2a5e0a29",
-  k1Tip: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
+  k8AssemblyTip: "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+  k1Tip: "a71b8f37f526d775cd99f0535705be678b72261e",
   k2ListTip: "3c6ccc197bd565dba57feca81c42af48869ef62e",
-  k2AssemblyTip: "df8ed8a524492ddad098beb3f9bf6f909017fbc4",
+  k2AssemblyTip: "c49d71dceae8e221fc3e321056b091d7e3347be5",
   k5Tip: "6c4444879d5651679c969b8009b3f39d05302c43",
+} as const;
+
+/** Root prepared-source handoff @ 2026-11-13 21:24 MSK — inventory pins only (no DB apply). */
+export const CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF = {
+  pins: {
+    k8: "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+    k1: "a71b8f37f526d775cd99f0535705be678b72261e",
+    k2: "c49d71dceae8e221fc3e321056b091d7e3347be5",
+    k5: "6c4444879d5651679c969b8009b3f39d05302c43",
+    p1: "2b2b32b8",
+    p4: "10c25fe6",
+    p6: "5092f756ab6e7c08d0ed066c45a3eefb5ab6c843",
+  },
+  assemblyNote: "60 root production files; 11 route modules; offline validate + isolated prisma generate @ 8f4d336a",
+  notDone: "full project type-clean; 2 missing env type libraries; prod DB approval; mounted UI acceptance",
+  sharedTypeDepsNavigatorOnly: [
+    "Navigator root assembly reports 2 missing environment type libraries — not in partner-platform P2 tree",
+    "Partner P2 depends on local types.ts mappers only until navigator package is linked",
+  ],
 } as const;
 
 export const CLIENTS_ACTIVE_CERTIFICATE_SLOT = {
@@ -139,7 +161,7 @@ export const CLIENTS_PURCHASE_READ_SEMANTICS = {
   blockerId: "BLK-CLIENTS-PURCHASE-READ",
   owner: "K8",
   k8Module: "projectAppealPurchaseFields",
-  k8CanonicalSha: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
+  k8CanonicalSha: "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
   currentMapping: {
     paidAmountKopecks:
       "kopecksFromAmount(Order.totalAmount) when orderCountsAsClientPurchase(Order.status) — agentClientPurchaseRules",
@@ -160,9 +182,9 @@ export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b
 
 /** Parallel navigator tips accepted for contract inventory (source prep only — not prod release). */
 export const CLIENTS_NAVIGATOR_FIXED_ASSEMBLY = {
-  k8: "0f4fe83359491012c76597fa31ad10fa2a5e0a29",
-  k1: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
-  k2: "df8ed8a524492ddad098beb3f9bf6f909017fbc4",
+  k8: "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+  k1: "a71b8f37f526d775cd99f0535705be678b72261e",
+  k2: "c49d71dceae8e221fc3e321056b091d7e3347be5",
   k5: "6c4444879d5651679c969b8009b3f39d05302c43",
   k8ContractModule: "src/lib/clientAppeals/contract.ts",
   k8ReceivingList: "src/lib/clientAppeals/receivingList.ts",
@@ -317,7 +339,9 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
     path: "/api/pro/client-appeals/working-stages",
     get200: "{ settings: ClientAppealPartnerSettingsRecord }",
     settingsKey: "receivingPartnerUserId @ unique (K8 settingsRepository)",
-    postBody: "{ kind: workingStage | refusalReason, label? | reason?, expectedVersion? }",
+    postBody:
+      "{ kind: workingStage | refusalReason | manualChannel, label? | reason?, expectedVersion? }",
+    manualChannelBody: "{ kind: 'manualChannel', label } → settings.manualChannels[] append",
     patchBody: "{ id, label?, restore?: true, expectedVersion? }",
     deleteQuery: "?stageId=&expectedVersion=",
     post200: "{ settings, version }",
@@ -340,7 +364,8 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
     body: "{ promoCode }",
     p6Alias: "certificateCode → promoCode",
     response: "{ valid: true, outcome, appeal } | { valid: false, reason } @ 200",
-    k8CreateOpts: "createCertificateAppealIfNoneActive(data, { createdHistoryEvent? }) @ K8 0f4fe833",
+    k8CreateOpts:
+      "createCertificateAppealIfNoneActive(data, { createdHistoryEvent? }) @ K8 8f4d336a — CLIENT_APPEAL_CERTIFICATE_CREATED_HISTORY",
   },
   p1AllowlistPatterns: [
     "^/api/pro/client-appeals$",
@@ -371,11 +396,34 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
 /** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
 export const CLIENTS_PARTNER_OWNER_TIPS = {
   p1: "2b2b32b8",
-  p2: "9f7c3755",
+  p2: "5285f36e",
   p3: "b85efb54",
-  p4: "1850d088",
+  p4: "10c25fe6",
   p5: "6a72f353",
-  p6: "4dca7af7",
+  p6: "5092f756",
+} as const;
+
+/**
+ * Persisted manual channels — K8 `manualChannels.ts` + settings JSON @ 8f4d336a;
+ * K1 POST working-stages `kind: manualChannel` @ a71b8f37.
+ */
+export const CLIENTS_MANUAL_CHANNELS_WIRE = {
+  k8Module: "src/lib/clientAppeals/manualChannels.ts",
+  settingsField: "PartnerClientAppealPartnerSettings.manualChannels Json @default([])",
+  settingsDtoField: "ClientAppealPartnerSettingsRecord.manualChannels",
+  rowField: "PartnerClientAppeal.manualSourceKey VarChar(80)",
+  channelShape: "{ key: string, label: string }",
+  builtinKeys: ["phone", "messenger", "visit", "ads", "other", "scan"] as const,
+  customKeyPattern: "custom_{slug}_{base36Ms} — normalizeManualChannelKey (Cyrillic preserved in slug)",
+  postAddChannel: {
+    path: "POST /api/pro/client-appeals/working-stages",
+    body: "{ kind: 'manualChannel', label, expectedVersion? }",
+    errors: "MANUAL_CHANNEL_LABEL_REQUIRED | MANUAL_CHANNEL_LABEL_DUPLICATE | SETTINGS_VERSION_CONFLICT",
+    response: "{ settings, version }",
+  },
+  manualCreateTrust: "manualSourceKey must be builtin (except scan on manual POST) or key in loaded manualChannels — scan/certificate keys rejected",
+  observerOrigin: "OBSERVER_REFERRER_APPEAL_ORIGIN = CERTIFICATE on K8 observerList + K2 routes",
+  k8Exports: "k1ReceivingApi re-exports normalizeManualChannelKey, isManualSourceKeyAllowed",
 } as const;
 
 /**
@@ -386,20 +434,22 @@ export const CLIENTS_PROTOTYPE_PARTNER_OVERLAY = {
   manualChannels: {
     prototype:
       "partnerOverlay.manualChannels[] + MANUAL_CHANNEL_OPTIONS (phone,messenger,visit,ads,other) + custom { key, label }",
-    prototypeFn: "manualChannelsFor",
-    k8Persisted: "manualSourceKey on appeal row only — contract ClientAppealManualSourceKey",
-    k1SettingsApi: "working-stages handles workingStages/refusalReasons — NOT custom channel catalog",
-    p6Status: "SOURCE_GAP — display built-in options; custom channel CRUD is in-memory prototype only until K8 additive settings",
-    financeChange: "PROHIBITED_IN_CLIENTS_PREP",
+    prototypeFn: "manualChannelsFor / addWorkspaceChannel",
+    k8Persisted: "settings.manualChannels[] + appeal.manualSourceKey @ 8f4d336a — CLIENTS_MANUAL_CHANNELS_WIRE",
+    k1SettingsApi: "POST kind=manualChannel on working-stages; GET settings.manualChannels in grid",
+    p6Status: "P6 must unwrap settings.manualChannels from working-stages GET — custom keys in manual create select",
+    financeChange: "NO new payout/settlement — channel catalog only",
   },
   payCategories: {
     prototype:
       "partnerOverlay.payCategories[] + profilePayCategories(config) for purchase/accrual UI",
     prototypeFn: "payCategoriesFor / renderPayCategoryOptions",
-    k8Persisted: "NOT in PartnerClientAppealPartnerSettings @ 0f4fe833",
-    existingProd: "Store order / wallet reward categories — separate financial APIs",
-    p6Status: "DISPLAY_ONLY_OR_OUT_OF_SCOPE — purchase form categories come from profile/catalog APIs, not client-appeals list",
-    financeChange: "PROHIBITED — no new settlement in Clients prep",
+    k8Persisted: "NOT in client-appeals schema @ 8f4d336a",
+    existingOrderIntegration:
+      "Appeal purchase read: Order.totalAmount + orderCountsAsClientPurchase (BLK-CLIENTS-PURCHASE-READ) — still required for paid stage UI",
+    existingProd: "profilePayCategories / store category APIs — wire separately; no Clients-prep formula change",
+    p6Status: "SOURCE_GAP for payCategories array on settings — use existing order/catalog endpoints where prototype did",
+    financeChange: "PROHIBITED new settlement rules — existing order link + projection mappers still IN SCOPE",
   },
   workingStagesRefusalReasons: {
     prototype: "partnerSettings[receivingPartnerId].workingStages + refusalReasons",
@@ -410,11 +460,13 @@ export const CLIENTS_PROTOTYPE_PARTNER_OVERLAY = {
 
 /** P6 @ 4dca7af7 — Root-reviewed wire defects vs K1 @ 5a51d7b7 (P6 fixes via types.ts mappers). */
 export const RECEIVING_P6_WIRE_DEFECTS = {
-  p6Tip: "4dca7af7",
-  k1Tip: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
+  p6BaselineTip: "4dca7af7",
+  p6WireAlignTip: "5092f756ab6e7c08d0ed066c45a3eefb5ab6c843",
+  k1Tip: "a71b8f37f526d775cd99f0535705be678b72261e",
   bucketNotTab: {
-    defect: "P6 filters local bucket using row.bucket; list wire uses top-level `bucket` + constant `tab: incoming`",
-    fix: "Pass `bucket` query on GET; use response.bucket; do not treat tab as bucket",
+    defect: "P6 treated tab as bucket; K1 parseReceivingListQuery uses bucket only",
+    status: "FIXED_5092f756",
+    fix: "Query/response `bucket`; tab is display-only incoming",
   },
   stageKeyNotLabel: {
     defect: "P6 status filter compares stage display labels; K1 filters `stageKey` id on server",
@@ -823,43 +875,63 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
   },
   {
     id: "GAP-K2-OBSERVER-DELETED-AT",
-    owner: "K2",
+    owner: "K2+K8",
     topic:
       "List/detail where deletedAt: null hides appeal from referrer when receiver moved row to receiving trash",
-    status: "UNRESOLVED",
+    status: "RESOLVED_8f4d336a_c49d71dc",
     requiredFix:
-      "Observer queries scope referrerProUserId + certificate only — ignore receiver deletedAt/archivedAt for inclusion",
+      "buildObserverReferrerListWhere + K2 routes — no deletedAt/archivedAt; originKind CERTIFICATE",
   },
   {
     id: "GAP-K2-OBSERVER-TIMELINE-RAW",
     owner: "K2+K8",
     topic: "Detail GET maps PartnerClientAppealHistoryEvent.text without publicReferrerTimeline filter",
-    status: "PARTIAL_df8ed8a5",
-    requiredFix:
-      "K2 @ df8ed8a5 projectObserverPublicHistory — verify wire is ObserverPublicTimelineEvent[] only end-to-end",
+    status: "RESOLVED_c49d71dc",
+    requiredFix: "projectObserverPublicHistory @ detail GET — P4 wire at|text only",
+  },
+  {
+    id: "GAP-K2-ROUTE-EXPORTS",
+    owner: "K2",
+    topic: "Next route.ts re-exported guards/constants — invalid value exports",
+    status: "RESOLVED_c49d71dc",
+    requiredFix: "observerAccess.ts + import CLIENT_APPEAL_SYSTEM_STAGE from @/lib/clientAppeals/contract",
   },
   {
     id: "GAP-K8-PUBLIC-TIMELINE",
     owner: "K8",
     topic:
       "Persisted history → prototype isPublicReferrerHistoryEntry/publicHistoryLine in shared module for K1 audit + K2 observer",
-    status: "PARTIAL_0f4fe833",
-    requiredFix:
-      "K8 referrerPublicHistory @ 0f4fe833; K1 certificate create uses { createdHistoryEvent? } — do not duplicate in P2",
+    status: "RESOLVED_8f4d336a",
+    requiredFix: "referrerPublicHistory.ts + CreateCertificateAppealOptions.createdHistoryEvent in repository.ts",
+  },
+  {
+    id: "GAP-K8-CERTIFICATE-CREATE-OPTS",
+    owner: "K8",
+    topic: "Certificate create historyOnCreate / fake signature",
+    status: "RESOLVED_8f4d336a",
+    requiredFix: "CreateCertificateAppealOptions { createdHistoryEvent? } — K1 consumer only",
   },
   {
     id: "GAP-K8-MANUAL-CHANNELS-CUSTOM",
     owner: "K8+K1",
     topic: "Prototype addWorkspaceChannel / manualChannels[] — no persisted custom channel catalog",
-    status: "UNRESOLVED",
-    requiredFix: "CLIENTS_PROTOTYPE_PARTNER_OVERLAY.manualChannels — built-in manualSourceKey only until schema",
+    status: "RESOLVED_8f4d336a_a71b8f37",
+    requiredFix: "CLIENTS_MANUAL_CHANNELS_WIRE — P6 UI still must render settings.manualChannels",
   },
   {
     id: "GAP-K8-PAY-CATEGORIES",
-    owner: "K8+profile",
+    owner: "K8+profile+P6",
     topic: "Prototype payCategories / profilePayCategories — not in client-appeals settings API",
-    status: "OUT_OF_SCOPE_FINANCE",
-    requiredFix: "DISPLAY_ONLY — existing store/order category APIs; no Clients prep settlement change",
+    status: "UNRESOLVED",
+    requiredFix:
+      "Existing order/catalog APIs + purchase projection (GAP-K8-N) — no new settlement; not a blanket finance opt-out",
+  },
+  {
+    id: "GAP-P6-BUCKET-TAB",
+    owner: "P6",
+    topic: "List bucket conflated with tab incoming",
+    status: "RESOLVED_5092f756",
+    requiredFix: "K1 bucket query + normalizeK1ReceivingListHttp.bucket — verify mounted UI",
   },
   {
     id: "GAP-K8-O",

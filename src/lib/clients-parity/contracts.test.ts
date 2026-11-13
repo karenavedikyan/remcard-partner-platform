@@ -20,6 +20,8 @@ import {
   RECEIVING_MANUAL_POST_UI_TO_K1_MAP,
   RECEIVING_P6_WIRE_DEFECTS,
   CLIENTS_PROTOTYPE_PARTNER_OVERLAY,
+  CLIENTS_MANUAL_CHANNELS_WIRE,
+  CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -32,6 +34,7 @@ import {
 import { fetchObserverReferredAppeals } from "./fetch-observer-appeals";
 import {
   CLIENTS_APPEAL_SYSTEM_STAGE,
+  CLIENT_APPEAL_BUILTIN_MANUAL_SOURCE_KEYS,
   mapReceivingAppealWireToUiRow,
   mapReceivingUiManualCreateToK1Post,
   mapReceivingUiCertificateCodeToK1Promo,
@@ -62,9 +65,10 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^6f09c23e/);
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverActual.shape).toContain("appeals");
     expect(CLIENTS_PURCHASE_READ_SEMANTICS.blockerId).toBe("BLK-CLIENTS-PURCHASE-READ");
-    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8).toMatch(/^0f4fe833/);
-    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^5a51d7b7/);
-    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2).toMatch(/^df8ed8a5/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8).toMatch(/^8f4d336a/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^a71b8f37/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2).toMatch(/^c49d71dc/);
+    expect(CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins.p6).toMatch(/^5092f756/);
     expect(CLIENTS_RECEIVING_HTTP_CONTRACT.stagePatchPath).toContain("/stage");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k1HttpReceivingActual.shape).toContain("appeals");
     expect(CLIENTS_PURCHASE_READ_SEMANTICS.status).toBe("PARTIAL_K8_1894569a_K2_DIVERGES");
@@ -82,7 +86,11 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).not.toContain("GAP-K1-HTTP-BUCKET");
     expect(CLIENTS_K8_UNRESOLVED_GAPS.map((g) => g.id)).toContain("GAP-P6-CERT-PROMOCODE");
     expect(RECEIVING_P6_WIRE_DEFECTS.certificateEntry.k1Body).toContain("promoCode");
+    expect(RECEIVING_P6_WIRE_DEFECTS.bucketNotTab.status).toBe("FIXED_5092f756");
+    expect(CLIENTS_MANUAL_CHANNELS_WIRE.postAddChannel.body).toContain("manualChannel");
     expect(CLIENTS_PROTOTYPE_PARTNER_OVERLAY.payCategories.financeChange).toContain("PROHIBITED");
+    expect(CLIENT_APPEAL_BUILTIN_MANUAL_SOURCE_KEYS).toContain("phone");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).not.toContain("GAP-K2-OBSERVER-DELETED-AT");
     expect(CLIENTS_OBSERVER_REFERRER_LIST_SCOPE.explicitNonFilters[0]).toContain("deletedAt");
     expect(CLIENTS_OBSERVER_PUBLIC_TIMELINE.wireFields).toEqual(["at", "text"]);
     expect(CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT.route).toContain("referred-appeals");

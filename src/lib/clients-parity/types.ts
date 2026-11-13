@@ -412,6 +412,28 @@ export type K1ReceivingDetailHttpActual = {
   readOnly?: boolean;
 } & Partial<K1ReceivingAccessEnvelope>;
 
+/** Mirrors K8 `ClientAppealManualChannel` @ manualChannels.ts. */
+export type ClientAppealManualChannelWire = {
+  key: string;
+  label: string;
+};
+
+/** K8 built-ins — `scan` allowed on certificate flow, rejected on manual POST @ K1. */
+export const CLIENT_APPEAL_BUILTIN_MANUAL_SOURCE_KEYS = [
+  "phone",
+  "messenger",
+  "visit",
+  "ads",
+  "other",
+  "scan",
+] as const;
+
+export type ClientAppealBuiltinManualSourceKey =
+  (typeof CLIENT_APPEAL_BUILTIN_MANUAL_SOURCE_KEYS)[number];
+
+/** Built-in keys + persisted `custom_*` from settings.manualChannels. */
+export type ClientAppealManualSourceKeyWire = ClientAppealBuiltinManualSourceKey | `custom_${string}`;
+
 export type ReceivingPartnerSettingsWire = {
   receivingPartnerUserId: string;
   receivingOrganizationId: string | null;
@@ -419,8 +441,16 @@ export type ReceivingPartnerSettingsWire = {
   workingStages: ClientAppealWorkingStage[];
   refusalReasons: string[];
   archivedStages: ClientAppealWorkingStage[];
+  manualChannels: ClientAppealManualChannelWire[];
   version: number;
   updatedAt: string;
+};
+
+/** K1 POST /working-stages when kind=manualChannel @ a71b8f37. */
+export type ReceivingManualChannelPostBody = {
+  kind: "manualChannel";
+  label: string;
+  expectedVersion?: number | null;
 };
 
 export type ReceivingBatchHttpActual = {
@@ -474,7 +504,7 @@ export type ReceivingUiManualCreateBody = {
   interest?: string;
   clientCity?: string;
   clientContact?: string;
-  manualChannel?: "phone" | "messenger" | "visit" | "ads" | "other";
+  manualChannel?: ClientAppealBuiltinManualSourceKey | string;
   privateNotes?: string;
 };
 
