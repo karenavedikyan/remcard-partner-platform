@@ -3,7 +3,10 @@
  * Canonical receiving key: `receivingPartnerUserId` (User.id). Org/branch optional scope only.
  */
 
-import type { ReceivingAppealDetailDto } from "./ReceivingAppealDetailView";
+import type {
+  ReceivingAppealDetailDto,
+  ReceivingAppealDetailReady,
+} from "./ReceivingAppealDetailView";
 import type { ReceivingAppealHistoryEntry } from "./ReceivingAppealHistory";
 
 /** Revised K8 record — receiving CRM (includes private fields). */
@@ -13,8 +16,8 @@ export type ClientAppealRecordWire = {
   certificateId: string | null;
   /** Trusted receiving principal User.id (prototype receivingPartnerId). */
   receivingPartnerUserId: string;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
   referrerProUserId: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   interest: string | null;
@@ -64,6 +67,28 @@ export type ClientAppealHistoryEventWire = {
  * K2 observer-safe detail — MUST NOT include privateNotes, clientContact, paidAmountKopecks.
  * Navigator K2 routes strip these before partner proxy response.
  */
+/**
+ * P6 `ReceivingAppealDetail` reference (@ 7ebfa955) — **read-only** for adapter; file owned by P6.
+ * P4 UI intentionally does **not** render `paidAmount` / `paidAt` / `purchaseId` until K8 financial
+ * projection is separate from client purchase totals (bonus ≠ purchase display).
+ */
+export type P6ReceivingAppealDetailWire = {
+  id: string;
+  clientName: string;
+  certificateId: string;
+  receivingPartnerUserId: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
+  interest: string;
+  clientContact?: string | null;
+  stageId: string;
+  updatedAt: string;
+  history: { at: string; author: string; text: string; reason?: string }[];
+  paidAmount?: number | null;
+  paidAt?: string | null;
+  purchaseId?: string | null;
+};
+
 export type ObserverReferrerAppealDetailWire = {
   id: string;
   clientDisplayName: string;
@@ -100,6 +125,37 @@ export function historyEventWireToUi(e: ClientAppealHistoryEventWire): Receiving
   };
 }
 
+export function p6ReceivingDetailToP4Ready(
+  detail: P6ReceivingAppealDetailWire,
+  labels: { stageLabel: string; sourceLabel: string; referrerPartnerName: string | null },
+): ReceivingAppealDetailReady {
+  void detail.paidAmount;
+  void detail.paidAt;
+  void detail.purchaseId;
+  const appeal: ReceivingAppealDetailDto = {
+    id: detail.id,
+    clientName: detail.clientName,
+    clientContact: detail.clientContact ?? null,
+    interest: detail.interest,
+    stageId: detail.stageId,
+    stageLabel: labels.stageLabel,
+    certificateId: detail.certificateId,
+    referrerPartnerName: labels.referrerPartnerName,
+    sourceLabel: labels.sourceLabel,
+    updatedAt: detail.updatedAt,
+    receivingPartnerUserId: detail.receivingPartnerUserId,
+    receivingOrganizationId: detail.receivingOrganizationId ?? null,
+    receivingBranchId: detail.receivingBranchId ?? null,
+  };
+  const history: ReceivingAppealHistoryEntry[] = detail.history.map((h) => ({
+    at: h.at,
+    text: h.text,
+    reason: h.reason ?? null,
+    author: h.author,
+  }));
+  return { status: "ready", appeal, history, readOnly: false };
+}
+
 export function receivingRecordToDetailDto(
   record: ClientAppealRecordWire,
   labels: { stageLabel: string; sourceLabel: string; referrerPartnerName: string | null },
@@ -116,7 +172,7 @@ export function receivingRecordToDetailDto(
     sourceLabel: labels.sourceLabel,
     updatedAt: record.updatedAt,
     receivingPartnerUserId: record.receivingPartnerUserId,
-    receivingOrganizationId: record.receivingOrganizationId ?? null,
-    receivingBranchId: record.receivingBranchId ?? null,
+    receivingOrganizationId: record.receivingOrganizationId,
+    receivingBranchId: record.receivingBranchId,
   };
 }

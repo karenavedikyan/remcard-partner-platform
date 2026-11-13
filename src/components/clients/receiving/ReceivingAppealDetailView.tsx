@@ -41,6 +41,10 @@ export type ReceivingAppealDetailProps = {
   | { status: "error"; message: string; onRetry?: () => void }
 );
 
+/**
+ * Sole receiving CRM detail surface for Root assembly (prototype `renderDetailPage` body).
+ * Stage PATCH, notes save, purchase panel — out of scope here (P5/K1/wallet owners).
+ */
 export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
   const { onBack } = props;
 

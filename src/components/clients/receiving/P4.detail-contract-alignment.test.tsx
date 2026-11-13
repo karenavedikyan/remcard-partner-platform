@@ -3,6 +3,7 @@ import {
   historyEventWireToUi,
   isActiveAppealStage,
   receivingPartnerPrincipalToObserverMeta,
+  p6ReceivingDetailToP4Ready,
   receivingRecordToDetailDto,
   type ClientAppealRecordWire,
 } from "./detail-contract-alignment";
@@ -14,6 +15,8 @@ describe("P4.detail-contract-alignment (K8 fc33b4fa mirror)", () => {
       clientDisplayName: "Иван",
       certificateId: "C-9",
       receivingPartnerUserId: "user-receiver-solo",
+      receivingOrganizationId: null,
+      receivingBranchId: null,
       referrerProUserId: "u-2",
       originKind: "CERTIFICATE",
       interest: "Шкаф",
@@ -43,6 +46,28 @@ describe("P4.detail-contract-alignment (K8 fc33b4fa mirror)", () => {
     });
     expect(meta.id).toBe("usr-9");
     expect(meta.name).toBe("Соло специалист");
+  });
+
+  it("p6 detail envelope omits financial fields from UI props", () => {
+    const ready = p6ReceivingDetailToP4Ready(
+      {
+        id: "a1",
+        clientName: "X",
+        certificateId: "c",
+        receivingPartnerUserId: "u1",
+        interest: "i",
+        stageId: "sys_new",
+        updatedAt: "2026-11-10T10:00:00Z",
+        history: [{ at: "2026-11-10T10:00:00Z", author: "S", text: "Новое" }],
+        paidAmount: 999,
+        paidAt: "2026-11-11T10:00:00Z",
+        purchaseId: "ord-1",
+      },
+      { stageLabel: "Новое", sourceLabel: "Сертификат", referrerPartnerName: null },
+    );
+    expect(ready.status).toBe("ready");
+    expect(ready.history.length).toBe(1);
+    expect(JSON.stringify(ready.appeal)).not.toMatch(/999|ord-1/);
   });
 
   it("isActiveAppealStage matches prototype refused/return only", () => {
