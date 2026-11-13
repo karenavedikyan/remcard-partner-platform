@@ -29,7 +29,14 @@
     "partnerOpenBack": true,
     "editCancel": true,
     "saveDisabledNoFakeSave": true,
-    "kpiCols": { "1440": 4, "1024": 4, "768": 2, "375": 4, "360": 4, "320": 4 },
+    "kpiCols": {
+      "1440": 4,
+      "1024": 4,
+      "768": 2,
+      "375": 4,
+      "360": 4,
+      "320": 4
+    },
     "mount": "audit/clients-parity-20261113/v4-isolated-mount/"
   },
   "correctionD1da9484": {
@@ -47,7 +54,7 @@
   "viewportVerification": {
     "clientWidthAndPngMatchRequested": true,
     "innerWidthInflatedOnMobileBy": 14,
-    "v3IsolatedPngWidthInflationExample": "320 claimed → PNG 334",
+    "v3IsolatedPngWidthInflationExample": "320 claimed \u2192 PNG 334",
     "v4PngWidthsCorrect": true,
     "sixViewportVisualParityClaimed": false,
     "doc": "11-V4-VIEWPORT-DIMENSIONS.md"
@@ -85,5 +92,7 @@
     "audit/clients-parity-20261113/v4-isolated-mount-d1da9484/",
     "scripts/clients-parity-20261113/mount-observer-v4-verified-viewports.mjs",
     "scripts/clients-parity-20261113/mount-observer-v4-d1da9484.mjs"
-  ]
+  ],
+  "auditSha": "dd4f43d5c622d5def5e49e2566330d5cee29e9e0",
+  "auditorTipNote": "branch tip after push; auditSha is content body dd4f43d5"
 }
