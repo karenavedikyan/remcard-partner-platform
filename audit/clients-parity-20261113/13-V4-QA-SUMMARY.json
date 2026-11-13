@@ -1,0 +1,89 @@
+{
+  "task": "REMCLIENTS-V4-QA-COMPUTER",
+  "canonical": "https://www.perplexity.ai/computer/tasks/c7ca575a-0a2a-4ae4-92b9-0e0c535046f8",
+  "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "implCandidateSha": "4c2e4cdf9ab7c17b6c8864d42ee6b34fcdcf87bd",
+  "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
+  "priorV3AuditPinnedImpl": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "priorV3AuditSha": "7cd5a1a6e5e786cd0464f65e9cf910795629447f",
+  "priorV3AuditorTip": "98e3b1ae",
+  "note": "Re-audit named 4c2e4cdf + subsequent d1da9484. Do not carry ffd4aa61 FAILs/screenshots as proof. auditSha filled after this commit.",
+  "computerAccepted": false,
+  "sectionAccepted": false,
+  "forbiddenCompat": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH_DELETED",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "namedCandidate4c2e4cdf": {
+    "motionStatLowercaseJsx": true,
+    "detailLabelsRendered": false,
+    "voidCanLinkOnboardingHistory": true,
+    "propForwardToGate": false,
+    "partnerOpenBack": true,
+    "editCancel": true,
+    "saveDisabledNoFakeSave": true,
+    "kpiCols": { "1440": 4, "1024": 4, "768": 2, "375": 4, "360": 4, "320": 4 },
+    "mount": "audit/clients-parity-20261113/v4-isolated-mount/"
+  },
+  "correctionD1da9484": {
+    "motionStatPascalCase": true,
+    "detailLabelsRendered": true,
+    "voidCanLinkRemoved": true,
+    "jsxCastForwardCanLink": true,
+    "gateStillIgnoresCanLink": true,
+    "routeStillOmitsCanLink": true,
+    "forbiddenPackagingUnchanged": true,
+    "kpiColsUnchangedFail": true,
+    "selectionToggleOk": true,
+    "mount": "audit/clients-parity-20261113/v4-isolated-mount-d1da9484/"
+  },
+  "viewportVerification": {
+    "clientWidthAndPngMatchRequested": true,
+    "innerWidthInflatedOnMobileBy": 14,
+    "v3IsolatedPngWidthInflationExample": "320 claimed → PNG 334",
+    "v4PngWidthsCorrect": true,
+    "sixViewportVisualParityClaimed": false,
+    "doc": "11-V4-VIEWPORT-DIMENSIONS.md"
+  },
+  "backendHandlers": {
+    "repo": "karenavedikyan/remcard-navigator",
+    "primaryRef": "release/prof-backend-v1-20261007",
+    "statusRuntimeSha": "94636ab4ecc4ea377b5a543aac85c6c8ea5011f3",
+    "stagingTip": "computer/remcard-timeweb-staging@e6696a44",
+    "phraseCurrentB38": "unresolved-as-sha; treated as current BE re-verify",
+    "agentClientsPresent": true,
+    "referredAppealsPresent": false,
+    "clientAppealsPresent": false,
+    "personalMetaPresent": false,
+    "evidence": "10-V4-BACKEND-HANDLERS-READONLY.md"
+  },
+  "counts": {
+    "PASS_functional": 0,
+    "PASS_safety": 4,
+    "FAIL": 15,
+    "BLOCKED": 23,
+    "BLOCKED_PERSISTENCE": 4,
+    "NOT_STARTED": 9,
+    "EXCLUDED": 1,
+    "TOTAL": 56
+  },
+  "evidenceRoots": [
+    "audit/clients-parity-20261113/09-V4-QA-FORBIDDEN-COMPAT.md",
+    "audit/clients-parity-20261113/10-V4-BACKEND-HANDLERS-READONLY.md",
+    "audit/clients-parity-20261113/11-V4-VIEWPORT-DIMENSIONS.md",
+    "audit/clients-parity-20261113/12-V4-AUTHOR-CORRECTION-d1da9484.md",
+    "audit/clients-parity-20261113/13-V4-QA-SUMMARY.json",
+    "audit/clients-parity-20261113/requirement-matrix-c01-c56.json",
+    "audit/clients-parity-20261113/v4-isolated-mount/",
+    "audit/clients-parity-20261113/v4-isolated-mount-d1da9484/",
+    "scripts/clients-parity-20261113/mount-observer-v4-verified-viewports.mjs",
+    "scripts/clients-parity-20261113/mount-observer-v4-d1da9484.mjs"
+  ]
+}

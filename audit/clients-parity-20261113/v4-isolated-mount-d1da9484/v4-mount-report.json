@@ -1,0 +1,883 @@
+{
+  "task": "REMCLIENTS-V4-QA-COMPUTER",
+  "implCandidateSha": "d1da948491293c1a8ba77d4854191347708b4379",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "priorAuditArtifactsNotUsed": [
+    "candidate-isolated-listview/",
+    "candidate-mount/"
+  ],
+  "viewportVerification": {
+    "method": "Playwright viewport + CDP Emulation.setDeviceMetricsOverride + viewport screenshot (fullPage:false) + PNG header parse",
+    "expectedViewports": [
+      {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      }
+    ],
+    "dimensionFailures": [
+      {
+        "theme": "light",
+        "viewport": "768x1024",
+        "expected": {
+          "w": 768,
+          "h": 1024
+        },
+        "inner": {
+          "w": 782,
+          "h": 1043
+        },
+        "client": {
+          "w": 768,
+          "h": 1024
+        },
+        "png": {
+          "width": 768,
+          "height": 1024
+        }
+      },
+      {
+        "theme": "light",
+        "viewport": "375x812",
+        "expected": {
+          "w": 375,
+          "h": 812
+        },
+        "inner": {
+          "w": 389,
+          "h": 843
+        },
+        "client": {
+          "w": 375,
+          "h": 812
+        },
+        "png": {
+          "width": 375,
+          "height": 812
+        }
+      },
+      {
+        "theme": "light",
+        "viewport": "360x800",
+        "expected": {
+          "w": 360,
+          "h": 800
+        },
+        "inner": {
+          "w": 374,
+          "h": 832
+        },
+        "client": {
+          "w": 360,
+          "h": 800
+        },
+        "png": {
+          "width": 360,
+          "height": 800
+        }
+      },
+      {
+        "theme": "light",
+        "viewport": "320x740",
+        "expected": {
+          "w": 320,
+          "h": 740
+        },
+        "inner": {
+          "w": 334,
+          "h": 773
+        },
+        "client": {
+          "w": 320,
+          "h": 740
+        },
+        "png": {
+          "width": 320,
+          "height": 740
+        }
+      },
+      {
+        "theme": "dark",
+        "viewport": "768x1024",
+        "expected": {
+          "w": 768,
+          "h": 1024
+        },
+        "inner": {
+          "w": 782,
+          "h": 1043
+        },
+        "client": {
+          "w": 768,
+          "h": 1024
+        },
+        "png": {
+          "width": 768,
+          "height": 1024
+        }
+      },
+      {
+        "theme": "dark",
+        "viewport": "375x812",
+        "expected": {
+          "w": 375,
+          "h": 812
+        },
+        "inner": {
+          "w": 389,
+          "h": 843
+        },
+        "client": {
+          "w": 375,
+          "h": 812
+        },
+        "png": {
+          "width": 375,
+          "height": 812
+        }
+      },
+      {
+        "theme": "dark",
+        "viewport": "360x800",
+        "expected": {
+          "w": 360,
+          "h": 800
+        },
+        "inner": {
+          "w": 374,
+          "h": 832
+        },
+        "client": {
+          "w": 360,
+          "h": 800
+        },
+        "png": {
+          "width": 360,
+          "height": 800
+        }
+      },
+      {
+        "theme": "dark",
+        "viewport": "320x740",
+        "expected": {
+          "w": 320,
+          "h": 740
+        },
+        "inner": {
+          "w": 334,
+          "h": 773
+        },
+        "client": {
+          "w": 320,
+          "h": 740
+        },
+        "png": {
+          "width": 320,
+          "height": 740
+        }
+      }
+    ],
+    "allDimensionMatch": false
+  },
+  "sourceFindings": {
+    "motionStatLowercaseJsx": false,
+    "motionStatComponentDefined": false,
+    "voidCanLinkOnboardingHistory": false,
+    "forwardsCanLinkToGate": false,
+    "jsxCastForwardsCanLinkViaGateAlias": true,
+    "forwardsCanLinkToGateRegexMissedAlias": true,
+    "gateRuntimeAcceptsCanLink": false,
+    "note": "Workspace uses <Gate canLink\u2026> cast; OwnerClientsGate signature still {children} only; route omits prop."
+  },
+  "measurements": [
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "dims": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "clientWidth": 1440,
+        "clientHeight": 1000,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensionMatch": true,
+      "computed": {
+        "cardHeight": "128px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "113.781px 113.797px 113.781px 113.797px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-light-1440x1000-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "dims": {
+        "innerWidth": 1024,
+        "innerHeight": 900,
+        "clientWidth": 1024,
+        "clientHeight": 900,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 1024,
+        "height": 900
+      },
+      "dimensionMatch": true,
+      "computed": {
+        "cardHeight": "128px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-light-1024x900-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "dims": {
+        "innerWidth": 782,
+        "innerHeight": 1043,
+        "clientWidth": 768,
+        "clientHeight": 1024,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 768,
+        "height": 1024
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "221.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "358px 358px",
+        "kpiFontSize": "20px",
+        "statsColCount": 2
+      },
+      "screenshot": "v4-light-768x1024-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "dims": {
+        "innerWidth": 389,
+        "innerHeight": 843,
+        "clientWidth": 375,
+        "clientHeight": 812,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 375,
+        "height": 812
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "244.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-light-375x812-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "dims": {
+        "innerWidth": 374,
+        "innerHeight": 832,
+        "clientWidth": 360,
+        "clientHeight": 800,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 360,
+        "height": 800
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "244.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "71px 71px 71px 71px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-light-360x800-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "dims": {
+        "innerWidth": 334,
+        "innerHeight": 773,
+        "clientWidth": 320,
+        "clientHeight": 740,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 320,
+        "height": 740
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "285px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "61px 61px 61px 61px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-light-320x740-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "dims": {
+        "innerWidth": 1440,
+        "innerHeight": 1000,
+        "clientWidth": 1440,
+        "clientHeight": 1000,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 1440,
+        "height": 1000
+      },
+      "dimensionMatch": true,
+      "computed": {
+        "cardHeight": "128px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "113.781px 113.797px 113.781px 113.797px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-dark-1440x1000-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "dims": {
+        "innerWidth": 1024,
+        "innerHeight": 900,
+        "clientWidth": 1024,
+        "clientHeight": 900,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 1024,
+        "height": 900
+      },
+      "dimensionMatch": true,
+      "computed": {
+        "cardHeight": "128px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-dark-1024x900-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "dims": {
+        "innerWidth": 782,
+        "innerHeight": 1043,
+        "clientWidth": 768,
+        "clientHeight": 1024,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 768,
+        "height": 1024
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "221.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "358px 358px",
+        "kpiFontSize": "20px",
+        "statsColCount": 2
+      },
+      "screenshot": "v4-dark-768x1024-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "dims": {
+        "innerWidth": 389,
+        "innerHeight": 843,
+        "clientWidth": 375,
+        "clientHeight": 812,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 375,
+        "height": 812
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "244.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-dark-375x812-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "dims": {
+        "innerWidth": 374,
+        "innerHeight": 832,
+        "clientWidth": 360,
+        "clientHeight": 800,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 360,
+        "height": 800
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "244.5px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "71px 71px 71px 71px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-dark-360x800-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "dims": {
+        "innerWidth": 334,
+        "innerHeight": 773,
+        "clientWidth": 320,
+        "clientHeight": 740,
+        "devicePixelRatio": 1,
+        "fontFamily": "Manrope, system-ui, sans-serif"
+      },
+      "png": {
+        "width": 320,
+        "height": 740
+      },
+      "dimensionMatch": false,
+      "computed": {
+        "cardHeight": "285px",
+        "cardPadding": "12px 16px",
+        "borderRadius": "12px",
+        "titleFontSize": "15px",
+        "titleFontWeight": "700",
+        "titleFontFamily": "Manrope, system-ui, sans-serif",
+        "statsGrid": "61px 61px 61px 61px",
+        "kpiFontSize": "20px",
+        "statsColCount": 4
+      },
+      "screenshot": "v4-dark-320x740-default.png",
+      "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6"
+    }
+  ],
+  "interactions": [
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-1440x1000-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-1440x1000-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "light",
+      "viewport": "1024x900",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-1024x900-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "1024x900",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-1024x900-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-768x1024-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-768x1024-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-375x812-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-375x812-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-360x800-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-360x800-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-light-320x740-partner-detail.png"
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-light-320x740-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-1440x1000-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-1440x1000-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024x900",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-1024x900-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024x900",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-1024x900-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-768x1024-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-768x1024-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-375x812-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-375x812-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-360x800-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-360x800-edit-cancel.png",
+      "backOk": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "action": "partner-open",
+      "onPartnerPage": true,
+      "motionStatIntrinsicCount": 0,
+      "dtCount": 2,
+      "ddCount": 2,
+      "labelsRendered": true,
+      "screenshot": "v4-dark-320x740-partner-detail.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "action": "edit-cancel",
+      "saveDisabled": true,
+      "formGoneAfterCancel": true,
+      "fakeSavePossible": false,
+      "screenshot": "v4-dark-320x740-edit-cancel.png",
+      "backOk": true
+    }
+  ],
+  "errors": [],
+  "ok": true
+}

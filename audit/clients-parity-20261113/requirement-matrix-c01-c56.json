@@ -1,362 +1,336 @@
 {
-  "task": "REMCLIENTS-V3-QA-CANDIDATE",
+  "task": "REMCLIENTS-V4-QA-COMPUTER",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
-  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "implCandidateSha": "4c2e4cdf9ab7c17b6c8864d42ee6b34fcdcf87bd",
+  "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
+  "matrixEvaluatedAgainst": "d1da948491293c1a8ba77d4854191347708b4379",
+  "priorV3ImplShaDoNotCarry": "ffd4aa6130e92af5d95da21cfe5519133228a962",
   "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
   "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
-  "note": "V3: separate PASS_functional vs PASS_safety. Forbidden Gate/Context/route/helper/vitest delta → delivery not accepted. Isolated ListView mount artifacts exist; visual not functional PASS.",
+  "note": "Each of C01–C56 has exactly one status. PASS_functional=0. UI disabled-save forms are BLOCKED_PERSISTENCE, not persistence PASS. Fresh V4 mounts only; V3 screenshots not evidence for these SHAs.",
   "counts": {
+    "PASS_functional": 0,
+    "PASS_safety": 4,
     "FAIL": 15,
+    "BLOCKED": 23,
+    "BLOCKED_PERSISTENCE": 4,
     "NOT_STARTED": 9,
     "EXCLUDED": 1,
-    "PASS_safety": 4,
-    "BLOCKED": 27,
-    "PASS_functional": 0
+    "TOTAL": 56
   },
+  "countCheck": "0+4+15+23+4+9+1=56",
   "requirements": [
     {
       "id": "C01",
       "status": "FAIL",
-      "evidence": "Forbidden OwnerClientsGate/Context/route/helper/vitest delta vs 57ca4680 — Computer not accepted. Pure UI exists but delivery packaging invalid.",
-      "paths": [
-        "02-V2-QA-STATIC-COMPAT.md",
-        "candidate-mount/visual-diff-summary.json"
-      ]
+      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 on 4c2e4cdf and d1da9484. Fresh: 09-V4-QA-FORBIDDEN-COMPAT.md"
     },
     {
       "id": "C02",
       "status": "FAIL",
-      "evidence": "Forbidden OwnerClientsGate/Context/route/helper/vitest delta vs 57ca4680 — Computer not accepted. Pure UI exists but delivery packaging invalid.",
-      "paths": [
-        "src/components/clients/observer/* @ ffd4aa61"
-      ]
+      "evidence": "Observer UI exists under forbidden packaging; delivery not accepted. 4c2e4cdf had lowercase motionStat (labels absent); d1da9484 fixes MotionStat only."
     },
     {
       "id": "C03",
       "status": "FAIL",
-      "evidence": "Forbidden OwnerClientsGate/Context/route/helper/vitest delta vs 57ca4680 — Computer not accepted. Pure UI exists but delivery packaging invalid.",
-      "paths": [
-        "ClientsDirectionTabs.tsx",
-        "ReceivingAppealsBlocked.tsx"
-      ]
+      "evidence": "Direction/receiving shell still packaged with forbidden Gate/route delta — not accepted."
     },
     {
       "id": "C04",
       "status": "NOT_STARTED",
-      "evidence": "No durable filter/disclosure continuity across navigations proven"
+      "evidence": "Filter/disclosure continuity across navigations not proven this pass."
     },
     {
       "id": "C05",
       "status": "EXCLUDED",
-      "evidence": "Agent receiving pages 107–112 excluded by V1 scope"
+      "evidence": "Agent receiving pages 107–112 excluded by scope (C56)."
     },
     {
       "id": "C06",
       "status": "PASS_safety",
-      "evidence": "Safety: no role demo switcher / page catalog injected into production UI",
-      "note": "Safety-only PASS Not functional readiness.",
+      "evidence": "No role demo switcher / page catalog injected into production Clients UI.",
       "passKind": "safety"
     },
     {
       "id": "C07",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C08",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C09",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C10",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C11",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C12",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C13",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C14",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C15",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C16",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "No working-stage handlers on release BE (10-V4)."
     },
     {
       "id": "C17",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C18",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "No receiving funnel analytics contract on release BE (10-V4)."
     },
     {
       "id": "C19",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C20",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C21",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C22",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C23",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C24",
       "status": "BLOCKED",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "Backend tree: no client-appeals / working-stages handlers on release/prof-backend-v1-20261007."
+      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
     },
     {
       "id": "C25",
       "status": "NOT_STARTED",
-      "evidence": "Purchase/receipt navigation without preview domain not exercised"
+      "evidence": "Purchase/receipt navigation without preview domain not exercised."
     },
     {
       "id": "C26",
       "status": "FAIL",
-      "evidence": "Compact cards UI exists; visual mount 0/12 PASS vs etalon; KPI cols wrong at 768 and ≤360 | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4).",
-      "paths": [
-        "candidate-mount/visual-diff-summary.json",
-        "prototype-baseline/"
-      ]
+      "evidence": "Fresh V4 mount vs prototype 3dc31836: KPI cols 768→2 (proto 4), ≤360→4 (proto 2). 11-V4-VIEWPORT-DIMENSIONS.md"
     },
     {
       "id": "C27",
       "status": "BLOCKED",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "Backend tree: no referred-appeals handlers (0 hits)."
+      "evidence": "No referred-appeals handlers on release BE (10-V4)."
     },
     {
       "id": "C28",
       "status": "FAIL",
-      "evidence": "Candidate card height deltas: +8px@1440/1024, +123px@768, −55px@≤360 vs prototype baseline | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "Card/KPI layout diverges at 768 and ≤360 on both 4c2e4cdf and d1da9484 fresh mounts."
     },
     {
       "id": "C29",
       "status": "FAIL",
-      "evidence": "Isolated ListView mount artifacts exist (candidate-isolated-listview/); unit interactions OK; visual/KPI parity FAIL; partnerOpenBtn no onClick; edit has notice only (no form/cancel).",
-      "paths": [
-        "candidate-isolated-listview/isolated-mount-report.json"
-      ]
+      "evidence": "d1da9484: partner open/back/selection/cancel/disabled-save verified UI-only; KPI visual parity FAIL; packaging forbidden. Not PASS_functional. 4c2e4cdf detail labels absent (motionStat)."
     },
     {
       "id": "C30",
       "status": "NOT_STARTED",
-      "evidence": "session openPartners claimed by author; auditor did not prove reload→collapsed across real navigation"
+      "evidence": "session openPartners reload→collapsed not proven across real navigation."
     },
     {
       "id": "C31",
       "status": "FAIL",
-      "evidence": "Isolated ListView mount artifacts exist (candidate-isolated-listview/); unit interactions OK; visual/KPI parity FAIL; partnerOpenBtn no onClick; edit has notice only (no form/cancel).",
-      "paths": [
-        "candidate-isolated-listview/isolated-mount-report.json"
-      ]
+      "evidence": "List/detail navigation shell improved on d1da9484 but delivery packaging + KPI parity still FAIL."
     },
     {
       "id": "C32",
       "status": "BLOCKED",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "Backend tree: no referred-appeals handlers (0 hits)."
+      "evidence": "No referred-appeals handlers on release BE (10-V4)."
     },
     {
       "id": "C33",
       "status": "FAIL",
-      "evidence": "Isolated ListView mount artifacts exist (candidate-isolated-listview/); unit interactions OK; visual/KPI parity FAIL; partnerOpenBtn no onClick; edit has notice only (no form/cancel).",
-      "paths": [
-        "candidate-isolated-listview/isolated-mount-report.json"
-      ]
+      "evidence": "Personal edit UI form+cancel+disabled save on fresh mount; not functional personal-meta; packaging FAIL."
     },
     {
       "id": "C34",
       "status": "BLOCKED",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "Backend tree: no referred-appeals handlers (0 hits)."
+      "evidence": "No referred-appeals handlers on release BE (10-V4)."
     },
     {
       "id": "C35",
-      "status": "BLOCKED",
+      "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Backend release/prof-backend-v1-20261007: agent-clients soft-delete/archive exist (wrong semantics); personal-meta handlers ABSENT (0 tree hits). Edit UI notice-only — form/cancel still missing (FAIL UI separately)."
+      "evidence": "UI form exists; save disabled. No personal-meta API. Disabled save ≠ persistence PASS."
     },
     {
       "id": "C36",
-      "status": "BLOCKED",
+      "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Backend release/prof-backend-v1-20261007: agent-clients soft-delete/archive exist (wrong semantics); personal-meta handlers ABSENT (0 tree hits). Edit UI notice-only — form/cancel still missing (FAIL UI separately)."
+      "evidence": "Mass tag edit has no endpoint; UI-only. BLOCKED_PERSISTENCE."
     },
     {
       "id": "C37",
-      "status": "BLOCKED",
+      "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Backend release/prof-backend-v1-20261007: agent-clients soft-delete/archive exist (wrong semantics); personal-meta handlers ABSENT (0 tree hits). Edit UI notice-only — form/cancel still missing (FAIL UI separately)."
+      "evidence": "agent-clients archive/delete ≠ personal trash-from-own-list. No personal-meta handlers."
     },
     {
       "id": "C38",
-      "status": "BLOCKED",
+      "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Backend release/prof-backend-v1-20261007: agent-clients soft-delete/archive exist (wrong semantics); personal-meta handlers ABSENT (0 tree hits). Edit UI notice-only — form/cancel still missing (FAIL UI separately)."
+      "evidence": "No production personal-meta contract; disabled save is UI-only BLOCKED_PERSISTENCE."
     },
     {
       "id": "C39",
       "status": "BLOCKED",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "Backend tree: no referred-appeals handlers (0 hits)."
+      "evidence": "No referred-appeals handlers on release BE (10-V4)."
     },
     {
       "id": "C40",
       "status": "BLOCKED",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "Backend tree: no referred-appeals handlers (0 hits)."
+      "evidence": "No referred-appeals handlers on release BE (10-V4)."
     },
     {
       "id": "C41",
       "status": "NOT_STARTED",
-      "evidence": "URL/id protection not expanded/proven in this audit pass"
+      "evidence": "URL/id protection not expanded this pass."
     },
     {
       "id": "C42",
       "status": "FAIL",
-      "evidence": "Local CSS inspired by prototype but breakpoints diverge (768→2-col KPI; ≤360 stays 4-col due cascade) | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "observer.module.css breakpoints diverge from prototype 3dc31836 (768/≤360). Fresh computed cols."
     },
     {
       "id": "C43",
       "status": "FAIL",
-      "evidence": "computed-style-candidate.json vs computed-style-baseline.json — col/height mismatches recorded | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "Computed KPI column counts mismatch prototype baseline at 768 and ≤360 (11-V4)."
     },
     {
       "id": "C44",
       "status": "FAIL",
-      "evidence": "Spacing/radius not within visual pass thresholds | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "Spacing/radius/layout not within visual pass; KPI grid wrong at key breakpoints."
     },
     {
       "id": "C45",
       "status": "FAIL",
-      "evidence": "light/dark mounts captured; both FAIL pixel thresholds | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "light+dark fresh mounts both show same KPI column failures."
     },
     {
       "id": "C46",
       "status": "FAIL",
-      "evidence": "Six viewports captured; KPI 4@375 OK cols but 2@768 (should stay 4 until ≤360) and 4@≤360 (should be 2) | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "Six viewports captured with verified clientWidth/PNG widths; parity FAIL (not claimed). innerWidth +14 on mobile documented."
     },
     {
       "id": "C47",
       "status": "FAIL",
-      "evidence": "bounding box deltas recorded in candidate-mount | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "Element KPI grid mismatch vs prototype; card layout not etalon-pass."
     },
     {
       "id": "C48",
       "status": "FAIL",
-      "evidence": "Overlay diffs in candidate-mount/diff/*.png; 0/12 visualPass | V3 isolated React mount confirms KPI cols wrong at 768 (2) and ≤360 (4)."
+      "evidence": "No visualPass vs prototype 3dc31836 on fresh V4 mounts."
     },
     {
       "id": "C49",
       "status": "NOT_STARTED",
-      "evidence": "Full overflow/regression sweep outside observer fixture not run"
+      "evidence": "Full overflow/regression sweep outside observer fixture not run."
     },
     {
       "id": "C50",
       "status": "NOT_STARTED",
-      "evidence": "focus-visible CSS present; keyboard inventory not fully exercised in browser a11y pass"
+      "evidence": "Keyboard/a11y inventory not fully exercised."
     },
     {
       "id": "C51",
       "status": "NOT_STARTED",
-      "evidence": "Network loading/error paths for observer not proven beyond blocked adapter stub"
+      "evidence": "Network loading/error paths for observer not proven beyond blocked adapter."
     },
     {
       "id": "C52",
       "status": "PASS_safety",
-      "evidence": "Safety: observer-demo-fixtures not imported by production workspace path",
-      "note": "Safety-only PASS Not functional readiness.",
+      "evidence": "observer-demo-fixtures not imported by production workspace path.",
       "passKind": "safety"
     },
     {
       "id": "C53",
       "status": "NOT_STARTED",
-      "evidence": "Form rerender focus not tested"
+      "evidence": "Form rerender focus not tested."
     },
     {
       "id": "C54",
       "status": "NOT_STARTED",
-      "evidence": "Cross-section regressions not run in this audit"
+      "evidence": "Cross-section regressions not run."
     },
     {
       "id": "C55",
       "status": "PASS_safety",
-      "evidence": "Safety: no real financial ops in candidate Clients work",
-      "note": "Safety-only PASS — not functional readiness Not functional readiness.",
+      "evidence": "No real financial ops in candidate Clients work / this audit.",
       "passKind": "safety"
     },
     {
       "id": "C56",
       "status": "PASS_safety",
-      "evidence": "Safety: no DB/backend/rights changes in candidate Clients commits reviewed",
-      "note": "Safety-only PASS — not functional readiness Not functional readiness.",
+      "evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod changes by auditor. Forbidden deltas explicit in 09-V4.",
       "passKind": "safety"
     }
-  ],
-  "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
-  "priorNamedInterimSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
-  "computerAccepted": false
+  ]
 }
