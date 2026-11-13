@@ -1,12 +1,21 @@
 {
-  "task": "REMCLIENTS-PARITY-20261113-V1",
+  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
-  "implCandidateSha": null,
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "backendRepoMounted": false,
+  "method": "Read-only FE proxy allowlist + FE API helpers + candidate adapters. Absence of a handler in this frontend repo is NOT proof the remcard backend lacks a route; it is proof this platform has no allowlisted/typed client contract to call safely.",
   "summary": {
     "personalReferrerOverlayContractExists": false,
     "agentClientCrudIsPersonalOverlay": false,
-    "blockedRequirementIds": ["C35", "C36", "C37", "C38", "C16", "C18"]
+    "referredAppealsContractOnFeProxy": false,
+    "receivingAppealsContractOnFeProxy": false,
+    "blockedRequirementIds": [
+      "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18",
+      "C19", "C20", "C21", "C22", "C23", "C24",
+      "C27", "C32", "C34", "C35", "C36", "C37", "C38", "C39", "C40"
+    ]
   },
   "contracts": [
     {
@@ -14,11 +23,13 @@
       "method": "GET",
       "path": "/api/pro/agent-clients",
       "feHelper": "src/lib/agent-r03/api.ts#fetchAgentClients",
+      "proxyAllowlisted": true,
       "scope": "read",
       "ownership": "actor-owned agent client CRM",
       "fields": ["displayName", "phone", "email", "city", "need", "note", "archivedAt", "certificateCount", "hasPurchases"],
       "deleteSemantics": "n/a (list)",
       "mapsToPrototype": "NOT equivalent to observer personal referral list",
+      "mapsToCIds": [],
       "status": "AVAILABLE_WRONG_SEMANTICS_FOR_C26_C38"
     },
     {
@@ -26,42 +37,64 @@
       "method": "POST",
       "path": "/api/pro/agent-clients",
       "feHelper": "createAgentClient",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "actor-owned",
       "fields": ["displayName", "phone?", "email?", "city?", "need?", "note?"],
       "mapsToPrototype": "Partial overlap with manual client create for agent CRM only; agent receiving manual (109) is EXCLUDED",
+      "mapsToCIds": [],
       "status": "AVAILABLE_LIMITED"
+    },
+    {
+      "id": "agent-clients-get",
+      "method": "GET",
+      "path": "/api/pro/agent-clients/:id",
+      "feHelper": "fetchAgentClient",
+      "proxyAllowlisted": true,
+      "scope": "read",
+      "ownership": "actor-owned entity",
+      "fields": ["client", "certificates", "purchase scopes"],
+      "mapsToCIds": [],
+      "status": "AVAILABLE_WRONG_SEMANTICS"
     },
     {
       "id": "agent-clients-patch",
       "method": "PATCH",
       "path": "/api/pro/agent-clients/:id",
       "feHelper": "patchAgentClient",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "actor-owned entity fields (not personal overlay)",
       "fields": ["displayName", "phone", "email", "city", "need", "note", "action:archive|restore"],
       "mapsToPrototype": "MUST NOT be used as personal alias/tag/note overlay (C35)",
-      "status": "AVAILABLE_WRONG_SEMANTICS"
+      "mapsToCIds": [],
+      "status": "AVAILABLE_WRONG_SEMANTICS",
+      "forbiddenFor": ["C35", "C36", "C37", "C38"]
     },
     {
       "id": "agent-clients-delete",
       "method": "DELETE",
       "path": "/api/pro/agent-clients/:id",
       "feHelper": "deleteAgentClient",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "actor-owned entity",
       "deleteSemantics": "entity delete — NOT personal trash (C37)",
-      "status": "BLOCKED_FOR_PERSONAL_TRASH"
+      "mapsToCIds": [],
+      "status": "BLOCKED_FOR_PERSONAL_TRASH",
+      "forbiddenFor": ["C37"]
     },
     {
       "id": "agent-clients-batch",
       "method": "POST",
       "path": "/api/pro/agent-clients/batch",
       "feHelper": "batchAgentClients",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "actor-owned",
       "fields": ["action: archive|restore|delete", "ids"],
       "deleteSemantics": "batch entity archive/restore/delete — no personal trash bucket",
+      "mapsToCIds": [],
       "status": "AVAILABLE_WRONG_SEMANTICS_FOR_C37"
     },
     {
@@ -69,10 +102,12 @@
       "method": "PATCH",
       "path": "/api/pro/agent-certificates/:id",
       "feHelper": "patchAgentCertificate",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "certificate personal title-for-self",
       "fields": ["userAlias", "archive/restore actions"],
       "mapsToPrototype": "Not referral personal alias",
+      "mapsToCIds": [],
       "status": "AVAILABLE_WRONG_ENTITY"
     },
     {
@@ -80,34 +115,81 @@
       "method": "PATCH",
       "path": "/api/store/orders/:id/receiving-client",
       "feHelper": "patchStoreOrderReceivingClient",
+      "proxyAllowlisted": true,
       "scope": "write",
       "ownership": "order ↔ agentClient link",
       "fields": ["action:link|unlink", "agentClientId?", "expectedVersion"],
       "mapsToPrototype": "Not appeals CRM / personal list",
+      "mapsToCIds": [],
       "status": "AVAILABLE_UNRELATED"
+    },
+    {
+      "id": "observer-referred-appeals",
+      "method": null,
+      "path": null,
+      "claimedMissingByCandidate": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "feHelper": "src/lib/clients-parity/fetch-observer-appeals.ts#fetchObserverReferredAppeals",
+      "proxyAllowlisted": false,
+      "scope": "missing on FE proxy allowlist",
+      "ownership": "referrer-visible referred appeals (read)",
+      "fields": ["clientName", "interest", "certificateId", "receivingPartnerId", "stageId", "updatedAt", "referralAt"],
+      "prototypeSource": "client-appeals.js ownReferredAppeals()",
+      "serverHandlerInThisRepo": false,
+      "backendPresenceUnknown": true,
+      "mapsToCIds": ["C26", "C27", "C32", "C33", "C34", "C39", "C40", "C41"],
+      "status": "BLOCKED",
+      "candidateBehavior": "Returns BLOCKED_CONTRACT without inventing routes — correct for audit"
     },
     {
       "id": "observer-personal-meta",
       "method": null,
       "path": null,
+      "claimedMissingByCandidate": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ],
       "feHelper": null,
+      "proxyAllowlisted": false,
       "scope": "missing",
-      "ownership": "would be referrer-private overlay on referral/appeal id",
+      "ownership": "referrer-private overlay on referral/appeal id",
       "fields": ["alias", "tag", "note", "bucket:active|archived|trash", "beforeTrash"],
       "prototypeSource": "design/general-prototype/partner/observer-personal-list.js",
-      "persistence": "prototype in-memory only; production contract absent",
-      "status": "BLOCKED_PERSISTENCE"
+      "persistence": "prototype in-memory only; production contract absent on FE",
+      "serverHandlerInThisRepo": false,
+      "backendPresenceUnknown": true,
+      "mapsToCIds": ["C35", "C36", "C37", "C38"],
+      "status": "BLOCKED_PERSISTENCE",
+      "doNotReuse": "agent-clients PATCH/DELETE/batch"
     },
     {
       "id": "receiving-appeals-crm",
       "method": null,
       "path": null,
+      "claimedMissingByCandidate": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
       "feHelper": null,
+      "proxyAllowlisted": false,
       "scope": "missing on FE proxy allowlist",
       "ownership": "receiving partner appeals",
       "fields": ["stages", "refusalReasons", "funnel", "scan/manual/purchase flows"],
       "prototypeSource": "design/general-prototype/partner/client-appeals.js",
+      "serverHandlerInThisRepo": false,
+      "backendPresenceUnknown": true,
+      "mapsToCIds": ["C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24"],
       "status": "BLOCKED"
     }
+  ],
+  "ownershipRules": [
+    "AGENT CRM CRUD owns AgentClient entities for the actor — not per-referrer personal overlays.",
+    "Personal alias/tag/note/archive/trash must not mutate receiving partner appeal fields.",
+    "No contract found on FE → exact BLOCKED; do not propose DB/rights changes in this audit."
   ]
 }

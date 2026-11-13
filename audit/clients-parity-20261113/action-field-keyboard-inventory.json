@@ -1,0 +1,101 @@
+{
+  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "sources": {
+    "prototype": [
+      "design/general-prototype/partner/client-appeals.js",
+      "design/general-prototype/partner/observer-personal-list.js"
+    ],
+    "candidate": [
+      "src/components/clients/observer/*",
+      "src/components/clients/direction/*",
+      "src/lib/clients-parity/*"
+    ]
+  },
+  "observerControls": [
+    {
+      "control": "bucket:active|archived|trash",
+      "role": "button group",
+      "keyboard": "Tab to group; Space/Enter activate",
+      "states": ["default", "aria-pressed=true|false", "disabled:n/a"],
+      "candidate": "ObserverPersonalTools bucketBtn",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "layout:partners|list",
+      "role": "button group",
+      "keyboard": "Tab; Space/Enter",
+      "states": ["aria-pressed"],
+      "candidate": "ObserverPersonalTools",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "observer-q search",
+      "role": "textbox",
+      "keyboard": "Tab; type; Escape not specified",
+      "states": ["empty", "filled", "chip clear"],
+      "candidate": "ObserverFilterChips / list view search",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "observer-period",
+      "role": "combobox/select",
+      "keyboard": "Tab; arrows",
+      "states": ["all", "period values"],
+      "candidate": "filter period select",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "partner group checkbox",
+      "role": "checkbox",
+      "keyboard": "Tab; Space",
+      "states": ["unchecked", "checked", "aria-checked=mixed"],
+      "candidate": "ObserverPartnerCard group input",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "partner disclosure summary",
+      "role": "disclosure",
+      "keyboard": "Tab; Enter/Space toggles details",
+      "states": ["closed", "open", "focus-visible"],
+      "candidate": "ObserverPartnerCard details/summary",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "partner open (→)",
+      "role": "button",
+      "keyboard": "Tab; Enter",
+      "states": ["default", "focus"],
+      "candidate": "partnerOpenBtn data-ca-action=observer:partner:*",
+      "status": "PRESENT_UI_NAV_BLOCKED",
+      "note": "C39 target page BLOCKED without by-partner API"
+    },
+    {
+      "control": "edit personal meta",
+      "role": "button",
+      "keyboard": "Tab; Enter",
+      "states": ["default", "shows BLOCKED_PERSISTENCE notice"],
+      "candidate": "ObserverPersonalClientRow / list view edit",
+      "status": "BLOCKED_PERSISTENCE"
+    },
+    {
+      "control": "direction tabs incoming|at-partners",
+      "role": "tablist",
+      "keyboard": "Tab; arrows/Enter per pattern",
+      "states": ["selected", "unselected"],
+      "candidate": "ClientsDirectionTabs",
+      "status": "PRESENT_UI_UNIT"
+    },
+    {
+      "control": "receiving list actions",
+      "role": "various",
+      "keyboard": "n/a",
+      "states": ["blocked panel only"],
+      "candidate": "ReceivingAppealsBlocked",
+      "status": "BLOCKED"
+    }
+  ],
+  "perControlStatesMatrixCsv": "element-state-matrix.csv",
+  "prototypeActionCatalog": "action-inventory.json"
+}

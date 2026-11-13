@@ -1,0 +1,95 @@
+{
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "shots": 12,
+  "visualPassCount": 0,
+  "visualFailCount": 12,
+  "anyVisualPass": false,
+  "allVisualPass": false,
+  "functionalVisualVerdict": "FAIL",
+  "visualDiffs": [
+    {
+      "key": "light|1440x1000",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.027234722222222223,
+      "visualPass": false
+    },
+    {
+      "key": "light|1024x900",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.03987196180555556,
+      "visualPass": false
+    },
+    {
+      "key": "light|768x1024",
+      "statsColMismatch": true,
+      "heightDeltaPx": 123,
+      "pixelRatio": 0.04479090372721354,
+      "visualPass": false
+    },
+    {
+      "key": "light|375x812",
+      "statsColMismatch": false,
+      "heightDeltaPx": -2,
+      "pixelRatio": 0.09388834154351396,
+      "visualPass": false
+    },
+    {
+      "key": "light|360x800",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.09019791666666667,
+      "visualPass": false
+    },
+    {
+      "key": "light|320x740",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.10497888513513513,
+      "visualPass": false
+    },
+    {
+      "key": "dark|1440x1000",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.03281736111111111,
+      "visualPass": false
+    },
+    {
+      "key": "dark|1024x900",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.04685546875,
+      "visualPass": false
+    },
+    {
+      "key": "dark|768x1024",
+      "statsColMismatch": true,
+      "heightDeltaPx": 123,
+      "pixelRatio": 0.05170313517252604,
+      "visualPass": false
+    },
+    {
+      "key": "dark|375x812",
+      "statsColMismatch": false,
+      "heightDeltaPx": -2,
+      "pixelRatio": 0.10986863711001642,
+      "visualPass": false
+    },
+    {
+      "key": "dark|360x800",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.1036076388888889,
+      "visualPass": false
+    },
+    {
+      "key": "dark|320x740",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.11988597972972972,
+      "visualPass": false
+    }
+  ]
+}

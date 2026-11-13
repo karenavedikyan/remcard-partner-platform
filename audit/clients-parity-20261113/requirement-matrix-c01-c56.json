@@ -1,0 +1,315 @@
+{
+  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "note": "Auditor statuses. Author self-matrix IN_PROGRESS/PASS are not accepted as functional PASS. Safety PASS (C55/C56/C06/C52) does not mean product ready. No visual PASS without artifacts.",
+  "counts": {
+    "PASS": 4,
+    "FAIL": 8,
+    "BLOCKED": 30,
+    "NOT_STARTED": 13,
+    "EXCLUDED": 1,
+    "IN_PROGRESS": 0
+  },
+  "requirements": [
+    {
+      "id": "C01",
+      "status": "FAIL",
+      "evidence": "Cabinet Clients routed, but OwnerClientsGate rewritten vs 57ca4680; visual/list not parity-complete",
+      "paths": ["02-V2-QA-STATIC-COMPAT.md", "candidate-mount/visual-diff-summary.json"]
+    },
+    {
+      "id": "C02",
+      "status": "FAIL",
+      "evidence": "Agent observer shell present; referred data BLOCKED; visual FAIL; CRM list removed (good direction) but parity incomplete",
+      "paths": ["src/components/clients/observer/* @ ffd4aa61"]
+    },
+    {
+      "id": "C03",
+      "status": "FAIL",
+      "evidence": "Direction tabs exist; receiving tab is blocker-only; no receiving list parity",
+      "paths": ["ClientsDirectionTabs.tsx", "ReceivingAppealsBlocked.tsx"]
+    },
+    {
+      "id": "C04",
+      "status": "NOT_STARTED",
+      "evidence": "No durable filter/disclosure continuity across navigations proven"
+    },
+    {
+      "id": "C05",
+      "status": "EXCLUDED",
+      "evidence": "Agent receiving pages 107–112 excluded by V1 scope"
+    },
+    {
+      "id": "C06",
+      "status": "PASS",
+      "evidence": "Safety: no role demo switcher / page catalog injected into production UI",
+      "note": "Safety-only PASS"
+    },
+    {
+      "id": "C07",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS",
+      "evidence": "No FE proxy route for receiving appeals list"
+    },
+    {
+      "id": "C08",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C09",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C10",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C11",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C12",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C13",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C14",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C15",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C16",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS",
+      "evidence": "Working stages CRUD absent on FE proxy; absence of FE UI ≠ proof backend lacks stages elsewhere, but no allowlisted contract found"
+    },
+    {
+      "id": "C17",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C18",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C19",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C20",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C21",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C22",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C23",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C24",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "id": "C25",
+      "status": "NOT_STARTED",
+      "evidence": "Purchase/receipt navigation without preview domain not exercised"
+    },
+    {
+      "id": "C26",
+      "status": "FAIL",
+      "evidence": "Compact cards UI exists; visual mount 0/12 PASS vs etalon; KPI cols wrong at 768 and ≤360",
+      "paths": ["candidate-mount/visual-diff-summary.json", "prototype-baseline/"]
+    },
+    {
+      "id": "C27",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED",
+      "evidence": "Metrics markup present; live data adapter returns BLOCKED_CONTRACT"
+    },
+    {
+      "id": "C28",
+      "status": "FAIL",
+      "evidence": "Candidate card height deltas: +8px@1440/1024, +123px@768, −55px@≤360 vs prototype baseline"
+    },
+    {
+      "id": "C29",
+      "status": "FAIL",
+      "evidence": "Disclosure toggle unit-tested; no visual PASS artifacts for expanded/collapsed parity"
+    },
+    {
+      "id": "C30",
+      "status": "NOT_STARTED",
+      "evidence": "session openPartners claimed by author; auditor did not prove reload→collapsed across real navigation"
+    },
+    {
+      "id": "C31",
+      "status": "FAIL",
+      "evidence": "Checkbox/mixed unit tests pass; no visual/a11y artifact PASS vs etalon"
+    },
+    {
+      "id": "C32",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "id": "C33",
+      "status": "FAIL",
+      "evidence": "Filter chips/layout unit-tested with fixtures; visual parity FAIL; API semantics BLOCKED"
+    },
+    {
+      "id": "C34",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "id": "C35",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
+      "evidence": "Must not use agent-clients PATCH as personal alias/tag/note"
+    },
+    {
+      "id": "C36",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "id": "C37",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
+      "evidence": "agent-clients delete ≠ personal trash"
+    },
+    {
+      "id": "C38",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
+      "evidence": "BLOCKED_PERSISTENCE; UI surfaces notice — correct acknowledgment, not functional PASS"
+    },
+    {
+      "id": "C39",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED",
+      "evidence": "Nested partner pages 86/95/104/113/122 — no referred-by-partner contract"
+    },
+    {
+      "id": "C40",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "id": "C41",
+      "status": "NOT_STARTED",
+      "evidence": "URL/id protection not expanded/proven in this audit pass"
+    },
+    {
+      "id": "C42",
+      "status": "FAIL",
+      "evidence": "Local CSS inspired by prototype but breakpoints diverge (768→2-col KPI; ≤360 stays 4-col due cascade)"
+    },
+    {
+      "id": "C43",
+      "status": "FAIL",
+      "evidence": "computed-style-candidate.json vs computed-style-baseline.json — col/height mismatches recorded"
+    },
+    {
+      "id": "C44",
+      "status": "FAIL",
+      "evidence": "Spacing/radius not within visual pass thresholds"
+    },
+    {
+      "id": "C45",
+      "status": "FAIL",
+      "evidence": "light/dark mounts captured; both FAIL pixel thresholds"
+    },
+    {
+      "id": "C46",
+      "status": "FAIL",
+      "evidence": "Six viewports captured; KPI 4@375 OK cols but 2@768 (should stay 4 until ≤360) and 4@≤360 (should be 2)"
+    },
+    {
+      "id": "C47",
+      "status": "FAIL",
+      "evidence": "bounding box deltas recorded in candidate-mount"
+    },
+    {
+      "id": "C48",
+      "status": "FAIL",
+      "evidence": "Overlay diffs in candidate-mount/diff/*.png; 0/12 visualPass"
+    },
+    {
+      "id": "C49",
+      "status": "NOT_STARTED",
+      "evidence": "Full overflow/regression sweep outside observer fixture not run"
+    },
+    {
+      "id": "C50",
+      "status": "NOT_STARTED",
+      "evidence": "focus-visible CSS present; keyboard inventory not fully exercised in browser a11y pass"
+    },
+    {
+      "id": "C51",
+      "status": "NOT_STARTED",
+      "evidence": "Network loading/error paths for observer not proven beyond blocked adapter stub"
+    },
+    {
+      "id": "C52",
+      "status": "PASS",
+      "evidence": "Safety: observer-demo-fixtures not imported by production workspace path",
+      "note": "Safety-only PASS"
+    },
+    {
+      "id": "C53",
+      "status": "NOT_STARTED",
+      "evidence": "Form rerender focus not tested"
+    },
+    {
+      "id": "C54",
+      "status": "NOT_STARTED",
+      "evidence": "Cross-section regressions not run in this audit"
+    },
+    {
+      "id": "C55",
+      "status": "PASS",
+      "evidence": "Safety: no real financial ops in candidate Clients work",
+      "note": "Safety-only PASS — not functional readiness"
+    },
+    {
+      "id": "C56",
+      "status": "PASS",
+      "evidence": "Safety: no DB/backend/rights changes in candidate Clients commits reviewed",
+      "note": "Safety-only PASS — not functional readiness"
+    }
+  ]
+}

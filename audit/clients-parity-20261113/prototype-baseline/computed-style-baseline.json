@@ -1,0 +1,776 @@
+{
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "outDir": "/agent/repos/remcard-partner-platform/audit/clients-parity-20261113/prototype-baseline",
+  "viewports": [
+    {
+      "name": "1440x1000",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "name": "1024x900",
+      "width": 1024,
+      "height": 900
+    },
+    {
+      "name": "768x1024",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "name": "375x812",
+      "width": 375,
+      "height": 812
+    },
+    {
+      "name": "360x800",
+      "width": 360,
+      "height": 800
+    },
+    {
+      "name": "320x740",
+      "width": 320,
+      "height": 740
+    }
+  ],
+  "rolePages": [
+    {
+      "page": 79,
+      "role": "specialist",
+      "nested": 86
+    },
+    {
+      "page": 88,
+      "role": "store",
+      "nested": 95
+    },
+    {
+      "page": 97,
+      "role": "company",
+      "nested": 104
+    },
+    {
+      "page": 106,
+      "role": "agent",
+      "nested": 113
+    },
+    {
+      "page": 115,
+      "role": "employee",
+      "nested": 122
+    }
+  ],
+  "note": "Baseline uses synthetic markup + exact prototype CSS. Full roles.html SPA not booted (requires prototype runtime). Same compact-card CSS rules apply across roles 79/88/97/106/115 and nested partner pages.",
+  "measurements": [
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 192,
+        "y": 209.578125,
+        "width": 1056,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "1056px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "107.031px 107.047px 107.047px 107.047px"
+      },
+      "screenshot": "observer-compact-light-1440x1000.png"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 32,
+        "y": 206.25,
+        "width": 960,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "960px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "95.875px 95.8906px 95.875px 95.8906px"
+      },
+      "screenshot": "observer-compact-light-1024x900.png"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 24,
+        "y": 227.75,
+        "width": 720,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "720px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "76px 76px 76px 76px"
+      },
+      "screenshot": "observer-compact-light-768x1024.png"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 381.359375,
+        "width": 343,
+        "height": 228
+      },
+      "computed": {
+        "card": {
+          "width": "343px",
+          "height": "228px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "71.25px 71.25px 71.25px 71.25px"
+      },
+      "screenshot": "observer-compact-light-375x812.png"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 434.546875,
+        "width": 328,
+        "height": 280.5
+      },
+      "computed": {
+        "card": {
+          "width": "328px",
+          "height": "280.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "139px 139px"
+      },
+      "screenshot": "observer-compact-light-360x800.png"
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 434.546875,
+        "width": 288,
+        "height": 280.5
+      },
+      "computed": {
+        "card": {
+          "width": "288px",
+          "height": "280.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "119px 119px"
+      },
+      "screenshot": "observer-compact-light-320x740.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 192,
+        "y": 209.578125,
+        "width": 1056,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "1056px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "107.031px 107.047px 107.047px 107.047px"
+      },
+      "screenshot": "observer-compact-dark-1440x1000.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 32,
+        "y": 206.25,
+        "width": 960,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "960px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "95.875px 95.8906px 95.875px 95.8906px"
+      },
+      "screenshot": "observer-compact-dark-1024x900.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 24,
+        "y": 227.75,
+        "width": 720,
+        "height": 125
+      },
+      "computed": {
+        "card": {
+          "width": "720px",
+          "height": "125px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "8px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "76px 76px 76px 76px"
+      },
+      "screenshot": "observer-compact-dark-768x1024.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 381.359375,
+        "width": 343,
+        "height": 228
+      },
+      "computed": {
+        "card": {
+          "width": "343px",
+          "height": "228px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "71.25px 71.25px 71.25px 71.25px"
+      },
+      "screenshot": "observer-compact-dark-375x812.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 434.546875,
+        "width": 328,
+        "height": 280.5
+      },
+      "computed": {
+        "card": {
+          "width": "328px",
+          "height": "280.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "139px 139px"
+      },
+      "screenshot": "observer-compact-dark-360x800.png"
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "rolePagesCovered": [
+        {
+          "page": 79,
+          "role": "specialist",
+          "nested": 86
+        },
+        {
+          "page": 88,
+          "role": "store",
+          "nested": 95
+        },
+        {
+          "page": 97,
+          "role": "company",
+          "nested": 104
+        },
+        {
+          "page": 106,
+          "role": "agent",
+          "nested": 113
+        },
+        {
+          "page": 115,
+          "role": "employee",
+          "nested": 122
+        }
+      ],
+      "cardBoundingBox": {
+        "x": 16,
+        "y": 434.546875,
+        "width": 288,
+        "height": 280.5
+      },
+      "computed": {
+        "card": {
+          "width": "288px",
+          "height": "280.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, sans-serif",
+          "gap": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px",
+          "letterSpacing": "normal"
+        },
+        "statsGrid": "119px 119px"
+      },
+      "screenshot": "observer-compact-dark-320x740.png"
+    }
+  ],
+  "errors": [],
+  "ok": true
+}

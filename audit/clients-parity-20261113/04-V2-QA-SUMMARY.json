@@ -1,0 +1,58 @@
+{
+  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
+  "canonical": "https://www.perplexity.ai/computer/tasks/c7ca575a-0a2a-4ae4-92b9-0e0c535046f8",
+  "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "mergeBaseWithProduction": "bbf06ef8e371ad31193274ee59600f39c4dea920",
+  "productionIsAncestorOfCandidate": false,
+  "canLinkOnboardingHistory": {
+    "b0622e51": "FAIL_MISSING",
+    "ffd4aa61": "PROP_RESTORED_GATE_REWRITE_DIVERGES"
+  },
+  "visual": {
+    "prototypeShots": 12,
+    "candidateShots": 12,
+    "visualPass": 0,
+    "visualFail": 12,
+    "verdict": "FAIL",
+    "chrome": "/usr/local/bin/google-chrome",
+    "playwrightBundledChromium": "missing — used system Chrome"
+  },
+  "vitestCandidate": {
+    "command": "npx vitest run src/lib/clients-parity src/components/clients/observer src/components/clients/direction src/components/clients/ClientsListWorkspace.props.test.tsx",
+    "cwd": "/tmp/clients-cand-ffd4aa61",
+    "result": "5 files / 14 tests passed",
+    "log": "candidate-vitest-ffd4aa61.txt",
+    "note": "Unit PASS ≠ functional visual or data PASS"
+  },
+  "requirementCounts": {
+    "PASS": 4,
+    "FAIL": 8,
+    "BLOCKED": 30,
+    "NOT_STARTED": 13,
+    "EXCLUDED": 1
+  },
+  "pageStatusCounts": {
+    "FAIL": 5,
+    "BLOCKED": 37,
+    "NOT_STARTED": 4,
+    "EXCLUDED": 6,
+    "PASS": 0
+  },
+  "safetyPassDoesNotMeanReady": true,
+  "evidenceRoots": [
+    "audit/clients-parity-20261113/prototype-baseline/",
+    "audit/clients-parity-20261113/candidate-mount/",
+    "audit/clients-parity-20261113/02-V2-QA-STATIC-COMPAT.md",
+    "audit/clients-parity-20261113/03-V2-VISUAL-BASELINE-AND-DIFF.md",
+    "audit/clients-parity-20261113/requirement-matrix-c01-c56.json",
+    "audit/clients-parity-20261113/contract-audit.json",
+    "audit/clients-parity-20261113/page-matrix.json"
+  ],
+  "auditSha": "4ce42352c2fba56951831783f81c42c7a99345b4"
+}

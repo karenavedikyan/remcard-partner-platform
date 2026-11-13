@@ -1,0 +1,751 @@
+{
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "mountMethod": "Synthetic HTML + git-show observer.module.css (CSS modules class tokens as global). Not Next.js RSC mount.",
+  "note": "No data/wrap masking. Same Manrope font import as prototype baseline. Overlay diffs in candidate-mount/diff/.",
+  "measurements": [
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "cardBoundingBox": {
+        "x": 160,
+        "y": 155.296875,
+        "width": 1154,
+        "height": 133
+      },
+      "computed": {
+        "card": {
+          "width": "1120px",
+          "height": "107px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "118.438px 118.438px 118.438px 118.453px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-light-1440x1000.png",
+      "vsPrototype": {
+        "heightDeltaPx": 8,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 1440,
+          "height": 1000,
+          "mismatched": 39218,
+          "ratio": 0.027234722222222223,
+          "aSize": {
+            "w": 1440,
+            "h": 1000
+          },
+          "bSize": {
+            "w": 1440,
+            "h": 1000
+          }
+        }
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 155.296875,
+        "width": 1018,
+        "height": 133
+      },
+      "computed": {
+        "card": {
+          "width": "984px",
+          "height": "107px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-light-1024x900.png",
+      "vsPrototype": {
+        "heightDeltaPx": 8,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 1024,
+          "height": 900,
+          "mismatched": 36746,
+          "ratio": 0.03987196180555556,
+          "aSize": {
+            "w": 1024,
+            "h": 900
+          },
+          "bSize": {
+            "w": 1038,
+            "h": 900
+          }
+        }
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 155.296875,
+        "width": 762,
+        "height": 247.5
+      },
+      "computed": {
+        "card": {
+          "width": "728px",
+          "height": "221.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "358px 358px",
+        "statsColCount": 2
+      },
+      "screenshot": "observer-compact-light-768x1024.png",
+      "vsPrototype": {
+        "heightDeltaPx": 123,
+        "protoStatsCols": 4,
+        "candStatsCols": 2,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 768,
+          "height": 1024,
+          "mismatched": 35225,
+          "ratio": 0.04479090372721354,
+          "aSize": {
+            "w": 768,
+            "h": 1024
+          },
+          "bSize": {
+            "w": 782,
+            "h": 1024
+          }
+        }
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 226.296875,
+        "width": 369,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "335px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-light-375x812.png",
+      "vsPrototype": {
+        "heightDeltaPx": -2,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 375,
+          "height": 812,
+          "mismatched": 28589,
+          "ratio": 0.09388834154351396,
+          "aSize": {
+            "w": 375,
+            "h": 873
+          },
+          "bSize": {
+            "w": 389,
+            "h": 812
+          }
+        }
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 278.296875,
+        "width": 354,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "320px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "71px 71px 71px 71px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-light-360x800.png",
+      "vsPrototype": {
+        "heightDeltaPx": -55,
+        "protoStatsCols": 2,
+        "candStatsCols": 4,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 360,
+          "height": 800,
+          "mismatched": 25977,
+          "ratio": 0.09019791666666667,
+          "aSize": {
+            "w": 360,
+            "h": 1032
+          },
+          "bSize": {
+            "w": 374,
+            "h": 800
+          }
+        }
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 278.296875,
+        "width": 314,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "280px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "61px 61px 61px 61px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-light-320x740.png",
+      "vsPrototype": {
+        "heightDeltaPx": -55,
+        "protoStatsCols": 2,
+        "candStatsCols": 4,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 320,
+          "height": 740,
+          "mismatched": 24859,
+          "ratio": 0.10497888513513513,
+          "aSize": {
+            "w": 320,
+            "h": 1032
+          },
+          "bSize": {
+            "w": 334,
+            "h": 740
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "cardBoundingBox": {
+        "x": 160,
+        "y": 155.296875,
+        "width": 1154,
+        "height": 133
+      },
+      "computed": {
+        "card": {
+          "width": "1120px",
+          "height": "107px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "118.438px 118.438px 118.438px 118.453px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-dark-1440x1000.png",
+      "vsPrototype": {
+        "heightDeltaPx": 8,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 1440,
+          "height": 1000,
+          "mismatched": 47257,
+          "ratio": 0.03281736111111111,
+          "aSize": {
+            "w": 1440,
+            "h": 1000
+          },
+          "bSize": {
+            "w": 1440,
+            "h": 1000
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 155.296875,
+        "width": 1018,
+        "height": 133
+      },
+      "computed": {
+        "card": {
+          "width": "984px",
+          "height": "107px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-dark-1024x900.png",
+      "vsPrototype": {
+        "heightDeltaPx": 8,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 1024,
+          "height": 900,
+          "mismatched": 43182,
+          "ratio": 0.04685546875,
+          "aSize": {
+            "w": 1024,
+            "h": 900
+          },
+          "bSize": {
+            "w": 1038,
+            "h": 900
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 155.296875,
+        "width": 762,
+        "height": 247.5
+      },
+      "computed": {
+        "card": {
+          "width": "728px",
+          "height": "221.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "358px 358px",
+        "statsColCount": 2
+      },
+      "screenshot": "observer-compact-dark-768x1024.png",
+      "vsPrototype": {
+        "heightDeltaPx": 123,
+        "protoStatsCols": 4,
+        "candStatsCols": 2,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 768,
+          "height": 1024,
+          "mismatched": 40661,
+          "ratio": 0.05170313517252604,
+          "aSize": {
+            "w": 768,
+            "h": 1024
+          },
+          "bSize": {
+            "w": 782,
+            "h": 1024
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 226.296875,
+        "width": 369,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "335px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-dark-375x812.png",
+      "vsPrototype": {
+        "heightDeltaPx": -2,
+        "protoStatsCols": 4,
+        "candStatsCols": 4,
+        "statsColMismatch": false,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 375,
+          "height": 812,
+          "mismatched": 33455,
+          "ratio": 0.10986863711001642,
+          "aSize": {
+            "w": 375,
+            "h": 873
+          },
+          "bSize": {
+            "w": 389,
+            "h": 812
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 278.296875,
+        "width": 354,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "320px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "71px 71px 71px 71px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-dark-360x800.png",
+      "vsPrototype": {
+        "heightDeltaPx": -55,
+        "protoStatsCols": 2,
+        "candStatsCols": 4,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 360,
+          "height": 800,
+          "mismatched": 29839,
+          "ratio": 0.1036076388888889,
+          "aSize": {
+            "w": 360,
+            "h": 1032
+          },
+          "bSize": {
+            "w": 374,
+            "h": 800
+          }
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 278.296875,
+        "width": 314,
+        "height": 225.5
+      },
+      "computed": {
+        "card": {
+          "width": "280px",
+          "height": "199.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px",
+          "fontFamily": "Manrope, system-ui, sans-serif"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "61px 61px 61px 61px",
+        "statsColCount": 4
+      },
+      "screenshot": "observer-compact-dark-320x740.png",
+      "vsPrototype": {
+        "heightDeltaPx": -55,
+        "protoStatsCols": 2,
+        "candStatsCols": 4,
+        "statsColMismatch": true,
+        "titleFontSizeProto": "15px",
+        "titleFontSizeCand": "15px",
+        "pixelDiff": {
+          "ok": true,
+          "width": 320,
+          "height": 740,
+          "mismatched": 28389,
+          "ratio": 0.11988597972972972,
+          "aSize": {
+            "w": 320,
+            "h": 1032
+          },
+          "bSize": {
+            "w": 334,
+            "h": 740
+          }
+        }
+      }
+    }
+  ],
+  "visualDiffs": [
+    {
+      "key": "light|1440x1000",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.027234722222222223,
+      "visualPass": false
+    },
+    {
+      "key": "light|1024x900",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.03987196180555556,
+      "visualPass": false
+    },
+    {
+      "key": "light|768x1024",
+      "statsColMismatch": true,
+      "heightDeltaPx": 123,
+      "pixelRatio": 0.04479090372721354,
+      "visualPass": false
+    },
+    {
+      "key": "light|375x812",
+      "statsColMismatch": false,
+      "heightDeltaPx": -2,
+      "pixelRatio": 0.09388834154351396,
+      "visualPass": false
+    },
+    {
+      "key": "light|360x800",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.09019791666666667,
+      "visualPass": false
+    },
+    {
+      "key": "light|320x740",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.10497888513513513,
+      "visualPass": false
+    },
+    {
+      "key": "dark|1440x1000",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.03281736111111111,
+      "visualPass": false
+    },
+    {
+      "key": "dark|1024x900",
+      "statsColMismatch": false,
+      "heightDeltaPx": 8,
+      "pixelRatio": 0.04685546875,
+      "visualPass": false
+    },
+    {
+      "key": "dark|768x1024",
+      "statsColMismatch": true,
+      "heightDeltaPx": 123,
+      "pixelRatio": 0.05170313517252604,
+      "visualPass": false
+    },
+    {
+      "key": "dark|375x812",
+      "statsColMismatch": false,
+      "heightDeltaPx": -2,
+      "pixelRatio": 0.10986863711001642,
+      "visualPass": false
+    },
+    {
+      "key": "dark|360x800",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.1036076388888889,
+      "visualPass": false
+    },
+    {
+      "key": "dark|320x740",
+      "statsColMismatch": true,
+      "heightDeltaPx": -55,
+      "pixelRatio": 0.11988597972972972,
+      "visualPass": false
+    }
+  ],
+  "summary": {
+    "shots": 12,
+    "visualPassCount": 0,
+    "visualFailCount": 12,
+    "anyVisualPass": false,
+    "allVisualPass": false,
+    "functionalVisualVerdict": "FAIL"
+  },
+  "errors": [],
+  "ok": true
+}

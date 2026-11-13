@@ -1,0 +1,23 @@
+
+ RUN  v3.2.7 /tmp/clients-cand-ffd4aa61
+
+ ✓ src/components/clients/ClientsListWorkspace.props.test.tsx > ClientsListWorkspace 57ca4680 compatibility > accepts canLinkOnboardingHistory and forwards to OwnerClientsGate 1ms
+ ✓ src/components/clients/ClientsListWorkspace.props.test.tsx > ClientsListWorkspace 57ca4680 compatibility > clients page passes canLinkOnboardingHistoryFromUserRole 0ms
+ ✓ src/components/clients/direction/ClientsDirectionWorkspace.test.tsx > ClientsDirectionWorkspace > agent shows observer list without CRM add control 37ms
+ ✓ src/components/clients/direction/ClientsDirectionWorkspace.test.tsx > ClientsDirectionWorkspace > specialist shows direction tabs and receiving blocker on incoming 3ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > renders grouped compact cards with four KPI metrics 107ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > toggles partner disclosure independently 13ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > shows filter chips and clears search 92ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > switches to flat list layout 41ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > partner checkbox selects visible client rows 36ms
+ ✓ src/lib/clients-parity/observer-stats.test.ts > partnerAppealStats > computes conversion with prototype labels 1ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > edit action surfaces BLOCKED_PERSISTENCE notice 62ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > maps C07 to receiving blocker 1ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > fetch observer returns blocked 0ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > has three contract blockers 1ms
+
+ Test Files  5 passed (5)
+      Tests  14 passed (14)
+   Start at  09:57:52
+   Duration  1.47s (transform 437ms, setup 627ms, collect 581ms, tests 398ms, environment 1.37s, prepare 266ms)
+

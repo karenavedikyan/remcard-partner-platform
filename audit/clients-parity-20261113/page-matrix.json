@@ -1,10 +1,10 @@
 {
-  "task": "REMCLIENTS-PARITY-20261113-V1",
+  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
   "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
   "auditorHead": "4f64b8cf24e4fe0dc1ec3e1081a663258a84ca94",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "implCandidateSha": null,
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
   "pageCount": 52,
   "pages": [
     {
@@ -17,8 +17,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "FAIL",
       "requirements": [
         "C01",
         "C06",
@@ -31,7 +31,7 @@
         "C12",
         "C13"
       ],
-      "notes": ""
+      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
     },
     {
       "page": 80,
@@ -43,8 +43,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -52,7 +52,7 @@
         "C15",
         "C17"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 81,
@@ -64,15 +64,15 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C20",
         "C21"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 82,
@@ -84,14 +84,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C19"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 83,
@@ -103,14 +103,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C16"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -123,8 +123,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -133,7 +133,7 @@
         "C24",
         "C25"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 85,
@@ -145,14 +145,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C18"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -165,8 +165,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -175,7 +175,7 @@
         "C35",
         "C38"
       ],
-      "notes": "",
+      "notes": "C39 nested partner — BLK-OBSERVER-REFERRED; no by-partner API on FE proxy",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -188,8 +188,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -197,7 +197,7 @@
         "C41",
         "C35"
       ],
-      "notes": "",
+      "notes": "BLK-OBSERVER-PERSONAL-PERSIST",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -210,8 +210,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "FAIL",
       "requirements": [
         "C01",
         "C06",
@@ -224,7 +224,7 @@
         "C12",
         "C13"
       ],
-      "notes": ""
+      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
     },
     {
       "page": 89,
@@ -236,8 +236,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -245,7 +245,7 @@
         "C15",
         "C17"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 90,
@@ -257,15 +257,15 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C20",
         "C21"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 91,
@@ -277,14 +277,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C19"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 92,
@@ -296,14 +296,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C16"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -316,8 +316,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -326,7 +326,7 @@
         "C24",
         "C25"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 94,
@@ -338,14 +338,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C18"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -358,8 +358,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -368,7 +368,7 @@
         "C35",
         "C38"
       ],
-      "notes": "",
+      "notes": "C39 nested partner — BLK-OBSERVER-REFERRED; no by-partner API on FE proxy",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -381,8 +381,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -390,7 +390,7 @@
         "C41",
         "C35"
       ],
-      "notes": "",
+      "notes": "BLK-OBSERVER-PERSONAL-PERSIST",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -403,8 +403,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "FAIL",
       "requirements": [
         "C01",
         "C06",
@@ -417,7 +417,7 @@
         "C12",
         "C13"
       ],
-      "notes": ""
+      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
     },
     {
       "page": 98,
@@ -429,8 +429,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -438,7 +438,7 @@
         "C15",
         "C17"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 99,
@@ -450,15 +450,15 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C20",
         "C21"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 100,
@@ -470,14 +470,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C19"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 101,
@@ -489,14 +489,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C16"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -509,8 +509,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -519,7 +519,7 @@
         "C24",
         "C25"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 103,
@@ -531,14 +531,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C18"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -551,8 +551,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -561,7 +561,7 @@
         "C35",
         "C38"
       ],
-      "notes": "",
+      "notes": "C39 nested partner — BLK-OBSERVER-REFERRED; no by-partner API on FE proxy",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -574,8 +574,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -583,7 +583,7 @@
         "C41",
         "C35"
       ],
-      "notes": "",
+      "notes": "BLK-OBSERVER-PERSONAL-PERSIST",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -596,8 +596,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "FAIL",
       "requirements": [
         "C01",
         "C06",
@@ -618,7 +618,7 @@
         "C37",
         "C38"
       ],
-      "notes": "",
+      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -631,13 +631,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 108,
@@ -649,13 +649,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 109,
@@ -667,13 +667,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 110,
@@ -685,13 +685,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 111,
@@ -703,13 +703,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 112,
@@ -721,13 +721,13 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "EXCLUDED",
       "requirements": [
         "C02",
         "C05"
       ],
-      "notes": "C05/C02: agent receiving CRM closed; verify server denial, do not implement"
+      "notes": "Agent receiving EXCLUDED by V1"
     },
     {
       "page": 113,
@@ -739,8 +739,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -751,7 +751,7 @@
         "C35",
         "C38"
       ],
-      "notes": "",
+      "notes": "C39 nested partner — BLK-OBSERVER-REFERRED; no by-partner API on FE proxy",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -764,8 +764,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -775,7 +775,7 @@
         "C41",
         "C35"
       ],
-      "notes": "",
+      "notes": "BLK-OBSERVER-PERSONAL-PERSIST",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -788,8 +788,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "FAIL",
       "requirements": [
         "C01",
         "C06",
@@ -802,7 +802,7 @@
         "C12",
         "C13"
       ],
-      "notes": ""
+      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
     },
     {
       "page": 116,
@@ -814,8 +814,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -823,7 +823,7 @@
         "C15",
         "C17"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 117,
@@ -835,15 +835,15 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C20",
         "C21"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 118,
@@ -855,14 +855,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C19"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 119,
@@ -874,14 +874,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C16"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -894,8 +894,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -904,7 +904,7 @@
         "C24",
         "C25"
       ],
-      "notes": ""
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 121,
@@ -916,14 +916,14 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
         "C18"
       ],
-      "notes": "",
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route",
       "earlyContract": ";BLOCKED_receiving_crm_api"
     },
     {
@@ -936,8 +936,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -946,7 +946,7 @@
         "C35",
         "C38"
       ],
-      "notes": "",
+      "notes": "C39 nested partner — BLK-OBSERVER-REFERRED; no by-partner API on FE proxy",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -959,8 +959,8 @@
       "zone": "partner",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C01",
         "C06",
@@ -968,7 +968,7 @@
         "C41",
         "C35"
       ],
-      "notes": "",
+      "notes": "BLK-OBSERVER-PERSONAL-PERSIST",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -981,12 +981,12 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "EXCLUDED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "NOT_STARTED",
       "requirements": [
         "R2_EXCLUDED"
       ],
-      "notes": "R2 only — not R1"
+      "notes": "Boundary/repair pages not exercised in V2 visual mount"
     },
     {
       "page": 142,
@@ -998,12 +998,12 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "EXCLUDED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "NOT_STARTED",
       "requirements": [
         "R2_EXCLUDED"
       ],
-      "notes": "R2 only — not R1"
+      "notes": "Boundary/repair pages not exercised in V2 visual mount"
     },
     {
       "page": 143,
@@ -1015,13 +1015,13 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C04",
         "boundary_partners"
       ],
-      "notes": "Integration boundary only; do not rewrite foreign sections"
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 144,
@@ -1033,13 +1033,13 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C25",
         "boundary_purchase"
       ],
-      "notes": "Integration boundary only; do not rewrite foreign sections"
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 145,
@@ -1051,13 +1051,13 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "NOT_STARTED",
       "requirements": [
         "C25",
         "boundary_receipt"
       ],
-      "notes": "Integration boundary only; do not rewrite foreign sections"
+      "notes": "Boundary/repair pages not exercised in V2 visual mount"
     },
     {
       "page": 146,
@@ -1069,14 +1069,14 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
-      "status": "NOT_STARTED",
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+      "status": "BLOCKED",
       "requirements": [
         "C20",
         "C21",
         "boundary_scanner"
       ],
-      "notes": "Integration boundary only; do not rewrite foreign sections"
+      "notes": "BLK-RECEIVING-APPEALS or missing FE contract; frontend absence ≠ backend proof, but no allowlisted route"
     },
     {
       "page": 147,
@@ -1088,12 +1088,12 @@
       "zone": "standalone",
       "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
       "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-      "implCandidateSha": null,
+      "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
       "status": "NOT_STARTED",
       "requirements": [
         "boundary_wallet_history"
       ],
-      "notes": "Integration boundary only; do not rewrite foreign sections"
+      "notes": "Boundary/repair pages not exercised in V2 visual mount"
     }
   ],
   "counts": {
@@ -1102,6 +1102,16 @@
     "PASS": 0,
     "FAIL": 0,
     "BLOCKED": 0,
+    "IN_PROGRESS": 0
+  },
+  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "auditorNote": "Statuses per page are auditor V2-QA. Safety PASS on C55/C56 does not imply page PASS.",
+  "statusCounts": {
+    "FAIL": 5,
+    "BLOCKED": 37,
+    "NOT_STARTED": 4,
+    "EXCLUDED": 6,
+    "PASS": 0,
     "IN_PROGRESS": 0
   }
 }

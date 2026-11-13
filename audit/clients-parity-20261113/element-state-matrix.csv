@@ -1,17 +1,22 @@
-requirementId,page,role,release,mode,state,selectorOrAccessibleName,prototypeSource,implementationLocation,apiContract,expectedTransition,visualEvidence,functionalEvidence,status,blocker
-C02,106,agent,R1,observer-overview,,[data-testid=ca-observer-personal-tools],observer-personal-list.js + client-appeals.js,,missing personal overlay API,stay on my-clients-at-partners,,,NOT_STARTED,see 01-EARLY blockers; candidate SHA pending
-C05,107,agent,R1,excluded-receiving,,n/a receiving appeal,client-appeals.js (closed for agent),,server denial required,must not open receiving CRM,,,EXCLUDED,C02/C05 closed numbers 107-112
-C05,108,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
-C05,109,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
-C05,110,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
-C05,111,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
-C05,112,agent,R1,excluded-receiving,,n/a,client-appeals.js,,,must not open,,,EXCLUDED,C05
-C35,106,agent,R1,personal-edit,edit-form,[data-observer-personal-edit] alias/tag/note,observer-personal-list.js,,BLOCKED_PERSISTENCE,save personal only,,,BLOCKED,no referrer overlay API; agent-clients PATCH wrong semantics
-C36,106,agent,R1,personal-bulk-tag,,mass tag panel,observer-personal-list.js,,BLOCKED_PERSISTENCE,tag-only mass apply,,,BLOCKED,no tag field on AgentClientRow
-C37,106,agent,R1,personal-trash,,data-observer-action=move:trash,observer-personal-list.js,,BLOCKED,delete only from own list,,,BLOCKED,deleteAgentClient/batch delete ≠ personal trash
-C38,106,agent,R1,personal-persist,,workspace.observerPersonal.meta,observer-personal-list.js (in-memory demo),,BLOCKED_PERSISTENCE,survive reload,,,BLOCKED,localStorage forbidden; no user contract
-C16,83,specialist,R1,stages-settings,,nav:settings / settings:*,client-appeals.js,,BLOCKED,CRUD working stages,,,BLOCKED,no FE appeals/stages API on 57ca4680
-C18,85,specialist,R1,analytics,,renderFunnelPage,client-appeals.js,,BLOCKED,funnel metrics,,,BLOCKED,no analytics contract; do not copy demo arithmetic
-C56,*,*,R1,constraint,,n/a,spec,,constraint,no DB/rights/API invention,,,EXCLUDED,process constraint
-R2,141,*,R2,excluded,,repair:open-141,client-appeals.js,,,do not implement,,,EXCLUDED,R2 only
-R2,142,*,R2,excluded,,repair:open-142,client-appeals.js,,,do not implement,,,EXCLUDED,R2 only
+requirement_id,page,role,mode,state,selector,accessible_name,prototype_source,implementation_source,api_contract,status,blocker,evidence
+C26,106,agent,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,client-appeals.js renderObserverPartnersList,ObserverPartnerCard.tsx @ ffd4aa61,BLK-OBSERVER-REFERRED,FAIL,BLK-OBSERVER-REFERRED,candidate-mount/visual-diff-summary.json 0/12
+C26,79,specialist,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,same CSS compact cards,ObserverPartnerCard.tsx,BLK-OBSERVER-REFERRED,FAIL,BLK-OBSERVER-REFERRED,shared fixture baseline
+C26,88,store,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,same CSS,ObserverPartnerCard.tsx,BLK-OBSERVER-REFERRED,FAIL,BLK-OBSERVER-REFERRED,shared fixture baseline
+C26,97,company,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,same CSS,ObserverPartnerCard.tsx,BLK-OBSERVER-REFERRED,FAIL,BLK-OBSERVER-REFERRED,shared fixture baseline
+C26,115,employee,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,same CSS,ObserverPartnerCard.tsx,BLK-OBSERVER-REFERRED,FAIL,BLK-OBSERVER-REFERRED,shared fixture baseline
+C28,106,agent,observer-partners,compact-height,ca-observer-partner-card,card height ~125px desktop,client-appeals.css,observer.module.css,none,FAIL,,heightDelta +8@1440 +123@768
+C29,106,agent,observer-partners,expanded,ca-observer-partner-details,Показать/Скрыть,client-appeals.css ca-observer-disclosure,ObserverPartnerCard.tsx details,none,FAIL,,unit OK visual FAIL
+C31,106,agent,observer-partners,selection,data-observer-group,Выбрать клиентов,observer-personal-list.js,ObserverPartnerCard.tsx checkbox,none,FAIL,,unit OK visual FAIL
+C33,106,agent,observer-partners,filters,ca-observer-filter-chips,Фильтры,client-appeals.js renderObserverFilterChips,ObserverFilterChips.tsx,none,FAIL,,unit OK visual FAIL
+C33,106,agent,observer-partners,layout,layout:list,Списком,client-appeals.js,ObserverPersonalTools.tsx,none,FAIL,,unit OK
+C38,106,agent,observer-personals,edit,persistenceNotice,BLOCKED_PERSISTENCE,prototype demo in-memory,ObserverPartnersListView.tsx,BLK-OBSERVER-PERSONAL-PERSIST,BLOCKED,BLK-OBSERVER-PERSONAL-PERSIST,correct acknowledgment
+C01,79,specialist,direction-tabs,default,ca-clients-directions,Направление клиентов,client-appeals.js,ClientsDirectionTabs.tsx,none,FAIL,,shell only
+C07,79,specialist,incoming,blocked,ca-receiving-appeals-blocked,Клиенты у меня,client-appeals.js renderListPage,ReceivingAppealsBlocked.tsx,BLK-RECEIVING-APPEALS,BLOCKED,BLK-RECEIVING-APPEALS,no FE proxy route
+C39,86,specialist,nested-partner,default,observer:partner,Страница партнёра,client-appeals.js,partnerOpenBtn,BLK-OBSERVER-REFERRED,BLOCKED,BLK-OBSERVER-REFERRED,no by-partner API
+C39,95,store,nested-partner,default,observer:partner,Страница партнёра,client-appeals.js,partnerOpenBtn,BLK-OBSERVER-REFERRED,BLOCKED,BLK-OBSERVER-REFERRED,
+C39,104,company,nested-partner,default,observer:partner,Страница партнёра,client-appeals.js,partnerOpenBtn,BLK-OBSERVER-REFERRED,BLOCKED,BLK-OBSERVER-REFERRED,
+C39,113,agent,nested-partner,default,observer:partner,Страница партнёра,client-appeals.js,partnerOpenBtn,BLK-OBSERVER-REFERRED,BLOCKED,BLK-OBSERVER-REFERRED,
+C39,122,employee,nested-partner,default,observer:partner,Страница партнёра,client-appeals.js,partnerOpenBtn,BLK-OBSERVER-REFERRED,BLOCKED,BLK-OBSERVER-REFERRED,
+C46,106,agent,observer-partners,viewport-768,ca-observer-stats,KPI columns,client-appeals.css @media 760/360,observer.module.css @media 768/375/360,none,FAIL,,proto 4-col cand 2-col
+C46,106,agent,observer-partners,viewport-360,ca-observer-stats,KPI columns,max-width:360 → 2-col,cascade leaves 4-col,none,FAIL,,proto 2-col cand 4-col
+C50,106,agent,observer-partners,focus-visible,disclosure summary,focus ring,prototype focus,observer.module.css summary:focus-visible,none,NOT_STARTED,,CSS present keyboard pass incomplete
