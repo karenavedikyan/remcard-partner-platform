@@ -26,15 +26,21 @@ import { ReceivingAppealsList } from "./ReceivingAppealsList";
 import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
 import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
-import type { ReceivingBulkAction, ReceivingBulkContractState } from "./ReceivingBulkActions";
+import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
+import {
+  applyReceivingBulkEditsPerId,
+  isReceivingBulkPatchProxyReady,
+} from "@/lib/clients-parity/receiving-bulk-apply";
+import type { ReceivingBulkAction, ReceivingBulkContractState } from "@/lib/clients-parity/receiving-bulk-contract";
 import {
   normalizeReceivingBatchResponse,
+  normalizeReceivingPerIdBulkApply,
   receivingBulkErrorMessage,
   receivingBulkMergeSelection,
   receivingBulkPreserveSelection,
   receivingToolbarToBatchAction,
   type ReceivingCrmBatchAction,
-} from "./receiving-bulk-handoff";
+} from "@/lib/clients-parity/receiving-bulk-contract";
 import styles from "./receiving.module.css";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
@@ -66,6 +72,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     action: ReceivingCrmBatchAction;
     ids: string[];
   } | null>(null);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
 
   const proxyReady = isReceivingAppealsProxyReady();
   const batchProxyReady = isReceivingBatchProxyReady();
@@ -168,6 +175,33 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     }
   }, [bulkConfirm, reload]);
 
+  const executeBulkEdit = useCallback(
+    async (draft: Parameters<typeof applyReceivingBulkEditsPerId>[1]) => {
+      if (!data) return;
+      const ids = [...selected];
+      if (ids.length === 0) return;
+      setBatchPending(true);
+      setBatchPartial(null);
+      const raw = await applyReceivingBulkEditsPerId(ids, draft, {
+        appeals: data.appeals,
+        workingStages: data.settings?.workingStages ?? [],
+      });
+      setBatchPending(false);
+      const result = normalizeReceivingPerIdBulkApply(raw);
+      const partialMsg = receivingBulkErrorMessage(result);
+      if (partialMsg) setBatchPartial(partialMsg);
+      if (result.ok && result.updatedIds.length > 0) {
+        await reload();
+      }
+      setSelected((prev) => new Set(receivingBulkMergeSelection([...prev], result)));
+      if (result.ok && result.kind === "full") {
+        setBulkEditOpen(false);
+        setSelected(new Set());
+      }
+    },
+    [data, reload, selected],
+  );
+
   const bulkCallbacks = useMemo(
     () => ({
       selectedIds: selected,
@@ -202,9 +236,8 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
         if (mapped === "patch-multi") {
           const ids = [...selected];
           if (ids.length === 0) return;
-          setPersistNotice(
-            `Массовое редактирование (${ids.length}): PATCH profile/stage по K1 — без оплаты и отгрузки. Панель полей — P4/P5.`,
-          );
+          setBulkConfirm(null);
+          setBulkEditOpen(true);
           return;
         }
         if (!mapped) return;
@@ -381,6 +414,22 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
             Закрыть
           </button>
         </div>
+      ) : null}
+      {bulkEditOpen && selected.size > 0 ? (
+        <ReceivingBulkEditPanel
+          count={selected.size}
+          selectedRows={data.appeals.filter((a) => selected.has(a.id))}
+          workingStages={data.settings?.workingStages ?? []}
+          disabled={!isReceivingBulkPatchProxyReady()}
+          pending={batchPending}
+          blockedMessage={
+            !isReceivingBulkPatchProxyReady()
+              ? "PATCH /api/pro/client-appeals/:id ждёт P1 allowlist (K1 a71b8f37)."
+              : null
+          }
+          onCancel={() => setBulkEditOpen(false)}
+          onApply={(draft) => void executeBulkEdit(draft)}
+        />
       ) : null}
       {bulkConfirm ? (
         <section

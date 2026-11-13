@@ -12,7 +12,8 @@ import {
   type ReceivingListBucket,
   type ReceivingListFilters,
 } from "@/lib/clients-parity/receiving-appeals-api";
-import { ReceivingBulkActions, type ReceivingBulkAction, type ReceivingBulkContractState } from "./ReceivingBulkActions";
+import { ReceivingBulkToolbar } from "./ReceivingBulkToolbar";
+import type { ReceivingBulkAction, ReceivingBulkContractState } from "@/lib/clients-parity/receiving-bulk-contract";
 import styles from "./receiving.module.css";
 
 /** P5 toolbar wired by P6 workspace — K1 batch via `postReceivingAppealsBatch`. */
@@ -217,7 +218,7 @@ export function ReceivingAppealsList({
       )}
 
       {bulkOn ? (
-        <ReceivingBulkActions
+        <ReceivingBulkToolbar
           bucket={filters.bucket}
           selectedCount={selected.size}
           visibleCount={filtered.length}

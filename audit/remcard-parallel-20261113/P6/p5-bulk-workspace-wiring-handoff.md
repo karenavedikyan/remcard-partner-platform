@@ -1,7 +1,8 @@
-# P6 workspace ↔ P5 bulk ↔ K1 batch
+# P6 workspace ↔ P5 bulk ↔ K1 batch / per-id PATCH
 
-**P5 @ `ca2855fb`** — `ReceivingBulkActions.tsx`, `receiving-bulk-handoff.ts` (vendored, unedited).  
-**K1 ref `a71b8f37`** — `POST /api/pro/client-appeals/batch` → `{ updatedIds, skippedIds, failures }`.
+**P5 dependency (read-only):** `ca2855fb9b470d04b4d7358b74776cefe79a93f8` — not vendored on P6 tip.  
+**P6:** `receiving-bulk-contract.ts`, `ReceivingBulkToolbar.tsx`, `ReceivingBulkEditPanel.tsx`, `receiving-bulk-apply.ts`.  
+**K1 `a71b8f37`** — batch POST + per-id PATCH `/:id` and `/:id/stage` with `expectedRevision`.
 
 ## Connected (P6)
 
@@ -11,7 +12,7 @@
 | Select all / row checkboxes | Workspace `selected` set |
 | `archive` / `trash` / `unarchive` / `restore` | Confirm panel → `postReceivingAppealsBatch` → `normalizeReceivingBatchResponse` → `reload()` |
 | Partial batch | `receivingBulkMergeSelection` / `receivingBulkPreserveSelection` |
-| `edit-open` | Notice only — **PATCH multi panel not built** (P4/P5) |
+| `edit-open` | `ReceivingBulkEditPanel` → serial per-id PATCH (notes + non-financial stage), 409 → partial selection |
 | `clear` | Clears selection + confirm |
 
 ## Blocked until P1

@@ -1,13 +1,21 @@
 /**
- * П5 — receiving bulk UI ↔ K1 `POST /api/pro/client-appeals/batch` (tip ref 51353825).
- * Fetch lives in P6 `receiving-appeals-api.ts` only; observer personal stays K5 adapter.
+ * P6 workspace bulk contract — aligned with P5 `receiving-bulk-handoff.ts` @ `ca2855fb`
+ * (read via git show; Root merges P5 owner files — do not treat this as P5 source of truth).
  */
-import type { ReceivingAppealBucket } from "./ReceivingBulkActions";
-import type { ReceivingBulkAction } from "./ReceivingBulkActions";
+export type ReceivingAppealBucket = "active" | "archive" | "trash";
 
-export const K1_RECEIVING_BATCH_REF = "51353825" as const;
+export type ReceivingBulkAction =
+  | "edit-open"
+  | "archive-ask"
+  | "delete-ask"
+  | "unarchive-ask"
+  | "restore-ask"
+  | "clear";
 
-/** Navigator batch body action (K1). Not financial ops. */
+export type ReceivingBulkContractState = "blocked" | "ready" | "pending";
+
+export const P5_RECEIVING_BULK_DEPENDENCY_SHA = "ca2855fb9b470d04b4d7358b74776cefe79a93f8" as const;
+
 export type ReceivingCrmBatchAction = "archive" | "unarchive" | "trash" | "restore";
 
 export type ReceivingBatchFailure = {
@@ -17,7 +25,6 @@ export type ReceivingBatchFailure = {
   message?: string;
 };
 
-/** K1 batch HTTP JSON (authoritative fields per integration audit). */
 export type ReceivingBatchResponse = {
   action: ReceivingCrmBatchAction;
   updatedIds: string[];
@@ -25,12 +32,14 @@ export type ReceivingBatchResponse = {
   failures: ReceivingBatchFailure[];
 };
 
+export type ReceivingPerIdBulkApplyResult = {
+  updatedIds: string[];
+  skippedIds: string[];
+  failures: ReceivingBatchFailure[];
+};
+
 export type ReceivingBulkMutationResult =
-  | {
-      ok: true;
-      kind: "full";
-      updatedIds: string[];
-    }
+  | { ok: true; kind: "full"; updatedIds: string[] }
   | {
       ok: true;
       kind: "partial";
@@ -71,13 +80,20 @@ export function receivingToolbarToBatchAction(
 }
 
 export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): ReceivingBulkMutationResult {
+  return normalizeReceivingPerIdBulkApply({
+    updatedIds: raw.updatedIds,
+    skippedIds: raw.skippedIds,
+    failures: raw.failures,
+  });
+}
+
+export function normalizeReceivingPerIdBulkApply(
+  raw: ReceivingPerIdBulkApplyResult,
+): ReceivingBulkMutationResult {
   const updatedIds = Array.isArray(raw.updatedIds) ? raw.updatedIds : [];
   const skippedIds = Array.isArray(raw.skippedIds) ? raw.skippedIds : [];
   const failures = Array.isArray(raw.failures) ? raw.failures : [];
-  const failedIdSet = new Set([
-    ...skippedIds,
-    ...failures.map((f) => f.id).filter(Boolean),
-  ]);
+  const failedIdSet = new Set([...skippedIds, ...failures.map((f) => f.id).filter(Boolean)]);
 
   if (updatedIds.length === 0 && failedIdSet.size > 0) {
     return {
@@ -88,18 +104,10 @@ export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): Re
       preserveUi: true,
     };
   }
-
   if (failedIdSet.size === 0) {
     return { ok: true, kind: "full", updatedIds };
   }
-
-  return {
-    ok: true,
-    kind: "partial",
-    updatedIds,
-    skippedIds,
-    failures,
-  };
+  return { ok: true, kind: "partial", updatedIds, skippedIds, failures };
 }
 
 export function receivingBulkErrorMessage(result: ReceivingBulkMutationResult): string | null {
@@ -132,12 +140,6 @@ export function receivingBulkFailedIds(result: ReceivingBulkMutationResult): str
   return [];
 }
 
-export function receivingBulkUpdatedIds(result: ReceivingBulkMutationResult): string[] {
-  if (!result.ok) return [];
-  return result.updatedIds;
-}
-
-/** P6: remove successes only; keep skipped/failed selected; never clear on error. */
 export function receivingBulkMergeSelection(
   currentSelected: readonly string[],
   result: ReceivingBulkMutationResult,
