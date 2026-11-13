@@ -168,16 +168,35 @@ export function createCabinetStandaloneHost(config) {
   let contextSendGeneration = 0;
   let contextPulseTimer = 0;
   let embedSessionDeadlineTimer = 0;
+  let embedSessionDeadlineOwner = null;
 
-  function clearEmbedSessionDeadline() {
-    if (embedSessionDeadlineTimer) {
-      clearTimeout(embedSessionDeadlineTimer);
-      embedSessionDeadlineTimer = 0;
+  function embedSessionOwnerRef(loadGeneration, loadToken, loadPageN) {
+    return { loadGeneration, loadToken, loadPageN };
+  }
+
+  /** Pass owner only when clearing for a specific session; omit owner to force-clear (close/abort/arm). */
+  function clearEmbedSessionDeadline(sessionOwner = undefined) {
+    if (!embedSessionDeadlineTimer) return;
+    if (sessionOwner !== undefined) {
+      const o = embedSessionDeadlineOwner;
+      if (
+        !o ||
+        o.loadGeneration !== sessionOwner.loadGeneration ||
+        o.loadToken !== sessionOwner.loadToken ||
+        o.loadPageN !== sessionOwner.loadPageN
+      ) {
+        return;
+      }
     }
+    clearTimeout(embedSessionDeadlineTimer);
+    embedSessionDeadlineTimer = 0;
+    embedSessionDeadlineOwner = null;
   }
 
   function armEmbedSessionDeadline({ loadGeneration, loadToken, loadPageN, loadAbort, onTimeout }) {
     clearEmbedSessionDeadline();
+    embedSessionDeadlineOwner = embedSessionOwnerRef(loadGeneration, loadToken, loadPageN);
+    const armedOwner = embedSessionDeadlineOwner;
     embedSessionDeadlineTimer = setTimeout(() => {
       if (
         hostEl.hidden ||
@@ -191,6 +210,7 @@ export function createCabinetStandaloneHost(config) {
         loadAbort.abort();
       } catch (_) {}
       onTimeout();
+      clearEmbedSessionDeadline(armedOwner);
     }, EMBED_SRCDOC_SESSION_MS);
   }
 
@@ -554,10 +574,12 @@ export function createCabinetStandaloneHost(config) {
     }
     const guestHash = embedCtx?.guestHash;
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
+    const sessionOwner = () => embedSessionOwnerRef(loadGeneration, loadToken, loadPageN);
+
     const commitStandaloneReady = () => {
       if (!assertSrcdocSessionActive()) return;
       stopContextPulse();
-      clearEmbedSessionDeadline();
+      clearEmbedSessionDeadline(sessionOwner());
       syncEmbeddedPageBadge(loadPageN);
       frame.dataset.embedContentReady = "1";
       setEmbedLoadState("ready");
@@ -566,7 +588,7 @@ export function createCabinetStandaloneHost(config) {
     const markStandaloneStalled = (err) => {
       if (!assertSrcdocSessionActive()) return;
       stopContextPulse();
-      clearEmbedSessionDeadline();
+      clearEmbedSessionDeadline(sessionOwner());
       srcdocFetchAbort?.abort();
       srcdocReadyAbort?.abort();
       const timedOut = /timeout/i.test(String(err?.message || ""));
@@ -634,7 +656,6 @@ export function createCabinetStandaloneHost(config) {
         if (!assertSrcdocSessionActive()) return;
         commitStandaloneReady();
       } catch (err) {
-        clearEmbedSessionDeadline();
         if (err?.name === "AbortError" || err instanceof StandaloneSrcdocStaleError) return;
         if (!assertSrcdocSessionActive()) return;
         markStandaloneStalled(err);
@@ -705,7 +726,9 @@ export function createCabinetStandaloneHost(config) {
         if (!embedTokenMatches(data.token)) return;
       } else if (String(data.token ?? "") !== "" && !embedTokenMatches(data.token)) return;
       stopContextPulse();
-      clearEmbedSessionDeadline();
+      clearEmbedSessionDeadline(
+        embedSessionOwnerRef(srcdocLoadGeneration, openEmbedToken, openPageN),
+      );
       srcdocFetchAbort?.abort();
       srcdocReadyAbort?.abort();
       syncEmbeddedPageBadge(openPageN);

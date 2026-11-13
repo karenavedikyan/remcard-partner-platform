@@ -145,19 +145,38 @@ async function clientsDirectionCycle(page, role, { r2 = false, label = role, ski
   assert.equal(await incomingTab.getAttribute("aria-selected"), "true", `${label}: receiving restored after cycle`);
 }
 
-async function enterEmployeeClientsCabinet(page) {
-  await page.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
+async function openCabinetPreview(page, { role = null } = {}) {
+  await page.waitForSelector('[data-testid="view-cabinet"]', { state: "attached", timeout: 20000 });
+  if (role != null) {
+    await page.waitForSelector('[data-testid="scenario-role"]', { state: "attached", timeout: 15000 });
+    await page.evaluate((scenarioRole) => {
+      const roleEl = document.querySelector('[data-testid="scenario-role"]');
+      if (!roleEl) return;
+      roleEl.value = scenarioRole;
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }, role);
+    await page.waitForFunction(
+      (scenarioRole) => document.querySelector('[data-testid="scenario-role"]')?.value === scenarioRole,
+      role,
+      { timeout: 15000 },
+    );
+  }
   await page.evaluate(() => {
     document.querySelector('[data-testid="view-cabinet"]')?.click();
   });
-  await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
-  await page.evaluate(() => {
-    const roleEl = document.querySelector('[data-testid="scenario-role"]');
-    if (!roleEl) return;
-    roleEl.value = "employee";
-    roleEl.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-  await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="view-cabinet"]')?.getAttribute("aria-pressed") === "true" ||
+      !!document.querySelector(".shell aside.sidebar"),
+    null,
+    { timeout: 20000 },
+  );
+  await page.waitForSelector(".shell aside.sidebar", { timeout: 25000 });
+}
+
+async function enterEmployeeClientsCabinet(page) {
+  await page.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
+  await openCabinetPreview(page, { role: "employee" });
   await page.evaluate(() => {
     const review = document.querySelector("#review");
     if (review && !review.open) review.open = true;
@@ -335,11 +354,7 @@ try {
   const empPage = await browser.newPage();
   await empPage.setViewportSize({ width: 1280, height: 800 });
   await empPage.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
-  await empPage.evaluate(() => {
-    document.querySelector('[data-testid="scenario-role"]')?.dispatchEvent(new Event("change", { bubbles: true }));
-    document.querySelector('[data-testid="view-cabinet"]')?.click();
-  });
-  await empPage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await openCabinetPreview(empPage, { role: "employee" });
   await empPage.evaluate(() => {
     const review = document.querySelector("#review");
     if (review && !review.open) review.open = true;
@@ -530,11 +545,7 @@ try {
   const scanEmp = await browser.newPage();
   await scanEmp.setViewportSize({ width: 1280, height: 900 });
   await scanEmp.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
-  await scanEmp.evaluate(() => {
-    document.querySelector('[data-testid="scenario-role"]')?.dispatchEvent(new Event("change", { bubbles: true }));
-    document.querySelector('[data-testid="view-cabinet"]')?.click();
-  });
-  await scanEmp.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await openCabinetPreview(scanEmp, { role: "employee" });
   await scanEmp.evaluate(() => {
     const review = document.querySelector("#review");
     if (review && !review.open) review.open = true;
@@ -1811,6 +1822,78 @@ try {
   );
   await retryFailNest.unroute(/partner-cooperation-detail\.html/i);
   await retryFailNest.close();
+
+  const replacePendingSession = await browser.newPage();
+  await replacePendingSession.setViewportSize({ width: 1280, height: 900 });
+  let releaseBlock143 = null;
+  const holdBlock143 = new Promise((resolve) => {
+    releaseBlock143 = resolve;
+  });
+  let releaseBlock147 = null;
+  const holdBlock147 = new Promise((resolve) => {
+    releaseBlock147 = resolve;
+  });
+  await replacePendingSession.route(/partner-cooperation-detail\.html/i, async (route) => {
+    await holdBlock143;
+    await route.continue();
+  });
+  await replacePendingSession.route(/partner-wallet-history\.html/i, async (route) => {
+    await holdBlock147;
+    await route.continue();
+  });
+  await enterNestStoreCabinet(replacePendingSession);
+  await replacePendingSession.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await replacePendingSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      return host && !host.hidden;
+    },
+    null,
+    { timeout: 15000 },
+  );
+  const replace147Start = Date.now();
+  await replacePendingSession.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await replacePendingSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const title = doc?.querySelector("[data-standalone-title]")?.textContent || "";
+      return (
+        host &&
+        !host.hidden &&
+        host.dataset?.embedLoadState === "stalled" &&
+        /История покупок/i.test(title)
+      );
+    },
+    null,
+    { timeout: 35000 },
+  );
+  const replace147Ms = Date.now() - replace147Start;
+  assert.ok(
+    replace147Ms >= 20000 && replace147Ms < 32000,
+    `replaced 143 session must still hit 147 deadline (${replace147Ms}ms)`,
+  );
+  const replaceLoadState = await replacePendingSession.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    return doc?.querySelector("[data-testid='cabinet-standalone-host']")?.dataset?.embedLoadState || "";
+  });
+  assert.equal(replaceLoadState, "stalled", "147 must stall, not hang on loading after replacing 143");
+  releaseBlock143?.();
+  releaseBlock147?.();
+  await replacePendingSession.unroute(/partner-cooperation-detail\.html/i);
+  await replacePendingSession.unroute(/partner-wallet-history\.html/i);
+  await replacePendingSession.close();
 
   const hangHtmlSession = await browser.newPage();
   await hangHtmlSession.setViewportSize({ width: 1280, height: 900 });
