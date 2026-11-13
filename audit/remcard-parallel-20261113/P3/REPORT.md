@@ -6,8 +6,8 @@
 | --- | --- |
 | Agent | П3 (bc-409f1419) |
 | Branch | `cursor/remcard-p3-acceptance-20261113` |
-| Tip (this delta) | `142c418b78175ff2ed7417918dd8f90361d3d5ba` |
-| Prior tip | `85e0b3d78175ff2ed7417918dd8f90361d3d5ba` |
+| Tip (this delta) | `4eeb6c642bd519c4ae6d80fa81372e621ee08935` |
+| Publication residual | `audit/remcard-parallel-20261113/P3/PUBLISH-RESIDUAL-20261113-V2.md` |
 | Base (author candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
 | Prototype ref | `3dc31836cd18d9209c20097f18b906dd276f7af6` (`design/general-prototype/partner/client-appeals.js`) |
 | Production tip (read-only) | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
