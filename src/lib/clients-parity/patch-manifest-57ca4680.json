@@ -64,6 +64,13 @@
     "handoffDoc": "audit/remcard-parallel-20261113/P1/EARLY-CONTRACT-PROXY-HANDOFF.md",
     "p2MatrixSha": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
   },
+  "k8NavigatorCandidatesNotAccepted": {
+    "handoffRef": "16253b84",
+    "schemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+    "coordinationDoc": "audit/remcard-parallel-20261113/P1/K8-K1-PROXY-COORDINATION.md",
+    "clientProfileProductionSha": "89fb8e073c39c8dbd329996940b85c6a86751868",
+    "rootGapsDoNotPropagate": ["G1-eligibility", "G2-workingStages", "G3-active-uniqueness", "G4-scan-hook", "G5-observer-dto"]
+  },
   "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
   "parallelAssemblyTips20261113V4": {
     "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
