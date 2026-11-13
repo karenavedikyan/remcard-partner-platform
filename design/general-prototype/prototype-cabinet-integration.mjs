@@ -50,6 +50,18 @@ assert.match(repairR2, /employeeRepairScopeAllowsDemo/, "scoped employee repair 
 assert.match(clientAppeals, /ca-observer-partners-list/, "observer partners list test id");
 assert.doesNotMatch(clientAppeals, /ca-clients-preview-toggle/, "no legacy clients preview opt-in block");
 assert.match(clientAppeals, /clientsAtPartnersTabEnabled/, "partner-grouped at-partners tab without preview toggle");
+assert.match(clientAppeals, /atPartnersDirectionSwitchAllowed/, "direction tab uses eligibility not active mode");
+assert.match(clientAppeals, /incomingDirectionSwitchAllowed/, "incoming tab uses role eligibility");
+assert.doesNotMatch(
+  clientAppeals,
+  /if \(action === "direction:at-partners"\)[\s\S]{0,180}observerActionsAllowed/,
+  "at-partners switch must not require observerActionsAllowed",
+);
+assert.doesNotMatch(
+  clientAppeals,
+  /function ws\(key\)[\s\S]{0,900}if \("clientsPreviewMode" in s\) delete s\.clientsPreviewMode/,
+  "ws() must not strip clientsPreviewMode before normalizeClientsNavState",
+);
 assert.match(clientAppeals, /showsAtPartnersObserverList/, "at-partners uses observer list not flat outgoing table");
 assert.doesNotMatch(clientAppeals, /Сравните привычный список/, "removed comparison helper copy");
 assert.match(clientAppeals, /if \(agentClientsObserverOnly\(config\)\) return;/, "blocks agent legacy client nav handlers");

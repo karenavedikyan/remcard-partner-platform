@@ -1831,7 +1831,6 @@ function ws(key) {
   if (s.clientsDirection !== "at-partners" && s.clientsDirection !== "incoming") {
     s.clientsDirection = "incoming";
   }
-  if ("clientsPreviewMode" in s) delete s.clientsPreviewMode;
   if (s.observerQ == null) s.observerQ = "";
   if (!s.observerPeriod) s.observerPeriod = "all";
   if (s.r2ObjectId === undefined) s.r2ObjectId = null;
@@ -2192,6 +2191,18 @@ function syncClientsPreviewAccess(config) {
 function observerActionsAllowed(config) {
   if (agentClientsObserverOnly(config)) return true;
   return atPartnersDirectionActive(config);
+}
+
+/** Tab switch eligibility (current direction may still be the other mode). */
+function incomingDirectionSwitchAllowed(config) {
+  if (agentClientsObserverOnly(config)) return false;
+  if (config.readOnly) return false;
+  return roleCaps(config.role).incoming;
+}
+
+function atPartnersDirectionSwitchAllowed(config) {
+  if (agentClientsObserverOnly(config)) return false;
+  return clientsAtPartnersTabEnabled(config.role, config.readOnly);
 }
 
 function renderObserverFiltersEmpty() {
@@ -3482,8 +3493,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   const s = ws(config.key);
   hooks.clearNotice?.();
   if (action === "direction:incoming") {
-    if (agentClientsObserverOnly(config)) return;
-    if (!observerActionsAllowed(config)) return;
+    if (!incomingDirectionSwitchAllowed(config)) return;
     s.clientsDirection = "incoming";
     clearObserverNav(s);
     clearBulkSelection(s);
@@ -3494,8 +3504,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
     return;
   }
   if (action === "direction:at-partners") {
-    if (agentClientsObserverOnly(config)) return;
-    if (!observerActionsAllowed(config)) return;
+    if (!atPartnersDirectionSwitchAllowed(config)) return;
     s.clientsDirection = "at-partners";
     clearObserverNav(s);
     clearBulkSelection(s);

@@ -52,11 +52,126 @@ async function enterCabinet(page, role = "store") {
     timeout: 20000,
   });
   await page.evaluate(() => {
-    const roleEl = document.querySelector('[data-testid="scenario-role"]');
-    if (roleEl) roleEl.dispatchEvent(new Event("change", { bubbles: true }));
     document.querySelector('[data-testid="view-cabinet"]')?.click();
   });
   await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await page.evaluate((scenarioRole) => {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    if (!roleEl) return;
+    roleEl.value = scenarioRole;
+    roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+  }, role);
+  await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await page.waitForFunction(
+    (scenarioRole) => document.querySelector('[data-testid="scenario-role"]')?.value === scenarioRole,
+    role,
+    { timeout: 10000 },
+  );
+}
+
+async function enablePrototypeR2(page) {
+  await page.evaluate(() => {
+    window.rcDemoMemory?.setItem?.("rc_release", "2");
+    const el = document.querySelector('[data-testid="prototype-release"]');
+    if (el) {
+      el.value = "2";
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  await page.waitForTimeout(300);
+}
+
+async function clientsDirectionCycle(page, role, { r2 = false, label = role, skipEnter = false } = {}) {
+  if (!skipEnter) {
+    if (role === "specialist") {
+      await page.goto(`${base}/partner/index.html?role=specialist&open=clients`, { waitUntil: "load" });
+      await page.waitForSelector('[data-testid="view-cabinet"][aria-pressed="true"]', { timeout: 20000 });
+    } else {
+      await enterCabinet(page, role);
+      await page.locator('[data-testid="nav-clients"]:visible').first().click();
+    }
+  } else {
+    await page.locator('[data-testid="nav-clients"]:visible').first().click();
+  }
+  await page.waitForSelector("[data-ca-root]", { timeout: 10000 });
+  if (r2) await enablePrototypeR2(page);
+
+  if (role === "agent") {
+    await page.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 10000 });
+    assert.equal(await page.$('[data-testid="ca-clients-directions"]'), null, `${label}: no direction tabs`);
+    assert.equal(await page.$(".ca-row"), null, `${label}: no flat receiving rows`);
+    await page.locator('[data-testid="ca-observer-partner-card"]').first().click();
+    await page.waitForSelector('[data-testid="ca-observer-client-row"]', { timeout: 8000 });
+    await page.locator('[data-testid="ca-observer-client-row"]').first().click();
+    await page.waitForSelector('[data-testid="ca-observer-client-page"]', { timeout: 8000 });
+    await page.locator('[data-testid="ca-clients-back"]').click();
+    await page.waitForSelector('[data-testid="ca-observer-partner-page"]', { timeout: 8000 });
+    await page.locator('[data-testid="ca-clients-back"]').click();
+    await page.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 8000 });
+    return;
+  }
+
+  await page.waitForSelector('[data-ca-action="direction:at-partners"]', { timeout: 10000 });
+  const incomingTab = page.locator('[data-ca-action="direction:incoming"]');
+  const atPartnersTab = page.locator('[data-ca-action="direction:at-partners"]');
+  assert.ok(
+    (await page.locator('[data-testid="ca-clients-directions"]').count()) > 0,
+    `${label}: clients direction tablist present`,
+  );
+  assert.equal(await incomingTab.getAttribute("aria-selected"), "true", `${label}: default incoming selected`);
+  assert.ok(
+    (await page.locator('[data-ca-action="nav:scan"]').count()) > 0,
+    `${label}: receiving scan/manual surface on incoming`,
+  );
+  assert.equal(await page.$('[data-testid="ca-observer-partners-list"]'), null, `${label}: observer list hidden on incoming`);
+
+  await atPartnersTab.click();
+  await page.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 8000 });
+  assert.equal(await atPartnersTab.getAttribute("aria-selected"), "true", `${label}: at-partners tab selected`);
+  assert.equal(await incomingTab.getAttribute("aria-selected"), "false", `${label}: incoming deselected`);
+  assert.equal(await page.$('[data-ca-action="nav:scan"]'), null, `${label}: scan hidden on at-partners`);
+
+  await page.locator('[data-testid="ca-observer-partner-card"]').first().click();
+  await page.waitForSelector('[data-testid="ca-observer-partner-page"]', { timeout: 8000 });
+  await page.locator('[data-testid="ca-observer-client-row"]').first().click();
+  await page.waitForSelector('[data-testid="ca-observer-client-page"]', { timeout: 8000 });
+  await page.locator('[data-testid="ca-clients-back"]').click();
+  await page.waitForSelector('[data-testid="ca-observer-partner-page"]', { timeout: 8000 });
+  await page.locator('[data-testid="ca-clients-back"]').click();
+  await page.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 8000 });
+
+  await incomingTab.click();
+  await page.waitForSelector('[data-ca-action="nav:scan"]', { timeout: 8000 });
+  assert.equal(await incomingTab.getAttribute("aria-selected"), "true", `${label}: receiving restored after cycle`);
+}
+
+async function enterEmployeeClientsCabinet(page) {
+  await page.goto(`${base}/partner/index.html?role=employee`, { waitUntil: "load" });
+  await page.evaluate(() => {
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await page.evaluate(() => {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    if (!roleEl) return;
+    roleEl.value = "employee";
+    roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await page.evaluate(() => {
+    const review = document.querySelector("#review");
+    if (review && !review.open) review.open = true;
+  });
+  await page.waitForSelector('[data-testid="permission-clients"]', { timeout: 10000 });
+  if (await page.locator('[data-control="invite"]').count()) {
+    await page.locator('[data-control="invite"]').selectOption("valid");
+  }
+  await page.locator('[data-testid="permission-clients"]').setChecked(true);
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="nav-clients"]')?.offsetParent !== null,
+    null,
+    { timeout: 10000 },
+  );
 }
 
 try {
@@ -67,7 +182,7 @@ try {
     const page = await browser.newPage();
     await page.setViewportSize(viewport);
     await enterCabinet(page, "store");
-    await page.click('[data-action="nav:partners"], [data-action="nav:links"]');
+    await page.locator('[data-testid="nav-partners"]:visible, [data-testid="nav-links"]:visible').first().click();
     await page.waitForSelector("[data-coll-open]", { timeout: 10000 });
     const partnerName = await page.evaluate(() => {
       const btn = document.querySelector("[data-coll-open]");
@@ -685,24 +800,33 @@ try {
     await dockPage.close();
   }
 
+  for (const spec of [
+    { role: "store", r2: false, label: "store" },
+    { role: "store", r2: true, label: "store R2" },
+    { role: "company", r2: false, label: "company" },
+    { role: "specialist", r2: false, label: "specialist" },
+    { role: "specialist", r2: true, label: "specialist R2" },
+  ]) {
+    const cyclePage = await browser.newPage();
+    await cyclePage.setViewportSize({ width: 1280, height: 900 });
+    await clientsDirectionCycle(cyclePage, spec.role, { r2: spec.r2, label: spec.label });
+    await cyclePage.close();
+  }
+
   const agentPage = await browser.newPage();
   await agentPage.setViewportSize({ width: 1280, height: 900 });
-  await enterCabinet(agentPage, "agent");
-  await agentPage.locator('[data-action="nav:clients"]').click();
-  await agentPage.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 10000 });
+  await clientsDirectionCycle(agentPage, "agent", { label: "agent observer-only" });
   const agentLegacy = await agentPage.$('[data-testid="ca-clients-preview-toggle"]');
   assert.equal(agentLegacy, null, "agent has no legacy preview opt-in");
-  const agentRows = await agentPage.$(".ca-row");
-  assert.equal(agentRows, null, "agent never shows flat appeals table");
-  await agentPage.locator('[data-testid="ca-observer-partner-card"]').first().click();
-  await agentPage.waitForSelector('[data-testid="ca-observer-client-row"]', { timeout: 8000 });
-  await agentPage.locator('[data-testid="ca-observer-client-row"]').first().click();
-  await agentPage.waitForSelector('[data-testid="ca-observer-client-page"]', { timeout: 8000 });
   const agentR1RepairCta = await agentPage.$('[data-ca-action="standalone:142"]');
   assert.equal(agentR1RepairCta, null, "R1 agent observer client hides 142 CTA entirely");
-  await agentPage.locator('[data-testid="ca-clients-back"]').click();
-  await agentPage.waitForSelector('[data-testid="ca-observer-partner-page"]', { timeout: 8000 });
   await agentPage.close();
+
+  const empClientsPage = await browser.newPage();
+  await empClientsPage.setViewportSize({ width: 1280, height: 900 });
+  await enterEmployeeClientsCabinet(empClientsPage);
+  await clientsDirectionCycle(empClientsPage, "employee", { label: "employee clients scope", skipEnter: true });
+  await empClientsPage.close();
 
   const r2Page = await browser.newPage();
   await r2Page.setViewportSize({ width: 1280, height: 900 });
