@@ -691,7 +691,7 @@ try {
   await agentPage.locator('[data-action="nav:clients"]').click();
   await agentPage.waitForSelector('[data-testid="ca-observer-partners-list"]', { timeout: 10000 });
   const agentLegacy = await agentPage.$('[data-testid="ca-clients-preview-toggle"]');
-  assert.equal(agentLegacy, null, "agent hides optional observer toggle");
+  assert.equal(agentLegacy, null, "agent has no legacy preview opt-in");
   const agentRows = await agentPage.$(".ca-row");
   assert.equal(agentRows, null, "agent never shows flat appeals table");
   await agentPage.locator('[data-testid="ca-observer-partner-card"]').first().click();

@@ -1815,7 +1815,6 @@ function ws(key) {
       bulkSelectedIds: [],
       bulkPanel: null,
       bulkConfirm: null,
-      clientsPreviewMode: false,
       clientsDirection: "incoming",
       observerPartnerId: null,
       observerClientId: null,
@@ -1828,8 +1827,11 @@ function ws(key) {
   const s = workspaces.get(key);
   if (!s.listBucket) s.listBucket = "active";
   if (!s.bulkSelectedIds) s.bulkSelectedIds = [];
-  if (s.clientsPreviewMode == null) s.clientsPreviewMode = false;
   if (!s.clientsDirection) s.clientsDirection = "incoming";
+  if (s.clientsDirection !== "at-partners" && s.clientsDirection !== "incoming") {
+    s.clientsDirection = "incoming";
+  }
+  if ("clientsPreviewMode" in s) delete s.clientsPreviewMode;
   if (s.observerQ == null) s.observerQ = "";
   if (!s.observerPeriod) s.observerPeriod = "all";
   if (s.r2ObjectId === undefined) s.r2ObjectId = null;
@@ -1953,9 +1955,9 @@ function agentClientsObserverOnly(config) {
 
 function primeAgentObserverClients(config) {
   const s = ws(config.key);
-  s.clientsPreviewMode = true;
   s.clientsDirection = "at-partners";
-  s.tab = "outgoing";
+  s.tab = "incoming";
+  if ("clientsPreviewMode" in s) delete s.clientsPreviewMode;
 }
 
 function coerceAgentClientsView(config) {
@@ -2007,7 +2009,7 @@ export function clientAppealsPageTitle(config) {
     const appeal = appeals.find((a) => a.id === s.observerClientId);
     if (appeal) return appeal.clientName;
   }
-  if (s.view === "list" && previewShowsObserverList(config)) return "Мои клиенты у партнёров";
+  if (s.view === "list" && showsAtPartnersObserverList(config)) return "Мои клиенты у партнёров";
   if (s.view === "list" && clientsListIsSenderView(config)) return "Мои клиенты";
   return PAGE_TITLES[s.view] || "Клиенты";
 }
@@ -2018,12 +2020,9 @@ export function clientAppealsPageMuted(config) {
   if (
     s.view === "observer-partner" ||
     s.view === "observer-client" ||
-    (s.view === "list" && previewShowsObserverList(config))
+    (s.view === "list" && showsAtPartnersObserverList(config))
   ) {
     return "Пример ваших направлений · демоданные";
-  }
-  if (s.view === "list" && s.clientsPreviewMode) {
-    return "Сравните привычный список с видом направлений у партнёров.";
   }
   if (s.view === "list") {
     return clientsListIsSenderView(config) ? SENDER_LIST_MUTED : RECEIVER_LIST_MUTED;
@@ -2077,8 +2076,8 @@ function ensureSeed(config) {
     workspaces.forEach((w) => {
       w.seeded = false;
       w.datasetEmpty = null;
-      w.clientsPreviewMode = false;
       w.clientsDirection = "incoming";
+      if ("clientsPreviewMode" in w) delete w.clientsPreviewMode;
       w.observerPartnerId = null;
       w.observerClientId = null;
       w.observerQ = "";
@@ -2108,6 +2107,56 @@ function clientsPreviewEligible(role, readOnly) {
   return ["store", "company", "specialist", "agent", "employee"].includes(role);
 }
 
+function clientsAtPartnersTabEnabled(role, readOnly) {
+  if (readOnly) return false;
+  if (role === "agent") return false;
+  return clientsPreviewEligible(role, readOnly);
+}
+
+function atPartnersDirectionActive(config) {
+  const s = ws(config.key);
+  if (agentClientsObserverOnly(config)) return true;
+  return clientsAtPartnersTabEnabled(config.role, config.readOnly) && s.clientsDirection === "at-partners";
+}
+
+function showsAtPartnersObserverList(config) {
+  const s = ws(config.key);
+  if (agentClientsObserverOnly(config)) {
+    return s.view === "list" || s.view === "observer-partner" || s.view === "observer-client";
+  }
+  if (!clientsAtPartnersTabEnabled(config.role, config.readOnly)) return false;
+  if (s.view === "observer-partner" || s.view === "observer-client") {
+    return s.clientsDirection === "at-partners";
+  }
+  if (s.view === "list") return s.clientsDirection === "at-partners";
+  return false;
+}
+
+function normalizeClientsNavState(config) {
+  const s = ws(config.key);
+  if (agentClientsObserverOnly(config)) {
+    coerceAgentClientsView(config);
+    return;
+  }
+  if ("clientsPreviewMode" in s) {
+    delete s.clientsPreviewMode;
+    if (s.tab === "outgoing") {
+      s.clientsDirection = "at-partners";
+      s.tab = "incoming";
+    }
+  }
+  if (!clientsAtPartnersTabEnabled(config.role, config.readOnly)) {
+    if (s.clientsDirection === "at-partners") {
+      s.clientsDirection = "incoming";
+      clearClientsPreviewNav(s);
+    }
+    return;
+  }
+  if (s.clientsDirection !== "at-partners" && s.clientsDirection !== "incoming") {
+    s.clientsDirection = "incoming";
+  }
+}
+
 function clearObserverNav(s) {
   s.observerPartnerId = null;
   s.observerClientId = null;
@@ -2124,20 +2173,16 @@ function resetObserverFilters(s) {
 }
 
 function syncClientsPreviewAccess(config) {
-  if (agentClientsObserverOnly(config)) {
-    coerceAgentClientsView(config);
-    return;
-  }
+  normalizeClientsNavState(config);
   if (clientsPreviewEligible(config.role, config.readOnly)) return;
   const s = ws(config.key);
-  const hadPreview =
-    s.clientsPreviewMode ||
+  const hadObserver =
+    s.clientsDirection === "at-partners" ||
     s.observerPartnerId ||
     s.observerClientId ||
     s.view === "observer-partner" ||
     s.view === "observer-client";
-  if (!hadPreview) return;
-  s.clientsPreviewMode = false;
+  if (!hadObserver) return;
   s.clientsDirection = "incoming";
   clearClientsPreviewNav(s);
   clearBulkSelection(s);
@@ -2146,8 +2191,7 @@ function syncClientsPreviewAccess(config) {
 
 function observerActionsAllowed(config) {
   if (agentClientsObserverOnly(config)) return true;
-  const s = ws(config.key);
-  return clientsPreviewEligible(config.role, config.readOnly) && Boolean(s.clientsPreviewMode);
+  return atPartnersDirectionActive(config);
 }
 
 function renderObserverFiltersEmpty() {
@@ -2280,29 +2324,11 @@ function purchaseSummaryForReferrer(appeal) {
   return { amountLabel: label, note: "Сумма покупки у партнёра (не вознаграждение)" };
 }
 
-function renderClientsPreviewToggle(config) {
-  if (agentClientsObserverOnly(config)) return "";
-  if (!clientsPreviewEligible(config.role, config.readOnly)) return "";
-  const s = ws(config.key);
-  const on = Boolean(s.clientsPreviewMode);
-  return `<section class="panel ca-preview-opt-in" data-testid="ca-clients-preview-toggle">
-    <div class="ca-preview-opt-in__row">
-      <label class="ca-preview-switch">
-        <input type="checkbox" data-ca-input="preview-mode" ${on ? "checked" : ""} aria-describedby="ca-preview-opt-in-desc">
-        <span class="ca-preview-switch__ui" aria-hidden="true"></span>
-        <span class="ca-preview-switch__label">Новый вид: клиенты у партнёров</span>
-      </label>
-      <span class="pill ca-preview-badge">На просмотр</span>
-    </div>
-    <p class="small muted" id="ca-preview-opt-in-desc">${on ? "Пример ваших направлений · демоданные, без прав партнёра. «Клиенты у меня» — прежний список." : "После включения откроется список партнёров. Выключите, чтобы вернуться к обычному разделу."}</p>
-  </section>`;
-}
-
 function renderClientsDirectionTabs(config) {
   const s = ws(config.key);
-  if (!s.clientsPreviewMode) return "";
+  if (agentClientsObserverOnly(config)) return "";
+  if (!clientsAtPartnersTabEnabled(config.role, config.readOnly)) return "";
   const caps = roleCaps(config.role);
-  if (config.role === "agent") return "";
   if (!caps.incoming) return "";
   const dir = s.clientsDirection === "at-partners" ? "at-partners" : "incoming";
   return `<div class="ca-tabs wallet-direction__tabs ca-preview-directions" role="tablist" data-testid="ca-clients-directions" aria-label="Направление клиентов">
@@ -2311,28 +2337,14 @@ function renderClientsDirectionTabs(config) {
   </div>`;
 }
 
-function previewOpensObserverDirection(role) {
-  return ["store", "company", "specialist", "agent", "employee"].includes(role);
-}
-
-function previewShowsObserverList(config) {
-  if (agentClientsObserverOnly(config)) return ws(config.key).view === "list";
-  if (!clientsPreviewEligible(config.role, config.readOnly)) return false;
-  const s = ws(config.key);
-  if (!s.clientsPreviewMode) return false;
-  return s.clientsDirection === "at-partners";
-}
-
 function observerSectionClass(config, s) {
   const agentObserver =
     agentClientsObserverOnly(config) &&
     ["list", "observer-partner", "observer-client", "repair-objects"].includes(s.view);
-  const eligible = clientsPreviewEligible(config.role, config.readOnly);
   const observer =
     agentObserver ||
-    (eligible &&
-      s.clientsPreviewMode &&
-      (previewShowsObserverList(config) || s.view === "observer-partner" || s.view === "observer-client"));
+    (clientsAtPartnersTabEnabled(config.role, config.readOnly) &&
+      (showsAtPartnersObserverList(config) || s.view === "observer-partner" || s.view === "observer-client"));
   return observer ? "stack ca-section ca-section--observer" : "stack ca-section";
 }
 
@@ -2365,9 +2377,7 @@ function renderObserverFilterChips(s) {
 
 function renderObserverPartnersList(config) {
   const s = ws(config.key);
-  const useObserver =
-    agentClientsObserverOnly(config) ||
-    (clientsPreviewEligible(config.role, config.readOnly) && s.clientsPreviewMode);
+  const useObserver = agentClientsObserverOnly(config) || atPartnersDirectionActive(config);
   if (!useObserver) return renderListPage(config);
   const base = ownReferredAppeals();
   const filtered = filterObserverAppeals(s, base);
@@ -2643,7 +2653,15 @@ function renderListPage(config) {
   const icon = config.icon;
   const incomingList = filterAppeals("incoming", config.key);
   const outgoingList = filterAppeals("outgoing", config.key, { lifecycle: "none" });
-  const tab = caps.incoming && caps.outgoing ? s.tab : caps.incoming ? "incoming" : "outgoing";
+  const dualDirection = clientsAtPartnersTabEnabled(config.role, config.readOnly);
+  if (dualDirection && s.clientsDirection === "incoming") s.tab = "incoming";
+  const tab = dualDirection
+    ? "incoming"
+    : caps.incoming && caps.outgoing
+      ? s.tab
+      : caps.incoming
+        ? "incoming"
+        : "outgoing";
   const list = tab === "incoming" ? incomingList : outgoingList;
   const bulkOn = !readOnly && tab === "incoming";
   const selected = new Set((s.bulkSelectedIds || []).filter((id) => list.some((a) => a.id === id)));
@@ -2683,7 +2701,8 @@ function renderListPage(config) {
       return `<div class="ca-row-lane">${check}<button type="button" class="ca-row" data-ca-action="open:${a.id}" data-ca-tab="${tab}"><span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span><span class="ca-row-request muted small">${esc(a.interest || a.id)}</span><span class="ca-row-meta muted small">${esc(rowMetaSource(a, tab))}</span><span class="ca-row-status">${pillHtml(a)}</span><span class="ca-row-amount">${amt}</span><span class="ca-row-age muted small">${esc(formatAgeSince(a.createdAt))}</span><span class="ca-chev" aria-hidden="true">›</span></button></div>`;
     })
     .join("");
-  const showLegacyOutgoingTab = caps.incoming && caps.outgoing && !s.clientsPreviewMode;
+  const showLegacyOutgoingTab =
+    caps.incoming && caps.outgoing && !clientsAtPartnersTabEnabled(config.role, config.readOnly);
   const tabs = showLegacyOutgoingTab
     ? `<div class="ca-tabs wallet-direction__tabs" role="tablist"><button type="button" class="wallet-direction__tab${tab === "incoming" ? " is-active" : ""}" role="tab" aria-selected="${tab === "incoming"}" data-ca-action="tab:incoming">Пришли ко мне · ${incomingList.length}</button><button type="button" class="wallet-direction__tab${tab === "outgoing" ? " is-active" : ""}" role="tab" aria-selected="${tab === "outgoing"}" data-ca-action="tab:outgoing">Я направил · ${outgoingList.length}</button></div>`
     : "";
@@ -2745,22 +2764,21 @@ export function renderClientAppeals(config) {
     RECEIVING.id = viewer.id;
     RECEIVING.name = viewer.name;
   }
-  const previewChrome = renderClientsPreviewToggle(config);
   const rootClass = observerSectionClass(config, s);
   if (s.view === "list") {
     const r2Entry = renderRepairObjectsListEntry(config);
-    const body = previewShowsObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
-    return `<div class="${rootClass}" data-ca-root>${previewChrome}${r2Entry}${body}</div>`;
+    const body = showsAtPartnersObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
+    return `<div class="${rootClass}" data-ca-root>${r2Entry}${body}</div>`;
   }
   if (
     s.view === "observer-partner" &&
     observerActionsAllowed(config) &&
-    (agentClientsObserverOnly(config) || previewShowsObserverList(config))
+    (agentClientsObserverOnly(config) || showsAtPartnersObserverList(config))
   ) {
-    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${previewChrome}${renderObserverPartnerPage(config)}</div>`;
+    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-partner-page">${renderObserverPartnerPage(config)}</div>`;
   }
   if (s.view === "observer-client" && observerActionsAllowed(config)) {
-    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${previewChrome}${renderObserverClientPage(config)}</div>`;
+    return `<div class="${rootClass}" data-ca-root data-testid="ca-observer-client-page">${renderObserverClientPage(config)}</div>`;
   }
   if (
     !agentClientsObserverOnly(config) &&
@@ -3376,32 +3394,6 @@ export function hydrateClientAppeals(hooks) {
       hooks.refresh();
       return;
     }
-    if (t.matches('[data-ca-input="preview-mode"]')) {
-      if (agentClientsObserverOnly(config)) {
-        t.checked = true;
-        return;
-      }
-      if (!clientsPreviewEligible(config.role, config.readOnly)) {
-        syncClientsPreviewAccess(config);
-        hooks.refresh();
-        return;
-      }
-      const next = t.checked;
-      s.clientsPreviewMode = next;
-      if (next) {
-        if (previewOpensObserverDirection(config.role)) s.clientsDirection = "at-partners";
-        clearClientsPreviewNav(s);
-        clearBulkSelection(s);
-        s.view = "list";
-      } else {
-        s.clientsDirection = "incoming";
-        clearClientsPreviewNav(s);
-        clearBulkSelection(s);
-        s.view = "list";
-      }
-      hooks.refresh();
-      return;
-    }
     if (t.matches('[data-ca-input="observer-period"]')) {
       s.observerPeriod = t.value || "all";
       hooks.refresh();
@@ -3895,7 +3887,17 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
     return;
   }
   if (action.startsWith("tab:")) {
-    s.tab = action.split(":")[1];
+    const nextTab = action.split(":")[1];
+    if (clientsAtPartnersTabEnabled(config.role, config.readOnly) && nextTab === "outgoing") {
+      s.clientsDirection = "at-partners";
+      s.tab = "incoming";
+      s.view = "list";
+      clearObserverNav(s);
+      clearBulkSelection(s);
+      hooks.refresh();
+      return;
+    }
+    s.tab = nextTab;
     activeTab = s.tab;
     clearBulkSelection(s);
     hooks.refresh();

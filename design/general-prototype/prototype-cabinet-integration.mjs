@@ -48,6 +48,10 @@ assert.doesNotMatch(
 assert.match(roles, /pageN === 142[\s\S]*O\("clients"\)/, "142 standalone gate requires clients for employee");
 assert.match(repairR2, /employeeRepairScopeAllowsDemo/, "scoped employee repair list honest filter");
 assert.match(clientAppeals, /ca-observer-partners-list/, "observer partners list test id");
+assert.doesNotMatch(clientAppeals, /ca-clients-preview-toggle/, "no legacy clients preview opt-in block");
+assert.match(clientAppeals, /clientsAtPartnersTabEnabled/, "partner-grouped at-partners tab without preview toggle");
+assert.match(clientAppeals, /showsAtPartnersObserverList/, "at-partners uses observer list not flat outgoing table");
+assert.doesNotMatch(clientAppeals, /Сравните привычный список/, "removed comparison helper copy");
 assert.match(clientAppeals, /if \(agentClientsObserverOnly\(config\)\) return;/, "blocks agent legacy client nav handlers");
 assert.match(numbering, /partner:agent:clients-list[\s\S]*Мои клиенты у партнёров/, "page 106 titles agent observer list");
 assert.match(wallet, /proto-standalone:147/, "wallet hub in cabinet");
