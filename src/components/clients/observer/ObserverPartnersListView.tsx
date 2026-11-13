@@ -27,7 +27,10 @@ import {
 } from "./ObserverPartnerDetailView";
 import { ObserverPersonalClientRow } from "./ObserverPersonalClientRow";
 import { ObserverPersonalConfirmPanel } from "./ObserverPersonalConfirmPanel";
-import { ObserverPersonalEditPanel } from "./ObserverPersonalEditPanel";
+import {
+  ObserverPersonalEditPanel,
+  type PersonalEditDraft,
+} from "./ObserverPersonalEditPanel";
 import { ObserverPersonalTools } from "./ObserverPersonalTools";
 import styles from "./observer.module.css";
 
@@ -45,6 +48,22 @@ type Panel =
   | { kind: "confirm"; action: "archived" | "trash" | "restore"; ids: string[] }
   | null;
 
+export type ObserverPersonalPersistResult =
+  | { ok: true; meta: Record<string, ObserverPersonalMeta>; failedIds?: string[] }
+  | { ok: false; message: string; failedIds?: string[] };
+
+export type ObserverPersonalPersistenceCallbacks = {
+  onSavePersonal?: (args: {
+    mode: "single" | "bulk";
+    ids: string[];
+    draft: PersonalEditDraft;
+  }) => Promise<ObserverPersonalPersistResult>;
+  onBucketAction?: (args: {
+    action: "archived" | "trash" | "restore";
+    ids: string[];
+  }) => Promise<ObserverPersonalPersistResult>;
+};
+
 type Props = {
   showHeading?: boolean;
   appeals: ObserverReferredAppeal[];
@@ -53,8 +72,10 @@ type Props = {
   initialLayout?: "partners" | "list";
   /** Synthetic QA only — seed sub-view without mutating production routes. */
   initialNav?: Nav;
-  /** Read-only display seed (tests); never mutated on save. */
+  /** Overlay from GET / parent merge after persist. */
   displayPersonalMeta?: Record<string, ObserverPersonalMeta>;
+  personalPersistence?: ObserverPersonalPersistenceCallbacks;
+  onPersonalMetaUpdated?: (meta: Record<string, ObserverPersonalMeta>) => void;
 };
 
 function partnersMap(partners: ObserverPartnerMeta[]) {
@@ -85,6 +106,8 @@ export function ObserverPartnersListView({
   initialLayout = "partners",
   initialNav,
   displayPersonalMeta = {},
+  personalPersistence,
+  onPersonalMetaUpdated,
 }: Props) {
   const [filters, setFilters] = useState<ObserverFilterState>({
     q: "",
@@ -97,6 +120,7 @@ export function ObserverPartnersListView({
   const [nav, setNav] = useState<Nav>(initialNav ?? { view: "partners" });
   const [panel, setPanel] = useState<Panel>(null);
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
+  const [persisting, setPersisting] = useState(false);
 
   const personalMeta = displayPersonalMeta;
   const partnersById = useMemo(() => partnersMap(partners), [partners]);
@@ -126,6 +150,72 @@ export function ObserverPartnersListView({
     setPanel(null);
     setSelected(new Set());
   }, []);
+
+  const finishPersist = useCallback(
+    (res: ObserverPersonalPersistResult, ids: string[]) => {
+      if (res.ok) {
+        onPersonalMetaUpdated?.(res.meta);
+        const failed = new Set(res.failedIds ?? []);
+        setSelected(failed.size ? new Set([...ids].filter((id) => failed.has(id))) : new Set());
+        setPersistenceNotice(null);
+        setPanel(null);
+        return;
+      }
+      const failed = new Set(res.failedIds ?? ids);
+      setSelected(new Set([...ids].filter((id) => failed.has(id))));
+      setPersistenceNotice(res.message);
+      setPanel(null);
+    },
+    [onPersonalMetaUpdated],
+  );
+
+  const handleConfirmBucket = useCallback(async () => {
+    if (!panel || panel.kind !== "confirm" || persisting) return;
+    const { action, ids } = panel;
+    if (!ids.length) {
+      setPanel(null);
+      return;
+    }
+    if (!personalPersistence?.onBucketAction) {
+      notifyPersistenceBlock(action);
+      return;
+    }
+    setPersisting(true);
+    try {
+      const res = await personalPersistence.onBucketAction({ action, ids });
+      finishPersist(res, ids);
+    } finally {
+      setPersisting(false);
+    }
+  }, [finishPersist, notifyPersistenceBlock, panel, personalPersistence, persisting]);
+
+  const handleAttemptSave = useCallback(async () => {
+    if (!panel || panel.kind !== "edit" || persisting) return;
+    const { mode, ids } = panel;
+    if (!ids.length) {
+      setPanel(null);
+      return;
+    }
+    if (!personalPersistence?.onSavePersonal) {
+      notifyPersistenceBlock("Сохранить личные поля");
+      return;
+    }
+    const firstId = mode === "single" ? ids[0] : undefined;
+    const draft: PersonalEditDraft = firstId
+      ? {
+          alias: personalMeta[firstId]?.alias ?? "",
+          tag: personalMeta[firstId]?.tag ?? "",
+          note: personalMeta[firstId]?.note ?? "",
+        }
+      : { alias: "", tag: "", note: "" };
+    setPersisting(true);
+    try {
+      const res = await personalPersistence.onSavePersonal({ mode, ids, draft });
+      finishPersist(res, ids);
+    } finally {
+      setPersisting(false);
+    }
+  }, [finishPersist, notifyPersistenceBlock, panel, personalMeta, personalPersistence, persisting]);
 
   const onPartnerToggle = useCallback((partnerId: string, open: boolean) => {
     setOpenPartners((prev) => ({ ...prev, [partnerId]: open }));
@@ -371,7 +461,9 @@ export function ObserverPartnersListView({
           count={panel.ids.length}
           initial={editInitial}
           onCancel={() => setPanel(null)}
-          onAttemptSave={() => notifyPersistenceBlock("Сохранить личные поля")}
+          onAttemptSave={() => {
+            void handleAttemptSave();
+          }}
         />
       ) : null}
 
@@ -380,7 +472,9 @@ export function ObserverPartnersListView({
           kind={panel.action}
           count={panel.ids.length}
           onCancel={() => setPanel(null)}
-          onConfirm={() => notifyPersistenceBlock(panel.action)}
+          onConfirm={() => {
+            void handleConfirmBucket();
+          }}
         />
       ) : null}
 

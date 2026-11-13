@@ -1,13 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { blockerForRequirement, CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import { fetchObserverReferredAppeals } from "./fetch-observer-appeals";
 
 describe("clients parity contracts", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("maps C07 to receiving blocker", () => {
     expect(blockerForRequirement("C07")?.id).toBe("BLK-RECEIVING-APPEALS");
   });
 
   it("fetch observer returns blocked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ error: "Path not allowed" }), { status: 403 }),
+      ),
+    );
     const res = await fetchObserverReferredAppeals();
     expect(res.ok).toBe(false);
     if (!res.ok) {
