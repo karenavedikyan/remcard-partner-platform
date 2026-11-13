@@ -7,6 +7,7 @@ import {
   ReceivingAppealHistory,
   type ReceivingAppealHistoryEntry,
 } from "./ReceivingAppealHistory";
+import { filterStageOptionsForDirectPatch } from "./receiving-detail-actions-contract";
 
 const SYSTEM_STAGE_OPTIONS = [
   { id: "sys_new", label: "Новое обращение" },
@@ -55,7 +56,7 @@ export type ReceivingAppealDetailActions = {
   markPaid?:
     | { supported: true; onMarkPaid: () => void }
     | { supported: false; reason: string };
-  /** Prototype pay-category / review panel — P6 `onOpenPaidReview`, never profile finance PATCH. */
+  /** Prototype pay panel — P6 order pipeline (`/scanner` or purchase detail), never PATCH `sys_paid`. */
   paidReview?:
     | { supported: true; onOpen: () => void }
     | { supported: false; reason: string };
@@ -98,9 +99,10 @@ function stageOptionsForPicker(
   if (currentStageId && !byId.has(currentStageId)) {
     byId.set(currentStageId, currentStageId);
   }
-  return [...byId.entries()]
+  const options = [...byId.entries()]
     .filter(([id]) => id !== currentStageId)
     .map(([id, label]) => ({ id, label }));
+  return filterStageOptionsForDirectPatch(options);
 }
 
 /**
@@ -363,8 +365,9 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 Подробнее о покупке ({props.appeal.purchaseOrderId})
               </button>
             ) : props.appeal.purchaseOrderId ? (
-              <p className={styles.mutedSmall}>
-                Заказ {props.appeal.purchaseOrderId} — открытие через существующие order flows (P6).
+              <p className={styles.mutedSmall} data-testid="ca-receiving-purchase-order-hint">
+                Заказ {props.appeal.purchaseOrderId} — откройте деталь покупки в кошельке (P6
+                onOpenPurchaseOrder).
               </p>
             ) : actions?.paidReview?.supported ? (
               <button
@@ -390,7 +393,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               <p className={styles.mutedSmall} data-testid="ca-receiving-purchase-unsupported">
                 {actions?.paidReview?.reason ??
                   actions?.markPaid?.reason ??
-                  "Оплата фиксируется через этап «Оплачено» и существующие order flows — без правки суммы в карточке."}
+                  "Оплата — через кошелёк/заказ (/scanner или история покупок), не PATCH этапа «Оплачено»."}
               </p>
             )}
           </section>

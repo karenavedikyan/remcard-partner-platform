@@ -26,7 +26,10 @@ const baseActions = {
   refusalReasons: ["Дорого"],
   onSavePrivateNotes: vi.fn(),
   onApplyStage: vi.fn(),
-  markPaid: { supported: false as const, reason: "Только через этап «Оплачено» (K1 stage PATCH)." },
+  markPaid: {
+    supported: false as const,
+    reason: "Оплата не отмечается PATCH этапа «Оплачено» (K1: STAGE_REQUIRES_ORDER_PIPELINE).",
+  },
 };
 
 describe("P4.ReceivingAppealDetailView", () => {
@@ -77,7 +80,9 @@ describe("P4.ReceivingAppealDetailView", () => {
     await user.selectOptions(screen.getByTestId("ca-receiving-stage-select"), "ws_custom");
     await user.click(screen.getByTestId("ca-receiving-stage-apply"));
     expect(onStage).toHaveBeenCalledWith({ stageKey: "ws_custom", refusedReason: null });
-    expect(screen.getByTestId("ca-receiving-purchase-unsupported")).toHaveTextContent("Оплачено");
+    expect(screen.getByTestId("ca-receiving-purchase-unsupported")).toHaveTextContent(
+      "STAGE_REQUIRES_ORDER_PIPELINE",
+    );
   });
 
   it("readOnly hides notes and shows readonly hint", () => {

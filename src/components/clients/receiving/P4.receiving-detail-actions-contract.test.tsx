@@ -1,13 +1,38 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  RECEIVING_PAID_REVIEW_PARENT_CALLBACK,
+  K1_STAGE_REQUIRES_ORDER_PIPELINE,
+  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
+  RECEIVING_MARK_PAID_ABSENT_REASON,
+  RECEIVING_ORDER_PIPELINE_CALLBACK,
   buildReceivingAppealDetailReady,
+  filterStageOptionsForDirectPatch,
+  receivingAppealPurchaseDetailHref,
 } from "./receiving-detail-actions-contract";
 
 describe("P4.receiving-detail-actions-contract", () => {
-  it("builds actions with paidReview absent and shipped on sys_paid", async () => {
-    const mutateStage = vi.fn().mockResolvedValue({ ok: true as const });
-    const ready = buildReceivingAppealDetailReady({
+  it("excludes sys_paid from direct PATCH stage picker options", () => {
+    const filtered = filterStageOptionsForDirectPatch([
+      { id: "sys_new", label: "Новое" },
+      { id: "sys_paid", label: "Оплачено" },
+      { id: "ws1", label: "Согласование" },
+    ]);
+    expect(filtered.map((o) => o.id)).toEqual(["sys_new", "ws1"]);
+  });
+
+  it("purchase href matches wallet history route", () => {
+    expect(receivingAppealPurchaseDetailHref("ord-9")).toBe("/history/purchases/ord-9");
+  });
+
+  it("mark paid absent cites order pipeline not stage PATCH", () => {
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(K1_STAGE_REQUIRES_ORDER_PIPELINE);
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).not.toMatch(/PATCH.*sys_paid/i);
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(RECEIVING_ORDER_PIPELINE_CALLBACK);
+    expect(RECEIVING_MARK_PAID_ABSENT_REASON).toContain(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
+  });
+
+  it("builds shipped only when paid projection exists", () => {
+    const mutateStage = vi.fn();
+    const withPaid = buildReceivingAppealDetailReady({
       appealId: "a1",
       readOnly: false,
       mapped: {
@@ -17,29 +42,42 @@ describe("P4.receiving-detail-actions-contract", () => {
           clientName: "X",
           stageId: "sys_paid",
           stageLabel: "Оплачено",
-          updatedAt: "2026-11-10T10:00:00Z",
+          updatedAt: "x",
+          purchaseOrderId: "ord-1",
         },
         history: [],
-        revision: 4,
-        workingStages: [{ id: "ws1", label: "Согласование" }],
-        refusalReasons: ["Дорого"],
+        revision: 1,
+        workingStages: [],
+        refusalReasons: [],
       },
       mutateProfile: vi.fn(),
       mutateStage,
       reloadDetail: vi.fn(),
     });
-    expect(ready.actions?.paidReview?.supported).toBe(false);
-    if (ready.actions?.paidReview && !ready.actions.paidReview.supported) {
-      expect(ready.actions.paidReview.reason).toContain(RECEIVING_PAID_REVIEW_PARENT_CALLBACK);
-    }
-    expect(ready.actions?.shippedConfirm?.supported).toBe(true);
-    if (ready.actions?.shippedConfirm?.supported) {
-      ready.actions.shippedConfirm.onMarkShipped();
-    }
-    expect(mutateStage).toHaveBeenCalledWith({
-      stageKey: "sys_shipped",
-      expectedRevision: 4,
+    expect(withPaid.actions?.shippedConfirm?.supported).toBe(true);
+
+    const withoutPaid = buildReceivingAppealDetailReady({
+      appealId: "a2",
+      readOnly: false,
+      mapped: {
+        status: "ready",
+        appeal: {
+          id: "a2",
+          clientName: "Y",
+          stageId: "sys_paid",
+          stageLabel: "Оплачено",
+          updatedAt: "x",
+        },
+        history: [],
+        revision: 1,
+        workingStages: [],
+        refusalReasons: [],
+      },
+      mutateProfile: vi.fn(),
+      mutateStage: vi.fn(),
+      reloadDetail: vi.fn(),
     });
+    expect(withoutPaid.actions?.shippedConfirm?.supported).toBe(false);
   });
 
   it("readOnly omits actions (observer/list-only redaction path)", () => {

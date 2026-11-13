@@ -53,7 +53,14 @@ setViewProps({ ...ready, onBack });
 
 **Profile PATCH:** `privateNotes` (+ optional profile fields K1 allows), **`expectedRevision`** — never `paidAmountKopecks`.
 
-**Stage PATCH:** `stageKey`, optional `refusedReason`, **`expectedRevision`** — financial paid categories only via K1 paid-stage flow, not profile.
+**Stage PATCH:** `stageKey`, optional `refusedReason`, **`expectedRevision`**. **Never** `sys_paid` — K1 `stageRules.ts` → `422 STAGE_REQUIRES_ORDER_PIPELINE`. P4 stage picker excludes `sys_paid`.
+
+**Order pipeline (paid):**
+
+| Callback | Target | Module |
+|----------|--------|--------|
+| `onOpenOrderPipeline` | `/scanner` | `ScannerHub` (existing sale prep) |
+| `onOpenPurchaseOrder` | `/history/purchases/:orderId` | `PurchaseReceivingClientPanel` (read-only view; link write = `PATCH …/receiving-client`, P6) |
 
 ## Observer / readOnly
 
@@ -64,9 +71,10 @@ setViewProps({ ...ready, onBack });
 
 | Prototype | Parent callback | Status |
 |-----------|-----------------|--------|
-| `panel:pay` / pay categories | `onOpenPaidReview` | **Absent** on P6 host → P4 shows unsupported copy |
-| `stage:next:sys_shipped` | `shippedConfirm.onMarkShipped` → stage PATCH | **Built** when `stageId===sys_paid` + mutations allowed |
-| Purchase «Подробнее» | `openPurchaseOrder` | **Absent** until P6 wires existing order/history route |
+| `panel:pay` / pay categories | `onOpenOrderPipeline` / `onOpenPurchaseOrder` | **Absent** on P6 host → order pipeline copy |
+| PATCH `sys_paid` | — | **Forbidden** K1; UI excludes from picker |
+| `stage:next:sys_shipped` | `shippedConfirm` → stage PATCH | Only if `purchaseOrderId` or `paidAt` on record |
+| Purchase «Подробнее» | `onOpenPurchaseOrder` → `/history/purchases/:id` | **Absent** until P6 wires router |
 
 ## P6 defects (report only)
 

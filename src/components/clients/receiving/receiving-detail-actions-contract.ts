@@ -33,15 +33,38 @@ export type ReceivingAppealDetailMutationOutcome =
   | { ok: true; revision?: number }
   | { ok: false; conflict: boolean; message: string };
 
-/** Prototype `panel:pay` / pay category form — not profile PATCH finance fields. */
-export const RECEIVING_PAID_REVIEW_PARENT_CALLBACK = "onOpenPaidReview" as const;
+/** K1 `canTransitionAppealStage` — direct PATCH to paid is always rejected. */
+export const K1_STAGE_REQUIRES_ORDER_PIPELINE = "STAGE_REQUIRES_ORDER_PIPELINE" as const;
 
-export const RECEIVING_PAID_REVIEW_ABSENT_REASON =
-  "Категории и сумма оплаты — через K1 PATCH …/stage (этап «Оплачено») и существующие order flows. " +
-  `Отсутствует колбэк хоста «${RECEIVING_PAID_REVIEW_PARENT_CALLBACK}»; P6 не должен писать paidAmount в profile PATCH.`;
+export const STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH = new Set<string>(["sys_paid"]);
+
+/** P6 navigates; P4 does not fetch. Matches `purchaseDetailHref` / wallet history. */
+export function receivingAppealPurchaseDetailHref(purchaseOrderId: string): string {
+  return `/history/purchases/${encodeURIComponent(purchaseOrderId)}`;
+}
+
+/** Existing scanner hub (store order / sale prep) — prod route `/scanner`. */
+export const RECEIVING_APPEAL_ORDER_PIPELINE_HREF = "/scanner" as const;
+
+/** Safe read-only panel: `src/components/history/PurchaseReceivingClientPanel.tsx` on purchase detail. */
+export const RECEIVING_PURCHASE_PANEL_CALLBACK = "onOpenPurchaseOrder" as const;
+
+/** When appeal has no `purchaseOrderId` yet — scanner/order pipeline entry. */
+export const RECEIVING_ORDER_PIPELINE_CALLBACK = "onOpenOrderPipeline" as const;
 
 export const RECEIVING_MARK_PAID_ABSENT_REASON =
-  "Отметить оплату — смена этапа на «Оплачено» (PATCH …/:id/stage), не правка суммы в карточке.";
+  "Оплата не отмечается PATCH этапа «Оплачено» (K1: STAGE_REQUIRES_ORDER_PIPELINE). " +
+  `Нужен колбэк «${RECEIVING_ORDER_PIPELINE_CALLBACK}» (→ ${RECEIVING_APPEAL_ORDER_PIPELINE_HREF}) ` +
+  `или связанный заказ («${RECEIVING_PURCHASE_PANEL_CALLBACK}» → /history/purchases/:orderId).`;
+
+export const RECEIVING_PAID_REVIEW_ABSENT_REASON =
+  "Категории/сумма — в существующем заказе кошелька и order pipeline, не в profile PATCH. " +
+  `Без заказа: «${RECEIVING_ORDER_PIPELINE_CALLBACK}»; с purchaseOrderId: «${RECEIVING_PURCHASE_PANEL_CALLBACK}» ` +
+  "(read-only деталь + `PurchaseReceivingClientPanel`; запись — PATCH /api/store/orders/:id/receiving-client, P6).";
+
+export function filterStageOptionsForDirectPatch<T extends { id: string }>(options: T[]): T[] {
+  return options.filter((o) => !STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH.has(o.id));
+}
 
 export type ReceivingAppealDetailHostDeps = {
   appealId: string;
@@ -53,7 +76,8 @@ export type ReceivingAppealDetailHostDeps = {
   mutateStage: (body: ReceivingAppealStagePatchInput) => Promise<ReceivingAppealDetailMutationOutcome>;
   reloadDetail: () => Promise<void>;
   openPurchaseOrder?: () => void;
-  onOpenPaidReview?: () => void;
+  /** Certificate/manual without order yet — navigate to `/scanner` (no appeal stage PATCH). */
+  onOpenOrderPipeline?: () => void;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
 };
@@ -87,14 +111,23 @@ export function buildReceivingAppealDetailReady(
           if (!result.ok && result.conflict) await deps.reloadDetail();
         },
         onOpenPurchaseOrder: deps.openPurchaseOrder,
-        markPaid: deps.onOpenPaidReview
-          ? { supported: true, onMarkPaid: deps.onOpenPaidReview }
-          : { supported: false, reason: RECEIVING_MARK_PAID_ABSENT_REASON },
-        paidReview: deps.onOpenPaidReview
-          ? { supported: true, onOpen: deps.onOpenPaidReview }
-          : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
+        markPaid:
+          deps.onOpenOrderPipeline || deps.openPurchaseOrder
+            ? {
+                supported: true,
+                onMarkPaid: deps.onOpenOrderPipeline ?? deps.openPurchaseOrder!,
+              }
+            : { supported: false, reason: RECEIVING_MARK_PAID_ABSENT_REASON },
+        paidReview:
+          deps.openPurchaseOrder || deps.onOpenOrderPipeline
+            ? {
+                supported: true,
+                onOpen: deps.openPurchaseOrder ?? deps.onOpenOrderPipeline!,
+              }
+            : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
         shippedConfirm:
-          mapped.appeal.stageId === "sys_paid"
+          mapped.appeal.stageId === "sys_paid" &&
+          Boolean(mapped.appeal.purchaseOrderId || mapped.appeal.paidAtDisplay)
             ? {
                 supported: true,
                 onMarkShipped: () =>
@@ -103,7 +136,10 @@ export function buildReceivingAppealDetailReady(
                     expectedRevision: revision,
                   }),
               }
-            : { supported: false, reason: "Доступно на этапе «Оплачено»." },
+            : {
+                supported: false,
+                reason: "Сначала оплата в кошельке/заказе — прямой PATCH «Оплачено» недоступен (K1).",
+              },
       };
 
   return {
