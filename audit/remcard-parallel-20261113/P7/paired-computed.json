@@ -1,6 +1,6 @@
 {
   "sha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
-  "tip": "9280f9e7",
+  "productTip": "c5c7f2091187565d5cf883a5ec18d3a2b4009d24",
   "computed": [
     {
       "theme": "light",
@@ -57,16 +57,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(159, 18, 57)",
-        "backgroundColor": "rgb(255, 255, 255)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -76,7 +76,7 @@
       "summary": {
         "color": "rgb(37, 41, 35)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -155,16 +155,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(159, 18, 57)",
-        "backgroundColor": "rgb(255, 255, 255)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -174,7 +174,7 @@
       "summary": {
         "color": "rgb(37, 41, 35)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -253,16 +253,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(159, 18, 57)",
-        "backgroundColor": "rgb(255, 255, 255)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -272,7 +272,7 @@
       "summary": {
         "color": "rgb(37, 41, 35)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -294,6 +294,104 @@
         "outlineOffset": "0px",
         "height": 61.796875,
         "width": 736
+      }
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(36, 38, 35)"
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 958
+      },
+      "row": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 472px 472px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 992
+      }
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 95.5
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(37, 41, 35)"
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 958
+      },
+      "row": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 472px 472px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 992
       }
     },
     {
@@ -351,16 +449,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(159, 18, 57)",
-        "backgroundColor": "rgb(255, 255, 255)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -370,7 +468,7 @@
       "summary": {
         "color": "rgb(37, 41, 35)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -449,16 +547,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(253, 164, 175)",
-        "backgroundColor": "rgb(32, 37, 32)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -468,7 +566,7 @@
       "summary": {
         "color": "rgb(240, 241, 236)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -547,16 +645,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(253, 164, 175)",
-        "backgroundColor": "rgb(32, 37, 32)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -566,7 +664,7 @@
       "summary": {
         "color": "rgb(240, 241, 236)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -645,16 +743,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(253, 164, 175)",
-        "backgroundColor": "rgb(32, 37, 32)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -664,7 +762,7 @@
       "summary": {
         "color": "rgb(240, 241, 236)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -686,6 +784,104 @@
         "outlineOffset": "0px",
         "height": 61.796875,
         "width": 736
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(241, 240, 235)"
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 958
+      },
+      "row": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 472px 472px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 992
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 95.5
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(240, 241, 236)"
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 958
+      },
+      "row": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 472px 472px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 992
       }
     },
     {
@@ -743,16 +939,16 @@
       "side": "product",
       "bucket": {
         "color": "rgb(253, 164, 175)",
-        "backgroundColor": "rgb(32, 37, 32)",
-        "fontSize": "16px",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
         "fontWeight": "700",
-        "padding": "8px 12px",
+        "padding": "4px 12px",
         "minHeight": "44px",
         "gridTemplateColumns": "none",
         "outlineWidth": "0px",
         "outlineOffset": "0px",
         "height": 44,
-        "width": 118.65625
+        "width": 95.5
       },
       "kpi": {
         "fontSize": "20px",
@@ -762,7 +958,7 @@
       "summary": {
         "color": "rgb(240, 241, 236)",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "fontSize": "16px",
+        "fontSize": "14px",
         "fontWeight": "400",
         "padding": "8px 0px 0px",
         "minHeight": "44px",
@@ -784,6 +980,138 @@
         "outlineOffset": "0px",
         "height": 49.796875,
         "width": 1408
+      }
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "height": 568,
+      "viewport": "short-375x568",
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      }
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "height": 568,
+      "viewport": "short-375x568",
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(252, 240, 237)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 95.5
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "height": 568,
+      "viewport": "short-375x568",
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "height": 568,
+      "viewport": "short-375x568",
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(60, 41, 40)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 95.5
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
       }
     }
   ]

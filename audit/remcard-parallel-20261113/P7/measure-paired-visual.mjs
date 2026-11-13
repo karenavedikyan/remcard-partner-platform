@@ -11,8 +11,9 @@ import { chromium } from "playwright";
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 const SHA = "3dc31836cd18d9209c20097f18b906dd276f7af6";
 const OUT = import.meta.dirname;
-const WIDTHS = [320, 375, 768, 1440];
+const WIDTHS = [320, 375, 768, 1024, 1440];
 const THEMES = ["light", "dark"];
+const SHORT_VIEWPORT = { width: 375, height: 568, label: "short-375x568" };
 
 function gitShow(file) {
   return execSync(`git show ${SHA}:design/general-prototype/partner/${file}`, {
@@ -127,8 +128,40 @@ async function main() {
       }
     }
   }
+
+  const shortContext = await browser.newContext({
+    viewport: { width: SHORT_VIEWPORT.width, height: SHORT_VIEWPORT.height },
+  });
+  const shortPage = await shortContext.newPage();
+  for (const theme of THEMES) {
+    for (const side of ["proto", "product"]) {
+      await shortPage.setContent(side === "proto" ? protoHtml(theme) : productHtml(theme), {
+        waitUntil: "domcontentloaded",
+      });
+      const bucket = await sample(shortPage, "bucket-pressed");
+      const summary = await sample(shortPage, "disclosure-summary");
+      computed.push({
+        theme,
+        width: SHORT_VIEWPORT.width,
+        height: SHORT_VIEWPORT.height,
+        viewport: SHORT_VIEWPORT.label,
+        side,
+        bucket,
+        summary,
+      });
+      await shortPage.screenshot({
+        path: path.join(OUT, "screenshots", `${SHORT_VIEWPORT.label}-${theme}-${side}.png`),
+      });
+    }
+  }
+  await shortContext.close();
   await browser.close();
-  writeFileSync(path.join(OUT, "paired-computed.json"), JSON.stringify({ sha: SHA, tip: "9280f9e7", computed }, null, 2));
+
+  const tip = execSync("git rev-parse HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
+  writeFileSync(
+    path.join(OUT, "paired-computed.json"),
+    JSON.stringify({ sha: SHA, productTip: tip, computed }, null, 2),
+  );
   console.log("Wrote paired-computed.json and", computed.length, "screenshots");
 }
 

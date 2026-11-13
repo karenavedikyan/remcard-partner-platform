@@ -1,6 +1,7 @@
-productTip=9280f9e7279da14964574a6d1585499134ac7f8c
-auditTip=13ec43b958848eea6e429b19927cae78cd15b538
 base=9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0
+productTip=c5c7f2091187565d5cf883a5ec18d3a2b4009d24
 branch=cursor/remcard-p7-acceptance-20261113
-gitAuthorLatest=karenavedikyan <105862906+karenavedikyan@users.noreply.github.com>
-gitTrailerCompliance=BLOCKED (platform appends extra Co-authored-by after Perplexity)
+p7Tests=27 PASS (vitest.p7.config.ts)
+sharedRegression=31 PASS (observer harness + list)
+fullShell=OPEN
+gitTrailerCompliance=BLOCKED (platform extra Co-authored-by)

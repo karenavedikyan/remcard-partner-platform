@@ -1,0 +1,26 @@
+{
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "priorAuditTip": "316248f2",
+  "productTip": "c5c7f2091187565d5cf883a5ec18d3a2b4009d24",
+  "partialHarnessPass": {
+    "bucket375": {
+      "light": {
+        "product": { "fontSize": "12px", "padding": "4px 12px", "bg": "rgb(252, 240, 237)", "protoBg": "rgb(250, 233, 232)" },
+        "proto": { "fontSize": "12px", "padding": "4px 12px" }
+      },
+      "dark": {
+        "product": { "fontSize": "12px", "padding": "4px 12px", "bg": "rgb(60, 41, 40)", "protoBg": "rgb(59, 39, 41)" },
+        "accentText": "rgb(253, 164, 175)"
+      }
+    },
+    "disclosureSummary": {
+      "light": { "product": "14px", "proto": "14px" },
+      "dark": { "product": "14px", "proto": "14px" }
+    },
+    "widthsRemeasured": [320, 375, 768, 1024, 1440],
+    "shortViewport": "short-375x568",
+    "screenshots": 24
+  },
+  "fullShell": "OPEN",
+  "productDiffOnly": "observer.module.css — --observer-tint; bucketBtn 12px/4px12; pressed tint bg; disclosure summary 14px"
+}
