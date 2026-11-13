@@ -7,10 +7,14 @@ import {
   toK1ReceivingAppealCreateBody,
   receivingAppealsMutationsAllowed,
   findActiveReceivingAppeal,
+  findDuplicateManualChannelLabel,
   isReceivingAppealActive,
   isReceivingAppealsProxyReady,
   isReceivingCertificateEntryProxyReady,
   isReceivingSettingsMaterialized,
+  mapReceivingAppealDetailFieldsFromWire,
+  postReceivingManualChannel,
+  receivingManualChannelOptions,
   submitReceivingCertificateEntry,
   RECEIVING_SYSTEM_STAGE,
   type ReceivingAppealListRow,
@@ -177,6 +181,45 @@ describe("P6.receiving-appeals-api contract gate", () => {
     if (!res.ok) {
       expect(res.code).toBe("BLOCKED_CONTRACT");
       expect(res.blockerId).toBe("BLK-RECEIVING-APPEALS");
+    }
+  });
+
+  it("manual channel duplicate check is case-insensitive (prototype addWorkspaceChannel)", () => {
+    const channels = receivingManualChannelOptions({
+      workingStages: [],
+      refusalReasons: [],
+      archivedStages: [],
+      manualChannels: [{ key: "ch_1", label: "Instagram" }],
+    });
+    expect(findDuplicateManualChannelLabel("instagram", channels)?.key).toBe("ch_1");
+    expect(findDuplicateManualChannelLabel("Звонок", channels)?.key).toBe("phone");
+    expect(findDuplicateManualChannelLabel("  ", channels)).toBeNull();
+  });
+
+  it("detail mapper keeps privateNotes and discount fields", () => {
+    const detail = mapReceivingAppealDetailFieldsFromWire({
+      id: "d1",
+      clientDisplayName: "Клиент",
+      stageKey: "sys_new",
+      receivingPartnerUserId: "u1",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-02T00:00:00Z",
+      privateNotes: "  заметка  ",
+      clientContact: "+7",
+      discountPercent: 12,
+      certValidUntil: "2027-01-01",
+    });
+    expect(detail.privateNotes).toBe("заметка");
+    expect(detail.clientContact).toBe("+7");
+    expect(detail.discountPercent).toBe(12);
+    expect(detail.certValidUntil).toBe("2027-01-01");
+  });
+
+  it("postReceivingManualChannel blocked when working-stages POST not on proxy pin", async () => {
+    const res = await postReceivingManualChannel("Новый канал", 1);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.code).toBe("BLOCKED_CONTRACT");
     }
   });
 });

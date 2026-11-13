@@ -193,6 +193,19 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       <ReceivingAppealForm
         disabled={!proxyReady || readOnly}
         persistBlockedMessage="Создание обращения ждёт P1 proxy и K1 handler."
+        settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
+        settingsVersion={data.settingsVersion}
+        onChannelsUpdated={(snapshot) => {
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  settings: snapshot.settings,
+                  settingsVersion: snapshot.version ?? prev.settingsVersion,
+                }
+              : prev,
+          );
+        }}
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
           if (!proxyReady || readOnly) return;

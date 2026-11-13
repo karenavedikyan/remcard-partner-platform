@@ -142,6 +142,16 @@ export type ReceivingAppealListRowWire = {
   manualEntry?: boolean;
 };
 
+/** Detail-only fields on `GET /:id` appeal object (K8 canonical). */
+export type ReceivingAppealDetailFieldsWire = {
+  privateNotes?: string | null;
+  clientContact?: string | null;
+  discountPercent?: number | null;
+  certValidUntil?: string | null;
+};
+
+export type ReceivingAppealDetailRowWire = ReceivingAppealListRowWire & ReceivingAppealDetailFieldsWire;
+
 /** List row — UI view-model (prototype renderListPage table). */
 export type ReceivingAppealListRow = {
   id: string;
@@ -188,9 +198,12 @@ export type ReceivingAppealDetail = ReceivingAppealListRow & {
   certValidUntil?: string | null;
 };
 
-/** GET `/api/pro/client-appeals/:id` top-level wire (K1 `5a51d7b7`). */
+/**
+ * GET `/api/pro/client-appeals/:id` top-level wire (K1).
+ * P4 may consume this envelope directly — П6 mapper is non-authoritative convenience.
+ */
 export type ReceivingAppealDetailWire = {
-  appeal: ReceivingAppealListRowWire;
+  appeal: ReceivingAppealDetailRowWire;
   revision: string | number;
   history: ReceivingAppealHistoryWire[];
   workingStages?: ReceivingWorkingStage[];
@@ -206,9 +219,23 @@ export type ReceivingAppealDetailPayload = {
   refusalReasons: string[];
 };
 
+export function mapReceivingAppealDetailFieldsFromWire(
+  wire: ReceivingAppealDetailRowWire,
+): ReceivingAppealDetail {
+  const base = mapReceivingAppealListRowFromWire(wire);
+  return {
+    ...base,
+    privateNotes: wire.privateNotes?.trim() ? wire.privateNotes.trim() : undefined,
+    clientContact: wire.clientContact ?? null,
+    discountPercent:
+      typeof wire.discountPercent === "number" ? wire.discountPercent : undefined,
+    certValidUntil: wire.certValidUntil ?? null,
+  };
+}
+
 export function mapReceivingAppealDetailFromWire(wire: ReceivingAppealDetailWire): ReceivingAppealDetailPayload {
   return {
-    appeal: mapReceivingAppealListRowFromWire(wire.appeal) as ReceivingAppealDetail,
+    appeal: mapReceivingAppealDetailFieldsFromWire(wire.appeal),
     revision: wire.revision,
     history: mapReceivingHistoryFromWire(wire.history ?? []),
     workingStages: wire.workingStages ?? [],
@@ -225,11 +252,18 @@ export type ReceivingWorkingStage = {
  * Prototype `partnerSettings[partnerId]` — `partnerId` = receiving owner **User.id**.
  * Must be persisted (K8 additive settings storage scoped to `receivingPartnerUserId`).
  */
+export type ReceivingManualChannel = {
+  key: string;
+  label: string;
+};
+
 export type ReceivingPartnerSettings = {
   receivingPartnerUserId?: string;
   workingStages: ReceivingWorkingStage[];
   refusalReasons: string[];
   archivedStages: ReceivingWorkingStage[];
+  /** K8 `0f4fe833` — custom manual channels per receiving User.id. */
+  manualChannels?: ReceivingManualChannel[];
 };
 
 /** GET working-stages wire — unwrap `{ settings, settings.version }`. */
@@ -253,6 +287,7 @@ export function unwrapReceivingPartnerSettingsWire(
         workingStages: rest.workingStages ?? [],
         refusalReasons: rest.refusalReasons ?? [],
         archivedStages: rest.archivedStages ?? [],
+        manualChannels: rest.manualChannels ?? [],
         receivingPartnerUserId: rest.receivingPartnerUserId,
       },
       version,
@@ -392,7 +427,91 @@ export const RECEIVING_EMPTY_SETTINGS: ReceivingPartnerSettings = {
   workingStages: [],
   refusalReasons: [],
   archivedStages: [],
+  manualChannels: [],
 };
+
+/** Prototype `manualChannelsFor` — builtins first, then persisted custom. */
+export function receivingManualChannelOptions(
+  settings?: ReceivingPartnerSettings | null,
+): ReceivingManualChannel[] {
+  const builtins: ReceivingManualChannel[] = RECEIVING_MANUAL_CHANNEL_OPTIONS.map((o) => ({
+    key: o.key,
+    label: o.label,
+  }));
+  const custom = settings?.manualChannels ?? [];
+  return [...builtins, ...custom];
+}
+
+/** Prototype `addWorkspaceChannel` duplicate check (case-insensitive label). */
+export function findDuplicateManualChannelLabel(
+  label: string,
+  channels: ReceivingManualChannel[],
+): ReceivingManualChannel | null {
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  return channels.find((c) => c.label.trim().toLowerCase() === lower) ?? null;
+}
+
+export type PostReceivingManualChannelBody = {
+  kind: "manualChannel";
+  label: string;
+  expectedVersion?: string | number;
+};
+
+export type PostReceivingManualChannelResult =
+  | { ok: true; snapshot: ReceivingPartnerSettingsSnapshot; channel: ReceivingManualChannel }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "VALIDATION" | "ERROR"; message: string };
+
+export async function postReceivingManualChannel(
+  label: string,
+  expectedVersion?: string | number,
+): Promise<PostReceivingManualChannelResult> {
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return { ok: false, code: "VALIDATION", message: "Введите название канала." };
+  }
+  const path = "/api/pro/client-appeals/working-stages";
+  if (!isAllowedProxyRoute("POST", path)) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "Сохранение канала ждёт K1 working-stages POST и P1 allowlist.",
+    };
+  }
+  try {
+    const payload = await remcardFetch<ReceivingPartnerSettingsWire>(path, {
+      method: "POST",
+      body: JSON.stringify({
+        kind: "manualChannel",
+        label: trimmed,
+        expectedVersion,
+      } satisfies PostReceivingManualChannelBody),
+    });
+    const snapshot = unwrapReceivingPartnerSettingsWire(payload);
+    if (!snapshot) {
+      return { ok: false, code: "ERROR", message: "Пустой ответ настроек после сохранения канала." };
+    }
+    const channel =
+      snapshot.settings.manualChannels?.find(
+        (c) => c.label.trim().toLowerCase() === trimmed.toLowerCase(),
+      ) ?? null;
+    if (!channel) {
+      return {
+        ok: false,
+        code: "ERROR",
+        message: "Сервер не вернул сохранённый канал.",
+      };
+    }
+    return { ok: true, snapshot, channel };
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить канал",
+    };
+  }
+}
 
 export function receivingAppealsMutationsAllowed(data: Pick<ReceivingAppealsListResponse, "readOnly">): boolean {
   return data.readOnly !== true;
@@ -567,7 +686,7 @@ export type ReceivingAppealCreateBody = {
   manualSourceKey?: string;
 };
 
-/** K1 POST wire — `manualSourceKey` may be preset or custom channel text (K8). */
+/** K1 POST wire — `manualSourceKey` = builtin key or persisted custom `key` (K8). */
 export type ReceivingAppealCreateWire = {
   clientDisplayName: string;
   interest?: string;
