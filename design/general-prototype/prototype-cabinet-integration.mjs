@@ -96,6 +96,11 @@ assert.match(embedRole, /if \(el\.disabled !== true\)/, "146 sale lock writes ar
 const walletHistory = readFileSync(path.join(root, "partner/partner-wallet-history.js"), "utf8");
 assert.match(walletHistory, /data-proto-embed-ignore/, "147 purchase anchor ignored by generic embed nav");
 assert.match(walletHistory, /data-purchase-embed="\$\{index\}"/, "147 routes every purchase row to 144 embed");
+assert.doesNotMatch(roles, /crypto\.randomUUID/, "roles uses demoRandomId in non-secure embed");
+assert.match(roles, /demoRandomId\(\)/, "roles wires prototype demo id fallback");
+const certView = readFileSync(path.join(root, "partner/certificate-view.js"), "utf8");
+assert.doesNotMatch(certView, /crypto\.randomUUID/, "certificate-view avoids secure-context-only API");
+assert.match(certView, /demoRandomToken/, "certificate display code uses demo token helper");
 assert.doesNotMatch(
   walletHistory,
   /linkedPurchase=isPurchase&&index===0/,

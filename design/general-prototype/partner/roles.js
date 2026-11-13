@@ -72,6 +72,7 @@ import {
   certificatePublicModel,
   hydrateCertificateCard,
 } from "./certificate-view.js";
+import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
   recommendationGuestHash,
@@ -5576,7 +5577,7 @@ document.addEventListener("submit", (e) => {
       let t = new FormData(e.target);
       if (!String(t.get("name")).trim()) return;
       let s = he(e.target.dataset.id) || {
-        id: crypto.randomUUID(),
+        id: demoRandomId(),
         purchases: [],
       };
       for (let n of ["name", "city", "phone", "email", "need", "note"])
@@ -5664,7 +5665,7 @@ document.addEventListener("submit", (e) => {
       let t = P.find((n) => n.id === e.target.dataset.target),
         a = new FormData(e.target);
       if (!t || t.ready || Ve(t.id) || !String(a.get("subject")).trim()) return;
-      let s = crypto.randomUUID();
+      let s = demoRandomId();
       (i.invitations.push({
         id: s,
         kind: "partner",
@@ -5695,7 +5696,7 @@ document.addEventListener("submit", (e) => {
         return;
       }
       let a = Kt(),
-        createdId = crypto.randomUUID();
+        createdId = demoRandomId();
       (i.records.push({
         id: createdId,
         kind: "certificate",
@@ -5728,7 +5729,7 @@ document.addEventListener("submit", (e) => {
         s = String(t.get("partner")).trim(),
         n = String(t.get("category")).trim();
       if (!s || !n) return;
-      let l = crypto.randomUUID();
+      let l = demoRandomId();
       (i.invitations.push({
         id: l,
         kind: a,
@@ -5816,7 +5817,7 @@ document.addEventListener("submit", (e) => {
       let t = new FormData(e.target);
       if (!String(t.get("category")).trim()) return;
       (i.records.push({
-        id: crypto.randomUUID(),
+        id: demoRandomId(),
         kind: "certificate",
         ...newCertificateIdentity(),
         name: String(t.get("category")),

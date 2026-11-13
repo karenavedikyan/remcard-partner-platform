@@ -772,6 +772,56 @@ try {
   assert.doesNotMatch(href147 || "", /partner-wallet-history\.html/, "hub TOC must not open orphan 147 HTML");
   await hubToc.close();
 
+  const opaqueCtx = await browser.newContext();
+  await opaqueCtx.addInitScript(() => {
+    if (typeof crypto === "undefined") return;
+    try {
+      delete crypto.randomUUID;
+    } catch {
+      try {
+        Object.defineProperty(crypto, "randomUUID", {
+          value: undefined,
+          configurable: true,
+          writable: true,
+        });
+      } catch {
+        // ignore
+      }
+    }
+  });
+  const opaquePage = await opaqueCtx.newPage();
+  await opaquePage.setViewportSize({ width: 1280, height: 900 });
+  const opaqueErrors = [];
+  opaquePage.on("pageerror", (err) => opaqueErrors.push(String(err)));
+  await opaquePage.goto(`${base}/partner/index.html?role=store`, { waitUntil: "load" });
+  await opaquePage.waitForFunction(
+    () => document.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 20000 },
+  );
+  await opaquePage.evaluate(() => {
+    document.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await opaquePage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  await opaquePage.evaluate(() => {
+    const roleEl = document.querySelector('[data-testid="scenario-role"]');
+    if (!roleEl) return;
+    roleEl.value = "agent";
+    roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await opaquePage.waitForFunction(
+    () => document.querySelector('[data-testid="scenario-role"]')?.value === "agent",
+    null,
+    { timeout: 10000 },
+  );
+  await opaquePage.waitForSelector(".shell aside.sidebar", { timeout: 20000 });
+  assert.equal(
+    opaqueErrors.some((line) => /randomUUID/i.test(line)),
+    false,
+    `scenario-role agent switch must not throw randomUUID: ${opaqueErrors.join(" | ")}`,
+  );
+  await opaqueCtx.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

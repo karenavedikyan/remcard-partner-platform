@@ -1,6 +1,7 @@
 import { a as makeQR } from "./chunk-3HBG25M4.js";
 import { a as logo } from "./chunk-PG3I4FMB.js";
 import { j as publicCertificateUrl } from "./chunk-QXOSRGZH.js";
+import { demoRandomToken } from "./demo-random-id.js";
 const QR = makeQR();
 const types = {
   agent: ["А", "Агент"],
@@ -24,7 +25,7 @@ export function certificateIdentity({
 }) {
   const [prefix, label] = types[role] || ["К", "Компания"];
   return {
-    displayCode: `${prefix}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+    displayCode: `${prefix}-${demoRandomToken(8)}`,
     issuerTypeSnapshot: role,
     issuerTypeLabel: label,
     issuerNameSnapshot: name,
