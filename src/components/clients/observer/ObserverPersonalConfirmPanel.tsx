@@ -4,6 +4,7 @@ import styles from "./observer.module.css";
 import type { ObserverPersonalPersistenceStatus } from "./ObserverPersonalEditPanel";
 
 type Props = {
+  confirmTargetKey: string;
   kind: "archived" | "trash" | "restore";
   count: number;
   persistenceStatus?: ObserverPersonalPersistenceStatus;
@@ -31,6 +32,7 @@ const COPY = {
 };
 
 export function ObserverPersonalConfirmPanel({
+  confirmTargetKey,
   kind,
   count,
   persistenceStatus = "blocked",
@@ -45,7 +47,9 @@ export function ObserverPersonalConfirmPanel({
       ? "Выполняется…"
       : persistenceStatus === "blocked"
         ? `${c.confirm} (недоступно)`
-        : c.confirm;
+        : persistenceStatus === "error"
+          ? `Повторить: ${c.confirm}`
+          : c.confirm;
 
   return (
     <section
@@ -53,6 +57,7 @@ export function ObserverPersonalConfirmPanel({
       role="region"
       aria-label="Подтверждение действия"
       data-testid="ca-observer-personal-confirm"
+      data-confirm-target-key={confirmTargetKey}
       data-persistence-status={persistenceStatus}
     >
       <h3>{c.title}</h3>
@@ -82,6 +87,7 @@ export function ObserverPersonalConfirmPanel({
           aria-disabled={confirmBlocked}
           title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
           onClick={() => {
+            if (persistenceStatus === "pending") return;
             if (!confirmBlocked) onConfirm();
           }}
         >

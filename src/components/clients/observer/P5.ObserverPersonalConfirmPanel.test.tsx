@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ObserverPersonalConfirmPanel } from "./ObserverPersonalConfirmPanel";
+import { buildObserverConfirmTargetKey } from "./observer-personal-edit-target";
 
 describe("P5 ObserverPersonalConfirmPanel", () => {
   it.each([
@@ -10,7 +11,13 @@ describe("P5 ObserverPersonalConfirmPanel", () => {
     ["restore", "Восстановить в активный список?", "Восстановить (недоступно)"],
   ] as const)("kind %s blocked copy", (kind, title, confirmLabel) => {
     render(
-      <ObserverPersonalConfirmPanel kind={kind} count={2} onCancel={vi.fn()} onConfirm={vi.fn()} />,
+      <ObserverPersonalConfirmPanel
+        confirmTargetKey={buildObserverConfirmTargetKey(kind, ["a", "b"])}
+        kind={kind}
+        count={2}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
     );
     expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     expect(screen.getByText(/Выбрано записей: 2/)).toBeTruthy();
@@ -24,7 +31,13 @@ describe("P5 ObserverPersonalConfirmPanel", () => {
     const onConfirm = vi.fn();
     const user = userEvent.setup();
     render(
-      <ObserverPersonalConfirmPanel kind="trash" count={1} onCancel={vi.fn()} onConfirm={onConfirm} />,
+      <ObserverPersonalConfirmPanel
+        confirmTargetKey={buildObserverConfirmTargetKey("trash", ["x"])}
+        kind="trash"
+        count={1}
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+      />,
     );
     await user.click(screen.getByRole("button", { name: "Удалить у себя (недоступно)" }));
     expect(onConfirm).not.toHaveBeenCalled();
@@ -35,6 +48,7 @@ describe("P5 ObserverPersonalConfirmPanel", () => {
     const user = userEvent.setup();
     render(
       <ObserverPersonalConfirmPanel
+        confirmTargetKey={buildObserverConfirmTargetKey("archived", ["a", "b", "c"])}
         kind="archived"
         count={3}
         persistenceStatus="ready"
@@ -49,6 +63,7 @@ describe("P5 ObserverPersonalConfirmPanel", () => {
   it("shows partial error when provided", () => {
     render(
       <ObserverPersonalConfirmPanel
+        confirmTargetKey={buildObserverConfirmTargetKey("restore", ["a", "b"])}
         kind="restore"
         count={2}
         persistenceStatus="error"

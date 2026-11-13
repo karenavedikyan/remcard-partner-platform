@@ -75,3 +75,12 @@ K5 `BUCKET_LOCKED` when mutating from trash except restore — map to `error` + 
 ## Competing copy
 
 If a P3-branch duplicate of this adapter exists, **delete it** and point imports here before Root integration.
+
+## Edit / confirm draft binding (required props @ `f2e51a00+`)
+
+`observer-personal-edit-target.ts`: `buildObserverEditTargetKey`, `buildObserverConfirmTargetKey`, `ObserverPersonalEditPanelBinding`.
+
+- `editTargetKey` / `confirmTargetKey` — stable sorted ids; remount with `key={editTargetKey}`.
+- `draftSeed` — increment **only** on cancel/reopen; keep constant across `ready→pending→error` so user draft survives.
+- `onSave` / `onConfirm` fire on **`ready` and `error`** (retry); **`pending`** is no-op.
+- Do not replace `initial` each render to reset draft — that discards user input; bump `draftSeed` instead.

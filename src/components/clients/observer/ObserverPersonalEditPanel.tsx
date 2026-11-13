@@ -12,22 +12,28 @@ export type PersonalEditDraft = {
 export type ObserverPersonalPersistenceStatus = "blocked" | "ready" | "pending" | "error";
 
 type Props = {
+  /** Same ids as P3 selection; changes reinitialize draft from `initial`. */
+  editTargetKey: string;
   mode: "single" | "bulk";
   count: number;
   initial?: PersonalEditDraft;
+  /** Bump on cancel/reopen only — not on error rerenders. */
+  draftSeed?: number | string;
   persistenceStatus?: ObserverPersonalPersistenceStatus;
   saveError?: string | null;
   onCancel: () => void;
   /** Legacy blocked path: parent shows global notice without mutating. */
   onAttemptSave?: () => void;
-  /** Called only when persistenceStatus is ready; must not write without confirmed API. */
+  /** Called when persistenceStatus is ready or error (retry). Never when pending/blocked. */
   onSave?: (draft: PersonalEditDraft) => void;
 };
 
 export function ObserverPersonalEditPanel({
+  editTargetKey,
   mode,
   count,
   initial,
+  draftSeed = 0,
   persistenceStatus = "blocked",
   saveError,
   onCancel,
@@ -36,15 +42,19 @@ export function ObserverPersonalEditPanel({
 }: Props) {
   const titleId = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const draftBindingRef = useRef<string | null>(null);
   const [alias, setAlias] = useState(initial?.alias ?? "");
   const [tag, setTag] = useState(initial?.tag ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
 
   useEffect(() => {
+    const binding = `${editTargetKey}\0${mode}\0${count}\0${draftSeed}`;
+    if (draftBindingRef.current === binding) return;
+    draftBindingRef.current = binding;
     setAlias(initial?.alias ?? "");
     setTag(initial?.tag ?? "");
     setNote(initial?.note ?? "");
-  }, [initial, mode, count]);
+  }, [editTargetKey, mode, count, draftSeed, initial]);
 
   useEffect(() => {
     formRef.current?.querySelector<HTMLElement>("input,textarea")?.focus({ preventScroll: true });
@@ -63,13 +73,18 @@ export function ObserverPersonalEditPanel({
       ? "Сохранение…"
       : persistenceStatus === "blocked"
         ? "Сохранить (недоступно)"
-        : mode === "single"
-          ? "Сохранить для себя"
-          : `Применить к ${count} записям`;
+        : persistenceStatus === "error"
+          ? mode === "single"
+            ? "Повторить сохранение"
+            : `Повторить для ${count} записей`
+          : mode === "single"
+            ? "Сохранить для себя"
+            : `Применить к ${count} записям`;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (persistenceStatus === "ready" && onSave) {
+    if (persistenceStatus === "pending") return;
+    if ((persistenceStatus === "ready" || persistenceStatus === "error") && onSave) {
       onSave(draft());
       return;
     }
@@ -83,6 +98,7 @@ export function ObserverPersonalEditPanel({
       ref={formRef}
       className={styles.editPanel}
       data-observer-personal-edit
+      data-edit-target-key={editTargetKey}
       data-persistence-status={persistenceStatus}
       onSubmit={submit}
       aria-labelledby={titleId}
