@@ -1,0 +1,55 @@
+{
+  "reconcilesRootManifest": "remcard-cursor-team/review/clients-release-prep/selected-source-manifest.json",
+  "reconcileOwner": "P1",
+  "partnerRepo": "karenavedikyan/remcard-partner-platform",
+  "packagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "p1PackagingPin": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "navigatorProductionProfile": "89fb8e073c39c8dbd329996940b85c6a86751868",
+  "rootSelectedUiPins": {
+    "P1": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+    "P2": "457a417c",
+    "P2_branchRef": "cursor/2-06bf",
+    "P3": "b1c1684e",
+    "P4": "9d22694f",
+    "P5": "164b8dbe",
+    "P6": "2375944e",
+    "P7": "9094f523"
+  },
+  "frozenNavigatorBackendSourcePrep": {
+    "K8": "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+    "K1": "a71b8f37f526d775cd99f0535705be678b72261e",
+    "K2": "c49d71dceae8e221fc3e321056b091d7e3347be5",
+    "K5": "6c4444879d5651679c969b8009b3f39d05302c43"
+  },
+  "p6RejectedBulkTipDoNotSelect": "3d6c7637",
+  "p5BulkCollisionPathsSelectFromP5Only": [
+    "src/components/clients/receiving/ReceivingBulkToolbar.tsx",
+    "src/components/clients/receiving/ReceivingBulkEditPanel.tsx",
+    "src/components/clients/receiving/receiving-bulk-handoff.ts",
+    "src/lib/clients-parity/receiving-bulk-contract.ts"
+  ],
+  "wholeBranchTransferForbidden": true,
+  "clientsSectionPublishable": false,
+  "primaryOpenBlocker": "order_association_return",
+  "openAcceptanceGates": [
+    "observer",
+    "personal",
+    "bulk",
+    "settings",
+    "certificate",
+    "roles",
+    "geometry_full_shell"
+  ],
+  "rootSyntheticQaOnly": [
+    "detail_revision_1_2",
+    "stage_history_refresh",
+    "failed_save_retains_draft",
+    "committed_save_failed_refresh_notice",
+    "409_reload_no_auto_retry",
+    "readonly_redaction",
+    "404_back_500_retry",
+    "scanner_order_buttons_intercepted",
+    "viewport_375_1440_slice_not_full_acceptance"
+  ]
+}

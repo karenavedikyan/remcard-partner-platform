@@ -123,26 +123,22 @@
   ],
   "clientsSectionPublishable": false,
   "rootFixedAssemblyPin": "audit/remcard-parallel-20261113/P1/ROOT-BACKEND-ASSEMBLY-PIN.md",
-  "parallelAssemblyTips20261113RootFixed": {
-    "P1_proxyWire": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
-    "P2": "9f7c3755",
-    "P3": "b85efb54",
-    "P4": "1850d088",
-    "P5": "6a72f353",
-    "P6_detailSettings": "86251070900989cf82100376ffb870535f0477f3",
-    "P6_transport": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-    "P6_rejectedBulkTip": "3d6c7637",
-    "P5_receivingBulk": "1298491f",
-    "P2_operationMatrix8137_heritage": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-    "P7_prior": "30a292d002d56e0daaeebdff62d1fce902590362",
-    "navigatorBackend": {
-      "K8": "1894569a",
-      "K1": "63a4f3d6",
-      "K2": "78ce748d",
-      "K5": "6c444487"
-    },
-    "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
+  "rootSelectedReconcile": "audit/remcard-parallel-20261113/P1/ROOT-SELECTED-SOURCE-RECONCILE.md",
+  "rootSelectedSourceManifest": "remcard-cursor-team/review/clients-release-prep/selected-source-manifest.json",
+  "p1ReconcileManifest": "audit/remcard-parallel-20261113/P1/selected-source-manifest.p1-reconcile.json",
+  "rootSelectedUiPins20261113": {
+    "P1": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+    "P2": "457a417c",
+    "P2_branchRef": "cursor/2-06bf",
+    "P3": "b1c1684e",
+    "P4": "9d22694f",
+    "P5": "164b8dbe",
+    "P6": "2375944e",
+    "P7": "9094f523"
   },
+  "p6RejectedBulkTipDoNotSelect": "3d6c7637",
+  "primaryOpenBlocker": "order_association_return",
+  "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
   "p2OperationMatrix8137Finding": "No complete no-schema path under current restrictions — server contracts blocked",
   "receivingPrincipalCanonical": {
     "status": "CORRECTION_PIN_ONLY_K8_MUST_REVISE_SCHEMA",

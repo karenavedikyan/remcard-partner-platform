@@ -7,13 +7,13 @@
     "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c"
   },
   "agentTipsReviewed": {
-    "P1": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-    "P2": "9f7c3755",
-    "P3": "b85efb54",
-    "P4": "1850d088",
+    "P1": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+    "P2": "457a417c",
+    "P3": "b1c1684e",
+    "P4": "9d22694f",
     "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "6a72f353",
-    "P6": "86251070900989cf82100376ffb870535f0477f3",
+    "P5": "164b8dbe",
+    "P6": "2375944e",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
   },
@@ -23,16 +23,16 @@
     "awaiting": "P6 correction branch"
   },
   "p3FollowUpResolverPending": {
-    "tip": "b85efb54",
+    "tip": "b1c1684e",
     "note": "fe416e2b — follow-up resolver pending; do not treat as final stack until P3 closes"
   },
   "p2OperationMatrix8137": {
-    "tip": "9f7c3755",
+    "tip": "457a417c",
     "finding": "no complete no-schema publication path under current restrictions",
     "blocksFullSectionPublish": true
   },
   "p4Pins": {
-    "productTip": "1850d088",
+    "productTip": "9d22694f",
     "auditTip": "ad7b0824b39ffedd576af84d18be64782611d6b5"
   },
   "ownerProductAllowlist": {
@@ -88,7 +88,7 @@
     "p6DetailSettingsPin": "86251070900989cf82100376ffb870535f0477f3",
     "p6TransportPin": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
     "p6OwnerAssemblyDefaultTip": "86251070900989cf82100376ffb870535f0477f3",
-    "p5ReceivingBulkTip": "1298491f",
+    "p5ReceivingBulkTip": "164b8dbe",
     "excludeFromP6OwnershipSelectP5Blob": [
       "src/components/clients/receiving/ReceivingBulkActions.tsx",
       "src/components/clients/receiving/receiving-bulk-handoff.ts",
@@ -111,6 +111,20 @@
     "doc": "audit/remcard-parallel-20261113/P1/P6-RECEIVING-PROXY-READINESS.md"
   },
   "remDualFrontClientResidual": "audit/remcard-parallel-20261113/P1/REM-DUAL-FRONT-CLIENT-SITE-RESIDUAL.md",
+  "rootSelectedSourceManifest": "remcard-cursor-team/review/clients-release-prep/selected-source-manifest.json",
+  "rootSelectedUiPins": {
+    "P1": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+    "P2": "457a417c",
+    "P2_branchRef": "cursor/2-06bf",
+    "P3": "b1c1684e",
+    "P4": "9d22694f",
+    "P5": "164b8dbe",
+    "P6": "2375944e",
+    "P7": "9094f523"
+  },
+  "p1ReconcileManifest": "audit/remcard-parallel-20261113/P1/selected-source-manifest.p1-reconcile.json",
+  "rootSelectedReconcileDoc": "audit/remcard-parallel-20261113/P1/ROOT-SELECTED-SOURCE-RECONCILE.md",
+  "primaryOpenBlocker": "order_association_return",
   "p1ScaffoldDependencies": [
     "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
     "src/lib/clients-parity/contracts.ts",
@@ -164,7 +178,7 @@
     {
       "path": "src/components/clients/ClientDetailWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "f2510a49f871e2027bb8c87d85bbedb98bb8ca2b",
       "contentSha256": "3229c207fd1554bfbc5dd6421b482b04bd52a1ab8ce3d96c9b101ef49231acc0",
       "gitStatusVs57ca": "M",
@@ -176,7 +190,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9",
       "contentSha256": "a1e934e7228c73764d3786f3ef4082ca446d91975dbf2c7373d8eec799f207e7",
       "gitStatusVs57ca": "M",
@@ -188,85 +202,61 @@
     {
       "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
-      "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "2d29bf54011578bf063e442c9c1a5a38b658aebc",
-      "matchesP7WholeTree": false
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "1f5a87d732f3e9bb281b3d48e565c1f71df1f9fd",
-      "contentSha256": "66aded6644c388ff06fc234b473eb99ca75217225432358147a721e36e92d332",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "7e8a97a38b0a210c81a6e51579ab6b15bdaf4553",
-      "matchesP7WholeTree": false
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
-      "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "49a942519afaf8a8c7cb3368e7cd94aba3eedf92",
-      "matchesP7WholeTree": false
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverClientDetailView.tsx",
       "owner": "P4",
-      "sourceSha": "1850d088",
+      "sourceSha": "9d22694f",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
-      "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "74c52cb852c37cb6e84cfe95921b35bfdc53d37b",
-      "matchesP7WholeTree": false
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverFilterChips.tsx",
       "owner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPartnerCard.tsx",
       "owner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPartnerDetailView.tsx",
       "owner": "P4",
-      "sourceSha": "1850d088",
+      "sourceSha": "9d22694f",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPartnersListView.tsx",
       "owner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
       "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
       "gitStatusVs57ca": "A",
@@ -278,25 +268,25 @@
     {
       "path": "src/components/clients/observer/ObserverPersonalClientRow.tsx",
       "owner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
       "owner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
       "owner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalTools.tsx",
       "owner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
@@ -314,141 +304,75 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "473382616e4a4524c08756f903e4bfbb0a6dd33c",
-      "contentSha256": "9df7ec22330bfd797c9c0c9dd87183e2f6595671453ba8c2605fe8515b92b910",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "29514322b5541a2200e2a7f6463b682aeaa98b97",
-      "contentSha256": "66dcbaa1cbd5500a7d184ebe7d7a82a4811559bc6caf94813ae85c12d43fa919",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingAppealForm.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "5c4cd8e4b946928113df2a799deea8ffa6b1fbd9",
-      "contentSha256": "d30000067a1d3ecbaaf470248890dbb1e4563e9d0a293018799324b62c6393af",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingAppealHistory.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "9d2e5db7dc948a47dcec0379d33bd44847c1fb44",
-      "contentSha256": "3c6d26324fee53b396d48d0a629067693ce3ddab602cab93b38b12275d354b7c",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingAppealsList.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "232ef8d7a1b42c21558f81b2c4a8227dde5adb09",
-      "contentSha256": "0b0dc51c91c6fdacf46651084c56070145c02aceea8b01fd2f434707914bcc05",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "b489805b2687671af8a39bd5c9423a04dd687864",
-      "contentSha256": "baefacf12567cc5b5d452872ae37fdd0c737f5826ab2bcb46359832f7791d86f",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/ReceivingCertificateScan.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "602a2f4251178ef2ba69e9e613f265749151fd13",
-      "contentSha256": "db1689669036f34974073bae25a16dbcb469037d23d67c48c96f5e825fe0c8ce",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/WorkingStagesEditor.tsx",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "298c12dd2f0f912fe4487493c70906abe07e624f",
-      "contentSha256": "1fbf3f30cecc8158390345439fc319ca65877c7642df4e8d36ef609ae9cdeb64",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/detail-contract-alignment.ts",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "a273e728f136b3bff9c3496c2fd52583824cac59",
-      "contentSha256": "d708f26975f257444d4b43556da8cbe3ef4467b540c58fdecf3a975f8603238e",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "1e9276caa9b0c83ec023383e7a91065dae65455f",
-      "contentSha256": "203308e0afc19b464e8b58a744111e91d300ba70bae1aa5ddf4a56f6db5ca6c0",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/components/clients/receiving/receiving.module.css",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "74bc969fd7139a2864ef643e03dea985d344d0d5",
-      "contentSha256": "3438f76d5e29fc2f0c2dfa57c57223a71f39ecb44b94ccf2c637669c1318263e",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/lib/clients-parity/author-handoff-v6.json",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-      "gitBlobSha": "01e8c0c857c8f9fe7175a070ce02282e078912ee",
-      "contentSha256": "bcf9e542c5e7afc71c7804c6dab6c292d41823419752bf65337a4adcf7b83dee",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+      "gitBlobSha": "7b833ddb055a7a80dd8f4a9045611394a85678c6",
+      "contentSha256": "e533990bea042b937d75e5ec615451466d9fd71b84b0f91f262499dddd3acc1b",
       "gitStatusVs57ca": "A",
       "packaging": "exclude",
       "reasonCode": "packaging-metadata-not-runtime",
@@ -458,7 +382,7 @@
     {
       "path": "src/lib/clients-parity/contracts.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
       "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
       "gitStatusVs57ca": "A",
@@ -470,7 +394,7 @@
     {
       "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
       "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
       "gitStatusVs57ca": "A",
@@ -482,7 +406,7 @@
     {
       "path": "src/lib/clients-parity/filter-observer.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
       "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
       "gitStatusVs57ca": "A",
@@ -494,7 +418,7 @@
     {
       "path": "src/lib/clients-parity/observer-display.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
       "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
       "gitStatusVs57ca": "A",
@@ -506,7 +430,7 @@
     {
       "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
       "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
       "gitStatusVs57ca": "A",
@@ -518,7 +442,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
       "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
       "gitStatusVs57ca": "A",
@@ -530,7 +454,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
       "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
       "gitStatusVs57ca": "A",
@@ -542,7 +466,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
       "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
       "gitStatusVs57ca": "A",
@@ -554,7 +478,7 @@
     {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
       "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
       "gitStatusVs57ca": "A",
@@ -566,9 +490,9 @@
     {
       "path": "src/lib/clients-parity/patch-manifest-57ca4680.json",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-      "gitBlobSha": "f07549ea8d406f248f5bd4fcfff3ddf8a849d9ef",
-      "contentSha256": "97ef307aab533219346b4b8ed2190e21bf736d262dfab2436f7d714931ceb269",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+      "gitBlobSha": "10ce48c3c661302440cfec52d50672289905781f",
+      "contentSha256": "235c7da8f184c43679d815d834639b11968f03dfdbdfbee92bf5e4ebd06a5915",
       "gitStatusVs57ca": "A",
       "packaging": "exclude",
       "reasonCode": "packaging-metadata-not-runtime",
@@ -578,7 +502,7 @@
     {
       "path": "src/lib/clients-parity/production-compat.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
       "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
       "gitStatusVs57ca": "A",
@@ -590,19 +514,13 @@
     {
       "path": "src/lib/clients-parity/receiving-appeals-api.ts",
       "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "96406c0a54b1776ce750e184e053e43908946191",
-      "contentSha256": "1db9575465c39225f03189547cbb8cf2c9accc23658343e66887f9703fbff1fe",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
+      "sourceSha": "2375944e",
+      "packaging": "MISSING_AT_OWNER_TIP"
     },
     {
       "path": "src/lib/clients-parity/types.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "0c23726fb5d53a97f00d2f04d8a60eb9b0dbc7dc",
       "contentSha256": "d91db48eb7967f035b3705be56951a407e2770dbd2cf23566a836ea33789b213",
       "gitStatusVs57ca": "A",
@@ -614,9 +532,9 @@
     {
       "path": "src/lib/remcard-proxy.ts",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-      "gitBlobSha": "867c21d83ca0671cbf3f6f95ed9a6fe7a2d805a4",
-      "contentSha256": "1cd580188a602d34828c3a8a9fedf064879e0b35e0da369155047584ce93dd21",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+      "gitBlobSha": "84a1f45e51515edf0984bdabd2fe243df9ac63c7",
+      "contentSha256": "04deb5cc0ab3486ff494960392e860e167b306878101ac04b05d0af252e6e7e3",
       "gitStatusVs57ca": "M",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -628,7 +546,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9",
       "contentSha256": "a1e934e7228c73764d3786f3ef4082ca446d91975dbf2c7373d8eec799f207e7",
       "gitStatusVs57ca": "M",
@@ -638,57 +556,9 @@
       "matchesP7WholeTree": false
     },
     {
-      "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
-      "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "2d29bf54011578bf063e442c9c1a5a38b658aebc",
-      "matchesP7WholeTree": false
-    },
-    {
-      "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "1f5a87d732f3e9bb281b3d48e565c1f71df1f9fd",
-      "contentSha256": "66aded6644c388ff06fc234b473eb99ca75217225432358147a721e36e92d332",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "7e8a97a38b0a210c81a6e51579ab6b15bdaf4553",
-      "matchesP7WholeTree": false
-    },
-    {
-      "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
-      "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "49a942519afaf8a8c7cb3368e7cd94aba3eedf92",
-      "matchesP7WholeTree": false
-    },
-    {
-      "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
-      "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
-      "gitStatusVs57ca": "A",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "74c52cb852c37cb6e84cfe95921b35bfdc53d37b",
-      "matchesP7WholeTree": false
-    },
-    {
       "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
       "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
       "gitStatusVs57ca": "A",
@@ -710,141 +580,9 @@
       "matchesP7WholeTree": true
     },
     {
-      "path": "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "473382616e4a4524c08756f903e4bfbb0a6dd33c",
-      "contentSha256": "9df7ec22330bfd797c9c0c9dd87183e2f6595671453ba8c2605fe8515b92b910",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "29514322b5541a2200e2a7f6463b682aeaa98b97",
-      "contentSha256": "66dcbaa1cbd5500a7d184ebe7d7a82a4811559bc6caf94813ae85c12d43fa919",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingAppealForm.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "5c4cd8e4b946928113df2a799deea8ffa6b1fbd9",
-      "contentSha256": "d30000067a1d3ecbaaf470248890dbb1e4563e9d0a293018799324b62c6393af",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingAppealHistory.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "9d2e5db7dc948a47dcec0379d33bd44847c1fb44",
-      "contentSha256": "3c6d26324fee53b396d48d0a629067693ce3ddab602cab93b38b12275d354b7c",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingAppealsList.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "232ef8d7a1b42c21558f81b2c4a8227dde5adb09",
-      "contentSha256": "0b0dc51c91c6fdacf46651084c56070145c02aceea8b01fd2f434707914bcc05",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "b489805b2687671af8a39bd5c9423a04dd687864",
-      "contentSha256": "baefacf12567cc5b5d452872ae37fdd0c737f5826ab2bcb46359832f7791d86f",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/ReceivingCertificateScan.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "602a2f4251178ef2ba69e9e613f265749151fd13",
-      "contentSha256": "db1689669036f34974073bae25a16dbcb469037d23d67c48c96f5e825fe0c8ce",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/WorkingStagesEditor.tsx",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "298c12dd2f0f912fe4487493c70906abe07e624f",
-      "contentSha256": "1fbf3f30cecc8158390345439fc319ca65877c7642df4e8d36ef609ae9cdeb64",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/detail-contract-alignment.ts",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "a273e728f136b3bff9c3496c2fd52583824cac59",
-      "contentSha256": "d708f26975f257444d4b43556da8cbe3ef4467b540c58fdecf3a975f8603238e",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "1e9276caa9b0c83ec023383e7a91065dae65455f",
-      "contentSha256": "203308e0afc19b464e8b58a744111e91d300ba70bae1aa5ddf4a56f6db5ca6c0",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
-      "path": "src/components/clients/receiving/receiving.module.css",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "74bc969fd7139a2864ef643e03dea985d344d0d5",
-      "contentSha256": "3438f76d5e29fc2f0c2dfa57c57223a71f39ecb44b94ccf2c637669c1318263e",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
       "path": "src/lib/clients-parity/contracts.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
       "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
       "gitStatusVs57ca": "A",
@@ -856,7 +594,7 @@
     {
       "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
       "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
       "gitStatusVs57ca": "A",
@@ -868,7 +606,7 @@
     {
       "path": "src/lib/clients-parity/filter-observer.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
       "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
       "gitStatusVs57ca": "A",
@@ -880,7 +618,7 @@
     {
       "path": "src/lib/clients-parity/observer-display.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
       "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
       "gitStatusVs57ca": "A",
@@ -892,7 +630,7 @@
     {
       "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
       "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
       "gitStatusVs57ca": "A",
@@ -904,7 +642,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
       "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
       "gitStatusVs57ca": "A",
@@ -916,7 +654,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
       "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
       "gitStatusVs57ca": "A",
@@ -928,7 +666,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
       "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
       "gitStatusVs57ca": "A",
@@ -940,7 +678,7 @@
     {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
       "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
       "gitStatusVs57ca": "A",
@@ -952,7 +690,7 @@
     {
       "path": "src/lib/clients-parity/production-compat.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
       "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
       "gitStatusVs57ca": "A",
@@ -962,21 +700,9 @@
       "matchesP7WholeTree": true
     },
     {
-      "path": "src/lib/clients-parity/receiving-appeals-api.ts",
-      "owner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "gitBlobSha": "96406c0a54b1776ce750e184e053e43908946191",
-      "contentSha256": "1db9575465c39225f03189547cbb8cf2c9accc23658343e66887f9703fbff1fe",
-      "gitStatusVs57ca": "?",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": null,
-      "matchesP7WholeTree": null
-    },
-    {
       "path": "src/lib/clients-parity/types.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "0c23726fb5d53a97f00d2f04d8a60eb9b0dbc7dc",
       "contentSha256": "d91db48eb7967f035b3705be56951a407e2770dbd2cf23566a836ea33789b213",
       "gitStatusVs57ca": "A",
@@ -988,9 +714,9 @@
     {
       "path": "src/lib/remcard-proxy.ts",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-      "gitBlobSha": "867c21d83ca0671cbf3f6f95ed9a6fe7a2d805a4",
-      "contentSha256": "1cd580188a602d34828c3a8a9fedf064879e0b35e0da369155047584ce93dd21",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+      "gitBlobSha": "84a1f45e51515edf0984bdabd2fe243df9ac63c7",
+      "contentSha256": "04deb5cc0ab3486ff494960392e860e167b306878101ac04b05d0af252e6e7e3",
       "gitStatusVs57ca": "M",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -1003,12 +729,12 @@
     "listBodySource": {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9"
     },
     "productionExportArtifact": {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d"
     },
     "transformOn57ca": [
@@ -1033,7 +759,7 @@
     {
       "path": "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "presentAtOwnerTip": true,
       "gitBlobSha": "476702d771b75287fcfcb848e58cc64db73b25ce",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1041,7 +767,7 @@
     {
       "path": "src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "presentAtOwnerTip": true,
       "gitBlobSha": "56b01f043063c3072d91fb1440c6b1fd8a85d3e4",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1049,7 +775,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.props.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
       "presentAtOwnerTip": true,
       "gitBlobSha": "3b553aab2756442a3e8bf77a3b1c6eb4abf7260a",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1057,15 +783,15 @@
     {
       "path": "src/components/clients/P1.receiving-proxy-readiness.test.ts",
       "qaOwner": "P1",
-      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-      "presentAtOwnerTip": false,
-      "gitBlobSha": null,
+      "sourceSha": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "c9a03b465445b7252c9a73476dddffa6307e071a",
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/observer/P3.ObserverFilterChips.test.tsx",
       "qaOwner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1073,7 +799,7 @@
     {
       "path": "src/components/clients/observer/P3.ObserverPartnerCard.test.tsx",
       "qaOwner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1081,7 +807,7 @@
     {
       "path": "src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx",
       "qaOwner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1089,7 +815,7 @@
     {
       "path": "src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx",
       "qaOwner": "P3",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1097,7 +823,7 @@
     {
       "path": "src/components/clients/observer/P4.ObserverClientDetailView.test.tsx",
       "qaOwner": "P4",
-      "sourceSha": "1850d088",
+      "sourceSha": "9d22694f",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1105,7 +831,7 @@
     {
       "path": "src/components/clients/observer/P4.ObserverPartnerDetailView.test.tsx",
       "qaOwner": "P4",
-      "sourceSha": "1850d088",
+      "sourceSha": "9d22694f",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1113,7 +839,7 @@
     {
       "path": "src/components/clients/observer/P4.observer-detail-navigation.test.tsx",
       "qaOwner": "P4",
-      "sourceSha": "1850d088",
+      "sourceSha": "9d22694f",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1121,7 +847,7 @@
     {
       "path": "src/components/clients/observer/P5.ObserverPersonalClientRow.test.tsx",
       "qaOwner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1129,7 +855,7 @@
     {
       "path": "src/components/clients/observer/P5.ObserverPersonalConfirmPanel.test.tsx",
       "qaOwner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1137,7 +863,7 @@
     {
       "path": "src/components/clients/observer/P5.ObserverPersonalEditPanel.test.tsx",
       "qaOwner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1145,7 +871,7 @@
     {
       "path": "src/components/clients/observer/P5.ObserverPersonalTools.test.tsx",
       "qaOwner": "P5",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
@@ -1153,49 +879,49 @@
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "db35888f0818828394190be7f9b530c24591be29",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionTabs.keyboard.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "b0cf3769e496b85898479c6a2faeffceb1a0c50e",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "e1728cf178e65d12f0d2f37e22459948aa7fa65b",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.keyboard.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "5630775985c76d8900b6b95f1cb39d6b576e1591",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "b933960eabe783f31ba95a616c2cfc153ef52ee5",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/observer/P6.ObserverContractBlocked.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
-      "presentAtOwnerTip": true,
-      "gitBlobSha": "211e5a0169aa9b7c76802c08cf8452346ee94af1",
+      "sourceSha": "2375944e",
+      "presentAtOwnerTip": false,
+      "gitBlobSha": null,
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
@@ -1225,7 +951,7 @@
       "sourceOwner": "P3",
       "sourceShaKey": "P3",
       "note": "Imported by P3/P4 observer tests; do not ship to production bundle",
-      "sourceSha": "b85efb54",
+      "sourceSha": "b1c1684e",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_FIXTURE_TRANSITIVE"
@@ -1238,7 +964,7 @@
       "sourceOwner": "P5",
       "sourceShaKey": "P5",
       "note": "P5 personal-row tests; audit path only",
-      "sourceSha": "6a72f353",
+      "sourceSha": "164b8dbe",
       "presentAtOwnerTip": false,
       "gitBlobSha": null,
       "packaging": "QA_FIXTURE_TRANSITIVE"
@@ -1277,23 +1003,8 @@
       "description": "Owner-tip extracted UI + parity lib; applies only atop 57ca gate/routes",
       "paths": [
         "src/components/clients/ClientsListWorkspace.tsx",
-        "src/components/clients/direction/ClientsDirectionTabs.tsx",
-        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
-        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
-        "src/components/clients/observer/ObserverContractBlocked.tsx",
         "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
         "src/components/clients/observer/observer.module.css",
-        "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
-        "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
-        "src/components/clients/receiving/ReceivingAppealForm.tsx",
-        "src/components/clients/receiving/ReceivingAppealHistory.tsx",
-        "src/components/clients/receiving/ReceivingAppealsList.tsx",
-        "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
-        "src/components/clients/receiving/ReceivingCertificateScan.tsx",
-        "src/components/clients/receiving/WorkingStagesEditor.tsx",
-        "src/components/clients/receiving/detail-contract-alignment.ts",
-        "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
-        "src/components/clients/receiving/receiving.module.css",
         "src/lib/clients-parity/contracts.ts",
         "src/lib/clients-parity/filter-observer.ts",
         "src/lib/clients-parity/observer-display.ts",
@@ -1303,7 +1014,6 @@
         "src/lib/clients-parity/observer-stats.ts",
         "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
         "src/lib/clients-parity/production-compat.ts",
-        "src/lib/clients-parity/receiving-appeals-api.ts",
         "src/lib/clients-parity/types.ts",
         "src/lib/remcard-proxy.ts"
       ],
@@ -1460,7 +1170,7 @@
   "p7MismatchEvidence": [
     {
       "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
-      "ownerBlob": "6c601f681e7b7508da7eecf18857d16dd57951f4",
+      "ownerBlob": null,
       "p7Blob": "2d29bf54011578bf063e442c9c1a5a38b658aebc"
     },
     {

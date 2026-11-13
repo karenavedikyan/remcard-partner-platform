@@ -16,11 +16,25 @@ NAVIGATOR_CLIENTS_BACKEND = {
     "sourcePrepFrozen": True,
 }
 
+ROOT_SELECTED_MANIFEST = (
+    "remcard-cursor-team/review/clients-release-prep/selected-source-manifest.json"
+)
+ROOT_SELECTED_UI_PINS = {
+    "P1": "f43f9e226387f20117fc6f6b1118271fc2e99ea2",
+    "P2": "457a417c",
+    "P2_branchRef": "cursor/2-06bf",
+    "P3": "b1c1684e",
+    "P4": "9d22694f",
+    "P5": "164b8dbe",
+    "P6": "2375944e",
+    "P7": "9094f523",
+}
+
 P6_REJECTED_BULK_TIP = "3d6c7637"
 P6_DETAIL_SETTINGS_PIN = "86251070900989cf82100376ffb870535f0477f3"
 P6_TRANSPORT_PIN = "78fd46e70fa6cd5b1eb08aa79a9554505a121c00"
 P6_HANDOFF_TIP = P6_DETAIL_SETTINGS_PIN
-P5_RECEIVING_BULK_TIP = "1298491f"
+P5_RECEIVING_BULK_TIP = ROOT_SELECTED_UI_PINS["P5"]
 P6_EXCLUDE_VENDOR_P5_PATHS = [
     "src/components/clients/receiving/ReceivingBulkActions.tsx",
     "src/components/clients/receiving/receiving-bulk-handoff.ts",
@@ -49,15 +63,15 @@ P6_RECEIVING_PRODUCT_PATHS = [
     "src/lib/clients-parity/receiving-appeals-api.ts",
 ]
 
-# Root fixed assembly (partner parallel tips) — paths from owner branches only.
+# Root selected UI blobs — not whole-branch merge (see selected-source-manifest.p1-reconcile.json).
 AGENT_TIPS = {
-    "P1": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
-    "P2": "9f7c3755",
-    "P3": "b85efb54",
-    "P4": "1850d088",
+    "P1": ROOT_SELECTED_UI_PINS["P1"],
+    "P2": ROOT_SELECTED_UI_PINS["P2"],
+    "P3": ROOT_SELECTED_UI_PINS["P3"],
+    "P4": ROOT_SELECTED_UI_PINS["P4"],
     "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "6a72f353",
-    "P6": P6_HANDOFF_TIP,
+    "P5": ROOT_SELECTED_UI_PINS["P5"],
+    "P6": ROOT_SELECTED_UI_PINS["P6"],
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
 }
@@ -618,6 +632,11 @@ def main() -> None:
             "doc": "audit/remcard-parallel-20261113/P1/P6-RECEIVING-PROXY-READINESS.md",
         },
         "remDualFrontClientResidual": "audit/remcard-parallel-20261113/P1/REM-DUAL-FRONT-CLIENT-SITE-RESIDUAL.md",
+        "rootSelectedSourceManifest": ROOT_SELECTED_MANIFEST,
+        "rootSelectedUiPins": ROOT_SELECTED_UI_PINS,
+        "p1ReconcileManifest": "audit/remcard-parallel-20261113/P1/selected-source-manifest.p1-reconcile.json",
+        "rootSelectedReconcileDoc": "audit/remcard-parallel-20261113/P1/ROOT-SELECTED-SOURCE-RECONCILE.md",
+        "primaryOpenBlocker": "order_association_return",
         "p1ScaffoldDependencies": P1_SCAFFOLD_DEPENDENCIES,
         "preserveBase57caByteIdentical": preserve_base,
         "ownerRootAssembly": assembly,

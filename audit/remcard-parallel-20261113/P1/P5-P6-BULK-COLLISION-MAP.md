@@ -14,7 +14,7 @@ Root: reject bulk ownership workaround; **never** silently select 3d6c7637 blobs
 
 ## P5 canonical (select at publish)
 
-**Pin:** `1298491f` (toolbar / edit / confirm / helpers — full SHA when on origin)
+**Pin:** `164b8dbe` (Root selected P5; supersedes `1298491f`)
 
 | Role | Typical paths (verify @ P5 tip) |
 |------|----------------------------------|
