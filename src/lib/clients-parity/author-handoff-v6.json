@@ -136,6 +136,13 @@
     "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
   },
   "p2OperationMatrix8137Finding": "No complete no-schema path under current restrictions — server contracts blocked",
+  "p1ProxyHandoffEarly": {
+    "wireBlockedUntil": "canonical navigator referred-appeals + personal-meta contract",
+    "dbMigrateDeploy": "separate user confirmation only",
+    "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+    "clientProfilePinInProgress": "89fb8e073c39c8dbd329996940b85c6a86751868",
+    "doc": "audit/remcard-parallel-20261113/P1/EARLY-CONTRACT-PROXY-HANDOFF.md"
+  },
   "fullSectionPublishGatesRequired": [
     "GATE-PRODUCTION-GATE-CONTEXT-57ca",
     "GATE-REFERRED-APPEALS-CONTRACT-P2",

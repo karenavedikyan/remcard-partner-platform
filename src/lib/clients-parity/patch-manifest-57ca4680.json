@@ -45,6 +45,25 @@
   },
   "clientsListWorkspaceProductionApplyNote": "Export matches snippet: direct OwnerClientsGate + canLinkOnboardingHistory; no compatibility cast.",
   "clientsSectionPublishable": false,
+  "p1ProxyOwner": {
+    "file": "src/lib/remcard-proxy.ts",
+    "wireStatus": "BLOCKED_UNTIL_CANONICAL_NAVIGATOR_CONTRACT",
+    "navigatorOwners": "K8/K1/K2/K5",
+    "pendingAllowlistRoutes": [
+      "GET /api/pro/referred-appeals",
+      "GET /api/pro/referred-appeals/:id",
+      "GET /api/pro/referred-appeals/by-partner/:partnerId",
+      "PATCH /api/pro/referred-appeals/:id/personal-meta",
+      "POST /api/pro/referred-appeals/personal-batch"
+    ],
+    "explicitlyNotForObserverProxy": [
+      "/api/pro/client-appeals",
+      "/api/pro/agent-clients",
+      "/api/pro/agent-clients/batch"
+    ],
+    "handoffDoc": "audit/remcard-parallel-20261113/P1/EARLY-CONTRACT-PROXY-HANDOFF.md",
+    "p2MatrixSha": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
+  },
   "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
   "parallelAssemblyTips20261113V4": {
     "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
