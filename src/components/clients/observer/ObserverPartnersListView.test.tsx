@@ -79,8 +79,9 @@ describe("ObserverPartnersListView (fixture presentation)", () => {
     await user.click(rowCheck);
     await user.click(screen.getByRole("button", { name: "В архив" }));
     const confirm = screen.getByTestId("ca-observer-personal-confirm");
-    await user.click(within(confirm).getByRole("button", { name: "В архив" }));
-    expect(screen.getByText(/BLOCKED_PERSISTENCE/)).toBeTruthy();
+    const confirmBtn = within(confirm).getByRole("button", { name: "В архив" });
+    expect(confirmBtn).toHaveProperty("disabled", true);
+    expect(confirmBtn.getAttribute("data-persistence-status")).toBe("blocked");
     expect(screen.getAllByTestId("ca-observer-client-row").length).toBe(3);
   });
 

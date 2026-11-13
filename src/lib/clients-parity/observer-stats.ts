@@ -1,11 +1,11 @@
 import type { ObserverPartnerAppealStats, ObserverReferredAppeal } from "./types";
 
 const SYSTEM = {
-  NEW: "new",
-  PAID: "paid",
-  SHIPPED: "shipped",
-  RETURN: "return",
-  REFUSED: "refused",
+  NEW: "sys_new",
+  PAID: "sys_paid",
+  SHIPPED: "sys_shipped",
+  RETURN: "sys_return",
+  REFUSED: "sys_refused",
 } as const;
 
 export function safePct(numerator: number, denominator: number): string {

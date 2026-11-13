@@ -9,14 +9,15 @@ describe("partnerAppealStats", () => {
     receivingPartnerId: "p1",
     referrerPartnerId: "me",
     updatedAt: "2026-01-01T12:00:00Z",
-    stageId: "new",
+    stageId: "sys_new",
+    certificateId: "",
   };
 
   it("computes conversion with prototype labels", () => {
     const list: ObserverReferredAppeal[] = [
       base,
-      { ...base, id: "a2", stageId: "paid", updatedAt: "2026-01-02T12:00:00Z" },
-      { ...base, id: "a3", stageId: "refused" },
+      { ...base, id: "a2", stageId: "sys_paid", updatedAt: "2026-01-02T12:00:00Z" },
+      { ...base, id: "a3", stageId: "sys_refused" },
     ];
     const stats = partnerAppealStats(list);
     expect(stats.total).toBe(3);

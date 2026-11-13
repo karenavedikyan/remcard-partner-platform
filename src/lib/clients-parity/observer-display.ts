@@ -1,6 +1,11 @@
 import type { ObserverReferredAppeal } from "./types";
 
 const STAGE_LABELS: Record<string, string> = {
+  sys_new: "Новое обращение",
+  sys_paid: "Оплачено",
+  sys_shipped: "Отгружено",
+  sys_return: "Возврат",
+  sys_refused: "Отказ",
   new: "Новое обращение",
   paid: "Оплачено",
   shipped: "Отгружено",

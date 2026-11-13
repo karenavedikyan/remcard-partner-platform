@@ -36,18 +36,19 @@ export const OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS = [
   "shippedAt",
 ] as const;
 
-const K8_SYSTEM_STAGE_TO_UI: Record<string, string> = {
-  sys_new: "new",
-  sys_paid: "paid",
-  sys_shipped: "shipped",
-  sys_return: "return",
-  sys_refused: "refused",
-};
+/** P2 @ 457a417c: preserve canonical K8 `sys_*` system stage ids in UI state. */
+export const OBSERVER_K8_SYSTEM_STAGE_KEYS = [
+  "sys_new",
+  "sys_paid",
+  "sys_shipped",
+  "sys_return",
+  "sys_refused",
+] as const;
 
 export function mapK8AppealStageKey(stageKey: string): string {
-  const hit = K8_SYSTEM_STAGE_TO_UI[stageKey];
-  if (hit) return hit;
-  if (stageKey.startsWith("sys_")) return stageKey.slice(4);
+  if ((OBSERVER_K8_SYSTEM_STAGE_KEYS as readonly string[]).includes(stageKey)) {
+    return stageKey;
+  }
   return stageKey;
 }
 
@@ -198,7 +199,11 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
         : "";
   const updatedAt = typeof row.updatedAt === "string" ? row.updatedAt : "";
   const stageRaw =
-    typeof row.stageKey === "string" ? row.stageKey : typeof row.stageId === "string" ? row.stageId : "new";
+    typeof row.stageKey === "string"
+      ? row.stageKey
+      : typeof row.stageId === "string"
+        ? row.stageId
+        : "sys_new";
   const stageId = mapK8AppealStageKey(stageRaw);
   const referralAt =
     typeof row.referralAt === "string"

@@ -1,10 +1,13 @@
 "use client";
 
+import type { ObserverPersonalPersistenceStatus } from "./ObserverPersonalEditPanel";
 import styles from "./observer.module.css";
 
 type Props = {
   kind: "archived" | "trash" | "restore";
   count: number;
+  persistenceStatus: ObserverPersonalPersistenceStatus;
+  persistenceError?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -27,8 +30,16 @@ const COPY = {
   },
 };
 
-export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm }: Props) {
+export function ObserverPersonalConfirmPanel({
+  kind,
+  count,
+  persistenceStatus,
+  persistenceError,
+  onCancel,
+  onConfirm,
+}: Props) {
   const c = COPY[kind];
+  const confirmAllowed = persistenceStatus === "ready" || persistenceStatus === "error";
   return (
     <section
       className={styles.confirmPanel}
@@ -40,6 +51,11 @@ export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm 
       <p>
         Выбрано записей: {count}. {c.body}
       </p>
+      {persistenceError ? (
+        <p className={styles.persistenceNotice} role="alert">
+          {persistenceError}
+        </p>
+      ) : null}
       <div className={styles.personalActions}>
         <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
           Отмена
@@ -48,9 +64,12 @@ export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm 
           type="button"
           className={styles.primaryBtn}
           data-observer-action="confirm"
+          disabled={!confirmAllowed}
+          aria-disabled={!confirmAllowed}
+          data-persistence-status={persistenceStatus}
           onClick={onConfirm}
         >
-          {c.confirm}
+          {persistenceStatus === "pending" ? "Выполняется…" : c.confirm}
         </button>
       </div>
     </section>

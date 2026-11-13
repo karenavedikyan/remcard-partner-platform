@@ -34,7 +34,7 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-10T14:22:00Z",
     referralAt: "2026-11-01T10:00:00Z",
-    stageId: "new",
+    stageId: "sys_new",
   },
   {
     id: "ref-2",
@@ -47,7 +47,7 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-11T09:15:00Z",
     referralAt: "2026-10-15T10:00:00Z",
-    stageId: "paid",
+    stageId: "sys_paid",
   },
   {
     id: "ref-3",
@@ -60,6 +60,6 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-12T18:40:00Z",
     referralAt: "2026-11-05T08:00:00Z",
-    stageId: "refused",
+    stageId: "sys_refused",
   },
 ];

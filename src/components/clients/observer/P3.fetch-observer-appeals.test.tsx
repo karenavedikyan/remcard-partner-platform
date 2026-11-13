@@ -234,10 +234,10 @@ describe("P3 fetchObserverReferredAppeals", () => {
     const res = await fetchObserverReferredAppeals();
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.appeals[0]?.stageId).toBe("paid");
+      expect(res.appeals[0]?.stageId).toBe("sys_paid");
       expect(res.appeals[0]?.referralAt).toBe("2026-01-01T00:00:00.000Z");
       expect(res.personalMeta.a1?.alias).toBe("V");
-      expect(mapK8AppealStageKey("sys_new")).toBe("new");
+      expect(mapK8AppealStageKey("sys_new")).toBe("sys_new");
       expect(OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS).toContain("privateNotes");
     }
   });

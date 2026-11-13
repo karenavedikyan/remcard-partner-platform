@@ -124,7 +124,11 @@ describe("P3 observer persistence via P5 bridge + intercepted fetch", () => {
     await user.click(screen.getByRole("button", { name: "Изменить" }));
     await user.click(screen.getByRole("button", { name: "Сохранить" }));
     await waitFor(() => {
-      expect(screen.getByText(/обновились|сервер/i)).toBeTruthy();
+      expect(screen.getByTestId("ca-observer-personal-edit")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Сохранить" })).toHaveAttribute(
+        "data-persistence-status",
+        "error",
+      );
     });
     expect(rowCheck).toBeChecked();
   });

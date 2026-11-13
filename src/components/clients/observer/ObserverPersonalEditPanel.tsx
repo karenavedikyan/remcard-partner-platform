@@ -9,23 +9,29 @@ export type PersonalEditDraft = {
   note: string;
 };
 
+export type ObserverPersonalPersistenceStatus = "blocked" | "ready" | "pending" | "error";
+
 type Props = {
   mode: "single" | "bulk";
   count: number;
   initial?: PersonalEditDraft;
-  /** When false, save stays disabled (no P5 bridge / blocked proxy). */
-  persistEnabled?: boolean;
+  /** Stable per open-panel session — avoids wiping user input on parent pending rerenders. */
+  editSessionKey: string;
+  persistenceStatus: ObserverPersonalPersistenceStatus;
+  persistenceError?: string | null;
   onCancel: () => void;
-  onAttemptSave: (draft: PersonalEditDraft) => void;
+  onSave: (draft: PersonalEditDraft) => void;
 };
 
 export function ObserverPersonalEditPanel({
   mode,
   count,
   initial,
-  persistEnabled = false,
+  editSessionKey,
+  persistenceStatus,
+  persistenceError,
   onCancel,
-  onAttemptSave,
+  onSave,
 }: Props) {
   const titleId = useId();
   const [alias, setAlias] = useState(initial?.alias ?? "");
@@ -36,15 +42,18 @@ export function ObserverPersonalEditPanel({
     setAlias(initial?.alias ?? "");
     setTag(initial?.tag ?? "");
     setNote(initial?.note ?? "");
-  }, [initial, mode, count]);
+  }, [editSessionKey]);
+
+  const saveAllowed = persistenceStatus === "ready" || persistenceStatus === "error";
 
   return (
     <form
       className={styles.editPanel}
       data-observer-personal-edit
+      data-testid="ca-observer-personal-edit"
       onSubmit={(e) => {
         e.preventDefault();
-        onAttemptSave({ alias, tag, note });
+        onSave({ alias, tag, note });
       }}
       aria-labelledby={titleId}
     >
@@ -85,6 +94,11 @@ export function ObserverPersonalEditPanel({
       ) : (
         <p className={styles.mutedSmall}>Пустое поле удалит метку у выбранных записей.</p>
       )}
+      {persistenceError ? (
+        <p className={styles.persistenceNotice} role="alert">
+          {persistenceError}
+        </p>
+      ) : null}
       <div className={styles.personalActions}>
         <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
           Отмена
@@ -92,12 +106,17 @@ export function ObserverPersonalEditPanel({
         <button
           type="submit"
           className={styles.primaryBtn}
-          disabled={!persistEnabled}
-          aria-disabled={!persistEnabled}
-          title={persistEnabled ? undefined : "BLOCKED_PERSISTENCE"}
+          disabled={!saveAllowed}
+          aria-disabled={!saveAllowed}
+          title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
           data-observer-action="save"
+          data-persistence-status={persistenceStatus}
         >
-          {persistEnabled ? "Сохранить" : "Сохранить (недоступно)"}
+          {persistenceStatus === "blocked"
+            ? "Сохранить (недоступно)"
+            : persistenceStatus === "pending"
+              ? "Сохранение…"
+              : "Сохранить"}
         </button>
       </div>
     </form>
