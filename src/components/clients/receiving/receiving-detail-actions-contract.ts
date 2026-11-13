@@ -32,7 +32,7 @@ export {
 } from "./receiving-appeal-navigation";
 
 export const RECEIVING_DETAIL_INTEGRATION_PINS = {
-  p4Detail: "e0f00c3c",
+  p4Detail: "08e71600",
   p6Host: "2375944e",
   p6Workspace: "2375944e",
   k1: "a71b8f37",
