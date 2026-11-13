@@ -30,14 +30,62 @@ export type ReceivingAppealScannerContext =
 
 export type ScannerAppealParam = { mode: "none" } | { mode: "invalid" } | { mode: "scoped"; appealId: string };
 
+/** P4 `725e7c47` `assertReceivingAppealId` — owned mirror for scanner query preflight. */
+const UNSAFE_APPEAL_ID = /[\s#?&/\\]|^(?:https?:|\/\/)/i;
+
+export function assertReceivingAppealId(appealId: string): string | null {
+  const id = appealId.trim();
+  if (!id || UNSAFE_APPEAL_ID.test(id)) {
+    return null;
+  }
+  return id;
+}
+
+export function parseReceivingAppealRevision(raw: string | number | null | undefined): number | null {
+  if (typeof raw === "number") {
+    if (!Number.isSafeInteger(raw) || raw < 0) {
+      return null;
+    }
+    return raw;
+  }
+  if (typeof raw === "string") {
+    const text = raw.trim();
+    if (!text || !/^\d+$/.test(text)) {
+      return null;
+    }
+    const n = Number(text);
+    if (!Number.isSafeInteger(n) || n < 0) {
+      return null;
+    }
+    return n;
+  }
+  return null;
+}
+
+export function parseScannerAppealQueryValues(values: readonly string[]): ScannerAppealParam {
+  if (values.length === 0) {
+    return { mode: "none" };
+  }
+  const nonempty = values.map((v) => v.trim()).filter(Boolean);
+  if (nonempty.length === 0) {
+    return { mode: "invalid" };
+  }
+  const unique = new Set(nonempty);
+  if (unique.size > 1) {
+    return { mode: "invalid" };
+  }
+  const id = assertReceivingAppealId(nonempty[0]!);
+  if (!id) {
+    return { mode: "invalid" };
+  }
+  return { mode: "scoped", appealId: id };
+}
+
 export function parseScannerAppealParam(raw: string | null | undefined): ScannerAppealParam {
   if (raw === null || raw === undefined) {
     return { mode: "none" };
   }
-  if (raw.trim() === "") {
-    return { mode: "invalid" };
-  }
-  return { mode: "scoped", appealId: raw.trim() };
+  return parseScannerAppealQueryValues([raw]);
 }
 
 /** @deprecated use parseScannerAppealParam */
@@ -123,16 +171,14 @@ export async function loadReceivingAppealScannerContext(
     };
   }
 
-  const revisionRaw =
-    typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision);
-  if (!Number.isFinite(revisionRaw) || revisionRaw < 0) {
+  const revision = parseReceivingAppealRevision(res.wire.revision);
+  if (revision === null) {
     return {
       status: "error",
       appealId: trimmed,
       message: "Некорректная ревизия обращения.",
     };
   }
-  const revision = revisionRaw;
 
   const stageKey = (appeal.stageKey ?? appeal.stageId ?? "").trim();
   if (stageKey && RECEIVING_TERMINAL_STAGE_KEYS.has(stageKey)) {

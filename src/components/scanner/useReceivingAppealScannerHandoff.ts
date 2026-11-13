@@ -22,7 +22,14 @@ export type ReceivingAppealLinkPhase =
   | "failed"
   | "conflict";
 
-type SubmitScope = { appealId: string; revision: number; loadGen: number };
+type FrozenSubmitScope = { appealId: string; revision: number; loadGen: number; idempotencyKey: string };
+
+function resolveParam(input: ScannerAppealParam | string | null | undefined): ScannerAppealParam {
+  if (input !== null && typeof input === "object" && "mode" in input) {
+    return input;
+  }
+  return parseScannerAppealParam(input);
+}
 
 function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContext {
   if (param.mode === "invalid") {
@@ -34,8 +41,11 @@ function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContex
   return { status: "idle" };
 }
 
-export function useReceivingAppealScannerHandoff(appealIdParam: string | null | undefined) {
-  const param = useMemo(() => parseScannerAppealParam(appealIdParam), [appealIdParam]);
+const LINK_SCOPE_LOST_MESSAGE =
+  "Покупка создана, но привязка к обращению недоступна: нет доверенного контекста исходной попытки (повтор проверки или смена обращения).";
+
+export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | string | null | undefined) {
+  const param = useMemo(() => resolveParam(input), [input]);
   const scopedAppealId = param.mode === "scoped" ? param.appealId : null;
 
   const [context, setContext] = useState<ReceivingAppealScannerContext>(() => initialContext(param));
@@ -46,7 +56,8 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
   const revisionRef = useRef(0);
   const contextRef = useRef(context);
   contextRef.current = context;
-  const submitScopeRef = useRef<SubmitScope | null>(null);
+  const frozenSubmitByKeyRef = useRef<Map<string, FrozenSubmitScope>>(new Map());
+  const activeSubmitScopeRef = useRef<FrozenSubmitScope | null>(null);
 
   const [linkPhase, setLinkPhase] = useState<ReceivingAppealLinkPhase>("idle");
   const [linkError, setLinkError] = useState("");
@@ -60,7 +71,7 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     linkGen.current += 1;
     linkInFlight.current = false;
     linkScopeRef.current = null;
-    submitScopeRef.current = null;
+    activeSubmitScopeRef.current = null;
     setLinkPhase("idle");
     setLinkError("");
     setPendingOrderId(null);
@@ -91,22 +102,46 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     };
   }, [param, resetLinkState, scopedAppealId]);
 
-  const captureSubmitScope = useCallback(() => {
+  const freezeSubmitScopeOnce = useCallback((idempotencyKey: string) => {
     if (!scopeRef.current) {
-      submitScopeRef.current = null;
+      return;
+    }
+    if (frozenSubmitByKeyRef.current.has(idempotencyKey)) {
       return;
     }
     const ctx = contextRef.current;
     if (ctx.status !== "ready" || ctx.appealId !== scopeRef.current || ctx.orderAlreadyLinked) {
-      submitScopeRef.current = null;
       return;
     }
-    submitScopeRef.current = {
+    const frozen: FrozenSubmitScope = {
       appealId: ctx.appealId,
       revision: revisionRef.current,
       loadGen: loadGen.current,
+      idempotencyKey,
     };
+    frozenSubmitByKeyRef.current.set(idempotencyKey, frozen);
+    activeSubmitScopeRef.current = frozen;
   }, []);
+
+  const prepareOrderAttemptScope = useCallback((idempotencyKey: string, wasRetry: boolean) => {
+    if (!scopeRef.current) {
+      return;
+    }
+    if (!wasRetry) {
+      freezeSubmitScopeOnce(idempotencyKey);
+      return;
+    }
+    const frozen = frozenSubmitByKeyRef.current.get(idempotencyKey);
+    if (!frozen) {
+      activeSubmitScopeRef.current = null;
+      return;
+    }
+    if (scopeRef.current !== frozen.appealId) {
+      activeSubmitScopeRef.current = null;
+      return;
+    }
+    activeSubmitScopeRef.current = frozen;
+  }, [freezeSubmitScopeOnce]);
 
   const assertPreviewAllowed = useCallback((preview: OrderPreviewAllowed): string | null => {
     if (!scopeRef.current) {
@@ -125,24 +160,32 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     return null;
   }, []);
 
-  const beginOrderLinkAfterSuccess = useCallback((orderId: string) => {
-    const submit = submitScopeRef.current;
-    if (!submit || scopeRef.current !== submit.appealId) {
+  const beginOrderLinkAfterSuccess = useCallback((orderId: string, idempotencyKey: string) => {
+    if (!scopeRef.current) {
       return;
     }
-    if (loadGen.current !== submit.loadGen) {
+    const frozen = frozenSubmitByKeyRef.current.get(idempotencyKey);
+    if (!frozen) {
+      setLinkPhase("failed");
+      setLinkError(LINK_SCOPE_LOST_MESSAGE);
+      return;
+    }
+    if (scopeRef.current !== frozen.appealId) {
+      setLinkPhase("failed");
+      setLinkError(LINK_SCOPE_LOST_MESSAGE);
       return;
     }
     const ctx = contextRef.current;
-    if (ctx.status !== "ready" || ctx.appealId !== submit.appealId || ctx.orderAlreadyLinked) {
+    if (ctx.status !== "ready" || ctx.appealId !== frozen.appealId || ctx.orderAlreadyLinked) {
+      setLinkPhase("failed");
+      setLinkError(LINK_SCOPE_LOST_MESSAGE);
       return;
     }
-    const gen = linkGen.current;
     linkScopeRef.current = {
-      appealId: submit.appealId,
+      appealId: frozen.appealId,
       orderId,
-      revision: submit.revision,
-      linkGen: gen,
+      revision: frozen.revision,
+      linkGen: linkGen.current,
     };
     setPendingOrderId(orderId);
     setLinkPhase("pending");
@@ -226,11 +269,13 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     if (ctx.status !== "ready" || ctx.appealId !== scopeRef.current) {
       return;
     }
-    const frozenRevision = scope?.revision ?? revisionRef.current;
+    if (!scope || scope.appealId !== scopeRef.current) {
+      return;
+    }
     linkScopeRef.current = {
-      appealId: scopeRef.current,
+      appealId: scope.appealId,
       orderId,
-      revision: frozenRevision,
+      revision: scope.revision,
       linkGen: linkGen.current,
     };
     setPendingOrderId(orderId);
@@ -256,7 +301,8 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
       context,
       linkPhase,
       linkError,
-      captureSubmitScope,
+      freezeSubmitScopeOnce,
+      prepareOrderAttemptScope,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
       retryOrderLinkOnly,
@@ -267,12 +313,13 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
       allowsNewStoreOrder,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
-      captureSubmitScope,
       certificatePrefillCode,
       context,
+      freezeSubmitScopeOnce,
       linkError,
       linkPhase,
       param,
+      prepareOrderAttemptScope,
       requiresAppealReady,
       retryOrderLinkOnly,
       scopedAppealId,

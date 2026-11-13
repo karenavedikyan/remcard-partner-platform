@@ -78,6 +78,7 @@ import {
   type ScannerEmptyActivityProbe,
 } from "@/lib/scanner-empty/eligibility";
 import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
+import { parseScannerAppealQueryValues } from "@/lib/scanner/receiving-appeal-handoff";
 import { useReceivingAppealScannerHandoff } from "./useReceivingAppealScannerHandoff";
 import {
   ReceivingAppealScannerBanner,
@@ -227,7 +228,9 @@ function RestoredAttemptBlock({
 
 export function ScannerHub({ userId }: ScannerHubProps) {
   const searchParams = useSearchParams();
-  const receivingHandoff = useReceivingAppealScannerHandoff(searchParams?.get("appealId") ?? null);
+  const receivingHandoff = useReceivingAppealScannerHandoff(
+    searchParams ? parseScannerAppealQueryValues(searchParams.getAll("appealId")) : { mode: "none" },
+  );
   const receivingRef = useRef(receivingHandoff);
   receivingRef.current = receivingHandoff;
   const presentation = useCabinetPresentation();
@@ -475,6 +478,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       outcome: ReturnType<typeof classifyStoreOrderPostResponse>,
       wasRetry: boolean,
       certificateCode: string,
+      idempotencyKey: string,
     ) => {
       switch (outcome.kind) {
         case "success": {
@@ -492,7 +496,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
           const handoff = receivingRef.current;
           if (handoff.appealId) {
-            handoff.beginOrderLinkAfterSuccess(data.order.id);
+            handoff.beginOrderLinkAfterSuccess(data.order.id, idempotencyKey);
           }
           break;
         }
@@ -543,7 +547,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const executeOrderPost = useCallback(
     async (record: StoreOrderAttemptRecord, wasRetry: boolean) => {
-      receivingRef.current.captureSubmitScope();
+      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry);
       markStoreOrderAttemptInFlight(userId);
       setStoredAttempt({ ...record, status: "in_flight" });
       setSubmitting(true);
@@ -561,6 +565,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           classifyStoreOrderPostResponse({ status: 201, payload, wasRetry }),
           wasRetry,
           record.body.certificateCode,
+          record.idempotencyKey,
         );
       } catch (caught) {
         if (caught instanceof RemcardApiError) {
@@ -573,12 +578,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             }),
             wasRetry,
             record.body.certificateCode,
+            record.idempotencyKey,
           );
         } else {
           applyPostOutcome(
             classifyStoreOrderNetworkFailure(wasRetry),
             wasRetry,
             record.body.certificateCode,
+            record.idempotencyKey,
           );
         }
       } finally {
@@ -927,8 +934,6 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       setSubmitError("Загружаем обращение. Повторите после готовности контекста.");
       return;
     }
-    receivingRef.current.captureSubmitScope();
-
     if (!presentation?.contextReady) {
       setSubmitError("Контекст рабочего места ещё загружается. Повторите поиск.");
       return;
