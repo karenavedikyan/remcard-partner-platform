@@ -1,6 +1,5 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
 import { ClientsDirectionWorkspace } from "@/components/clients/direction/ClientsDirectionWorkspace";
@@ -44,20 +43,11 @@ type Props = {
   canLinkOnboardingHistory?: boolean;
 };
 
-type ProductionOwnerClientsGate = ComponentType<{
-  children: ReactNode;
-  canLinkOnboardingHistory?: boolean;
-}>;
-
-/**
- * Production `57ca4680` `OwnerClientsGate` accepts this prop via `useBusinessSectionDispatch`.
- * R5 gate type is unchanged; cast keeps the patch snippet identical on production apply.
- */
+/** Export matches `patch-ClientsListWorkspace-57ca4680.snippet.txt` on production gate signature. */
 export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
-  const Gate = OwnerClientsGate as ProductionOwnerClientsGate;
   return (
-    <Gate canLinkOnboardingHistory={canLinkOnboardingHistory}>
+    <OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>
       <ClientsListBody />
-    </Gate>
+    </OwnerClientsGate>
   );
 }

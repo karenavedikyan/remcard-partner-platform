@@ -43,12 +43,23 @@
     "jsx": "<ClientsListWorkspace canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)} />",
     "gate": "src/components/clients/OwnerClientsGate.tsx forwards prop to OwnerClientsModeProvider"
   },
-  "clientsListWorkspaceProductionApplyNote": "On 57ca4680, drop ProductionOwnerClientsGate cast and use OwnerClientsGate directly; prop forwards to production gate.",
-  "parityBranchGateTypingShim": {
-    "component": "ClientsListWorkspace.tsx",
-    "reason": "Parity-branch OwnerClientsGate accepts only children; production gate forwards canLinkOnboardingHistory via useBusinessSectionDispatch.",
-    "productionApply": "Use patch-ClientsListWorkspace-57ca4680.snippet.txt export block only; do not cherry-pick the cast."
+  "clientsListWorkspaceProductionApplyNote": "Export matches snippet: direct OwnerClientsGate + canLinkOnboardingHistory; no compatibility cast.",
+  "clientsSectionPublishable": false,
+  "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "parallelAssemblyTips20261113V3": {
+    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
+    "P4_f7198e9d": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
+    "P4_28aa18ab": "28aa18ab1bdc42aa35c3a063c75e60e32f23bee9",
+    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
+    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P7": "30a292d002d56e0daaeebdff62d1fce902590362"
   },
+  "preserveBase57caByteIdentical": [
+    "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+    "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+    "src/components/clients/new-partner-empty/clientsEmptyCopy.ts"
+  ],
   "clientDetailWorkspaceVs57ca4680": "noDelta",
   "persistenceClaimsForbidden": [
     "C35 save",

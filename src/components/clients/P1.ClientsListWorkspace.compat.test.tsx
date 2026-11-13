@@ -37,8 +37,11 @@ describe("P1 ClientsListWorkspace build & production wiring", () => {
     expect(workspaceSource).toMatch(/canLinkOnboardingHistory\?: boolean/);
   });
 
-  it("documents parity-only gate cast; production snippet uses direct OwnerClientsGate", () => {
-    expect(workspaceSource).toContain("ProductionOwnerClientsGate");
+  it("uses direct OwnerClientsGate export (no compatibility cast)", () => {
+    expect(workspaceSource).not.toContain("ProductionOwnerClientsGate");
+    expect(workspaceSource).toMatch(
+      /<OwnerClientsGate canLinkOnboardingHistory=\{canLinkOnboardingHistory\}>/,
+    );
     const snippet = readFileSync(snippetPath, "utf8");
     expect(snippet).toContain(
       "<OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>",

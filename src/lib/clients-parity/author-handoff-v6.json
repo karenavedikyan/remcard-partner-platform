@@ -121,6 +121,47 @@
       "note": "2 fixture files / 8 ObserverPartnersListView tests PASS (jsdom; not a substitute for Computer browser pass)."
     }
   ],
+  "clientsSectionPublishable": false,
+  "parallelAssemblyTips20261113V3": {
+    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
+    "P4_f7198e9d": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
+    "P4_28aa18ab": "28aa18ab1bdc42aa35c3a063c75e60e32f23bee9",
+    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
+    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
+    "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+    "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
+  },
+  "fullSectionPublishGatesRequired": [
+    "GATE-PRODUCTION-GATE-CONTEXT-57ca",
+    "GATE-REFERRED-APPEALS-CONTRACT-P2",
+    "GATE-PERSONAL-OVERLAY-P2",
+    "GATE-EMPTY-STATE-PRESERVE-57ca",
+    "GATE-FULL-LEDGER-C01-C56",
+    "GATE-PAGE-ACCEPTANCE-NOT-COMPONENT-ONLY"
+  ],
+  "crossOwnerIntegrationGaps": [
+    {
+      "id": "INT-P2-CONTRACTS",
+      "owner": "P2",
+      "missing": "Production ok:true fetch-observer-appeals + personal overlay mapping decisions",
+      "blocks": "ObserverDataContractState honest UI without mocks"
+    },
+    {
+      "id": "INT-P3-EXPORTS",
+      "owner": "P3",
+      "missing": "Stable exports: ObserverClientBackFrom, observerClientBackFrom, ObserverDataContractState @ 9c3221ad",
+      "consumers": "P4 ObserverPartnerDetailView / ObserverClientDetailView"
+    },
+    {
+      "id": "INT-P4-DETAIL-MISSING",
+      "owner": "P4",
+      "missing": "ObserverPartnerDetailMissing export when partner id not in dataset (28aa18ab stack)",
+      "note": "f7198e9d vs 28aa18ab: same clients tree diff empty; root pin both SHAs for audit traceability"
+    }
+  ],
+  "smallestRootIntegrationCommand": "python3 audit/remcard-parallel-20261113/P1/validate-owner-assembly.py && git show <ownerTip>:<path> for each ownerRootAssembly row",
   "explicitRemainingBlockers": [
     "BLK-RECEIVING-APPEALS",
     "BLK-OBSERVER-REFERRED",

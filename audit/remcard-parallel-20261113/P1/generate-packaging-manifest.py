@@ -10,10 +10,11 @@ BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 AGENT_TIPS = {
     "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
     "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
-    "P3": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
-    "P4": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
-    "P5": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
-    "P6": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
+    "P4": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
+    "P4_supplement": "28aa18ab1bdc42aa35c3a063c75e60e32f23bee9",
+    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
+    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
 }
@@ -135,7 +136,7 @@ REJECTED_MANIFEST_SHAS = {
     "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c",
 }
 
-NAVIGATOR_RELEASE_PIN = "3c37ca2557069a43544b7d72848fd53c37e3be5e"
+NAVIGATOR_RELEASE_PIN = "8137ddd1ae5bad880fa28df34bab04e460bf2bdd"
 
 DEPENDENCY_GRAPH_EDGES = [
     ("src/components/clients/ClientsListWorkspace.tsx", "src/components/clients/direction/ClientsDirectionWorkspace.tsx"),
