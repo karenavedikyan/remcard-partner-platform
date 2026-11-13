@@ -44,6 +44,12 @@
     "gate": "src/components/clients/OwnerClientsGate.tsx forwards prop to OwnerClientsModeProvider"
   },
   "clientsListWorkspaceProductionApplyNote": "On 57ca4680, drop ProductionOwnerClientsGate cast and use OwnerClientsGate directly; prop forwards to production gate.",
+  "parityBranchGateTypingShim": {
+    "component": "ClientsListWorkspace.tsx",
+    "reason": "Parity-branch OwnerClientsGate accepts only children; production gate forwards canLinkOnboardingHistory via useBusinessSectionDispatch.",
+    "productionApply": "Use patch-ClientsListWorkspace-57ca4680.snippet.txt export block only; do not cherry-pick the cast."
+  },
+  "clientDetailWorkspaceVs57ca4680": "noDelta",
   "persistenceClaimsForbidden": [
     "C35 save",
     "C36 bulk tag save",

@@ -1,0 +1,16 @@
+
+> remcard-partner-platform@0.1.0 test:component
+> vitest run src/components/clients/P1.ClientsListWorkspace.compat.test.tsx src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx src/components/clients/ClientsListWorkspace.props.test.tsx
+
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/ClientsListWorkspace.props.test.tsx (2 tests) 2ms
+ ✓ src/components/clients/P1.ClientsListWorkspace.compat.test.tsx (6 tests) 7ms
+ ✓ src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx (3 tests) 6ms
+
+ Test Files  3 passed (3)
+      Tests  11 passed (11)
+   Start at  11:38:43
+   Duration  640ms (transform 58ms, setup 404ms, collect 43ms, tests 15ms, environment 779ms, prepare 160ms)
+

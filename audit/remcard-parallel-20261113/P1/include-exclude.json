@@ -1,0 +1,28 @@
+{
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "includeForCherryPick": [
+    "src/components/clients/ClientsListWorkspace.tsx",
+    "src/components/clients/direction/**",
+    "src/components/clients/observer/**",
+    "src/lib/clients-parity/**",
+    "scripts/clients-parity-20261113/**"
+  ],
+  "omitNoDelta": [
+    "src/components/clients/ClientDetailWorkspace.tsx"
+  ],
+  "excludeFromCherryPick": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/app/(cabinet)/clients/page.tsx",
+    "src/app/(cabinet)/clients/[id]/page.tsx",
+    "src/lib/onboarding-step/history-link-eligibility.ts",
+    "src/lib/onboarding-step/history-link-eligibility.test.ts",
+    "vitest.config.ts",
+    "src/lib/clients-rsc-boundary.test.ts"
+  ],
+  "mustNotDeleteOrMoveOnProduction": [
+    "src/app/clients/page.tsx",
+    "src/app/clients/[id]/page.tsx"
+  ],
+  "productionApplyClientsListExportOnly": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt"
+}

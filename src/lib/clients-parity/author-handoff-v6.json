@@ -56,6 +56,11 @@
     "src/components/clients/direction/ClientsDirectionTabs.tsx",
     "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
   ],
+  "clientDetailWorkspaceAtAuditSha": {
+    "path": "src/components/clients/ClientDetailWorkspace.tsx",
+    "vsProduction57ca4680": "noDelta",
+    "note": "P1: safe to omit from cherry-pick; list shell carries observer UX delta only."
+  },
   "parityLibAtAuditSha": [
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/fetch-observer-appeals.ts",
