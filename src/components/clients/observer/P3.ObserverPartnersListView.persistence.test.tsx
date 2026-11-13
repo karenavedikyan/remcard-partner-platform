@@ -7,6 +7,7 @@ import type { ObserverReferredAppeal } from "@/lib/clients-parity/types";
 const appeal: ObserverReferredAppeal = {
   id: "a1",
   clientName: "Клиент",
+  certificateId: "",
   receivingPartnerId: "p1",
   referrerPartnerId: "me",
   updatedAt: "2026-01-01T00:00:00.000Z",
@@ -28,7 +29,7 @@ describe("P3 ObserverPartnersListView persistence callbacks", () => {
     render(
       <ObserverPartnersListView
         appeals={[appeal]}
-        partners={[{ id: "p1", name: "Партнёр" }]}
+        partners={[{ id: "p1", name: "Партнёр", receivingOrganizationId: null, receivingBranchId: null }]}
         dataContract={{ status: "ready" }}
         initialLayout="list"
         displayPersonalMeta={{}}
@@ -50,7 +51,7 @@ describe("P3 ObserverPartnersListView persistence callbacks", () => {
     render(
       <ObserverPartnersListView
         appeals={[appeal]}
-        partners={[{ id: "p1", name: "Партнёр" }]}
+        partners={[{ id: "p1", name: "Партнёр", receivingOrganizationId: null, receivingBranchId: null }]}
         dataContract={{ status: "ready" }}
         initialLayout="list"
       />,

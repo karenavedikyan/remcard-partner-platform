@@ -6,6 +6,7 @@ import {
   fetchObserverReferredAppeals,
   type ObserverAppealsFetchErrorCode,
 } from "@/lib/clients-parity/fetch-observer-appeals";
+import { mergeObserverPersonalAfterGet } from "@/lib/clients-parity/observer-personal-merge";
 import type { ObserverPartnerMeta, ObserverPersonalMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
 import {
   ObserverPartnersListView,
@@ -58,8 +59,16 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
     if (res.ok) {
       setAppeals(res.appeals);
       setPartners(res.partners);
-      setPersonalMeta(res.personalMeta);
-      overlayVersionsRef.current = res.overlayVersions;
+      setPersonalMeta((prev) => {
+        const merged = mergeObserverPersonalAfterGet(
+          prev,
+          res.personalMeta,
+          overlayVersionsRef.current,
+          res.overlayVersions,
+        );
+        overlayVersionsRef.current = merged.versions;
+        return merged.meta;
+      });
       setLoadPhase("ready");
       setBlocker(null);
       setLoadError(null);

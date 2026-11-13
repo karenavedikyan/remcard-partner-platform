@@ -13,11 +13,20 @@ type Props = {
   mode: "single" | "bulk";
   count: number;
   initial?: PersonalEditDraft;
+  /** When false, save stays disabled (no P5 bridge / blocked proxy). */
+  persistEnabled?: boolean;
   onCancel: () => void;
-  onAttemptSave: () => void;
+  onAttemptSave: (draft: PersonalEditDraft) => void;
 };
 
-export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAttemptSave }: Props) {
+export function ObserverPersonalEditPanel({
+  mode,
+  count,
+  initial,
+  persistEnabled = false,
+  onCancel,
+  onAttemptSave,
+}: Props) {
   const titleId = useId();
   const [alias, setAlias] = useState(initial?.alias ?? "");
   const [tag, setTag] = useState(initial?.tag ?? "");
@@ -35,7 +44,7 @@ export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAt
       data-observer-personal-edit
       onSubmit={(e) => {
         e.preventDefault();
-        onAttemptSave();
+        onAttemptSave({ alias, tag, note });
       }}
       aria-labelledby={titleId}
     >
@@ -83,12 +92,12 @@ export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAt
         <button
           type="submit"
           className={styles.primaryBtn}
-          disabled
-          aria-disabled="true"
-          title="BLOCKED_PERSISTENCE"
+          disabled={!persistEnabled}
+          aria-disabled={!persistEnabled}
+          title={persistEnabled ? undefined : "BLOCKED_PERSISTENCE"}
           data-observer-action="save"
         >
-          Сохранить (недоступно)
+          {persistEnabled ? "Сохранить" : "Сохранить (недоступно)"}
         </button>
       </div>
     </form>

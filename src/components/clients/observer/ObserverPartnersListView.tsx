@@ -189,33 +189,28 @@ export function ObserverPartnersListView({
     }
   }, [finishPersist, notifyPersistenceBlock, panel, personalPersistence, persisting]);
 
-  const handleAttemptSave = useCallback(async () => {
-    if (!panel || panel.kind !== "edit" || persisting) return;
-    const { mode, ids } = panel;
-    if (!ids.length) {
-      setPanel(null);
-      return;
-    }
-    if (!personalPersistence?.onSavePersonal) {
-      notifyPersistenceBlock("Сохранить личные поля");
-      return;
-    }
-    const firstId = mode === "single" ? ids[0] : undefined;
-    const draft: PersonalEditDraft = firstId
-      ? {
-          alias: personalMeta[firstId]?.alias ?? "",
-          tag: personalMeta[firstId]?.tag ?? "",
-          note: personalMeta[firstId]?.note ?? "",
-        }
-      : { alias: "", tag: "", note: "" };
-    setPersisting(true);
-    try {
-      const res = await personalPersistence.onSavePersonal({ mode, ids, draft });
-      finishPersist(res, ids);
-    } finally {
-      setPersisting(false);
-    }
-  }, [finishPersist, notifyPersistenceBlock, panel, personalMeta, personalPersistence, persisting]);
+  const handleAttemptSave = useCallback(
+    async (draft: PersonalEditDraft) => {
+      if (!panel || panel.kind !== "edit" || persisting) return;
+      const { mode, ids } = panel;
+      if (!ids.length) {
+        setPanel(null);
+        return;
+      }
+      if (!personalPersistence?.onSavePersonal) {
+        notifyPersistenceBlock("Сохранить личные поля");
+        return;
+      }
+      setPersisting(true);
+      try {
+        const res = await personalPersistence.onSavePersonal({ mode, ids, draft });
+        finishPersist(res, ids);
+      } finally {
+        setPersisting(false);
+      }
+    },
+    [finishPersist, notifyPersistenceBlock, panel, personalPersistence, persisting],
+  );
 
   const onPartnerToggle = useCallback((partnerId: string, open: boolean) => {
     setOpenPartners((prev) => ({ ...prev, [partnerId]: open }));
@@ -460,9 +455,10 @@ export function ObserverPartnersListView({
           mode={panel.mode}
           count={panel.ids.length}
           initial={editInitial}
+          persistEnabled={Boolean(personalPersistence?.onSavePersonal)}
           onCancel={() => setPanel(null)}
-          onAttemptSave={() => {
-            void handleAttemptSave();
+          onAttemptSave={(draft) => {
+            void handleAttemptSave(draft);
           }}
         />
       ) : null}
