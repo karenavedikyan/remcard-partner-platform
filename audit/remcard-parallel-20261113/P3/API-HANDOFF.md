@@ -13,7 +13,25 @@
 | **Implementation** | `src/lib/clients-parity/fetch-observer-appeals.ts` |
 | **BFF today** | **403 Path not allowed** until `remcard-proxy.ts` allowlist (P1/Root), **not** П3 |
 
-### 1.1 Response 200 (wire → UI)
+### 1.1 GET list (K2 @ 72193c78 — actual)
+
+```json
+{
+  "items": [/* observer appeal DTO */],
+  "page": 1,
+  "limit": 25,
+  "total": 0,
+  "hasMore": false,
+  "empty": true,
+  "receivingPartners": [/* optional; required for UI when total>0 */]
+}
+```
+
+П3 `fetchObserverReferredAppeals` запрашивает страницы (`limit`≤100, `fetchAllPages` по `hasMore`). Без `receivingPartners` / embedded `receivingBranch` при `total>0` — **SERVER** (не пустой fake ready).
+
+Legacy `{ appeals, partners }` ещё читается для тестов/перехода.
+
+### 1.2 Response 200 (wire → UI)
 
 **Wire (K2/K8 observer-safe slice)** — only these appeal fields may reach the adapter (see `OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS` in `fetch-observer-appeals.ts`):
 
@@ -77,12 +95,21 @@ ObserverPersonalPersistResult =
 
 **Fallback:** if callbacks absent → existing `BLOCKED_PERSISTENCE` notice (no localStorage).
 
-### 2.2 P5 follow-ups (out of П3)
+### 2.2 K5 actual routes (navigator @ 86ac3e35)
 
-- Enable save in `ObserverPersonalEditPanel` + `onSave(draft)` or call adapter with draft from panel.
-- Ship `src/lib/clients-parity/*personal*` adapter using  
-  `PATCH /api/pro/referred-appeals/:id/personal-meta`,  
-  `POST /api/pro/referred-appeals/personal-batch` (per `contracts.ts`).
+| Method | Path | Notes |
+|--------|------|-------|
+| `PATCH` | `/api/pro/referred-appeals/:id/personal-meta` | body: `expectedVersion?, alias?, tag?, note?, action?, target?`; response `{ meta }` |
+| `POST` | `/api/pro/referred-appeals/personal-batch` | `action: move \| restore \| setTag`, `mode`, `expectedVersions?`; response `processed[]`, `skipped[]` |
+
+**Do not use** P5 draft paths `/api/pro/client-appeals/.../personal-overlay`.
+
+П3 adapter: `src/lib/clients-parity/observer-personal-api.ts` → `createObserverPersonalPersistenceCallbacks` (workspace default).
+
+### 2.3 P5 follow-ups (out of П3)
+
+- Replace P5 `observer-personal-api.ts` invented routes with K5 paths or import П3 module.
+- Enable save in `ObserverPersonalEditPanel` (still disabled in P5 UI).
 
 ## 3. Root-reported K8 gaps (do not propagate)
 

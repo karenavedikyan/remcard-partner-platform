@@ -43,6 +43,8 @@ describe("P3 ObserverPartnersWorkspace load", () => {
         appeals: [],
         partners: [],
         personalMeta: {},
+        overlayVersions: {},
+        pageInfo: { total: 0, loaded: 0, hasMore: false },
       });
     render(<ObserverPartnersWorkspace />);
     const retry = await screen.findByTestId("ca-observer-load-error");

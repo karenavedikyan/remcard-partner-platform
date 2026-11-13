@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createObserverPersonalPersistenceCallbacks } from "@/lib/clients-parity/observer-personal-api";
 import {
   fetchObserverReferredAppeals,
   type ObserverAppealsFetchErrorCode,
@@ -38,13 +39,27 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
   const [appeals, setAppeals] = useState<ObserverReferredAppeal[]>([]);
   const [partners, setPartners] = useState<ObserverPartnerMeta[]>([]);
   const [personalMeta, setPersonalMeta] = useState<Record<string, ObserverPersonalMeta>>({});
+  const overlayVersionsRef = useRef<Record<string, number>>({});
   const [loadGeneration, setLoadGeneration] = useState(0);
+
+  const defaultPersonalPersistence = useMemo(
+    () =>
+      createObserverPersonalPersistenceCallbacks(
+        () => overlayVersionsRef.current,
+        (patch) => {
+          overlayVersionsRef.current = { ...overlayVersionsRef.current, ...patch };
+        },
+      ),
+    [],
+  );
+  const persistence = personalPersistence ?? defaultPersonalPersistence;
 
   const applyResult = useCallback((res: Awaited<ReturnType<typeof fetchObserverReferredAppeals>>) => {
     if (res.ok) {
       setAppeals(res.appeals);
       setPartners(res.partners);
       setPersonalMeta(res.personalMeta);
+      overlayVersionsRef.current = res.overlayVersions;
       setLoadPhase("ready");
       setBlocker(null);
       setLoadError(null);
@@ -148,7 +163,7 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
         partners={[]}
         dataContract={dataContract}
         displayPersonalMeta={{}}
-        personalPersistence={personalPersistence}
+        personalPersistence={persistence}
         onPersonalMetaUpdated={onPersonalMetaUpdated}
       />
     );
@@ -161,7 +176,7 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
       partners={partners}
       dataContract={dataContract}
       displayPersonalMeta={personalMeta}
-      personalPersistence={personalPersistence}
+      personalPersistence={persistence}
       onPersonalMetaUpdated={onPersonalMetaUpdated}
     />
   );

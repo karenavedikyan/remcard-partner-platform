@@ -53,7 +53,29 @@ export type ObserverAppealsFetchErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "NETWORK"
-  | "SERVER";
+  | "SERVER"
+  | "SCHEMA_UNAVAILABLE";
+
+export type ObserverAppealsFetchQuery = {
+  q?: string;
+  period?: "all" | "30" | "90";
+  sort?: "updated_desc" | "created_desc";
+  limit?: number;
+};
+
+/** K2 actual list page (navigator @ 72193c78). */
+export type K2ObserverAppealsListPage = {
+  items: unknown[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  empty?: boolean;
+  receivingPartners?: unknown;
+  receivingBranches?: unknown;
+};
+
+export type ObserverPersonalMetaWithVersion = ObserverPersonalMeta & { version?: number };
 
 export type ObserverAppealsFetchResult =
   | {
@@ -61,6 +83,8 @@ export type ObserverAppealsFetchResult =
       appeals: ObserverReferredAppeal[];
       partners: ObserverPartnerMeta[];
       personalMeta: Record<string, ObserverPersonalMeta>;
+      overlayVersions: Record<string, number>;
+      pageInfo: { total: number; loaded: number; hasMore: boolean };
     }
   | {
       ok: false;
@@ -72,13 +96,15 @@ export type ObserverAppealsFetchResult =
       httpStatus?: number;
     };
 
-type ReferredAppealsApiBody = {
-  appeals?: unknown;
-  partners?: unknown;
-  personalMeta?: unknown;
-  /** K8 / K5 list overlay (record or rows). */
-  personalOverlays?: unknown;
+type ParsedListBundle = {
+  appeals: ObserverReferredAppeal[];
+  partners: ObserverPartnerMeta[];
+  personalMeta: Record<string, ObserverPersonalMeta>;
+  overlayVersions: Record<string, number>;
 };
+
+const DEFAULT_PAGE_LIMIT = 100;
+const MAX_LIST_PAGES = 50;
 
 function referredBlocker() {
   return CLIENTS_CONTRACT_BLOCKERS.find((b) => b.id === "BLK-OBSERVER-REFERRED");
@@ -121,7 +147,8 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
           ? null
           : undefined;
 
-  if (!id || !clientName || !receivingPartnerId || !referrerPartnerId || !updatedAt) {
+  const sessionReferrer = referrerPartnerId || "session-viewer";
+  if (!id || !clientName || !receivingPartnerId || !updatedAt) {
     return null;
   }
 
@@ -136,43 +163,78 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
           ? null
           : undefined,
     receivingPartnerId,
-    /** Stores K8 `referrerProUserId` until P2 exposes explicit partner scope ids. */
-    referrerPartnerId,
+    /** K2 list omits referrer on row; viewer scope is session (referrer-only GET). */
+    referrerPartnerId: sessionReferrer,
     updatedAt,
     referralAt,
     stageId,
   };
 }
 
-function parseAppeals(raw: unknown): ObserverReferredAppeal[] | null {
-  if (!Array.isArray(raw)) return null;
-  const appeals: ObserverReferredAppeal[] = [];
-  for (const row of raw) {
-    if (!isRecord(row)) return null;
-    const mapped = parseK8AppealRow(row);
-    if (!mapped) continue;
-    appeals.push(mapped);
-  }
-  return appeals;
+function parsePartnerRow(row: Record<string, unknown>): ObserverPartnerMeta | null {
+  const id =
+    typeof row.branchId === "string"
+      ? row.branchId
+      : typeof row.receivingBranchId === "string"
+        ? row.receivingBranchId
+        : typeof row.id === "string"
+          ? row.id
+          : "";
+  const name =
+    typeof row.displayName === "string"
+      ? row.displayName
+      : typeof row.name === "string"
+        ? row.name
+        : "";
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    city: typeof row.city === "string" ? row.city : row.city === null ? null : undefined,
+    category:
+      typeof row.category === "string"
+        ? row.category
+        : typeof row.storeCategoryLabel === "string"
+          ? row.storeCategoryLabel
+          : row.category === null
+            ? null
+            : undefined,
+  };
 }
 
-function parsePartners(raw: unknown): ObserverPartnerMeta[] | null {
-  if (!Array.isArray(raw)) return null;
-  const partners: ObserverPartnerMeta[] = [];
-  for (const row of raw) {
-    if (!isRecord(row)) return null;
-    const id = typeof row.id === "string" ? row.id : "";
-    const name = typeof row.name === "string" ? row.name : "";
-    if (!id || !name) return null;
-    partners.push({
-      id,
-      name,
-      city: typeof row.city === "string" ? row.city : row.city === null ? null : undefined,
-      category:
-        typeof row.category === "string" ? row.category : row.category === null ? null : undefined,
-    });
+function mergePartners(
+  partners: Map<string, ObserverPartnerMeta>,
+  rows: unknown[],
+  fromItems = false,
+): void {
+  for (const row of rows) {
+    if (!isRecord(row)) continue;
+    if (fromItems) {
+      const branch = row.receivingBranch;
+      if (isRecord(branch)) {
+        const mapped = parsePartnerRow(branch);
+        if (mapped) partners.set(mapped.id, mapped);
+      }
+      continue;
+    }
+    const mapped = parsePartnerRow(row);
+    if (mapped) partners.set(mapped.id, mapped);
   }
-  return partners;
+}
+
+function extractOverlayFromItem(
+  row: Record<string, unknown>,
+  personalMeta: Record<string, ObserverPersonalMeta>,
+  overlayVersions: Record<string, number>,
+): void {
+  const appealId = typeof row.id === "string" ? row.id : "";
+  if (!appealId) return;
+  const overlay = row.personalOverlay ?? row.personalMeta;
+  if (!isRecord(overlay)) return;
+  mergePersonalEntry(personalMeta, appealId, overlay);
+  if (typeof overlay.version === "number") {
+    overlayVersions[appealId] = overlay.version;
+  }
 }
 
 function parseBucket(raw: unknown): ObserverPersonalMeta["bucket"] | undefined {
@@ -184,6 +246,7 @@ function mergePersonalEntry(
   out: Record<string, ObserverPersonalMeta>,
   appealId: string,
   value: Record<string, unknown>,
+  overlayVersions?: Record<string, number>,
 ): void {
   const alias =
     typeof value.alias === "string" ? value.alias : value.alias === null ? undefined : undefined;
@@ -195,17 +258,21 @@ function mergePersonalEntry(
     note,
     bucket: parseBucket(value.bucket),
   };
+  if (overlayVersions && typeof value.version === "number") {
+    overlayVersions[appealId] = value.version;
+  }
 }
 
 function parsePersonalMeta(
   record: unknown,
   overlays: unknown,
+  overlayVersions: Record<string, number>,
 ): Record<string, ObserverPersonalMeta> {
   const out: Record<string, ObserverPersonalMeta> = {};
   if (isRecord(record)) {
     for (const [appealId, value] of Object.entries(record)) {
       if (!isRecord(value)) continue;
-      mergePersonalEntry(out, appealId, value);
+      mergePersonalEntry(out, appealId, value, overlayVersions);
     }
   }
   if (Array.isArray(overlays)) {
@@ -213,10 +280,95 @@ function parsePersonalMeta(
       if (!isRecord(row)) continue;
       const appealId = typeof row.appealId === "string" ? row.appealId : "";
       if (!appealId) continue;
-      mergePersonalEntry(out, appealId, row);
+      mergePersonalEntry(out, appealId, row, overlayVersions);
     }
   }
   return out;
+}
+
+function parseListPayload(payload: unknown): ParsedListBundle | { error: string } {
+  if (!isRecord(payload)) {
+    return { error: "Некорректный ответ списка направлений." };
+  }
+
+  const appeals: ObserverReferredAppeal[] = [];
+  const partners = new Map<string, ObserverPartnerMeta>();
+  const personalMeta: Record<string, ObserverPersonalMeta> = {};
+  const overlayVersions: Record<string, number> = {};
+
+  const itemRows = Array.isArray(payload.items)
+    ? payload.items
+    : Array.isArray(payload.appeals)
+      ? payload.appeals
+      : null;
+
+  if (!itemRows) {
+    return { error: "Отсутствует items[] в ответе K2." };
+  }
+
+  for (const row of itemRows) {
+    if (!isRecord(row)) continue;
+    const mapped = parseK8AppealRow(row);
+    if (mapped) appeals.push(mapped);
+    extractOverlayFromItem(row, personalMeta, overlayVersions);
+  }
+
+  if (Array.isArray(payload.receivingPartners)) {
+    mergePartners(partners, payload.receivingPartners);
+  }
+  if (Array.isArray(payload.receivingBranches)) {
+    mergePartners(partners, payload.receivingBranches);
+  }
+  if (Array.isArray(payload.partners)) {
+    mergePartners(partners, payload.partners);
+  }
+  mergePartners(partners, itemRows, true);
+
+  Object.assign(
+    personalMeta,
+    parsePersonalMeta(payload.personalMeta, payload.personalOverlays, overlayVersions),
+  );
+
+  const total = typeof payload.total === "number" ? payload.total : appeals.length;
+  const empty = payload.empty === true;
+
+  if (total > 0 && appeals.length > 0 && partners.size === 0) {
+    return {
+      error:
+        "Ответ K2 содержит обращения без метаданных филиала (ожидается receivingPartners или receivingBranch).",
+    };
+  }
+
+  if (total > 0 && appeals.length === 0) {
+    return { error: "Ответ K2: total>0, но items пуст." };
+  }
+
+  if (!empty && appeals.length === 0 && total === 0) {
+    return {
+      appeals: [],
+      partners: [],
+      personalMeta: {},
+      overlayVersions: {},
+    };
+  }
+
+  return {
+    appeals,
+    partners: [...partners.values()],
+    personalMeta,
+    overlayVersions,
+  };
+}
+
+function listQueryString(query: ObserverAppealsFetchQuery, page: number, limit: number): string {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (query.q) params.set("q", query.q);
+  if (query.period && query.period !== "all") params.set("period", query.period);
+  if (query.sort) params.set("sort", query.sort);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
 }
 
 function proxyPathBlocked(error: RemcardApiError): boolean {
@@ -271,10 +423,13 @@ function mapFetchError(error: unknown): ObserverAppealsFetchResult {
     if (proxyPathBlocked(error)) {
       return blockedContractResult();
     }
+    const code = error.body?.code;
     return {
       ok: false,
       code: "FORBIDDEN",
-      message: error.message || "Нет доступа к списку направлений.",
+      message:
+        error.message ||
+        (code ? `Нет доступа (${code})` : "Нет доступа к списку направлений."),
       retryable: false,
       httpStatus: 403,
     };
@@ -288,6 +443,19 @@ function mapFetchError(error: unknown): ObserverAppealsFetchResult {
       retryable: true,
       httpStatus: 404,
     };
+  }
+
+  if (error.status === 503) {
+    const code = error.body?.code;
+    if (code === "OBSERVER_APPEALS_SCHEMA_UNAVAILABLE" || code === "PERSISTENCE_UNAVAILABLE") {
+      return {
+        ok: false,
+        code: "SCHEMA_UNAVAILABLE",
+        message: error.message || "Хранилище направлений ещё не развёрнуто.",
+        retryable: false,
+        httpStatus: 503,
+      };
+    }
   }
 
   if (error.status >= 500) {
@@ -314,30 +482,83 @@ function mapFetchError(error: unknown): ObserverAppealsFetchResult {
  * Uses BFF proxy; surfaces BLOCKED_CONTRACT until allowlist and origin exist.
  */
 export async function fetchObserverReferredAppeals(
-  options: { signal?: AbortSignal } = {},
+  options: {
+    signal?: AbortSignal;
+    query?: ObserverAppealsFetchQuery;
+    /** When true (default), follow K2 hasMore until all pages loaded or MAX_LIST_PAGES. */
+    fetchAllPages?: boolean;
+  } = {},
 ): Promise<ObserverAppealsFetchResult> {
-  try {
-    const payload = await remcardFetch<ReferredAppealsApiBody>(OBSERVER_REFERRED_APPEALS_LIST_PATH, {
-      method: "GET",
-      signal: options.signal,
-    });
+  const limit = Math.min(options.query?.limit ?? DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_LIMIT);
+  const fetchAllPages = options.fetchAllPages !== false;
 
-    const appeals = parseAppeals(payload.appeals);
-    const partners = parsePartners(payload.partners);
-    if (!appeals || !partners) {
+  try {
+    const allAppeals: ObserverReferredAppeal[] = [];
+    const partners = new Map<string, ObserverPartnerMeta>();
+    const personalMeta: Record<string, ObserverPersonalMeta> = {};
+    const overlayVersions: Record<string, number> = {};
+
+    let page = 1;
+    let total = 0;
+    let hasMore = true;
+
+    while (page <= MAX_LIST_PAGES) {
+      const path = `${OBSERVER_REFERRED_APPEALS_LIST_PATH}${listQueryString(options.query ?? {}, page, limit)}`;
+      const payload = await remcardFetch<K2ObserverAppealsListPage | Record<string, unknown>>(path, {
+        method: "GET",
+        signal: options.signal,
+      });
+
+      const parsed = parseListPayload(payload);
+      if ("error" in parsed) {
+        return {
+          ok: false,
+          code: "SERVER",
+          message: parsed.error,
+          retryable: true,
+        };
+      }
+
+      for (const appeal of parsed.appeals) {
+        allAppeals.push(appeal);
+      }
+      for (const partner of parsed.partners) {
+        partners.set(partner.id, partner);
+      }
+      Object.assign(personalMeta, parsed.personalMeta);
+      Object.assign(overlayVersions, parsed.overlayVersions);
+
+      if (isRecord(payload)) {
+        total = typeof payload.total === "number" ? payload.total : allAppeals.length;
+        hasMore =
+          typeof payload.hasMore === "boolean"
+            ? payload.hasMore
+            : page * limit < total;
+      } else {
+        total = allAppeals.length;
+        hasMore = false;
+      }
+
+      if (!fetchAllPages || !hasMore) break;
+      page += 1;
+    }
+
+    if (hasMore && fetchAllPages) {
       return {
         ok: false,
         code: "SERVER",
-        message: "Некорректный ответ списка направлений.",
-        retryable: true,
+        message: `Слишком много страниц направлений (>${MAX_LIST_PAGES}). Уточните фильтры.`,
+        retryable: false,
       };
     }
 
     return {
       ok: true,
-      appeals,
-      partners,
-      personalMeta: parsePersonalMeta(payload.personalMeta, payload.personalOverlays),
+      appeals: allAppeals,
+      partners: [...partners.values()],
+      personalMeta,
+      overlayVersions,
+      pageInfo: { total, loaded: allAppeals.length, hasMore },
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {

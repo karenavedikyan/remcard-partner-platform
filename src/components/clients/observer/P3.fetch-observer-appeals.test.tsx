@@ -25,24 +25,28 @@ describe("P3 fetchObserverReferredAppeals", () => {
     }
   });
 
-  it("parses ok payload with personalMeta overlay", async () => {
+  it("parses K2 paginated list with receivingPartners and overlays", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
         new Response(
           JSON.stringify({
-            appeals: [
+            items: [
               {
                 id: "a1",
-                clientName: "Иван",
-                receivingPartnerId: "p1",
-                referrerPartnerId: "me",
+                clientDisplayName: "Иван",
+                receivingBranchId: "p1",
+                stageKey: "sys_new",
                 updatedAt: "2026-01-01T00:00:00.000Z",
-                stageId: "new",
+                createdAt: "2026-01-01T00:00:00.000Z",
+                personalOverlay: { alias: "Мой Иван", bucket: "active", version: 2 },
               },
             ],
-            partners: [{ id: "p1", name: "Партнёр" }],
-            personalMeta: { a1: { alias: "Мой Иван", bucket: "active" } },
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            receivingPartners: [{ branchId: "p1", displayName: "Партнёр" }],
           }),
           { status: 200 },
         ),
@@ -52,7 +56,9 @@ describe("P3 fetchObserverReferredAppeals", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.appeals).toHaveLength(1);
+      expect(res.partners[0]?.name).toBe("Партнёр");
       expect(res.personalMeta.a1?.alias).toBe("Мой Иван");
+      expect(res.overlayVersions.a1).toBe(2);
     }
   });
 
@@ -62,7 +68,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
       vi.fn(async () =>
         new Response(
           JSON.stringify({
-            appeals: [
+            items: [
               {
                 id: "a1",
                 clientDisplayName: "Иван",
@@ -76,7 +82,11 @@ describe("P3 fetchObserverReferredAppeals", () => {
                 paidAmountKopecks: 100,
               },
             ],
-            partners: [{ id: "branch-1", name: "Филиал" }],
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            receivingPartners: [{ branchId: "branch-1", displayName: "Филиал" }],
             personalOverlays: [{ appealId: "a1", alias: "V", bucket: "active", version: 2 }],
           }),
           { status: 200 },
