@@ -3,7 +3,8 @@
   "taskId": "REMCLIENTS-V8-HANDOFF-PIN-ONLY",
   "computerCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
   "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-  "metadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
+  "metadataTipSha": "0f9f73defbe6bc3bdf05ebf5af13599b46c4bb3e",
+  "computerVerifiedTipSha": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
   "shaPinLegend": {
     "productFixSha": "Product/CSS/tests commit only (observer.module.css V7 cascade + parity assertions). Pin for cherry-pick and Computer candidate.",
     "metadataTipSha": "Handoff JSON/docs stamp after product fix; same tree as productFixSha for parity files, no additional product delta.",

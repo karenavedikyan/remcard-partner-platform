@@ -9,7 +9,7 @@
   "shas": {
     "computerCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
     "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-    "metadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
+    "metadataTipSha": "0f9f73defbe6bc3bdf05ebf5af13599b46c4bb3e",
     "staleMetadataDoNotUse": {
       "patchManifestProductFixSha5063368a": "Superseded V6 mobile stack; corrected in V8 handoff",
       "priorAuditSha0729c12f": "Grouped row parity FAIL before 140de0a8"
@@ -135,8 +135,8 @@
   ],
   "auditorInstructions": {
     "pinProductSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-    "optionalMetadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
-    "computerVerifiedTip": "fc39afb73d4cb555c632a949400305b9d4031094",
+    "optionalMetadataTipSha": "0f9f73defbe6bc3bdf05ebf5af13599b46c4bb3e",
+    "computerVerifiedTip": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
     "doNotUsePin": "5063368a metadata; 0729c12f; 65df323e pre-V7; 42f9fae9 V5",
     "measureChildBoundsAndRealClicks": true,
     "doNotPromoteMissingBackendToPass": true
