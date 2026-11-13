@@ -32,7 +32,7 @@ export const COMPUTER_V6_ISOLATED_PASS_IDS = [
   "REG-V6-COMPONENT-VITEST",
 ] as const;
 
-export const AUTHOR_HANDOFF_AUDIT_SHA = "78e4852194a0b9d307ee92743ae754dd18d5a9ba";
+export const AUTHOR_HANDOFF_AUDIT_SHA = "140de0a83044f324bf455ac2dfb87b17432fb8d1";
 
 /** C01–C56 registry for implementation author (REMCLIENTS-PARITY-20261113-V1). */
 export function buildClientsAcceptanceMatrix(): AcceptanceRow[] {

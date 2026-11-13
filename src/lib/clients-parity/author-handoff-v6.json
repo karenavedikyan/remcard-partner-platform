@@ -7,8 +7,9 @@
     "auditor": "bc-0a64ca5a"
   },
   "shas": {
-    "auditSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
-    "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+    "auditSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "priorAuditShaDoNotUse": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
     "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
     "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
     "supersedesComputerPin": "d1da948491293c1a8ba77d4854191347708b4379",

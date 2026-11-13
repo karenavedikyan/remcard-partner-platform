@@ -1,6 +1,6 @@
 {
-  "measuredAt": "2026-11-13T10:47:19.097Z",
-  "candidateSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+  "measuredAt": "2026-11-13T10:54:50.543Z",
+  "candidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
   "prototypeReferenceSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "harness": "scripts/clients-parity-20261113/observer-list-harness",
   "viewportHeight": 812,
@@ -9,11 +9,16 @@
       "innerWidth": 768,
       "theme": "dark",
       "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
-      "gridTemplateColumns": "24px 708px",
+      "gridTemplateColumns": "24px 348px 348px",
+      "rowParity": {
+        "gridTemplateAreas": "none",
+        "topDelta": 0
+      },
+      "parityPass": true,
       "openButton": {
         "x": 48,
-        "y": 206,
-        "width": 708,
+        "y": 214,
+        "width": 68,
         "height": 47.5
       },
       "geometryPass": true,
@@ -24,11 +29,16 @@
       "innerWidth": 375,
       "theme": "dark",
       "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
-      "gridTemplateColumns": "24px 315px",
+      "gridTemplateColumns": "24px 151.5px 151.5px",
+      "rowParity": {
+        "gridTemplateAreas": "none",
+        "topDelta": 0
+      },
+      "parityPass": true,
       "openButton": {
         "x": 48,
-        "y": 206,
-        "width": 315,
+        "y": 214,
+        "width": 68,
         "height": 47.5
       },
       "geometryPass": true,
@@ -39,11 +49,16 @@
       "innerWidth": 360,
       "theme": "dark",
       "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
-      "gridTemplateColumns": "24px 300px",
+      "gridTemplateColumns": "24px 144px 144px",
+      "rowParity": {
+        "gridTemplateAreas": "none",
+        "topDelta": 0
+      },
+      "parityPass": true,
       "openButton": {
         "x": 48,
-        "y": 206,
-        "width": 300,
+        "y": 214,
+        "width": 68,
         "height": 47.5
       },
       "geometryPass": true,
@@ -54,11 +69,16 @@
       "innerWidth": 320,
       "theme": "dark",
       "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
-      "gridTemplateColumns": "24px 260px",
+      "gridTemplateColumns": "24px 124px 124px",
+      "rowParity": {
+        "gridTemplateAreas": "none",
+        "topDelta": 0
+      },
+      "parityPass": true,
       "openButton": {
         "x": 48,
-        "y": 206,
-        "width": 260,
+        "y": 214,
+        "width": 68,
         "height": 47.5
       },
       "geometryPass": true,
