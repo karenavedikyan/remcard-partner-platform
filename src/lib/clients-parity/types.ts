@@ -571,21 +571,34 @@ export function mapReceivingUiStageIdToK1StagePatch(stageId: string): ReceivingA
   return { stageKey: stageId };
 }
 
+type K1ReceivingAccessBlock = K1ReceivingAccessEnvelope["access"];
+
+function isK1ReceivingAccessBlock(
+  value: Partial<ReceivingAppealsAccessWire> | K1ReceivingAccessBlock | null | undefined,
+): value is K1ReceivingAccessBlock {
+  if (value == null || typeof value !== "object") return false;
+  if (!("mutationsAllowed" in value)) return false;
+  return typeof value.mutationsAllowed === "boolean";
+}
+
 export function mapK1AccessWireToP6Gates(input: {
-  access?: Partial<ReceivingAppealsAccessWire> | K1ReceivingAccessEnvelope["access"] | null;
+  access?: Partial<ReceivingAppealsAccessWire> | K1ReceivingAccessBlock | null;
   readOnly?: boolean;
   envelope?: Partial<K1ReceivingAccessEnvelope> | null;
 }): ReceivingUiPrincipalAccess {
   const k1Access = input.envelope?.access ?? input.access;
-  if (k1Access && "mutationsAllowed" in k1Access && typeof k1Access.mutationsAllowed === "boolean") {
+  if (isK1ReceivingAccessBlock(k1Access)) {
     return {
-      listAllowed: k1Access.listAllowed !== false,
+      listAllowed: true,
       mutationsAllowed: k1Access.mutationsAllowed,
       denialCode: k1Access.denialCode ?? null,
     };
   }
-  const readOnly = input.readOnly === true || input.envelope?.readOnly === true || input.access?.readOnly === true;
-  const accessMode = input.access?.accessMode;
+  const legacyAccess: Partial<ReceivingAppealsAccessWire> | null =
+    input.access != null && !isK1ReceivingAccessBlock(input.access) ? input.access : null;
+  const readOnly =
+    input.readOnly === true || input.envelope?.readOnly === true || legacyAccess?.readOnly === true;
+  const accessMode = legacyAccess?.accessMode;
   const orgListOnly = accessMode === "org_workplace_read";
   return {
     listAllowed: true,
