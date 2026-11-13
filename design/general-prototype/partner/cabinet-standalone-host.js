@@ -7,6 +7,7 @@ import {
   waitForStandaloneFrameContent,
 } from "./cabinet-standalone-srcdoc.js?v=embed12";
 import { demoRandomToken } from "./demo-random-id.js";
+import { hasNativeCabinetPage, mountNativeCabinetPage } from "./cabinet-native-pages.js?v=native1";
 
 export const STANDALONE_BY_N = {
   139: { path: "certificate.html", title: "Гостевой сертификат", guest: true },
@@ -169,6 +170,7 @@ export function createCabinetStandaloneHost(config) {
   let contextPulseTimer = 0;
   let embedSessionDeadlineTimer = 0;
   let embedSessionDeadlineOwner = null;
+  let nativePage = null;
 
   function embedSessionOwnerRef(loadGeneration, loadToken, loadPageN) {
     return { loadGeneration, loadToken, loadPageN };
@@ -242,7 +244,7 @@ export function createCabinetStandaloneHost(config) {
     if (!loadStateEl) return;
     if (state === "ready" || state === "idle") {
       loadStateEl.hidden = true;
-      frame.hidden = false;
+      frame.hidden = !!nativePage;
       if (loadRetryEl) loadRetryEl.hidden = true;
       return;
     }
@@ -414,6 +416,10 @@ export function createCabinetStandaloneHost(config) {
     const sendGen = ++contextSendGeneration;
     let payload = resolveEmbedPayload(openPageN, openCtx, openQuery);
     if (!payload) return;
+    if (nativePage) {
+      nativePage.update(payload);
+      return;
+    }
     if (typeof enrichEmbedPayload === "function") {
       try {
         payload = (await enrichEmbedPayload(openPageN, payload)) || payload;
@@ -429,6 +435,8 @@ export function createCabinetStandaloneHost(config) {
   }
 
   function closeHost({ back = false, reset = false } = {}) {
+    nativePage?.destroy();
+    nativePage = null;
     contextSendGeneration += 1;
     abortPendingSrcdocWork();
     setEmbedLoadState("idle");
@@ -492,6 +500,10 @@ export function createCabinetStandaloneHost(config) {
     if (hostEl.hidden) return;
     const t = theme || currentTheme();
     syncHostThemeChrome(t);
+    if (nativePage) {
+      nativePage.theme(t);
+      return;
+    }
     try {
       frame.contentWindow?.postMessage(
         { source: "proto-cabinet-host", type: "theme", theme: t },
@@ -530,6 +542,8 @@ export function createCabinetStandaloneHost(config) {
     if (embedCtx != null) openCtx = embedCtx;
 
     abortPendingSrcdocWork();
+    nativePage?.destroy();
+    nativePage = null;
     srcdocLoadGeneration += 1;
     const loadGeneration = srcdocLoadGeneration;
     titleEl.textContent = def.title;
@@ -556,6 +570,25 @@ export function createCabinetStandaloneHost(config) {
     syncHostThemeChrome();
     watchLayout();
     reposition();
+    if (hasNativeCabinetPage(pageN)) {
+      // No extra document fetch or child-window messaging on these paths.
+      frame.onload = null;
+      frame.removeAttribute("src");
+      frame.removeAttribute("srcdoc");
+      frame.dataset.embedMount = "native";
+      hostEl.dataset.embedEngine = "native-direct-1";
+      frame.dataset.embedSessionToken = openEmbedToken;
+      const payload = resolveEmbedPayload?.(pageN, openCtx, openQuery);
+      nativePage = mountNativeCabinetPage(
+        hostEl.querySelector(".cabinet-standalone-host__stage"), pageN, payload,
+        { dispatch: dispatchStandaloneAction, theme: currentTheme() },
+      );
+      setEmbedLoadState("ready");
+      frame.hidden = true;
+      frame.dataset.embedContentReady = "1";
+      syncEmbeddedPageBadge(pageN);
+      return true;
+    }
     if (pageN === 139 && openCtx?.publicModel && typeof buildCertificateGuestEmbedExtras === "function") {
       const publicModel = openCtx.publicModel;
       void buildCertificateGuestEmbedExtras(publicModel).then((guestEmbedExtras) => {
@@ -738,6 +771,10 @@ export function createCabinetStandaloneHost(config) {
       setEmbedLoadState("ready");
       return;
     }
+    dispatchStandaloneAction(data);
+  }
+
+  function dispatchStandaloneAction(data) {
     if (data.type === "nav" && data.pageN) {
       if (Number(data.pageN) === Number(openPageN)) return;
       const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
