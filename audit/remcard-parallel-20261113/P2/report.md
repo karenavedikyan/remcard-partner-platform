@@ -13,6 +13,7 @@
 | Prototype SHA | `3dc31836cd18d9209c20097f18b906dd276f7af6` |
 | Disk at audit start | 246G free on `/dev/vdc` |
 | Product writes | none (audit directory only) |
+| Commit trailer compliance (`bd4749b9`) | **BLOCKED** — platform appended extra `Co-authored-by: Аведикян Карен` after intended single Perplexity trailer |
 
 ## Scope
 
