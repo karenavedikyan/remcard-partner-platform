@@ -18,9 +18,9 @@ Detail CAS helpers: `patchReceivingAppealProfileCas`, `patchReceivingAppealStage
 
 ## P4 UI dependency (read-only SHA)
 
-- **Detail controls UI:** `10c25fe6` — `ReceivingAppealDetailView.tsx` (notes/stage/purchase affordances via `actions` prop).
+- **Detail controls UI:** `497f313d` — `ReceivingAppealDetailView.tsx` + `receiving-detail-actions-contract.ts` (`buildReceivingAppealDetailReady`).
 - **Mapper:** `detail-contract-alignment.ts` — P6+P4 shared; private fields on DTO when not `readOnly`.
-- **P6 host:** `ReceivingAppealDetailHost.tsx` wires `actions` → CAS PATCH; 409 → `onConflict` reload.
+- **P6 host:** `ReceivingAppealDetailHost.tsx` → `buildReceivingAppealDetailReady` → `mutateProfile` / `mutateStage` → CAS PATCH in `receiving-appeals-api.ts`; conflict → `reloadDetail`.
 - P4 `ReceivingAppealHistory.tsx` remains on branch from earlier assembly; Root replaces from P4 owner tip.
 
 ## K1 POST `working-stages` kinds (P6 adapter — confirm vs K1 `51353825`)
@@ -31,7 +31,7 @@ Detail CAS helpers: `patchReceivingAppealProfileCas`, `patchReceivingAppealStage
 
 ## Remaining / not whole-section
 
-- Source-only: detail notes/stage **blocked** until P1 allowlist + mounted synthetic/real API (not prod pin today).
+- Source on branch: P1 `0bb25b9b` proxy uses `isAllowedProxyRoute` — batch/detail/PATCH ready in **source**; production deploy pin may still lag (separate from contract).
 - P4 finance affordances (mark paid, paid review, shipped) — host exposes `supported: false` + frozen copy.
 - P1 allowlist for GET detail + PATCH profile/stage + POST working-stages on production pin.
 - K8 migration apply — separate DB approval.

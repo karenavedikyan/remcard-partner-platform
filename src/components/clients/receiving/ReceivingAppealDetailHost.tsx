@@ -1,22 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReceivingAppealDetailMapped } from "./detail-contract-alignment";
 import {
   fetchReceivingAppealDetailWire,
   patchReceivingAppealProfileCas,
   patchReceivingAppealStageCas,
-  RECEIVING_FINANCE_PATCH_FROZEN,
 } from "@/lib/clients-parity/receiving-appeals-api";
+import { ReceivingAppealDetailView, type ReceivingAppealDetailProps } from "./ReceivingAppealDetailView";
 import {
-  ReceivingAppealDetailView,
-  type ReceivingAppealDetailActions,
-  type ReceivingAppealDetailProps,
-} from "./ReceivingAppealDetailView";
+  buildReceivingAppealDetailReady,
+  type ReceivingAppealDetailMutationOutcome,
+  type ReceivingAppealProfilePatchInput,
+  type ReceivingAppealStagePatchInput,
+} from "./receiving-detail-actions-contract";
 import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope-bridge";
 
-/** P4 UI reference — read `git show 10c25fe6:.../ReceivingAppealDetailView.tsx` (not vendored again). */
-export const P4_RECEIVING_DETAIL_UI_SHA = "10c25fe6" as const;
+/** P4 UI + contract — `git show 497f313d:src/components/clients/receiving/` (Root merges P4 owner tip). */
+export const P4_RECEIVING_DETAIL_UI_SHA = "497f313d" as const;
 
 export type ReceivingAppealDetailHostProps = {
   appealId: string;
@@ -29,6 +29,19 @@ export type ReceivingAppealDetailHostProps = {
 
 type LoadPhase = "loading" | "ready" | "missing" | "error";
 
+function toMutationOutcome(
+  result:
+    | Awaited<ReturnType<typeof patchReceivingAppealProfileCas>>
+    | Awaited<ReturnType<typeof patchReceivingAppealStageCas>>,
+): ReceivingAppealDetailMutationOutcome {
+  if (result.ok) return { ok: true };
+  return {
+    ok: false,
+    conflict: result.code === "CONFLICT",
+    message: result.message,
+  };
+}
+
 export function ReceivingAppealDetailHost({
   appealId,
   readOnly = false,
@@ -38,9 +51,10 @@ export function ReceivingAppealDetailHost({
   onAppealMutated,
 }: ReceivingAppealDetailHostProps) {
   const [phase, setPhase] = useState<LoadPhase>("loading");
-  const [mapped, setMapped] = useState<ReceivingAppealDetailMapped | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [revision, setRevision] = useState(0);
+  const [mapped, setMapped] = useState<ReturnType<typeof receivingAppealDetailWireToP4Mapped> | null>(
+    null,
+  );
   const [busy, setBusy] = useState<{ notes?: boolean; stage?: boolean }>({});
   const [actionError, setActionError] = useState<{ notes?: string; stage?: string }>({});
   const [reloadToken, setReloadToken] = useState(0);
@@ -62,7 +76,6 @@ export function ReceivingAppealDetailHost({
     }
     const rev =
       typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision) || 0;
-    setRevision(rev);
     onRevisionLoaded?.(rev);
     setMapped(
       receivingAppealDetailWireToP4Mapped(res.wire, {
@@ -78,74 +91,50 @@ export function ReceivingAppealDetailHost({
     void load();
   }, [load, reloadToken]);
 
-  const actions: ReceivingAppealDetailActions | undefined = useMemo(() => {
-    if (readOnly || !mapped || mapped.status !== "ready") return undefined;
-    return {
-      expectedRevision: revision,
-      workingStages: mapped.workingStages,
-      refusalReasons: mapped.refusalReasons,
-      busy,
-      error: actionError,
-      onConflict: () => setReloadToken((t) => t + 1),
-      markPaid: { supported: false, reason: RECEIVING_FINANCE_PATCH_FROZEN },
-      paidReview: {
-        supported: false,
-        reason: "Категории оплаты — не из profile PATCH (прототип pay panel).",
-      },
-      shippedConfirm: {
-        supported: false,
-        reason: "Подтверждение отгрузки — только K1 stage PATCH без finance PATCH.",
-      },
-      onOpenPurchaseOrder: () => undefined,
-      onSavePrivateNotes: async (privateNotes) => {
-        setBusy((b) => ({ ...b, notes: true }));
-        setActionError((e) => ({ ...e, notes: undefined }));
-        const result = await patchReceivingAppealProfileCas(appealId, {
-          privateNotes,
-          expectedRevision: revision,
-        });
-        setBusy((b) => ({ ...b, notes: false }));
-        if (!result.ok) {
-          if (result.code === "CONFLICT") {
-            setActionError((e) => ({
-              ...e,
-              notes: `${result.message} Обновите карточку.`,
-            }));
-            setReloadToken((t) => t + 1);
-            return;
-          }
-          setActionError((e) => ({ ...e, notes: result.message }));
-          return;
-        }
-        setReloadToken((t) => t + 1);
+  const reloadDetail = useCallback(async () => {
+    setReloadToken((t) => t + 1);
+  }, []);
+
+  const mutateProfile = useCallback(
+    async (body: ReceivingAppealProfilePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      setBusy((b) => ({ ...b, notes: true }));
+      setActionError((e) => ({ ...e, notes: undefined }));
+      const result = await patchReceivingAppealProfileCas(appealId, {
+        privateNotes: body.privateNotes,
+        expectedRevision: body.expectedRevision,
+      });
+      setBusy((b) => ({ ...b, notes: false }));
+      const outcome = toMutationOutcome(result);
+      if (!outcome.ok) {
+        setActionError((e) => ({ ...e, notes: outcome.message }));
+      } else {
         await onAppealMutated?.();
-      },
-      onApplyStage: async (payload) => {
-        setBusy((b) => ({ ...b, stage: true }));
-        setActionError((e) => ({ ...e, stage: undefined }));
-        const result = await patchReceivingAppealStageCas(appealId, {
-          stageKey: payload.stageKey,
-          refusedReason: payload.refusedReason ?? null,
-          expectedRevision: revision,
-        });
-        setBusy((b) => ({ ...b, stage: false }));
-        if (!result.ok) {
-          if (result.code === "CONFLICT") {
-            setActionError((e) => ({
-              ...e,
-              stage: `${result.message} Обновите карточку.`,
-            }));
-            setReloadToken((t) => t + 1);
-            return;
-          }
-          setActionError((e) => ({ ...e, stage: result.message }));
-          return;
-        }
-        setReloadToken((t) => t + 1);
+      }
+      return outcome;
+    },
+    [appealId, onAppealMutated],
+  );
+
+  const mutateStage = useCallback(
+    async (body: ReceivingAppealStagePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      setBusy((b) => ({ ...b, stage: true }));
+      setActionError((e) => ({ ...e, stage: undefined }));
+      const result = await patchReceivingAppealStageCas(appealId, {
+        stageKey: body.stageKey,
+        refusedReason: body.refusedReason ?? null,
+        expectedRevision: body.expectedRevision,
+      });
+      setBusy((b) => ({ ...b, stage: false }));
+      const outcome = toMutationOutcome(result);
+      if (!outcome.ok) {
+        setActionError((e) => ({ ...e, stage: outcome.message }));
+      } else {
         await onAppealMutated?.();
-      },
-    };
-  }, [actionError, appealId, busy, mapped, onAppealMutated, readOnly, revision]);
+      }
+      return outcome;
+    },
+    [appealId, onAppealMutated],
+  );
 
   const viewProps = useMemo((): ReceivingAppealDetailProps | null => {
     if (phase === "missing") return { status: "missing", appealId };
@@ -156,11 +145,31 @@ export function ReceivingAppealDetailHost({
         onRetry: () => setReloadToken((t) => t + 1),
       };
     }
-    if (mapped?.status === "ready") {
-      return { ...mapped, actions };
+    if (phase === "ready" && mapped?.status === "ready") {
+      return buildReceivingAppealDetailReady({
+        appealId,
+        mapped,
+        readOnly,
+        busy,
+        error: actionError,
+        mutateProfile,
+        mutateStage,
+        reloadDetail,
+      });
     }
     return null;
-  }, [actions, appealId, loadError, mapped, phase]);
+  }, [
+    actionError,
+    appealId,
+    busy,
+    loadError,
+    mapped,
+    mutateProfile,
+    mutateStage,
+    phase,
+    readOnly,
+    reloadDetail,
+  ]);
 
   if (phase === "loading") {
     return (

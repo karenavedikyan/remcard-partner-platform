@@ -1,13 +1,21 @@
 "use client";
 
 import styles from "../observer/observer.module.css";
-import type {
-  ReceivingAppealBucket,
-  ReceivingBulkAction,
-  ReceivingBulkContractState,
-} from "@/lib/clients-parity/receiving-bulk-contract";
 
-export type ReceivingBulkToolbarProps = {
+/** Prototype client-appeals.js bucket naming (receiving CRM, not observer trash overlay). */
+export type ReceivingAppealBucket = "active" | "archive" | "trash";
+
+export type ReceivingBulkAction =
+  | "edit-open"
+  | "archive-ask"
+  | "delete-ask"
+  | "unarchive-ask"
+  | "restore-ask"
+  | "clear";
+
+export type ReceivingBulkContractState = "blocked" | "ready" | "pending";
+
+export type ReceivingBulkActionsProps = {
   bucket: ReceivingAppealBucket;
   selectedCount: number;
   visibleCount: number;
@@ -22,8 +30,11 @@ export type ReceivingBulkToolbarProps = {
   onAction: (action: ReceivingBulkAction) => void;
 };
 
-/** P6 list toolbar (prototype bulk bar); P5 UI reference SHA ca2855fb — not vendored. */
-export function ReceivingBulkToolbar({
+/**
+ * Receiving incoming list bulk toolbar (C11/C12). P6 wires list selection; K1 wires
+ * client-appeals batch API. No wallet / purchase / payout actions.
+ */
+export function ReceivingBulkActions({
   bucket,
   selectedCount,
   visibleCount,
@@ -36,7 +47,7 @@ export function ReceivingBulkToolbar({
   selectionOutsideView = 0,
   onSelectAll,
   onAction,
-}: ReceivingBulkToolbarProps) {
+}: ReceivingBulkActionsProps) {
   const selectRef = (input: HTMLInputElement | null) => {
     if (!input) return;
     input.indeterminate = someVisibleSelected && !allVisibleSelected;
@@ -46,7 +57,7 @@ export function ReceivingBulkToolbar({
     );
   };
 
-  const batchActionsDisabled = contractState === "blocked" || contractState === "pending";
+  const actionsDisabled = contractState === "blocked" || contractState === "pending";
 
   return (
     <section
@@ -78,8 +89,7 @@ export function ReceivingBulkToolbar({
       {contractState === "blocked" ? (
         <p className={styles.mutedSmall}>
           Массовые действия принимающего требуют <strong>{blockerId}</strong> (
-          <code>POST /api/pro/client-appeals/batch</code> и PATCH по каждому ID). Финансовые операции
-          здесь не выполняются.
+          <code>POST /api/pro/client-appeals/batch</code>). Финансовые операции здесь не выполняются.
         </p>
       ) : null}
       {batchNotice ? (
@@ -100,6 +110,7 @@ export function ReceivingBulkToolbar({
                 type="button"
                 className={styles.ghostBtn}
                 data-ca-action="bulk:edit-open"
+                disabled={actionsDisabled}
                 onClick={() => onAction("edit-open")}
               >
                 Редактировать
@@ -108,7 +119,7 @@ export function ReceivingBulkToolbar({
                 type="button"
                 className={styles.ghostBtn}
                 data-ca-action="bulk:archive-ask"
-                disabled={batchActionsDisabled}
+                disabled={actionsDisabled}
                 onClick={() => onAction("archive-ask")}
               >
                 В архив
@@ -117,7 +128,7 @@ export function ReceivingBulkToolbar({
                 type="button"
                 className={styles.ghostBtn}
                 data-ca-action="bulk:delete-ask"
-                disabled={batchActionsDisabled}
+                disabled={actionsDisabled}
                 onClick={() => onAction("delete-ask")}
               >
                 Удалить
@@ -130,7 +141,7 @@ export function ReceivingBulkToolbar({
                 type="button"
                 className={styles.ghostBtn}
                 data-ca-action="bulk:unarchive-ask"
-                disabled={batchActionsDisabled}
+                disabled={actionsDisabled}
                 onClick={() => onAction("unarchive-ask")}
               >
                 Вернуть в активные
@@ -139,7 +150,7 @@ export function ReceivingBulkToolbar({
                 type="button"
                 className={styles.ghostBtn}
                 data-ca-action="bulk:delete-ask"
-                disabled={batchActionsDisabled}
+                disabled={actionsDisabled}
                 onClick={() => onAction("delete-ask")}
               >
                 В корзину
@@ -151,10 +162,10 @@ export function ReceivingBulkToolbar({
               type="button"
               className={styles.primaryBtn}
               data-ca-action="bulk:restore-ask"
-              disabled={batchActionsDisabled}
+              disabled={actionsDisabled}
               onClick={() => onAction("restore-ask")}
             >
-              {batchActionsDisabled ? "Восстановить (недоступно)" : "Восстановить"}
+              {actionsDisabled ? "Восстановить (недоступно)" : "Восстановить"}
             </button>
           ) : null}
           <button

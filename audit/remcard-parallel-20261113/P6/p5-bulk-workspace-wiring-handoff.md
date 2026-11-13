@@ -1,25 +1,38 @@
-# P6 workspace ↔ P5 bulk ↔ K1 batch / per-id PATCH
+# P6 ↔ P5 bulk — ownership correction (reverts `3d6c7637` workaround)
 
-**P5 dependency (read-only):** `ca2855fb9b470d04b4d7358b74776cefe79a93f8` — not vendored on P6 tip.  
-**P6:** `receiving-bulk-contract.ts`, `ReceivingBulkToolbar.tsx`, `ReceivingBulkEditPanel.tsx`, `receiving-bulk-apply.ts`.  
-**K1 `a71b8f37`** — batch POST + per-id PATCH `/:id` and `/:id/stage` with `expectedRevision`.
+## Root decision
 
-## Connected (P6)
+Renaming/reimplementing P5 modules on the same paths is **rejected**. P5 sole sources @ **`1298491f7e8a86b6462ede9e42cf9513b691e8d1`**:
 
-| Control | Flow |
-|---------|------|
-| `ReceivingBulkActions` toolbar | Mounted from `ReceivingAppealsList` when `readOnly=false` |
-| Select all / row checkboxes | Workspace `selected` set |
-| `archive` / `trash` / `unarchive` / `restore` | Confirm panel → `postReceivingAppealsBatch` → `normalizeReceivingBatchResponse` → `reload()` |
-| Partial batch | `receivingBulkMergeSelection` / `receivingBulkPreserveSelection` |
-| `edit-open` | `ReceivingBulkEditPanel` → serial per-id PATCH (notes + non-financial stage), 409 → partial selection |
-| `clear` | Clears selection + confirm |
+- `ReceivingBulkActions.tsx`
+- `ReceivingBulkEditPanel.tsx`
+- `ReceivingBulkConfirmPanel.tsx`
+- `receiving-bulk-handoff.ts`
 
-## Blocked until P1
+## Root packaging — **INCLUDE** (from P5 tip / `1298491f`)
 
-`isReceivingBatchProxyReady()` → `contractState: "blocked"`; confirm disabled; no fake bucket updates.
+```
+src/components/clients/receiving/ReceivingBulkActions.tsx
+src/components/clients/receiving/ReceivingBulkEditPanel.tsx
+src/components/clients/receiving/ReceivingBulkConfirmPanel.tsx
+src/components/clients/receiving/receiving-bulk-handoff.ts
+src/components/clients/receiving/P5.receiving-bulk-handoff.test.tsx
+```
 
-## Not connected
+## Root packaging — **EXCLUDE / DELETE** (P6 `3d6c7637` collisions)
 
-- Bulk edit form (stage/notes PATCH per id)
-- Financial bucket ops
+```
+src/components/clients/receiving/ReceivingBulkToolbar.tsx
+src/lib/clients-parity/receiving-bulk-contract.ts
+```
+
+Any local `ReceivingBulkEditPanel.tsx` / `receiving-bulk-handoff.ts` content that is **not** byte-identical to P5 `1298491f`.
+
+## P6-owned (wire only)
+
+- `ReceivingAppealsWorkspace.tsx` — imports P5 panels + handoff normalizers; `isReceivingBatchProxyReady()` for contract state (P1 `0bb25b9b` allows batch when `isAllowedProxyRoute` true on this branch).
+- `ReceivingAppealsList.tsx` — mounts `ReceivingBulkActions` (not toolbar duplicate).
+- `src/lib/clients-parity/receiving-bulk-apply.ts` — serial PATCH transport via `buildReceivingBulkPatchIntents` / `aggregateReceivingPatchResults` only; maps `serviceNote` → K1 `privateNotes` wire in `receiving-appeals-api.ts`.
+- `src/lib/clients-parity/receiving-appeals-api.ts` — batch + CAS PATCH (unchanged owner).
+
+Branch may carry P5 files as **read-only mirror** for compile; Root replaces from P5 owner — P6 must not edit those paths.

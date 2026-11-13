@@ -49,12 +49,22 @@ export type ReceivingAppealDetailActions = {
   expectedRevision: number;
   workingStages: { id: string; label: string }[];
   refusalReasons?: string[];
-  onSavePrivateNotes?: (privateNotes: string) => void;
-  onApplyStage?: (payload: { stageKey: string; refusedReason?: string | null }) => void;
+  onSavePrivateNotes?: (privateNotes: string) => void | Promise<void>;
+  onApplyStage?: (payload: { stageKey: string; refusedReason?: string | null }) => void | Promise<void>;
   onOpenPurchaseOrder?: () => void;
   markPaid?:
     | { supported: true; onMarkPaid: () => void }
     | { supported: false; reason: string };
+  /** Prototype pay-category / review panel — P6 `onOpenPaidReview`, never profile finance PATCH. */
+  paidReview?:
+    | { supported: true; onOpen: () => void }
+    | { supported: false; reason: string };
+  /** Prototype «Отметить отгрузку» on `sys_paid` — K1 stage PATCH only. */
+  shippedConfirm?:
+    | { supported: true; onMarkShipped: () => void }
+    | { supported: false; reason: string };
+  /** P6 reload after K1 409 stale `expectedRevision`. */
+  onConflict?: () => void;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
 };
@@ -167,10 +177,18 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
           {!props.readOnly && props.actions ? (
             <section className={styles.blocked} data-testid="ca-receiving-detail-stage">
               <h3>Следующий шаг</h3>
-              <p className={styles.mutedSmall}>
-                Смена этапа — через{" "}
-                <code>PATCH /api/pro/client-appeals/:id/stage</code> (P6).
-              </p>
+              {props.appeal.stageId === "sys_paid" && actions?.shippedConfirm?.supported ? (
+                <button
+                  type="button"
+                  className={styles.ghostBtn}
+                  data-ca-action="receiving:stage:shipped"
+                  data-testid="ca-receiving-mark-shipped"
+                  disabled={actions.busy?.stage}
+                  onClick={actions.shippedConfirm.onMarkShipped}
+                >
+                  Отметить отгрузку
+                </button>
+              ) : null}
               <label className={styles.field}>
                 Перевести в этап
                 <select
@@ -223,6 +241,19 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               {actions.error?.stage ? (
                 <p className={styles.mutedSmall} role="alert" data-testid="ca-receiving-stage-error">
                   {actions.error.stage}
+                  {actions.onConflict ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className={styles.ghostBtn}
+                        data-testid="ca-receiving-stage-retry"
+                        onClick={actions.onConflict}
+                      >
+                        Обновить карточку
+                      </button>
+                    </>
+                  ) : null}
                 </p>
               ) : null}
             </section>
@@ -335,6 +366,16 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               <p className={styles.mutedSmall}>
                 Заказ {props.appeal.purchaseOrderId} — открытие через существующие order flows (P6).
               </p>
+            ) : actions?.paidReview?.supported ? (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                data-ca-action="receiving:purchase:paid-review"
+                data-testid="ca-receiving-paid-review"
+                onClick={actions.paidReview.onOpen}
+              >
+                Отметить оплату
+              </button>
             ) : actions?.markPaid?.supported ? (
               <button
                 type="button"
@@ -347,7 +388,8 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               </button>
             ) : (
               <p className={styles.mutedSmall} data-testid="ca-receiving-purchase-unsupported">
-                {actions?.markPaid?.reason ??
+                {actions?.paidReview?.reason ??
+                  actions?.markPaid?.reason ??
                   "Оплата фиксируется через этап «Оплачено» и существующие order flows — без правки суммы в карточке."}
               </p>
             )}
@@ -381,6 +423,19 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               {actions?.error?.notes ? (
                 <p className={styles.mutedSmall} role="alert" data-testid="ca-receiving-notes-error">
                   {actions.error.notes}
+                  {actions.onConflict ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className={styles.ghostBtn}
+                        data-testid="ca-receiving-notes-retry"
+                        onClick={actions.onConflict}
+                      >
+                        Обновить карточку
+                      </button>
+                    </>
+                  ) : null}
                 </p>
               ) : null}
             </section>

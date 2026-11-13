@@ -4,7 +4,10 @@ import {
   isReceivingAppealLockedForBulkStage,
   isReceivingFinancialStageKey,
 } from "@/lib/clients-parity/receiving-bulk-apply";
-import { normalizeReceivingPerIdBulkApply } from "@/lib/clients-parity/receiving-bulk-contract";
+import {
+  aggregateReceivingPatchResults,
+  buildReceivingBulkPatchIntents,
+} from "./receiving-bulk-handoff";
 
 describe("P6.receiving-bulk-apply", () => {
   it("locks financial rows for bulk stage edits", () => {
@@ -26,12 +29,17 @@ describe("P6.receiving-bulk-apply", () => {
     expect(isReceivingFinancialStageKey("ws_measure")).toBe(false);
   });
 
-  it("normalize partial per-id PATCH keeps failed selection", () => {
-    const result = normalizeReceivingPerIdBulkApply({
-      updatedIds: ["a1"],
-      skippedIds: ["a2"],
-      failures: [{ id: "a2", reason: "version_conflict" }],
-    });
+  it("uses P5 intent builder and aggregate for partial per-id PATCH", () => {
+    const built = buildReceivingBulkPatchIntents(["a1", "a2"], {
+      stageId: "",
+      serviceNote: "note",
+      appendNote: true,
+    }, { stageBlocked: true });
+    expect(built.intents.length).toBeGreaterThan(0);
+    const result = aggregateReceivingPatchResults([
+      { appealId: "a1", ok: true },
+      { appealId: "a2", ok: false, reason: "version_conflict", message: "conflict" },
+    ]);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.kind).toBe("partial");
   });

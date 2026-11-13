@@ -1,144 +1,133 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  RECEIVING_SYSTEM_STAGE,
-  type ReceivingAppealListRow,
-  type ReceivingWorkingStage,
-} from "@/lib/clients-parity/receiving-appeals-api";
-import {
-  isReceivingAppealLockedForBulkStage,
-  isReceivingFinancialStageKey,
-  type ReceivingBulkEditDraft,
-} from "@/lib/clients-parity/receiving-bulk-apply";
-import styles from "./receiving.module.css";
+import { useEffect, useId, useRef, useState } from "react";
+import styles from "../observer/observer.module.css";
+import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
+import type { ReceivingBulkEditDraft, ReceivingWorkingStageOption } from "./receiving-bulk-handoff";
 
-export type ReceivingBulkEditPanelProps = {
+type Props = {
   count: number;
-  selectedRows: ReceivingAppealListRow[];
-  workingStages: ReceivingWorkingStage[];
-  disabled?: boolean;
-  pending?: boolean;
-  blockedMessage?: string | null;
+  stageOptions: ReceivingWorkingStageOption[];
+  /** Prototype `bulkStageEditBlocked` — paid/shipped/return/refused in selection. */
+  stageBlocked: boolean;
+  contractState?: ReceivingBulkContractState;
+  saveError?: string | null;
   onCancel: () => void;
   onApply: (draft: ReceivingBulkEditDraft) => void;
 };
 
 export function ReceivingBulkEditPanel({
   count,
-  selectedRows,
-  workingStages,
-  disabled = false,
-  pending = false,
-  blockedMessage,
+  stageOptions,
+  stageBlocked,
+  contractState = "blocked",
+  saveError,
   onCancel,
   onApply,
-}: ReceivingBulkEditPanelProps) {
-  const [stageKey, setStageKey] = useState("");
-  const [note, setNote] = useState("");
-  const [noteAppend, setNoteAppend] = useState(true);
-  const [validation, setValidation] = useState<string | null>(null);
+}: Props) {
+  const titleId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [stageId, setStageId] = useState("");
+  const [serviceNote, setServiceNote] = useState("");
+  const [appendNote, setAppendNote] = useState(true);
 
-  const stageBlocked = useMemo(
-    () => selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row)),
-    [selectedRows],
-  );
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLElement>("select,textarea")?.focus({ preventScroll: true });
+  }, [count]);
 
-  const stageOptions = workingStages.filter(
-    (s) => !isReceivingFinancialStageKey(s.id) && s.id !== RECEIVING_SYSTEM_STAGE.REFUSED,
-  );
+  const applyDisabled = contractState === "blocked" || contractState === "pending";
+
+  const draft = (): ReceivingBulkEditDraft => ({
+    stageId: stageBlocked ? "" : stageId,
+    serviceNote: serviceNote.trim(),
+    appendNote,
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (contractState !== "ready") return;
+    onApply(draft());
+  };
 
   return (
-    <aside
-      className={`panel stack ca-bulk-edit ${styles.receivingShell}`}
-      data-testid="ca-receiving-bulk-edit"
+    <form
+      ref={formRef}
+      className={styles.editPanel}
+      data-ca-bulk-edit
       data-bulk-stage-blocked={stageBlocked ? "1" : "0"}
+      data-contract-state={contractState}
+      onSubmit={submit}
+      aria-labelledby={titleId}
     >
-      <h3>Групповое изменение · {count}</h3>
-      {blockedMessage ? (
-        <p className="field-error" role="status">
-          {blockedMessage}
-        </p>
-      ) : null}
+      <h3 id={titleId}>Групповое изменение · {count}</h3>
       {stageBlocked ? (
-        <p className="small muted">
-          Снимите из выборки закрытые обращения (оплата/отгрузка/отказ), чтобы менять этап.
+        <p className={styles.persistenceNotice} role="status">
+          В выборке есть оплаченные, отгруженные, с возвратом или закрытые обращения — рабочий этап
+          для всей группы изменить нельзя. Можно добавить служебную заметку.
         </p>
-      ) : null}
-      <label className="field">
+      ) : (
+        <p className={styles.mutedSmall}>Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат».</p>
+      )}
+      <label className={styles.field}>
         Этап работ
         <select
           name="bulk-stage"
-          value={stageKey}
-          disabled={disabled || pending || stageBlocked}
-          onChange={(e) => setStageKey(e.target.value)}
+          value={stageId}
+          disabled={stageBlocked || applyDisabled}
+          onChange={(e) => setStageId(e.target.value)}
         >
           <option value="">Не менять</option>
-          {stageOptions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
+          {stageOptions.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
             </option>
           ))}
         </select>
-        <small className="input-hint">
+        <span className={styles.mutedSmall}>
           {stageBlocked
-            ? "Этап заблокирован для части выборки."
-            : "Только рабочие этапы — без оплаты и отгрузки."}
-        </small>
+            ? "Снимите из выборки закрытые обращения, чтобы менять этап."
+            : "Только рабочие этапы, без оплаты и отгрузки."}
+        </span>
       </label>
-      <label className="field">
+      <label className={styles.field}>
         Служебная заметка
         <textarea
           name="bulk-note"
           rows={2}
           maxLength={2000}
           placeholder="Текст для команды"
-          value={note}
-          disabled={disabled || pending}
-          onChange={(e) => setNote(e.target.value)}
+          value={serviceNote}
+          onChange={(e) => setServiceNote(e.target.value)}
         />
       </label>
-      <label className="field ca-check-line">
+      <label className={styles.personalCheck}>
         <input
           type="checkbox"
           name="bulk-note-append"
-          checked={noteAppend}
-          disabled={disabled || pending}
-          onChange={(e) => setNoteAppend(e.target.checked)}
+          checked={appendNote}
+          onChange={(e) => setAppendNote(e.target.checked)}
         />
         Добавить к существующей заметке
       </label>
-      {validation ? (
-        <p className="field-error" role="alert">
-          {validation}
+      {saveError ? (
+        <p className={styles.persistenceNotice} role="alert">
+          {saveError}
         </p>
       ) : null}
-      <div className="ca-form-actions">
-        <button type="button" className="btn ghost" disabled={pending} onClick={onCancel}>
+      <div className={styles.personalActions}>
+        <button type="button" className={styles.ghostBtn} data-ca-action="bulk:edit-cancel" onClick={onCancel}>
           Отмена
         </button>
         <button
-          type="button"
-          className="btn primary"
+          type="submit"
+          className={styles.primaryBtn}
           data-ca-action="bulk:edit-apply"
-          disabled={disabled || pending}
-          onClick={() => {
-            setValidation(null);
-            const trimmedNote = note.trim();
-            if (!stageKey && !trimmedNote) {
-              setValidation("Укажите этап или заметку.");
-              return;
-            }
-            onApply({
-              stageKey: stageKey || undefined,
-              privateNotes: trimmedNote || undefined,
-              noteAppend,
-            });
-          }}
+          disabled={applyDisabled}
+          aria-disabled={applyDisabled}
         >
-          {pending ? "Применение…" : "Применить"}
+          {contractState === "pending" ? "Применение…" : contractState === "blocked" ? "Применить (недоступно)" : "Применить"}
         </button>
       </div>
-    </aside>
+    </form>
   );
 }

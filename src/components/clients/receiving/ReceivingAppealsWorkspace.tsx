@@ -26,21 +26,22 @@ import { ReceivingAppealsList } from "./ReceivingAppealsList";
 import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
 import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
+import type { ReceivingBulkAction, ReceivingBulkContractState } from "./ReceivingBulkActions";
+import { ReceivingBulkConfirmPanel } from "./ReceivingBulkConfirmPanel";
 import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
 import {
   applyReceivingBulkEditsPerId,
-  isReceivingBulkPatchProxyReady,
+  isReceivingAppealLockedForBulkStage,
 } from "@/lib/clients-parity/receiving-bulk-apply";
-import type { ReceivingBulkAction, ReceivingBulkContractState } from "@/lib/clients-parity/receiving-bulk-contract";
 import {
   normalizeReceivingBatchResponse,
-  normalizeReceivingPerIdBulkApply,
   receivingBulkErrorMessage,
   receivingBulkMergeSelection,
   receivingBulkPreserveSelection,
+  receivingConfirmToBatchAction,
   receivingToolbarToBatchAction,
-  type ReceivingCrmBatchAction,
-} from "@/lib/clients-parity/receiving-bulk-contract";
+  type ReceivingBulkConfirmKind,
+} from "./receiving-bulk-handoff";
 import styles from "./receiving.module.css";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
@@ -69,7 +70,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   const [batchPending, setBatchPending] = useState(false);
   const [batchPartial, setBatchPartial] = useState<string | null>(null);
   const [bulkConfirm, setBulkConfirm] = useState<{
-    action: ReceivingCrmBatchAction;
+    kind: ReceivingBulkConfirmKind;
     ids: string[];
   } | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -147,7 +148,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     setBatchPending(true);
     setBatchPartial(null);
     const res = await postReceivingAppealsBatch({
-      action: bulkConfirm.action,
+      action: receivingConfirmToBatchAction(bulkConfirm.kind),
       ids: bulkConfirm.ids,
     });
     setBatchPending(false);
@@ -182,12 +183,18 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       if (ids.length === 0) return;
       setBatchPending(true);
       setBatchPartial(null);
-      const raw = await applyReceivingBulkEditsPerId(ids, draft, {
+      const selectedRows = data.appeals.filter((a) => selected.has(a.id));
+      const stageBlocked = selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row));
+      const stageLockedIds = new Set(
+        selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
+      );
+      const result = await applyReceivingBulkEditsPerId(ids, draft, {
         appeals: data.appeals,
         workingStages: data.settings?.workingStages ?? [],
+        stageBlocked,
+        stageLockedIds,
       });
       setBatchPending(false);
-      const result = normalizeReceivingPerIdBulkApply(raw);
       const partialMsg = receivingBulkErrorMessage(result);
       if (partialMsg) setBatchPartial(partialMsg);
       if (result.ok && result.updatedIds.length > 0) {
@@ -229,6 +236,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
         if (action === "clear") {
           setSelected(new Set());
           setBulkConfirm(null);
+          setBulkEditOpen(false);
           setBatchPartial(null);
           return;
         }
@@ -243,7 +251,19 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
         if (!mapped) return;
         const ids = [...selected];
         if (ids.length === 0) return;
-        setBulkConfirm({ action: mapped, ids });
+        const confirmKind: ReceivingBulkConfirmKind | null =
+          action === "archive-ask"
+            ? "archive"
+            : action === "delete-ask"
+              ? "delete"
+              : action === "unarchive-ask"
+                ? "unarchive"
+                : action === "restore-ask"
+                  ? "restore"
+                  : null;
+        if (!confirmKind) return;
+        setBulkEditOpen(false);
+        setBulkConfirm({ kind: confirmKind, ids });
       },
     }),
     [bulkContractState, batchPartial, listFilters.bucket, selected],
@@ -419,49 +439,28 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       {bulkEditOpen && selected.size > 0 ? (
         <ReceivingBulkEditPanel
           count={selected.size}
-          selectedRows={data.appeals.filter((a) => selected.has(a.id))}
-          workingStages={data.settings?.workingStages ?? []}
-          disabled={!isReceivingBulkPatchProxyReady()}
-          pending={batchPending}
-          blockedMessage={
-            !isReceivingBulkPatchProxyReady()
-              ? "PATCH /api/pro/client-appeals/:id ждёт P1 allowlist (K1 a71b8f37)."
-              : null
-          }
+          stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
+            id: s.id,
+            label: s.label,
+          }))}
+          stageBlocked={data.appeals
+            .filter((a) => selected.has(a.id))
+            .some((row) => isReceivingAppealLockedForBulkStage(row))}
+          contractState={bulkContractState}
+          saveError={batchPartial}
           onCancel={() => setBulkEditOpen(false)}
           onApply={(draft) => void executeBulkEdit(draft)}
         />
       ) : null}
       {bulkConfirm ? (
-        <section
-          className={`panel stack ${styles.receivingNotice}`}
-          data-testid="ca-receiving-bulk-confirm"
-          role="dialog"
-          aria-label="Подтверждение группового действия"
-        >
-          <p>
-            Применить действие <strong>{bulkConfirm.action}</strong> к{" "}
-            <strong>{bulkConfirm.ids.length}</strong> обращениям?
-          </p>
-          <div className="ca-form-actions">
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={batchPending}
-              onClick={() => setBulkConfirm(null)}
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={batchPending || !batchProxyReady}
-              onClick={() => void executeBulkConfirmed()}
-            >
-              {batchPending ? "Выполняется…" : "Подтвердить"}
-            </button>
-          </div>
-        </section>
+        <ReceivingBulkConfirmPanel
+          kind={bulkConfirm.kind}
+          count={bulkConfirm.ids.length}
+          contractState={bulkContractState}
+          partialError={batchPartial}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={() => void executeBulkConfirmed()}
+        />
       ) : null}
       <ReceivingAppealsList
         data={data}
