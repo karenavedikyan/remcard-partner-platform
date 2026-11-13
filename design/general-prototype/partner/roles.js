@@ -82,7 +82,8 @@ import {
   hydrateCertificateCard,
 } from "./certificate-view.js";
 import { h as renderCertificateGuestMain, e as renderPartnerProfilePage, j as publicCertificateShareUrl } from "./chunk-QXOSRGZH.js";
-import { a as certificateQrcode } from "./chunk-3HBG25M4.js";
+import { a as qrcodeModuleRef } from "./chunk-3HBG25M4.js";
+import { c as esmInterop } from "./chunk-5TBO732O.js";
 import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
@@ -103,6 +104,32 @@ import {
   openWalletMasterLedger,
 } from "./cabinet-sections.js";
 import "./chunk-5TBO732O.js";
+
+function qrcodeLibrary() {
+  const mod =
+    typeof qrcodeModuleRef === "function" ? esmInterop(qrcodeModuleRef(), 1) : esmInterop(qrcodeModuleRef, 1);
+  return mod?.default || mod;
+}
+
+async function qrRasterDataUrl(text) {
+  const api = qrcodeLibrary();
+  if (typeof api?.toDataURL !== "function") return "";
+  const payload = String(text || "").trim();
+  if (!payload) return "";
+  try {
+    const dataUrl = await api.toDataURL(payload, {
+      width: 600,
+      margin: 3,
+      errorCorrectionLevel: "M",
+    });
+    if (!/^data:image\/(?:png|jpeg|jpg);/i.test(dataUrl || "")) return "";
+    if ((dataUrl || "").length < 512) return "";
+    return dataUrl;
+  } catch (_) {
+    return "";
+  }
+}
+
 async function buildCertificateGuestEmbedExtras(publicModel) {
   if (!publicModel) return {};
   let shareUrl = "";
@@ -113,21 +140,7 @@ async function buildCertificateGuestEmbedExtras(publicModel) {
   }
   const qrText =
     shareUrl && shareUrl.length <= 1800 ? shareUrl : String(publicModel.code || "RemCard");
-  let qrDataUrl = "";
-  try {
-    qrDataUrl = await certificateQrcode.toDataURL(qrText, {
-      width: 600,
-      margin: 3,
-      errorCorrectionLevel: "M",
-    });
-  } catch (_) {
-    try {
-      qrDataUrl = await certificateQrcode.toString(qrText, { type: "svg", width: 300 });
-      if (qrDataUrl && !qrDataUrl.startsWith("data:")) {
-        qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrDataUrl)}`;
-      }
-    } catch (_) {}
-  }
+  const qrDataUrl = await qrRasterDataUrl(qrText);
   const offers = publicModel.offers?.length
     ? publicModel.offers
     : [
@@ -157,21 +170,7 @@ async function buildRecommendationGuestEmbedExtras(publicModel) {
   }
   const qrText =
     shareUrl && shareUrl.length <= 1800 ? shareUrl : String(publicModel.code || "RemCard");
-  let qrDataUrl = "";
-  try {
-    qrDataUrl = await certificateQrcode.toDataURL(qrText, {
-      width: 600,
-      margin: 3,
-      errorCorrectionLevel: "M",
-    });
-  } catch (_) {
-    try {
-      const svg = await certificateQrcode.toString(qrText, { type: "svg", width: 300 });
-      if (svg && !svg.startsWith("data:")) {
-        qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-      }
-    } catch (_) {}
-  }
+  const qrDataUrl = await qrRasterDataUrl(qrText);
   return { qrDataUrl: qrDataUrl || "", shareUrl: shareUrl || "" };
 }
 async function enrichStandaloneEmbedPayload(pageN, payload) {

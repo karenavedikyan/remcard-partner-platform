@@ -581,6 +581,7 @@ export function createCabinetStandaloneHost(config) {
       return;
     }
     if (data.type === "nav" && data.pageN) {
+      if (Number(data.pageN) === Number(openPageN)) return;
       const nextCtx = data.ctx ? { ...(openCtx || {}), ...data.ctx } : openCtx;
       if (!assertCanOpen(Number(data.pageN), nextCtx)) return;
       doOpen(Number(data.pageN), {

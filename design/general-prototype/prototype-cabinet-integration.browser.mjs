@@ -1284,11 +1284,11 @@ try {
   await cabFrame.locator('[data-coll-action="seed"]').click();
   const cert80Row = cabFrame.locator("[data-coll-open]", { hasText: /сертификат\s*80/i });
   await cert80Row.first().waitFor({ timeout: 15000 });
-  const certCodeBeforeOpen =
-    (await cert80Row.first().locator("xpath=ancestor::tr//td[contains(@class,'collection-detail')]").textContent().catch(() => null))?.trim() || "";
   await cert80Row.first().click();
   const publicView = cabFrame.locator('[data-testid="certificate-public-view"]');
   await publicView.waitFor({ timeout: 15000 });
+  const certCodeBeforeOpen =
+    (await cabFrame.locator('[data-testid="certificate-code"]').textContent().catch(() => null))?.trim() || "";
   await publicView.click();
   await cert139Nest.waitForFunction(
     () => {
@@ -1299,7 +1299,7 @@ try {
         frame?.dataset?.embedMount === "srcdoc" &&
         frame?.dataset?.embedContentReady === "1" &&
         doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 139 &&
-        /cert139-qr-ok/.test(marker)
+        /cert139-qr-raster-ok/.test(marker)
       );
     },
     null,
@@ -1339,26 +1339,72 @@ try {
   assert.match(cert139Snap.title, /сертификат/i);
   const cert139GuestMarker =
     (await cabFrame.locator("[data-testid='cabinet-standalone-frame']").getAttribute("data-embed-guest-marker")) || "";
-  assert.match(cert139GuestMarker, /cert139-qr-/, cert139GuestMarker);
+  assert.match(cert139GuestMarker, /cert139-qr-raster-ok/, cert139GuestMarker);
 
   const cert139GuestFrame = cabFrame.frameLocator('[data-testid="cabinet-standalone-frame"]');
   await cert139GuestFrame.locator(".cert-guest").waitFor({ timeout: 15000 });
-  const qrSrc = await cert139GuestFrame.locator("[data-cert-qr]").getAttribute("src");
-  assert.ok(qrSrc && qrSrc.startsWith("data:image"), `139 embed must hydrate QR image src (${cert139GuestMarker})`);
+  const qrProbe = await cert139GuestFrame.locator("[data-cert-qr]").evaluate((img) => ({
+    src: img.getAttribute("src") || "",
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+    complete: img.complete,
+  }));
+  assert.match(qrProbe.src, /^data:image\/(?:png|jpeg|jpg);/i, `139 QR must be raster (${cert139GuestMarker})`);
+  assert.ok(qrProbe.src.length >= 512, "139 QR payload must be a real encoded image");
+  assert.ok(qrProbe.naturalWidth > 40 && qrProbe.naturalHeight > 40, "139 QR must decode to non-zero dimensions");
+  assert.equal(qrProbe.complete, true, "139 QR image should finish loading");
+  const openedCertCode = (
+    (await cert139GuestFrame.locator(".cert-code").first().textContent()) || ""
+  ).trim();
+  assert.ok(openedCertCode.length > 2, "guest cert should show code from opened record");
+  if (certCodeBeforeOpen) {
+    assert.ok(
+      openedCertCode.includes(certCodeBeforeOpen) || certCodeBeforeOpen.includes(openedCertCode),
+      `guest code ${openedCertCode} should match list detail ${certCodeBeforeOpen}`,
+    );
+  }
 
   const certQrBtn = cert139GuestFrame.locator('[data-client-action="qr"]');
   await certQrBtn.click();
   await certQrBtn.click();
-  const afterQrSrc = await cert139GuestFrame.locator("[data-cert-qr]").getAttribute("src");
-  assert.ok(afterQrSrc && afterQrSrc.startsWith("data:image"), "139 QR must stay populated after repeat show");
+  const afterQrProbe = await cert139GuestFrame.locator("[data-cert-qr]").evaluate((img) => img.naturalWidth);
+  assert.ok(afterQrProbe > 40, "139 QR must stay populated after repeat show");
 
   await cert139GuestFrame.locator('a[href*="partner=0"]').first().click();
   await cert139GuestFrame.locator(".pc-page").waitFor({ timeout: 10000 });
+  await cert139Nest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        host && !host.hidden &&
+        frame?.dataset?.embedMount === "srcdoc" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 139
+      );
+    },
+    null,
+    { timeout: 10000 },
+  );
   assert.equal(await cert139GuestFrame.locator(".cert-guest").count(), 0, "partner profile must replace guest cert main");
   const partnerTitle = await cert139GuestFrame.locator("h1").first().textContent();
   assert.match(String(partnerTitle || ""), /материал/i);
+  await cert139GuestFrame.locator(".pc-page").getByText(openedCertCode, { exact: false }).first().waitFor({
+    timeout: 10000,
+  });
   await cert139GuestFrame.getByRole("link", { name: /вернуться к сертификату/i }).first().click();
   await cert139GuestFrame.locator(".cert-guest").waitFor({ timeout: 10000 });
+  await cert139Nest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      return host && !host.hidden;
+    },
+    null,
+    { timeout: 10000 },
+  );
+  const backQrWidth = await cert139GuestFrame.locator("[data-cert-qr]").evaluate((img) => img.naturalWidth);
+  assert.ok(backQrWidth > 40, "guest cert QR remains after profile back");
 
   await cert139GuestFrame.locator('[data-client-action="register"]').click();
   const clientPanel = cert139GuestFrame.locator("[data-client-area]");

@@ -189,6 +189,16 @@ assert.match(
   "host pre-renders 139 guest HTML before opaque embed",
 );
 assert.match(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /qrRasterDataUrl|qrcodeLibrary/,
+  "139 embed QR uses bundled library interop, not bare module ref",
+);
+assert.match(
+  readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8"),
+  /pageN === currentN/,
+  "same-page guest links do not re-navigate embed host",
+);
+assert.match(
   readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),
   /publicHtml/,
   "140 opaque embed applies host-rendered recommendation HTML",

@@ -137,6 +137,11 @@
       if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
       var pageN = resolvePageFromHref(href);
       if (pageN) {
+        var currentN = Number(params.get("proto_n") || 0) || 0;
+        if (currentN && pageN === currentN) {
+          e.preventDefault();
+          return;
+        }
         e.preventDefault();
         try {
           var u = new URL(href, embedLinkBase());
