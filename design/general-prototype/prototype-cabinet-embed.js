@@ -76,9 +76,15 @@
     } catch (_) {}
   }
 
-  window.__protoCabinetEmbedSignalContentReady = function protoCabinetEmbedSignalContentReady(pageN) {
+  window.__protoCabinetEmbedSignalContentReady = function protoCabinetEmbedSignalContentReady(pageN, extra) {
     var n = pageN != null ? Number(pageN) : Number(params.get("proto_n") || 0) || null;
-    post({ type: "embed-content-ready", pageN: n });
+    var msg = { type: "embed-content-ready", pageN: n };
+    if (extra && typeof extra === "object") {
+      if (extra.guestMarker) msg.guestMarker = String(extra.guestMarker);
+    } else if (typeof extra === "string" && extra) {
+      msg.guestMarker = extra;
+    }
+    post(msg);
   };
 
   window.__protoCabinetEmbedNavigate = function embedNavigate(targetN, extraQuery, ctx, opts) {
@@ -181,22 +187,6 @@
   } catch (_) {}
 
   post({ type: "ready", pageN: Number(params.get("proto_n") || 0) || null });
-
-  (function scheduleGuestRootReadyProbe() {
-    var n = Number(params.get("proto_n") || 0);
-    if (n !== 141 && n !== 142) return;
-    var sel = n === 141 ? "#assignment-root" : "#observer-root";
-    var started = Date.now();
-    (function tick() {
-      var root = document.querySelector(sel);
-      if (root && root.childElementCount > 0) {
-        window.__protoCabinetEmbedSignalContentReady(n);
-        return;
-      }
-      if (Date.now() - started > 18000) return;
-      requestAnimationFrame(tick);
-    })();
-  })();
 
   window.addEventListener("message", function (ev) {
     var data = ev.data;

@@ -847,9 +847,31 @@ try {
   await r2Page.locator('[data-testid="ca-r2-object-r2-obj-krd-aurora"]').click();
   await r2Page.locator('[data-testid="ca-r2-open-142"]').click();
   await r2Page.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 10000 });
-  const embed142 = r2Page.frameLocator("[data-testid='cabinet-standalone-frame']");
-  await embed142.locator("body").waitFor({ timeout: 8000 });
-  const storedY = await r2Page.evaluate(() => window.scrollY);
+  await r2Page.waitForFunction(
+    () => {
+      const frame = document.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedContentReady === "1" &&
+        frame?.dataset?.embedGuestMarker === "r2-obj-krd-aurora"
+      );
+    },
+    null,
+    { timeout: 20000 },
+  );
+  await r2Page.locator('[data-testid="proto-standalone-back"]').click();
+  await r2Page.waitForSelector('[data-testid="ca-r2-object-detail"]', { timeout: 10000 });
+  await r2Page.locator('[data-testid="ca-r2-open-141"]').click();
+  await r2Page.waitForFunction(
+    () => {
+      const frame = document.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedContentReady === "1" &&
+        frame?.dataset?.embedGuestMarker === "r2-obj-krd-aurora"
+      );
+    },
+    null,
+    { timeout: 20000 },
+  );
   await r2Page.locator('[data-testid="proto-standalone-back"]').click();
   await r2Page.waitForSelector('[data-testid="ca-r2-object-detail"]', { timeout: 10000 });
   const afterBack = await r2Page.evaluate(() => ({
@@ -857,6 +879,21 @@ try {
     selected: document.querySelector('[data-testid="ca-r2-object-r2-obj-krd-aurora"]')?.classList.contains("is-selected"),
   }));
   assert.ok(afterBack.view && afterBack.selected, "back restores R2 repair object context");
+  await r2Page.locator('[data-testid="ca-r2-object-r2-obj-spb-loft"]').click();
+  await r2Page.locator('[data-testid="ca-r2-open-142"]').click();
+  await r2Page.waitForFunction(
+    () => {
+      const frame = document.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedContentReady === "1" &&
+        frame?.dataset?.embedGuestMarker === "r2-obj-spb-loft"
+      );
+    },
+    null,
+    { timeout: 20000 },
+  );
+  await r2Page.locator('[data-testid="proto-standalone-back"]').click();
+  await r2Page.waitForSelector('[data-testid="ca-r2-object-detail"]', { timeout: 10000 });
   await r2Page.locator('[data-testid="ca-r2-object-r2-obj-ekb-draft"]').click();
   const asgDisabled = await r2Page.locator('[data-testid="ca-r2-open-141"]').isDisabled();
   assert.ok(asgDisabled, "no assignment fixture keeps 141 disabled");
@@ -1227,6 +1264,84 @@ try {
   }
   assert.match(cert139Snap.title, /сертификат/i);
   await cert139Nest.close();
+
+  const r2Nest142 = await browser.newPage();
+  await r2Nest142.setViewportSize({ width: 1280, height: 900 });
+  const r2NestErrors = [];
+  r2Nest142.on("pageerror", (err) => r2NestErrors.push(String(err)));
+  await r2Nest142.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  await r2Nest142.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await r2Nest142.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const win = doc?.defaultView;
+    win?.rcDemoMemory?.setItem?.("rc_release", "2");
+    const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "store";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    const rel = doc?.querySelector('[data-testid="prototype-release"]');
+    if (rel) {
+      rel.value = "2";
+      rel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  const r2Cab = r2Nest142.frameLocator("#cabinet");
+  await r2Cab.locator(".shell aside.sidebar").waitFor({ timeout: 25000 });
+  await r2Cab.locator('[data-action="nav:clients"]').click();
+  await r2Cab.locator('[data-ca-action="nav:repair-objects"]').click();
+  await r2Cab.locator('[data-testid="ca-r2-object-r2-obj-spb-loft"]').click();
+  await r2Cab.locator('[data-testid="ca-r2-open-142"]').click();
+  await r2Nest142.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        frame?.dataset?.embedGuestMarker === "r2-obj-spb-loft" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 142
+      );
+    },
+    null,
+    { timeout: 30000 },
+  );
+  const r2LoftSnap = await r2Nest142.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      marker: frame?.dataset?.embedGuestMarker || "",
+      url: frame?.dataset?.embedUrl || "",
+      title: doc?.querySelector("[data-standalone-title]")?.textContent?.trim() || "",
+    };
+  });
+  assert.equal(r2NestErrors.length, 0, `opaque 142 nest: ${r2NestErrors.join(" | ")}`);
+  assert.equal(r2LoftSnap.marker, "r2-obj-spb-loft");
+  assert.match(r2LoftSnap.title, /наблюдени/i);
+  assert.ok(r2LoftSnap.url.includes("observer.html"), r2LoftSnap.url);
+  await r2Cab.locator('[data-testid="proto-standalone-back"]').click();
+  await r2Cab.locator('[data-testid="ca-r2-object-r2-obj-krd-aurora"]').click();
+  await r2Cab.locator('[data-testid="ca-r2-open-141"]').click();
+  await r2Nest142.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        frame?.dataset?.embedGuestMarker === "r2-obj-krd-aurora" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 141
+      );
+    },
+    null,
+    { timeout: 30000 },
+  );
+  await r2Nest142.close();
 
   const previewToc = await browser.newPage();
   await previewToc.setViewportSize({ width: 1280, height: 900 });

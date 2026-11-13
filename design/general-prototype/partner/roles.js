@@ -54,7 +54,16 @@ import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
 import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca34";
-import { buildRepairEmbedCtx, employeeRepairScopeAllowsDemo, R2_REPAIR_OBJECT_PAGES } from "./repair-objects-r2.js";
+import {
+  assignmentHandoffModel,
+  buildRepairEmbedCtx,
+  employeeRepairScopeAllowsDemo,
+  observerPublicModel,
+  repairObjectById,
+  R2_REPAIR_OBJECT_PAGES,
+} from "./repair-objects-r2.js";
+import { h as renderObserverGuestMain } from "./chunk-KTYMGLZA.js";
+import { d as renderAssignmentGuestSection } from "./chunk-UM77QSQJ.js";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
 import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=es2";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
@@ -76,6 +85,7 @@ import { h as renderCertificateGuestMain } from "./chunk-QXOSRGZH.js";
 import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
+  observerDesignSampleModel,
   recommendationGuestHash,
   recommendationDesignSampleHash,
 } from "./guest-embed-payloads.js";
@@ -3365,19 +3375,39 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
     return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
   }
   if (pageN === 141 && ctx?.guestHash) {
-    return embedPayloadEnvelope(pageN, ctx, {
+    const fixture = ctx.repairObjectId ? repairObjectById(ctx.repairObjectId) : null;
+    const model = fixture ? assignmentHandoffModel(fixture) : null;
+  return embedPayloadEnvelope(pageN, ctx, {
       guestReady: true,
       r2Repair: !!ctx.r2Repair,
       guestHash: ctx.guestHash,
+      repairObjectId: ctx.repairObjectId || "",
+      guestMarker: ctx.repairObjectId || "",
+      assignmentHtml: model
+        ? `<p class="notice">Демонстрация поручения. Без входа в RemCard. Изменения на этой странице не передаются отправителю и исчезнут после обновления.</p><section class="panel">${renderAssignmentGuestSection(model)}<p class="input-hint">В ссылке только выбранное поручение, не весь объект. Это снимок: изменения условий и отметки в кабинете в нём не обновляются. Файлы передаются отдельно.</p></section>`
+        : "",
+      objectName: model?.object || fixture?.name || "",
+      objectAddress: model?.address || fixture?.address || "",
     });
   }
   if (pageN === 142 && ctx?.guestHash) {
+    const fixture = ctx.repairObjectId && !ctx.designExample ? repairObjectById(ctx.repairObjectId) : null;
+    const model = ctx.designExample
+      ? observerDesignSampleModel()
+      : fixture
+        ? observerPublicModel(fixture)
+        : null;
     return embedPayloadEnvelope(pageN, ctx, {
       guestReady: true,
       designExample: !!ctx.designExample,
       naReason: ctx.naReason || "",
       readOnlyObserver: !!ctx.readOnlyObserver,
       guestHash: ctx.guestHash,
+      repairObjectId: ctx.repairObjectId || "",
+      guestMarker: ctx.designExample ? "design-sample" : ctx.repairObjectId || "",
+      observerHtml: model ? renderObserverGuestMain(model) : "",
+      objectName: model?.name || "",
+      objectAddress: model?.address || "",
     });
   }
   if (pageN === 140 && ctx?.designExample) {

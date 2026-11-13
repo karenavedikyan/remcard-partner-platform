@@ -178,6 +178,28 @@ assert.match(
   /publicHtml:\s*renderCertificateGuestMain\(publicModel\)/,
   "host pre-renders 139 guest HTML before opaque embed",
 );
+assert.match(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /observerHtml:\s*model\s*\?\s*renderObserverGuestMain\(model\)/,
+  "host pre-renders 142 guest HTML for opaque embed",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/observer-cabinet-embed.js"), "utf8"),
+  /observerHtml/,
+  "142 opaque embed applies host-rendered observer HTML",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/assignment-cabinet-embed.js"), "utf8"),
+  /assignmentHtml/,
+  "141 opaque embed applies host-rendered assignment HTML",
+);
+assert.match(readFileSync(path.join(root, "partner/observer-guest.js"), "utf8"), /__protoCabinetEffectiveHash/, "142 guest uses effective hash");
+assert.match(readFileSync(path.join(root, "partner/assignment-guest.js"), "utf8"), /__protoCabinetEffectiveHash/, "141 guest uses effective hash");
+assert.doesNotMatch(
+  embedChild,
+  /scheduleGuestRootReadyProbe[\s\S]{0,400}141[\s\S]{0,80}142/,
+  "embed child must not auto-ready 141/142 from empty root",
+);
 const hostJs = readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8");
 assert.match(hostJs, /abortPendingSrcdocWork/, "host cancels in-flight srcdoc work on close/reopen");
 assert.match(hostJs, /assertSrcdocSessionActive/, "host ties srcdoc load to open generation and token");

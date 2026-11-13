@@ -322,6 +322,7 @@ export function createCabinetStandaloneHost(config) {
     delete frame.dataset.embedUrl;
     delete frame.dataset.embedContentReady;
     delete frame.dataset.embedSessionToken;
+    delete frame.dataset.embedGuestMarker;
     openPageN = null;
     openQuery = "";
     openCtx = null;
@@ -537,6 +538,8 @@ export function createCabinetStandaloneHost(config) {
       } else if (String(data.token ?? "") !== "" && !embedTokenMatches(data.token)) return;
       syncEmbeddedPageBadge(openPageN);
       frame.dataset.embedContentReady = "1";
+      if (data.guestMarker) frame.dataset.embedGuestMarker = String(data.guestMarker);
+      else delete frame.dataset.embedGuestMarker;
       return;
     }
     if (data.type === "nav" && data.pageN) {
@@ -606,6 +609,7 @@ export function createCabinetStandaloneHost(config) {
         delete frame.dataset.embedUrl;
         delete frame.dataset.embedContentReady;
         delete frame.dataset.embedSessionToken;
+        delete frame.dataset.embedGuestMarker;
         unwatchLayout();
         document.documentElement.classList.remove("proto-cabinet-embed-host-active");
       }
