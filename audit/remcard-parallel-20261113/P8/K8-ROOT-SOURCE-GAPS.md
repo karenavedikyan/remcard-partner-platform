@@ -1,95 +1,49 @@
-# П8 — K8 navigator source inspection (read-only)
+# П8 — Navigator source gaps ledger (current pins)
 
-**Canonical K8 tip:** `6f09c23e` (`cursor/remcard-k8-acceptance-20261113`)  
-**Companion tips (Root):** K1 `f722a164` · K5 `6c444487`  
-**Obsolete for gate:** `fc33b4fa` — Branch-required identity; **do not** score current gate against it.
+**Canonical assembly:** K8 `0f4fe833` · K1 `51353825` · K2 `df8ed8a5` · K5 `6c444487`  
+**Schema SQL base:** `1894569a` (unchanged per Root) · **Obsolete pins:** `fc33`, pre-fix `6f09` reward projection
 
-**Profile prod `89fb8e07`:** publication in progress — **≠** Clients section ready.  
-**Partner base:** `57ca4680` · **P8 product:** none · **G7 prod DB:** not started
-
-**Inspected @ `6f09c23e`:** `contract.ts`, `IDENTITY_HANDOFF.md`, `HANDOFF.md`, `appealPurchaseProjection.ts`, `recordMap.ts`, `dto.ts`, `eligibility.ts`
+**Whole Clients:** **NO-GO** · **G7:** not started · **Partner @ `57ca4680`:** integration defects remain (see `GATE-REFRESH-20261113-1815.md`)
 
 ---
 
-## Identity @ `6f09c23e` (K8-GAP-6 — **CORRECTED in source**, not release)
+## Cleared (do not treat as current blockers)
 
-| Requirement | Evidence |
-|-------------|----------|
-| `receivingPartnerUserId` required | `ClientAppealRecord`, create inputs, `ClientAppealReadContext` |
-| Org/branch optional | `receivingOrganizationId` / `receivingBranchId` → `string \| null` |
-| Settings keyed by principal | `ClientAppealPartnerSettingsRecord.receivingPartnerUserId` |
-| Active slot | `(certificateId, receivingPartnerUserId)` partial unique (HANDOFF / IDENTITY) |
-
-**Not section acceptance:** contract in navigator source only; partner proxy still `BLOCKED_CONTRACT`; no prod migration.
+| Gap | Resolution @ current pin |
+|-----|---------------------------|
+| K8-GAP-6 identity | `receivingPartnerUserId`; optional org/branch |
+| K8-GAP-7 purchase | `Order.totalAmount` + `orderCountsAsClientPurchase`; `paidAt=null` |
+| Referrer `deletedAt` | `buildObserverReferrerListWhere` excludes receiver archive filter |
+| K2 duplicate mirrors | `df8ed8a5` → canonical `@/lib/clientAppeals/*` |
+| Public history split | K8 `referrerPublicHistory` @ `594cb4ef`; K2 imports |
 
 ---
 
-## Open blockers (current source)
-
-### K8-GAP-7 — **Purchase read projection uses bonus payout** (new, Root assembly)
-
-| | |
-|---|---|
-| **File** | `appealPurchaseProjection.ts` → `recordMap.ts` |
-| **Current mapping** | `paidAmountKopecks` ← `rewardSummary(lifecycle).paid`; `paidAt` ← earliest `RewardPayment` `RECEIVED` |
-| **Financial meaning** | `summary.paid` = **reward/bonus payouts** on `Order.rewardLifecycle`, not customer purchase total |
-| **Prototype @ `3dc31836`** | `paidKopecksForAppeal` prefers `purchaseBreakdown.totalKopecks` / appeal purchase ledger — **client purchase** display |
-| **Impact** | Receiving/observer columns show **wrong amount/date** vs prototype wallet/purchase vocabulary; risk of conflating payout with «Покупка: Оплачено» |
-| **Constraint** | **No** change to `orderRewards` formulas or wallet mutations in Clients prep |
-| **Owner** | **K8** read projection; **K1/K2** must not duplicate wrong field; align DTO labels with corrected source |
-| **Next action** | Map read-only fields from **existing** order purchase total / accrual surfaces already used in prod UI (not `rewardSummary.paid`); keep `purchaseOrderId` on `PartnerClientAppeal.orderId` |
-
-### K8-GAP-1 — Eligibility alignment (narrowed @ `6f09c23e`, integration open)
-
-HANDOFF documents `requireOwnerClientsContext` + `principalAgentObserverOnly`; `eligibility.ts` uses principal viewer. **Residual:** org workplace vs principal on **receiving** routes (K1 `f722a164`) — P8 has not independently accepted K1 wiring.
-
-### K8-GAP-2 — Settings scope (partial)
-
-Schema + `PartnerClientAppealPartnerSettings` present @ `6f09c23e`. **Unresolved:** P2 org-wide vs per-branch (`client-appeals-settings-scope-8137.md`); K1 settings routes not P8-accepted.
-
-### K8-GAP-3 — Active certificate (improved, verify with K1)
-
-Principal-scoped unique index documented; confirm `createCertificateAppealIfNoneActive` + prototype `isActiveAppeal` in K1 integration.
+## Open server-side
 
 ### K8-GAP-4 — Scan → appeal (Root / K1)
 
-`storeCertificateScan.ts` still outside K8 allowlist; certificate open journey not integrally verified.
+Certificate open still via `storeCertificateScan.ts` — outside K8 write allowlist. **Criterion:** validated scan yields at most one active appeal per prototype predicate. **Next:** Root minimal wire proposal; K1 POST after validation.
 
-### K8-GAP-5 — Observer DTO (improved @ `6f09c23e`)
+### K1/K2 — Assembly not section acceptance
 
-`toObserverAppealDto` strips `privateNotes` / `clientContact`. **Residual:** K2 routes + partner adapter; GAP-7 leaks wrong finance into observer DTO if projection unfixed.
+Source reviewed @ pins; **no** live API/DB verification. **Criterion:** G3 routes on profile backend after G7. **Next:** Root selects files; P8 re-gate after deploy stub only.
 
----
+### P2 settings scope
 
-## Early handoff (unchanged owners)
-
-| Consumer | Use | Avoid |
-|----------|-----|-------|
-| **K1** | `k1ReceivingApi.ts`, revised contract | Wrong `paidAmountKopecks` semantics |
-| **K2** | `toObserverAppealDto` after projection fix | GET writes |
-| **K5** | `6c444487` overlay contract | AgentClient substitute |
-| **P2** | Adapter after K8 projection fix | Treat navigator as shipped API |
-| **Root** | Selected files only; **G7** before DB apply | Whole-branch merge as acceptance |
+Org-wide vs per-branch (`client-appeals-settings-scope-8137`) — unresolved in HANDOFF. **Owner:** P2. **Blocks:** settings UI envelope acceptance only.
 
 ---
 
-## Release gate (summary)
+## Partner-side (P8 does not own product fixes)
 
-| Gate | Status |
-|------|--------|
-| G1 schema draft @ `6f09c23e` | **IN_PROGRESS** — identity OK; **GAP-7** blocks accept |
-| G2 safety | **BLOCKED** until GAP-7 + K1/K2 wire review |
-| G3–G4 | **BLOCKED** |
-| G5 prototype parity | **NO** (purchase projection) |
-| G7 prod DB | **NOT_STARTED** |
-| **Whole Clients** | **NO-GO** |
+See **`GATE-REFRESH-20261113-1815.md`** — bucket/tab, promoCode, envelopes, revision, `paidAmountKopecks` UI, profile vs stage PATCH. **Owners:** P2, P4, P6.
 
 ---
 
-## P8 checks this pass
+## P8 checks
 
 | Check | Result |
 |-------|--------|
-| Read K8 `contract.ts` + projection @ `6f09c23e` | **OK** — identity canonical; **GAP-7 reproduced** |
-| Partner `contracts.test.ts` | **3/3 PASS** — still `BLOCKED_CONTRACT` on live fetch |
-| Vitest (scoped) | `src/lib/clients-parity/contracts.test.ts` only |
+| Read-only GitHub @ `0f4fe833`, `df8ed8a5` | OK |
+| Partner `contracts.test.ts` | Scoped vitest on P8 branch |
