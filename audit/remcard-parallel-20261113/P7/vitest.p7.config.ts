@@ -9,7 +9,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: [path.join(repoRoot, "vitest.setup.ts")],
-    include: [path.join(repoRoot, "src/components/clients/observer/P7.*.test.ts")],
+    include: [
+      path.join(repoRoot, "src/components/clients/observer/P7.*.test.ts"),
+      path.join(repoRoot, "src/components/clients/receiving/P7.*.test.ts"),
+    ],
   },
   resolve: {
     alias: {

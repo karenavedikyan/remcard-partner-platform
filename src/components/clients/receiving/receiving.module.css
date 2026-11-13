@@ -1,0 +1,159 @@
+/* Incoming / receiving appeals — parity layer for client-appeals.css (3dc31836). */
+
+.receivingShell,
+.blocked,
+.kpiStrip,
+.toolbar,
+.rows {
+  --receiving-accent: var(--accent, var(--accent-emphasis, var(--primary, #c12b2f)));
+  --receiving-tint: var(--tint, var(--soft, #fae9e8));
+}
+
+.receivingShell {
+  max-width: 1120px;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+/* ReceivingAppealsBlocked target (.blocked) — mirror observer blocked panel until P4 retargets import. */
+.blocked {
+  padding: 16px 20px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.blocked h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.blocked p,
+.blocked ul {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted, #64748b);
+}
+
+.blocked ul {
+  padding-left: 1.25rem;
+}
+
+.blocked strong {
+  color: var(--ink, #0f172a);
+}
+
+/* Prototype .ca-kpi-strip */
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.kpi {
+  padding: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.kpiVal {
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prototype .ca-toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.toolbarPrimary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Prototype .ca-rows */
+.rows {
+  display: grid;
+  gap: 8px;
+}
+
+/* Prototype .ca-personal-notice */
+.receivingNotice {
+  padding: 12px 16px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  background: var(--offset, var(--soft, #f8fafc));
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: var(--muted, #64748b);
+}
+
+.receivingNotice strong {
+  color: var(--ink, #0f172a);
+}
+
+/* P4/P5 hook: side-effect import wires direction tabs + accent mapping in clients workspace. */
+:global([data-testid="clients-direction-workspace"]) {
+  --receiving-accent: var(--accent, var(--accent-emphasis, var(--primary, #c12b2f)));
+}
+
+/* Prototype .ca-tabs.wallet-direction__tabs */
+:global([data-testid="clients-direction-workspace"])
+  :global(.ca-tabs.wallet-direction__tabs.ca-preview-directions) {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  margin: 0 0 20px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+:global([data-testid="clients-direction-workspace"]) :global(.wallet-direction__tab) {
+  min-height: 44px;
+}
+
+:global([data-testid="clients-direction-workspace"]) :global(.wallet-direction__tab:focus-visible) {
+  outline: 2px solid var(--receiving-accent);
+  outline-offset: 2px;
+}
+
+:global([data-testid="clients-direction-workspace"]) :global(.wallet-direction__tab.is-active),
+:global([data-testid="clients-direction-workspace"])
+  :global(.wallet-direction__tab[aria-selected="true"]) {
+  background: var(--receiving-accent);
+  color: var(--onaccent, #fff);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .blocked,
+[data-theme="dark"] .receivingNotice {
+  background: var(--surface, #1e293b);
+  border-color: var(--line, #334155);
+}
+
+[data-theme="dark"] :global([data-testid="clients-direction-workspace"])
+  :global(.wallet-direction__tab.is-active),
+[data-theme="dark"] :global([data-testid="clients-direction-workspace"])
+  :global(.wallet-direction__tab[aria-selected="true"]) {
+  background: var(--receiving-accent);
+  color: var(--onaccent, #fff);
+}
+
+@media (max-width: 760px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
