@@ -1044,6 +1044,8 @@ try {
 
   const staleRacePage = await browser.newPage();
   await staleRacePage.setViewportSize({ width: 1280, height: 900 });
+  const staleRaceErrors = [];
+  staleRacePage.on("pageerror", (err) => staleRaceErrors.push(String(err)));
   await staleRacePage.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
   let releaseDelayed143 = null;
   const holdDelayed143 = new Promise((resolve) => {
@@ -1182,6 +1184,16 @@ try {
     () => document.querySelector("#cabinet")?.contentDocument?.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
     null,
     { timeout: 15000 },
+  );
+  assert.equal(
+    staleRaceErrors.filter((m) => !/embed-content-ready aborted/i.test(m)).length,
+    0,
+    `stale srcdoc close/reopen must not throw: ${staleRaceErrors.join(" | ")}`,
+  );
+  assert.equal(
+    staleRaceErrors.filter((m) => /embed-content-ready aborted/i.test(m)).length,
+    0,
+    "aborted embed readiness must be observed, not an unhandled pageerror",
   );
   await staleRacePage.close();
 

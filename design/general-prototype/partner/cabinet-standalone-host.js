@@ -22,6 +22,15 @@ export const STANDALONE_BY_N = {
 
 const RETURN_KEY = "proto_embed_return_stack";
 
+/** Attach before fetch settles so close/abort during slow srcdoc load cannot surface as unhandled. */
+function observeEmbedReadyAbort(promise) {
+  if (!promise?.catch) return promise;
+  void promise.catch((err) => {
+    if (err?.name === "AbortError") return;
+  });
+  return promise;
+}
+
 function readStack() {
   try {
     const raw = window.rcDemoMemory?.getItem?.(RETURN_KEY);
@@ -474,11 +483,13 @@ export function createCabinetStandaloneHost(config) {
       delete frame.dataset.embedContentReady;
       frame.dataset.embedSessionToken = loadToken;
       srcdocReadyAbort = new AbortController();
-      const contentReady = waitReady({
-        timeoutMs: 25000,
-        signal: srcdocReadyAbort.signal,
-        requireToken: true,
-      });
+      const contentReady = observeEmbedReadyAbort(
+        waitReady({
+          timeoutMs: 25000,
+          signal: srcdocReadyAbort.signal,
+          requireToken: true,
+        }),
+      );
       srcdocFetchAbort = new AbortController();
       void loadStandaloneSrcdoc(frame, loadPageN, def.path, extraQuery, urlBridge, {
         guestHash,

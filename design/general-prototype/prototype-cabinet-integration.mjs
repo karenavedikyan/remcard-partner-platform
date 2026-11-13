@@ -204,6 +204,7 @@ const hostJs = readFileSync(path.join(root, "partner/cabinet-standalone-host.js"
 assert.match(hostJs, /abortPendingSrcdocWork/, "host cancels in-flight srcdoc work on close/reopen");
 assert.match(hostJs, /assertSrcdocSessionActive/, "host ties srcdoc load to open generation and token");
 assert.match(hostJs, /srcdocLoadGeneration/, "stale srcdoc generation guard");
+assert.match(hostJs, /observeEmbedReadyAbort/, "srcdoc readiness abort observed immediately");
 assert.match(embedChild, /__protoCabinetEffectiveHash/, "embed child exposes effective guest hash in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8"), /__protoCabinetEmbedParams/, "144 reads injected embed params in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail-embed.js"), "utf8"), /__protoCabinetEmbedParams/, "144 embed module reads injected params");
