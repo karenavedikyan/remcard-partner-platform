@@ -124,6 +124,7 @@ export function createCabinetStandaloneHost(config) {
     resolveEmbedPayload,
     enrichEmbedPayload,
     buildCertificateGuestEmbedExtras,
+    buildRecommendationGuestEmbedExtras,
     shouldResetOnRerender,
   } = config;
   const urlBridge = { getRole, getEmployer };
@@ -464,6 +465,14 @@ export function createCabinetStandaloneHost(config) {
         sendContextToFrame();
       });
     }
+    if (pageN === 140 && openCtx?.publicModel && typeof buildRecommendationGuestEmbedExtras === "function") {
+      const publicModel = openCtx.publicModel;
+      void buildRecommendationGuestEmbedExtras(publicModel).then((guestEmbedExtras) => {
+        if (!guestEmbedExtras || openPageN !== loadPageN || srcdocLoadGeneration !== loadGeneration) return;
+        openCtx = { ...openCtx, guestEmbedExtras };
+        sendContextToFrame();
+      });
+    }
     const guestHash = embedCtx?.guestHash;
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
     const commitStandaloneReady = () => {
@@ -692,9 +701,13 @@ export function prepareGuestStandaloneOpen(pageN, suffix, embedCtx, returnCtx, h
   }
   if (pageN === 140) {
     if (record && hooks.recommendationGuestHash) {
+      if (hooks.recommendationPublicModel) {
+        nextEmbed.publicModel = hooks.recommendationPublicModel(record);
+      }
       nextEmbed.guestHash = hooks.recommendationGuestHash(record) || "";
       delete nextEmbed.record;
     } else if (hooks.recommendationDesignSampleHash) {
+      nextEmbed.publicModel = hooks.recommendationDesignSampleModel?.() || null;
       nextEmbed.guestHash = hooks.recommendationDesignSampleHash();
       nextEmbed.designExample = true;
       delete nextEmbed.record;

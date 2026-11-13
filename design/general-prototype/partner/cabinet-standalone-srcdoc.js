@@ -5,8 +5,8 @@ const PREVIEW_HOST = /\.pplx\.app$/i;
 
 /** Native DOM markers — embed badge must not show until one matches (avoids about:blank false positives). */
 export const STANDALONE_CONTENT_PROBE = {
-  139: "#recommendation-root, .cert-guest-page main",
-  140: "#recommendation-root, .cert-guest-page main",
+  139: "#certificate-root, .cert-guest-page #certificate-root",
+  140: "#recommendation-root, .cert-guest-page #recommendation-root",
   141: "#assignment-root",
   142: "#observer-root",
   143: "#partner-title",

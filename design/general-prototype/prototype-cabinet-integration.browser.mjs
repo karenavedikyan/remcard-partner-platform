@@ -943,12 +943,72 @@ try {
   assert.ok(toc143Src.includes("embed_role=agent"), "TOC 143 preserves agent embed role");
   await tocPage.close();
 
+  const toc140Nest = await browser.newPage();
+  await toc140Nest.setViewportSize({ width: 1280, height: 900 });
+  const toc140Errors = [];
+  toc140Nest.on("pageerror", (err) => toc140Errors.push(String(err)));
+  await toc140Nest.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  await toc140Nest.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await toc140Nest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "store";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  const cabFrame140 = toc140Nest.frameLocator("#cabinet");
+  await cabFrame140.locator(".shell aside.sidebar").waitFor({ timeout: 25000 });
+  await toc140Nest.evaluate(() => {
+    const win = document.querySelector("#cabinet")?.contentWindow;
+    if (typeof win?.__protoCabinetTocStandalone !== "function") {
+      throw new Error("protoCabinetTocStandalone missing on cabinet frame");
+    }
+    win.__protoCabinetTocStandalone(140);
+  });
+  await toc140Nest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const marker = frame?.dataset?.embedGuestMarker || "";
+      return (
+        frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 140 &&
+        /rec140-qr-ok/.test(marker)
+      );
+    },
+    null,
+    { timeout: 35000 },
+  );
+  assert.equal(toc140Errors.length, 0, `TOC 140 opaque embed must not throw: ${toc140Errors.join(" | ")}`);
+  const rec140Frame = cabFrame140.frameLocator('[data-testid="cabinet-standalone-frame"]');
+  await rec140Frame.getByText(/Дизайн-макет публичной рекомендации/i).waitFor({ timeout: 15000 });
+  await rec140Frame.getByText(/DEMO-PROF-1/).waitFor({ timeout: 10000 });
+  const rec140Qr = await rec140Frame.locator("[data-recommendation-qr]").getAttribute("src");
+  assert.ok(rec140Qr && rec140Qr.startsWith("data:image"), "TOC 140 hydrates recommendation QR");
+  await rec140Frame.locator('[data-rec-client-action="code"]').click();
+  const toc140Src = await cabFrame140.locator("[data-testid='cabinet-standalone-frame']").evaluate(
+    (el) => el?.dataset?.embedUrl || "",
+  );
+  assert.ok(toc140Src.includes("recommendation.html"), toc140Src);
+  assert.ok(toc140Src.includes("cabinet_embed=1"), "TOC 140 opens cabinet embed, not orphan recommendation.html");
+  await toc140Nest.close();
+
   const hubToc = await browser.newPage();
   await hubToc.goto(`${base}/index.html`, { waitUntil: "load" });
   await hubToc.locator(".proto-page-toc-btn").click();
   const href147 = await hubToc.locator('a[data-page-n="147"]').getAttribute("href");
   assert.match(href147 || "", /proto_standalone=147/, "hub TOC 147 links into partner cabinet");
   assert.doesNotMatch(href147 || "", /partner-wallet-history\.html/, "hub TOC must not open orphan 147 HTML");
+  const href140 = await hubToc.locator('a[data-page-n="140"]').getAttribute("href");
+  assert.match(href140 || "", /proto_standalone=140/, "hub TOC 140 links into partner cabinet");
+  assert.doesNotMatch(href140 || "", /recommendation\.html/, "hub TOC must not open orphan 140 HTML");
   await hubToc.close();
 
   const previewNest = await browser.newPage();

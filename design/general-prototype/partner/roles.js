@@ -89,7 +89,10 @@ import {
   observerDesignSampleModel,
   recommendationGuestHash,
   recommendationDesignSampleHash,
+  recommendationDesignSampleModel,
+  recommendationPublicModel,
 } from "./guest-embed-payloads.js";
+import { e as renderRecommendationGuestMain, a as publicRecommendationShareUrl } from "./chunk-BTQ7FRMV.js";
 import {
   renderPartners,
   renderWallet,
@@ -144,10 +147,43 @@ async function buildCertificateGuestEmbedExtras(publicModel) {
   });
   return { qrDataUrl, shareUrl, partnerProfileHtmlByIndex };
 }
+async function buildRecommendationGuestEmbedExtras(publicModel) {
+  if (!publicModel) return {};
+  let shareUrl = "";
+  try {
+    shareUrl = publicRecommendationShareUrl(publicModel);
+  } catch (_) {
+    shareUrl = String(publicModel.code || "");
+  }
+  const qrText =
+    shareUrl && shareUrl.length <= 1800 ? shareUrl : String(publicModel.code || "RemCard");
+  let qrDataUrl = "";
+  try {
+    qrDataUrl = await certificateQrcode.toDataURL(qrText, {
+      width: 600,
+      margin: 3,
+      errorCorrectionLevel: "M",
+    });
+  } catch (_) {
+    try {
+      const svg = await certificateQrcode.toString(qrText, { type: "svg", width: 300 });
+      if (svg && !svg.startsWith("data:")) {
+        qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+    } catch (_) {}
+  }
+  return { qrDataUrl: qrDataUrl || "", shareUrl: shareUrl || "" };
+}
 async function enrichStandaloneEmbedPayload(pageN, payload) {
-  if (pageN !== 139 || !payload?.publicModel) return payload;
-  const extras = await buildCertificateGuestEmbedExtras(payload.publicModel);
-  return { ...payload, ...extras };
+  if (pageN === 139 && payload?.publicModel) {
+    const extras = await buildCertificateGuestEmbedExtras(payload.publicModel);
+    return { ...payload, ...extras };
+  }
+  if (pageN === 140 && payload?.publicModel) {
+    const extras = await buildRecommendationGuestEmbedExtras(payload.publicModel);
+    return { ...payload, ...extras };
+  }
+  return payload;
 }
 var xe =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
@@ -3136,6 +3172,14 @@ function resolveDeepLinkEmbedCtx(pageN, q) {
   if (pageN === 147) {
     return { walletState: null, deepLink: true };
   }
+  if (pageN === 140) {
+    return {
+      designExample: true,
+      publicModel: recommendationDesignSampleModel(),
+      guestHash: recommendationDesignSampleHash(),
+      deepLink: true,
+    };
+  }
   if (R2_REPAIR_OBJECT_PAGES.has(pageN)) {
     const objectId = q.get("repair_object") || q.get("r2_object") || "";
     return buildRepairEmbedCtx(pageN, objectId, { deepLink: true });
@@ -3429,8 +3473,30 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       ...(ctx.guestEmbedExtras || {}),
     });
   }
-  if (pageN === 140 && ctx?.guestHash) {
-    return embedPayloadEnvelope(pageN, ctx, { guestReady: true });
+  if (pageN === 140 && (ctx?.guestHash || ctx?.designExample)) {
+    const publicModel =
+      ctx.publicModel ||
+      (ctx.designExample ? recommendationDesignSampleModel() : null);
+    if (!publicModel) {
+      return embedPayloadEnvelope(pageN, ctx, {
+        unavailable: true,
+        unavailableMessage:
+          "В этом просмотре нет данных рекомендации. Откройте гостевой макет из карточки сертификата или из оглавления прототипа.",
+      });
+    }
+    const note = ctx.designExample
+      ? '<p class="cert-guest-note cert-guest-design-sample">Дизайн-макет публичной рекомендации · явный пример для оглавления. Не привязан к выбранному сертификату в кабинете.</p>'
+      : '<p class="cert-guest-note">Демонстрация · без регистрации в RemCard</p>';
+    return embedPayloadEnvelope(pageN, ctx, {
+      publicModel,
+      publicHtml: `${note}${renderRecommendationGuestMain(publicModel)}`,
+      displayCode: publicModel.code,
+      designExample: !!ctx.designExample,
+      guestHash: ctx.guestHash || "",
+      guestReady: true,
+      guestMarker: ctx.designExample ? "design-sample" : "record-handoff",
+      ...(ctx.guestEmbedExtras || {}),
+    });
   }
   if (pageN === 141 && ctx?.guestHash) {
     const fixture = ctx.repairObjectId ? repairObjectById(ctx.repairObjectId) : null;
@@ -3468,9 +3534,6 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
       objectAddress: model?.address || "",
     });
   }
-  if (pageN === 140 && ctx?.designExample) {
-    return embedPayloadEnvelope(pageN, ctx, { guestReady: true, designExample: true });
-  }
   if (pageN === 147) {
     return embedPayloadEnvelope(pageN, ctx, {
       walletState: ctx?.walletState || null,
@@ -3500,6 +3563,7 @@ function ensureStandaloneHost() {
       resolveEmbedPayload: resolveStandaloneEmbedPayload,
       enrichEmbedPayload: enrichStandaloneEmbedPayload,
       buildCertificateGuestEmbedExtras,
+      buildRecommendationGuestEmbedExtras,
       onCoopAction: (action, partnerId) => {
         const partner = P.find((p) => p.id === partnerId);
         if (!partner) return false;
@@ -5136,6 +5200,8 @@ document.addEventListener("click", (e) => {
           certificateGuestHash,
           recommendationGuestHash,
           recommendationDesignSampleHash,
+          recommendationPublicModel,
+          recommendationDesignSampleModel,
           closeSourceDialog: () => {
             if (!se.open) return false;
             _();

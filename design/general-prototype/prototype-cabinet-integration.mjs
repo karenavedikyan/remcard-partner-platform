@@ -189,6 +189,36 @@ assert.match(
   "host pre-renders 139 guest HTML before opaque embed",
 );
 assert.match(
+  readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),
+  /publicHtml/,
+  "140 opaque embed applies host-rendered recommendation HTML",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),
+  /__recommendationEmbedGuestHydrate/,
+  "140 opaque embed calls classic recommendation hydration",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/recommendation.html"), "utf8"),
+  /recommendation-embed-guest\.classic\.js/,
+  "140 guest page loads classic interaction binder for opaque srcdoc",
+);
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/recommendation.html"), "utf8"),
+  /type="module"\s+src="\.\/recommendation-guest/,
+  "140 opaque srcdoc must not load recommendation-guest module in embed shell",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /renderRecommendationGuestMain\(publicModel\)/,
+  "host pre-renders 140 guest recommendation before opaque embed",
+);
+assert.match(
+  readFileSync(path.join(root, "prototype-numbering.js"), "utf8"),
+  /n:\s*140[\s\S]*cabinetEmbed:\s*true/,
+  "TOC 140 routes through cabinet embed host",
+);
+assert.match(
   readFileSync(path.join(root, "partner/roles.js"), "utf8"),
   /observerHtml:\s*model\s*\?\s*renderObserverGuestMain\(model\)/,
   "host pre-renders 142 guest HTML for opaque embed",
