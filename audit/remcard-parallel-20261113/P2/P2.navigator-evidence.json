@@ -1,7 +1,11 @@
 {
   "auditor": "P2",
-  "navigatorCandidateSha": "3cb569ffa5f2991be57235622691dc9ff7029050",
-  "treeSha": "9b7105af738d8f4a4bc2cc541d78116bd687a1e2",
+  "navigatorCandidateShaPrior": "3cb569ffa5f2991be57235622691dc9ff7029050",
+  "navigatorPublishedReleaseSha": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
+  "navigatorReleaseBranch": "release/prof-backend-v1-20261007",
+  "treeShaPublished": "69610e6cf95c8f1e66ef70ecf68f32fc2ff26d41",
+  "treeShaPrior": "9b7105af738d8f4a4bc2cc541d78116bd687a1e2",
+  "deltaNote": "3cb569ff→3c37ca25: client/shell only; observer API paths still 0",
   "access": {
     "mcpGetFileContents": "ok",
     "mcpGetGitTreeRecursive": "ok",
