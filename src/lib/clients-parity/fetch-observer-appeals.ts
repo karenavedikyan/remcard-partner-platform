@@ -131,12 +131,12 @@ function wireNullableString(value: unknown): string | null {
 }
 
 /** P2 @ 120d9a4a: UI `certificateId` is string; null/absent on wire → "". */
-function wireCertificateId(value: unknown): string {
+export function wireCertificateId(value: unknown): string {
   if (typeof value === "string") return value;
   return "";
 }
 
-function partnerScopeFromWire(row: Record<string, unknown>): Pick<
+export function partnerScopeFromWire(row: Record<string, unknown>): Pick<
   ObserverPartnerMeta,
   "receivingOrganizationId" | "receivingBranchId"
 > {

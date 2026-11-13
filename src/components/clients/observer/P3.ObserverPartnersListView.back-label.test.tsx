@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   OBSERVER_FIXTURE_APPEALS,
@@ -8,6 +8,9 @@ import {
 import { observerClientBackFrom, ObserverPartnersListView } from "./ObserverPartnersListView";
 
 describe("P3.P4 integration — list shell backFrom (requires P4 detail exports)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it("observerClientBackFrom (P4 canonical) maps nav slice + layout", () => {
     expect(observerClientBackFrom({ partnerId: "p" }, "partners")).toBe("partner-clients");
     expect(observerClientBackFrom({}, "list")).toBe("flat-list");
@@ -74,6 +77,10 @@ describe("P3.P4 integration — list shell backFrom (requires P4 detail exports)
   });
 
   it("unknown client and partner render P4 missing shells", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ error: "not found" }), { status: 404 })),
+    );
     const user = userEvent.setup();
     const { unmount } = render(
       <ObserverPartnersListView
@@ -83,7 +90,9 @@ describe("P3.P4 integration — list shell backFrom (requires P4 detail exports)
         initialNav={{ view: "client", clientId: "missing-id" }}
       />,
     );
-    expect(screen.getByTestId("ca-observer-client-missing")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId("ca-observer-client-missing")).toBeTruthy();
+    });
     await user.click(screen.getByTestId("ca-clients-back"));
     expect(screen.getByTestId("ca-observer-partners-list")).toBeTruthy();
     unmount();

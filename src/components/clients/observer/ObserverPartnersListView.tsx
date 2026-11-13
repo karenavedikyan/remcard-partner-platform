@@ -10,21 +10,18 @@ import type {
   ObserverPersonalMeta,
   ObserverReferredAppeal,
 } from "@/lib/clients-parity/types";
+import { ObserverClientDetailHost } from "./ObserverClientDetailHost";
 import {
-  ObserverClientDetailMissing,
-  ObserverClientDetailView,
   observerClientBackFrom,
   type ObserverClientBackFrom,
-} from "./ObserverClientDetailView";
+} from "./observer-client-back";
 
 export { observerClientBackFrom, type ObserverClientBackFrom };
 import { ObserverContractBlocked } from "./ObserverContractBlocked";
 import { ObserverFilterChips } from "./ObserverFilterChips";
 import { ObserverPartnerCard } from "./ObserverPartnerCard";
-import {
-  ObserverPartnerDetailMissing,
-  ObserverPartnerDetailView,
-} from "./ObserverPartnerDetailView";
+import { ObserverPartnerDetailMissing } from "./ObserverPartnerDetailMissing";
+import { ObserverPartnerDetailView } from "./ObserverPartnerDetailView";
 import { ObserverPersonalClientRow } from "./ObserverPersonalClientRow";
 import { ObserverPersonalConfirmPanel } from "./ObserverPersonalConfirmPanel";
 import {
@@ -346,19 +343,11 @@ export function ObserverPartnersListView({
   if (nav.view === "client") {
     const clientBackFrom = observerClientBackFrom({ partnerId: nav.partnerId }, layout);
     const appeal = appeals.find((a) => a.id === nav.clientId);
-    if (!appeal) {
-      return (
-        <ObserverClientDetailMissing
-          clientId={nav.clientId}
-          backFrom={clientBackFrom}
-          onBack={backFromSubView}
-        />
-      );
-    }
     return (
-      <ObserverClientDetailView
-        appeal={appeal}
-        partner={partnersById.get(appeal.receivingPartnerId)}
+      <ObserverClientDetailHost
+        clientId={nav.clientId}
+        listAppeal={appeal}
+        listPartner={appeal ? partnersById.get(appeal.receivingPartnerId) : undefined}
         backFrom={clientBackFrom}
         onBack={backFromSubView}
       />
