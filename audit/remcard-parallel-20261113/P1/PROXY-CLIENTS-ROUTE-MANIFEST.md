@@ -7,16 +7,16 @@
 
 | Owner | SHA | Scope |
 |-------|-----|--------|
-| K8 core/contract | `1894569a` | `receivingPartnerUserId` required; org/branch optional |
-| K1 receiving | `63a4f3d6` | `client-appeals/*` (detail GET+PATCH) |
-| K2 observer read | `78ce748d` | `referred-appeals/*` GET (`receivingPartnerUserId` list filter) |
+| K8 core/contract | `8f4d336a` | frozen source-prep |
+| K1 receiving | `a71b8f37` | `client-appeals/*` (detail GET+PATCH) |
+| K2 observer read | `c49d71dc` | `referred-appeals/*` GET |
 | K5 observer personal | `6c444487` | personal-meta PATCH, personal-batch POST |
 
 Partner proxy wire reviewed @ P1 `6eda0029`. Pin doc: `ROOT-BACKEND-ASSEMBLY-PIN.md`.
 
 ## Added to `ALLOWED_ROUTES` (exact)
 
-### K1 @ 63a4f3d6
+### K1 @ a71b8f37
 
 | Method(s) | Pattern |
 |-----------|---------|

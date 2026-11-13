@@ -129,7 +129,7 @@
     "P3": "b85efb54",
     "P4": "1850d088",
     "P5": "6a72f353",
-    "P6": "4dca7af7",
+    "P6": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
     "P2_operationMatrix8137_heritage": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
     "P7_prior": "30a292d002d56e0daaeebdff62d1fce902590362",
     "navigatorBackend": {
@@ -150,10 +150,11 @@
     "uiFieldAlias": "types.ts receivingPartnerId => receivingPartnerUserId"
   },
   "navigatorClientsBackendCandidates": {
-    "K8": "1894569a",
-    "K1": "63a4f3d6",
-    "K2": "78ce748d",
-    "K5": "6c444487",
+    "K8": "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+    "K1": "a71b8f37f526d775cd99f0535705be678b72261e",
+    "K2": "c49d71dceae8e221fc3e321056b091d7e3347be5",
+    "K5": "6c4444879d5651679c969b8009b3f39d05302c43",
+    "sourcePrepFrozen": true,
     "profilePublishedNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"
   },
   "p1ReceivingDetailPatchProxy": {

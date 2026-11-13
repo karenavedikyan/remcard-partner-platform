@@ -8,12 +8,35 @@ import sys
 BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 
 NAVIGATOR_CLIENTS_BACKEND = {
-    "K8_contract": "1894569a",
-    "K1_receiving": "63a4f3d6",
-    "K2_observerGet": "78ce748d",
-    "K5_personal": "6c444487",
+    "K8_contract": "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+    "K1_receiving": "a71b8f37f526d775cd99f0535705be678b72261e",
+    "K2_observerGet": "c49d71dceae8e221fc3e321056b091d7e3347be5",
+    "K5_personal": "6c4444879d5651679c969b8009b3f39d05302c43",
     "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868",
+    "sourcePrepFrozen": True,
 }
+
+P6_HANDOFF_TIP = "78fd46e70fa6cd5b1eb08aa79a9554505a121c00"
+P5_RECEIVING_BULK_TIP = "ca2855fb"
+P6_EXCLUDE_VENDOR_P5_PATHS = [
+    "src/components/clients/receiving/ReceivingBulkActions.tsx",
+    "src/components/clients/receiving/receiving-bulk-handoff.ts",
+]
+P5_RECEIVING_BULK_PATHS = list(P6_EXCLUDE_VENDOR_P5_PATHS)
+P6_RECEIVING_PRODUCT_PATHS = [
+    "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
+    "src/components/clients/receiving/ReceivingAppealsList.tsx",
+    "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
+    "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
+    "src/components/clients/receiving/ReceivingAppealForm.tsx",
+    "src/components/clients/receiving/ReceivingAppealHistory.tsx",
+    "src/components/clients/receiving/ReceivingCertificateScan.tsx",
+    "src/components/clients/receiving/WorkingStagesEditor.tsx",
+    "src/components/clients/receiving/detail-contract-alignment.ts",
+    "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
+    "src/components/clients/receiving/receiving.module.css",
+    "src/lib/clients-parity/receiving-appeals-api.ts",
+]
 
 # Root fixed assembly (partner parallel tips) — paths from owner branches only.
 AGENT_TIPS = {
@@ -23,7 +46,7 @@ AGENT_TIPS = {
     "P4": "1850d088",
     "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
     "P5": "6a72f353",
-    "P6": "06f7e6bb",
+    "P6": P6_HANDOFF_TIP,
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
 }
@@ -64,6 +87,7 @@ OWNER_PRODUCT: dict[str, list[str]] = {
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/observer/ObserverContractBlocked.tsx",
+        *P6_RECEIVING_PRODUCT_PATHS,
     ],
     "P7": ["src/components/clients/observer/observer.module.css"],
     "P8": [],
@@ -97,6 +121,7 @@ QA_TESTS_BY_OWNER: dict[str, list[str]] = {
         "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
         "src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx",
         "src/components/clients/ClientsListWorkspace.props.test.tsx",
+        "src/components/clients/P1.receiving-proxy-readiness.test.ts",
     ],
     "P3": [
         "src/components/clients/observer/P3.ObserverFilterChips.test.tsx",
@@ -564,6 +589,20 @@ def main() -> None:
             "auditTip": AGENT_TIPS["P4_audit"],
         },
         "ownerProductAllowlist": OWNER_PRODUCT,
+        "p6P5VendorExclusion": {
+            "p6HandoffTip": P6_HANDOFF_TIP,
+            "p5ReceivingBulkTip": P5_RECEIVING_BULK_TIP,
+            "excludeFromP6OwnershipSelectP5Blob": P6_EXCLUDE_VENDOR_P5_PATHS,
+            "p5ReceivingBulkPaths": P5_RECEIVING_BULK_PATHS,
+            "doc": "audit/remcard-parallel-20261113/P1/P6-P5-VENDOR-EXCLUSION.md",
+        },
+        "p6ReceivingProxyReadiness": {
+            "partnerProxyPin": "2b2b32b8",
+            "batchUsesIsAllowedProxyRoute": True,
+            "proofTest": "src/components/clients/P1.receiving-proxy-readiness.test.ts",
+            "doc": "audit/remcard-parallel-20261113/P1/P6-RECEIVING-PROXY-READINESS.md",
+        },
+        "remDualFrontClientResidual": "audit/remcard-parallel-20261113/P1/REM-DUAL-FRONT-CLIENT-SITE-RESIDUAL.md",
         "p1ScaffoldDependencies": P1_SCAFFOLD_DEPENDENCIES,
         "preserveBase57caByteIdentical": preserve_base,
         "ownerRootAssembly": assembly,

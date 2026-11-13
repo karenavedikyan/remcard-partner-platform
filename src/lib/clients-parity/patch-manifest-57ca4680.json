@@ -50,10 +50,11 @@
     "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
     "routeManifestDoc": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
     "navigatorBackendCandidates": {
-      "K8_contract": "1894569a",
-      "K1_receiving": "63a4f3d6",
-      "K2_observerGet": "78ce748d",
-      "K5_personal": "6c444487"
+      "K8_contract": "8f4d336ad44906de042ca6c15c8f581d6ba8686c",
+      "K1_receiving": "a71b8f37f526d775cd99f0535705be678b72261e",
+      "K2_observerGet": "c49d71dceae8e221fc3e321056b091d7e3347be5",
+      "K5_personal": "6c4444879d5651679c969b8009b3f39d05302c43",
+      "sourcePrepFrozen": true
     },
     "receivingDetailPatchProxy": "GET,PATCH /api/pro/client-appeals/:id @ K1 63a4f3d6",
     "p4P6Handoff": "audit/remcard-parallel-20261113/P1/P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md",
@@ -112,7 +113,8 @@
     "P3": "b85efb54",
     "P4": "1850d088",
     "P5": "6a72f353",
-    "P6": "4dca7af7",
+    "P6": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    "p5ReceivingBulkTip": "ca2855fb",
     "navigatorBackend_K8": "1894569a",
     "navigatorBackend_K1": "63a4f3d6",
     "navigatorBackend_K2": "78ce748d",
