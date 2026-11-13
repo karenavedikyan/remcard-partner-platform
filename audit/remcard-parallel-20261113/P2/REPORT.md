@@ -3,7 +3,7 @@
 - **Agent:** П2 (audit-only)
 - **Branch:** `cursor/remcard-p2-acceptance-20261113`
 - **Base:** `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0`
-- **Tip (this delivery):** `aeeb5e63cb4ec5b67d1491675fa0ebed4c175f3a`
+- **Tip (this delivery):** `c9fbd721cc470beb14cf681404d85caa838918c4`
 - **Production reference SHA:** `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79`
 - **Disk:** 246G free (4% used on `/dev/vdc`)
 
