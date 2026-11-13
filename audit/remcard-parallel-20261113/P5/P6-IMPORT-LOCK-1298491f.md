@@ -91,14 +91,15 @@ buildReceivingBulkPatchIntents(appealIds, draft, {
 | `serviceNote?` | team note text (prototype `privateNotes` slice) |
 | `serviceNoteAppend?` | `true` = append to existing; `false` = replace |
 
-One **`PATCH /api/pro/client-appeals/:id`** per intent (K1). **No** combined batch-edit endpoint.
+**Stage + note:** `buildReceivingBulkPatchIntents` emits **two** intents per appeal (`part: stage` then `note`). P6 PATCH **in order**; update `expectedRevision` after stage success before note.
 
 **Aggregate partial:**
 
 ```ts
-const outcomes = await Promise.all(intents.map(/* patchClientAppeal */));
+const outcomes: ReceivingPatchOutcome[] = []; // per intent, include `part`
 const result = aggregateReceivingPatchResults(outcomes);
-// reuse receivingBulkErrorMessage, receivingBulkPreserveSelection, receivingBulkMergeSelection
+// receivingBulkShouldRefetch(result) → refetch if any stage/note applied
+// receivingBulkMergeSelection keeps row selected when note fails after stage ok
 ```
 
 On conflict/error: keep panel + draft + failed selection (`preserveUi`).

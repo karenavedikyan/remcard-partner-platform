@@ -31,9 +31,21 @@ export type ReceivingAppealPatchBody = {
   serviceNoteAppend?: boolean;
 };
 
+export type ReceivingAppealPatchPart = "stage" | "note";
+
 export type ReceivingAppealPatchIntent = {
   appealId: string;
   body: ReceivingAppealPatchBody;
+  /** When stage+note both set: separate intents; P6 must PATCH in order and bump `expectedRevision`. */
+  part?: ReceivingAppealPatchPart;
+};
+
+export type ReceivingPatchOutcome = {
+  appealId: string;
+  ok: boolean;
+  part?: ReceivingAppealPatchPart;
+  reason?: string;
+  message?: string;
 };
 
 /** Navigator batch body action (K1). Not financial ops. */
@@ -98,41 +110,76 @@ export function buildReceivingBulkPatchIntents(
   }
   const intents: ReceivingAppealPatchIntent[] = [];
   for (const appealId of appealIds) {
-    const body: ReceivingAppealPatchBody = {
-      expectedRevision: opts.revisions?.[appealId],
-    };
-    if (wantStage && !opts.stageLockedIds?.has(appealId)) {
-      body.stageId = draft.stageId;
+    const revision = opts.revisions?.[appealId];
+    const locked = opts.stageLockedIds?.has(appealId);
+    const canStage = wantStage && !locked;
+    if (canStage && wantNote) {
+      intents.push({
+        appealId,
+        part: "stage",
+        body: { expectedRevision: revision, stageId: draft.stageId },
+      });
+      intents.push({
+        appealId,
+        part: "note",
+        body: {
+          expectedRevision: revision,
+          serviceNote: draft.serviceNote,
+          serviceNoteAppend: draft.appendNote,
+        },
+      });
+      continue;
     }
+    const body: ReceivingAppealPatchBody = { expectedRevision: revision };
+    if (canStage) body.stageId = draft.stageId;
     if (wantNote) {
       body.serviceNote = draft.serviceNote;
       body.serviceNoteAppend = draft.appendNote;
     }
     if (body.stageId || body.serviceNote) {
-      intents.push({ appealId, body });
+      intents.push({
+        appealId,
+        body,
+        part: canStage && !wantNote ? "stage" : wantNote && !canStage ? "note" : undefined,
+      });
     }
   }
   return { intents };
 }
 
-export function aggregateReceivingPatchResults(
-  outcomes: Array<{ appealId: string; ok: boolean; reason?: string; message?: string }>,
-): ReceivingBulkMutationResult {
-  const updatedIds = outcomes.filter((o) => o.ok).map((o) => o.appealId);
-  const failures: ReceivingBatchFailure[] = outcomes
-    .filter((o) => !o.ok)
-    .map((o) => ({
-      id: o.appealId,
-      reason: o.reason ?? "patch_failed",
-      message: o.message ?? "Не удалось обновить.",
-    }));
-  const skippedIds = failures.map((f) => f.id);
-  return normalizeReceivingBatchResponse({
-    action: "archive",
-    updatedIds,
-    skippedIds,
-    failures,
-  });
+export function aggregateReceivingPatchResults(outcomes: ReceivingPatchOutcome[]): ReceivingBulkMutationResult {
+  const updatedAppeals = new Set<string>();
+  const failures: ReceivingBatchFailure[] = [];
+
+  for (const o of outcomes) {
+    if (o.ok) updatedAppeals.add(o.appealId);
+    else {
+      failures.push({
+        id: o.appealId,
+        reason: o.reason ?? (o.part === "note" ? "note_patch_failed" : "patch_failed"),
+        message:
+          o.message ??
+          (o.part === "note" ? "Заметка не сохранена." : o.part === "stage" ? "Этап не изменён." : "Не удалось обновить."),
+      });
+    }
+  }
+
+  const updatedIds = [...updatedAppeals];
+  const skippedIds = failures.map((f) => f.id).filter((id) => !updatedAppeals.has(id));
+
+  if (updatedIds.length === 0 && failures.length > 0) {
+    return {
+      ok: false,
+      kind: "error",
+      message: "Ни одна запись не обновлена.",
+      failures,
+      preserveUi: true,
+    };
+  }
+  if (failures.length === 0) {
+    return { ok: true, kind: "full", updatedIds };
+  }
+  return { ok: true, kind: "partial", updatedIds, skippedIds, failures };
 }
 
 export function receivingToolbarToBatchAction(
@@ -192,7 +239,12 @@ export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): Re
 export function receivingBulkErrorMessage(result: ReceivingBulkMutationResult): string | null {
   if (result.ok) {
     if (result.kind === "partial") {
-      const n = result.skippedIds.length + result.failures.length;
+      const noteFails = result.failures.filter((f) => f.reason === "note_patch_failed").length;
+      const stageOkAppeals = result.updatedIds.length;
+      if (stageOkAppeals > 0 && noteFails > 0) {
+        return `Этап применён: ${stageOkAppeals} · заметка не сохранена: ${noteFails}.`;
+      }
+      const n = result.failures.length;
       return `Обновлено: ${result.updatedIds.length}, пропущено: ${n}.`;
     }
     return null;
@@ -231,8 +283,20 @@ export function receivingBulkMergeSelection(
 ): string[] {
   const next = new Set(currentSelected);
   for (const id of receivingBulkFailedIds(result)) next.add(id);
-  if (result.ok) {
+  if (result.ok && result.kind === "full") {
     for (const id of result.updatedIds) next.delete(id);
   }
+  if (result.ok && result.kind === "partial") {
+    const residualFail = new Set(receivingBulkFailedIds(result));
+    for (const id of result.updatedIds) {
+      if (!residualFail.has(id)) next.delete(id);
+    }
+  }
   return [...next];
+}
+
+/** P6: refetch list when any appeal changed (including stage-only partial). */
+export function receivingBulkShouldRefetch(result: ReceivingBulkMutationResult): boolean {
+  if (!result.ok) return false;
+  return result.updatedIds.length > 0;
 }

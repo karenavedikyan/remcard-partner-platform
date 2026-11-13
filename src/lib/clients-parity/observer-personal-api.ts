@@ -505,4 +505,15 @@ export function personalMutationRetainSelectedIds(
   return [...base];
 }
 
+/** P3: refetch overlays/list after any successful apply (incl. partial). */
+export function personalMutationShouldRefetch(result: PersonalMutationResult): boolean {
+  if (!result.ok) return false;
+  return result.appliedIds.length > 0;
+}
+
+export function personalMutationAppliedCount(result: PersonalMutationResult): number {
+  if (!result.ok) return 0;
+  return result.appliedIds.length;
+}
+
 export type ObserverPersonalMetaMap = Record<string, ObserverPersonalMeta>;

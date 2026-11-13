@@ -5,9 +5,11 @@ import {
   isPersonalPersistProxyBlocked,
   moveObserverPersonalBucket,
   patchObserverPersonalMeta,
+  personalMutationAppliedCount,
   personalMutationAppliedIds,
   personalMutationFailedIds,
   personalMutationRetainSelectedIds,
+  personalMutationShouldRefetch,
   postObserverPersonalBatch,
   restoreObserverPersonal,
   runObserverPersonalConfirmAction,
@@ -283,6 +285,8 @@ describe("P5 observer-personal-api (K5 @ 86ac3e35)", () => {
     expect(personalMutationFailedIds(partial)).toEqual(["bad"]);
     expect(personalMutationAppliedIds(partial)).toEqual(["ok"]);
     expect(personalMutationRetainSelectedIds(["ok"], partial)).toEqual(expect.arrayContaining(["ok", "bad"]));
+    expect(personalMutationShouldRefetch(partial)).toBe(true);
+    expect(personalMutationAppliedCount(partial)).toBe(1);
   });
 
   it("applyObserverPersonalEdit bulk uses setTag only", async () => {
