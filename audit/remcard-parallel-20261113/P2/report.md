@@ -6,7 +6,9 @@
 | --- | --- |
 | Agent | П2 — Контракты и сохранение Клиентов |
 | Branch | `cursor/2-06bf` |
+| Prior audit tip | `e0063d15cb2887f61077cdfad066615845837bb0` |
 | Base SHA (team candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
+| Navigator backend scanned | `3cb569ffa5f2991be57235622691dc9ff7029050` |
 | Production base (reference only) | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
 | Prototype SHA | `3dc31836cd18d9209c20097f18b906dd276f7af6` |
 | Disk at audit start | 246G free on `/dev/vdc` |
@@ -17,19 +19,38 @@
 Verified referred-appeal list/detail contracts and per-observer personal overlay (alias, tag, note, archive, trash, restore) against:
 
 - Partner-platform proxy allowlist (`src/lib/remcard-proxy.ts`)
+- **Backend** `karenavedikyan/remcard-navigator` at `3cb569ff` (routes + Prisma schema via GitHub MCP; no DB queries)
 - Client adapters (`fetch-observer-appeals.ts`, `agent-r03/api.ts`)
 - Observer UI call sites (`ObserverPartnersWorkspace`, `ObserverPartnersListView`, personal panels)
-- Frozen prototype (`git show 3dc31836:design/general-prototype/partner/{client-appeals.js,observer-personal-list.js}`)
+- Frozen prototype (`3dc31836`: `design/general-prototype/partner/{client-appeals.js,observer-personal-list.js}`, `prototype-page-catalog.json`, `client/account.js`)
 
 ## Executive verdict
 
 | Blocker | Repository evidence | Verdict |
 | --- | --- | --- |
-| **BLK-OBSERVER-REFERRED** (C26–C34, C39–C40 data) | No `/api/pro/referred-appeals*` in proxy; `fetchObserverReferredAppeals()` always `ok:false` | **ABSENT — confirmed** |
-| **BLK-OBSERVER-PERSONAL-PERSIST** (C35–C38) | No personal-meta routes; UI calls `notifyPersistenceBlock` only; save control disabled | **ABSENT — confirmed** |
-| AgentClient CRUD as substitute | `/api/pro/agent-clients*` exists but mutates owner CRM rows | **REJECTED — not equivalent** |
+| **BLK-OBSERVER-REFERRED** (C26–C34, C39–C40 data) | No referred-appeals routes in **navigator** `3cb569ff`; partner proxy unwired; adapter blocked | **MISSING — confirmed (not proxy-only gap)** |
+| **BLK-OBSERVER-PERSONAL-PERSIST** (C35–C38) | No overlay schema/routes in navigator; nearest APIs are CRM/cert/partnership prefs | **MISSING — confirmed** |
+| AgentClient CRUD as substitute | Navigator `GET/PATCH/POST /api/pro/agent-clients*` + batch | **REJECTED — existing but incompatible** |
 
 Whole observer data plane remains **BLOCKED** for production load and persistence PASS. UI parity work may continue on fixtures only.
+
+### Navigator cross-check (stage 2)
+
+Full tables: `navigator-backend-audit.md`, machine evidence: `P2.navigator-evidence.json`.
+
+**Access:** GitHub MCP read of private navigator **succeeded**. `git clone` on the agent VM **failed** (`Repository not found` — token), reported as real access error, not “prototype missing locally”.
+
+**Reusable unchanged:** none for required observer contracts.
+
+**Existing but incompatible (navigator `3cb569ff`):**
+
+- `GET/PATCH/POST /api/pro/agent-clients*` — owner CRM (`requireOwnerClientsContext`)
+- `GET /api/pro/agent-certificates` — R03 certificate list (partial shape; wrong lifecycle key)
+- `PATCH /api/certificate/:code/alias` — `CertificateUserAlias` single field
+- `GET/PATCH /api/pro/partnership-list-preferences/:partnershipId` — partnership nickname/archive/hidden
+- `CertificateProWorkspace` — per-certificate workspace archive only
+
+**Truly missing:** `/api/pro/referred-appeals*` and `/api/pro/referred-appeals/.../personal-meta` (+ batch); no `appeal` routes in tree; no Prisma model for per-appeal overlay (`tag`, `note`, `trash` bucket).
 
 ## 1. Referred appeals — prototype vs product
 

@@ -1,0 +1,73 @@
+{
+  "auditor": "P2",
+  "navigatorCandidateSha": "3cb569ffa5f2991be57235622691dc9ff7029050",
+  "treeSha": "9b7105af738d8f4a4bc2cc541d78116bd687a1e2",
+  "access": {
+    "mcpGetFileContents": "ok",
+    "mcpGetGitTreeRecursive": "ok",
+    "vmGitClone": "failed_repository_not_found"
+  },
+  "routesConfirmedAbsent": [
+    "/api/pro/referred-appeals",
+    "/api/pro/referred-appeals/:id",
+    "/api/pro/referred-appeals/:id/personal-meta",
+    "/api/pro/referred-appeals/personal-batch"
+  ],
+  "routesReviewedIncompatible": [
+    {
+      "method": "GET",
+      "path": "/api/pro/agent-clients",
+      "auth": "requireOwnerClientsListContext",
+      "file": "src/app/api/pro/agent-clients/route.ts",
+      "whyIncompatible": "Owner CRM list; not referrer appeals at receiving partners"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pro/agent-clients/:id",
+      "auth": "requireOwnerClientsContext",
+      "file": "src/app/api/pro/agent-clients/[id]/route.ts",
+      "whyIncompatible": "Detail+purchases for owned agentClientId; not ObserverReferredAppeal"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/pro/agent-clients/:id",
+      "fields": ["displayName", "phone", "email", "city", "need", "note", "action:archive|restore"],
+      "whyIncompatible": "Canonical CRM mutation; note is not overlay tag"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pro/agent-clients/batch",
+      "actions": ["archive", "restore", "delete"],
+      "whyIncompatible": "No trash/bucket; deletes CRM rows"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pro/agent-certificates",
+      "auth": "requireAgentR03Context",
+      "file": "src/app/api/pro/agent-certificates/route.ts",
+      "whyIncompatible": "Certificate catalog; status!=appeal stageId; multi-partner flattening non-trivial"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/certificate/:code/alias",
+      "fields": ["alias"],
+      "file": "src/app/api/certificate/[code]/alias/route.ts",
+      "model": "CertificateUserAlias",
+      "whyIncompatible": "Per-certificate alias only; no tag/note/bucket"
+    },
+    {
+      "method": "GET|PATCH",
+      "path": "/api/pro/partnership-list-preferences/:partnershipId",
+      "fields": ["personalAlias", "archived", "hidden"],
+      "model": "PartnershipListPreference",
+      "whyIncompatible": "Per-partnership not per referred appeal; hiddenAt not trash"
+    }
+  ],
+  "schemaModelsNoAppealOverlay": [
+    "AgentClient",
+    "CertificateUserAlias",
+    "CertificateProWorkspace",
+    "PartnershipListPreference",
+    "CabinetUiPreference"
+  ]
+}

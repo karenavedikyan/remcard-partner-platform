@@ -2,3 +2,16 @@
 
  RUN  v3.2.7 /agent/repos/remcard-partner-platform
 
+ ✓ src/lib/clients-parity/contracts.test.ts (3 tests) 5ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  12:46:24
+   Duration  1.44s (transform 79ms, setup 241ms, collect 31ms, tests 5ms, environment 942ms, prepare 54ms)
+
+
+=== P2.contract-verification.mjs ===
+PASS	no referred-appeals in proxy
+PASS	agent-clients allowed
+PASS	no personal-meta in proxy
+PASS	fetch adapter documents BLOCKED

@@ -1,13 +1,27 @@
 {
   "auditor": "P2",
   "baseSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
-  "auditTipSha": null,
+  "auditTipSha": "e0063d15cb2887f61077cdfad066615845837bb0",
+  "navigatorBackendTipSha": "3cb569ffa5f2991be57235622691dc9ff7029050",
+  "navigatorMainTipSha": "e6696a44da93e8e1f2bee26d21c3e0f48ee5cbb7",
+  "navigatorAccessNote": "MCP get_file_contents OK; VM git clone of private navigator repo failed (HTTP 404)",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "verdictSummary": {
-    "BLK-OBSERVER-REFERRED": "ABSENT",
-    "BLK-OBSERVER-PERSONAL-PERSIST": "ABSENT",
-    "agentClientCrudAsSubstitute": "REJECTED"
+    "BLK-OBSERVER-REFERRED": "MISSING_NAVIGATOR",
+    "BLK-OBSERVER-PERSONAL-PERSIST": "MISSING_NAVIGATOR",
+    "agentClientCrudAsSubstitute": "REJECTED",
+    "nearestBackendPrimitives": "INCOMPATIBLE_AGENT_CERT_ORDER_CRM",
+    "partnerProxyAt9fa6cc42": "STILL_UNWIRED"
+  },
+  "navigatorDecisionTable": {
+    "referredAppealsList": "TRULY_MISSING",
+    "personalMetaOverlay": "TRULY_MISSING",
+    "GET_api_pro_agent_clients": "EXISTING_INCOMPATIBLE",
+    "GET_api_pro_agent_certificates": "EXISTING_INCOMPATIBLE_PARTIAL_SHAPE",
+    "PATCH_api_certificate_code_alias": "EXISTING_INCOMPATIBLE_ALIAS_ONLY",
+    "GET_PATCH_api_pro_partnership_list_preferences": "EXISTING_INCOMPATIBLE_PARTNERSHIP_SCOPE",
+    "CertificateProWorkspace_via_R03": "EXISTING_INCOMPATIBLE_CERT_ARCHIVE_ONLY"
   },
   "referredAppeals": {
     "status": "ABSENT_IN_REPO",
