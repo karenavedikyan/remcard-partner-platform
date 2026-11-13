@@ -1,0 +1,34 @@
+=== P5 tests ===
+
+> remcard-partner-platform@0.1.0 test:component
+> vitest run src/components/clients/observer/P5.
+
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/P5.ObserverPersonalClientRow.test.tsx (3 tests) 113ms
+ ✓ src/components/clients/observer/P5.ObserverPersonalEditPanel.test.tsx (4 tests) 164ms
+ ✓ src/components/clients/observer/P5.ObserverPersonalTools.test.tsx (7 tests) 210ms
+ ✓ src/components/clients/observer/P5.ObserverPersonalConfirmPanel.test.tsx (4 tests) 103ms
+
+ Test Files  4 passed (4)
+      Tests  18 passed (18)
+   Start at  11:39:51
+   Duration  1.35s (transform 133ms, setup 474ms, collect 285ms, tests 590ms, environment 943ms, prepare 209ms)
+
+
+=== ObserverPartnersListView (integration, read-only) ===
+
+> remcard-partner-platform@0.1.0 test:component
+> vitest run src/components/clients/observer/ObserverPartnersListView.test.tsx
+
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests) 489ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  11:39:52
+   Duration  1.12s (transform 132ms, setup 103ms, collect 146ms, tests 489ms, environment 207ms, prepare 36ms)
+

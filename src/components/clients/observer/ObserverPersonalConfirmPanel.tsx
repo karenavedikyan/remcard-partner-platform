@@ -40,6 +40,10 @@ export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm 
       <p>
         Выбрано записей: {count}. {c.body}
       </p>
+      <p className={styles.mutedSmall}>
+        Без API personal-meta подтверждение только покажет уведомление BLOCKED_PERSISTENCE; списки и
+        данные партнёров не изменятся.
+      </p>
       <div className={styles.personalActions}>
         <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
           Отмена
@@ -48,6 +52,7 @@ export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm 
           type="button"
           className={styles.primaryBtn}
           data-observer-action="confirm"
+          title="BLOCKED_PERSISTENCE"
           onClick={onConfirm}
         >
           {c.confirm}
