@@ -13,7 +13,7 @@
     "P4": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
     "P5": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
     "P6": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
-    "P7": "9280f9e7279da14964574a6d1585499134ac7f8c",
+    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
   },
   "ownerProductAllowlist": {
@@ -295,13 +295,13 @@
     {
       "path": "src/components/clients/observer/observer.module.css",
       "owner": "P7",
-      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
-      "gitBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
-      "contentSha256": "70fd30ec5d8f6cc91c92ce805c27ace0f5fac9c443a45bd773849d355f797ed7",
+      "sourceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "gitBlobSha": "bd13e20fe282b14ac777ffa1e3683c0f3de42d34",
+      "contentSha256": "56e0598396c3d618f85a0135f1339dce798fe1e46a6a711f220619db45672fff",
       "gitStatusVs57ca": "A",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "p7TipBlobSha": "bd13e20fe282b14ac777ffa1e3683c0f3de42d34",
       "matchesP7WholeTree": true
     },
     {
@@ -645,13 +645,13 @@
     {
       "path": "src/components/clients/observer/observer.module.css",
       "owner": "P7",
-      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
-      "gitBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
-      "contentSha256": "70fd30ec5d8f6cc91c92ce805c27ace0f5fac9c443a45bd773849d355f797ed7",
+      "sourceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "gitBlobSha": "bd13e20fe282b14ac777ffa1e3683c0f3de42d34",
+      "contentSha256": "56e0598396c3d618f85a0135f1339dce798fe1e46a6a711f220619db45672fff",
       "gitStatusVs57ca": "A",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "p7TipBlobSha": "bd13e20fe282b14ac777ffa1e3683c0f3de42d34",
       "matchesP7WholeTree": true
     },
     {
@@ -982,15 +982,15 @@
     {
       "path": "src/components/clients/observer/P7.observer-accent-contrast.test.ts",
       "qaOwner": "P7",
-      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "sourceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
       "presentAtOwnerTip": true,
-      "gitBlobSha": "32df1ee8c13547b1db0a51244763960a202faeb8",
+      "gitBlobSha": "cc889c03930e17727ea529467bd6d68aeef76fe9",
       "packaging": "QA_MANIFEST_ONLY"
     },
     {
       "path": "src/components/clients/observer/P7.observer-prototype-layout.test.ts",
       "qaOwner": "P7",
-      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "sourceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
       "presentAtOwnerTip": true,
       "gitBlobSha": "5755e9eded6baf7545abf483b077dbde6b5753f8",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1036,6 +1036,146 @@
       "browserDownload": "not required when root sandbox provides Chromium adapter",
       "note": "QA harness expects pre-provisioned Chromium in sandbox; do not add product dependencies"
     }
+  },
+  "publicationReconcileV2": {
+    "publicationId": "REM-PUBLISH-RESIDUAL-20261113-V2",
+    "clientsSectionPublishable": false,
+    "wholeBranchTransferForbidden": true,
+    "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+    "navigatorReleasePin": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
+    "navigatorReleaseBranchNote": "release/prof-backend-v1-20261007 (remote ref not fetched here; SHA object present locally)",
+    "prototypePin": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+    "deployableIndependentUiOnly": {
+      "description": "Owner-tip extracted UI + parity lib; applies only atop 57ca gate/routes",
+      "paths": [
+        "src/components/clients/ClientsListWorkspace.tsx",
+        "src/components/clients/direction/ClientsDirectionTabs.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/observer/ObserverClientDetailView.tsx",
+        "src/components/clients/observer/ObserverContractBlocked.tsx",
+        "src/components/clients/observer/ObserverFilterChips.tsx",
+        "src/components/clients/observer/ObserverPartnerCard.tsx",
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+        "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+        "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
+        "src/components/clients/observer/ObserverPersonalTools.tsx",
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/contracts.ts",
+        "src/lib/clients-parity/filter-observer.ts",
+        "src/lib/clients-parity/observer-display.ts",
+        "src/lib/clients-parity/observer-personal-row-spec.ts",
+        "src/lib/clients-parity/observer-stats-grid-harness.ts",
+        "src/lib/clients-parity/observer-stats-grid-spec.ts",
+        "src/lib/clients-parity/observer-stats.ts",
+        "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
+        "src/lib/clients-parity/production-compat.ts",
+        "src/lib/clients-parity/types.ts"
+      ],
+      "partialApply": [
+        "src/components/clients/ClientsListWorkspace.tsx"
+      ]
+    },
+    "deployableWithExplicitRuntimeBlocker": [
+      "src/lib/clients-parity/fetch-observer-appeals.ts"
+    ],
+    "forbiddenInPublicationPackage": [
+      "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+      "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+      "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+      "src/components/clients/OwnerClientsGate.tsx",
+      "src/components/clients/OwnerClientsModeContext.tsx",
+      "src/app/(cabinet)/clients/page.tsx",
+      "src/app/(cabinet)/clients/[id]/page.tsx",
+      "vitest.config.ts",
+      "src/lib/onboarding-step/history-link-eligibility.ts",
+      "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+      "audit/remcard-parallel-20261113/P5/fixtures.ts",
+      "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+      "src/app/(cabinet)/clients/**"
+    ],
+    "dependencyGraphEdges": [
+      {
+        "from": "src/components/clients/ClientsListWorkspace.tsx",
+        "to": "src/components/clients/direction/ClientsDirectionWorkspace.tsx"
+      },
+      {
+        "from": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "to": "src/components/clients/direction/ClientsDirectionTabs.tsx"
+      },
+      {
+        "from": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "to": "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
+      },
+      {
+        "from": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "to": "src/components/clients/observer/ObserverPartnersWorkspace.tsx"
+      },
+      {
+        "from": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+        "to": "src/components/clients/observer/ObserverPartnersListView.tsx"
+      },
+      {
+        "from": "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "to": "src/lib/clients-parity/types.ts"
+      },
+      {
+        "from": "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "to": "src/lib/clients-parity/filter-observer.ts"
+      },
+      {
+        "from": "@57ca/production",
+        "to": "src/components/clients/OwnerClientsGate.tsx"
+      },
+      {
+        "from": "@57ca/production",
+        "to": "src/components/clients/OwnerClientsModeContext.tsx"
+      },
+      {
+        "from": "@57ca/production",
+        "to": "src/app/clients/page.tsx"
+      },
+      {
+        "from": "src/components/clients/ClientsListWorkspace.tsx",
+        "to": "@57ca/production OwnerClientsGate+snippet export"
+      }
+    ],
+    "missingAcceptanceCriteria": [
+      {
+        "id": "AC-REFERRED-API",
+        "blocker": "BLK-OBSERVER-REFERRED",
+        "detail": "fetch-observer-appeals has no production ok:true contract; UI must stay unavailable/honest"
+      },
+      {
+        "id": "AC-PERSONAL-PERSIST",
+        "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
+        "detail": "alias/tag/note/archive/trash save not backed by personal overlay API"
+      },
+      {
+        "id": "AC-RECEIVING-APPEALS",
+        "blocker": "BLK-RECEIVING-APPEALS",
+        "detail": "incoming specialist direction shows blocked shell only"
+      },
+      {
+        "id": "AC-FULL-LEDGER",
+        "blocker": "FULL-SECTION-ACCEPTANCE",
+        "detail": "C01–C56 ledger not closed; component tests ≠ page acceptance"
+      },
+      {
+        "id": "AC-ONBOARDING-LINKS",
+        "blocker": "PRESERVE_BASE",
+        "detail": "empty-state copy must remain 57ca blobs for settlements/history links"
+      },
+      {
+        "id": "AC-GATE-CONTEXT",
+        "blocker": "BLK-GATE-CONTEXT",
+        "detail": "production gate/context unchanged; list snippet only on 57ca"
+      }
+    ],
+    "rootOwnerAction": "Root alone cherry-picks deployableIndependentUiOnly paths; root assigns backend contract work for blockers"
   },
   "sharedInfrastructureBlockers": [
     {

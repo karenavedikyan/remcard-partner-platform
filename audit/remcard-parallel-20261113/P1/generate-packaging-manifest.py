@@ -14,7 +14,7 @@ AGENT_TIPS = {
     "P4": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
     "P5": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
     "P6": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
-    "P7": "9280f9e7279da14964574a6d1585499134ac7f8c",
+    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
 }
 
@@ -134,6 +134,31 @@ REJECTED_MANIFEST_SHAS = {
     "e90615aa_linear_p7_tree": "e90615aa819c32caf787e74bd8e751f182d83545",
     "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c",
 }
+
+NAVIGATOR_RELEASE_PIN = "3c37ca2557069a43544b7d72848fd53c37e3be5e"
+
+DEPENDENCY_GRAPH_EDGES = [
+    ("src/components/clients/ClientsListWorkspace.tsx", "src/components/clients/direction/ClientsDirectionWorkspace.tsx"),
+    ("src/components/clients/direction/ClientsDirectionWorkspace.tsx", "src/components/clients/direction/ClientsDirectionTabs.tsx"),
+    ("src/components/clients/direction/ClientsDirectionWorkspace.tsx", "src/components/clients/direction/ReceivingAppealsBlocked.tsx"),
+    ("src/components/clients/direction/ClientsDirectionWorkspace.tsx", "src/components/clients/observer/ObserverPartnersWorkspace.tsx"),
+    ("src/components/clients/observer/ObserverPartnersWorkspace.tsx", "src/components/clients/observer/ObserverPartnersListView.tsx"),
+    ("src/components/clients/observer/ObserverPartnersListView.tsx", "src/lib/clients-parity/types.ts"),
+    ("src/components/clients/observer/ObserverPartnersListView.tsx", "src/lib/clients-parity/filter-observer.ts"),
+    ("@57ca/production", "src/components/clients/OwnerClientsGate.tsx"),
+    ("@57ca/production", "src/components/clients/OwnerClientsModeContext.tsx"),
+    ("@57ca/production", "src/app/clients/page.tsx"),
+    ("src/components/clients/ClientsListWorkspace.tsx", "@57ca/production OwnerClientsGate+snippet export"),
+]
+
+MISSING_ACCEPTANCE_FOR_UI_PACKAGE = [
+    {"id": "AC-REFERRED-API", "blocker": "BLK-OBSERVER-REFERRED", "detail": "fetch-observer-appeals has no production ok:true contract; UI must stay unavailable/honest"},
+    {"id": "AC-PERSONAL-PERSIST", "blocker": "BLK-OBSERVER-PERSONAL-PERSIST", "detail": "alias/tag/note/archive/trash save not backed by personal overlay API"},
+    {"id": "AC-RECEIVING-APPEALS", "blocker": "BLK-RECEIVING-APPEALS", "detail": "incoming specialist direction shows blocked shell only"},
+    {"id": "AC-FULL-LEDGER", "blocker": "FULL-SECTION-ACCEPTANCE", "detail": "C01–C56 ledger not closed; component tests ≠ page acceptance"},
+    {"id": "AC-ONBOARDING-LINKS", "blocker": "PRESERVE_BASE", "detail": "empty-state copy must remain 57ca blobs for settlements/history links"},
+    {"id": "AC-GATE-CONTEXT", "blocker": "BLK-GATE-CONTEXT", "detail": "production gate/context unchanged; list snippet only on 57ca"},
+]
 
 # Paths wrongly included in 814df98d productionBundleFromOwnerTips (dry-run regression).
 REJECTED_814DF_BUNDLE_PATHS = [
@@ -455,6 +480,40 @@ def validate_assembly(rows: list[dict], bundle: list[dict], preserve: list[dict]
     return failures
 
 
+def build_publication_reconcile(bundle: list[dict], preserve: list[dict]) -> dict:
+    ui_only = [r["path"] for r in bundle if r.get("packaging") == "include"]
+    with_blocker = [r["path"] for r in bundle if r.get("packaging") == "include-with-blocker"]
+    partial = [r["path"] for r in bundle if r.get("packaging") == "include-partial"]
+    forbidden_paths = (
+        [r["path"] for r in preserve]
+        + BLOCKED_SHARED
+        + [f["path"] for f in QA_TRANSITIVE_FIXTURES]
+        + ["src/lib/clients-parity/fixtures/observer-demo-fixtures.ts"]
+        + ["src/app/(cabinet)/clients/**"]
+    )
+    return {
+        "publicationId": "REM-PUBLISH-RESIDUAL-20261113-V2",
+        "clientsSectionPublishable": False,
+        "wholeBranchTransferForbidden": True,
+        "profClientsPackagingBaseSha": BASE,
+        "navigatorReleasePin": NAVIGATOR_RELEASE_PIN,
+        "navigatorReleaseBranchNote": "release/prof-backend-v1-20261007 (remote ref not fetched here; SHA object present locally)",
+        "prototypePin": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+        "deployableIndependentUiOnly": {
+            "description": "Owner-tip extracted UI + parity lib; applies only atop 57ca gate/routes",
+            "paths": sorted(ui_only + partial),
+            "partialApply": partial,
+        },
+        "deployableWithExplicitRuntimeBlocker": with_blocker,
+        "forbiddenInPublicationPackage": forbidden_paths,
+        "dependencyGraphEdges": [
+            {"from": a, "to": b} for a, b in DEPENDENCY_GRAPH_EDGES
+        ],
+        "missingAcceptanceCriteria": MISSING_ACCEPTANCE_FOR_UI_PACKAGE,
+        "rootOwnerAction": "Root alone cherry-picks deployableIndependentUiOnly paths; root assigns backend contract work for blockers",
+    }
+
+
 def main() -> None:
     assembly = build_owner_assembly()
     preserve_base = build_preserve_base()
@@ -480,6 +539,7 @@ def main() -> None:
         "qaTestManifest": qa_manifest(),
         "qaTransitiveFixturesManifest": qa_fixtures_manifest(),
         "p7QaRuntimeRequirements": p7_qa_runtime_requirements(),
+        "publicationReconcileV2": build_publication_reconcile(bundle, preserve_base),
         "sharedInfrastructureBlockers": [
             {
                 "id": "BLK-GATE-API",
