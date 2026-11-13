@@ -1,0 +1,9 @@
+requirement_id,page,role,mode,state,selector,accessible_name,prototype_source,implementation_source,api_contract,status,blocker
+C26,106,agent,observer-partners,default,ca-observer-partner-card,Показатели видимых клиентов,client-appeals.js renderObserverPartnersList,ObserverPartnerCard.tsx,BLK-OBSERVER-REFERRED,IN_PROGRESS,BLK-OBSERVER-REFERRED
+C29,106,agent,observer-partners,expanded,ca-observer-partner-details,Показать/Скрыть,client-appeals.css ca-observer-disclosure,ObserverPartnerCard.tsx details,none,IN_PROGRESS,
+C31,106,agent,observer-partners,selection,data-observer-group,Выбрать клиентов,observer-personal-list.js,ObserverPartnerCard.tsx checkbox,none,IN_PROGRESS,
+C33,106,agent,observer-partners,filters,ca-observer-filter-chips,Фильтры,client-appeals.js renderObserverFilterChips,ObserverFilterChips.tsx,none,IN_PROGRESS,
+C33,106,agent,observer-partners,layout,data-observer-action=layout:list,Списком,client-appeals.js,ObserverPersonalTools.tsx,none,IN_PROGRESS,
+C38,106,agent,observer-personals,edit,persistenceNotice,BLOCKED_PERSISTENCE,prototype demo in-memory,ObserverPartnersListView.tsx,BLK-OBSERVER-PERSONAL-PERSIST,BLOCKED,BLK-OBSERVER-PERSONAL-PERSIST
+C01,79,specialist,direction-tabs,ca-clients-directions,Направление клиентов,client-appeals.js,ClientsDirectionTabs.tsx,none,IN_PROGRESS,
+C07,79,specialist,incoming,ca-receiving-appeals-blocked,Клиенты у меня,client-appeals.js renderListPage,ReceivingAppealsBlocked.tsx,BLK-RECEIVING-APPEALS,BLOCKED,BLK-RECEIVING-APPEALS
