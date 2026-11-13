@@ -12,6 +12,7 @@ describe("P4 observer detail export contract", () => {
     expect(typeof client.ObserverClientDetailMissing).toBe("function");
     expect(typeof client.resolveObserverClientBackLabel).toBe("function");
     expect(typeof client.resolveObserverClientBackFrom).toBe("function");
+    expect(typeof client.observerClientBackFrom).toBe("function");
 
     expect(typeof partner.ObserverPartnerDetailView).toBe("function");
     expect(typeof partner.ObserverPartnerDetailMissing).toBe("function");

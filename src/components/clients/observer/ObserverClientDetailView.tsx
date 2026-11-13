@@ -37,6 +37,16 @@ export function resolveObserverClientBackFrom(
   return "partners-list";
 }
 
+/** Stable name used by P3 shell (`ObserverPartnersListView` @ 9c3221ad). */
+export type ObserverClientNavSlice = { partnerId?: string };
+
+export function observerClientBackFrom(
+  clientNav: ObserverClientNavSlice,
+  layout: "partners" | "list",
+): ObserverClientBackFrom {
+  return resolveObserverClientBackFrom({ navPartnerId: clientNav.partnerId, layout });
+}
+
 type Props = {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;

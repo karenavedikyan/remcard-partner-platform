@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx (5 tests) 269ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  17:25:50
+   Duration  955ms (transform 169ms, setup 103ms, collect 189ms, tests 269ms, environment 208ms, prepare 38ms)
+

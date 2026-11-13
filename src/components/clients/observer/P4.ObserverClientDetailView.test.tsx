@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import {
   ObserverClientDetailMissing,
   ObserverClientDetailView,
+  observerClientBackFrom,
   resolveObserverClientBackFrom,
   resolveObserverClientBackLabel,
 } from "./ObserverClientDetailView";
@@ -52,6 +53,13 @@ describe("P4.ObserverClientDetailView", () => {
     );
     expect(resolveObserverClientBackFrom({ layout: "list" })).toBe("flat-list");
     expect(resolveObserverClientBackFrom({ layout: "partners" })).toBe("partners-list");
+  });
+
+  it("observerClientBackFrom is the P3 shell entry point (9c3221ad)", () => {
+    expect(observerClientBackFrom({ partnerId: "p1" }, "partners")).toBe("partner-clients");
+    expect(observerClientBackFrom({}, "list")).toBe("flat-list");
+    expect(observerClientBackFrom({}, "partners")).toBe("partners-list");
+    expect(observerClientBackFrom({ partnerId: "p1" }, "list")).toBe("partner-clients");
   });
 
   it("shows grouped and flat visible back labels on detail", () => {
