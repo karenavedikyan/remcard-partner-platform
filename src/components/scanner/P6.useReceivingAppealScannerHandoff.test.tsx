@@ -74,4 +74,59 @@ describe("P6 useReceivingAppealScannerHandoff", () => {
     ).toBe("New");
     fetchSpy.mockRestore();
   });
+
+  it("does not link when submit scope was captured for a prior appeal", async () => {
+    const linkSpy = vi.spyOn(api, "postReceivingAppealOrderLink").mockResolvedValue({
+      ok: true,
+      data: { appealId: "ap_old", orderId: "ord-1", revision: 2, alreadyLinked: false },
+    });
+    vi.spyOn(api, "fetchReceivingAppealDetailWire")
+      .mockResolvedValueOnce({
+        ok: true,
+        wire: {
+          appeal: {
+            id: "ap_old",
+            clientDisplayName: "Old",
+            purchaseOrderId: null,
+            stageKey: "ws_new",
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
+          revision: 1,
+          history: [],
+          readOnly: false,
+          access: { listAllowed: true, mutationsAllowed: true },
+        },
+      })
+      .mockResolvedValue({
+        ok: true,
+        wire: {
+          appeal: {
+            id: "ap_new",
+            clientDisplayName: "New",
+            purchaseOrderId: null,
+            stageKey: "ws_new",
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
+          revision: 1,
+          history: [],
+          readOnly: false,
+          access: { listAllowed: true, mutationsAllowed: true },
+        },
+      });
+
+    const { result, rerender } = renderHook(
+      ({ id }) => useReceivingAppealScannerHandoff(id),
+      { initialProps: { id: "ap_old" } },
+    );
+    await waitFor(() => expect(result.current.context.status).toBe("ready"));
+    result.current.captureSubmitScope();
+    rerender({ id: "ap_new" });
+    await waitFor(() => expect(result.current.appealId).toBe("ap_new"));
+    result.current.beginOrderLinkAfterSuccess("ord-1");
+    await waitFor(() => expect(result.current.linkPhase).toBe("idle"));
+    expect(linkSpy).not.toHaveBeenCalled();
+    linkSpy.mockRestore();
+  });
 });

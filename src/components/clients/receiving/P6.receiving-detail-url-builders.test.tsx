@@ -16,7 +16,10 @@ describe("P6 receiving URL builders", () => {
     );
   });
 
-  it("purchase href unchanged", () => {
+  it("purchase href carries appealId context query", () => {
     expect(receivingAppealPurchaseDetailHref("ord-7")).toBe("/history/purchases/ord-7");
+    expect(receivingAppealPurchaseDetailHref("ord-7", "ap-1")).toBe(
+      "/history/purchases/ord-7?appealId=ap-1",
+    );
   });
 });

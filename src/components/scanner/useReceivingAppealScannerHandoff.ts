@@ -22,6 +22,8 @@ export type ReceivingAppealLinkPhase =
   | "failed"
   | "conflict";
 
+type SubmitScope = { appealId: string; revision: number; loadGen: number };
+
 function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContext {
   if (param.mode === "invalid") {
     return { status: "invalid_param", message: "Некорректный идентификатор обращения в URL." };
@@ -44,22 +46,25 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
   const revisionRef = useRef(0);
   const contextRef = useRef(context);
   contextRef.current = context;
+  const submitScopeRef = useRef<SubmitScope | null>(null);
 
   const [linkPhase, setLinkPhase] = useState<ReceivingAppealLinkPhase>("idle");
   const [linkError, setLinkError] = useState("");
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [linkedOrderId, setLinkedOrderId] = useState<string | null>(null);
-  const linkScopeRef = useRef<{ appealId: string; orderId: string; revision: number } | null>(null);
+  const linkScopeRef = useRef<{ appealId: string; orderId: string; revision: number; linkGen: number } | null>(
+    null,
+  );
 
   const resetLinkState = useCallback(() => {
     linkGen.current += 1;
     linkInFlight.current = false;
     linkScopeRef.current = null;
+    submitScopeRef.current = null;
     setLinkPhase("idle");
     setLinkError("");
     setPendingOrderId(null);
     setLinkedOrderId(null);
-    revisionRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -82,8 +87,26 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     });
     return () => {
       loadGen.current += 1;
+      linkGen.current += 1;
     };
   }, [param, resetLinkState, scopedAppealId]);
+
+  const captureSubmitScope = useCallback(() => {
+    if (!scopeRef.current) {
+      submitScopeRef.current = null;
+      return;
+    }
+    const ctx = contextRef.current;
+    if (ctx.status !== "ready" || ctx.appealId !== scopeRef.current || ctx.orderAlreadyLinked) {
+      submitScopeRef.current = null;
+      return;
+    }
+    submitScopeRef.current = {
+      appealId: ctx.appealId,
+      revision: revisionRef.current,
+      loadGen: loadGen.current,
+    };
+  }, []);
 
   const assertPreviewAllowed = useCallback((preview: OrderPreviewAllowed): string | null => {
     if (!scopeRef.current) {
@@ -102,90 +125,89 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     return null;
   }, []);
 
-  const beginOrderLinkAfterSuccess = useCallback(
-    (orderId: string) => {
-      const ctx = contextRef.current;
-      if (ctx.status !== "ready" || ctx.orderAlreadyLinked) {
-        return;
-      }
-      const appealId = ctx.appealId;
-      if (scopeRef.current !== appealId) {
-        return;
-      }
-      linkScopeRef.current = {
-        appealId,
+  const beginOrderLinkAfterSuccess = useCallback((orderId: string) => {
+    const submit = submitScopeRef.current;
+    if (!submit || scopeRef.current !== submit.appealId) {
+      return;
+    }
+    if (loadGen.current !== submit.loadGen) {
+      return;
+    }
+    const ctx = contextRef.current;
+    if (ctx.status !== "ready" || ctx.appealId !== submit.appealId || ctx.orderAlreadyLinked) {
+      return;
+    }
+    const gen = linkGen.current;
+    linkScopeRef.current = {
+      appealId: submit.appealId,
+      orderId,
+      revision: submit.revision,
+      linkGen: gen,
+    };
+    setPendingOrderId(orderId);
+    setLinkPhase("pending");
+    setLinkError("");
+  }, []);
+
+  const runOrderLink = useCallback(async (orderId: string): Promise<ReceivingAppealOrderLinkResult> => {
+    const scope = linkScopeRef.current;
+    if (!scope || scope.orderId !== orderId) {
+      return { ok: false, code: "ERROR", message: "Контекст привязки устарел." };
+    }
+    if (scopeRef.current !== scope.appealId) {
+      return { ok: false, code: "ERROR", message: "Обращение сменилось — привязка отменена." };
+    }
+    if (linkInFlight.current) {
+      return { ok: false, code: "ERROR", message: "Привязка уже выполняется." };
+    }
+    const appealId = scope.appealId;
+    const gen = ++linkGen.current;
+    linkInFlight.current = true;
+    setLinkPhase("linking");
+    setLinkError("");
+
+    try {
+      const result = await postReceivingAppealOrderLink(appealId, {
         orderId,
-        revision: revisionRef.current,
-      };
-      setPendingOrderId(orderId);
-      setLinkPhase("pending");
-      setLinkError("");
-    },
-    [],
-  );
-
-  const runOrderLink = useCallback(
-    async (orderId: string): Promise<ReceivingAppealOrderLinkResult> => {
-      const scope = linkScopeRef.current;
-      const ctx = contextRef.current;
-      if (ctx.status !== "ready" || !scope || scope.orderId !== orderId || scope.appealId !== ctx.appealId) {
-        return { ok: false, code: "ERROR", message: "Контекст привязки устарел." };
+        expectedRevision: scope.revision,
+      });
+      if (gen !== linkGen.current || scopeRef.current !== appealId) {
+        return result;
       }
-      if (linkInFlight.current) {
-        return { ok: false, code: "ERROR", message: "Привязка уже выполняется." };
-      }
-      const appealId = scope.appealId;
-      const gen = ++linkGen.current;
-      linkInFlight.current = true;
-      setLinkPhase("linking");
-      setLinkError("");
-
-      try {
-        const result = await postReceivingAppealOrderLink(appealId, {
-          orderId,
-          expectedRevision: scope.revision,
-        });
-        if (gen !== linkGen.current || scopeRef.current !== appealId) {
-          return result;
-        }
-        if (result.ok) {
-          revisionRef.current = result.data.revision;
-          setLinkedOrderId(result.data.orderId);
-          setLinkPhase("linked");
-          setLinkError("");
-          const loadGenAtStart = loadGen.current;
-          const next = await loadReceivingAppealScannerContext(appealId);
-          if (loadGenAtStart === loadGen.current && scopeRef.current === appealId) {
-            setContext(next);
-            if (next.status === "ready") {
-              revisionRef.current = next.revision;
-            }
-          }
-          return result;
-        }
-        if (result.code === "CONFLICT") {
-          setLinkPhase("conflict");
-          setLinkError(result.message);
-        } else {
-          setLinkPhase("failed");
-          setLinkError(result.message);
+      if (result.ok) {
+        revisionRef.current = result.data.revision;
+        setLinkedOrderId(result.data.orderId);
+        setLinkPhase("linked");
+        setLinkError("");
+        const loadGenAtStart = loadGen.current;
+        const next = await loadReceivingAppealScannerContext(appealId);
+        if (loadGenAtStart === loadGen.current && scopeRef.current === appealId && next.status === "ready") {
+          setContext(next);
+          revisionRef.current = next.revision;
         }
         return result;
-      } finally {
-        if (gen === linkGen.current) {
-          linkInFlight.current = false;
-        }
       }
-    },
-    [],
-  );
+      if (result.code === "CONFLICT") {
+        setLinkPhase("conflict");
+        setLinkError(result.message);
+      } else {
+        setLinkPhase("failed");
+        setLinkError(result.message);
+      }
+      return result;
+    } finally {
+      if (gen === linkGen.current) {
+        linkInFlight.current = false;
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (linkPhase !== "pending" || !pendingOrderId) {
       return;
     }
     const scope = linkScopeRef.current;
-    if (!scope || scope.orderId !== pendingOrderId) {
+    if (!scope || scope.orderId !== pendingOrderId || scope.linkGen !== linkGen.current) {
       return;
     }
     void runOrderLink(pendingOrderId);
@@ -197,17 +219,19 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
     }
     const scope = linkScopeRef.current;
     const orderId = scope?.orderId ?? pendingOrderId ?? linkedOrderId;
+    if (!orderId || !scopeRef.current) {
+      return;
+    }
     const ctx = contextRef.current;
-    if (!orderId || ctx.status !== "ready") {
+    if (ctx.status !== "ready" || ctx.appealId !== scopeRef.current) {
       return;
     }
-    if (scope && scope.appealId !== ctx.appealId) {
-      return;
-    }
+    const frozenRevision = scope?.revision ?? revisionRef.current;
     linkScopeRef.current = {
-      appealId: ctx.appealId,
+      appealId: scopeRef.current,
       orderId,
-      revision: revisionRef.current,
+      revision: frozenRevision,
+      linkGen: linkGen.current,
     };
     setPendingOrderId(orderId);
     setLinkPhase("pending");
@@ -216,11 +240,9 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
   const appealScoped = param.mode === "scoped";
   const appealInvalid = param.mode === "invalid";
   const allowsNewStoreOrder =
-    !appealScoped ||
-    (context.status === "ready" && !context.orderAlreadyLinked);
+    !appealScoped || (context.status === "ready" && !context.orderAlreadyLinked);
   const requiresAppealReady = appealScoped && context.status !== "ready";
-  const certificatePrefillCode =
-    context.status === "ready" ? context.certificatePrefillCode : null;
+  const certificatePrefillCode = context.status === "ready" ? context.certificatePrefillCode : null;
 
   return useMemo(
     () => ({
@@ -234,6 +256,7 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
       context,
       linkPhase,
       linkError,
+      captureSubmitScope,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
       retryOrderLinkOnly,
@@ -244,6 +267,7 @@ export function useReceivingAppealScannerHandoff(appealIdParam: string | null | 
       allowsNewStoreOrder,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
+      captureSubmitScope,
       certificatePrefillCode,
       context,
       linkError,

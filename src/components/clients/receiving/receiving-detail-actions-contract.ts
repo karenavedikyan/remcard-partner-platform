@@ -46,8 +46,16 @@ export const K1_STAGE_REQUIRES_ORDER_PIPELINE = "STAGE_REQUIRES_ORDER_PIPELINE" 
 
 export const STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH = new Set<string>(["sys_paid"]);
 
-export function receivingAppealPurchaseDetailHref(purchaseOrderId: string): string {
-  return `/history/purchases/${encodeURIComponent(purchaseOrderId)}`;
+export function receivingAppealPurchaseDetailHref(
+  purchaseOrderId: string,
+  appealId?: string | null,
+): string {
+  const base = `/history/purchases/${encodeURIComponent(purchaseOrderId.trim())}`;
+  const ctx = appealId?.trim();
+  if (!ctx) {
+    return base;
+  }
+  return `${base}?${new URLSearchParams({ appealId: ctx }).toString()}`;
 }
 
 /** @deprecated Prefer `buildReceivingAppealOrderPipelineHref(appealId)` — bare `/scanner` without appeal context. */

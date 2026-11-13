@@ -50,9 +50,10 @@ export function receivingAppealPurchaseDetailHrefForReturn(
   purchaseOrderId: string,
   appealId: string,
 ): string {
-  const base = receivingAppealPurchaseDetailHref(purchaseOrderId);
-  return `${base}?receivingAppealId=${encodeURIComponent(appealId.trim())}`;
+  return receivingAppealPurchaseDetailHref(purchaseOrderId, appealId);
 }
+
+const RECEIVING_TERMINAL_STAGE_KEYS = new Set(["sys_return", "sys_refused"]);
 
 export function receivingCertificateMatchesPreview(
   boundCertificateId: string | null | undefined,
@@ -114,8 +115,44 @@ export async function loadReceivingAppealScannerContext(
   }
 
   const appeal = res.wire.appeal;
-  const revision =
-    typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision) || 0;
+  if (appeal.id.trim() !== trimmed) {
+    return {
+      status: "error",
+      appealId: trimmed,
+      message: "Ответ сервера не соответствует запрошенному обращению.",
+    };
+  }
+
+  const revisionRaw =
+    typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision);
+  if (!Number.isFinite(revisionRaw) || revisionRaw < 0) {
+    return {
+      status: "error",
+      appealId: trimmed,
+      message: "Некорректная ревизия обращения.",
+    };
+  }
+  const revision = revisionRaw;
+
+  const stageKey = (appeal.stageKey ?? appeal.stageId ?? "").trim();
+  if (stageKey && RECEIVING_TERMINAL_STAGE_KEYS.has(stageKey)) {
+    return {
+      status: "forbidden",
+      appealId: trimmed,
+      message: "Обращение закрыто — оформление покупки недоступно.",
+    };
+  }
+
+  const origin = (appeal.originKind ?? appeal.sourceKey ?? "").toString().toLowerCase();
+  const certId = appeal.certificateId?.trim() || null;
+  if ((origin === "certificate" || origin.includes("cert")) && !certId) {
+    return {
+      status: "forbidden",
+      appealId: trimmed,
+      message: "У сертификатного обращения нет привязанного сертификата.",
+    };
+  }
+
   const purchaseOrderId = appeal.purchaseOrderId?.trim() || appeal.purchaseId?.trim() || null;
 
   return {
