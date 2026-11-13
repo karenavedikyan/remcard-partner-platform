@@ -2,7 +2,10 @@
   "task": "P1-P7 owner-tip assembly (parallel branches)",
   "packagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "assemblyModel": "byte-extract each path from reviewed owner tip SHA (NOT P7 whole tree)",
-  "rejectsManifestSha": "e90615aa819c32caf787e74bd8e751f182d83545",
+  "rejectsManifestShas": {
+    "e90615aa_linear_p7_tree": "e90615aa819c32caf787e74bd8e751f182d83545",
+    "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c"
+  },
   "agentTipsReviewed": {
     "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
     "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
@@ -49,9 +52,6 @@
   },
   "p1ScaffoldDependencies": [
     "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
-    "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
-    "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
-    "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/fetch-observer-appeals.ts",
     "src/lib/clients-parity/filter-observer.ts",
@@ -63,6 +63,41 @@
     "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
     "src/lib/clients-parity/production-compat.ts",
     "src/lib/clients-parity/types.ts"
+  ],
+  "preserveBase57caByteIdentical": [
+    {
+      "path": "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+      "packaging": "PRESERVE_BASE",
+      "sourceSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+      "gitBlobSha": "f34dd9a257d486379b89989869efeefe7c5f348f",
+      "contentSha256": "49874628dc39a69fe824185e5a1ff1a609793e93ba0df0babe2d6f0285fbc7eb",
+      "reasonCode": "STALE_BRANCH_INHERITANCE: removes canLinkOnboardingHistory/step.action/OnboardingStepItem; direction/observer/list shell do not import",
+      "branchBlobAtP1Tip": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
+      "branchDiffersFrom57ca": true,
+      "dryRunEvidence": "clientsEmptyCopy.test.tsx fails 2 cases when branch copies applied"
+    },
+    {
+      "path": "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+      "packaging": "PRESERVE_BASE",
+      "sourceSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+      "gitBlobSha": "399d829eba62d14755904f4c9f4d4a852a4ffdbe",
+      "contentSha256": "61805bf44cb7d9c81f8a787088140ad0aefb87c3b46f683259091a21dcf1b287",
+      "reasonCode": "STALE_BRANCH_INHERITANCE: removes canLinkOnboardingHistory/step.action/OnboardingStepItem; direction/observer/list shell do not import",
+      "branchBlobAtP1Tip": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
+      "branchDiffersFrom57ca": true,
+      "dryRunEvidence": "clientsEmptyCopy.test.tsx fails 2 cases when branch copies applied"
+    },
+    {
+      "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+      "packaging": "PRESERVE_BASE",
+      "sourceSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+      "gitBlobSha": "e78b4d0d212bd9eb3bb875dd75f849d9a2dc2caf",
+      "contentSha256": "d845659a4f52da68583aebaa91208d81aeb56776958a6266b6be081a45329b9b",
+      "reasonCode": "STALE_BRANCH_INHERITANCE: removes canLinkOnboardingHistory/step.action/OnboardingStepItem; direction/observer/list shell do not import",
+      "branchBlobAtP1Tip": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
+      "branchDiffersFrom57ca": true,
+      "dryRunEvidence": "clientsEmptyCopy.test.tsx fails 2 cases when branch copies applied"
+    }
   ],
   "ownerRootAssembly": [
     {
@@ -124,42 +159,6 @@
       "reasonCode": "owner-tip-extract",
       "p7TipBlobSha": "49a942519afaf8a8c7cb3368e7cd94aba3eedf92",
       "matchesP7WholeTree": false
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
-      "contentSha256": "fa74008eb9f0e85e6b09130b43597804eb6132668e30cb555ba36934a1996556",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
-      "matchesP7WholeTree": true
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
-      "contentSha256": "29146e0b1bc5d280aba30d7dea05091c2e41510e53a3662145cf7509f089cc95",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
-      "matchesP7WholeTree": true
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
-      "contentSha256": "8d3f22b91502dda299668a0acf01a5b7de3608f6b6321d496e0989e2bf75f449",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
-      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverClientDetailView.tsx",
@@ -512,42 +511,6 @@
       "matchesP7WholeTree": false
     },
     {
-      "path": "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
-      "contentSha256": "fa74008eb9f0e85e6b09130b43597804eb6132668e30cb555ba36934a1996556",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
-      "matchesP7WholeTree": true
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
-      "contentSha256": "29146e0b1bc5d280aba30d7dea05091c2e41510e53a3662145cf7509f089cc95",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
-      "matchesP7WholeTree": true
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
-      "owner": "P1-scaffold",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "gitBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
-      "contentSha256": "8d3f22b91502dda299668a0acf01a5b7de3608f6b6321d496e0989e2bf75f449",
-      "gitStatusVs57ca": "M",
-      "packaging": "include",
-      "reasonCode": "owner-tip-extract",
-      "p7TipBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
-      "matchesP7WholeTree": true
-    },
-    {
       "path": "src/components/clients/observer/ObserverClientDetailView.tsx",
       "owner": "P4",
       "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
@@ -845,7 +808,15 @@
     "forbiddenOn57caFromBranch": [
       "ProductionOwnerClientsGate cast",
       "Forwarding canLinkOnboardingHistory into parity OwnerClientsGate that ignores it"
-    ]
+    ],
+    "paritySourceAssertionNotAppliedProduction": {
+      "file": "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
+      "scope": "parity-branch source only (NOT applied 57ca dry-run acceptance)",
+      "appliedProductionMustNotContain": [
+        "ProductionOwnerClientsGate"
+      ],
+      "snippetRemovesCast": "patch-ClientsListWorkspace-57ca4680.snippet.txt has no ProductionOwnerClientsGate"
+    }
   },
   "qaTestManifest": [
     {
@@ -1025,6 +996,47 @@
       "packaging": "QA_MANIFEST_ONLY"
     }
   ],
+  "qaTransitiveFixturesManifest": [
+    {
+      "path": "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+      "qaConsumers": [
+        "P3",
+        "P4"
+      ],
+      "sourceOwner": "P3",
+      "sourceShaKey": "P3",
+      "note": "Imported by P3/P4 observer tests; do not ship to production bundle",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "cd7930a051f2b73e4296d6c864ff9eb7d56d09cd",
+      "packaging": "QA_FIXTURE_TRANSITIVE"
+    },
+    {
+      "path": "audit/remcard-parallel-20261113/P5/fixtures.ts",
+      "qaConsumers": [
+        "P5"
+      ],
+      "sourceOwner": "P5",
+      "sourceShaKey": "P5",
+      "note": "P5 personal-row tests; audit path only",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "a6da5a513ad18e917da301cd2d586c0335ce7ba9",
+      "packaging": "QA_FIXTURE_TRANSITIVE"
+    }
+  ],
+  "p7QaRuntimeRequirements": {
+    "tests": [
+      "src/components/clients/observer/P7.observer-accent-contrast.test.ts",
+      "src/components/clients/observer/P7.observer-prototype-layout.test.ts"
+    ],
+    "playwright": {
+      "api": "chromium.launch({ headless: true })",
+      "channel": "none — no channel: 'chrome' in owner P7 tests",
+      "browserDownload": "not required when root sandbox provides Chromium adapter",
+      "note": "QA harness expects pre-provisioned Chromium in sandbox; do not add product dependencies"
+    }
+  },
   "sharedInfrastructureBlockers": [
     {
       "id": "BLK-GATE-API",

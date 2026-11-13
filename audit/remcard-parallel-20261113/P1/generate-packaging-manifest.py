@@ -52,12 +52,16 @@ OWNER_PRODUCT: dict[str, list[str]] = {
     "P8": [],
 }
 
-# Runtime scaffold extracted from P1 tip only (not re-owned by P3–P7 list above).
-P1_SCAFFOLD_DEPENDENCIES = [
-    "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+# On 57ca, keep byte-identical — branch variants regress clientsEmptyCopy.test / history links.
+PRESERVE_BASE_57CA = [
     "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
     "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
     "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+]
+
+# Runtime scaffold extracted from P1 tip (not in P3–P7 owner list; not PRESERVE_BASE).
+P1_SCAFFOLD_DEPENDENCIES = [
+    "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/fetch-observer-appeals.ts",
     "src/lib/clients-parity/filter-observer.ts",
@@ -107,6 +111,36 @@ QA_TESTS_BY_OWNER: dict[str, list[str]] = {
         "src/components/clients/observer/P7.observer-prototype-layout.test.ts",
     ],
 }
+
+# Transitive QA fixtures (imported by owner tests only — never production UI).
+QA_TRANSITIVE_FIXTURES = [
+    {
+        "path": "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+        "qaConsumers": ["P3", "P4"],
+        "sourceOwner": "P3",
+        "sourceShaKey": "P3",
+        "note": "Imported by P3/P4 observer tests; do not ship to production bundle",
+    },
+    {
+        "path": "audit/remcard-parallel-20261113/P5/fixtures.ts",
+        "qaConsumers": ["P5"],
+        "sourceOwner": "P5",
+        "sourceShaKey": "P5",
+        "note": "P5 personal-row tests; audit path only",
+    },
+]
+
+REJECTED_MANIFEST_SHAS = {
+    "e90615aa_linear_p7_tree": "e90615aa819c32caf787e74bd8e751f182d83545",
+    "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c",
+}
+
+# Paths wrongly included in 814df98d productionBundleFromOwnerTips (dry-run regression).
+REJECTED_814DF_BUNDLE_PATHS = [
+    "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+    "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+    "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+]
 
 BLOCKED_SHARED = [
     "src/components/clients/OwnerClientsGate.tsx",
@@ -220,6 +254,48 @@ def build_owner_assembly() -> list[dict]:
     return sorted(rows, key=lambda r: r["path"])
 
 
+def build_preserve_base() -> list[dict]:
+    rows: list[dict] = []
+    for path in PRESERVE_BASE_57CA:
+        data = blob_bytes(BASE, path)
+        if data is None:
+            continue
+        base_blob = git_blob_sha(BASE, path)
+        branch_blob = git_blob_sha(AGENT_TIPS["P1"], path)
+        rows.append(
+            {
+                "path": path,
+                "packaging": "PRESERVE_BASE",
+                "sourceSha": BASE,
+                "gitBlobSha": base_blob,
+                "contentSha256": sha256_hex(data),
+                "reasonCode": "STALE_BRANCH_INHERITANCE: removes canLinkOnboardingHistory/step.action/OnboardingStepItem; direction/observer/list shell do not import",
+                "branchBlobAtP1Tip": branch_blob,
+                "branchDiffersFrom57ca": base_blob != branch_blob,
+                "dryRunEvidence": "clientsEmptyCopy.test.tsx fails 2 cases when branch copies applied",
+            }
+        )
+    return rows
+
+
+def qa_fixtures_manifest() -> list[dict]:
+    rows = []
+    for item in QA_TRANSITIVE_FIXTURES:
+        tip = AGENT_TIPS[item["sourceShaKey"]]
+        path = item["path"]
+        exists = path_exists(tip, path)
+        rows.append(
+            {
+                **item,
+                "sourceSha": tip,
+                "presentAtOwnerTip": exists,
+                "gitBlobSha": git_blob_sha(tip, path) if exists else None,
+                "packaging": "QA_FIXTURE_TRANSITIVE",
+            }
+        )
+    return rows
+
+
 def qa_manifest() -> list[dict]:
     rows = []
     for owner, tests in QA_TESTS_BY_OWNER.items():
@@ -238,6 +314,21 @@ def qa_manifest() -> list[dict]:
                 }
             )
     return rows
+
+
+def p7_qa_runtime_requirements() -> dict:
+    return {
+        "tests": [
+            "src/components/clients/observer/P7.observer-accent-contrast.test.ts",
+            "src/components/clients/observer/P7.observer-prototype-layout.test.ts",
+        ],
+        "playwright": {
+            "api": "chromium.launch({ headless: true })",
+            "channel": "none — no channel: 'chrome' in owner P7 tests",
+            "browserDownload": "not required when root sandbox provides Chromium adapter",
+            "note": "QA harness expects pre-provisioned Chromium in sandbox; do not add product dependencies",
+        },
+    }
 
 
 def p1_snippet_transform() -> dict:
@@ -266,10 +357,16 @@ def p1_snippet_transform() -> dict:
             "ProductionOwnerClientsGate cast",
             "Forwarding canLinkOnboardingHistory into parity OwnerClientsGate that ignores it",
         ],
+        "paritySourceAssertionNotAppliedProduction": {
+            "file": "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
+            "scope": "parity-branch source only (NOT applied 57ca dry-run acceptance)",
+            "appliedProductionMustNotContain": ["ProductionOwnerClientsGate"],
+            "snippetRemovesCast": "patch-ClientsListWorkspace-57ca4680.snippet.txt has no ProductionOwnerClientsGate",
+        },
     }
 
 
-def validate_assembly(rows: list[dict]) -> list[dict]:
+def validate_assembly(rows: list[dict], bundle: list[dict], preserve: list[dict]) -> list[dict]:
     """Deterministic checks; fails on rejected e90615aa-style P7-sourcing."""
     failures: list[dict] = []
 
@@ -327,30 +424,62 @@ def validate_assembly(rows: list[dict]) -> list[dict]:
                 }
             )
 
+    bundle_paths = {r["path"] for r in bundle}
+    for path in PRESERVE_BASE_57CA:
+        if path in bundle_paths:
+            failures.append(
+                {
+                    "check": "PRESERVE_BASE_MUST_NOT_BE_IN_PRODUCTION_BUNDLE",
+                    "path": path,
+                    "rejectedPatternSha": REJECTED_MANIFEST_SHAS["814df98d_stale_new_partner_empty"],
+                }
+            )
+        if path in REJECTED_814DF_BUNDLE_PATHS and path in bundle_paths:
+            failures.append(
+                {
+                    "check": "REJECTED_814DF98D_DRY_RUN_REGRESSION",
+                    "path": path,
+                }
+            )
+
+    snippet_path = "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt"
+    snippet = blob_bytes(AGENT_TIPS["P1"], snippet_path)
+    if snippet and b"ProductionOwnerClientsGate" in snippet:
+        failures.append(
+            {
+                "check": "SNIPPET_MUST_NOT_CONTAIN_CAST",
+                "path": snippet_path,
+            }
+        )
+
     return failures
 
 
 def main() -> None:
     assembly = build_owner_assembly()
-    failures = validate_assembly(assembly)
+    preserve_base = build_preserve_base()
     bundle = [
         r
         for r in assembly
         if r.get("packaging", "").startswith("include")
     ]
+    failures = validate_assembly(assembly, bundle, preserve_base)
 
     manifest = {
         "task": "P1-P7 owner-tip assembly (parallel branches)",
         "packagingBaseSha": BASE,
         "assemblyModel": "byte-extract each path from reviewed owner tip SHA (NOT P7 whole tree)",
-        "rejectsManifestSha": "e90615aa819c32caf787e74bd8e751f182d83545",
+        "rejectsManifestShas": REJECTED_MANIFEST_SHAS,
         "agentTipsReviewed": AGENT_TIPS,
         "ownerProductAllowlist": OWNER_PRODUCT,
         "p1ScaffoldDependencies": P1_SCAFFOLD_DEPENDENCIES,
+        "preserveBase57caByteIdentical": preserve_base,
         "ownerRootAssembly": assembly,
         "productionBundleFromOwnerTips": bundle,
         "p1SnippetTransformation": p1_snippet_transform(),
         "qaTestManifest": qa_manifest(),
+        "qaTransitiveFixturesManifest": qa_fixtures_manifest(),
+        "p7QaRuntimeRequirements": p7_qa_runtime_requirements(),
         "sharedInfrastructureBlockers": [
             {
                 "id": "BLK-GATE-API",

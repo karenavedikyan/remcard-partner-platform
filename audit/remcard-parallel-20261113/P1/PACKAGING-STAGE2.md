@@ -1,32 +1,36 @@
-# П1 — packaging stage 2 (corrected owner-tip assembly)
+# П1 — packaging stage 2 (57ca dry-run corrections)
 
-## Rejected
+## Rejected manifests
 
-`e90615aa` used linear last-touch to `combinedProductContentTip=P7` and **dropped reviewed fixes** (e.g. P6 tabs −51 vs P7, P3 list view −41 vs P4/P7).
+| SHA | Defect |
+|-----|--------|
+| `e90615aa` | Linear P7 whole-tree sourcing |
+| `814df98d` | `productionBundleFromOwnerTips` included stale `new-partner-empty/**` (regresses `clientsEmptyCopy.test.tsx`) |
 
-## Model
+## PRESERVE_BASE (57ca byte-identical, NOT in bundle)
 
-- **Base:** `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79`
-- **Assembly:** byte-extract each path from **reviewed owner tip** (parallel branches), not P7 whole tree.
-- **Artifact:** `p1-p7-packaging-manifest.json` (`ownerRootAssembly`, `qaTestManifest` separate).
-- **Validator:** `validate-owner-assembly.py` (fails old P4/P7 ownership heuristics).
+- `src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx`
+- `src/components/clients/new-partner-empty/clients-new-partner-empty.module.css`
+- `src/components/clients/new-partner-empty/clientsEmptyCopy.ts`
 
-## Corrected examples (git blob)
+Branch copies drop `canLinkOnboardingHistory` / `step.action` / `OnboardingStepItem`. **No** imports from `direction/` / `observer/` / `ClientsListWorkspace`.
 
-| Path | Owner | Source SHA | `matchesP7WholeTree` |
-|------|-------|------------|----------------------|
-| `ClientsDirectionTabs.tsx` | P6 | `3753b24c5273a8d83b68ab88a06f0ebe6c38547c` | **false** |
-| `ObserverPartnersListView.tsx` | P3 | `8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543` | **false** |
-| `observer.module.css` | P7 | `9280f9e7279da14964574a6d1585499134ac7f8c` | true (sole P7 product owner) |
+## Owner-tip assembly (unchanged pins)
 
-## P1 snippet (separate from list body blob)
+Per-owner tips P1–P7 parallel SHAs in `p1-p7-packaging-manifest.json`.
 
-On `57ca4680`, apply `patch-ClientsListWorkspace-57ca4680.snippet.txt` for export only; list **body** from P1 tip `c3d7c13d`.
+## QA (separate from production bundle)
 
-## QA tests
+- Tests: `qaTestManifest`
+- Transitive fixtures: `qaTransitiveFixturesManifest` (`observer-demo-fixtures.ts` @ P3, `audit/.../P5/fixtures.ts` @ P5)
+- P7 Playwright: `chromium.launch({ headless: true })` **without** `channel`; uses root sandbox Chromium adapter (no browser download in product deps)
 
-Listed in manifest `qaTestManifest` per owner tip — not folded into production bundle.
+## P1 `ProductionOwnerClientsGate`
 
-## Git author
+`P1.ClientsListWorkspace.compat.test.tsx` asserts **parity-branch source** only. Applied 57ca package uses snippet export **without** cast — not an applied-production test (see `p1SnippetTransformation.paritySourceAssertionNotAppliedProduction`).
 
-New commits: author `karenavedikyan`; report **BLOCKED** if platform appends extra `Co-authored-by` after Perplexity.
+## Validate
+
+```bash
+python3 audit/remcard-parallel-20261113/P1/validate-owner-assembly.py
+```

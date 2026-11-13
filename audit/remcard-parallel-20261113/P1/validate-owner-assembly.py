@@ -27,6 +27,19 @@ def main() -> int:
         for f in manifest["validation"]["failures"]:
             print("FAIL", json.dumps(f))
         return 1
+    bundle_paths = {r["path"] for r in manifest["productionBundleFromOwnerTips"]}
+    for row in manifest.get("preserveBase57caByteIdentical", []):
+        if row["path"] in bundle_paths:
+            print("FAIL: PRESERVE_BASE file in production bundle:", row["path"])
+            return 1
+    rejected_814 = {
+        "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+        "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+        "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+    }
+    if rejected_814 & bundle_paths:
+        print("FAIL: 814df98d stale new-partner-empty paths still in bundle", rejected_814 & bundle_paths)
+        return 1
     tabs = next(
         r
         for r in manifest["ownerRootAssembly"]
