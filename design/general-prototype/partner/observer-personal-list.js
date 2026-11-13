@@ -6,7 +6,7 @@ const BUCKETS = { active: "Активные", archived: "Архив", trash: "К
 export function observerPersonalState(workspace) {
   return workspace.observerPersonal ||= {
     meta: {}, selected: [], bucket: "active", layout: "partners",
-    panel: null, lastChange: null, notice: "",
+    panel: null, lastChange: null, notice: "", openPartners: {},
   };
 }
 
@@ -94,6 +94,12 @@ export function hydrateObserverPersonal(root, workspace, { visibleRows, baseRows
   if (!root.querySelector("[data-testid=ca-observer-personal-tools]") || root.dataset.observerPersonalBound) return;
   root.dataset.observerPersonalBound = "1";
   const p = observerPersonalState(workspace);
+  root.querySelectorAll("[data-observer-partner-details]").forEach(details => {
+    details.addEventListener("toggle", () => {
+      if (!root.contains(details)) return;
+      (p.openPartners ||= {})[details.dataset.observerPartnerDetails] = details.open;
+    });
+  });
   const editForm = root.querySelector("[data-observer-personal-edit]");
   if (editForm) {
     editForm.scrollIntoView({ block: "nearest" });

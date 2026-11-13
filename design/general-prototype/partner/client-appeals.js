@@ -5,7 +5,7 @@ import {
   observerPersonalState, observerPersonalMeta, observerPersonalBucket,
   clearObserverPersonalSelection, renderObserverPersonalTools,
   renderObserverPersonalRow, hydrateObserverPersonal,
-} from "./observer-personal-list.js?v=personal-card2";
+} from "./observer-personal-list.js?v=personal-compact3";
 import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
@@ -2416,33 +2416,40 @@ function renderObserverPartnersList(config) {
       const meta = PARTNER_OBSERVER_META[partnerId];
       const stats = partnerAppealStats(list);
       const last = formatObserverDateTime(stats.lastUpdate);
+      const expanded = observerPersonalState(s).openPartners?.[partnerId] ?? Boolean(s.observerQ?.trim());
       return `<article class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card" data-observer-bucket="${esc(observerPersonalState(s).bucket)}">
+        <div class="ca-observer-compact-top">
         <div class="ca-personal-group-head">
         <label class="ca-personal-check"><input type="checkbox" data-observer-group="${esc(partnerId)}" aria-label="Выбрать клиентов: ${esc(partner.name)}"></label>
-        <button type="button" class="ca-personal-partner-open" data-ca-action="observer:partner:${esc(partnerId)}">
+        <button type="button" class="ca-personal-partner-open" data-ca-action="observer:partner:${esc(partnerId)}" aria-label="Открыть партнёра: ${esc(partner.name)}">
         <div class="ca-observer-partner-card__head">
-          <span class="ca-observer-partner-kicker">Партнёр</span>
-          <strong>${esc(partner.name)}</strong>
-          ${meta?.category ? `<span class="ca-observer-partner-category">${esc(meta.category)}</span>` : ""}
-          ${partner.city ? `<span class="ca-observer-partner-city">${esc(partner.city)}</span>` : ""}
+          <strong>${esc(partner.name)} <span class="ca-observer-partner-arrow" aria-hidden="true">→</span></strong>
+          <span class="ca-observer-partner-category">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</span>
         </div>
-        <span class="ca-observer-open-label">Открыть партнёра <span aria-hidden="true">→</span></span>
         </button>
         </div>
         <dl class="ca-observer-stats" aria-label="Показатели видимых клиентов">
-          <div><dt>Всего направлено</dt><dd>${stats.total}</dd></div>
-          <div><dt>Сейчас в работе</dt><dd>${stats.inWork}</dd></div>
-          <div><dt>Дошли до оплаты</dt><dd>${stats.paidThrough}</dd></div>
+          <div><dt>Направлено</dt><dd>${stats.total}</dd></div>
+          <div><dt>В работе</dt><dd>${stats.inWork}</dd></div>
+          <div><dt>С оплатой</dt><dd>${stats.paidThrough}</dd></div>
           <div><dt>Отказы</dt><dd>${stats.refusals}</dd></div>
         </dl>
-        <dl class="ca-observer-card-meta">
-          <div><dt>Конверсия в оплату</dt><dd>${esc(stats.conv)}</dd></div>
-          <div><dt>Возвраты</dt><dd>${stats.returns}</dd></div>
-          <div class="ca-observer-card-update"><dt>Последнее обновление</dt><dd><time datetime="${esc(stats.lastUpdate)}">${esc(last)}</time></dd></div>
-        </dl>
+        </div>
+        <details class="ca-observer-disclosure" data-observer-partner-details="${esc(partnerId)}" ${expanded ? "open" : ""}>
+        <summary>
+          <span class="ca-observer-compact-meta">
+            <span>Конверсия в оплату <strong>${esc(stats.conv)}</strong></span>
+            <span>Возвраты <strong>${stats.returns}</strong></span>
+            <span class="ca-observer-compact-updated">Обновлено <time datetime="${esc(stats.lastUpdate)}">${esc(last)}</time></span>
+          </span>
+          <span class="ca-observer-toggle-label">Клиенты <b>${list.length}</b><span class="ca-observer-show">Показать</span><span class="ca-observer-hide">Скрыть</span><span class="ca-observer-chevron" aria-hidden="true">⌄</span></span>
+        </summary>
+        <div class="ca-observer-expanded-clients">
         <div class="ca-observer-clients-heading"><h2>Клиенты у партнёра <span>${list.length}</span></h2><p>Показатели выше относятся к клиентам в этом списке.${stats.returns ? " Клиенты с возвратом также могут входить в число дошедших до оплаты." : ""}</p></div>
         <div class="ca-observer-client-columns" aria-hidden="true"><span></span><span>Клиент и интерес</span><span>Статус у партнёра</span><span>Обновлено</span>${observerPersonalState(s).bucket !== "trash" ? "<span>Личная запись</span>" : ""}</div>
         <div class="ca-personal-rows">${list.map(a => personalRow(a, true)).join("")}</div>
+        </div>
+        </details>
       </article>`;
     })
     .join("");
