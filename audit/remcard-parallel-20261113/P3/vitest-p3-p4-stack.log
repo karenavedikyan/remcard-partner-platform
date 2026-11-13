@@ -1,3 +1,17 @@
-# P4 tip effd85f3e7ca8b4ce1a373074e95d975d89cc492 (transient checkout, restored after run)
- Test Files  6 passed (6)
-      Tests  17 passed | 1 skipped (18)
+# P4 tip ad7b0824b39ffedd576af84d18be64782611d6b5 (transient)
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.states.test.tsx (3 tests) 250ms
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx (3 tests) 245ms
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx (5 tests) 379ms
+ ✓ src/components/clients/observer/P3.ObserverFilterChips.test.tsx (3 tests) 93ms
+ ✓ src/components/clients/observer/P3.ObserverPartnerCard.test.tsx (3 tests) 134ms
+ ✓ src/components/clients/observer/P3.observer-list-harness.computed.test.tsx (1 test | 1 skipped) 9ms
+ ✓ src/components/clients/observer/P3.selected-stack.integration.test.tsx (2 tests) 144ms
+
+ Test Files  7 passed (7)
+      Tests  19 passed | 1 skipped (20)
+   Start at  17:30:48
+   Duration  2.33s (transform 343ms, setup 816ms, collect 971ms, tests 1.25s, environment 1.62s, prepare 356ms)
+

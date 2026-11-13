@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT"
-P4_TIP="${P4_TIP:-effd85f3e7ca8b4ce1a373074e95d975d89cc492}"
+P4_TIP="${P4_TIP:-ad7b0824b39ffedd576af84d18be64782611d6b5}"
 LOG="$ROOT/audit/remcard-parallel-20261113/P3/vitest-p3-p4-stack.log"
 DETAIL=(
   src/components/clients/observer/ObserverClientDetailView.tsx

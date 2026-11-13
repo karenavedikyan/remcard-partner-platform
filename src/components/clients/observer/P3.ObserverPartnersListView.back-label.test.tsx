@@ -8,14 +8,11 @@ import {
 import { observerClientBackFrom, ObserverPartnersListView } from "./ObserverPartnersListView";
 
 describe("P3.P4 integration — list shell backFrom (requires P4 detail exports)", () => {
-  it("observerClientBackFrom maps nav + layout to P4 tokens", () => {
-    expect(
-      observerClientBackFrom({ view: "client", clientId: "a", partnerId: "p" }, "partners"),
-    ).toBe("partner-clients");
-    expect(observerClientBackFrom({ view: "client", clientId: "a" }, "list")).toBe("flat-list");
-    expect(observerClientBackFrom({ view: "client", clientId: "a" }, "partners")).toBe(
-      "partners-list",
-    );
+  it("observerClientBackFrom (P4 canonical) maps nav slice + layout", () => {
+    expect(observerClientBackFrom({ partnerId: "p" }, "partners")).toBe("partner-clients");
+    expect(observerClientBackFrom({}, "list")).toBe("flat-list");
+    expect(observerClientBackFrom({}, "partners")).toBe("partners-list");
+    expect(observerClientBackFrom({ partnerId: "p" }, "list")).toBe("partner-clients");
   });
 
   it("partner drill → client → «К списку клиентов» → partner page", async () => {

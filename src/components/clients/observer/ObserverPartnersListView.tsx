@@ -13,8 +13,11 @@ import type {
 import {
   ObserverClientDetailMissing,
   ObserverClientDetailView,
+  observerClientBackFrom,
   type ObserverClientBackFrom,
 } from "./ObserverClientDetailView";
+
+export { observerClientBackFrom, type ObserverClientBackFrom };
 import { ObserverContractBlocked } from "./ObserverContractBlocked";
 import { ObserverFilterChips } from "./ObserverFilterChips";
 import { ObserverPartnerCard } from "./ObserverPartnerCard";
@@ -57,19 +60,6 @@ type Props = {
 function partnersMap(partners: ObserverPartnerMeta[]) {
   return new Map(partners.map((p) => [p.id, p]));
 }
-
-type ClientNav = Extract<Nav, { view: "client" }>;
-
-/** Shell → P4 `backFrom` (prototype clientAppealsSubpageBack + flat list). */
-export function observerClientBackFrom(
-  clientNav: ClientNav,
-  layout: "partners" | "list",
-): ObserverClientBackFrom {
-  if (clientNav.partnerId) return "partner-clients";
-  return layout === "list" ? "flat-list" : "partners-list";
-}
-
-export type { ObserverClientBackFrom };
 
 function bucketCounts(
   appeals: ObserverReferredAppeal[],
@@ -236,7 +226,7 @@ export function ObserverPartnersListView({
   }
 
   if (nav.view === "client") {
-    const clientBackFrom = observerClientBackFrom(nav, layout);
+    const clientBackFrom = observerClientBackFrom({ partnerId: nav.partnerId }, layout);
     const appeal = appeals.find((a) => a.id === nav.clientId);
     if (!appeal) {
       return (
@@ -282,6 +272,8 @@ export function ObserverPartnersListView({
         }
       : undefined;
 
+  const listReady = dataContract.status === "ready";
+
   return (
     <div className={styles.section} data-testid="ca-observer-partners-list">
       {showHeading ? (
@@ -303,6 +295,8 @@ export function ObserverPartnersListView({
         />
       ) : null}
 
+      {listReady ? (
+        <>
       <div className={styles.filters} aria-label="Фильтры направлений">
         <label className={styles.searchField}>
           Поиск партнёра или клиента
@@ -468,6 +462,8 @@ export function ObserverPartnersListView({
             );
           })}
         </div>
+      ) : null}
+        </>
       ) : null}
     </div>
   );

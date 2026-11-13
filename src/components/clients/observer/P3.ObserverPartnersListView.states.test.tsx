@@ -53,7 +53,8 @@ describe("P3.ObserverPartnersListView states", () => {
       />,
     );
     expect(screen.getByText(/Нет контракта/)).toBeTruthy();
-    expect(screen.getByPlaceholderText("Имя, партнёр, сертификат")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Имя, партнёр, сертификат")).toBeNull();
+    expect(screen.queryByTestId("ca-observer-personal-tools")).toBeNull();
     expect(screen.queryAllByTestId("ca-observer-partner-card").length).toBe(0);
   });
 });

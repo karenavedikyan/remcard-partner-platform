@@ -4,7 +4,7 @@
 
 | Order | Source tip | Paths |
 | --- | --- | --- |
-| 1 | `effd85f3` @ `cursor/remcard-p4-acceptance-20261113` | `src/components/clients/observer/ObserverClientDetailView.tsx`, `ObserverPartnerDetailView.tsx` |
+| 1 | **`ad7b0824`** (product `eb4592fd`) @ `cursor/remcard-p4-acceptance-20261113` | `ObserverClientDetailView.tsx`, `ObserverPartnerDetailView.tsx` |
 | 2 | P3 branch tip | `src/components/clients/observer/ObserverPartnersListView.tsx`, `ObserverPartnerCard.tsx`, `ObserverFilterChips.tsx` |
 | 3 | P3 tests | `src/components/clients/observer/P3.*.test.tsx` |
 
@@ -12,7 +12,8 @@
 
 - `ObserverClientDetailMissing`, `ObserverClientDetailView`, `ObserverClientBackFrom`
 - `ObserverPartnerDetailMissing`, `ObserverPartnerDetailView`
-- `observerClientBackFrom(nav, layout)` → `backFrom` prop
+- `export { observerClientBackFrom }` re-export from P4 detail module (no duplicate resolver)
+- `observerClientBackFrom({ partnerId }, layout)` → `backFrom` prop
 
 **Transient verify (P4 files not committed on P3 branch):**
 
