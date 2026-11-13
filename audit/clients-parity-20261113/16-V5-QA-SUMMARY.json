@@ -1,0 +1,57 @@
+{
+  "task": "REMCLIENTS-V5-COMPUTER-MEASURED",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "priorComputerFailSha": "d1da948491293c1a8ba77d4854191347708b4379",
+  "correctedSha": "5c7db88744825e33cc68bc5210b11185f1aa5c8d",
+  "implTipSha": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
+  "note": "auditSha filled after content commit. KPI cascade measured PASS; section packaging/contracts still not accepted. No ffd4aa61 screenshot carry-over.",
+  "computerAccepted": false,
+  "sectionAccepted": false,
+  "kpiCascadeMeasuredPass": true,
+  "kpiExpected": {
+    "1440": 4,
+    "1024": 4,
+    "768": 4,
+    "375": 4,
+    "360": 2,
+    "320": 2
+  },
+  "evidence": {
+    "docs": [
+      "14-V5-QA-KPI-CASCADE.md",
+      "15-V5-QA-FORBIDDEN-AND-FORWARD.md",
+      "16-V5-QA-SUMMARY.json",
+      "requirement-matrix-c01-c56.json"
+    ],
+    "computed": "v5-computed/stats-grid-computed.json",
+    "mount": "v5-isolated-mount-e4ddc098/",
+    "authorComputedTest": "observer-stats-grid.computed.test.ts 13/13 PASS (system Chrome)"
+  },
+  "uiOnlyVerified": {
+    "partnerOpen": true,
+    "clientOpen": true,
+    "back": true,
+    "editCancel": true,
+    "saveDisabledNoFakePersist": true
+  },
+  "forbiddenCompat": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH_DELETED",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "counts": {
+    "PASS_functional": 3,
+    "PASS_safety": 4,
+    "FAIL": 12,
+    "BLOCKED": 23,
+    "BLOCKED_PERSISTENCE": 4,
+    "NOT_STARTED": 9,
+    "EXCLUDED": 1,
+    "TOTAL": 56
+  }
+}

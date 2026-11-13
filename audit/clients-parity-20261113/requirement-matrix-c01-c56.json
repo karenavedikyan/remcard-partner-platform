@@ -1,40 +1,40 @@
 {
-  "task": "REMCLIENTS-V4-QA-COMPUTER",
+  "task": "REMCLIENTS-V5-COMPUTER-MEASURED",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "implCandidateSha": "4c2e4cdf9ab7c17b6c8864d42ee6b34fcdcf87bd",
+  "implCandidateSha": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
   "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
-  "matrixEvaluatedAgainst": "d1da948491293c1a8ba77d4854191347708b4379",
+  "matrixEvaluatedAgainst": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
   "priorV3ImplShaDoNotCarry": "ffd4aa6130e92af5d95da21cfe5519133228a962",
   "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
   "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
-  "note": "Each of C01–C56 has exactly one status. PASS_functional=0. UI disabled-save forms are BLOCKED_PERSISTENCE, not persistence PASS. Fresh V4 mounts only; V3 screenshots not evidence for these SHAs.",
+  "note": "V5: KPI .stats cascade measured PASS vs 3dc31836 on e4ddc098. Packaging still FAIL vs 57ca4680. Persistence/contracts still BLOCKED. Each C has one status; TOTAL=56.",
   "counts": {
-    "PASS_functional": 0,
+    "PASS_functional": 3,
     "PASS_safety": 4,
-    "FAIL": 15,
+    "FAIL": 12,
     "BLOCKED": 23,
     "BLOCKED_PERSISTENCE": 4,
     "NOT_STARTED": 9,
     "EXCLUDED": 1,
     "TOTAL": 56
   },
-  "countCheck": "0+4+15+23+4+9+1=56",
+  "countCheck": "3+4+12+23+4+9+1=56",
   "requirements": [
     {
       "id": "C01",
       "status": "FAIL",
-      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 on 4c2e4cdf and d1da9484. Fresh: 09-V4-QA-FORBIDDEN-COMPAT.md"
+      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains on tip e4ddc098 (15-V5)."
     },
     {
       "id": "C02",
       "status": "FAIL",
-      "evidence": "Observer UI exists under forbidden packaging; delivery not accepted. 4c2e4cdf had lowercase motionStat (labels absent); d1da9484 fixes MotionStat only."
+      "evidence": "Observer UI improved (KPI+MotionStat) but delivery packaging still forbidden."
     },
     {
       "id": "C03",
       "status": "FAIL",
-      "evidence": "Direction/receiving shell still packaged with forbidden Gate/route delta — not accepted."
+      "evidence": "Direction shell still packaged with forbidden Gate/route delta."
     },
     {
       "id": "C04",
@@ -44,7 +44,7 @@
     {
       "id": "C05",
       "status": "EXCLUDED",
-      "evidence": "Agent receiving pages 107–112 excluded by scope (C56)."
+      "evidence": "Agent receiving pages 107\u2013112 excluded by scope (C56)."
     },
     {
       "id": "C06",
@@ -168,7 +168,7 @@
     {
       "id": "C26",
       "status": "FAIL",
-      "evidence": "Fresh V4 mount vs prototype 3dc31836: KPI cols 768→2 (proto 4), ≤360→4 (proto 2). 11-V4-VIEWPORT-DIMENSIONS.md"
+      "evidence": "KPI cols fixed on e4ddc098; compact-card full visual/pixel etalon vs prototype not declared PASS. Packaging forbidden."
     },
     {
       "id": "C27",
@@ -179,17 +179,17 @@
     {
       "id": "C28",
       "status": "FAIL",
-      "evidence": "Card/KPI layout diverges at 768 and ≤360 on both 4c2e4cdf and d1da9484 fresh mounts."
+      "evidence": "KPI cols fixed; card height/spacing etalon deltas not re-proven PASS this pass."
     },
     {
       "id": "C29",
       "status": "FAIL",
-      "evidence": "d1da9484: partner open/back/selection/cancel/disabled-save verified UI-only; KPI visual parity FAIL; packaging forbidden. Not PASS_functional. 4c2e4cdf detail labels absent (motionStat)."
+      "evidence": "e4ddc098: partner\u2192client\u2192back, edit/cancel, disabled save UI OK; KPI cols OK; packaging still FAIL; not PASS_functional for section."
     },
     {
       "id": "C30",
       "status": "NOT_STARTED",
-      "evidence": "session openPartners reload→collapsed not proven across real navigation."
+      "evidence": "session openPartners reload\u2192collapsed not proven across real navigation."
     },
     {
       "id": "C31",
@@ -217,7 +217,7 @@
       "id": "C35",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "UI form exists; save disabled. No personal-meta API. Disabled save ≠ persistence PASS."
+      "evidence": "UI form exists; save disabled. No personal-meta API. Disabled save \u2260 persistence PASS."
     },
     {
       "id": "C36",
@@ -229,7 +229,7 @@
       "id": "C37",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "agent-clients archive/delete ≠ personal trash-from-own-list. No personal-meta handlers."
+      "evidence": "agent-clients archive/delete \u2260 personal trash-from-own-list. No personal-meta handlers."
     },
     {
       "id": "C38",
@@ -256,38 +256,41 @@
     },
     {
       "id": "C42",
-      "status": "FAIL",
-      "evidence": "observer.module.css breakpoints diverge from prototype 3dc31836 (768/≤360). Fresh computed cols."
+      "status": "PASS_functional",
+      "evidence": "Fresh getComputedStyle + ListView mount: 768/375\u21924, \u2264360\u21922 both themes. 14-V5 + v5-computed/. Packaging still FAIL separately.",
+      "passKind": "functional"
     },
     {
       "id": "C43",
-      "status": "FAIL",
-      "evidence": "Computed KPI column counts mismatch prototype baseline at 768 and ≤360 (11-V4)."
+      "status": "PASS_functional",
+      "evidence": "Computed KPI column counts match prototype baseline at all 6 widths \u00d7 2 themes (v5-computed/stats-grid-computed.json allPass).",
+      "passKind": "functional"
     },
     {
       "id": "C44",
       "status": "FAIL",
-      "evidence": "Spacing/radius/layout not within visual pass; KPI grid wrong at key breakpoints."
+      "evidence": "KPI cascade OK; spacing/radius full visual pass thresholds not re-claimed."
     },
     {
       "id": "C45",
       "status": "FAIL",
-      "evidence": "light+dark fresh mounts both show same KPI column failures."
+      "evidence": "KPI cols OK both themes; full light/dark pixel thresholds not re-claimed PASS."
     },
     {
       "id": "C46",
-      "status": "FAIL",
-      "evidence": "Six viewports captured with verified clientWidth/PNG widths; parity FAIL (not claimed). innerWidth +14 on mobile documented."
+      "status": "PASS_functional",
+      "evidence": "Six viewports \u00d72 themes KPI cols match prototype on isolated ListView mount (v5-isolated-mount-e4ddc098). Not a full pixel-parity PASS.",
+      "passKind": "functional"
     },
     {
       "id": "C47",
       "status": "FAIL",
-      "evidence": "Element KPI grid mismatch vs prototype; card layout not etalon-pass."
+      "evidence": "KPI cols OK; bounding-box etalon not re-diffed to PASS."
     },
     {
       "id": "C48",
       "status": "FAIL",
-      "evidence": "No visualPass vs prototype 3dc31836 on fresh V4 mounts."
+      "evidence": "KPI cols OK; overlay/pixel visualPass vs prototype baseline not re-run to PASS."
     },
     {
       "id": "C49",
@@ -332,5 +335,7 @@
       "evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod changes by auditor. Forbidden deltas explicit in 09-V4.",
       "passKind": "safety"
     }
-  ]
+  ],
+  "correctedFixSha": "5c7db88744825e33cc68bc5210b11185f1aa5c8d",
+  "priorFailSha": "d1da948491293c1a8ba77d4854191347708b4379"
 }
