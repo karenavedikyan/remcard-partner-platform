@@ -1,6 +1,6 @@
 # П8 — K8 navigator source inspection (Root handoff, read-only)
 
-**Status:** K8 @ `fc33b4fa` / handoff @ `16253b84` are **CANDIDATES**, not accepted contract or release.  
+**Status:** K8 @ `fc33b4fa` / handoff @ `16253b84` are **CANDIDATES** — **REJECTED** for Branch-required identity (@ `fc33b4fa`); see **`CANONICAL-IDENTITY-CORRECTION.md`**. Not accepted contract or release.  
 **Profile prod `89fb8e07`:** Timeweb active — **unrelated** to Clients section readiness.  
 **Historical:** `8137` / `f447` navigator refs — superseded for **Clients API prep** lineage.
 
@@ -26,7 +26,19 @@
 
 ---
 
-## Five reproduced source gaps (owner blockers — not section acceptance)
+## Six reproduced source gaps (owner blockers — not section acceptance)
+
+### K8-GAP-6 — **CRITICAL** Solo receiving principal (source-proven)
+
+| | |
+|---|---|
+| **Root source** | `specialistR06Eligibility` — solo specialist **without** owned org is eligible; `requireOwnerClientsContext` matches |
+| **K8 defect** | Required `receivingOrganizationId` + `receivingBranchId`; HANDOFF maps receiver → `Branch.id` |
+| **Impact** | Receiving «Клиенты у меня» **impossible** for eligible solo specialist |
+| **Owner** | **K8** (schema/core only) |
+| **Next action** | Apply **`CANONICAL-IDENTITY-CORRECTION.md`**; `receivingPartnerUserId` + optional org/branch |
+
+## Prior five gaps
 
 ### K8-GAP-1 — Observer eligibility vs existing partner gates
 

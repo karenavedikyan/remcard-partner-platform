@@ -9,7 +9,7 @@
 | Role | SHA |
 |------|-----|
 | Partner publication base | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
-| Navigator Clients prep branch | `cursor/remcard-k8-acceptance-20261113` @ `fc33b4fa` (+ handoff `16253b84`) — **candidate** |
+| Navigator Clients prep branch | `fc33b4fa` — **REJECTED identity**; revision required per **`CANONICAL-IDENTITY-CORRECTION.md`** |
 | Client profile prod (unrelated) | `89fb8e073c39c8dbd329996940b85c6a86751868` — active; **≠** Clients readiness |
 | Historical navigator | `8137` — P2 matrix `ac2d4a7b` still valid for gap analysis |
 | Prototype | `3dc31836cd18d9209c20097f18b906dd276f7af6` (`client-appeals.js`, `observer-personal-list.js`) |
@@ -45,7 +45,7 @@
 | Step | Gate | Owner | Status | Proof required | Next action |
 |------|------|-------|--------|----------------|-------------|
 | **G0** | P2 matrix @ 8137 accepted | P2 | **PASS (audit)** | `contract-operation-matrix-8137.md` | Re-run matrix when navigator tip moves post-implementation |
-| **G1** | **Schema + source review** (draft migrations/SQL in repo only) | Navigator backend | **NOT_STARTED** | PR or branch with schema matching D4 + appeal entity; **no** prod apply | Draft migration + OpenAPI/route stubs; Root + user review |
+| **G1** | **Schema + source review** (draft migrations/SQL in repo only) | **K8** | **BLOCKED** | Revised contract w/ `receivingPartnerUserId`; optional org/branch | Fix **K8-GAP-6** before any accept; no DB execute |
 | **G2** | **Negative safety K3/K4** | Navigator + P2 | **NOT_STARTED** | Written review attached to G1 PR | **K3:** observer read uses **existing** eligibility only (D3); no new public/broader role. **K4:** personal overlay routes cannot PATCH `AgentClient` / cert alias / lead executor fields (D7) |
 | **G3** | API implementation in **source** | K8+K1+K2+K5 navigator | **BLOCKED** | **Candidate only:** `fc33b4fa` on `cursor/remcard-k8-acceptance-20261113` — see **`K8-ROOT-SOURCE-GAPS.md`** (5 gaps). Not accepted contract. |
 | **G4** | Partner **integration** (proxy + adapter) | P5/P6 | **BLOCKED** | `fetchObserverReferredAppeals` `ok:true` in **mocked** integration test | Wire after G3 source merge; honest UI if still blocked |
