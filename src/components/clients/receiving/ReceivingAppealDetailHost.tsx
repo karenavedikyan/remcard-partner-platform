@@ -21,8 +21,10 @@ import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope
 /** P4 read-only dependency: `receiving-detail-actions-contract.ts` @ `6b7c38d3` (Root packages; P6 does not commit P4). */
 export const P4_RECEIVING_DETAIL_UI_SHA = "6b7c38d3" as const;
 
-/** View body without shell `onBack` — host passes `onBack` at render site. */
-export type ReceivingAppealDetailViewModel = Omit<ReceivingAppealDetailProps, "onBack">;
+type WithoutOnBack<T> = T extends unknown ? Omit<T, "onBack"> : never;
+
+/** View body without shell `onBack` — distributive over status union branches. */
+export type ReceivingAppealDetailViewModel = WithoutOnBack<ReceivingAppealDetailProps>;
 
 export type ReceivingAppealDetailHostProps = {
   appealId: string;
