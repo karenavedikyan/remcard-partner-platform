@@ -6,6 +6,25 @@ export type RegistrationKind =
   | "company"
   | "employee";
 
+export type RegistrationPreAuthConsentKind =
+  | "PERSONAL_DATA"
+  | "TERMS"
+  | "PUBLIC_OFFER_PRO";
+
+export type PreAuthConsentRequirement = {
+  kind: RegistrationPreAuthConsentKind;
+  legalDocumentId: string;
+  version: string;
+  documentUrl: string;
+};
+
+export type PreAuthConsentsCapability = {
+  contractVersion: string;
+  available: boolean;
+  requirements: PreAuthConsentRequirement[];
+  reason?: string;
+};
+
 export type RegistrationCapabilities = {
   contractVersion: string;
   welcomeEnabled: boolean;
@@ -13,6 +32,7 @@ export type RegistrationCapabilities = {
   joinRegistrationPathEnabled?: boolean;
   joinKinds?: Partial<Record<RegistrationKind, boolean>>;
   legacyLoginPathEnabled: boolean;
+  preAuthConsents?: PreAuthConsentsCapability;
 };
 
 export type RegistrationDraftFields = {

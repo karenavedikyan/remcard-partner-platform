@@ -39,8 +39,7 @@ import type { RegistrationCapabilities, RegistrationKind } from "@/lib/registrat
 import { REGISTRATION_KIND_LABELS } from "@/lib/registration/types";
 import {
   clearPreAuthConsentAck,
-  loadPreAuthConsentAck,
-  savePreAuthConsentAck,
+  isPreAuthMessengerGateReady,
 } from "@/lib/registration/pre-auth-consent";
 import {
   finishJoinContextErrorMessage,
@@ -239,8 +238,8 @@ export function RegistrationJoinFlow() {
       setPreAuthReady(false);
       return;
     }
-    setPreAuthReady(loadPreAuthConsentAck(kind));
-  }, [kind, step]);
+    setPreAuthReady(isPreAuthMessengerGateReady(kind, caps?.preAuthConsents));
+  }, [caps?.preAuthConsents, kind, step]);
 
   useEffect(() => {
     if (phase === "finish" || step === "finish") return;
@@ -490,15 +489,16 @@ export function RegistrationJoinFlow() {
           {!preAuthReady ? (
             <RegistrationPreAuthConsent
               kind={kind}
+              preAuthConsents={caps?.preAuthConsents}
               onContinue={() => {
-                savePreAuthConsentAck(kind);
-                setPreAuthReady(true);
+                setPreAuthReady(isPreAuthMessengerGateReady(kind, caps?.preAuthConsents));
               }}
             />
           ) : (
             <AuthFlow
               returnTo={authReturnTo}
               registrationAgentJoin
+              registrationJoinKind={kind}
               registrationMessengerGateReady={preAuthReady}
               layout="embedded"
               onAuthenticated={handleAuthenticated}

@@ -17,6 +17,33 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => navigation.joinSearchParams,
 }));
 
+const { qaPreAuthConsents } = vi.hoisted(() => ({
+  qaPreAuthConsents: {
+    contractVersion: "2026-11-13.pre-auth-consent.v1",
+    available: true,
+    requirements: [
+      {
+        kind: "PERSONAL_DATA",
+        legalDocumentId: "qa-privacy",
+        version: "2026-11-01",
+        documentUrl: "/privacy",
+      },
+      {
+        kind: "TERMS",
+        legalDocumentId: "qa-terms",
+        version: "2026-11-01",
+        documentUrl: "/terms",
+      },
+      {
+        kind: "PUBLIC_OFFER_PRO",
+        legalDocumentId: "qa-offer",
+        version: "2026-11-01",
+        documentUrl: "/legal/public-offer-pro",
+      },
+    ],
+  },
+}));
+
 vi.mock("@/lib/registration/capabilities", () => ({
   fetchRegistrationCapabilitiesClient: vi.fn().mockResolvedValue({
     contractVersion: "test",
@@ -24,6 +51,7 @@ vi.mock("@/lib/registration/capabilities", () => ({
     agentRegistrationPathEnabled: true,
     joinRegistrationPathEnabled: true,
     legacyLoginPathEnabled: true,
+    preAuthConsents: qaPreAuthConsents,
   }),
 }));
 
@@ -80,7 +108,15 @@ import {
   mergeRegistrationDraftFields,
   saveRegistrationWizardState,
 } from "@/lib/registration/draft";
-import { savePreAuthConsentAck } from "@/lib/registration/pre-auth-consent";
+import {
+  clearPreAuthConsentSnapshot,
+  createPreAuthAttemptId,
+  savePreAuthConsentSnapshot,
+} from "@/lib/registration/pre-auth-consent";
+
+function seedPreAuthAck(kind: "agent" | "specialist" | "store" | "company") {
+  savePreAuthConsentSnapshot(kind, qaPreAuthConsents.requirements, createPreAuthAttemptId());
+}
 
 function JoinNavHarness() {
   const [searchEpoch, setSearchEpoch] = useState(0);
@@ -107,12 +143,21 @@ function renderJoin() {
 }
 
 describe("RegistrationJoinFlow", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     navigation.joinSearchParams = new URLSearchParams("");
     fetchAuthMeSafeMock.mockResolvedValue({ ok: false });
     postFinishMock.mockReset();
+    const { fetchRegistrationCapabilitiesClient } = await import("@/lib/registration/capabilities");
+    vi.mocked(fetchRegistrationCapabilitiesClient).mockResolvedValue({
+      contractVersion: "test",
+      welcomeEnabled: true,
+      agentRegistrationPathEnabled: true,
+      joinRegistrationPathEnabled: true,
+      legacyLoginPathEnabled: true,
+      preAuthConsents: qaPreAuthConsents,
+    });
     navigation.replace.mockImplementation((href: string) => {
       const query = href.includes("?") ? href.split("?")[1] : "";
       navigation.joinSearchParams = new URLSearchParams(query);
@@ -137,6 +182,7 @@ describe("RegistrationJoinFlow", () => {
       agentRegistrationPathEnabled: false,
       joinRegistrationPathEnabled: true,
       legacyLoginPathEnabled: true,
+      preAuthConsents: qaPreAuthConsents,
     });
     const user = userEvent.setup();
     renderJoin();
@@ -155,6 +201,7 @@ describe("RegistrationJoinFlow", () => {
       agentRegistrationPathEnabled: true,
       joinRegistrationPathEnabled: false,
       legacyLoginPathEnabled: true,
+      preAuthConsents: qaPreAuthConsents,
     });
     const user = userEvent.setup();
     renderJoin();
@@ -191,6 +238,7 @@ describe("RegistrationJoinFlow", () => {
       agentRegistrationPathEnabled: true,
       joinRegistrationPathEnabled: true,
       legacyLoginPathEnabled: true,
+      preAuthConsents: qaPreAuthConsents,
     });
     fetchAuthMeSafeMock.mockResolvedValue({
       ok: true,
@@ -219,7 +267,7 @@ describe("RegistrationJoinFlow", () => {
       displayName: "QA чужой черновик",
       city: "QA чужой город",
     });
-    savePreAuthConsentAck("agent");
+    seedPreAuthAck("agent");
     fetchAuthMeSafeMock.mockResolvedValue({
       ok: true,
       data: { user: { id: "qa-new-owner" } },
@@ -249,7 +297,7 @@ describe("RegistrationJoinFlow", () => {
       city: "QA чужой город",
     });
     saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
-    savePreAuthConsentAck("agent");
+    seedPreAuthAck("agent");
     fetchAuthMeSafeMock.mockResolvedValue({
       ok: true,
       data: { user: { id: "qa-new-owner" } },
@@ -267,8 +315,19 @@ describe("RegistrationJoinFlow", () => {
     await user.type(await screen.findByRole("textbox", { name: /город/i }), newCity);
     await user.click(screen.getByRole("button", { name: /^продолжить$/i }));
 
-    for (const label of [/персональных данных/i, /пользовательское/i, /публичную оферту/i]) {
-      await user.click(await screen.findByRole("checkbox", { name: label }));
+    await waitFor(() =>
+      expect(screen.getByTestId("registration-pre-auth-consent")).toBeInTheDocument(),
+    );
+    await waitFor(() => {
+      const personal = screen.getByRole("checkbox", { name: /обработку персональных данных/i });
+      expect(personal).toBeEnabled();
+    });
+    for (const label of [
+      /обработку персональных данных/i,
+      /пользовательское соглашение/i,
+      /публичную оферту/i,
+    ]) {
+      await user.click(screen.getByRole("checkbox", { name: label }));
     }
     await user.click(screen.getByRole("button", { name: /продолжить к max/i }));
     await user.click(await screen.findByTestId("auth-flow-simulate-complete"));
@@ -312,6 +371,7 @@ describe("RegistrationJoinFlow", () => {
       agentRegistrationPathEnabled: true,
       joinRegistrationPathEnabled: false,
       legacyLoginPathEnabled: true,
+      preAuthConsents: qaPreAuthConsents,
     });
     saveRegistrationWizardState({ step: "auth", kind: "agent", updatedAt: Date.now() });
     renderJoin();

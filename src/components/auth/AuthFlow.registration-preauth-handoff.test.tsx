@@ -1,0 +1,224 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthFlow } from "./AuthFlow";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { QA_PRE_AUTH_CONSENTS } from "@/lib/registration/pre-auth-consent-fixtures";
+import {
+  clearPreAuthConsentSnapshot,
+  createPreAuthAttemptId,
+  savePreAuthConsentSnapshot,
+} from "@/lib/registration/pre-auth-consent";
+
+const replace = vi.fn();
+const refresh = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace, refresh }),
+}));
+
+vi.mock("@/components/layout/ThemeToggle", () => ({
+  ThemeToggle: () => null,
+}));
+
+vi.mock("@/lib/api-client", () => ({
+  remcardFetch: vi.fn(),
+  getAuthMe: vi.fn(),
+  RemcardApiError: class RemcardApiError extends Error {
+    status: number;
+    body: { error?: string } | null;
+    constructor(status: number, message: string, body: { error?: string } | null = null) {
+      super(message);
+      this.status = status;
+      this.body = body;
+    }
+  },
+}));
+
+vi.mock("@/lib/auth-session", () => ({
+  fetchAuthMeSafe: vi.fn(),
+  fetchReadinessSafe: vi.fn(),
+  consentRequirementKey: (req: { kind: string; legalDocumentId: string | null }) =>
+    `${req.kind}:${req.legalDocumentId ?? ""}`,
+}));
+
+import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+import { fetchAuthMeSafe, fetchReadinessSafe } from "@/lib/auth-session";
+
+const registrationPending = {
+  nextStep: "consents" as const,
+  missingConsents: QA_PRE_AUTH_CONSENTS.requirements.map((req) => ({
+    kind: req.kind,
+    legalDocumentId: req.legalDocumentId,
+    version: req.version,
+    url: req.documentUrl,
+    status: "missing" as const,
+  })),
+  needsProfileOnboarding: true,
+  canAccessCabinet: false,
+  isEmployee: false,
+  isAdmin: false,
+};
+
+const registrationReady = {
+  nextStep: "profile" as const,
+  missingConsents: [],
+  needsProfileOnboarding: true,
+  canAccessCabinet: false,
+  isEmployee: false,
+  isAdmin: false,
+};
+
+describe("AuthFlow registration pre-auth handoff", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    replace.mockReset();
+    vi.stubGlobal("open", vi.fn());
+    vi.mocked(fetchAuthMeSafe).mockResolvedValue({ ok: false, kind: "unauthorized" });
+  });
+
+  it("records server consents after verify without second consent form", async () => {
+    savePreAuthConsentSnapshot("agent", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    const recorded: string[] = [];
+    let readinessCalls = 0;
+
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-1", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      if (path === "/api/account/consent") {
+        recorded.push((init?.body as { kind: string }).kind);
+        return { ok: true };
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
+      readinessCalls += 1;
+      return {
+        ok: true,
+        data: readinessCalls === 1 ? registrationPending : registrationReady,
+      };
+    });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=agent"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="agent"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с max/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "123456");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    await waitFor(() => {
+      expect(recorded).toEqual(["PERSONAL_DATA", "TERMS", "PUBLIC_OFFER_PRO"]);
+    });
+    expect(screen.queryByText(/обязательные соглашения/i)).toBeNull();
+    clearPreAuthConsentSnapshot("agent");
+  });
+
+  it("shows consent step when snapshot version does not match readiness", async () => {
+    savePreAuthConsentSnapshot("specialist", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-2", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({
+      ok: true,
+      data: {
+        ...registrationPending,
+        missingConsents: registrationPending.missingConsents.map((row) =>
+          row.kind === "TERMS"
+            ? { ...row, legalDocumentId: "terms-v2", version: "2026-12-01" }
+            : row,
+        ),
+      },
+    });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=specialist"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="specialist"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с max/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "654321");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    expect(await screen.findByText(/обязательные соглашения/i)).toBeInTheDocument();
+    clearPreAuthConsentSnapshot("specialist");
+  });
+
+  it("surfaces 409 mismatch from consent API without redirect", async () => {
+    savePreAuthConsentSnapshot("store", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-3", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      if (path === "/api/account/consent") {
+        throw new RemcardApiError(409, "Документ обновился", { error: "DOCUMENT_VERSION_MISMATCH" });
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({ ok: true, data: registrationPending });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=store"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="store"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с telegram/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "111111");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+    clearPreAuthConsentSnapshot("store");
+  });
+});

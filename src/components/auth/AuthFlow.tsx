@@ -32,6 +32,15 @@ import {
   type AuthLoginProvider,
 } from "@/lib/auth-flow";
 import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
+import { applyRegistrationPreAuthConsentHandoff } from "@/lib/registration/pre-auth-consent-handoff";
+import {
+  clearPreAuthSnapshotForDifferentUser,
+  discardStalePreAuthSnapshotOnSessionResume,
+  isPreAuthHandoffPending,
+  loadPreAuthConsentSnapshot,
+  markPreAuthHandoffPending,
+} from "@/lib/registration/pre-auth-consent";
+import type { RegistrationKind } from "@/lib/registration/types";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +57,7 @@ type AuthFlowProps = {
   registrationAgentJoin?: boolean;
   /** Local pre-auth acknowledgement before opening MAX/Telegram (join registration only). */
   registrationMessengerGateReady?: boolean;
+  registrationJoinKind?: RegistrationKind | null;
   /** Admin entry must not automatically reuse a partner session. */
   checkSessionOnMount?: boolean;
   layout?: "full" | "embedded";
@@ -81,6 +91,7 @@ export function AuthFlow({
   reason,
   registrationAgentJoin,
   registrationMessengerGateReady = true,
+  registrationJoinKind = null,
   checkSessionOnMount = true,
   layout = "full",
   onAuthenticated,
@@ -89,6 +100,7 @@ export function AuthFlow({
   const submitLock = useRef(false);
   const codeConsumedRef = useRef(false);
   const flowActiveRef = useRef(true);
+  const preAuthHandoffLock = useRef(false);
   const [step, setStep] = useState<AuthFlowStep>(checkSessionOnMount ? "checking_session" : "provider");
   const [provider, setProvider] = useState<AuthLoginProvider>("MAX");
   const [code, setCode] = useState("");
@@ -177,38 +189,105 @@ export function AuthFlow({
     [],
   );
 
-  const runSessionCheck = useCallback(async (isActive: () => boolean) => {
-    setError("");
-    const meResult = await fetchAuthMeSafe();
-    if (!isActive()) return;
-    if (!meResult.ok) {
-      handleSessionFailure(meResult.kind, meResult.status);
-      setBooting(false);
-      return;
+  const reloadReadiness = useCallback(async (): Promise<CabinetReadiness | null> => {
+    const result = await fetchReadinessSafe();
+    if (!result.ok) {
+      handleSessionFailure(result.kind, result.status);
+      return null;
     }
-    if (meResult.data.user?.id) {
-      onAuthenticated?.(meResult.data.user.id);
-    }
-    const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
-    if (!isActive()) return;
-    if (blocked) {
-      setError(blocked);
-      setStep("blocked");
-      setBooting(false);
-      return;
-    }
+    setReadiness(result.data);
+    return result.data;
+  }, [handleSessionFailure]);
 
-    setStep("loading_readiness");
-    const readinessResult = await fetchReadinessSafe();
-    if (!isActive()) return;
-    if (!readinessResult.ok) {
-      handleSessionFailure(readinessResult.kind, readinessResult.status);
+  const maybeApplyPreAuthHandoff = useCallback(
+    async (userId: string, current: CabinetReadiness): Promise<CabinetReadiness> => {
+      if (!registrationAgentJoin || !registrationJoinKind || !userId) {
+        return current;
+      }
+      if (!hasPendingRegistrationConsents(current)) {
+        return current;
+      }
+      if (preAuthHandoffLock.current) {
+        return current;
+      }
+      preAuthHandoffLock.current = true;
+      try {
+        const result = await applyRegistrationPreAuthConsentHandoff(
+          registrationJoinKind,
+          userId,
+          current,
+        );
+        if (result.status === "applied") {
+          const refreshed = await reloadReadiness();
+          return refreshed ?? current;
+        }
+        if (result.status === "needs_ui" || result.status === "error") {
+          if (result.message) setError(result.message);
+        }
+        return current;
+      } finally {
+        preAuthHandoffLock.current = false;
+      }
+    },
+    [registrationAgentJoin, registrationJoinKind, reloadReadiness],
+  );
+
+  const runSessionCheck = useCallback(
+    async (isActive: () => boolean) => {
+      setError("");
+      const meResult = await fetchAuthMeSafe();
+      if (!isActive()) return;
+      if (!meResult.ok) {
+        handleSessionFailure(meResult.kind, meResult.status);
+        setBooting(false);
+        return;
+      }
+      const userId = meResult.data.user?.id;
+      if (userId) {
+        onAuthenticated?.(userId);
+        if (registrationAgentJoin && registrationJoinKind) {
+          discardStalePreAuthSnapshotOnSessionResume(registrationJoinKind);
+          clearPreAuthSnapshotForDifferentUser(registrationJoinKind, userId);
+        }
+      }
+      const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
+      if (!isActive()) return;
+      if (blocked) {
+        setError(blocked);
+        setStep("blocked");
+        setBooting(false);
+        return;
+      }
+
+      setStep("loading_readiness");
+      const readinessResult = await fetchReadinessSafe();
+      if (!isActive()) return;
+      if (!readinessResult.ok) {
+        handleSessionFailure(readinessResult.kind, readinessResult.status);
+        setBooting(false);
+        return;
+      }
+      let readinessData = readinessResult.data;
+      if (
+        userId &&
+        registrationAgentJoin &&
+        registrationJoinKind &&
+        isPreAuthHandoffPending(registrationJoinKind)
+      ) {
+        readinessData = await maybeApplyPreAuthHandoff(userId, readinessData);
+      }
+      applyReadiness(readinessData);
       setBooting(false);
-      return;
-    }
-    applyReadiness(readinessResult.data);
-    setBooting(false);
-  }, [applyReadiness, handleSessionFailure, onAuthenticated]);
+    },
+    [
+      applyReadiness,
+      handleSessionFailure,
+      maybeApplyPreAuthHandoff,
+      onAuthenticated,
+      registrationAgentJoin,
+      registrationJoinKind,
+    ],
+  );
 
   const runSessionCheckRef = useRef(runSessionCheck);
   runSessionCheckRef.current = runSessionCheck;
@@ -242,16 +321,6 @@ export function AuthFlow({
       submitLock.current = false;
     }
   }, [booting, loading, runSessionCheck]);
-
-  const reloadReadiness = useCallback(async (): Promise<CabinetReadiness | null> => {
-    const result = await fetchReadinessSafe();
-    if (!result.ok) {
-      handleSessionFailure(result.kind, result.status);
-      return null;
-    }
-    setReadiness(result.data);
-    return result.data;
-  }, [handleSessionFailure]);
 
   const chooseProvider = useCallback(
     (next: AuthLoginProvider) => {
@@ -304,8 +373,9 @@ export function AuthFlow({
           handleSessionFailure(meResult.kind, meResult.status);
           return;
         }
-        if (meResult.data.user?.id) {
-          onAuthenticated?.(meResult.data.user.id);
+        const userId = meResult.data.user?.id;
+        if (userId) {
+          onAuthenticated?.(userId);
         }
         const blocked = mapPostLoginBlocked(meResult.data.user ?? null);
         if (blocked) {
@@ -314,13 +384,23 @@ export function AuthFlow({
           return;
         }
 
+        const snapshot =
+          registrationJoinKind != null ? loadPreAuthConsentSnapshot(registrationJoinKind) : null;
+        if (snapshot) {
+          markPreAuthHandoffPending(snapshot.registrationKind, snapshot.attemptId);
+        }
+
         setStep("loading_readiness");
         const readinessResult = await fetchReadinessSafe();
         if (!readinessResult.ok) {
           handleSessionFailure(readinessResult.kind, readinessResult.status);
           return;
         }
-        applyReadiness(readinessResult.data);
+        let readinessData = readinessResult.data;
+        if (userId && registrationAgentJoin && registrationJoinKind) {
+          readinessData = await maybeApplyPreAuthHandoff(userId, readinessData);
+        }
+        applyReadiness(readinessData);
       } catch (caught) {
         if (caught instanceof RemcardApiError) {
           setError(mapVerifyCodeError(caught.status, caught.body));
@@ -332,7 +412,16 @@ export function AuthFlow({
         submitLock.current = false;
       }
     },
-    [applyReadiness, code, handleSessionFailure, loading, onAuthenticated],
+    [
+      applyReadiness,
+      code,
+      handleSessionFailure,
+      loading,
+      maybeApplyPreAuthHandoff,
+      onAuthenticated,
+      registrationAgentJoin,
+      registrationJoinKind,
+    ],
   );
 
   const submitConsents = useCallback(

@@ -6,17 +6,15 @@ import { AuthFlow } from "@/components/auth/AuthFlow";
 import { AdminLoginAccessory } from "@/components/auth/AdminLoginAccessory";
 import { RegistrationPreAuthConsent } from "@/components/registration/RegistrationPreAuthConsent";
 import type { AuthFlowStep } from "@/lib/auth-flow";
+import { fetchRegistrationCapabilitiesClient } from "@/lib/registration/capabilities";
 import {
   buildJoinHref,
   loadRegistrationWizardState,
 } from "@/lib/registration/draft";
 import { isJoinRegistrationKind } from "@/lib/registration/join-finish";
 import { parseJoinKindFromFinishReturnTo } from "@/lib/registration/join-kind-capability";
-import {
-  loadPreAuthConsentAck,
-  savePreAuthConsentAck,
-} from "@/lib/registration/pre-auth-consent";
-import type { RegistrationKind } from "@/lib/registration/types";
+import { isPreAuthMessengerGateReady } from "@/lib/registration/pre-auth-consent";
+import type { PreAuthConsentsCapability, RegistrationKind } from "@/lib/registration/types";
 import styles from "./auth.module.css";
 
 export type AdminCapabilitiesState = "pending" | "enabled" | "disabled" | "error";
@@ -50,6 +48,7 @@ export function LoginExperience({
   const [hydrated, setHydrated] = useState(() => !registrationAgentJoin);
   const [joinKind, setJoinKind] = useState<RegistrationKind | null>(urlJoinKind);
   const [preAuthReady, setPreAuthReady] = useState(false);
+  const [preAuthConsents, setPreAuthConsents] = useState<PreAuthConsentsCapability | null>(null);
 
   useEffect(() => {
     if (!registrationAgentJoin) {
@@ -58,10 +57,21 @@ export function LoginExperience({
     }
     const restored = resolveRegistrationJoinKindAfterHydration(returnTo);
     setJoinKind(restored);
-    setPreAuthReady(
-      restored && isJoinRegistrationKind(restored) ? loadPreAuthConsentAck(restored) : false,
-    );
-    setHydrated(true);
+    let cancelled = false;
+    void fetchRegistrationCapabilitiesClient().then((caps) => {
+      if (cancelled) return;
+      const block = caps.preAuthConsents ?? null;
+      setPreAuthConsents(block);
+      setPreAuthReady(
+        restored && isJoinRegistrationKind(restored)
+          ? isPreAuthMessengerGateReady(restored, block)
+          : false,
+      );
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [registrationAgentJoin, returnTo]);
 
   if (initialMode === "admin") {
@@ -115,9 +125,9 @@ export function LoginExperience({
       <div className={styles.loginEntryShell}>
         <RegistrationPreAuthConsent
           kind={joinKind}
+          preAuthConsents={preAuthConsents}
           onContinue={() => {
-            savePreAuthConsentAck(joinKind);
-            setPreAuthReady(true);
+            setPreAuthReady(isPreAuthMessengerGateReady(joinKind, preAuthConsents));
           }}
         />
         <p className={styles.lead}>
@@ -134,6 +144,7 @@ export function LoginExperience({
         reason={reason}
         initialStep={initialStep}
         registrationAgentJoin={registrationAgentJoin}
+        registrationJoinKind={needsRegistrationPreAuth ? joinKind : null}
         registrationMessengerGateReady={needsRegistrationPreAuth ? preAuthReady : true}
         checkSessionOnMount
         layout="full"

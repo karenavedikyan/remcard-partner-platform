@@ -1,4 +1,5 @@
 import { remcardFetch } from "@/lib/api-client";
+import { normalizePreAuthConsents } from "./pre-auth-consents-capability";
 import type { RegistrationCapabilities, RegistrationKind } from "./types";
 
 const JOIN_KIND_KEYS: RegistrationKind[] = [
@@ -42,6 +43,10 @@ export function normalizeRegistrationCapabilities(
     joinKinds = Object.keys(normalized).length > 0 ? normalized : undefined;
   }
 
+  const preAuthConsents = normalizePreAuthConsents(
+    (data as { preAuthConsents?: unknown }).preAuthConsents,
+  );
+
   return {
     contractVersion: data.contractVersion ?? FALLBACK.contractVersion,
     welcomeEnabled: data.welcomeEnabled === true,
@@ -49,6 +54,7 @@ export function normalizeRegistrationCapabilities(
     joinRegistrationPathEnabled,
     joinKinds,
     legacyLoginPathEnabled: data.legacyLoginPathEnabled !== false,
+    ...(preAuthConsents ? { preAuthConsents } : {}),
   };
 }
 

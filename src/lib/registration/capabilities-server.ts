@@ -1,4 +1,5 @@
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
+import { normalizeRegistrationCapabilities } from "./capabilities";
 import type { RegistrationCapabilities } from "./types";
 
 const FALLBACK: RegistrationCapabilities = {
@@ -20,11 +21,5 @@ export async function fetchRegistrationCapabilitiesServer(
   if (!result.ok) {
     return { ...FALLBACK };
   }
-  const data = result.data;
-  return {
-    contractVersion: data.contractVersion ?? FALLBACK.contractVersion,
-    welcomeEnabled: Boolean(data.welcomeEnabled),
-    agentRegistrationPathEnabled: Boolean(data.agentRegistrationPathEnabled),
-    legacyLoginPathEnabled: data.legacyLoginPathEnabled !== false,
-  };
+  return normalizeRegistrationCapabilities(result.data ?? FALLBACK);
 }
