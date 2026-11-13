@@ -8,15 +8,21 @@ import sys
 BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 
 AGENT_TIPS = {
-    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-    "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
-    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
-    "P4": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
-    "P4_supplement": "28aa18ab1bdc42aa35c3a063c75e60e32f23bee9",
+    "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
+    "P2": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
+    "P3": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
+    "P4": "eb4592fd64f33763f705bfda564b4988a8267c2b",
+    "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
     "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
     "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
+}
+
+P6_REJECTED_DO_NOT_USE = {
+    "sha": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
+    "reason": "Root rejected: conditional hooks before agent return; do not accept from 21 tests alone",
+    "awaiting": "P6 correction branch",
 }
 
 # Reviewed product ownership (parallel tips — authoritative content source per path).
@@ -531,6 +537,20 @@ def main() -> None:
         "assemblyModel": "byte-extract each path from reviewed owner tip SHA (NOT P7 whole tree)",
         "rejectsManifestShas": REJECTED_MANIFEST_SHAS,
         "agentTipsReviewed": AGENT_TIPS,
+        "p6RejectedDoNotUse": P6_REJECTED_DO_NOT_USE,
+        "p3FollowUpResolverPending": {
+            "tip": AGENT_TIPS["P3"],
+            "note": "fe416e2b — follow-up resolver pending; do not treat as final stack until P3 closes",
+        },
+        "p2OperationMatrix8137": {
+            "tip": AGENT_TIPS["P2"],
+            "finding": "no complete no-schema publication path under current restrictions",
+            "blocksFullSectionPublish": True,
+        },
+        "p4Pins": {
+            "productTip": AGENT_TIPS["P4"],
+            "auditTip": AGENT_TIPS["P4_audit"],
+        },
         "ownerProductAllowlist": OWNER_PRODUCT,
         "p1ScaffoldDependencies": P1_SCAFFOLD_DEPENDENCIES,
         "preserveBase57caByteIdentical": preserve_base,

@@ -122,17 +122,20 @@
     }
   ],
   "clientsSectionPublishable": false,
-  "parallelAssemblyTips20261113V3": {
-    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
-    "P4_f7198e9d": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
-    "P4_28aa18ab": "28aa18ab1bdc42aa35c3a063c75e60e32f23bee9",
+  "parallelAssemblyTips20261113V4": {
+    "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
+    "P2_operationMatrix8137": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
+    "P3_resolverPending": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
+    "P4_product": "eb4592fd64f33763f705bfda564b4988a8267c2b",
+    "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
     "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P6_acceptedUntilCorrection": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P6_rejectedDoNotUse": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
     "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
   },
+  "p2OperationMatrix8137Finding": "No complete no-schema path under current restrictions — server contracts blocked",
   "fullSectionPublishGatesRequired": [
     "GATE-PRODUCTION-GATE-CONTEXT-57ca",
     "GATE-REFERRED-APPEALS-CONTRACT-P2",
@@ -145,14 +148,23 @@
     {
       "id": "INT-P2-CONTRACTS",
       "owner": "P2",
-      "missing": "Production ok:true fetch-observer-appeals + personal overlay mapping decisions",
-      "blocks": "ObserverDataContractState honest UI without mocks"
+      "tip": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
+      "missing": "Operation matrix 8137: no complete no-schema publish path; working referred/personal contracts",
+      "blocks": "clientsSectionPublishable"
     },
     {
-      "id": "INT-P3-EXPORTS",
+      "id": "INT-P3-RESOLVER",
       "owner": "P3",
-      "missing": "Stable exports: ObserverClientBackFrom, observerClientBackFrom, ObserverDataContractState @ 9c3221ad",
-      "consumers": "P4 ObserverPartnerDetailView / ObserverClientDetailView"
+      "tip": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
+      "missing": "Follow-up resolver pending after fe416e2b",
+      "consumers": "P4 stack @ eb4592fd"
+    },
+    {
+      "id": "INT-P6-HOOKS",
+      "owner": "P6",
+      "rejectedTip": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
+      "acceptedPinUntilFix": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+      "missing": "Direction workspace without conditional-hook violation before agent return"
     },
     {
       "id": "INT-P4-DETAIL-MISSING",

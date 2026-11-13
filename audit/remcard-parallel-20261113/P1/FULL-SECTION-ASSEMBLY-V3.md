@@ -8,16 +8,17 @@ Branch `cursor/remcard-p1-acceptance-20261113`; prof base `57ca4680`; navigator 
 
 **false** until all `fullSectionPublishGatesRequired` in `author-handoff-v6.json` are green.
 
-## Owner tips (reconciled vs 20b93f87 manifest)
+## Owner tips (`parallelAssemblyTips20261113V4`)
 
-| Owner | Tip |
-|-------|-----|
-| P1 | `c3d7c13d…` (+ owned list shell wiring this commit) |
-| P3 | `9c3221adb336f783d173c92a3408af18522aa35c` |
-| P4 | `f7198e9d…` / `28aa18ab…` (identical `src/components/clients` delta) |
-| P5 | `dbbe44557a42eb354397315b70e1290af490c45c` |
-| P6 | `981c72aff23595d32e157dc9642e08c02a0cb70d` |
-| P7 | `30a292d002d56e0daaeebdff62d1fce902590362` |
+| Owner | Tip | Note |
+|-------|-----|------|
+| P1 | `ca2221e2…` | direct gate wiring |
+| P2 | `ac2d4a7b…` | matrix 8137 — no-schema path blocked |
+| P3 | `fe416e2b…` | resolver follow-up **pending** |
+| P4 | `eb4592fd` product / `ad7b0824` audit | |
+| P5 | `dbbe4455…` | |
+| P6 | **`981c72af` only** | `12aea875` **REJECTED** (hooks) |
+| P7 | `30a292d0…` | |
 
 Regenerate: `python3 audit/remcard-parallel-20261113/P1/validate-owner-assembly.py`
 
