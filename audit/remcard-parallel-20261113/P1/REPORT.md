@@ -8,7 +8,7 @@
 | Branch base (pre-P1) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` | Author candidate; not production |
 | Product fix pin | `140de0a83044f324bf455ac2dfb87b17432fb8d1` | Observer CSS / V7 regressions (not P1-owned) |
 | Manifest metadata tip (prior) | `6355485eb2c531a263545f5159384b88a956aba2` | Handoff/docs only; unchanged by product tree |
-| P1 commit | `ea1176a419cdab4a01885955135c8bdd396379b2` | Tests + manifest/handoff pins only |
+| P1 commit | `36ecfc4bc6ee34fa5f1eeb5b2cf0d8f68df113e9` | Tests + manifest/handoff pins only |
 
 ## Requirement status (P1 scope)
 
