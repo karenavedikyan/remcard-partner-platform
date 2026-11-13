@@ -5,7 +5,8 @@
 | Item | Value |
 |------|--------|
 | Section publishable | **false** |
-| `remcard-proxy.ts` wire | **BLOCKED** until navigator **canonical** contract + Root review |
+| `remcard-proxy.ts` wire | **K5 write paths only** (personal-meta, personal-batch); K2 GET **pending** P3 adapter |
+| Receiving identity | **Canonical correction** → `RECEIVING-PRINCIPAL-CANONICAL.md` + `canonical-receiving-principal.json` |
 | DB migrate/deploy | **separate user confirmation** — not this agent |
 | P2 matrix | `ac2d4a7b` → `audit/.../P2/contract-operation-matrix-8137.md` |
 
@@ -72,5 +73,5 @@ Navigator/backend owners (**K8/K1/K2/K5**) must define handlers, auth, row owner
 
 ```bash
 git show ac2d4a7b:audit/remcard-parallel-20261113/P2/contract-operation-matrix-8137.md | head -40
-rg 'referred-appeals|client-appeals' src/lib/remcard-proxy.ts  # expect no matches
+rg 'referred-appeals' src/lib/remcard-proxy.ts  # K5 personal-meta + personal-batch only; NOT client-appeals/personal-overlay
 ```

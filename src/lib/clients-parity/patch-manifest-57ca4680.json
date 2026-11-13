@@ -77,7 +77,15 @@
     "schemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
     "coordinationDoc": "audit/remcard-parallel-20261113/P1/K8-K1-PROXY-COORDINATION.md",
     "clientProfileProductionSha": "89fb8e073c39c8dbd329996940b85c6a86751868",
-    "rootGapsDoNotPropagate": ["G1-eligibility", "G2-workingStages", "G3-active-uniqueness", "G4-scan-hook", "G5-observer-dto"]
+    "rootGapsDoNotPropagate": [
+      "G1-eligibility",
+      "G2-workingStages",
+      "G3-active-uniqueness",
+      "G4-scan-hook",
+      "G5-observer-dto",
+      "G6-receiving-principal-user-id"
+    ],
+    "receivingPrincipalCanonicalPin": "src/lib/clients-parity/canonical-receiving-principal.json"
   },
   "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
   "parallelAssemblyTips20261113V4": {

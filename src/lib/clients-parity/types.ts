@@ -13,6 +13,7 @@ export type ObserverReferredAppeal = {
   clientName: string;
   interest?: string | null;
   certificateId?: string | null;
+  /** Prototype `receivingPartnerId` = receiving principal User.id (see canonical-receiving-principal.json). Not Branch.id. */
   receivingPartnerId: string;
   referrerPartnerId: string;
   updatedAt: string;

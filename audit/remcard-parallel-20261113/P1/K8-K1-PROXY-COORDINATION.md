@@ -12,6 +12,22 @@
 
 VM `git clone` of private navigator **404**; inspection via **GitHub MCP** only (not absence of files in partner checkout).
 
+## G6 — Receiving principal identity (Root correction, retract branch-as-partner)
+
+**Verified:** `resolveSpecialistR06Business` @ `89fb8e07` — solo specialist eligible **without** owned org; `ownedOrg` → ineligible.
+
+**K8 candidate defect:** `ClientAppealRecord` @ `fc33b4fa` requires `receivingOrganizationId` + `receivingBranchId`; blocks solo specialist receiving and mis-keys observer grouping if `Branch.id` is used as partner id.
+
+**Canonical (K8 schema source-only):**
+
+- Required: `receivingPartnerUserId` (`User.id`) — prototype `partnerSettings[receivingPartnerId]`.
+- Optional nullable: `receivingOrganizationId`, `receivingBranchId` (scope metadata only).
+- Active uniqueness: `(certificateId, receivingPartnerUserId)` per prototype `isActiveAppeal`; audit archive/trash vs `findActiveAppeal`.
+
+**P1 pin:** `src/lib/clients-parity/canonical-receiving-principal.json`, `audit/.../RECEIVING-PRINCIPAL-CANONICAL.md`. **No** proxy/gate edits.
+
+**Owners:** **K8** revise additive schema; **K1** receiving auth; **K2** by-partner + list meta; **P2** one DTO.
+
 ## K8 contract surface (from `contract.ts` @ fc33b4fa)
 
 - `ClientAppealRecord` — full receiving row includes `privateNotes`, `clientContact` (receiving-only).

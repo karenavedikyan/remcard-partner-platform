@@ -136,8 +136,16 @@
     "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
   },
   "p2OperationMatrix8137Finding": "No complete no-schema path under current restrictions — server contracts blocked",
+  "receivingPrincipalCanonical": {
+    "status": "CORRECTION_PIN_ONLY_K8_MUST_REVISE_SCHEMA",
+    "json": "src/lib/clients-parity/canonical-receiving-principal.json",
+    "doc": "audit/remcard-parallel-20261113/P1/RECEIVING-PRINCIPAL-CANONICAL.md",
+    "retractedK8CandidateFields": "fc33b4fa ClientAppealRecord mandatory receivingBranchId/receivingOrganizationId",
+    "requiredField": "receivingPartnerUserId",
+    "uiFieldAlias": "types.ts receivingPartnerId => receivingPartnerUserId"
+  },
   "p1ProxyHandoffEarly": {
-    "wireBlockedUntil": "canonical navigator referred-appeals + personal-meta contract",
+    "wireBlockedUntil": "K2 GET after P3 adapter; K5 personal-meta + personal-batch whitelisted @ 171b7982",
     "dbMigrateDeploy": "separate user confirmation only",
     "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
     "clientProfilePinInProgress": "89fb8e073c39c8dbd329996940b85c6a86751868",
@@ -156,10 +164,18 @@
   ],
   "crossOwnerIntegrationGaps": [
     {
+      "id": "INT-K8-RECEIVING-PRINCIPAL",
+      "owner": "K8",
+      "retractedCandidate": "fc33b4fae859fb692757807c3b27696b66d57558",
+      "missing": "Additive schema: required receivingPartnerUserId; optional org/branch; active slot per User.id principal",
+      "blocks": "clientsSectionPublishable",
+      "p1PinOnly": "canonical-receiving-principal.json"
+    },
+    {
       "id": "INT-P2-CONTRACTS",
       "owner": "P2",
       "tip": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-      "missing": "Operation matrix 8137: no complete no-schema publish path; working referred/personal contracts",
+      "missing": "Single revised DTO after K8 principal correction; matrix 8137 lineage",
       "blocks": "clientsSectionPublishable"
     },
     {

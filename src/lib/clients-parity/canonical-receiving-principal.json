@@ -1,0 +1,65 @@
+{
+  "$schema": "REMCLIENTS-RECEIVING-PRINCIPAL-V1",
+  "status": "CANONICAL_CORRECTION_PENDING_K8_SCHEMA",
+  "supersedesInterpretation": "receivingBranchId as mandatory receivingPartnerId / blanket receivingPartnerId=Branch.id",
+  "verifiedSources": {
+    "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+    "partnerProductionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+    "navigatorSpecialistR06Eligibility": "89fb8e073c39c8dbd329996940b85c6a86751868:src/lib/specialistR06Eligibility.ts",
+    "k8ContractCandidateRetractedFields": "fc33b4fae859fb692757807c3b27696b66d57558:src/lib/clientAppeals/contract.ts (receivingBranchId/receivingOrganizationId required)",
+    "p2Matrix": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
+  },
+  "soloSpecialistEligibilityFact": {
+    "eligibleWhen": "resolveSpecialistR06Business eligible AND no owned Organization AND not employee",
+    "ineligibleWhen": ["ownedOrg => org_owner", "isPartnerEmployee", "employed_view"],
+    "existingPartnerGate": "requireOwnerClientsContext / OwnerClientsGate principal paths (57ca) already authorize eligible solo specialist",
+    "forbiddenInThisTranche": ["auto-create Organization", "dummy branch ids", "backfill org for solo", "broaden rights"]
+  },
+  "receivingPrincipal": {
+    "receivingPartnerUserId": {
+      "type": "User.id",
+      "required": true,
+      "description": "Trusted receiving principal (prototype partnerSettings[receivingPartnerId]); store/company/solo specialist user id."
+    },
+    "receivingOrganizationId": {
+      "type": "Organization.id",
+      "required": false,
+      "nullable": true,
+      "description": "Optional scope when principal has an owned org context; MUST be null for eligible solo specialist without org."
+    },
+    "receivingBranchId": {
+      "type": "Branch.id",
+      "required": false,
+      "nullable": true,
+      "description": "Optional workplace scope metadata; MUST NOT substitute for receivingPartnerUserId; never required for solo specialist observer grouping."
+    }
+  },
+  "authorizationSurfaces": {
+    "receivingWrite": "requireOwnerClientsContext — original owner principal; business owner may attach optional org/branch when they exist",
+    "agentClientsMode": "observer-only for agent principal; no receiving CRM in observer package",
+    "orgWorkplaceCrm": "may resolve authorized owner principal for CRM reads; MUST NOT use that proxy owner as personal observer viewerUserId (original write 403)"
+  },
+  "observerGrouping": {
+    "byPartnerRouteParam": "receivingPartnerUserId (User.id), not Branch.id",
+    "partnerMetadata": "display from allowed User/partner profile fields; branch row not required"
+  },
+  "pipelineSettingsKey": "partnerSettings scoped by receivingPartnerUserId; optional org/branch are metadata only",
+  "activeCertificateSlot": {
+    "predicateSource": "prototype isActiveAppeal (only refused/return inactive)",
+    "caveat": "prototype findActiveAppeal does not exclude receiver archive UI bucket — K8 must inspect lifecycle before archive/trash allows duplicate active referrals",
+    "uniqueScope": "(certificateId, receivingPartnerUserId) not (certificateId, receivingBranchId)"
+  },
+  "ownerActions": {
+    "K8": "revise additive schema/migration/core only; no DB execute; retract mandatory receivingBranchId on Appeal record",
+    "K1": "receiving routes: bind auth to receivingPartnerUserId + optional scope; fix soloOwnerReceivingScope requiring owned org",
+    "K2": "observer GET + by-partner: emit receivingPartnerUserId; optional branch meta; list shape items/page/limit/total/hasMore",
+    "K5": "unchanged paths personal-meta / personal-batch",
+    "P2": "single revised DTO typing consumed by all adapters",
+    "P1": "pin only; proxy allowlist unchanged (K5 write paths); no gate/context edits"
+  },
+  "uiViewModelAlias": {
+    "field": "receivingPartnerId",
+    "means": "receivingPartnerUserId",
+    "not": "Branch.id"
+  }
+}
