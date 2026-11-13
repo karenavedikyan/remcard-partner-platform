@@ -6,7 +6,9 @@ import {
   findActiveReceivingAppeal,
   isReceivingAppealActive,
   isReceivingAppealsProxyReady,
+  isReceivingCertificateEntryProxyReady,
   isReceivingSettingsMaterialized,
+  submitReceivingCertificateEntry,
   RECEIVING_SYSTEM_STAGE,
   type ReceivingAppealListRow,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -80,6 +82,18 @@ describe("P6.receiving-appeals-api contract gate", () => {
         archivedStages: [],
       }),
     ).toBe(false);
+  });
+
+  it("certificate-entry proxy not ready — blocked without fake success", async () => {
+    expect(isReceivingCertificateEntryProxyReady()).toBe(false);
+    const res = await submitReceivingCertificateEntry({ certificateCode: "RC-1" }, {
+      listAllowed: true,
+      mutationsAllowed: true,
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.code).toBe("BLOCKED_CONTRACT");
+    }
   });
 
   it("proxy not ready on production pin — blocked without network", async () => {

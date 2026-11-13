@@ -326,6 +326,85 @@ export type ReceivingAppealPatchBody = {
   paidAmount?: number | null;
 };
 
+/**
+ * K1 certificate entry — POST body (Clients-only route; does not call store order POST).
+ * `certificateCode` = qrCode or promoCode (same as `POST /api/store/order/preview`).
+ * K1 chains: `authorizeStoreScan` → read-only `validateCertificateForStore` → idempotent appeal find/create.
+ */
+export type ReceivingCertificateEntryBody = {
+  certificateCode: string;
+};
+
+export type ReceivingCertificateEntrySuccess = {
+  outcome: "created" | "existing";
+  appeal: ReceivingAppealListRow;
+};
+
+export type ReceivingCertificateEntryResult =
+  | { ok: true; appealId: string } & ReceivingCertificateEntrySuccess
+  | {
+      ok: false;
+      code: "BLOCKED_CONTRACT" | "FORBIDDEN" | "INVALID" | "CONFLICT" | "ERROR";
+      message: string;
+    };
+
+const RECEIVING_CERT_ENTRY_PATH = "/api/pro/client-appeals/certificate-entry";
+
+/** P1 allowlist — separate from list route until K1+P1 land. */
+export function isReceivingCertificateEntryProxyReady(): boolean {
+  return isAllowedProxyRoute("POST", RECEIVING_CERT_ENTRY_PATH);
+}
+
+export async function submitReceivingCertificateEntry(
+  body: ReceivingCertificateEntryBody,
+  access?: ReceivingPrincipalAccess,
+): Promise<ReceivingCertificateEntryResult> {
+  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+    };
+  }
+  if (!isReceivingCertificateEntryProxyReady()) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: RECEIVING_API_CONTRACT_NOTE,
+    };
+  }
+  try {
+    const payload = await remcardFetch<ReceivingCertificateEntrySuccess>(RECEIVING_CERT_ENTRY_PATH, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return {
+      ok: true,
+      outcome: payload.outcome,
+      appeal: payload.appeal,
+      appealId: payload.appeal.id,
+    };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError) {
+      const { status, message } = caught;
+      if (status === 403) {
+        return { ok: false, code: "FORBIDDEN", message };
+      }
+      if (status === 409) {
+        return { ok: false, code: "CONFLICT", message };
+      }
+      if (status === 400 || status === 404 || status === 422) {
+        return { ok: false, code: "INVALID", message };
+      }
+    }
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось обработать сертификат",
+    };
+  }
+}
+
 /** P5 bulk — POST /api/pro/client-appeals/batch */
 export type ReceivingAppealsBatchBody = {
   ids: string[];

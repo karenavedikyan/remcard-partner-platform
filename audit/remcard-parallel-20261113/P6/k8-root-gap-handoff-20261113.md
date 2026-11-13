@@ -51,14 +51,14 @@ Root: ordinary index + `take:5` filter risks missed duplicates under concurrency
 
 `storeCertificateScan.ts` create hook — **read-only** reference (`docs/REUSE-MAP.md` → navigator `storeCertificateScan.ts`).
 
-**Minimal integration proposal for Root (not implemented by П6):**
+**П6 + K1 (Root assignment):** `k1-certificate-entry-handoff.md`
 
-1. Successful scan preview returns `certificateId` + client snapshot.
-2. New **allowed** BFF route e.g. `POST /api/pro/client-appeals/from-certificate` (idempotent on cert+receiver).
-3. Handler delegates to same domain service as manual create; enforces gap #3 predicate.
-4. UI scan page (`p.81`…) navigates to detail/list on success — P4/P6 routes only after proxy ready.
+1. K1 **POST** `/api/pro/client-appeals/certificate-entry` replaces Clients 501 scaffold only.
+2. Calls existing `authorizeStoreScan` + read-only `validateCertificateForStore` unchanged — **no** edits to store scan/order/finance routes.
+3. Idempotent find/create appeal (`receivingPartnerUserId` + cert); 403/409/invalid surfaced in `ReceivingCertificateScan` (no demo success).
+4. P1 allowlist; P4 detail on `outcome: created|existing`.
 
-**Owner:** K1 route + K8 service; navigator scan owner for hook call (separate allowlist).
+**Out of П6 allowlist:** shared `ScannerHub` / camera navigation.
 
 ### 5. Observer vs receiving DTO boundary
 

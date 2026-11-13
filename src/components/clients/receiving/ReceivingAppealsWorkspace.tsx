@@ -5,6 +5,8 @@ import {
   createReceivingAppeal,
   fetchReceivingAppealsWorkspace,
   isReceivingAppealsProxyReady,
+  isReceivingCertificateEntryProxyReady,
+  submitReceivingCertificateEntry,
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   type ReceivingAppealsListResponse,
   type ReceivingAppealsLoadResult,
@@ -12,6 +14,7 @@ import {
 import { ReceivingAppealsBlocked } from "@/components/clients/direction/ReceivingAppealsBlocked";
 import { ReceivingAppealForm } from "./ReceivingAppealForm";
 import { ReceivingAppealsList } from "./ReceivingAppealsList";
+import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
 import styles from "./receiving.module.css";
 
@@ -33,6 +36,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   const [persistNotice, setPersistNotice] = useState<string | null>(null);
 
   const proxyReady = isReceivingAppealsProxyReady();
+  const certEntryReady = isReceivingCertificateEntryProxyReady();
 
   const reload = useCallback(async () => {
     const res = await fetchReceivingAppealsWorkspace();
@@ -181,17 +185,24 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
 
   if (view === "scan") {
     return (
-      <section className="panel stack ca-scan" data-testid="ca-receiving-scan-shell">
-        <p className="small muted">
-          Сканер сертификата — интеграция с navigator `storeCertificateScan` (Root gap #4). Демо-исход
-          проверки выбирается на сервере после K1.
-        </p>
-        <div className="ca-form-actions">
-          <button type="button" className="btn ghost" onClick={() => setView("list")}>
-            К списку
-          </button>
-        </div>
-      </section>
+      <ReceivingCertificateScan
+        disabled={!certEntryReady || readOnly}
+        persistBlockedMessage={
+          readOnly
+            ? (access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+            : "Certificate-entry ждёт K1 route + P1 allowlist (authorizeStoreScan без правки store scan)."
+        }
+        onCancel={() => setView("list")}
+        onSubmit={async (body) => {
+          const res = await submitReceivingCertificateEntry(body, access);
+          if (!res.ok) {
+            throw new Error(res.message);
+          }
+          setDetailId(res.appealId);
+          setView("detail");
+          await reload();
+        }}
+      />
     );
   }
 
