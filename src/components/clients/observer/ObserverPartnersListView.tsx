@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useMemo,
-  useState,
-  type ComponentProps,
-  type ComponentType,
-} from "react";
+import { useCallback, useMemo, useState } from "react";
 import { filterObserverAppeals } from "@/lib/clients-parity/filter-observer";
 import { groupAppealsByPartner } from "@/lib/clients-parity/observer-stats";
 import type { ObserverFilterState } from "@/lib/clients-parity/filter-observer";
@@ -16,11 +10,18 @@ import type {
   ObserverPersonalMeta,
   ObserverReferredAppeal,
 } from "@/lib/clients-parity/types";
-import * as ClientDetailModule from "./ObserverClientDetailView";
+import {
+  ObserverClientDetailMissing,
+  ObserverClientDetailView,
+  type ObserverClientBackFrom,
+} from "./ObserverClientDetailView";
 import { ObserverContractBlocked } from "./ObserverContractBlocked";
 import { ObserverFilterChips } from "./ObserverFilterChips";
 import { ObserverPartnerCard } from "./ObserverPartnerCard";
-import * as PartnerDetailModule from "./ObserverPartnerDetailView";
+import {
+  ObserverPartnerDetailMissing,
+  ObserverPartnerDetailView,
+} from "./ObserverPartnerDetailView";
 import { ObserverPersonalClientRow } from "./ObserverPersonalClientRow";
 import { ObserverPersonalConfirmPanel } from "./ObserverPersonalConfirmPanel";
 import { ObserverPersonalEditPanel } from "./ObserverPersonalEditPanel";
@@ -59,117 +60,7 @@ function partnersMap(partners: ObserverPartnerMeta[]) {
 
 type ClientNav = Extract<Nav, { view: "client" }>;
 
-/** Mirrors P4 `ObserverClientBackFrom` — stable shell contract before detail slice lands. */
-export type ObserverClientBackFrom = "partner-clients" | "partners-list" | "flat-list";
-
-const ObserverClientDetailView = ClientDetailModule.ObserverClientDetailView;
-const ObserverPartnerDetailView = PartnerDetailModule.ObserverPartnerDetailView;
-
-type ClientDetailViewProps = React.ComponentProps<typeof ObserverClientDetailView> & {
-  backFrom?: ObserverClientBackFrom;
-};
-
-function shellClientBackLabel(backFrom: ObserverClientBackFrom): string {
-  const resolve = (
-    ClientDetailModule as { resolveObserverClientBackLabel?: (f?: ObserverClientBackFrom) => string }
-  ).resolveObserverClientBackLabel;
-  if (resolve) return resolve(backFrom);
-  if (backFrom === "partner-clients") return "← К списку клиентов";
-  if (backFrom === "partners-list") return "← К партнёрам";
-  return "← Назад к списку";
-}
-
-function ShellClientDetailMissing({
-  clientId,
-  onBack,
-  backFrom,
-}: {
-  clientId?: string;
-  onBack: () => void;
-  backFrom: ObserverClientBackFrom;
-}) {
-  const P4 = (
-    ClientDetailModule as {
-      ObserverClientDetailMissing?: ComponentType<{
-        clientId?: string;
-        onBack: () => void;
-        backFrom?: ObserverClientBackFrom;
-      }>;
-    }
-  ).ObserverClientDetailMissing;
-  if (P4) return <P4 clientId={clientId} onBack={onBack} backFrom={backFrom} />;
-  const label = shellClientBackLabel(backFrom);
-  return (
-    <div
-      className={styles.section}
-      data-testid="ca-observer-client-page"
-      data-ca-state="missing"
-    >
-      <button
-        type="button"
-        className={styles.backBtn}
-        data-ca-action="observer:back"
-        data-testid="ca-clients-back"
-        onClick={onBack}
-      >
-        {label}
-      </button>
-      <section className={styles.blocked} data-testid="ca-observer-client-missing">
-        <h2>Направление не найдено</h2>
-        <p className={styles.mutedSmall}>
-          {clientId
-            ? `Направление «${clientId}» недоступно в текущем списке.`
-            : "Направление недоступно в текущем списке."}
-        </p>
-      </section>
-    </div>
-  );
-}
-
-function ShellPartnerDetailMissing({
-  partnerId,
-  onBack,
-}: {
-  partnerId?: string;
-  onBack: () => void;
-}) {
-  const P4 = (
-    PartnerDetailModule as {
-      ObserverPartnerDetailMissing?: ComponentType<{
-        partnerId?: string;
-        onBack: () => void;
-      }>;
-    }
-  ).ObserverPartnerDetailMissing;
-  if (P4) return <P4 partnerId={partnerId} onBack={onBack} />;
-  return (
-    <div
-      className={styles.section}
-      data-testid="ca-observer-partner-page"
-      data-ca-state="missing"
-    >
-      <button
-        type="button"
-        className={styles.backBtn}
-        data-ca-action="observer:back"
-        data-testid="ca-clients-back"
-        onClick={onBack}
-      >
-        ← Назад к партнёрам
-      </button>
-      <section className={styles.blocked} data-testid="ca-observer-partner-missing">
-        <h2>Партнёр не найден</h2>
-        <p className={styles.mutedSmall}>
-          {partnerId
-            ? `Партнёр «${partnerId}» недоступен в текущем списке.`
-            : "Партнёр недоступен в текущем списке."}
-        </p>
-      </section>
-    </div>
-  );
-}
-
-/** P4 `resolveObserverClientBackLabel` input — shell derives from `nav` + `layout`. */
+/** Shell → P4 `backFrom` (prototype clientAppealsSubpageBack + flat list). */
 export function observerClientBackFrom(
   clientNav: ClientNav,
   layout: "partners" | "list",
@@ -177,6 +68,8 @@ export function observerClientBackFrom(
   if (clientNav.partnerId) return "partner-clients";
   return layout === "list" ? "flat-list" : "partners-list";
 }
+
+export type { ObserverClientBackFrom };
 
 function bucketCounts(
   appeals: ObserverReferredAppeal[],
@@ -319,7 +212,7 @@ export function ObserverPartnersListView({
     const partner = partnersById.get(nav.partnerId);
     if (!partner) {
       return (
-        <ShellPartnerDetailMissing
+        <ObserverPartnerDetailMissing
           partnerId={nav.partnerId}
           onBack={() => setNav({ view: "partners" })}
         />
@@ -344,23 +237,24 @@ export function ObserverPartnersListView({
 
   if (nav.view === "client") {
     const clientBackFrom = observerClientBackFrom(nav, layout);
-    if (!appeals.find((a) => a.id === nav.clientId)) {
+    const appeal = appeals.find((a) => a.id === nav.clientId);
+    if (!appeal) {
       return (
-        <ShellClientDetailMissing
+        <ObserverClientDetailMissing
           clientId={nav.clientId}
           backFrom={clientBackFrom}
           onBack={backFromSubView}
         />
       );
     }
-    const appeal = appeals.find((a) => a.id === nav.clientId)!;
-    const detailProps: ClientDetailViewProps = {
-      appeal,
-      partner: partnersById.get(appeal.receivingPartnerId),
-      backFrom: clientBackFrom,
-      onBack: backFromSubView,
-    };
-    return <ObserverClientDetailView {...detailProps} />;
+    return (
+      <ObserverClientDetailView
+        appeal={appeal}
+        partner={partnersById.get(appeal.receivingPartnerId)}
+        backFrom={clientBackFrom}
+        onBack={backFromSubView}
+      />
+    );
   }
 
   const bucketEmpty =
