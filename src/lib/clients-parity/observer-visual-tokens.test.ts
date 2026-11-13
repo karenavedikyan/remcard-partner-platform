@@ -24,7 +24,10 @@ describe("observer visual tokens (numeric, C42/C44 partial)", () => {
     expect(css).toMatch(/border-radius:\s*16px/);
   });
 
-  it("375px four KPI columns declared", () => {
-    expect(css).toMatch(/max-width:\s*375px[\s\S]*grid-template-columns:\s*repeat\(4/);
+  it("KPI cascade breakpoints are 760px (four cols) and 360px (two cols), not 768→2", () => {
+    expect(css).toMatch(/max-width:\s*760px[\s\S]*\.partnerCard\s+\.stats[\s\S]*repeat\(4/);
+    expect(css).toMatch(/max-width:\s*360px[\s\S]*\.partnerCard\s+\.stats[\s\S]*repeat\(2/);
+    expect(css).not.toMatch(/max-width:\s*375px[\s\S]*\.stats/);
+    expect(css).not.toMatch(/max-width:\s*768px[\s\S]*repeat\(2,\s*minmax/);
   });
 });

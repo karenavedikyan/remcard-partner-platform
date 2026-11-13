@@ -87,7 +87,8 @@
   align-items: center;
 }
 
-.stats {
+/* Match prototype `.ca-personal-partners .ca-observer-stats` (3dc31836). */
+.partnerCard .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
@@ -95,7 +96,7 @@
   font-size: 0.875rem;
 }
 
-.stats div {
+.partnerCard .stats div {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -103,7 +104,7 @@
   min-width: 0;
 }
 
-.stats dt {
+.partnerCard .stats dt {
   color: var(--muted, #64748b);
   margin: 0;
   line-height: 1.5;
@@ -111,7 +112,7 @@
   order: 1;
 }
 
-.stats dd {
+.partnerCard .stats dd {
   margin: 0;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -218,20 +219,26 @@
   font-size: 1.125rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 760px) {
   .compactTop {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .partnerCard .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .partnerCard .stats dt {
+    font-size: 11px;
   }
 }
 
 @media (max-width: 360px) {
-  .stats {
+  .partnerCard .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
   }
 }
 
@@ -527,12 +534,6 @@
   }
 }
 
-@media (max-width: 375px) {
-  .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 [data-theme="dark"] .partnerCard,
 [data-theme="dark"] .filters,
 [data-theme="dark"] .personalToolbar,
@@ -541,7 +542,7 @@
   border-color: var(--line, #334155);
 }
 
-[data-theme="dark"] .stats dd,
+[data-theme="dark"] .partnerCard .stats dd,
 [data-theme="dark"] .meta strong {
   color: var(--ink, #f1f5f9);
 }

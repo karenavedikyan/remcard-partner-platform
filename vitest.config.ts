@@ -66,6 +66,7 @@ export default defineConfig({
       "src/lib/clients-parity/contracts.test.ts",
       "src/lib/clients-parity/observer-stats.test.ts",
       "src/lib/clients-parity/observer-visual-tokens.test.ts",
+      "src/lib/clients-parity/observer-stats-grid.computed.test.ts",
       "src/components/clients/ClientsListWorkspace.props.test.tsx",
       "src/components/clients/observer/ObserverPartnersListView.test.tsx",
       "src/components/clients/observer/ObserverPartnerDetailView.test.tsx",
