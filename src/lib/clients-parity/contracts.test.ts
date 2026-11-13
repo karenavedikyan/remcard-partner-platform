@@ -12,6 +12,9 @@ import {
   CLIENTS_PARALLEL_FILE_OWNERSHIP,
   CLIENTS_PURCHASE_READ_SEMANTICS,
   CLIENTS_RECEIVING_HTTP_CONTRACT,
+  CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT,
+  CLIENTS_OBSERVER_PUBLIC_TIMELINE,
+  CLIENTS_OBSERVER_REFERRER_LIST_SCOPE,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -62,6 +65,10 @@ describe("clients parity contracts", () => {
     );
     expect(CLIENTS_K8_UNRESOLVED_GAPS.map((g) => g.id)).toContain("GAP-K8-N");
     expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K1-HTTP-ACCESS");
+    expect(CLIENTS_OBSERVER_REFERRER_LIST_SCOPE.explicitNonFilters[0]).toContain("deletedAt");
+    expect(CLIENTS_OBSERVER_PUBLIC_TIMELINE.wireFields).toEqual(["at", "text"]);
+    expect(CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT.route).toContain("referred-appeals");
+    expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.observerDetail.response200).toContain("timeline");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");

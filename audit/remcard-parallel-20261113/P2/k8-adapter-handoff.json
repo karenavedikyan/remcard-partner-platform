@@ -8,6 +8,12 @@
     "k5": "6c4444879d5651679c969b8009b3f39d05302c43"
   },
   "k1ReceivingHandoff": "audit/remcard-parallel-20261113/P2/K1-83f279e8-receiving-envelope-handoff.md",
+  "p4ObserverPrivacyHandoff": "audit/remcard-parallel-20261113/P2/P4-observer-privacy-timeline-handoff.md",
+  "observerPublicTimeline": {
+    "prototypeLines": "2299-2338",
+    "p4Wire": ["at", "text"],
+    "k8Helper": "GAP-K8-PUBLIC-TIMELINE"
+  },
   "receivingHttpPrefix": "/api/pro/client-appeals",
   "k8Candidate": {
     "branch": "cursor/remcard-k8-acceptance-20261113",
@@ -93,7 +99,9 @@
     "GAP-K1-HTTP-ACCESS",
     "GAP-K1-HTTP-BUCKET",
     "GAP-K1-HTTP-BATCH-LIFECYCLE",
-    "GAP-K8-CROSS-WIRE-STALE"
+    "GAP-K8-CROSS-WIRE-STALE",
+    "GAP-K2-OBSERVER-DELETED-AT",
+    "GAP-K2-OBSERVER-TIMELINE-RAW"
   ],
   "sectionReady": false,
   "profilePublishedNotClientsReady": "89fb8e073c39c8dbd329996940b85c6a86751868"

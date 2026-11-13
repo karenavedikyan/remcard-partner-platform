@@ -9,6 +9,88 @@ import { CLIENTS_APPEAL_SYSTEM_STAGE } from "./types";
 export const CLIENTS_PARITY_PROTOTYPE_SHA = "3dc31836cd18d9209c20097f18b906dd276f7af6";
 
 /**
+ * Observer list scope — prototype `ownReferredAppeals()` @ client-appeals.js ~2217.
+ * No new privacy rule: cite prototype only. Receiving lifecycle is separate (~969–1034).
+ */
+export const CLIENTS_OBSERVER_REFERRER_LIST_SCOPE = {
+  prototypeFn: "ownReferredAppeals",
+  prototypeLine: 2217,
+  predicates: [
+    "referrerPartnerId === REFERRER_VIEWER.id (referrerProUserId === session viewer)",
+    "hasCertificateFlow(appeal) — originKind CERTIFICATE",
+    "PARTNERS[receivingPartnerId] known (receiving principal resolvable)",
+  ],
+  explicitNonFilters: [
+    "receiver archivedAt / deletedAt MUST NOT exclude referrer observer row",
+    "receiving list bucket active|archive|trash — incoming-only via appealInBucket",
+  ],
+  personalOverlay: {
+    prototypeModule: "observer-personal-list.js",
+    filterFn: "filterObserverAppeals → observerPersonalBucket(s, a) === observerPersonalState(s).bucket",
+    meaning: "Observer archive/trash is per-viewer overlay; independent of receiver CRM lifecycle",
+  },
+  auth: "Existing R03/R06 / ownerClients referrer eligibility only — no broader access",
+} as const;
+
+/**
+ * Observer detail timeline — prototype `publicReferrerTimeline` @ ~2333–2338.
+ * UI heading: «Хронология (без внутренних заметок партнёра)» (~2549).
+ */
+export const CLIENTS_OBSERVER_PUBLIC_TIMELINE = {
+  prototypeFns: ["isPublicReferrerHistoryEntry", "publicHistoryLine", "publicReferrerTimeline"],
+  prototypeLines: "2299–2338",
+  k8Owner: "canonical helper from persisted history rows (K8 in progress)",
+  k2Consumer: "GET /api/pro/referred-appeals/:id maps via K8 helper — not raw DB text",
+  p4WireType: "ObserverPublicTimelineEvent[] in types.ts",
+  wireFields: ["at", "text"],
+  forbiddenOnObserverWire: ["authorLabel", "actorUserId", "reason", "id", "privateNotes"],
+  rejectInternalPatterns:
+    "/служебн|заметк|архив|корзин|скрыто|перемещено|вручную/i on entry.text; bulk group edits except /^этап изменён:/i",
+  allowPatterns: [
+    "^этап изменён:",
+    "^статус:",
+    "создано обращение по сертификату",
+    "refusal with entry.reason",
+    "^оплачено",
+    "^отгружено",
+    "^возврат",
+  ],
+  normalizedLines: [
+    "Этап: {label} from этап изменён",
+    "Отказ: {reason}",
+    "Оплачено",
+    "Отгружено",
+    "Возврат",
+    "Создано обращение по сертификату",
+  ],
+  mustNotUse: [
+    "K1 GET detail history[] as observer timeline",
+    "PartnerClientAppealHistoryEvent.text unfiltered on observer API",
+    "Receiver deletedAt filter hiding referrer detail (K2 @ 78ce748d)",
+  ],
+} as const;
+
+/** P4 / K2 GET detail target envelope (read-only). */
+export const CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT = {
+  route: "GET /api/pro/referred-appeals/:appealId",
+  owner: "K2",
+  authGate: "requireObserverReferredAppealsRead; referrerProUserId === viewer; originKind CERTIFICATE",
+  listRowScope: CLIENTS_OBSERVER_REFERRER_LIST_SCOPE,
+  response200: {
+    appeal: "ClientAppealObserverReadDto (no privateNotes/clientContact)",
+    receivingPartner: "ObserverReceivingPartnerMetaWire target",
+    timeline: "ObserverPublicTimelineEvent[] — CLIENTS_OBSERVER_PUBLIC_TIMELINE",
+    purchase: "{ amountKopecks, note } | null — referrer-facing purchase read, not bonus payout",
+  },
+  receivingDetailForbidden:
+    "Never alias /api/pro/client-appeals/:id history to observer detail — receiving keeps authorLabel + full text",
+  k2GapAt78ce748d: {
+    deletedAtFilter: "where.deletedAt: null drops row when receiver trashed — violates ownReferredAppeals",
+    timelineLeak: "maps history select text without publicHistoryLine filter",
+  },
+} as const;
+
+/**
  * Receiving partner identity — frozen 2026-11-13 after Root + specialistR06Eligibility review.
  * K8 revises additive schema/contract only; P2 inventory coordinates one DTO.
  */
@@ -272,8 +354,17 @@ export const CLIENTS_NAVIGATOR_ACTUAL_HTTP = {
     owner: "K2",
     response200:
       "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
+    listScope: "CLIENTS_OBSERVER_REFERRER_LIST_SCOPE — no deletedAt on appeal row",
     errors: "401 UNAUTHORIZED; 403 OBSERVER_REFERRER_INELIGIBLE; 400 OBSERVER_LIST_BAD_QUERY; 503 OBSERVER_APPEALS_SCHEMA_UNAVAILABLE",
     notBlockedContract: "Explicit 401/403/404 are HTTP outcomes, not partner BLOCKED_CONTRACT",
+  },
+  observerDetail: {
+    method: "GET",
+    path: "/api/pro/referred-appeals/:appealId",
+    owner: "K2",
+    contractRef: "CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT",
+    response200:
+      "{ appeal, receivingPartner, timeline: ObserverPublicTimelineEvent[], purchase? }",
   },
   personalMetaPatch: {
     method: "PATCH",
@@ -332,7 +423,10 @@ export const CLIENTS_PARALLEL_FILE_OWNERSHIP = {
   p3MustImport: [
     "@/lib/clients-parity/observer-personal-api — owned by P5 @ a7b111d2; P3 must not commit competing client",
   ],
-  p4: ["observer detail/history UI — read-only; no receiving-appeals-api"],
+  p4: [
+    "observer detail UI — timeline from ObserverPublicTimelineEvent[] only",
+    "no receiving history wire; see CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT",
+  ],
   p5: [
     "src/lib/clients-parity/observer-personal-api.ts",
     "personal/bulk observer UI components",
@@ -519,6 +613,31 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     topic: "CROSS_OWNER_WIRE.md cites K2 72193c78 items + Branch.id partner cards",
     status: "UNRESOLVED",
     requiredFix: "K8 doc points to 3c6ccc19 appeals envelope + receivingPartnerUserId (P2 inventory authoritative until K8 edits)",
+  },
+  {
+    id: "GAP-K2-OBSERVER-DELETED-AT",
+    owner: "K2",
+    topic:
+      "List/detail where deletedAt: null hides appeal from referrer when receiver moved row to receiving trash",
+    status: "UNRESOLVED",
+    requiredFix:
+      "Observer queries scope referrerProUserId + certificate only — ignore receiver deletedAt/archivedAt for inclusion",
+  },
+  {
+    id: "GAP-K2-OBSERVER-TIMELINE-RAW",
+    owner: "K2+K8",
+    topic: "Detail GET maps PartnerClientAppealHistoryEvent.text without publicReferrerTimeline filter",
+    status: "UNRESOLVED",
+    requiredFix:
+      "K8 publicReferrerTimeline helper; K2 detail returns ObserverPublicTimelineEvent[] only",
+  },
+  {
+    id: "GAP-K8-PUBLIC-TIMELINE",
+    owner: "K8",
+    topic:
+      "Persisted history → prototype isPublicReferrerHistoryEntry/publicHistoryLine in shared module for K1 audit + K2 observer",
+    status: "IN_PROGRESS",
+    requiredFix: "Export from src/lib/clientAppeals/ (e.g. publicReferrerTimeline.ts) @ next K8 tip",
   },
   {
     id: "GAP-K8-O",

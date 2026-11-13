@@ -43,7 +43,13 @@ Until P1 lands, P5 returns `blocked_contract` for proxy — not fake persistence
 
 ## P4 — observer detail/history
 
-Read-only observer routes only; no `receiving-appeals-api`; purchase fields subject to **BLK-CLIENTS-PURCHASE-READ** (bonus payout read, not client purchase total/date).
+Read-only observer routes only; no `receiving-appeals-api`.
+
+- Detail wire: `ObserverReferredAppealDetailHttp` — `timeline: ObserverPublicTimelineEvent[]` only (`at`, `text`)
+- Prototype: `publicReferrerTimeline` / `CLIENTS_OBSERVER_PUBLIC_TIMELINE` — not raw K1 history
+- List inclusion: `ownReferredAppeals` scope — **ignore receiver `deletedAt`** (**GAP-K2-OBSERVER-DELETED-AT**)
+- Personal bucket: K5 overlay — never receiver CRM trash
+- Handoff: `audit/.../P4-observer-privacy-timeline-handoff.md`
 
 ## P5 — personal client (owned module)
 

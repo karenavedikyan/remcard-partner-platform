@@ -20,12 +20,42 @@ export type ClientsAppealSystemStageId =
 /** Custom pipeline stage id per receiving partner (`workingStages[].id`). */
 export type ObserverAppealStageId = ClientsAppealSystemStageId | (string & {});
 
+/**
+ * Receiving CRM full history only (K1 detail) — not observer referrer timeline.
+ * @see CLIENTS_RECEIVING_HTTP_CONTRACT detail; observer uses ObserverPublicTimelineEvent.
+ */
+export type ReceivingAppealHistoryWireEntry = {
+  at: string;
+  authorLabel: string;
+  text: string;
+  reason?: string | null;
+  actorUserId?: string | null;
+};
+
+/** @deprecated alias — receiving CRM only */
 export type ObserverAppealHistoryEntry = {
   at: string;
   /** K8 wire: `authorLabel`; adapter maps to prototype `author`. */
   author: string;
   text: string;
   reason?: string;
+};
+
+/**
+ * Observer referrer detail timeline — prototype `publicReferrerTimeline` output.
+ * Safe wire for P4: only `at` + normalized `text` (no author/reason/id).
+ */
+export type ObserverPublicTimelineEvent = {
+  at: string;
+  text: string;
+};
+
+/** K2 GET /api/pro/referred-appeals/:id target @ CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT. */
+export type ObserverReferredAppealDetailHttp = {
+  appeal: ObserverAppealK2WireDto;
+  receivingPartner: ObserverReceivingPartnerMetaWire;
+  timeline: ObserverPublicTimelineEvent[];
+  purchase: { amountKopecks: number; note: string | null } | null;
 };
 
 /**
