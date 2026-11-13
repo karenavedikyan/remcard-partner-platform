@@ -25,7 +25,10 @@
 | `privateNotes` | receiving only (future CRM) | **forbidden** |
 | `history[]` | `receiving-full` | K2 → `publicTimeline[]` only |
 | `stageKey` | `stageId` + resolved `stageLabel` | `stageLabel` text |
-| `receivingBranchId` | P6 resolves display name | `receivingPartnerId` mapping via P2 |
+| `receivingPartnerUserId` | principal on DTO | `ObserverPartnerMeta.id` via P2 |
+| `receivingBranchId` / `receivingOrganizationId` | optional scope row | not required for solo specialist |
+
+**Identity correction:** see `receiving-principal-correction-handoff.md` — **not** Branch.id as canonical receiving key.
 
 ## Root-flagged K8 gaps (do not propagate)
 

@@ -104,7 +104,7 @@ export function ObserverClientDetailView({
           <dd>
             {partner?.name ?? (
               <span data-testid="ca-observer-partner-unavailable">
-                Партнёр недоступен ({appeal.receivingPartnerId})
+                Партнёр недоступен (id: {appeal.receivingPartnerId})
               </span>
             )}
           </dd>

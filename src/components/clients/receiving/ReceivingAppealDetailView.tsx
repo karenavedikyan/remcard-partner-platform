@@ -19,6 +19,10 @@ export type ReceivingAppealDetailDto = {
   referrerPartnerName?: string | null;
   sourceLabel?: string | null;
   updatedAt: string;
+  /** Receiving principal User.id when provided by K1. */
+  receivingPartnerUserId?: string | null;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
 };
 
 export type ReceivingAppealDetailReady = {
@@ -111,6 +115,21 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               <dt>Направил</dt>
               <dd>{props.appeal.referrerPartnerName?.trim() || "—"}</dd>
             </div>
+            {props.appeal.receivingBranchId || props.appeal.receivingOrganizationId ? (
+              <div data-testid="ca-receiving-scope-meta">
+                <dt>Охват принимающего</dt>
+                <dd className={styles.mutedSmall}>
+                  {[
+                    props.appeal.receivingOrganizationId
+                      ? `Орг. ${props.appeal.receivingOrganizationId}`
+                      : null,
+                    props.appeal.receivingBranchId ? `Филиал ${props.appeal.receivingBranchId}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt>Обновлено</dt>
               <dd>
