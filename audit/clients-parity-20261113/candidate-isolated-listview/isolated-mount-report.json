@@ -1,0 +1,672 @@
+{
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
+  "mountMethod": "esbuild IIFE bundle of ObserverPartnersListView + CSS modules + test fixtures only",
+  "fixtureSource": "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+  "fixtureLeakIntoNonTestSrc": null,
+  "partnerOpenBtnHasOnClickHandlerInSource": false,
+  "editOpensFormInSource": false,
+  "editSetsBlockedNoticeOnly": true,
+  "measurements": [
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "default",
+      "screenshot": "listview-light-1440x1000-default.png",
+      "cardBoundingBox": {
+        "x": 160,
+        "y": 379.296875,
+        "width": 1154,
+        "height": 154
+      },
+      "computed": {
+        "card": {
+          "width": "1120px",
+          "height": "128px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "118.438px 118.438px 118.438px 118.453px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "state": "default",
+      "screenshot": "listview-light-1024x900-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 379.296875,
+        "width": 1018,
+        "height": 154
+      },
+      "computed": {
+        "card": {
+          "width": "984px",
+          "height": "128px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "state": "default",
+      "screenshot": "listview-light-768x1024-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 419.296875,
+        "width": 762,
+        "height": 247.5
+      },
+      "computed": {
+        "card": {
+          "width": "728px",
+          "height": "221.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "358px 358px",
+        "statsColCount": 2
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "state": "default",
+      "screenshot": "listview-light-375x812-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 644.296875,
+        "width": 369,
+        "height": 270.5
+      },
+      "computed": {
+        "card": {
+          "width": "335px",
+          "height": "244.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "state": "default",
+      "screenshot": "listview-light-360x800-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 696.296875,
+        "width": 354,
+        "height": 270.5
+      },
+      "computed": {
+        "card": {
+          "width": "320px",
+          "height": "244.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "71px 71px 71px 71px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "light",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "state": "default",
+      "screenshot": "listview-light-320x740-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 717.296875,
+        "width": 314,
+        "height": 311
+      },
+      "computed": {
+        "card": {
+          "width": "280px",
+          "height": "285px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "61px 61px 61px 61px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1440x1000",
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "default",
+      "screenshot": "listview-dark-1440x1000-default.png",
+      "cardBoundingBox": {
+        "x": 160,
+        "y": 379.296875,
+        "width": 1154,
+        "height": 154
+      },
+      "computed": {
+        "card": {
+          "width": "1120px",
+          "height": "128px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "118.438px 118.438px 118.438px 118.453px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "1024x900",
+        "width": 1024,
+        "height": 900
+      },
+      "state": "default",
+      "screenshot": "listview-dark-1024x900-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 379.296875,
+        "width": 1018,
+        "height": 154
+      },
+      "computed": {
+        "card": {
+          "width": "984px",
+          "height": "128px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "102.625px 102.625px 102.625px 102.625px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "state": "default",
+      "screenshot": "listview-dark-768x1024-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 419.296875,
+        "width": 762,
+        "height": 247.5
+      },
+      "computed": {
+        "card": {
+          "width": "728px",
+          "height": "221.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "358px 358px",
+        "statsColCount": 2
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "375x812",
+        "width": 375,
+        "height": 812
+      },
+      "state": "default",
+      "screenshot": "listview-dark-375x812-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 644.296875,
+        "width": 369,
+        "height": 270.5
+      },
+      "computed": {
+        "card": {
+          "width": "335px",
+          "height": "244.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "74.75px 74.75px 74.75px 74.75px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "state": "default",
+      "screenshot": "listview-dark-360x800-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 696.296875,
+        "width": 354,
+        "height": 270.5
+      },
+      "computed": {
+        "card": {
+          "width": "320px",
+          "height": "244.5px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "71px 71px 71px 71px",
+        "statsColCount": 4
+      }
+    },
+    {
+      "theme": "dark",
+      "viewport": {
+        "name": "320x740",
+        "width": 320,
+        "height": 740
+      },
+      "state": "default",
+      "screenshot": "listview-dark-320x740-default.png",
+      "cardBoundingBox": {
+        "x": 20,
+        "y": 717.296875,
+        "width": 314,
+        "height": 311
+      },
+      "computed": {
+        "card": {
+          "width": "280px",
+          "height": "285px",
+          "padding": "12px 16px",
+          "borderRadius": "12px"
+        },
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": "700",
+          "lineHeight": "22.5px"
+        },
+        "statsGrid": "61px 61px 61px 61px",
+        "statsColCount": 4
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "state": "expanded",
+      "screenshot": "listview-light-1440x1000-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "state": "edit-notice",
+      "screenshot": "listview-light-1440x1000-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "state": "list-layout",
+      "screenshot": "listview-light-1440x1000-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "light",
+      "viewport": "1024x900",
+      "state": "expanded",
+      "screenshot": "listview-light-1024x900-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "1024x900",
+      "state": "edit-notice",
+      "screenshot": "listview-light-1024x900-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "1024x900",
+      "state": "list-layout",
+      "screenshot": "listview-light-1024x900-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "state": "expanded",
+      "screenshot": "listview-light-768x1024-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "state": "edit-notice",
+      "screenshot": "listview-light-768x1024-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "state": "list-layout",
+      "screenshot": "listview-light-768x1024-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "state": "expanded",
+      "screenshot": "listview-light-375x812-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "state": "edit-notice",
+      "screenshot": "listview-light-375x812-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "state": "list-layout",
+      "screenshot": "listview-light-375x812-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "state": "expanded",
+      "screenshot": "listview-light-360x800-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "state": "edit-notice",
+      "screenshot": "listview-light-360x800-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "state": "list-layout",
+      "screenshot": "listview-light-360x800-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "state": "expanded",
+      "screenshot": "listview-light-320x740-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "state": "edit-notice",
+      "screenshot": "listview-light-320x740-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "state": "list-layout",
+      "screenshot": "listview-light-320x740-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "state": "expanded",
+      "screenshot": "listview-dark-1440x1000-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-1440x1000-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "state": "list-layout",
+      "screenshot": "listview-dark-1440x1000-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024x900",
+      "state": "expanded",
+      "screenshot": "listview-dark-1024x900-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024x900",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-1024x900-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "1024x900",
+      "state": "list-layout",
+      "screenshot": "listview-dark-1024x900-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "state": "expanded",
+      "screenshot": "listview-dark-768x1024-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-768x1024-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "state": "list-layout",
+      "screenshot": "listview-dark-768x1024-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "state": "expanded",
+      "screenshot": "listview-dark-375x812-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-375x812-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "state": "list-layout",
+      "screenshot": "listview-dark-375x812-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "state": "expanded",
+      "screenshot": "listview-dark-360x800-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-360x800-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "state": "list-layout",
+      "screenshot": "listview-dark-360x800-list-layout.png",
+      "clientRows": 3
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "state": "expanded",
+      "screenshot": "listview-dark-320x740-expanded.png",
+      "open": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "state": "edit-notice",
+      "screenshot": "listview-dark-320x740-edit-notice.png",
+      "noticeText": "BLOCKED_PERSISTENCE: личные поля нельзя сохранить без API referred-appeals personal-meta.",
+      "hasPersonalEditForm": false,
+      "partnerOpenHasOnClick": false
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "state": "list-layout",
+      "screenshot": "listview-dark-320x740-list-layout.png",
+      "clientRows": 3
+    }
+  ],
+  "errors": [],
+  "ok": true,
+  "statesCovered": [
+    "default",
+    "expanded",
+    "list-layout",
+    "edit-notice"
+  ],
+  "bundleArchived": false,
+  "bundleNote": "esbuild bundle regenerated under /tmp/clients-parity-isolated-mount; screenshots+report committed only"
+}

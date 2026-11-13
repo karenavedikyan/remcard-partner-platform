@@ -1,5 +1,5 @@
 {
-  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
+  "task": "REMCLIENTS-V3-QA-CANDIDATE",
   "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
   "auditorHead": "4f64b8cf24e4fe0dc1ec3e1081a663258a84ca94",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
@@ -31,7 +31,7 @@
         "C12",
         "C13"
       ],
-      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
+      "notes": "V3: forbidden Gate/route packaging; isolated ListView mounts exist but visual FAIL; data BLOCKED"
     },
     {
       "page": 80,
@@ -224,7 +224,7 @@
         "C12",
         "C13"
       ],
-      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
+      "notes": "V3: forbidden Gate/route packaging; isolated ListView mounts exist but visual FAIL; data BLOCKED"
     },
     {
       "page": 89,
@@ -417,7 +417,7 @@
         "C12",
         "C13"
       ],
-      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
+      "notes": "V3: forbidden Gate/route packaging; isolated ListView mounts exist but visual FAIL; data BLOCKED"
     },
     {
       "page": 98,
@@ -618,7 +618,7 @@
         "C37",
         "C38"
       ],
-      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680",
+      "notes": "V3: forbidden Gate/route packaging; isolated ListView mounts exist but visual FAIL; data BLOCKED",
       "earlyContract": "BLOCKED_PERSISTENCE_see_01"
     },
     {
@@ -802,7 +802,7 @@
         "C12",
         "C13"
       ],
-      "notes": "Shell/UI present on ffd4aa61; visual 0/12 PASS; referred/receiving data BLOCKED; gate rewrite vs 57ca4680"
+      "notes": "V3: forbidden Gate/route packaging; isolated ListView mounts exist but visual FAIL; data BLOCKED"
     },
     {
       "page": 116,
@@ -1113,5 +1113,7 @@
     "EXCLUDED": 6,
     "PASS": 0,
     "IN_PROGRESS": 0
-  }
+  },
+  "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
+  "computerAccepted": false
 }

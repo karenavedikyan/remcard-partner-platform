@@ -1,11 +1,18 @@
 {
-  "task": "REMCLIENTS-PARITY-20261113-V2-QA",
+  "task": "REMCLIENTS-V3-QA-CANDIDATE",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
-  "priorNamedCandidateSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
+  "priorNamedInterimSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
   "backendRepoMounted": false,
-  "method": "Read-only FE proxy allowlist + FE API helpers + candidate adapters. Absence of a handler in this frontend repo is NOT proof the remcard backend lacks a route; it is proof this platform has no allowlisted/typed client contract to call safely.",
+  "backendRepoReadOnly": {
+    "repo": "karenavedikyan/remcard-navigator",
+    "ref": "release/prof-backend-v1-20261007",
+    "via": "cursor-github get_git_tree + get_file_contents",
+    "evidence": "06-V3-BACKEND-HANDLERS-READONLY.md"
+  },
+  "method": "FE proxy + FE helpers + read-only backend handlers on remcard-navigator release/prof-backend-v1-20261007. Missing path in backend tree (0 hits) is exact BLOCKED for that contract.",
   "summary": {
     "personalReferrerOverlayContractExists": false,
     "agentClientCrudIsPersonalOverlay": false,

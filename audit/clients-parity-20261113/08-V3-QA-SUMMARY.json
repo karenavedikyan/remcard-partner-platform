@@ -1,0 +1,67 @@
+{
+  "task": "REMCLIENTS-V3-QA-CANDIDATE",
+  "canonical": "https://www.perplexity.ai/computer/tasks/c7ca575a-0a2a-4ae4-92b9-0e0c535046f8",
+  "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "implCandidateSha": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
+  "priorNamedInterimSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
+  "note": "b0622e51 is NOT the latest candidate. Registry tip = ffd4aa61; intermediate presentation = 87c5ef62.",
+  "auditSha": "PENDING_COMMIT",
+  "computerAccepted": false,
+  "forbiddenCompat": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "passBuckets": {
+    "PASS_functional": 0,
+    "PASS_safety": 4,
+    "FAIL": 15,
+    "BLOCKED": 27,
+    "NOT_STARTED": 9,
+    "EXCLUDED": 1
+  },
+  "isolatedListView": {
+    "path": "audit/clients-parity-20261113/candidate-isolated-listview/",
+    "method": "esbuild React mount ObserverPartnersListView + fixtures",
+    "defaultShots": 12,
+    "interactionShots": 36,
+    "partnerOpenBtnOnClick": false,
+    "personalEditForm": false,
+    "editNoticeOnly": true,
+    "fixtureLeakIntoProductionSrc": false,
+    "kpiColsLight": {
+      "320": 4,
+      "360": 4,
+      "375": 4,
+      "768": 2,
+      "1024": 4,
+      "1440": 4
+    },
+    "functionalVisualPass": false
+  },
+  "backendHandlers": {
+    "repo": "karenavedikyan/remcard-navigator",
+    "ref": "release/prof-backend-v1-20261007",
+    "agentClientsPresent": true,
+    "referredAppealsPresent": false,
+    "clientAppealsPresent": false,
+    "personalMetaPresent": false,
+    "evidence": "06-V3-BACKEND-HANDLERS-READONLY.md"
+  },
+  "sectionAccepted": false,
+  "evidenceRoots": [
+    "audit/clients-parity-20261113/05-V3-QA-FORBIDDEN-COMPAT.md",
+    "audit/clients-parity-20261113/06-V3-BACKEND-HANDLERS-READONLY.md",
+    "audit/clients-parity-20261113/07-V3-AUTHOR-FOLLOWUP.md",
+    "audit/clients-parity-20261113/08-V3-QA-SUMMARY.json",
+    "audit/clients-parity-20261113/candidate-isolated-listview/",
+    "audit/clients-parity-20261113/requirement-matrix-c01-c56.json"
+  ]
+}
