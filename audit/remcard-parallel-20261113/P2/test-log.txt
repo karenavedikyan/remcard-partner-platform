@@ -8,3 +8,4 @@ ABSENT_ALLOWLIST	RECEIVING-APPEALS	client-appeals CRM routes
 
 Total allowlist patterns scanned: 142
 Observer/referred gaps (expected ABSENT today): 5
+AUDIT_RESULT=CONFIRMED_ABSENT
