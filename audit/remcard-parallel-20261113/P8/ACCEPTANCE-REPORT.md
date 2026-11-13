@@ -2,7 +2,11 @@
 
 ## RELEASE GATE (user priority — publish when ready)
 
-**`RELEASE-GATE.md` · NO-GO** until G1–G5 close. P2 **8137** matrix @ `ac2d4a7b` done — gate is **implementation**, not re-scan. Delta: **`NO-GO-DELTA-20261113-1730.md`**. **C04 not closed** (P6 `12aea875` rejected).
+**Canonical pipeline:** **`RELEASE-GATE-V3-API-PREP.md`** (G0–G9 incl. schema review, K3/K4 safety, **separate user DB approval G7**, deploy G8, read-only G9).
+
+User auth: **prepare** API/migrations only — **no** prod apply/deploy now. **`RELEASE-GATE.md`** superseded for ordering.
+
+P2 `ac2d4a7b` · P3 `4efb4215` · P6 `5b93b6a6` · navigator `8137` · profile `89fb8e07` (not observer BE).
 
 ## REM-PUBLISH-RESIDUAL-V2 (2026-11-13)
 
