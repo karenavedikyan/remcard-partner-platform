@@ -1,12 +1,5 @@
 import type { ObserverPartnerAppealStats, ObserverReferredAppeal } from "./types";
-
-const SYSTEM = {
-  NEW: "new",
-  PAID: "paid",
-  SHIPPED: "shipped",
-  RETURN: "return",
-  REFUSED: "refused",
-} as const;
+import { CLIENTS_APPEAL_SYSTEM_STAGE as SYSTEM } from "./types";
 
 export function safePct(numerator: number, denominator: number): string {
   if (!denominator || denominator <= 0) return "0%";

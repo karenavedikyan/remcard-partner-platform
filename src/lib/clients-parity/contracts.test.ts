@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { blockerForRequirement, CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
+import {
+  blockerForRequirement,
+  CLIENTS_CANONICAL_ROUTES,
+  CLIENTS_CONTRACT_BLOCKERS,
+  CLIENTS_DECISIONS,
+  CLIENTS_K8_SOURCE_OF_TRUTH,
+  routesForBlocker,
+} from "./contracts";
 import { fetchObserverReferredAppeals } from "./fetch-observer-appeals";
+import { CLIENTS_APPEAL_SYSTEM_STAGE } from "./types";
 
 describe("clients parity contracts", () => {
   it("maps C07 to receiving blocker", () => {
@@ -18,5 +26,17 @@ describe("clients parity contracts", () => {
 
   it("has three contract blockers", () => {
     expect(CLIENTS_CONTRACT_BLOCKERS).toHaveLength(3);
+  });
+
+  it("inventory routes stay NOT_IMPLEMENTED until K8 lands", () => {
+    expect(CLIENTS_K8_SOURCE_OF_TRUTH.status).toBe("NOT_PUBLISHED");
+    expect(CLIENTS_CANONICAL_ROUTES.every((r) => r.status === "NOT_IMPLEMENTED")).toBe(true);
+    expect(routesForBlocker("BLK-OBSERVER-REFERRED")).toHaveLength(3);
+    expect(CLIENTS_DECISIONS).toHaveLength(7);
+  });
+
+  it("system stage ids match frozen prototype", () => {
+    expect(CLIENTS_APPEAL_SYSTEM_STAGE.NEW).toBe("sys_new");
+    expect(CLIENTS_APPEAL_SYSTEM_STAGE.PAID).toBe("sys_paid");
   });
 });

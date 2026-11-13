@@ -151,5 +151,11 @@
     { "id": "D7", "topic": "forbid AgentClient overlay wiring", "owner": "all" }
   ],
   "noSchemaCompletePath": false,
-  "noSchemaReason": "P2 forbids new storage/routes; navigator 8137 has no composable Appeal read/overlay/receiving contracts"
+  "noSchemaReason": "Historical @ 8137; user authorized API/migration prep 2026-11-13 — K8 implements, P2 inventory in contracts.ts/types.ts",
+  "k8HandoffDoc": "audit/remcard-parallel-20261113/P2/K8-reconcile-handoff-20261113.md",
+  "k8SourceStatus": "NOT_PUBLISHED",
+  "partnerContractInventoryPaths": [
+    "src/lib/clients-parity/contracts.ts",
+    "src/lib/clients-parity/types.ts"
+  ]
 }

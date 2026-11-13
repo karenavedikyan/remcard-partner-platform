@@ -1,6 +1,7 @@
 /**
  * Synthetic observer dataset for isolated tests only — never import from production UI.
  */
+import { CLIENTS_APPEAL_SYSTEM_STAGE } from "../types";
 import type { ObserverPartnerMeta, ObserverReferredAppeal } from "../types";
 
 export const OBSERVER_FIXTURE_PARTNERS: ObserverPartnerMeta[] = [
@@ -23,12 +24,12 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     id: "ref-1",
     clientName: "Анна К.",
     interest: "Кухня на заказ",
-    certificateId: "CERT-1001",
     receivingPartnerId: "partner-alpha",
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-10T14:22:00Z",
     referralAt: "2026-11-01T10:00:00Z",
-    stageId: "new",
+    certificateId: "CERT-1001",
+    stageId: CLIENTS_APPEAL_SYSTEM_STAGE.NEW,
   },
   {
     id: "ref-2",
@@ -39,7 +40,7 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-11T09:15:00Z",
     referralAt: "2026-10-15T10:00:00Z",
-    stageId: "paid",
+    stageId: CLIENTS_APPEAL_SYSTEM_STAGE.PAID,
   },
   {
     id: "ref-3",
@@ -49,6 +50,7 @@ export const OBSERVER_FIXTURE_APPEALS: ObserverReferredAppeal[] = [
     referrerPartnerId: "viewer",
     updatedAt: "2026-11-12T18:40:00Z",
     referralAt: "2026-11-05T08:00:00Z",
-    stageId: "refused",
+    certificateId: "CERT-1003",
+    stageId: CLIENTS_APPEAL_SYSTEM_STAGE.REFUSED,
   },
 ];

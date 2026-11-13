@@ -1,11 +1,12 @@
 import type { ObserverReferredAppeal } from "./types";
+import { CLIENTS_APPEAL_SYSTEM_STAGE } from "./types";
 
 const STAGE_LABELS: Record<string, string> = {
-  new: "Новое обращение",
-  paid: "Оплачено",
-  shipped: "Отгружено",
-  return: "Возврат",
-  refused: "Отказ",
+  [CLIENTS_APPEAL_SYSTEM_STAGE.NEW]: "Новое обращение",
+  [CLIENTS_APPEAL_SYSTEM_STAGE.PAID]: "Оплачено",
+  [CLIENTS_APPEAL_SYSTEM_STAGE.SHIPPED]: "Отгружено",
+  [CLIENTS_APPEAL_SYSTEM_STAGE.RETURN]: "Возврат",
+  [CLIENTS_APPEAL_SYSTEM_STAGE.REFUSED]: "Отказ",
 };
 
 export function observerAppealStatusLabel(appeal: ObserverReferredAppeal): string {
