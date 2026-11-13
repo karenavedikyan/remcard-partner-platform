@@ -1,32 +1,60 @@
 /**
  * Partner UI alignment to K8 client appeals contract (revised receiving principal).
  * Canonical receiving key: `receivingPartnerUserId` (User.id). Org/branch optional scope only.
+ * K8 @ 0f4fe833 `ClientAppealRecord`; K1 @ 5a51d7b7 detail GET envelope (read-only mirror).
  */
 
+import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
+import { formatMoneyRub } from "@/lib/history-format";
 import type {
   ReceivingAppealDetailDto,
   ReceivingAppealDetailReady,
 } from "./ReceivingAppealDetailView";
 import type { ReceivingAppealHistoryEntry } from "./ReceivingAppealHistory";
 
-/** Revised K8 record — receiving CRM (includes private fields). */
+/** K8 `ClientAppealRecord` wire (receiving CRM — includes private + purchase projection). */
 export type ClientAppealRecordWire = {
   id: string;
   clientDisplayName: string;
   certificateId: string | null;
-  /** Trusted receiving principal User.id (prototype receivingPartnerId). */
   receivingPartnerUserId: string;
   receivingOrganizationId: string | null;
   receivingBranchId: string | null;
   referrerProUserId: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
+  manualSourceKey: string | null;
+  discountPercent: number | null;
+  certValidUntil: string | null;
   interest: string | null;
+  clientCity: string | null;
+  budgetHint: string | null;
   clientContact: string | null;
   stageKey: string;
   refusedReason: string | null;
-  updatedAt: string;
-  createdAt: string;
+  shippedAt: string | null;
+  purchaseOrderId: string | null;
+  paidAmountKopecks: number | null;
+  paidAt: string | null;
   privateNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** K1 GET `/api/pro/client-appeals/:id` — history and revision are top-level (not on `appeal`). */
+export type K1ReceivingAppealDetailEnvelopeWire = {
+  appeal: ClientAppealRecordWire;
+  revision: number;
+  history: ClientAppealHistoryEventWire[];
+  workingStages: ClientAppealWorkingStageWire[];
+  refusalReasons: string[];
+};
+
+export type ClientAppealWorkingStageWire = { id: string; label: string };
+
+export type ReceivingAppealDetailMapped = ReceivingAppealDetailReady & {
+  revision: number;
+  workingStages: ClientAppealWorkingStageWire[];
+  refusalReasons: string[];
 };
 
 /** Observer list/detail partner column — receiving principal profile, not Branch.id. */
@@ -41,6 +69,23 @@ export type ReceivingPartnerPrincipalWire = {
 
 /** Prototype `isActiveAppeal` — certificate slot uniqueness (K8 DB must match). */
 export const CLIENT_APPEAL_INACTIVE_STAGE_KEYS = ["sys_refused", "sys_return", "refused", "return"] as const;
+
+const CLIENT_APPEAL_SYSTEM_STAGE_LABELS: Record<string, string> = {
+  sys_new: "Новое",
+  sys_paid: "Оплачено",
+  sys_shipped: "Отгружено",
+  sys_return: "Возврат",
+  sys_refused: "Отказ",
+};
+
+const MANUAL_SOURCE_LABELS: Record<string, string> = {
+  phone: "Звонок",
+  messenger: "Мессенджер",
+  visit: "Личный визит",
+  ads: "Реклама",
+  other: "Другое",
+  scan: "Скан",
+};
 
 export function isActiveAppealStage(stageKey: string): boolean {
   const key = stageKey.trim().toLowerCase();
@@ -67,11 +112,23 @@ export type ClientAppealHistoryEventWire = {
  * K2 observer-safe detail — MUST NOT include privateNotes, clientContact, paidAmountKopecks.
  * Navigator K2 routes strip these before partner proxy response.
  */
-/**
- * P6 `ReceivingAppealDetail` reference (@ 7ebfa955) — **read-only** for adapter; file owned by P6.
- * P4 UI intentionally does **not** render `paidAmount` / `paidAt` / `purchaseId` until K8 financial
- * projection is separate from client purchase totals (bonus ≠ purchase display).
- */
+export type ObserverReferrerAppealDetailWire = {
+  id: string;
+  clientDisplayName: string;
+  interest: string | null;
+  certificateId: string | null;
+  receivingPartnerUserId: string;
+  receivingPartnerDisplayName: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
+  stageLabel: string;
+  referralAt: string;
+  updatedAt: string;
+  refusedReason: string | null;
+  publicTimeline: { at: string; text: string }[];
+};
+
+/** @deprecated P6 must pass K1 envelope to `k1ReceivingDetailEnvelopeToP4Mapped` (P6 @ 4dca7af7 fetch). */
 export type P6ReceivingAppealDetailWire = {
   id: string;
   clientName: string;
@@ -89,21 +146,32 @@ export type P6ReceivingAppealDetailWire = {
   purchaseId?: string | null;
 };
 
-export type ObserverReferrerAppealDetailWire = {
-  id: string;
-  clientDisplayName: string;
-  interest: string | null;
-  certificateId: string | null;
-  receivingPartnerUserId: string;
-  receivingPartnerDisplayName: string;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
-  stageLabel: string;
-  referralAt: string;
-  updatedAt: string;
-  refusedReason: string | null;
-  publicTimeline: { at: string; text: string }[];
-};
+export function resolveClientAppealStageLabel(
+  stageKey: string,
+  workingStages: ClientAppealWorkingStageWire[],
+): string {
+  const key = stageKey.trim();
+  const custom = workingStages.find((s) => s.id === key);
+  if (custom?.label?.trim()) return custom.label.trim();
+  return CLIENT_APPEAL_SYSTEM_STAGE_LABELS[key] ?? key;
+}
+
+export function resolveClientAppealSourceLabel(record: Pick<ClientAppealRecordWire, "originKind" | "manualSourceKey">): string {
+  if (record.originKind === "CERTIFICATE") return "По сертификату";
+  const manual = record.manualSourceKey?.trim();
+  if (manual && MANUAL_SOURCE_LABELS[manual]) return MANUAL_SOURCE_LABELS[manual]!;
+  return manual ? `Вручную: ${manual}` : "Вручную";
+}
+
+export function clientPurchaseDisplayFromRecord(
+  record: Pick<ClientAppealRecordWire, "paidAmountKopecks" | "paidAt">,
+): Pick<ReceivingAppealDetailDto, "paidDisplayLabel" | "paidAtDisplay"> {
+  if (record.paidAmountKopecks == null) return {};
+  return {
+    paidDisplayLabel: formatMoneyRub(record.paidAmountKopecks / 100),
+    paidAtDisplay: record.paidAt ? formatObserverDateTime(record.paidAt) : null,
+  };
+}
 
 export function receivingPartnerPrincipalToObserverMeta(
   p: ReceivingPartnerPrincipalWire,
@@ -125,13 +193,38 @@ export function historyEventWireToUi(e: ClientAppealHistoryEventWire): Receiving
   };
 }
 
+/** Canonical path: K1 detail GET → P4 detail props (P6 fetch only; no nested history on appeal). */
+export function k1ReceivingDetailEnvelopeToP4Mapped(
+  envelope: K1ReceivingAppealDetailEnvelopeWire,
+  options?: { referrerPartnerName?: string | null; readOnly?: boolean },
+): ReceivingAppealDetailMapped {
+  const stageLabel = resolveClientAppealStageLabel(envelope.appeal.stageKey, envelope.workingStages);
+  const sourceLabel = resolveClientAppealSourceLabel(envelope.appeal);
+  const appeal: ReceivingAppealDetailDto = {
+    ...receivingRecordToDetailDto(envelope.appeal, {
+      stageLabel,
+      sourceLabel,
+      referrerPartnerName: options?.referrerPartnerName ?? null,
+    }),
+    ...clientPurchaseDisplayFromRecord(envelope.appeal),
+  };
+  const history = envelope.history.map(historyEventWireToUi);
+  return {
+    status: "ready",
+    appeal,
+    history,
+    readOnly: options?.readOnly,
+    revision: envelope.revision,
+    workingStages: envelope.workingStages,
+    refusalReasons: envelope.refusalReasons,
+  };
+}
+
+/** Legacy shim until P6 detail fetch returns K1 envelope — do not use for new wiring. */
 export function p6ReceivingDetailToP4Ready(
   detail: P6ReceivingAppealDetailWire,
   labels: { stageLabel: string; sourceLabel: string; referrerPartnerName: string | null },
 ): ReceivingAppealDetailReady {
-  void detail.paidAmount;
-  void detail.paidAt;
-  void detail.purchaseId;
   const appeal: ReceivingAppealDetailDto = {
     id: detail.id,
     clientName: detail.clientName,

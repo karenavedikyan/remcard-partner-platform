@@ -1,56 +1,31 @@
 # P4 ↔ P6 receiving detail integration (Root-selected paths only)
 
-**K8 contract (candidate):** `remcard-navigator` @ `6f09c23e` `src/lib/clientAppeals/contract.ts`  
-**P6 workspace tip:** `7ebfa955` — list/form/API only; **do not integrate** P6 edits to `ObserverClientDetailView.tsx` / `ObserverPartnersListView.tsx` (P3/P4 owners).
+**K8:** `0f4fe833` · **K1 detail:** `5a51d7b7` · **P1 proxy:** `2b2b32b8` · **P6 adapter tip:** `4dca7af7`
 
 ## P4 owned components (sole detail/history UI)
 
 ```
 src/components/clients/receiving/ReceivingAppealDetailView.tsx
 src/components/clients/receiving/ReceivingAppealHistory.tsx
-src/components/clients/observer/ObserverPartnerDetailView.tsx
-src/components/clients/observer/ObserverClientDetailView.tsx
+src/components/clients/receiving/detail-contract-alignment.ts
 ```
 
-## P6 mount contract
+## P6 mount contract (K1 envelope)
 
-```tsx
-import { ReceivingAppealDetailView } from "@/components/clients/receiving/ReceivingAppealDetailView";
-import { p6ReceivingDetailToP4Ready } from "@/components/clients/receiving/detail-contract-alignment";
-
-// After fetchReceivingAppealDetail (P6 api) succeeds:
-const ready = p6ReceivingDetailToP4Ready(data.appeal, {
-  stageLabel: resolvedStageLabel,
-  sourceLabel: resolvedSourceLabel,
-  referrerPartnerName: resolvedReferrerName,
-});
-return (
-  <ReceivingAppealDetailView
-    {...ready}
-    onBack={() => setView({ kind: "list" })}
-  />
-);
-```
+See `k1-detail-envelope-handoff.md`. P6 **fetch only**; mapping **`k1ReceivingDetailEnvelopeToP4Mapped`**.
 
 | Load state | P4 prop |
 | --- | --- |
-| K1 detail OK | `status: "ready"` via `p6ReceivingDetailToP4Ready` |
+| K1 detail OK | `status: "ready"` from mapper |
 | 404 | `status: "missing"` + `appealId` |
-| transport/contract blocked | `status: "error"` + `message` + optional `onRetry` |
+| blocked / transport | `status: "error"` + `onRetry?` |
 
-**Blocked:** `fetchReceivingAppealDetail` failure → keep `ReceivingAppealsBlocked` or error shell — **no** inline fixture history.
+**No** competing detail component in P6. **No** nested `history` on `appeal` wire.
 
-## Financial fields (explicit non-display)
+## Financial display
 
-P6 `ReceivingAppealDetail` may include `paidAmount`, `paidAt`, `purchaseId` on the wire.  
-**P4 detail UI does not render them** until K8 ships a distinct financial projection (bonus payout ≠ client purchase total). Adapter uses `void` discard in `p6ReceivingDetailToP4Ready`.
+`paidAmountKopecks` on `ClientAppealRecord` → **client purchase** row in detail (`paidDisplayLabel`). Not partner bonus payout; no formula changes in P4.
 
 ## Observer (P3 + P4)
 
-- Navigation/load: **P3** `ObserverPartnersListView` + fetch.
-- Detail/history: **P4** `ObserverClientDetailView` + `publicTimeline` from **K2** only.
-- Partner meta id = `receivingPartnerUserId` after **P2** `types.ts` handoff (pending).
-
-## P2 dependency
-
-When `src/lib/clients-parity/contracts.ts` + `types.ts` land, replace duplicate wire aliases in `detail-contract-alignment.ts` with imports — **P4 does not own those files**.
+Detail/history for observer drill: **P4** `ObserverClientDetailView` + K2 `publicTimeline` only.

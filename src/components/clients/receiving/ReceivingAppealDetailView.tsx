@@ -23,6 +23,9 @@ export type ReceivingAppealDetailDto = {
   receivingPartnerUserId?: string | null;
   receivingOrganizationId?: string | null;
   receivingBranchId?: string | null;
+  /** Client purchase projection from K8 `paidAmountKopecks` (not partner bonus payout). */
+  paidDisplayLabel?: string | null;
+  paidAtDisplay?: string | null;
 };
 
 export type ReceivingAppealDetailReady = {
@@ -119,6 +122,15 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
               <dt>Направил</dt>
               <dd>{props.appeal.referrerPartnerName?.trim() || "—"}</dd>
             </div>
+            {props.appeal.paidDisplayLabel ? (
+              <div data-testid="ca-receiving-purchase-paid">
+                <dt>Оплата клиентом</dt>
+                <dd>
+                  {props.appeal.paidDisplayLabel}
+                  {props.appeal.paidAtDisplay ? ` · ${props.appeal.paidAtDisplay}` : ""}
+                </dd>
+              </div>
+            ) : null}
             {props.appeal.receivingBranchId || props.appeal.receivingOrganizationId ? (
               <div data-testid="ca-receiving-scope-meta">
                 <dt>Охват принимающего</dt>

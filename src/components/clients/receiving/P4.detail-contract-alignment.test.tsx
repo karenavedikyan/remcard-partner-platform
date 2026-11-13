@@ -2,34 +2,47 @@ import { describe, expect, it } from "vitest";
 import {
   historyEventWireToUi,
   isActiveAppealStage,
+  k1ReceivingDetailEnvelopeToP4Mapped,
   receivingPartnerPrincipalToObserverMeta,
-  p6ReceivingDetailToP4Ready,
+  resolveClientAppealSourceLabel,
+  resolveClientAppealStageLabel,
   receivingRecordToDetailDto,
   type ClientAppealRecordWire,
 } from "./detail-contract-alignment";
 
-describe("P4.detail-contract-alignment (K8 fc33b4fa mirror)", () => {
+const baseRecord = (): ClientAppealRecordWire => ({
+  id: "app-1",
+  clientDisplayName: "Иван",
+  certificateId: "C-9",
+  receivingPartnerUserId: "user-receiver-solo",
+  receivingOrganizationId: null,
+  receivingBranchId: null,
+  referrerProUserId: "u-2",
+  originKind: "CERTIFICATE",
+  manualSourceKey: null,
+  discountPercent: null,
+  certValidUntil: null,
+  interest: "Шкаф",
+  clientCity: null,
+  budgetHint: null,
+  clientContact: "+7",
+  stageKey: "sys_new",
+  refusedReason: null,
+  shippedAt: null,
+  purchaseOrderId: null,
+  paidAmountKopecks: null,
+  paidAt: null,
+  updatedAt: "2026-11-10T10:00:00Z",
+  createdAt: "2026-11-01T10:00:00Z",
+  privateNotes: "secret",
+});
+
+describe("P4.detail-contract-alignment (K8 0f4fe833 / K1 5a51d7b7)", () => {
   it("maps K8 record to receiving detail without dropping ids", () => {
-    const record: ClientAppealRecordWire = {
-      id: "app-1",
-      clientDisplayName: "Иван",
-      certificateId: "C-9",
-      receivingPartnerUserId: "user-receiver-solo",
-      receivingOrganizationId: null,
-      receivingBranchId: null,
-      referrerProUserId: "u-2",
-      originKind: "CERTIFICATE",
-      interest: "Шкаф",
-      clientContact: "+7",
-      stageKey: "sys_new",
-      refusedReason: null,
-      updatedAt: "2026-11-10T10:00:00Z",
-      createdAt: "2026-11-01T10:00:00Z",
-      privateNotes: "secret",
-    };
+    const record = baseRecord();
     const dto = receivingRecordToDetailDto(record, {
       stageLabel: "Новое",
-      sourceLabel: "Сертификат",
+      sourceLabel: "По сертификату",
       referrerPartnerName: "Партнёр",
     });
     expect(dto.id).toBe("app-1");
@@ -48,26 +61,41 @@ describe("P4.detail-contract-alignment (K8 fc33b4fa mirror)", () => {
     expect(meta.name).toBe("Соло специалист");
   });
 
-  it("p6 detail envelope omits financial fields from UI props", () => {
-    const ready = p6ReceivingDetailToP4Ready(
-      {
-        id: "a1",
-        clientName: "X",
-        certificateId: "c",
-        receivingPartnerUserId: "u1",
-        interest: "i",
-        stageId: "sys_new",
-        updatedAt: "2026-11-10T10:00:00Z",
-        history: [{ at: "2026-11-10T10:00:00Z", author: "S", text: "Новое" }],
-        paidAmount: 999,
-        paidAt: "2026-11-11T10:00:00Z",
-        purchaseId: "ord-1",
+  it("K1 envelope maps clientDisplayName, stageKey, history, paidAmountKopecks", () => {
+    const mapped = k1ReceivingDetailEnvelopeToP4Mapped({
+      appeal: {
+        ...baseRecord(),
+        paidAmountKopecks: 150_000,
+        paidAt: "2026-11-11T12:00:00Z",
       },
-      { stageLabel: "Новое", sourceLabel: "Сертификат", referrerPartnerName: null },
+      revision: 3,
+      history: [
+        {
+          id: "h1",
+          appealId: "app-1",
+          at: "2026-11-10T10:00:00Z",
+          authorLabel: "Система",
+          text: "Создано обращение",
+        },
+      ],
+      workingStages: [{ id: "ws_custom", label: "Согласование" }],
+      refusalReasons: ["Дорого"],
+    });
+    expect(mapped.revision).toBe(3);
+    expect(mapped.appeal.clientName).toBe("Иван");
+    expect(mapped.appeal.stageId).toBe("sys_new");
+    expect(mapped.appeal.paidDisplayLabel).toContain("1");
+    expect(mapped.appeal.paidDisplayLabel).toContain("₽");
+    expect(mapped.history).toHaveLength(1);
+    expect(mapped.history[0]?.author).toBe("Система");
+    expect(resolveClientAppealStageLabel("ws_custom", mapped.workingStages)).toBe("Согласование");
+  });
+
+  it("resolves source labels from originKind and manualSourceKey", () => {
+    expect(resolveClientAppealSourceLabel({ originKind: "CERTIFICATE", manualSourceKey: null })).toBe(
+      "По сертификату",
     );
-    expect(ready.status).toBe("ready");
-    expect(ready.history.length).toBe(1);
-    expect(JSON.stringify(ready.appeal)).not.toMatch(/999|ord-1/);
+    expect(resolveClientAppealSourceLabel({ originKind: "MANUAL", manualSourceKey: "phone" })).toBe("Звонок");
   });
 
   it("isActiveAppealStage matches prototype refused/return only", () => {
