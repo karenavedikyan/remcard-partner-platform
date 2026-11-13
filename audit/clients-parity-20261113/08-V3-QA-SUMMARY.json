@@ -10,7 +10,7 @@
   "intermediateSha": "87c5ef621ba3405c81a529bdb5feec04bdc7e2b2",
   "priorNamedInterimSha": "b0622e519a4aea9b8ffbeac194e95d40a196ec8b",
   "note": "b0622e51 is NOT the latest candidate. Registry tip = ffd4aa61; intermediate presentation = 87c5ef62.",
-  "auditSha": "PENDING_COMMIT",
+  "auditSha": "7cd5a1a6e5e786cd0464f65e9cf910795629447f",
   "computerAccepted": false,
   "forbiddenCompat": {
     "OwnerClientsGate": "FORBIDDEN_DELTA",
