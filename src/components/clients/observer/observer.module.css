@@ -408,6 +408,13 @@
   background: var(--surface, #fff);
 }
 
+.personalToolbar:has([data-observer-action="clear"]) {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
 .personalActions {
   margin-left: auto;
 }
@@ -543,14 +550,23 @@
 }
 
 .personalTag {
+  display: inline-block;
+  justify-self: start;
+  background: var(--offset, var(--bg, #f8fafc));
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .personalNote {
   font-size: 13px;
   color: var(--muted, #64748b);
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .personalStatus {
@@ -743,7 +759,8 @@
 .editPanel,
 .confirmPanel {
   display: grid;
-  gap: 12px;
+  gap: 16px;
+  scroll-margin-top: 190px;
   padding: 16px 20px;
   border: 1px solid var(--line, #e2e8f0);
   border-radius: 16px;
