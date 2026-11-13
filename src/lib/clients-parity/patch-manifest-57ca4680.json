@@ -47,14 +47,22 @@
   "clientsSectionPublishable": false,
   "p1ProxyOwner": {
     "file": "src/lib/remcard-proxy.ts",
-    "wireStatus": "BLOCKED_UNTIL_CANONICAL_NAVIGATOR_CONTRACT",
+    "wireStatus": "K5_PERSONAL_META_AND_BATCH_WHITELISTED_K2_GET_PENDING",
     "navigatorOwners": "K8/K1/K2/K5",
-    "pendingAllowlistRoutes": [
-      "GET /api/pro/referred-appeals",
-      "GET /api/pro/referred-appeals/:id",
-      "GET /api/pro/referred-appeals/by-partner/:partnerId",
+    "proxyWhitelistedK5Only": [
       "PATCH /api/pro/referred-appeals/:id/personal-meta",
       "POST /api/pro/referred-appeals/personal-batch"
+    ],
+    "k5NavigatorTip": "86ac3e354dc543817c061cb43565d0bf77545ab0",
+    "k2NavigatorTipListResponse": "72193c78 — GET returns {items,page,limit,total,hasMore,empty}",
+    "pendingK2ProxyAllowlistAfterP3Adapter": [
+      "GET /api/pro/referred-appeals",
+      "GET /api/pro/referred-appeals/:id",
+      "GET /api/pro/referred-appeals/by-partner/:partnerId"
+    ],
+    "p5RejectedInventedRoutesDoNotWhitelist": [
+      "/api/pro/client-appeals/:id/personal-overlay",
+      "/api/pro/client-appeals/personal-overlay/batch"
     ],
     "explicitlyNotForObserverProxy": [
       "/api/pro/client-appeals",

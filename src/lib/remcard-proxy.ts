@@ -182,6 +182,15 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET", "PATCH", "DELETE"]),
       pattern: /^\/api\/pro\/agent-clients\/[\w-]+$/,
     },
+    /* P1/K5: observer personal overlay — navigator @ 86ac3e35 (not P5 client-appeals paths). */
+    {
+      methods: new Set(["PATCH"]),
+      pattern: /^\/api\/pro\/referred-appeals\/[\w-]+\/personal-meta$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/referred-appeals\/personal-batch$/,
+    },
     { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/agent-certificates$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-certificates\/batch$/ },
     {

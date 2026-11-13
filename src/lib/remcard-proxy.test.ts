@@ -433,6 +433,19 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join"), false);
+    assert.equal(
+      isAllowedProxyRoute("PATCH", "/api/pro/referred-appeals/appeal_1/personal-meta"),
+      true,
+    );
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/referred-appeals/personal-batch"), true);
+    assert.equal(
+      isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1/personal-overlay"),
+      false,
+    );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/client-appeals/personal-overlay/batch"),
+      false,
+    );
     assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
   });
 

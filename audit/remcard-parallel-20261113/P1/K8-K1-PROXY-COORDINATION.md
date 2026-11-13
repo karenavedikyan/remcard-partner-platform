@@ -64,7 +64,7 @@ Hook in `storeCertificateScan.ts` **not editable** by P1/K8 in this tranche.
 
 ## Partner proxy coordination (blocked)
 
-**No changes** to `src/lib/remcard-proxy.ts` until K2/K5 ship final paths in navigator @ accepted tip.
+**P1 (20:49 MSK):** K5 paths **whitelisted** in `remcard-proxy.ts` @ navigator `86ac3e35`. K2 GET paths **not** whitelisted until P3 adapter + Root accept.
 
 | Intended owner | Likely upstream path (confirm with K2/K5) | Partner `ALLOWED_ROUTES` |
 |----------------|-------------------------------------------|---------------------------|
