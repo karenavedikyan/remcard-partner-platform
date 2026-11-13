@@ -3,11 +3,12 @@
 import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
 import styles from "../observer/observer.module.css";
 
-/** K1 row — aligns with prototype `history[]` item (server-sourced only). */
+/** K1 row — aligns with K8 `ClientAppealHistoryEvent` (server-sourced only). */
 export type ReceivingAppealHistoryEntry = {
   at: string;
   text: string;
   reason?: string | null;
+  /** UI alias for K8 `authorLabel`. */
   author?: string;
 };
 

@@ -40,6 +40,21 @@ describe("P4.ObserverClientDetailView", () => {
     );
   });
 
+  it("renders K2 publicTimeline without private fields", () => {
+    render(
+      <ObserverClientDetailView
+        appeal={appeal}
+        partner={partner}
+        publicTimeline={[
+          { at: "2026-11-10T12:00:00Z", text: "Создано обращение по сертификату" },
+        ]}
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("ca-receiving-appeal-history")).toBeTruthy();
+    expect(screen.queryByTestId("ca-observer-client-timeline-na")).toBeNull();
+  });
+
   it("maps backFrom to prototype labels without shell wiring", () => {
     expect(resolveObserverClientBackLabel("partner-clients")).toBe("← К списку клиентов");
     expect(resolveObserverClientBackLabel("partners-list")).toBe("← К партнёрам");

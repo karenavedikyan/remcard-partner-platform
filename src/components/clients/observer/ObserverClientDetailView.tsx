@@ -6,6 +6,7 @@ import {
   observerAppealStatusLabel,
 } from "@/lib/clients-parity/observer-display";
 import type { ObserverPartnerMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
+import { ReceivingAppealHistory } from "../receiving/ReceivingAppealHistory";
 import styles from "./observer.module.css";
 
 /** Where the client detail was opened from (prototype back labels). */
@@ -47,6 +48,9 @@ export function observerClientBackFrom(
   return resolveObserverClientBackFrom({ navPartnerId: clientNav.partnerId, layout });
 }
 
+/** K2-safe public timeline lines — no privateNotes / clientContact in payload. */
+export type ObserverPublicTimelineEntry = { at: string; text: string };
+
 type Props = {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;
@@ -54,6 +58,9 @@ type Props = {
   backFrom?: ObserverClientBackFrom;
   /** Overrides `backFrom` when the shell needs an explicit string. */
   backLabel?: string;
+  /** When set by K2 GET detail; empty array still renders honest empty state. */
+  publicTimeline?: ObserverPublicTimelineEntry[];
+  refusedReason?: string | null;
 };
 
 export function ObserverClientDetailView({
@@ -62,6 +69,8 @@ export function ObserverClientDetailView({
   onBack,
   backFrom,
   backLabel,
+  publicTimeline,
+  refusedReason,
 }: Props) {
   const clientName = displayClientName(appeal);
   const interest = appeal.interest?.trim();
@@ -129,14 +138,23 @@ export function ObserverClientDetailView({
           </dd>
         </div>
       </dl>
-      <section
-        className={styles.mutedSmall}
-        data-testid="ca-observer-client-timeline-na"
-        aria-label="Хронология направления"
-      >
-        Публичная хронология и данные покупки недоступны без подтверждённого контракта направлений
-        (BLK-OBSERVER-REFERRED).
-      </section>
+      {publicTimeline !== undefined ? (
+        <ReceivingAppealHistory
+          entries={publicTimeline.map((row) => ({ at: row.at, text: row.text }))}
+          projection="referrer-public"
+          refusedReason={refusedReason}
+          emptyLabel="Публичных событий пока нет."
+        />
+      ) : (
+        <section
+          className={styles.mutedSmall}
+          data-testid="ca-observer-client-timeline-na"
+          aria-label="Хронология направления"
+        >
+          Публичная хронология и данные покупки недоступны без подтверждённого контракта направлений
+          (BLK-OBSERVER-REFERRED).
+        </section>
+      )}
     </div>
   );
 }
