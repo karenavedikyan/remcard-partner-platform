@@ -5,16 +5,25 @@ type Props = {
   blockerId: string;
   message: string;
   missingRoutes: string[];
+  testId?: string;
+  titleId?: string;
 };
 
-export function ObserverContractBlocked({ title, blockerId, message, missingRoutes }: Props) {
+export function ObserverContractBlocked({
+  title,
+  blockerId,
+  message,
+  missingRoutes,
+  testId = "clients-parity-contract-blocked",
+  titleId = "clients-parity-blocked-title",
+}: Props) {
   return (
     <section
       className={styles.blocked}
-      data-testid="clients-parity-contract-blocked"
-      aria-labelledby="clients-parity-blocked-title"
+      data-testid={testId}
+      aria-labelledby={titleId}
     >
-      <h2 id="clients-parity-blocked-title">{title}</h2>
+      <h2 id={titleId}>{title}</h2>
       <p>
         <strong>{blockerId}</strong> — {message}
       </p>

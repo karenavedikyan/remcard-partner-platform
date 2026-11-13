@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx (2 tests) 75ms
+ ✓ src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx (1 test) 54ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx (4 tests) 105ms
+ ✓ src/components/clients/observer/P6.ObserverContractBlocked.test.tsx (2 tests) 23ms
+
+ Test Files  4 passed (4)
+      Tests  9 passed (9)
+   Start at  11:38:55
+   Duration  1.18s (transform 331ms, setup 465ms, collect 534ms, tests 257ms, environment 945ms, prepare 200ms)
+

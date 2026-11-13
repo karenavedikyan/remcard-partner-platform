@@ -30,7 +30,25 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   return (
     <div data-testid="clients-direction-workspace">
       <ClientsDirectionTabs direction={direction} onDirectionChange={setDirection} />
-      {direction === "incoming" ? <ReceivingAppealsBlocked /> : <ObserverPartnersWorkspace showHeading={false} />}
+      {direction === "incoming" ? (
+        <div
+          id="ca-clients-panel-incoming"
+          role="tabpanel"
+          aria-labelledby="ca-clients-tab-incoming"
+          data-testid="ca-clients-panel-incoming"
+        >
+          <ReceivingAppealsBlocked />
+        </div>
+      ) : (
+        <div
+          id="ca-clients-panel-at-partners"
+          role="tabpanel"
+          aria-labelledby="ca-clients-tab-at-partners"
+          data-testid="ca-clients-panel-at-partners"
+        >
+          <ObserverPartnersWorkspace showHeading={false} />
+        </div>
+      )}
     </div>
   );
 }
