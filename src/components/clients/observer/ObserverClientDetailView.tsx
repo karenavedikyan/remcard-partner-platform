@@ -7,7 +7,14 @@ import {
 } from "@/lib/clients-parity/observer-display";
 import type { ObserverPartnerMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
 import { ReceivingAppealHistory } from "../receiving/ReceivingAppealHistory";
+import {
+  formatObserverPublicPurchaseKopecks,
+  type K2ObserverPublicPurchase,
+  type ObserverPublicTimelineEntry,
+} from "./observer-client-detail-contract";
 import styles from "./observer.module.css";
+
+export type { ObserverPublicTimelineEntry } from "./observer-client-detail-contract";
 
 /** Where the client detail was opened from (prototype back labels). */
 export type ObserverClientBackFrom = "partner-clients" | "partners-list" | "flat-list";
@@ -38,7 +45,7 @@ export function resolveObserverClientBackFrom(
   return "partners-list";
 }
 
-/** Stable name used by P3 shell (`ObserverPartnersListView` @ 9c3221ad). */
+/** Stable name used by P3 shell (`ObserverPartnersListView`). */
 export type ObserverClientNavSlice = { partnerId?: string };
 
 export function observerClientBackFrom(
@@ -48,46 +55,82 @@ export function observerClientBackFrom(
   return resolveObserverClientBackFrom({ navPartnerId: clientNav.partnerId, layout });
 }
 
-/** K2-safe public timeline lines — no privateNotes / clientContact in payload. */
-export type ObserverPublicTimelineEntry = { at: string; text: string };
-
-type Props = {
-  appeal: ObserverReferredAppeal;
-  partner?: ObserverPartnerMeta;
+type ObserverClientDetailChromeProps = {
   onBack: () => void;
   backFrom?: ObserverClientBackFrom;
-  /** Overrides `backFrom` when the shell needs an explicit string. */
   backLabel?: string;
-  /** When set by K2 GET detail; empty array still renders honest empty state. */
+};
+
+/** Legacy list shell — omit `status`; pass `publicTimeline` only after K2 GET. */
+type ObserverClientDetailLegacyProps = ObserverClientDetailChromeProps & {
+  status?: undefined;
+  appeal: ObserverReferredAppeal;
+  partner?: ObserverPartnerMeta;
+  /** When omitted, timeline/purchase show contract blocker until P3 wires K2 GET. */
   publicTimeline?: ObserverPublicTimelineEntry[];
+  purchase?: K2ObserverPublicPurchase | null;
   refusedReason?: string | null;
 };
 
-export function ObserverClientDetailView({
-  appeal,
-  partner,
+type ObserverClientDetailPageProps = ObserverClientDetailChromeProps &
+  (
+    | { status: "loading" }
+    | { status: "missing"; clientId?: string }
+    | { status: "error"; message: string; onRetry?: () => void }
+    | {
+        status: "ready";
+        appeal: ObserverReferredAppeal;
+        partner?: ObserverPartnerMeta;
+        publicTimeline: ObserverPublicTimelineEntry[];
+        purchase: K2ObserverPublicPurchase | null;
+        refusedReason?: string | null;
+      }
+  );
+
+export type ObserverClientDetailProps =
+  | ObserverClientDetailLegacyProps
+  | ObserverClientDetailPageProps;
+
+function ObserverClientDetailBackButton({
   onBack,
   backFrom,
   backLabel,
+}: ObserverClientDetailChromeProps) {
+  return (
+    <button
+      type="button"
+      className={styles.backBtn}
+      data-ca-action="observer:back"
+      data-testid="ca-clients-back"
+      onClick={onBack}
+    >
+      {resolveObserverClientBackLabel(backFrom, backLabel)}
+    </button>
+  );
+}
+
+function ObserverClientDetailReadyBody({
+  appeal,
+  partner,
   publicTimeline,
+  purchase,
+  purchaseKnown,
   refusedReason,
-}: Props) {
+}: {
+  appeal: ObserverReferredAppeal;
+  partner?: ObserverPartnerMeta;
+  publicTimeline?: ObserverPublicTimelineEntry[];
+  purchase?: K2ObserverPublicPurchase | null;
+  /** When true, `purchase` came from K2 (including explicit null). */
+  purchaseKnown: boolean;
+  refusedReason?: string | null;
+}) {
   const clientName = displayClientName(appeal);
   const interest = appeal.interest?.trim();
   const certificate = appeal.certificateId?.trim();
-  const resolvedBackLabel = resolveObserverClientBackLabel(backFrom, backLabel);
 
   return (
-    <div className={styles.section} data-testid="ca-observer-client-page">
-      <button
-        type="button"
-        className={styles.backBtn}
-        data-ca-action="observer:back"
-        data-testid="ca-clients-back"
-        onClick={onBack}
-      >
-        {resolvedBackLabel}
-      </button>
+    <>
       <header className={styles.partnerPageHead}>
         {interest ? <p className={styles.mutedSmall}>{interest}</p> : null}
         <h2 id="ca-observer-client-title">{clientName}</h2>
@@ -137,6 +180,25 @@ export function ObserverClientDetailView({
             <time dateTime={appeal.updatedAt}>{formatObserverDateTime(appeal.updatedAt)}</time>
           </dd>
         </div>
+        {purchaseKnown ? (
+          <div data-testid="ca-observer-client-purchase">
+            <dt>Покупка</dt>
+            <dd>
+              {purchase ? (
+                <>
+                  {formatObserverPublicPurchaseKopecks(purchase.amountKopecks)}
+                  {purchase.note?.trim() ? (
+                    <span className={styles.mutedSmall}> · {purchase.note.trim()}</span>
+                  ) : null}
+                </>
+              ) : (
+                <span className={styles.mutedSmall} data-testid="ca-observer-client-purchase-empty">
+                  Покупка у партнёра пока не зафиксирована.
+                </span>
+              )}
+            </dd>
+          </div>
+        ) : null}
       </dl>
       {publicTimeline !== undefined ? (
         <ReceivingAppealHistory
@@ -155,6 +217,90 @@ export function ObserverClientDetailView({
           (BLK-OBSERVER-REFERRED).
         </section>
       )}
+    </>
+  );
+}
+
+export function ObserverClientDetailView(props: ObserverClientDetailProps) {
+  const chrome = {
+    onBack: props.onBack,
+    backFrom: props.backFrom,
+    backLabel: props.backLabel,
+  };
+
+  if (props.status === "loading") {
+    return (
+      <div
+        className={styles.section}
+        data-testid="ca-observer-client-page"
+        data-ca-state="loading"
+        aria-busy="true"
+      >
+        <ObserverClientDetailBackButton {...chrome} />
+        <p data-testid="ca-observer-client-loading">Загрузка направления…</p>
+      </div>
+    );
+  }
+
+  if (props.status === "error") {
+    return (
+      <div
+        className={styles.section}
+        data-testid="ca-observer-client-page"
+        data-ca-state="error"
+      >
+        <ObserverClientDetailBackButton {...chrome} />
+        <section className={styles.blocked} data-testid="ca-observer-client-error">
+          <h2>Данные направления недоступны</h2>
+          <p className={styles.mutedSmall}>{props.message}</p>
+          {props.onRetry ? (
+            <button type="button" className={styles.ghostBtn} onClick={props.onRetry}>
+              Повторить
+            </button>
+          ) : null}
+        </section>
+      </div>
+    );
+  }
+
+  if (props.status === "missing") {
+    return (
+      <ObserverClientDetailMissing
+        clientId={props.clientId}
+        onBack={props.onBack}
+        backFrom={props.backFrom}
+        backLabel={props.backLabel}
+      />
+    );
+  }
+
+  if (props.status === "ready") {
+    return (
+      <div className={styles.section} data-testid="ca-observer-client-page" data-ca-state="ready">
+        <ObserverClientDetailBackButton {...chrome} />
+        <ObserverClientDetailReadyBody
+          appeal={props.appeal}
+          partner={props.partner}
+          publicTimeline={props.publicTimeline}
+          purchase={props.purchase}
+          purchaseKnown
+          refusedReason={props.refusedReason}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.section} data-testid="ca-observer-client-page">
+      <ObserverClientDetailBackButton {...chrome} />
+      <ObserverClientDetailReadyBody
+        appeal={props.appeal}
+        partner={props.partner}
+        publicTimeline={props.publicTimeline}
+        purchase={props.purchase}
+        purchaseKnown={props.purchase !== undefined}
+        refusedReason={props.refusedReason}
+      />
     </div>
   );
 }

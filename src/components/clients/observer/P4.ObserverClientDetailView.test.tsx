@@ -55,6 +55,56 @@ describe("P4.ObserverClientDetailView", () => {
     expect(screen.queryByTestId("ca-observer-client-timeline-na")).toBeNull();
   });
 
+  it("ready page state with K2 empty timeline drops BLK banner", () => {
+    render(
+      <ObserverClientDetailView
+        status="ready"
+        appeal={appeal}
+        partner={partner}
+        publicTimeline={[]}
+        purchase={null}
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.queryByTestId("ca-observer-client-timeline-na")).toBeNull();
+    expect(screen.getByTestId("ca-observer-client-purchase-empty")).toBeTruthy();
+  });
+
+  it("shows purchase projection from K2", () => {
+    render(
+      <ObserverClientDetailView
+        status="ready"
+        appeal={appeal}
+        partner={partner}
+        publicTimeline={[]}
+        purchase={{ amountKopecks: 99_900, note: "Оплата" }}
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-client-purchase")).toHaveTextContent("999");
+    expect(screen.getByTestId("ca-observer-client-purchase")).toHaveTextContent("Оплата");
+  });
+
+  it("loading and error shells with retry", async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    const { rerender } = render(
+      <ObserverClientDetailView status="loading" onBack={() => undefined} />,
+    );
+    expect(screen.getByTestId("ca-observer-client-loading")).toBeTruthy();
+
+    rerender(
+      <ObserverClientDetailView
+        status="error"
+        message="Сеть недоступна"
+        onRetry={onRetry}
+        onBack={() => undefined}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Повторить" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it("maps backFrom to prototype labels without shell wiring", () => {
     expect(resolveObserverClientBackLabel("partner-clients")).toBe("← К списку клиентов");
     expect(resolveObserverClientBackLabel("partners-list")).toBe("← К партнёрам");
