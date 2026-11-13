@@ -1,0 +1,50 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > renders grouped compact cards with four KPI metrics 107ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > toggles partner disclosure independently 20ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 1440px → 4 columns 132ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 1024px → 4 columns 86ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 768px → 4 columns 87ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > navigates to partner page and back preserving filters 134ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > navigates partner → client → back 76ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 375px → 4 columns 83ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > edit form cancel discards draft without persistence 142ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 360px → 2 columns 63ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > light @ 320px → 2 columns 66ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > confirm archive blocks persistence without mutating list 77ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx > ObserverPartnersListView (fixture presentation) > save control is disabled with BLOCKED_PERSISTENCE 60ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 1440px → 4 columns 61ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 1024px → 4 columns 61ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 768px → 4 columns 55ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 375px → 4 columns 53ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 360px → 2 columns 61ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > dark @ 320px → 2 columns 62ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts > observer partner KPI .stats grid (computed, prototype 3dc31836) > does not declare a 768px breakpoint that forces 2 KPI columns 0ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 1024px (|Δtop|≤1px) 894ms
+ ✓ src/components/clients/observer/ObserverPartnerDetailView.test.tsx > ObserverPartnerDetailView > renders MotionStat KPI labels and values 59ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts > observer visual tokens (numeric, C42/C44 partial) > uses 12px partner category and 20px KPI values 1ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts > observer visual tokens (numeric, C42/C44 partial) > uses 44px control min-height 0ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts > observer visual tokens (numeric, C42/C44 partial) > uses 16px section radius 0ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts > observer visual tokens (numeric, C42/C44 partial) > KPI cascade breakpoints are 760px (four cols) and 360px (two cols), not 768→2 0ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts > observer visual tokens (numeric, C42/C44 partial) > uses prototype max1100 grouped + max760 flat personal rows (no obsolete max768 areas) 0ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > maps C07 to receiving blocker 2ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > fetch observer returns blocked 1ms
+ ✓ src/lib/clients-parity/contracts.test.ts > clients parity contracts > has three contract blockers 1ms
+ ✓ src/lib/clients-parity/observer-stats.test.ts > partnerAppealStats > computes conversion with prototype labels 1ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 768px (|Δtop|≤1px) 821ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 375px (|Δtop|≤1px) 782ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 360px (|Δtop|≤1px) 763ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 320px (|Δtop|≤1px) 802ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 768px (real click) 897ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 375px (real click) 850ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 360px (real click) 833ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 320px (real click) 850ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > expanded grouped card client row is clickable @ 375px 853ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts > observer mobile partner→client (Playwright harness, fixtures) > flat list client row is clickable @ 375px 834ms
+
+ Test Files  7 passed (7)
+      Tests  41 passed (41)
+   Start at  11:39:20
+   Duration  10.02s (transform 226ms, setup 716ms, collect 584ms, tests 10.95s, environment 1.58s, prepare 315ms)
+
