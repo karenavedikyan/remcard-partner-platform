@@ -1,18 +1,18 @@
 {
-  "task": "REMCLIENTS-V5-COMPUTER-MEASURED",
+  "task": "REMCLIENTS-V6-REAL-MOBILE-BLOCKER",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "implCandidateSha": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
+  "implCandidateSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
   "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
-  "matrixEvaluatedAgainst": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
+  "matrixEvaluatedAgainst": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
   "priorV3ImplShaDoNotCarry": "ffd4aa6130e92af5d95da21cfe5519133228a962",
   "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
   "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
-  "note": "V5: KPI .stats cascade measured PASS vs 3dc31836 on e4ddc098. Packaging still FAIL vs 57ca4680. Persistence/contracts still BLOCKED. Each C has one status; TOTAL=56.",
+  "note": "V6: mobile grouped/flat client-row real-click PASS on 0729c12f; KPI cascade still PASS; packaging/contracts still blocked. TOTAL=56.",
   "counts": {
-    "PASS_functional": 3,
+    "PASS_functional": 5,
     "PASS_safety": 4,
-    "FAIL": 12,
+    "FAIL": 10,
     "BLOCKED": 23,
     "BLOCKED_PERSISTENCE": 4,
     "NOT_STARTED": 9,
@@ -24,12 +24,12 @@
     {
       "id": "C01",
       "status": "FAIL",
-      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains on tip e4ddc098 (15-V5)."
+      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains on 0729c12f (V6 CSS-only for rows)."
     },
     {
       "id": "C02",
       "status": "FAIL",
-      "evidence": "Observer UI improved (KPI+MotionStat) but delivery packaging still forbidden."
+      "evidence": "Observer UI mobile rows+KPI fixed; delivery packaging still forbidden."
     },
     {
       "id": "C03",
@@ -183,8 +183,9 @@
     },
     {
       "id": "C29",
-      "status": "FAIL",
-      "evidence": "e4ddc098: partner\u2192client\u2192back, edit/cancel, disabled save UI OK; KPI cols OK; packaging still FAIL; not PASS_functional for section."
+      "status": "PASS_functional",
+      "evidence": "Real Playwright clicks: partner\u2192client\u2192back at 320/360/375/768/1440 both themes; openWidth>0; edit/cancel + disabled save UI-only. Packaging FAIL remains C01. 17-V6.",
+      "passKind": "functional"
     },
     {
       "id": "C30",
@@ -193,8 +194,9 @@
     },
     {
       "id": "C31",
-      "status": "FAIL",
-      "evidence": "List/detail navigation shell improved on d1da9484 but delivery packaging + KPI parity still FAIL."
+      "status": "PASS_functional",
+      "evidence": "Partner page + expanded group + flat list client open geometry nonzero; real click nav OK on tip 0729c12f.",
+      "passKind": "functional"
     },
     {
       "id": "C32",
@@ -336,6 +338,6 @@
       "passKind": "safety"
     }
   ],
-  "correctedFixSha": "5c7db88744825e33cc68bc5210b11185f1aa5c8d",
+  "correctedFixSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
   "priorFailSha": "d1da948491293c1a8ba77d4854191347708b4379"
 }

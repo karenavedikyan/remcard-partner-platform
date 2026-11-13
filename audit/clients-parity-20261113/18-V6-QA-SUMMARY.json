@@ -1,0 +1,46 @@
+{
+  "task": "REMCLIENTS-V6-REAL-MOBILE-BLOCKER",
+  "supplements": "REMCLIENTS-V5-COMPUTER-MEASURED",
+  "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "auditorBranch": "cursor/remcard-wallet-dialog-width-20261103",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "computerFailSha": "d1da948491293c1a8ba77d4854191347708b4379",
+  "correctedSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "authorPriorV6FixSha": "5063368a",
+  "note": "auditSha filled after content commit. Mobile client open geometry+real click PASS; section packaging/contracts still not accepted.",
+  "computerAccepted": false,
+  "sectionAccepted": false,
+  "mobileClientRowMeasuredPass": true,
+  "kpiCascadeStillPass": true,
+  "uiOnly": {
+    "partnerClientBackMobile": true,
+    "partnerClientBackDesktop": true,
+    "editCancelDiscard": true,
+    "saveDisabled": true,
+    "persistenceUnblocked": false
+  },
+  "forbiddenCompat": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH_DELETED",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "evidence": [
+    "17-V6-QA-MOBILE-CLIENT-ROW.md",
+    "18-V6-QA-SUMMARY.json",
+    "v6-mobile-click-e0729c12/",
+    "requirement-matrix-c01-c56.json"
+  ],
+  "counts": {
+    "PASS_functional": 5,
+    "PASS_safety": 4,
+    "FAIL": 10,
+    "BLOCKED": 23,
+    "BLOCKED_PERSISTENCE": 4,
+    "NOT_STARTED": 9,
+    "EXCLUDED": 1,
+    "TOTAL": 56
+  }
+}

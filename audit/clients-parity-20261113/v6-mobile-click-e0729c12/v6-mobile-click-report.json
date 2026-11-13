@@ -1,0 +1,440 @@
+{
+  "task": "REMCLIENTS-V6-REAL-MOBILE-BLOCKER",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "method": "Playwright real click + getBoundingClientRect/getComputedStyle (not fireEvent)",
+  "note": "document.scrollWidth alone is not a pass; open button must have nonzero geometry",
+  "results": [
+    {
+      "theme": "dark",
+      "viewport": "1440x1000",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 1096,
+          "rowWidth": 1096,
+          "rowGrid": "24px 441.812px 287.172px 145px 150px",
+          "openWidth": 441.8125,
+          "openHeight": 47.5,
+          "openX": 208,
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-dark-1440x1000-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 441.8125,
+          "openHeight": 47.5,
+          "rowGrid": "24px 441.812px 287.172px 145px 150px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 733.96875,
+          "openHeight": 47.5,
+          "rowGrid": "24px 733.969px 160px 142.031px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": true,
+      "saveDisabled": true,
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "768x1024",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 744,
+          "rowWidth": 744,
+          "rowGrid": "24px 348px 348px",
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 768,
+          "clientWidth": 768
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-dark-768x1024-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "rowGrid": "24px 348px 348px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "rowGrid": "24px 708px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "375x812",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 351,
+          "rowWidth": 351,
+          "rowGrid": "24px 151.5px 151.5px",
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-dark-375x812-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "rowGrid": "24px 151.5px 151.5px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "rowGrid": "24px 315px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "360x800",
+      "kpiCols": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 336,
+          "rowWidth": 336,
+          "rowGrid": "24px 144px 144px",
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-dark-360x800-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "rowGrid": "24px 144px 144px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "rowGrid": "24px 300px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "dark",
+      "viewport": "320x740",
+      "kpiCols": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 296,
+          "rowWidth": 296,
+          "rowGrid": "24px 124px 124px",
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-dark-320x740-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "rowGrid": "24px 124px 124px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "rowGrid": "24px 260px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "viewport": "1440x1000",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 1096,
+          "rowWidth": 1096,
+          "rowGrid": "24px 441.812px 287.172px 145px 150px",
+          "openWidth": 441.8125,
+          "openHeight": 47.5,
+          "openX": 208,
+          "scrollWidth": 1440,
+          "clientWidth": 1440
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-light-1440x1000-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 441.8125,
+          "openHeight": 47.5,
+          "rowGrid": "24px 441.812px 287.172px 145px 150px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 733.96875,
+          "openHeight": 47.5,
+          "rowGrid": "24px 733.969px 160px 142.031px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "viewport": "768x1024",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 744,
+          "rowWidth": 744,
+          "rowGrid": "24px 348px 348px",
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 768,
+          "clientWidth": 768
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-light-768x1024-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "rowGrid": "24px 348px 348px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 708,
+          "openHeight": 47.5,
+          "rowGrid": "24px 708px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "viewport": "375x812",
+      "kpiCols": 4,
+      "expectedKpi": 4,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 351,
+          "rowWidth": 351,
+          "rowGrid": "24px 151.5px 151.5px",
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-light-375x812-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "rowGrid": "24px 151.5px 151.5px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 315,
+          "openHeight": 47.5,
+          "rowGrid": "24px 315px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "viewport": "360x800",
+      "kpiCols": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 336,
+          "rowWidth": 336,
+          "rowGrid": "24px 144px 144px",
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-light-360x800-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "rowGrid": "24px 144px 144px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 300,
+          "openHeight": 47.5,
+          "rowGrid": "24px 300px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    },
+    {
+      "theme": "light",
+      "viewport": "320x740",
+      "kpiCols": 2,
+      "expectedKpi": 2,
+      "kpiOk": true,
+      "partnerPage": {
+        "geom": {
+          "partnerPageWidth": 296,
+          "rowWidth": 296,
+          "rowGrid": "24px 124px 124px",
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "openX": 48,
+          "scrollWidth": 320,
+          "clientWidth": 320
+        },
+        "openVisible": true,
+        "clientNavOk": true,
+        "backOk": true,
+        "clickError": null,
+        "screenshot": "v6-light-320x740-partner-row.png"
+      },
+      "expandedGroup": {
+        "geom": {
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "rowGrid": "24px 124px 124px"
+        },
+        "clickOk": true
+      },
+      "flatList": {
+        "geom": {
+          "openWidth": 260,
+          "openHeight": 47.5,
+          "rowGrid": "24px 260px"
+        },
+        "clickOk": true
+      },
+      "editCancelOk": null,
+      "saveDisabled": null,
+      "ok": true
+    }
+  ],
+  "failures": 0,
+  "pass": true
+}
