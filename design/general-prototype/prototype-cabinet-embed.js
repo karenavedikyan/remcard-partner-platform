@@ -76,6 +76,8 @@
     } catch (_) {}
   }
 
+  window.__protoCabinetEmbedPost = post;
+
   window.__protoCabinetEmbedSignalContentReady = function protoCabinetEmbedSignalContentReady(pageN, extra) {
     var n = pageN != null ? Number(pageN) : Number(params.get("proto_n") || 0) || null;
     var msg = { type: "embed-content-ready", pageN: n };
@@ -210,7 +212,58 @@
     history.replaceState = noop;
   } catch (_) {}
 
-  post({ type: "ready", pageN: Number(params.get("proto_n") || 0) || null });
+  var EMBED_ADAPTER_PAGE_N = {
+    "139": 1,
+    "140": 1,
+    "141": 1,
+    "142": 1,
+    "143": 1,
+    "144": 1,
+    "145": 1,
+    "146": 1,
+    "147": 1,
+  };
+  var domHandshakeReady = false;
+  var embedAdapterReady = false;
+  var embedChildReadySent = false;
+
+  function embedPageN() {
+    return Number(params.get("proto_n") || 0) || 0;
+  }
+
+  function pageUsesEmbedAdapter() {
+    var n = embedPageN();
+    return n && EMBED_ADAPTER_PAGE_N[String(n)];
+  }
+
+  window.__protoCabinetEmbedAdapterReady = function protoCabinetEmbedAdapterReady(pageN) {
+    var expected = embedPageN();
+    if (expected && Number(pageN) !== expected) return;
+    embedAdapterReady = true;
+    maybeEmitChildReady();
+  };
+
+  function maybeEmitChildReady() {
+    if (embedChildReadySent) return;
+    if (!domHandshakeReady) return;
+    if (pageUsesEmbedAdapter() && !embedAdapterReady) return;
+    embedChildReadySent = true;
+    post({ type: "ready", pageN: embedPageN() || null });
+  }
+
+  function onDomHandshakeReady() {
+    domHandshakeReady = true;
+    if (!pageUsesEmbedAdapter()) embedAdapterReady = true;
+    maybeEmitChildReady();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", onDomHandshakeReady, { once: true });
+  } else if (typeof queueMicrotask === "function") {
+    queueMicrotask(onDomHandshakeReady);
+  } else {
+    setTimeout(onDomHandshakeReady, 0);
+  }
 
   window.addEventListener("message", function (ev) {
     var data = ev.data;

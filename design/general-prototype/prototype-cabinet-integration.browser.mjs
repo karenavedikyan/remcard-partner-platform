@@ -1467,6 +1467,15 @@ try {
   await r2Nest142.setViewportSize({ width: 1280, height: 900 });
   const r2NestErrors = [];
   r2Nest142.on("pageerror", (err) => r2NestErrors.push(String(err)));
+  const delayAdapterMs = 150;
+  await r2Nest142.route("**/observer-cabinet-embed.js*", async (route) => {
+    await new Promise((r) => setTimeout(r, delayAdapterMs));
+    await route.continue();
+  });
+  await r2Nest142.route("**/assignment-cabinet-embed.js*", async (route) => {
+    await new Promise((r) => setTimeout(r, delayAdapterMs));
+    await route.continue();
+  });
   await r2Nest142.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
   await r2Nest142.waitForFunction(
     () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),

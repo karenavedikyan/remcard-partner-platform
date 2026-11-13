@@ -7,6 +7,10 @@
 
   function post(msg) {
     try {
+      if (typeof window.__protoCabinetEmbedPost === "function") {
+        window.__protoCabinetEmbedPost(msg);
+        return;
+      }
       parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
     } catch (_) {}
   }
@@ -55,4 +59,5 @@
   });
 
   post({ type: "need-context", pageN: 141 });
+  window.__protoCabinetEmbedAdapterReady?.(141);
 })();

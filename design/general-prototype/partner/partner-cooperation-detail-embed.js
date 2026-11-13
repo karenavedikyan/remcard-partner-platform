@@ -9,6 +9,10 @@
 
   function post(msg) {
     try {
+      if (typeof window.__protoCabinetEmbedPost === "function") {
+        window.__protoCabinetEmbedPost(msg);
+        return;
+      }
       parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
     } catch (_) {}
   }
@@ -209,6 +213,7 @@
     window.__protoCabinetEmbedSignalContentReady?.(143);
   }
 
+  window.__protoCabinetEmbedAdapterReady?.(143);
   post({ type: "need-context", pageN: 143 });
   document.addEventListener("DOMContentLoaded", () => {
     mountPanelMode();

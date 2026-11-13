@@ -142,6 +142,24 @@ assert.match(
 const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
 assert.match(embedChild, /__protoCabinetEmbedParams/, "embed child reads injected search in srcdoc");
 assert.match(embedChild, /embed-content-ready/, "embed child signals model readiness to opaque parent");
+assert.match(embedChild, /__protoCabinetEmbedPost/, "embed child exposes tokenized post for adapters");
+assert.match(embedChild, /__protoCabinetEmbedAdapterReady/, "embed child waits for adapter before ready");
+assert.match(embedChild, /DOMContentLoaded/, "embed child defers ready until DOM handshake");
+assert.match(
+  embedChild,
+  /maybeEmitChildReady[\s\S]*type: "ready"/,
+  "tokenized ready is emitted only after adapter and DOM handshake",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/observer-cabinet-embed.js"), "utf8"),
+  /__protoCabinetEmbedPost/,
+  "142 adapter uses tokenized embed post",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/assignment-cabinet-embed.js"), "utf8"),
+  /__protoCabinetEmbedAdapterReady/,
+  "141 adapter signals handshake before child ready",
+);
 const srcdocLoaderFull = readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8");
 assert.match(srcdocLoaderFull, /assertActive/, "srcdoc mount checks session before iframe write");
 assert.match(srcdocLoaderFull, /StandaloneSrcdocStaleError/, "stale srcdoc fetch rejects without mounting");

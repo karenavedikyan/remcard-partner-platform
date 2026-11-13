@@ -14,6 +14,10 @@
 
   function post(msg) {
     try {
+      if (typeof window.__protoCabinetEmbedPost === "function") {
+        window.__protoCabinetEmbedPost(msg);
+        return;
+      }
       if (window.parent && window.parent !== window) {
         window.parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
       }
@@ -336,4 +340,5 @@
   });
 
   post({ type: "need-context", pageN: pageN || null });
+  if (pageN) window.__protoCabinetEmbedAdapterReady?.(pageN);
 })();
