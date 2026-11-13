@@ -68,4 +68,4 @@ Result: **11/11 PASS** (4 files).
 1. Shell: wire contextual `backLabel` on `ObserverClientDetailView`.
 2. When contract unblocks: public timeline list + purchase summary row (prototype `renderObserverClientPage`).
 3. Browser matrix 320–1024 on detail pages (depends on shared computed runner / П7).
-4. Commit tip: `6c74deb2f1d9a5fe2fc3cecdfabba919f5a61300`.
+4. Commit tip: `1ee2191e050db8339d0bd974a4629fb375ae99b7`.
