@@ -38,14 +38,34 @@
       root.innerHTML =
         '<main class="cert-error"><p>Выберите сертификат в кабинете и откройте гостевой просмотр снова.</p></main>';
     }
-    window.__protoCabinetEmbedSignalContentReady?.(139);
+    if (typeof window.__certificateEmbedGuestHydrate === "function") {
+      window.__certificateEmbedGuestHydrate(root, payload || {});
+    }
+    signalCertReady(payload || {});
+  }
+
+  function signalCertReady(payload) {
+    const qrSrc = root.querySelector("[data-cert-qr]")?.getAttribute("src") || "";
+    const qrPayload = payload?.qrDataUrl ? String(payload.qrDataUrl).length : 0;
+    window.__protoCabinetEmbedSignalContentReady?.(139, {
+      guestMarker: `cert139-qr-${qrSrc.startsWith("data:image") ? "ok" : "missing"}-payload-${qrPayload}`,
+    });
   }
 
   window.addEventListener("message", (ev) => {
     const data = ev.data;
     if (!data || data.source !== "proto-cabinet-host" || data.type !== "context") return;
     if (Number(data.pageN) !== 139) return;
-    renderPublic(data.payload || {});
+    const payload = data.payload || {};
+    const mounted = root.querySelector(".cert-guest, .pc-page");
+    if (!mounted) {
+      renderPublic(payload);
+      return;
+    }
+    if (typeof window.__certificateEmbedGuestHydrate === "function") {
+      window.__certificateEmbedGuestHydrate(root, payload);
+    }
+    signalCertReady(payload);
   });
 
   post({ type: "need-context", pageN: 139 });

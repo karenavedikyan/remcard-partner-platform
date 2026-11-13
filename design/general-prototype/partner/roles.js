@@ -81,7 +81,8 @@ import {
   certificatePublicModel,
   hydrateCertificateCard,
 } from "./certificate-view.js";
-import { h as renderCertificateGuestMain } from "./chunk-QXOSRGZH.js";
+import { h as renderCertificateGuestMain, e as renderPartnerProfilePage, j as publicCertificateShareUrl } from "./chunk-QXOSRGZH.js";
+import { a as certificateQrcode } from "./chunk-3HBG25M4.js";
 import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
@@ -99,6 +100,55 @@ import {
   openWalletMasterLedger,
 } from "./cabinet-sections.js";
 import "./chunk-5TBO732O.js";
+async function buildCertificateGuestEmbedExtras(publicModel) {
+  if (!publicModel) return {};
+  let shareUrl = "";
+  try {
+    shareUrl = publicCertificateShareUrl(publicModel);
+  } catch (_) {
+    shareUrl = String(publicModel.code || "");
+  }
+  const qrText =
+    shareUrl && shareUrl.length <= 1800 ? shareUrl : String(publicModel.code || "RemCard");
+  let qrDataUrl = "";
+  try {
+    qrDataUrl = await certificateQrcode.toDataURL(qrText, {
+      width: 600,
+      margin: 3,
+      errorCorrectionLevel: "M",
+    });
+  } catch (_) {
+    try {
+      qrDataUrl = await certificateQrcode.toString(qrText, { type: "svg", width: 300 });
+      if (qrDataUrl && !qrDataUrl.startsWith("data:")) {
+        qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrDataUrl)}`;
+      }
+    } catch (_) {}
+  }
+  const offers = publicModel.offers?.length
+    ? publicModel.offers
+    : [
+        {
+          name: publicModel.seller,
+          city: publicModel.city,
+          category: publicModel.category,
+          discount: publicModel.discount,
+        },
+      ];
+  const partnerProfileHtmlByIndex = offers.map((_, index) => {
+    try {
+      return renderPartnerProfilePage(publicModel, index);
+    } catch (_) {
+      return "";
+    }
+  });
+  return { qrDataUrl, shareUrl, partnerProfileHtmlByIndex };
+}
+async function enrichStandaloneEmbedPayload(pageN, payload) {
+  if (pageN !== 139 || !payload?.publicModel) return payload;
+  const extras = await buildCertificateGuestEmbedExtras(payload.publicModel);
+  return { ...payload, ...extras };
+}
 var xe =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
 function Ke(e, t) {
@@ -3364,11 +3414,19 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
   }
   if (pageN === 139 && ctx?.record) {
     const publicModel = ctx.publicModel || certificatePublicModel(ctx.record);
+    const query = new URLSearchParams(String(openQuery || "").replace(/^\?/, ""));
+    const partnerParam = query.get("partner");
+    let initialPartnerIndex = null;
+    if (partnerParam !== null && /^\d+$/.test(partnerParam)) {
+      initialPartnerIndex = Number(partnerParam);
+    }
     return embedPayloadEnvelope(pageN, ctx, {
       publicModel,
       publicHtml: renderCertificateGuestMain(publicModel),
       displayCode: publicModel.code,
       recordId: ctx.record.id,
+      initialPartnerIndex,
+      ...(ctx.guestEmbedExtras || {}),
     });
   }
   if (pageN === 140 && ctx?.guestHash) {
@@ -3440,6 +3498,8 @@ function ensureStandaloneHost() {
       notify: (m, tone) => U(m, tone || "info"),
       shouldResetOnRerender: () => i.screen !== "cabinet",
       resolveEmbedPayload: resolveStandaloneEmbedPayload,
+      enrichEmbedPayload: enrichStandaloneEmbedPayload,
+      buildCertificateGuestEmbedExtras,
       onCoopAction: (action, partnerId) => {
         const partner = P.find((p) => p.id === partnerId);
         if (!partner) return false;

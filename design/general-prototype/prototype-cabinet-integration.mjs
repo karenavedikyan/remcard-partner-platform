@@ -164,6 +164,16 @@ assert.match(
   "139 opaque embed applies host-rendered guest HTML",
 );
 assert.match(
+  readFileSync(path.join(root, "partner/certificate-cabinet-embed.js"), "utf8"),
+  /__certificateEmbedGuestHydrate/,
+  "139 opaque embed calls classic guest hydration binder",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/certificate.html"), "utf8"),
+  /certificate-embed-guest\.classic\.js/,
+  "139 guest page loads classic interaction binder for opaque srcdoc",
+);
+assert.match(
   readFileSync(path.join(root, "partner/certificate.html"), "utf8"),
   /<script src="\.\/certificate-cabinet-embed\.js/,
   "139 guest page uses classic embed script for opaque srcdoc",

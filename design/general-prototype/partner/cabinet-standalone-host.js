@@ -122,6 +122,8 @@ export function createCabinetStandaloneHost(config) {
     onCoopAction,
     onSupplementalAction,
     resolveEmbedPayload,
+    enrichEmbedPayload,
+    buildCertificateGuestEmbedExtras,
     shouldResetOnRerender,
   } = config;
   const urlBridge = { getRole, getEmployer };
@@ -150,6 +152,7 @@ export function createCabinetStandaloneHost(config) {
   let srcdocLoadGeneration = 0;
   let srcdocFetchAbort = null;
   let srcdocReadyAbort = null;
+  let contextSendGeneration = 0;
 
   function embedTokenMatches(dataToken) {
     return String(dataToken ?? "") === String(openEmbedToken ?? "");
@@ -307,10 +310,17 @@ export function createCabinetStandaloneHost(config) {
     return true;
   }
 
-  function sendContextToFrame() {
+  async function sendContextToFrame() {
     if (!openPageN || !resolveEmbedPayload) return;
-    const payload = resolveEmbedPayload(openPageN, openCtx, openQuery);
+    const sendGen = ++contextSendGeneration;
+    let payload = resolveEmbedPayload(openPageN, openCtx, openQuery);
     if (!payload) return;
+    if (typeof enrichEmbedPayload === "function") {
+      try {
+        payload = (await enrichEmbedPayload(openPageN, payload)) || payload;
+      } catch (_) {}
+    }
+    if (sendGen !== contextSendGeneration) return;
     try {
       frame.contentWindow?.postMessage(
         { source: "proto-cabinet-host", type: "context", pageN: openPageN, payload },
@@ -320,6 +330,7 @@ export function createCabinetStandaloneHost(config) {
   }
 
   function closeHost({ back = false, reset = false } = {}) {
+    contextSendGeneration += 1;
     abortPendingSrcdocWork();
     srcdocLoadGeneration += 1;
     hostEl.hidden = true;
@@ -445,6 +456,14 @@ export function createCabinetStandaloneHost(config) {
     syncHostThemeChrome();
     watchLayout();
     reposition();
+    if (pageN === 139 && openCtx?.publicModel && typeof buildCertificateGuestEmbedExtras === "function") {
+      const publicModel = openCtx.publicModel;
+      void buildCertificateGuestEmbedExtras(publicModel).then((guestEmbedExtras) => {
+        if (!guestEmbedExtras || openPageN !== loadPageN || srcdocLoadGeneration !== loadGeneration) return;
+        openCtx = { ...openCtx, guestEmbedExtras };
+        sendContextToFrame();
+      });
+    }
     const guestHash = embedCtx?.guestHash;
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
     const commitStandaloneReady = () => {
@@ -464,7 +483,7 @@ export function createCabinetStandaloneHost(config) {
 
     frame.onload = () => {
       if (!assertSrcdocSessionActive() && useSrcdoc) return;
-      sendContextToFrame();
+      if (!useSrcdoc) sendContextToFrame();
       if (!useSrcdoc && contentReadyPromise) {
         void contentReadyPromise
           .then(() => {
@@ -499,7 +518,6 @@ export function createCabinetStandaloneHost(config) {
       })
         .then((mountedUrl) => {
           if (!mountedUrl || !assertSrcdocSessionActive()) return null;
-          sendContextToFrame();
           return contentReady;
         })
         .then((ready) => {

@@ -1234,10 +1234,12 @@ try {
     () => {
       const doc = document.querySelector("#cabinet")?.contentDocument;
       const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const marker = frame?.dataset?.embedGuestMarker || "";
       return (
         frame?.dataset?.embedMount === "srcdoc" &&
         frame?.dataset?.embedContentReady === "1" &&
-        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 139
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 139 &&
+        /cert139-qr-ok/.test(marker)
       );
     },
     null,
@@ -1275,6 +1277,37 @@ try {
     );
   }
   assert.match(cert139Snap.title, /сертификат/i);
+  const cert139GuestMarker =
+    (await cabFrame.locator("[data-testid='cabinet-standalone-frame']").getAttribute("data-embed-guest-marker")) || "";
+  assert.match(cert139GuestMarker, /cert139-qr-/, cert139GuestMarker);
+
+  const cert139GuestFrame = cabFrame.frameLocator('[data-testid="cabinet-standalone-frame"]');
+  await cert139GuestFrame.locator(".cert-guest").waitFor({ timeout: 15000 });
+  const qrSrc = await cert139GuestFrame.locator("[data-cert-qr]").getAttribute("src");
+  assert.ok(qrSrc && qrSrc.startsWith("data:image"), `139 embed must hydrate QR image src (${cert139GuestMarker})`);
+
+  const certQrBtn = cert139GuestFrame.locator('[data-client-action="qr"]');
+  await certQrBtn.click();
+  await certQrBtn.click();
+  const afterQrSrc = await cert139GuestFrame.locator("[data-cert-qr]").getAttribute("src");
+  assert.ok(afterQrSrc && afterQrSrc.startsWith("data:image"), "139 QR must stay populated after repeat show");
+
+  await cert139GuestFrame.locator('a[href*="partner=0"]').first().click();
+  await cert139GuestFrame.locator(".pc-page").waitFor({ timeout: 10000 });
+  assert.equal(await cert139GuestFrame.locator(".cert-guest").count(), 0, "partner profile must replace guest cert main");
+  const partnerTitle = await cert139GuestFrame.locator("h1").first().textContent();
+  assert.match(String(partnerTitle || ""), /материал/i);
+  await cert139GuestFrame.getByRole("link", { name: /вернуться к сертификату/i }).first().click();
+  await cert139GuestFrame.locator(".cert-guest").waitFor({ timeout: 10000 });
+
+  await cert139GuestFrame.locator('[data-client-action="register"]').click();
+  const clientPanel = cert139GuestFrame.locator("[data-client-area]");
+  await clientPanel.getByText(/Сертификат будет в вашем кабинете/i).waitFor({ timeout: 10000 });
+  assert.ok(
+    (await cert139GuestFrame.locator('[data-client-action="complete"]').count()) > 0,
+    "139 embed opens demo login/register panel",
+  );
+
   await cert139Nest.close();
 
   const r2Nest142 = await browser.newPage();
