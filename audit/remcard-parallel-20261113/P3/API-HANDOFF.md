@@ -3,6 +3,8 @@
 **Branch:** `cursor/remcard-p3-acceptance-20261113`  
 **Read-only refs:** P2 `CONTRACT-DECISIONS.md`, `contracts.ts`, P1 BFF allowlist (no `referred-appeals*` today)
 
+**K8 candidates (navigator, not release):** `remcard-navigator` branch `cursor/remcard-k8-acceptance-20261113` @ `fc33b4fae859fb692757807c3b27696b66d57558` — `src/lib/clientAppeals/HANDOFF.md`, `contract.ts` (handoff commit `16253b84` not fetched here; read at `fc33b4fa`).
+
 ## 1. GET list (load adapter owner: П3)
 
 | | |
@@ -11,17 +13,26 @@
 | **Implementation** | `src/lib/clients-parity/fetch-observer-appeals.ts` |
 | **BFF today** | **403 Path not allowed** until `remcard-proxy.ts` allowlist (P1/Root), **not** П3 |
 
-### 1.1 Response 200 (agreed view-model)
+### 1.1 Response 200 (wire → UI)
 
-```json
-{
-  "appeals": "ObserverReferredAppeal[]",
-  "partners": "ObserverPartnerMeta[]",
-  "personalMeta": "Record<appealId, ObserverPersonalMeta> (optional)"
-}
-```
+**Wire (K2/K8 observer-safe slice)** — only these appeal fields may reach the adapter (see `OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS` in `fetch-observer-appeals.ts`):
 
-Types: `src/lib/clients-parity/types.ts`. Rehydrate overlay on reload: workspace passes `personalMeta` into `ObserverPartnersListView` as `displayPersonalMeta`.
+| K8 `contract.ts` | Partner UI `types.ts` |
+|------------------|-------------------------|
+| `clientDisplayName` | `clientName` |
+| `receivingBranchId` | `receivingPartnerId` (branch id = card key) |
+| `referrerProUserId` | `referrerPartnerId` (**pro user id** until P2 renames) |
+| `stageKey` (`sys_*` / `ws_*`) | `stageId` via `mapK8AppealStageKey` |
+| `createdAt` | `referralAt` when `referralAt` absent |
+| `certificateId`, `interest`, `updatedAt` | same |
+
+**Forbidden on observer wire (strip/ignore):** `privateNotes`, `clientContact`, purchase/finance projections (`paidAmountKopecks`, `purchaseOrderId`, `paidAt`, …), receiving CRM fields (`manualSourceKey`, `clientCity`, `budgetHint`, …).
+
+**Personal overlay:** `personalMeta` record and/or `personalOverlays[]` (`ClientAppealPersonalOverlay` without `viewerUserId` in UI). K5 owns writes.
+
+Types: `src/lib/clients-parity/types.ts`. Workspace rehydrates `displayPersonalMeta` after GET (read-only).
+
+**GET must never write** (K8 HANDOFF).
 
 ### 1.2 Load result union (`ObserverAppealsFetchResult`)
 
@@ -73,13 +84,25 @@ ObserverPersonalPersistResult =
   `PATCH /api/pro/referred-appeals/:id/personal-meta`,  
   `POST /api/pro/referred-appeals/personal-batch` (per `contracts.ts`).
 
-## 3. Unresolved for publication
+## 3. Root-reported K8 gaps (do not propagate)
+
+| # | Gap | Owner / note |
+|---|-----|----------------|
+| 1 | `access.ts` `canObserveOwnReferrals` ties to `canViewOwnOperations`; prod `ownerClientsAccess` allows eligible agent/specialist without employment | **K8** must align with **existing** eligibility (read-only reuse of server gates); П3 does not implement gates |
+| 2 | Prototype `partnerSettings` stage CRUD vs `fc33b4fa` schema without settings persistence | **K8** additive storage + contract; not observer list |
+| 3 | Active certificate uniqueness / `take:5` race | **K8** DB transaction + prototype `findActiveAppeal` predicate |
+| 4 | `storeCertificateScan.ts` create hook outside allowlists | **Root** minimal integration proposal only; П3 does not edit scan |
+| 5 | Strict observer DTO | **P2/K2** enforce on origin; **П3 adapter** maps + drops forbidden keys |
+
+## 4. Unresolved for publication
 
 | Dependency | Owner |
 |------------|-------|
-| `referred-appeals` on origin + BFF allowlist | P2/K8 + P1/Root |
-| Personal-meta routes + П5 adapter module | P5 + same |
+| K2 observer GET + P2 BFF DTO forward | K2/P2 |
+| `referred-appeals` allowlist | P1/Root |
+| Personal-meta routes + П5 adapter | K5/P5 |
 | Production DB migrate | User separate approval |
 | П4 detail stack on disk | Root cherry-pick |
+| Profile pin `89fb8e073c39c8dbd329996940b85c6a86751868` (Timeweb) | Root publish |
 
 **Section acceptance:** not claimed by this handoff.

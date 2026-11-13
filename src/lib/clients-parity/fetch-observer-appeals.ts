@@ -6,8 +6,46 @@ import type {
   ObserverReferredAppeal,
 } from "./types";
 
-/** Agreed list route (P2 inventory / BFF proxy when allowlisted). */
+/**
+ * K8 canonical source (candidate, not release):
+ * `karenavedikyan/remcard-navigator` @ `fc33b4fae859fb692757807c3b27696b66d57558`
+ * — `src/lib/clientAppeals/contract.ts`, `HANDOFF.md`.
+ * P2 BFF forwards K2 observer GET; this adapter maps wire → UI view-model only.
+ */
 export const OBSERVER_REFERRED_APPEALS_LIST_PATH = "/api/pro/referred-appeals";
+
+/** Receiving / finance fields that must never enter observer UI state (K8 strict DTO). */
+export const OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS = [
+  "privateNotes",
+  "clientContact",
+  "paidAmountKopecks",
+  "purchaseOrderId",
+  "paidAt",
+  "discountPercent",
+  "certValidUntil",
+  "clientCity",
+  "budgetHint",
+  "receivingOrganizationId",
+  "manualSourceKey",
+  "originKind",
+  "refusedReason",
+  "shippedAt",
+] as const;
+
+const K8_SYSTEM_STAGE_TO_UI: Record<string, string> = {
+  sys_new: "new",
+  sys_paid: "paid",
+  sys_shipped: "shipped",
+  sys_return: "return",
+  sys_refused: "refused",
+};
+
+export function mapK8AppealStageKey(stageKey: string): string {
+  const hit = K8_SYSTEM_STAGE_TO_UI[stageKey];
+  if (hit) return hit;
+  if (stageKey.startsWith("sys_")) return stageKey.slice(4);
+  return stageKey;
+}
 
 export type ObserverAppealsFetchErrorCode =
   | "BLOCKED_CONTRACT"
@@ -38,6 +76,8 @@ type ReferredAppealsApiBody = {
   appeals?: unknown;
   partners?: unknown;
   personalMeta?: unknown;
+  /** K8 / K5 list overlay (record or rows). */
+  personalOverlays?: unknown;
 };
 
 function referredBlocker() {
@@ -48,43 +88,70 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal | null {
+  const id = typeof row.id === "string" ? row.id : "";
+  const clientName =
+    typeof row.clientDisplayName === "string"
+      ? row.clientDisplayName
+      : typeof row.clientName === "string"
+        ? row.clientName
+        : "";
+  const receivingPartnerId =
+    typeof row.receivingBranchId === "string"
+      ? row.receivingBranchId
+      : typeof row.receivingPartnerId === "string"
+        ? row.receivingPartnerId
+        : "";
+  const referrerPartnerId =
+    typeof row.referrerProUserId === "string"
+      ? row.referrerProUserId
+      : typeof row.referrerPartnerId === "string"
+        ? row.referrerPartnerId
+        : "";
+  const updatedAt = typeof row.updatedAt === "string" ? row.updatedAt : "";
+  const stageRaw =
+    typeof row.stageKey === "string" ? row.stageKey : typeof row.stageId === "string" ? row.stageId : "new";
+  const stageId = mapK8AppealStageKey(stageRaw);
+  const referralAt =
+    typeof row.referralAt === "string"
+      ? row.referralAt
+      : typeof row.createdAt === "string"
+        ? row.createdAt
+        : row.referralAt === null
+          ? null
+          : undefined;
+
+  if (!id || !clientName || !receivingPartnerId || !referrerPartnerId || !updatedAt) {
+    return null;
+  }
+
+  return {
+    id,
+    clientName,
+    interest: typeof row.interest === "string" ? row.interest : row.interest === null ? null : undefined,
+    certificateId:
+      typeof row.certificateId === "string"
+        ? row.certificateId
+        : row.certificateId === null
+          ? null
+          : undefined,
+    receivingPartnerId,
+    /** Stores K8 `referrerProUserId` until P2 exposes explicit partner scope ids. */
+    referrerPartnerId,
+    updatedAt,
+    referralAt,
+    stageId,
+  };
+}
+
 function parseAppeals(raw: unknown): ObserverReferredAppeal[] | null {
   if (!Array.isArray(raw)) return null;
   const appeals: ObserverReferredAppeal[] = [];
   for (const row of raw) {
     if (!isRecord(row)) return null;
-    const id = typeof row.id === "string" ? row.id : "";
-    const clientName = typeof row.clientName === "string" ? row.clientName : "";
-    const receivingPartnerId =
-      typeof row.receivingPartnerId === "string" ? row.receivingPartnerId : "";
-    const referrerPartnerId =
-      typeof row.referrerPartnerId === "string" ? row.referrerPartnerId : "";
-    const updatedAt = typeof row.updatedAt === "string" ? row.updatedAt : "";
-    const stageId = typeof row.stageId === "string" ? row.stageId : "new";
-    if (!id || !clientName || !receivingPartnerId || !referrerPartnerId || !updatedAt) {
-      return null;
-    }
-    appeals.push({
-      id,
-      clientName,
-      interest: typeof row.interest === "string" ? row.interest : row.interest === null ? null : undefined,
-      certificateId:
-        typeof row.certificateId === "string"
-          ? row.certificateId
-          : row.certificateId === null
-            ? null
-            : undefined,
-      receivingPartnerId,
-      referrerPartnerId,
-      updatedAt,
-      referralAt:
-        typeof row.referralAt === "string"
-          ? row.referralAt
-          : row.referralAt === null
-            ? null
-            : undefined,
-      stageId,
-    });
+    const mapped = parseK8AppealRow(row);
+    if (!mapped) continue;
+    appeals.push(mapped);
   }
   return appeals;
 }
@@ -113,17 +180,41 @@ function parseBucket(raw: unknown): ObserverPersonalMeta["bucket"] | undefined {
   return undefined;
 }
 
-function parsePersonalMeta(raw: unknown): Record<string, ObserverPersonalMeta> {
-  if (!isRecord(raw)) return {};
+function mergePersonalEntry(
+  out: Record<string, ObserverPersonalMeta>,
+  appealId: string,
+  value: Record<string, unknown>,
+): void {
+  const alias =
+    typeof value.alias === "string" ? value.alias : value.alias === null ? undefined : undefined;
+  const tag = typeof value.tag === "string" ? value.tag : value.tag === null ? undefined : undefined;
+  const note = typeof value.note === "string" ? value.note : value.note === null ? undefined : undefined;
+  out[appealId] = {
+    alias,
+    tag,
+    note,
+    bucket: parseBucket(value.bucket),
+  };
+}
+
+function parsePersonalMeta(
+  record: unknown,
+  overlays: unknown,
+): Record<string, ObserverPersonalMeta> {
   const out: Record<string, ObserverPersonalMeta> = {};
-  for (const [appealId, value] of Object.entries(raw)) {
-    if (!isRecord(value)) continue;
-    out[appealId] = {
-      alias: typeof value.alias === "string" ? value.alias : undefined,
-      tag: typeof value.tag === "string" ? value.tag : undefined,
-      note: typeof value.note === "string" ? value.note : undefined,
-      bucket: parseBucket(value.bucket),
-    };
+  if (isRecord(record)) {
+    for (const [appealId, value] of Object.entries(record)) {
+      if (!isRecord(value)) continue;
+      mergePersonalEntry(out, appealId, value);
+    }
+  }
+  if (Array.isArray(overlays)) {
+    for (const row of overlays) {
+      if (!isRecord(row)) continue;
+      const appealId = typeof row.appealId === "string" ? row.appealId : "";
+      if (!appealId) continue;
+      mergePersonalEntry(out, appealId, row);
+    }
   }
   return out;
 }
@@ -246,7 +337,7 @@ export async function fetchObserverReferredAppeals(
       ok: true,
       appeals,
       partners,
-      personalMeta: parsePersonalMeta(payload.personalMeta),
+      personalMeta: parsePersonalMeta(payload.personalMeta, payload.personalOverlays),
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
