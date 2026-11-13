@@ -500,7 +500,15 @@
 
 .personalRowsFlat {
   display: grid;
-  gap: 8px;
+  gap: 0;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 12px;
+  padding: 0 16px;
+}
+
+.personalRowsFlat > .personalRow:first-child {
+  border-top: 0;
 }
 
 .personalRow {
@@ -510,8 +518,13 @@
   gap: 12px;
   align-items: center;
   padding: 14px 0;
-  border-bottom: 1px solid var(--line, #e2e8f0);
+  border-top: 1px solid var(--line, #e2e8f0);
   min-width: 0;
+}
+
+.personalRow:has(.personalCheck input:checked) {
+  background: var(--observer-tint);
+  box-shadow: 8px 0 var(--observer-tint), -8px 0 var(--observer-tint);
 }
 
 .personalRowGrouped {
@@ -712,6 +725,7 @@
 [data-theme="dark"] .partnerCard,
 [data-theme="dark"] .filters,
 [data-theme="dark"] .personalToolbar,
+[data-theme="dark"] .personalRowsFlat,
 [data-theme="dark"] .blocked {
   background: var(--surface, #1e293b);
   border-color: var(--line, #334155);

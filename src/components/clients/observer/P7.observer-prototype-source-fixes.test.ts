@@ -17,6 +17,14 @@ describe("P7 — prototype source fixes (3dc31836)", () => {
     expect(css).toMatch(/\.personalNote[\s\S]{0,200}white-space:\s*pre-wrap/);
   });
 
+  it("flat shell, row border-top, selection tint via :has (proto 3dc31836)", () => {
+    expect(css).toMatch(/\.personalRowsFlat\s*\{[\s\S]*border-radius:\s*12px/);
+    expect(css).toMatch(/\.personalRowsFlat\s*\{[\s\S]*padding:\s*0 16px/);
+    expect(css).toMatch(/\.personalRow\s*\{[\s\S]*border-top:\s*1px solid/);
+    expect(css).not.toMatch(/\.personalRow\s*\{[\s\S]*border-bottom:/);
+    expect(css).toMatch(/\.personalRow:has\(\.personalCheck input:checked\)/);
+  });
+
   describe("computed @375/1440 container (Manrope + globals)", () => {
     let browser: Browser;
 
