@@ -16,6 +16,7 @@ type Props = {
   grouped?: boolean;
   showEdit?: boolean;
   onEdit?: () => void;
+  onOpen?: () => void;
 };
 
 export function ObserverPersonalClientRow({
@@ -26,6 +27,7 @@ export function ObserverPersonalClientRow({
   grouped = false,
   showEdit = true,
   onEdit,
+  onOpen,
 }: Props) {
   const name = displayClientName(appeal, meta?.alias);
   const status = observerAppealStatusLabel(appeal);
@@ -50,6 +52,7 @@ export function ObserverPersonalClientRow({
         type="button"
         className={styles.personalOpen}
         data-ca-action={`observer:client:${appeal.id}`}
+        onClick={() => onOpen?.()}
       >
         <strong>{name}</strong>
         {meta?.alias && meta.alias !== appeal.clientName ? (

@@ -545,3 +545,89 @@
 [data-theme="dark"] .meta strong {
   color: var(--ink, #f1f5f9);
 }
+
+.backBtn {
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.backBtn:focus-visible {
+  outline: 2px solid var(--accent, #c12b2f);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.primaryBtn {
+  border: 1px solid var(--brand, #c12b2f);
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: var(--brand, #c12b2f);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.editPanel,
+.confirmPanel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+
+.field input,
+.field textarea {
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 44px;
+  font: inherit;
+}
+
+.detailGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.detailGrid dt {
+  color: var(--muted, #64748b);
+  font-size: 12px;
+}
+
+.detailGrid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.partnerPageHead h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.statsInline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}

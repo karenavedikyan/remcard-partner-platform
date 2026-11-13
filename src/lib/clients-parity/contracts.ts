@@ -44,7 +44,8 @@ export const CLIENTS_CONTRACT_BLOCKERS: ContractBlocker[] = [
       "POST /api/pro/client-appeals/batch",
       "GET/POST /api/pro/client-appeals/working-stages",
     ],
-    evidence: "src/lib/remcard-proxy.ts allows only /api/pro/agent-clients*; no client-appeals routes.",
+    evidence:
+      "src/lib/remcard-proxy.ts: no /api/pro/client-appeals*; only order-scoped PATCH /api/store/orders/:id/receiving-client (linking purchase, not appeals CRM).",
   },
   {
     id: "BLK-OBSERVER-REFERRED",

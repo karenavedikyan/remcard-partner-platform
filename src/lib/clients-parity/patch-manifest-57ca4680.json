@@ -1,0 +1,19 @@
+{
+  "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "excludeFromCherryPick": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/lib/onboarding-step/history-link-eligibility.ts",
+    "vitest.config.ts"
+  ],
+  "includeForCherryPick": [
+    "src/components/clients/ClientsListWorkspace.tsx",
+    "src/components/clients/direction/**",
+    "src/components/clients/observer/**",
+    "src/lib/clients-parity/**"
+  ],
+  "productionWiringAlreadyPresent": {
+    "page": "src/app/clients/page.tsx",
+    "snippet": "canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}"
+  }
+}

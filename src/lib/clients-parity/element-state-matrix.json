@@ -1,0 +1,1625 @@
+{
+  "generatedAt": "2026-11-13T10:07:52.463Z",
+  "rows": [
+    {
+      "requirement_id": "C26",
+      "page": 79,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 79,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 79,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 80,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 80,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 80,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 81,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 81,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 81,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 82,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 82,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 82,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 83,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 83,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 83,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 84,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 84,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 84,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 85,
+      "role": "specialist",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 85,
+      "role": "specialist",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 85,
+      "role": "specialist",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 86,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 86,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 86,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 87,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 87,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 87,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 88,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 88,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 88,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 89,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 89,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 89,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 90,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 90,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 90,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 91,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 91,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 91,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 92,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 92,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 92,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 93,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 93,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 93,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 94,
+      "role": "store",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 94,
+      "role": "store",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 94,
+      "role": "store",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 95,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 95,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 95,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 96,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 96,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 96,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 97,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 97,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 97,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 98,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 98,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 98,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 99,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 99,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 99,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 100,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 100,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 100,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 101,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 101,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 101,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 102,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 102,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 102,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 103,
+      "role": "company",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 103,
+      "role": "company",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 103,
+      "role": "company",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 104,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 104,
+      "role": "agent",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 105,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 105,
+      "role": "agent",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 106,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 106,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 106,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 106,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 106,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 106,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 107,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 107,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 107,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 107,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 107,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 107,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 108,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 108,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 108,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 108,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 108,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 108,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 109,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 109,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 109,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 109,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 109,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 109,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 110,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 110,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 110,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 110,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 110,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 110,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 111,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 111,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 111,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 111,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 111,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 111,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 112,
+      "role": "agent",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 112,
+      "role": "agent",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 112,
+      "role": "agent",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 112,
+      "role": "agent",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 112,
+      "role": "agent",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 112,
+      "role": "agent",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 113,
+      "role": "employee",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 113,
+      "role": "employee",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C27",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-observer-partner-card",
+      "implementation": "ObserverPartnerCard.tsx",
+      "prototype_source": "client-appeals.css",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C35",
+      "page": 114,
+      "role": "employee",
+      "selector": "data-observer-personal-edit",
+      "implementation": "ObserverPersonalEditPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C37",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-observer-personal-confirm",
+      "implementation": "ObserverPersonalConfirmPanel.tsx",
+      "prototype_source": "observer-personal-list.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-PERSONAL-PERSIST"
+    },
+    {
+      "requirement_id": "C39",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-observer-partner-page",
+      "implementation": "ObserverPartnerDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C40",
+      "page": 114,
+      "role": "employee",
+      "selector": "ca-observer-client-page",
+      "implementation": "ObserverClientDetailView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-OBSERVER-REFERRED"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 115,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 115,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 115,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 116,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 116,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 116,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 117,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 117,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 117,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 118,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 118,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 118,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 119,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 119,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 119,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 120,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 120,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 120,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 121,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 121,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 121,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 122,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 122,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 122,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    },
+    {
+      "requirement_id": "C26",
+      "page": 123,
+      "role": "employee",
+      "selector": "ca-observer-partners-list",
+      "implementation": "ObserverPartnersListView.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C03",
+      "page": 123,
+      "role": "employee",
+      "selector": "ca-clients-directions",
+      "implementation": "ClientsDirectionTabs.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "IN_PROGRESS",
+      "blocker": ""
+    },
+    {
+      "requirement_id": "C07",
+      "page": 123,
+      "role": "employee",
+      "selector": "ca-receiving-appeals-blocked",
+      "implementation": "ReceivingAppealsBlocked.tsx",
+      "prototype_source": "client-appeals.js",
+      "status": "BLOCKED",
+      "blocker": "BLK-RECEIVING-APPEALS"
+    }
+  ]
+}

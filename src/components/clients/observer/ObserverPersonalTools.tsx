@@ -23,6 +23,9 @@ type Props = {
   onSelectAll: (checked: boolean) => void;
   onClearSelection: () => void;
   onEditSelected?: () => void;
+  onRequestArchive?: () => void;
+  onRequestTrash?: () => void;
+  onRequestRestore?: () => void;
   persistenceNotice?: string | null;
 };
 
@@ -40,6 +43,9 @@ export function ObserverPersonalTools({
   onSelectAll,
   onClearSelection,
   onEditSelected,
+  onRequestArchive,
+  onRequestTrash,
+  onRequestRestore,
   persistenceNotice,
 }: Props) {
   const selectRef = (input: HTMLInputElement | null) => {
@@ -121,14 +127,45 @@ export function ObserverPersonalTools({
         </strong>
         {selectedCount > 0 ? (
           <div className={styles.personalActions}>
-            <button
-              type="button"
-              className={styles.ghostBtn}
-              data-observer-action="edit"
-              onClick={() => onEditSelected?.()}
-            >
-              Редактировать
-            </button>
+            {bucket !== "trash" ? (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                data-observer-action="edit"
+                onClick={() => onEditSelected?.()}
+              >
+                Редактировать
+              </button>
+            ) : null}
+            {bucket === "active" ? (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                data-observer-action="move:archived"
+                onClick={() => onRequestArchive?.()}
+              >
+                В архив
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                data-observer-action="restore"
+                onClick={() => onRequestRestore?.()}
+              >
+                Восстановить
+              </button>
+            )}
+            {bucket !== "trash" ? (
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                data-observer-action="move:trash"
+                onClick={() => onRequestTrash?.()}
+              >
+                Удалить у себя
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles.ghostBtn}

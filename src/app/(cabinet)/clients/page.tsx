@@ -1,7 +1,6 @@
 import { SessionGate } from "@/components/auth/SessionGate";
 import { ClientsListWorkspace } from "@/components/clients/ClientsListWorkspace";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { canLinkOnboardingHistoryFromUserRole } from "@/lib/onboarding-step/history-link-eligibility";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +15,7 @@ export default async function ClientsPage() {
 
   return (
     <CabinetShell returnTo={RETURN_PATH}>
-      <ClientsListWorkspace
-        canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
-      />
+      <ClientsListWorkspace />
     </CabinetShell>
   );
 }

@@ -65,7 +65,7 @@ export default defineConfig({
       "src/lib/business-clients/client-list-row.test.ts",
       "src/lib/clients-parity/contracts.test.ts",
       "src/lib/clients-parity/observer-stats.test.ts",
-      "src/lib/onboarding-step/history-link-eligibility.test.ts",
+      "src/lib/clients-parity/observer-visual-tokens.test.ts",
       "src/components/clients/ClientsListWorkspace.props.test.tsx",
       "src/components/clients/observer/ObserverPartnersListView.test.tsx",
       "src/lib/business-owner-certificates/copy.test.ts",

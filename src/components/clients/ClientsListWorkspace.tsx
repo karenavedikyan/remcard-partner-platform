@@ -43,9 +43,14 @@ type Props = {
   canLinkOnboardingHistory?: boolean;
 };
 
+/**
+ * `canLinkOnboardingHistory` is forwarded on production `OwnerClientsGate` at 57ca4680.
+ * R5 branch gate is unchanged (read-only); prop is accepted for route compatibility.
+ */
 export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
+  void canLinkOnboardingHistory;
   return (
-    <OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>
+    <OwnerClientsGate>
       <ClientsListBody />
     </OwnerClientsGate>
   );

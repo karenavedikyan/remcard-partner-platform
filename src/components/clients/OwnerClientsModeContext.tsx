@@ -7,7 +7,6 @@ export type OwnerClientsAccessMode = "agent" | "specialist" | "business";
 type OwnerClientsModeValue = {
   mode: OwnerClientsAccessMode;
   businessPartnerType?: "STORE" | "COMPANY";
-  canLinkOnboardingHistory?: boolean;
 };
 
 const OwnerClientsModeContext = createContext<OwnerClientsModeValue | null>(null);
@@ -15,18 +14,14 @@ const OwnerClientsModeContext = createContext<OwnerClientsModeValue | null>(null
 export function OwnerClientsModeProvider({
   mode,
   businessPartnerType,
-  canLinkOnboardingHistory,
   children,
 }: {
   mode: OwnerClientsAccessMode;
   businessPartnerType?: "STORE" | "COMPANY";
-  canLinkOnboardingHistory?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <OwnerClientsModeContext.Provider
-      value={{ mode, businessPartnerType, canLinkOnboardingHistory }}
-    >
+    <OwnerClientsModeContext.Provider value={{ mode, businessPartnerType }}>
       {children}
     </OwnerClientsModeContext.Provider>
   );
@@ -38,8 +33,4 @@ export function useOwnerClientsMode(): OwnerClientsAccessMode | null {
 
 export function useOwnerClientsBusinessPartnerType(): "STORE" | "COMPANY" | undefined {
   return useContext(OwnerClientsModeContext)?.businessPartnerType;
-}
-
-export function useOwnerClientsCanLinkOnboardingHistory(): boolean | undefined {
-  return useContext(OwnerClientsModeContext)?.canLinkOnboardingHistory;
 }

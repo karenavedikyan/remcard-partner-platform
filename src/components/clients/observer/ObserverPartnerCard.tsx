@@ -24,6 +24,8 @@ type Props = {
   personalMeta: Record<string, ObserverPersonalMeta>;
   bucket: string;
   onEditClient: (id: string) => void;
+  onPartnerOpen: () => void;
+  onClientOpen: (id: string) => void;
 };
 
 export function ObserverPartnerCard({
@@ -39,6 +41,8 @@ export function ObserverPartnerCard({
   personalMeta,
   bucket,
   onEditClient,
+  onPartnerOpen,
+  onClientOpen,
 }: Props) {
   const stats = partnerAppealStats(appeals);
   const last = formatObserverDateTime(stats.lastUpdate);
@@ -76,6 +80,7 @@ export function ObserverPartnerCard({
             className={styles.partnerOpenBtn}
             data-ca-action={`observer:partner:${partner.id}`}
             aria-label={`Открыть партнёра: ${partner.name}`}
+            onClick={onPartnerOpen}
           >
             <div className={styles.partnerCardHead}>
               <strong>
@@ -164,6 +169,7 @@ export function ObserverPartnerCard({
                 grouped
                 showEdit={bucket !== "trash"}
                 onEdit={() => onEditClient(a.id)}
+                onOpen={() => onClientOpen(a.id)}
               />
             ))}
           </div>
