@@ -1,10 +1,10 @@
 RUN  v3.2.7 /agent/repos/remcard-partner-platform
 
- ✓ src/components/clients/observer/P3.ObserverPartnerCard.test.tsx (3 tests) 131ms
- ✓ src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx (3 tests) 245ms
- ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests) 543ms
- ✓ src/components/clients/observer/P3.ObserverFilterChips.test.tsx (3 tests) 83ms
+ ✓ src/components/clients/observer/P3.ObserverPartnerCard.test.tsx (3 tests)
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx (3 tests)
+ ✓ src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx (4 tests)
+ ✓ src/components/clients/observer/P3.ObserverFilterChips.test.tsx (3 tests)
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests)
 
- Test Files  4 passed (4)
-      Tests  16 passed (16)
-   Duration  1.37s
+ Test Files  5 passed (5)
+      Tests  20 passed (20)

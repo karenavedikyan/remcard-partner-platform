@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ComponentProps, type FC } from "react";
 import { filterObserverAppeals } from "@/lib/clients-parity/filter-observer";
 import { groupAppealsByPartner } from "@/lib/clients-parity/observer-stats";
 import type { ObserverFilterState } from "@/lib/clients-parity/filter-observer";
@@ -47,6 +47,20 @@ type Props = {
 
 function partnersMap(partners: ObserverPartnerMeta[]) {
   return new Map(partners.map((p) => [p.id, p]));
+}
+
+type ClientNav = Extract<Nav, { view: "client" }>;
+
+type ObserverClientDetailViewWithBackLabel = FC<
+  ComponentProps<typeof ObserverClientDetailView> & { backLabel?: string }
+>;
+
+const ObserverClientDetailWithBackLabel =
+  ObserverClientDetailView as ObserverClientDetailViewWithBackLabel;
+
+/** Prototype `clientAppealsSubpageBack` (3dc31836) + flat list return to partners overview. */
+export function observerClientBackLabel(clientNav: ClientNav): string {
+  return clientNav.partnerId ? "← К списку клиентов" : "← К партнёрам";
 }
 
 function bucketCounts(
@@ -210,9 +224,10 @@ export function ObserverPartnersListView({
     const appeal = appeals.find((a) => a.id === nav.clientId);
     if (appeal) {
       return (
-        <ObserverClientDetailView
+        <ObserverClientDetailWithBackLabel
           appeal={appeal}
           partner={partnersById.get(appeal.receivingPartnerId)}
+          backLabel={observerClientBackLabel(nav)}
           onBack={backFromSubView}
         />
       );

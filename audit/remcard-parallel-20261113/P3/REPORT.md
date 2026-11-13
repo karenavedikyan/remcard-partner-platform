@@ -6,6 +6,7 @@
 | --- | --- |
 | Agent | П3 (bc-409f1419) |
 | Branch | `cursor/remcard-p3-acceptance-20261113` |
+| Tip (this delta) | *(see commit below)* |
 | Base (author candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
 | Prototype ref | `3dc31836cd18d9209c20097f18b906dd276f7af6` (`design/general-prototype/partner/client-appeals.js`) |
 | Production tip (read-only) | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
@@ -14,7 +15,7 @@
 
 | File | Summary |
 | --- | --- |
-| `ObserverPartnersListView.tsx` | Bucket-specific empty states vs filter-empty (prototype `renderObserverPartnersList`); removed non-prototype period option «Год» (365); indent fix in partner nav branch. |
+| `ObserverPartnersListView.tsx` | Bucket-specific empty states vs filter-empty (prototype `renderObserverPartnersList`); removed non-prototype period option «Год» (365); `observerClientBackLabel` + `backLabel` call site (P4 contract via cast); indent fix in partner nav branch. |
 | `ObserverFilterChips.tsx` | Period chip labels aligned to prototype (30/90); `aria-label` on clear chip buttons. |
 | `ObserverPartnerCard.tsx` | *(no diff this run — verified against prototype)* |
 | `P3.*.test.tsx` | New scoped tests (chips, card, list roundtrip). |
@@ -27,7 +28,7 @@
   src/components/clients/observer/ObserverPartnersListView.test.tsx
 ```
 
-Result: **16/16 PASS** (4 files).
+Result: **20/20 PASS** (5 P3 files + legacy list view) — see `vitest-p3.log`.
 
 ## Requirement ledger (П3 scope)
 
@@ -47,9 +48,11 @@ Result: **16/16 PASS** (4 files).
 
 ## Cross-owner dependencies
 
+- **П4 (details)**: `ObserverClientDetailView.backLabel` + `data-testid="ca-clients-back"` on `origin/cursor/remcard-p4-acceptance-20261113`. П3 passes `backLabel` via cast only; **visible label BLOCKED** on this branch until P4 lands — mock vitest validates shell wiring.
+- **П4 (details)**: `ObserverPartnerDetailView` partner drill page (read-only here).
+- **П5 (personal controls)**: `ObserverPersonalTools`, personal rows, edit/confirm panels.
+- **П6 (direction)**: `ObserverPartnersWorkspace` / direction tabs — not П3 list overview.
 - **П7**: `.ca-personal-partners .ca-observer-stats` grid (4 col / 360→2 col), disclosure show/hide CSS, chip spacing.
-- **П4+**: `ObserverPersonalTools`, personal rows, edit/confirm panels.
-- **П5/П6**: `ObserverPartnerDetailView`, `ObserverClientDetailView` navigation targets.
 - **Platform**: Referred appeals fetch + personal-meta persistence API (section BLOCKED per team brief).
 
 ## Remaining work
