@@ -61,8 +61,16 @@ export function ObserverPersonalClientRow({
         <span className={styles.mutedSmall}>
           {appeal.interest || appeal.certificateId || "Интерес не указан"}
         </span>
-        {meta?.tag ? <span className={styles.personalTag}>Моя метка: {meta.tag}</span> : null}
-        {meta?.note ? <span className={styles.personalNote}>{meta.note}</span> : null}
+        {meta?.tag ? (
+          <span className={styles.personalTag}>
+            {grouped ? `Моя метка: ${meta.tag}` : meta.tag}
+          </span>
+        ) : null}
+        {meta?.note ? (
+          <span className={styles.personalNote}>
+            {grouped ? `Моя заметка: ${meta.note}` : meta.note}
+          </span>
+        ) : null}
       </button>
       <div className={styles.personalStatus}>
         {grouped ? <span className={styles.cellLabel}>Статус у партнёра</span> : null}

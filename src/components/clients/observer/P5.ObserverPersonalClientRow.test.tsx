@@ -19,7 +19,7 @@ describe("P5 ObserverPersonalClientRow", () => {
       />,
     );
     expect(screen.getByText("Для меня")).toBeTruthy();
-    expect(screen.getByText(/Моя метка: важно/)).toBeTruthy();
+    expect(screen.getByText("важно")).toBeTruthy();
     expect(screen.getByText("Перезвонить")).toBeTruthy();
     await user.click(screen.getByRole("checkbox", { name: /Выбрать: Для меня/ }));
     expect(onSelect).toHaveBeenCalledWith(true);
@@ -43,6 +43,7 @@ describe("P5 ObserverPersonalClientRow", () => {
     render(
       <ObserverPersonalClientRow
         appeal={P5_APPEAL}
+        meta={P5_META}
         selected
         grouped
         onSelect={vi.fn()}
@@ -50,6 +51,7 @@ describe("P5 ObserverPersonalClientRow", () => {
       />,
     );
     expect(screen.getByText("Статус у партнёра")).toBeTruthy();
+    expect(screen.getByText(/Моя метка: важно/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Изменить для себя" }));
     expect(onEdit).toHaveBeenCalled();
   });
