@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import { shouldPreferBusinessWorkplaceDispatch } from "@/lib/cabinet-presentation/resolve";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
 import type { ClientsParityDirection } from "@/lib/clients-parity/types";
@@ -68,8 +70,23 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId }: TabbedProps
 /** Hook-free role router: agent observer-only; tabbed roles keyed to reset subtree. */
 export function ClientsDirectionWorkspace({ accessMode }: Props) {
   const searchParams = useSearchParams();
+  const presentation = useCabinetPresentation();
   const receivingReturn = searchParams.get("direction") === "receiving";
   const initialAppealId = receivingReturn ? searchParams.get("appealId")?.trim() || null : null;
+
+  // Org staff are not observer referrers. Mirror the existing workplace dispatch;
+  // do not offer a tab whose backend gate correctly denies this actor.
+  if (accessMode === "business" && presentation && shouldPreferBusinessWorkplaceDispatch({
+    proContextRole: presentation.proContext?.role,
+    workplacePartnerType: presentation.workplacePartnerType,
+    workplacePartnerTypeSource: presentation.workplacePartnerTypeSource,
+  })) {
+    return (
+      <div className={styles.clientsScope} data-testid="clients-workplace-receiving-only">
+        <ReceivingAppealsWorkspace initialAppealId={initialAppealId} />
+      </div>
+    );
+  }
 
   if (accessMode === "agent") {
     return <ObserverPartnersWorkspace />;
