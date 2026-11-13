@@ -6,7 +6,7 @@
 | --- | --- |
 | Base (candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
 | Branch | `cursor/remcard-p5-acceptance-20261113` |
-| Commit | _(заполняется после push)_ |
+| Commit | `4d580e6ea9cf3cf922210be419664c164b1abd4e` |
 
 ## Изменённые файлы (write allowlist + отчёт + тесты)
 
