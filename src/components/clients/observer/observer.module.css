@@ -433,16 +433,19 @@
 
 .personalRow {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) minmax(120px, 0.5fr) auto;
+  /* Prototype .ca-personal-row — flat list default */
+  grid-template-columns: 24px minmax(0, 1fr) minmax(100px, 160px) auto;
   gap: 12px;
-  align-items: start;
-  padding: 12px 0;
+  align-items: center;
+  padding: 14px 0;
   border-bottom: 1px solid var(--line, #e2e8f0);
   min-width: 0;
 }
 
 .personalRowGrouped {
+  /* Prototype .ca-personal-row.ca-observer-card-client — desktop grouped */
   grid-template-columns: 24px minmax(0, 1fr) minmax(130px, 0.65fr) 145px 150px;
+  align-items: start;
 }
 
 /* Narrow viewports: stack grouped/flat client rows (prototype observer-personal-list). */
@@ -536,6 +539,9 @@
   cursor: pointer;
   font: inherit;
   min-width: 0;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+  color: inherit;
 }
 
 .personalOpen strong {
@@ -612,6 +618,82 @@
 
   .compactTop {
     min-height: 0;
+  }
+}
+
+/*
+ * Prototype client-appeals.css responsive personal rows (3dc31836).
+ * Without these, grouped desktop tracks (24+130+145+150) crush minmax(0,1fr)
+ * to 0px below ~449px — open button width 0, Playwright click fails.
+ */
+@media (max-width: 1100px) {
+  .clientColumns {
+    display: none;
+  }
+
+  .personalRowGrouped {
+    grid-template-columns: 24px repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+    padding: 20px 0;
+  }
+
+  .personalRowGrouped > .personalCheck {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    align-self: start;
+  }
+
+  .personalRowGrouped > .personalOpen,
+  .personalRowGrouped > .ghostBtn {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+
+  .personalRowGrouped > .personalStatus {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .personalRowGrouped > .clientUpdated {
+    grid-column: 3;
+    justify-self: start;
+  }
+
+  .personalRowGrouped .personalStatus {
+    display: grid;
+    gap: 4px;
+    justify-items: start;
+  }
+
+  .personalRowGrouped .cellLabel {
+    display: block;
+  }
+}
+
+@media (max-width: 760px) {
+  .personalRow:not(.personalRowGrouped) {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: start;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .personalCheck {
+    grid-row: 1 / 4;
+    align-self: start;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .personalStatus,
+  .personalRow:not(.personalRowGrouped) > .ghostBtn,
+  .personalRow:not(.personalRowGrouped) > time {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .personalRow:not(.personalRowGrouped) .personalStatus {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
   }
 }
 

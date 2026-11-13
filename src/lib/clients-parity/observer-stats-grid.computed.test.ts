@@ -14,7 +14,14 @@ describe("observer partner KPI .stats grid (computed, prototype 3dc31836)", () =
   const css = loadObserverModuleCss();
 
   beforeAll(async () => {
-    browser = await chromium.launch();
+    browser = await chromium.launch({
+      headless: true,
+      executablePath:
+        process.env.WALLET_QA_CHROME ||
+        process.env.CHROME_BIN ||
+        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+        undefined,
+    });
   }, 60_000);
 
   afterAll(async () => {
