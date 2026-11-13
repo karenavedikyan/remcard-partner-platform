@@ -1148,6 +1148,86 @@ try {
   );
   await staleRacePage.close();
 
+  const cert139Nest = await browser.newPage();
+  await cert139Nest.setViewportSize({ width: 1280, height: 900 });
+  const certPageErrors = [];
+  cert139Nest.on("pageerror", (err) => certPageErrors.push(String(err)));
+  await cert139Nest.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  await cert139Nest.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await cert139Nest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "store";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  const cabFrame = cert139Nest.frameLocator("#cabinet");
+  await cabFrame.locator(".shell aside.sidebar").waitFor({ timeout: 25000 });
+  await cabFrame.locator('[data-testid="nav-recommendations"]').click();
+  const demoList = cabFrame.locator(".collection-demo");
+  if (await demoList.count()) await demoList.evaluate((el) => { el.open = true; });
+  await cabFrame.locator('[data-coll-action="seed"]').click();
+  const cert80Row = cabFrame.locator("[data-coll-open]", { hasText: /сертификат\s*80/i });
+  await cert80Row.first().waitFor({ timeout: 15000 });
+  const certCodeBeforeOpen =
+    (await cert80Row.first().locator("xpath=ancestor::tr//td[contains(@class,'collection-detail')]").textContent().catch(() => null))?.trim() || "";
+  await cert80Row.first().click();
+  const publicView = cabFrame.locator('[data-testid="certificate-public-view"]');
+  await publicView.waitFor({ timeout: 15000 });
+  await publicView.click();
+  await cert139Nest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 139
+      );
+    },
+    null,
+    { timeout: 30000 },
+  );
+  const cert139Snap = await cert139Nest.evaluate((expectedDetail) => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    const srcdoc = frame?.getAttribute("srcdoc") || "";
+    return {
+      title: doc?.querySelector("[data-standalone-title]")?.textContent?.trim() || "",
+      url: frame?.dataset?.embedUrl || "",
+      srcdoc,
+      srcdocLen: srcdoc.length,
+      contentReady: frame?.dataset?.embedContentReady || "",
+      hasGuestBoot: srcdoc.includes("__protoCabinetEmbedSessionToken"),
+      hasCertRoot: srcdoc.includes("certificate-root"),
+      certErrorShell: /<main class="cert-error"/.test(srcdoc),
+      sessionToken: frame?.dataset?.embedSessionToken || "",
+      expectedDetail,
+    };
+  }, certCodeBeforeOpen);
+  assert.equal(certPageErrors.length, 0, `opaque 139 must not throw: ${certPageErrors.join(" | ")}`);
+  assert.equal(cert139Snap.contentReady, "1", "139 embed signals content-ready");
+  assert.ok(cert139Snap.srcdocLen > 800, "139 srcdoc must contain injected guest page");
+  assert.ok(cert139Snap.hasCertRoot, "139 srcdoc mounts certificate-root");
+  assert.ok(cert139Snap.hasGuestBoot, "139 srcdoc carries embed session boot");
+  assert.equal(cert139Snap.certErrorShell, false, "139 srcdoc must not ship pre-rendered error shell");
+  assert.ok(cert139Snap.url.includes("certificate.html"), cert139Snap.url);
+  assert.ok(cert139Snap.sessionToken.length > 4, "139 embed session token set");
+  if (certCodeBeforeOpen) {
+    assert.ok(
+      cert139Snap.srcdoc.includes(certCodeBeforeOpen) || cert139Snap.url.includes("cert_ref"),
+      "139 embed should reference opened certificate identity",
+    );
+  }
+  assert.match(cert139Snap.title, /сертификат/i);
+  await cert139Nest.close();
+
   const previewToc = await browser.newPage();
   await previewToc.setViewportSize({ width: 1280, height: 900 });
   await previewToc.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });

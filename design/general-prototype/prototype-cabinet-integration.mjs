@@ -146,6 +146,38 @@ const srcdocLoaderFull = readFileSync(path.join(root, "partner/cabinet-standalon
 assert.match(srcdocLoaderFull, /assertActive/, "srcdoc mount checks session before iframe write");
 assert.match(srcdocLoaderFull, /StandaloneSrcdocStaleError/, "stale srcdoc fetch rejects without mounting");
 assert.match(srcdocLoaderFull, /String\(d\.token/, "embed ready waits for exact token match");
+const embedDocBase = readFileSync(path.join(root, "partner/embed-document-base.js"), "utf8");
+assert.match(embedDocBase, /document\.baseURI/, "guest embed base prefers document.baseURI over about:srcdoc");
+assert.match(embedDocBase, /import\.meta\.url/, "guest embed base falls back to module directory");
+for (const chunk of ["chunk-QXOSRGZH.js", "chunk-BTQ7FRMV.js", "chunk-UM77QSQJ.js", "chunk-KTYMGLZA.js"]) {
+  const src = readFileSync(path.join(root, "partner", chunk), "utf8");
+  assert.doesNotMatch(
+    src,
+    /new URL\("\.\/[^"]+\.html",\s*location\.href\)/,
+    `${chunk} must not resolve guest pages against location.href`,
+  );
+  assert.match(src, /embed-document-base/, `${chunk} uses shared embed document base`);
+}
+assert.match(
+  readFileSync(path.join(root, "partner/certificate-cabinet-embed.js"), "utf8"),
+  /publicHtml/,
+  "139 opaque embed applies host-rendered guest HTML",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/certificate.html"), "utf8"),
+  /<script src="\.\/certificate-cabinet-embed\.js/,
+  "139 guest page uses classic embed script for opaque srcdoc",
+);
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/certificate.html"), "utf8"),
+  /type="module"\s+src="\.\/certificate-cabinet-embed/,
+  "139 guest page must not load embed module in opaque srcdoc",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /publicHtml:\s*renderCertificateGuestMain\(publicModel\)/,
+  "host pre-renders 139 guest HTML before opaque embed",
+);
 const hostJs = readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8");
 assert.match(hostJs, /abortPendingSrcdocWork/, "host cancels in-flight srcdoc work on close/reopen");
 assert.match(hostJs, /assertSrcdocSessionActive/, "host ties srcdoc load to open generation and token");

@@ -2,6 +2,7 @@ import { a as h } from "./chunk-PG3I4FMB.js";
 import { a as A } from "./chunk-3HBG25M4.js";
 import { a as q } from "./chunk-HYSRPJ57.js";
 import { c as P } from "./chunk-5TBO732O.js";
+import { resolvePartnerEmbedPageUrl as embedPageUrl } from "./embed-document-base.js";
 var U = P(A(), 1),
   x = P(q(), 1);
 var n = (t) =>
@@ -115,7 +116,7 @@ function j(t, e) {
   return `<section class="case-draft"><div class="draft-created" role="status"><span>Сохранено в этом просмотре</span><h2>Черновик сертификата создан</h2><p>Проверьте карточку и выдайте сертификат. Пока его видите только вы.</p></div><div class="draft-layout"><article class="cert-card draft-art"><div class="cert-wordmark">${h}<span class="cert-demo">ЧЕРНОВИК</span></div><div class="draft-card-content"><p>${a.offers?.length > 1 ? "Групповой сертификат" : "Скидочный сертификат"}</p>${a.offers ? `<h3 class="draft-group-title">${a.offers.length > 1 ? "Один сертификат, несколько предложений" : "Ваше предложение для клиента"}</h3><div class="draft-offers">${a.offers.map((s) => `<div><span>${n(s.name)}<small>${n(s.category)}</small></span><strong>${s.discount}%</strong></div>`).join("")}</div>` : `<strong>${a.discount}%</strong><span>скидка клиенту</span><h3>${n(a.seller)}</h3><p>${n(a.category)}</p>`}</div><div class="draft-code"><span>ЕЩЁ НЕ ВЫДАН</span><strong>${n(a.code)}</strong><small>QR-код и ссылка появятся после выдачи</small></div></article><div class="draft-next"><span class="eyebrow">СЛЕДУЮЩИЙ ШАГ</span><h3>Выдать сертификат</h3><p>После выдачи станет доступна клиентская страница. Её можно отправить ссылкой или скачать в PDF.</p><button class="btn primary" data-action="wf-${t.certGroup ? "cg-issue" : "next"}:${n(t.id)}">Выдать сертификат</button><button class="btn secondary" data-action="wf-edit:${n(t.id)}">Изменить черновик</button><small>Это демо. Выдача не отправляет сообщения клиентам и не создаёт начислений.</small></div></div></section>`;
 }
 function g(t) {
-  let e = new URL("./certificate.html", location.href);
+  let e = new URL(embedPageUrl("./certificate.html"));
   return (
     (e.hash = x.default.compressToEncodedURIComponent(JSON.stringify(t))),
     e.href

@@ -72,6 +72,7 @@ import {
   certificatePublicModel,
   hydrateCertificateCard,
 } from "./certificate-view.js";
+import { h as renderCertificateGuestMain } from "./chunk-QXOSRGZH.js";
 import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
@@ -3355,6 +3356,7 @@ function resolveStandaloneEmbedPayload(pageN, ctx, openQuery = "") {
     const publicModel = ctx.publicModel || certificatePublicModel(ctx.record);
     return embedPayloadEnvelope(pageN, ctx, {
       publicModel,
+      publicHtml: renderCertificateGuestMain(publicModel),
       displayCode: publicModel.code,
       recordId: ctx.record.id,
     });

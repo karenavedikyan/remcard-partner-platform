@@ -99,9 +99,21 @@
     return true;
   };
 
+  function embedLinkBase() {
+    try {
+      var base = document.baseURI || "";
+      if (base && !/^about:/.test(base)) return base;
+    } catch (_) {}
+    try {
+      var href = window.location.href || "";
+      if (href && !/^about:/.test(href)) return href;
+    } catch (_) {}
+    return "";
+  }
+
   function resolvePageFromHref(href) {
     try {
-      var u = new URL(href, window.location.href);
+      var u = new URL(href, embedLinkBase());
       var name = u.pathname.split("/").pop() || "";
       return FILE_TO_N[name] || null;
     } catch (_) {
@@ -121,7 +133,7 @@
       if (pageN) {
         e.preventDefault();
         try {
-          var u = new URL(href, window.location.href);
+          var u = new URL(href, embedLinkBase());
           post({ type: "nav", pageN: pageN, query: u.search || "" });
         } catch (_) {
           post({ type: "nav", pageN: pageN, query: "" });
