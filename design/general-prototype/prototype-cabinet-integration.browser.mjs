@@ -817,11 +817,10 @@ try {
     () => {
       const doc = document.querySelector("#cabinet")?.contentDocument;
       const iframe = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
-      const child = iframe?.contentDocument;
       return (
         iframe?.dataset?.embedMount === "srcdoc" &&
         iframe?.dataset?.embedContentReady === "1" &&
-        Boolean(child?.querySelector("#partner-title")?.textContent?.trim())
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143
       );
     },
     null,
@@ -830,20 +829,20 @@ try {
   const nest143 = await previewNest.evaluate(() => {
     const doc = document.querySelector("#cabinet")?.contentDocument;
     const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
-    const child = frame?.contentDocument;
     return {
       mount: frame?.dataset?.embedMount || "",
       url: frame?.dataset?.embedUrl || "",
       badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
       hasSrcdoc: Boolean(frame?.getAttribute("srcdoc")),
-      partnerTitle: child?.querySelector("#partner-title")?.textContent?.trim() || "",
       contentReady: frame?.dataset?.embedContentReady || "",
+      sandbox: frame?.getAttribute("sandbox") || "",
     };
   });
   assert.equal(nest143.badge, 143);
   assert.equal(nest143.mount, "srcdoc");
   assert.equal(nest143.contentReady, "1");
-  assert.ok(nest143.partnerTitle.length > 0, "nested 143 must render native partner title, not about:blank");
+  assert.match(nest143.sandbox, /allow-scripts/);
+  assert.doesNotMatch(nest143.sandbox, /allow-same-origin/, "standalone embed iframe is opaque in preview srcdoc");
   assert.ok(nest143.hasSrcdoc, "nested preview must mount embed via fetched srcdoc");
   assert.ok(nest143.url.includes("partner-cooperation-detail"), nest143.url);
   await previewNest.evaluate(() => {
@@ -858,15 +857,10 @@ try {
     () => {
       const doc = document.querySelector("#cabinet")?.contentDocument;
       const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
-      const win = frame?.contentWindow;
-      const child = frame?.contentDocument;
       return (
         doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 &&
         frame?.dataset?.embedMount === "srcdoc" &&
-        frame?.dataset?.embedContentReady === "1" &&
-        Boolean(child?.querySelector("#history-title")?.textContent?.trim()) &&
-        typeof win?.__protoCabinetEmbedParams === "function" &&
-        win.__protoCabinetEmbedParams().get("cabinet_embed") === "1"
+        frame?.dataset?.embedContentReady === "1"
       );
     },
     null,
@@ -875,20 +869,16 @@ try {
   const nest147 = await previewNest.evaluate(() => {
     const doc = document.querySelector("#cabinet")?.contentDocument;
     const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
-    const win = frame?.contentWindow;
-  return {
+    return {
       mount: frame?.dataset?.embedMount || "",
       url: frame?.dataset?.embedUrl || "",
-      embedDoc: Boolean(win?.document?.querySelector("#history-title")),
-      params:
-        typeof win?.__protoCabinetEmbedParams === "function"
-          ? win.__protoCabinetEmbedParams().get("cabinet_embed")
-          : null,
+      contentReady: frame?.dataset?.embedContentReady || "",
+      badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
     };
   });
   assert.equal(nest147.mount, "srcdoc");
-  assert.equal(nest147.params, "1");
-  assert.ok(nest147.embedDoc, "147 srcdoc child must boot with injected embed query");
+  assert.equal(nest147.contentReady, "1");
+  assert.equal(nest147.badge, 147);
   await previewNest.close();
 
   const previewToc = await browser.newPage();
@@ -917,12 +907,10 @@ try {
     () => {
       const doc = document.querySelector("#cabinet")?.contentDocument;
       const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
-      const child = frame?.contentDocument;
       return (
         frame?.dataset?.embedMount === "srcdoc" &&
         frame?.dataset?.embedContentReady === "1" &&
-        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143 &&
-        Boolean(child?.querySelector("#partner-title")?.textContent?.trim())
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143
       );
     },
     null,

@@ -16,6 +16,25 @@
       return new URLSearchParams();
     }
   };
+  window.__protoCabinetEffectiveHash = function protoCabinetEffectiveHash() {
+    var fromLoc = window.location.hash || "";
+    if (fromLoc) return fromLoc;
+    var boot = window.__protoCabinetEmbedHash;
+    if (!boot) return "";
+    return boot.charAt(0) === "#" ? boot : "#" + boot;
+  };
+  function applyBootHashBeforeLock() {
+    var raw = window.__protoCabinetEmbedHash;
+    if (!raw) return;
+    var hash = raw.charAt(0) === "#" ? raw : "#" + raw;
+    try {
+      if (!window.location.hash) {
+        var q = embedSearchString();
+        history.replaceState(null, "", (q || window.location.pathname || "") + hash);
+      }
+    } catch (_) {}
+  }
+  applyBootHashBeforeLock();
   var params;
   try {
     params = window.__protoCabinetEmbedParams();
@@ -40,13 +59,27 @@
     "partner-wallet-history.html": 147,
   };
 
+  function embedSessionToken() {
+    return typeof window.__protoCabinetEmbedSessionToken === "string"
+      ? window.__protoCabinetEmbedSessionToken
+      : "";
+  }
+
   function post(msg) {
     try {
       if (window.parent && window.parent !== window) {
-        window.parent.postMessage(Object.assign({ source: "proto-cabinet-embed" }, msg), "*");
+        window.parent.postMessage(
+          Object.assign({ source: "proto-cabinet-embed", token: embedSessionToken() }, msg),
+          "*",
+        );
       }
     } catch (_) {}
   }
+
+  window.__protoCabinetEmbedSignalContentReady = function protoCabinetEmbedSignalContentReady(pageN) {
+    var n = pageN != null ? Number(pageN) : Number(params.get("proto_n") || 0) || null;
+    post({ type: "embed-content-ready", pageN: n });
+  };
 
   window.__protoCabinetEmbedNavigate = function embedNavigate(targetN, extraQuery, ctx, opts) {
     if (window.parent === window) return false;
@@ -136,6 +169,22 @@
   } catch (_) {}
 
   post({ type: "ready", pageN: Number(params.get("proto_n") || 0) || null });
+
+  (function scheduleGuestRootReadyProbe() {
+    var n = Number(params.get("proto_n") || 0);
+    if (n !== 141 && n !== 142) return;
+    var sel = n === 141 ? "#assignment-root" : "#observer-root";
+    var started = Date.now();
+    (function tick() {
+      var root = document.querySelector(sel);
+      if (root && root.childElementCount > 0) {
+        window.__protoCabinetEmbedSignalContentReady(n);
+        return;
+      }
+      if (Date.now() - started > 18000) return;
+      requestAnimationFrame(tick);
+    })();
+  })();
 
   window.addEventListener("message", function (ev) {
     var data = ev.data;

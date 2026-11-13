@@ -60,6 +60,32 @@ export function waitForStandaloneFrameContent(frame, pageN, { timeoutMs = 20000 
   });
 }
 
+/** Opaque sandbox: parent cannot read child DOM — wait for postMessage after model application. */
+export function waitForEmbedChildContentReady(frame, { pageN, token, timeoutMs = 20000 } = {}) {
+  if (!frame?.contentWindow) return Promise.reject(new Error("no frame"));
+  return new Promise((resolve, reject) => {
+    const onMsg = (ev) => {
+      if (ev.source !== frame.contentWindow) return;
+      const d = ev.data;
+      if (!d || d.source !== "proto-cabinet-embed") return;
+      if (d.type !== "embed-content-ready") return;
+      if (token && d.token && d.token !== token) return;
+      if (pageN != null && d.pageN != null && Number(d.pageN) !== Number(pageN)) return;
+      cleanup();
+      resolve(d);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`embed-content-ready timeout n=${pageN}`));
+    }, timeoutMs);
+    const cleanup = () => {
+      clearTimeout(timer);
+      window.removeEventListener("message", onMsg);
+    };
+    window.addEventListener("message", onMsg);
+  });
+}
+
 export function shouldUseSrcdocStandaloneLoad() {
   if (typeof window === "undefined") return false;
   try {
@@ -109,9 +135,10 @@ export function buildStandaloneNavigationUrl(pageN, defPath, extraQuery, bridge)
   }
 }
 
-export function injectSrcdocEmbedBoot(html, queryString, baseHref) {
+export function injectSrcdocEmbedBoot(html, queryString, baseHref, { sessionToken = "", guestHash = "" } = {}) {
   const q = queryString.startsWith("?") ? queryString.slice(1) : queryString;
-  const boot = `<script>window.__protoCabinetEmbedSearch=${JSON.stringify(q)};</script>`;
+  const hash = guestHash ? String(guestHash).replace(/^#/, "") : "";
+  const boot = `<script>window.__protoCabinetEmbedSearch=${JSON.stringify(q)};window.__protoCabinetEmbedSessionToken=${JSON.stringify(sessionToken)};window.__protoCabinetEmbedHash=${JSON.stringify(hash)};</script>`;
   let out = html;
   if (!/<base\s/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, `<head$1><base href="${escapeAttr(baseHref)}">`);
@@ -128,7 +155,7 @@ export async function loadStandaloneSrcdoc(
   defPath,
   extraQuery,
   bridge,
-  { guestHash = "" } = {},
+  { guestHash = "", sessionToken = "" } = {},
 ) {
   if (!defPath) throw new Error("unknown standalone page");
   const fetchUrl = buildStandaloneFetchUrl(pageN, defPath, extraQuery, bridge);
@@ -138,9 +165,12 @@ export async function loadStandaloneSrcdoc(
   if (!response.ok) throw new Error(`fetch ${response.status}`);
   const html = await response.text();
   const baseHref = new URL("./", docUrl).href;
-  const srcdoc = injectSrcdocEmbedBoot(html, docUrl.search, baseHref);
+  const srcdoc = injectSrcdocEmbedBoot(html, docUrl.search, baseHref, {
+    sessionToken,
+    guestHash: guestHash ? String(guestHash).replace(/^#/, "") : "",
+  });
   frame.removeAttribute("src");
-  frame.srcdoc = guestHash ? `${srcdoc}<!--#${guestHash}-->` : srcdoc;
+  frame.srcdoc = srcdoc;
   frame.dataset.embedUrl = fetchUrl;
   frame.dataset.embedMount = "srcdoc";
   delete frame.dataset.embedContentReady;

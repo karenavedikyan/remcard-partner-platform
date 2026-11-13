@@ -1,6 +1,10 @@
 (() => {
   "use strict";
-  if (new URLSearchParams(location.search).get("cabinet_embed") === "1") return;
+  const coopParams =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
+  if (coopParams.get("cabinet_embed") === "1") return;
   const byId = id => document.getElementById(id);
   const detail = byId("partner-dialog");
   const certificate = byId("certificate");
@@ -78,5 +82,5 @@
     });
   });
   detail.addEventListener("close", () => byId("open-detail").focus());
-  if (!new URLSearchParams(location.search).get("cabinet_embed")) openDialog("partner-dialog");
+  if (!coopParams.get("cabinet_embed")) openDialog("partner-dialog");
 })();

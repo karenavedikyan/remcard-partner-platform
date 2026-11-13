@@ -2,7 +2,10 @@
   "use strict";
   const byId = (id) => document.getElementById(id);
   // Screenshot values only. No production API, financial writes or persistence.
-  const embedParams = new URLSearchParams(location.search);
+  const embedParams =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   const isCabinetEmbed = embedParams.get("cabinet_embed") === "1";
   let embedWalletState = null;
   let embedCertCode = null;

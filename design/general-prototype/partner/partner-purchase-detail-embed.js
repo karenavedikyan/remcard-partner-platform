@@ -1,5 +1,8 @@
 (function partnerPurchaseDetailEmbed() {
-  const params = new URLSearchParams(location.search);
+  const params =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   if (params.get("cabinet_embed") !== "1") return;
 
   const money = (n) =>
@@ -108,6 +111,7 @@
           : "—";
       }
     }
+    window.__protoCabinetEmbedSignalContentReady?.(144);
   }
 
   window.__protoApplyPurchaseEmbedCtx = applyPurchaseEmbedCtx;

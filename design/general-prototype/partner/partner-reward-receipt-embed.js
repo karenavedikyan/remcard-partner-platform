@@ -1,5 +1,8 @@
 (function partnerRewardReceiptEmbed() {
-  const params = new URLSearchParams(location.search);
+  const params =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   if (params.get("cabinet_embed") !== "1") return;
 
   const money = (n) => (Number.isFinite(n) ? n.toLocaleString("ru-RU") : "0") + " ₽";
@@ -173,6 +176,7 @@
     if (mainTable) mainTable.setAttribute("hidden", "");
     bindEmbedDismissCapture();
     if (overlay) overlay.hidden = false;
+    window.__protoCabinetEmbedSignalContentReady?.(pageN);
   }
 
   function onHostContext(data) {

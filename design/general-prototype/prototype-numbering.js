@@ -882,7 +882,11 @@ const PAGE_DEFS = [
 
   let embedCabinetChild = false;
   try {
-    embedCabinetChild = new URLSearchParams(location.search).get("cabinet_embed") === "1";
+    const embedParams =
+      typeof window.__protoCabinetEmbedParams === "function"
+        ? window.__protoCabinetEmbedParams()
+        : new URLSearchParams(location.search);
+    embedCabinetChild = embedParams.get("cabinet_embed") === "1";
   } catch (_) {}
 
   if (embedCabinetChild) {

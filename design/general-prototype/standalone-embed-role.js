@@ -249,6 +249,9 @@
       }
       note144.textContent =
         "Дизайн-макет без привязки к выбранной покупке в обращениях. Цифры на странице — демонстрационный пример.";
+      if (typeof window.__protoCabinetEmbedSignalContentReady === "function") {
+        window.__protoCabinetEmbedSignalContentReady(144);
+      }
       return;
     }
     if (typeof window.__protoApplyPurchaseEmbedCtx === "function" && ctx.embedSnapshot) {
@@ -279,6 +282,9 @@
       }
       note145.textContent =
         "Дизайн-макет квитанции без снимка выбранной покупки. Откройте покупку в обращениях, чтобы увидеть связанный пример.";
+      if (typeof window.__protoCabinetEmbedSignalContentReady === "function") {
+        window.__protoCabinetEmbedSignalContentReady(145);
+      }
       return;
     }
     if (typeof window.__protoApplyReceiptEmbedCtx === "function" && payload.receiptCtx) {
@@ -300,6 +306,13 @@
     if (topTitle && actor.contextBadge) topTitle.textContent = actor.contextBadge;
   }
 
+  function finishEmbedApply(target) {
+    setReadOnlyFlag(window.__protoEmbedPermissions);
+    if (typeof window.__protoCabinetEmbedSignalContentReady === "function") {
+      window.__protoCabinetEmbedSignalContentReady(target);
+    }
+  }
+
   window.__protoEmbedApplyContext = function applyContext(payload, n) {
     var target = n || pageN;
     if (payload && payload.permissions) {
@@ -312,7 +325,7 @@
     else if (target === 146) apply146(payload);
     else if (target === 144) apply144(payload);
     else if (target === 145) apply145(payload);
-    setReadOnlyFlag(payload.permissions);
+    finishEmbedApply(target);
   };
 
   window.addEventListener("message", function (ev) {

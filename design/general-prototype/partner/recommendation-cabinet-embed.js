@@ -1,5 +1,8 @@
 (function recommendationCabinetEmbed() {
-  const params = new URLSearchParams(location.search);
+  const params =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   if (params.get("cabinet_embed") !== "1") return;
 
   function post(msg) {
@@ -21,6 +24,7 @@
       note.textContent =
         "Дизайн-макет публичной рекомендации. Не привязан к выбранному сертификату в кабинете.";
       root.prepend(note);
+      window.__protoCabinetEmbedSignalContentReady?.(140);
     });
   });
 

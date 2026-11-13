@@ -1,5 +1,8 @@
 (function partnerCooperationDetailEmbed() {
-  const params = new URLSearchParams(location.search);
+  const params =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   if (params.get("cabinet_embed") !== "1") return;
 
   const byId = (id) => document.getElementById(id);
@@ -128,6 +131,7 @@
       mount.hidden = false;
     }
     wireSupplementalActions();
+    signalCoopEmbedReady();
   }
 
   function wireSupplementalActions() {
@@ -199,6 +203,12 @@
     );
   }
 
+  function signalCoopEmbedReady() {
+    if (window.__protoCoopEmbedReady) return;
+    window.__protoCoopEmbedReady = true;
+    window.__protoCabinetEmbedSignalContentReady?.(143);
+  }
+
   post({ type: "need-context", pageN: 143 });
   document.addEventListener("DOMContentLoaded", () => {
     mountPanelMode();
@@ -206,5 +216,6 @@
     wireCoopClick("pause", "toggle-pause");
     wireCoopClick("edit-terms", "edit-terms");
     wireCoopClick("certificate", "certificate");
+    signalCoopEmbedReady();
   });
 })();

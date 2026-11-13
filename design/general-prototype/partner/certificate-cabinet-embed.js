@@ -1,7 +1,10 @@
 import { h as renderGuestMain, i as hydrateGuestCert } from "./chunk-QXOSRGZH.js";
 import { certificatePublicModel } from "./certificate-view.js";
 
-const params = new URLSearchParams(location.search);
+const params =
+  typeof window.__protoCabinetEmbedParams === "function"
+    ? window.__protoCabinetEmbedParams()
+    : new URLSearchParams(location.search);
 const embedded = params.get("cabinet_embed") === "1";
 
 function post(msg) {
@@ -25,10 +28,12 @@ if (!embedded) {
       if (!publicModel?.code) {
         root.innerHTML =
           '<main class="cert-error"><p>Выберите сертификат в кабинете и откройте гостевой просмотр снова.</p></main>';
+        window.__protoCabinetEmbedSignalContentReady?.(139);
         return;
       }
       root.innerHTML = renderGuestMain(publicModel);
       hydrateGuestCert(root);
+      window.__protoCabinetEmbedSignalContentReady?.(139);
     }
 
     window.addEventListener("message", (ev) => {

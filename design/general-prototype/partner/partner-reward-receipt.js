@@ -291,7 +291,10 @@
   function closeDialog() {
     try {
       if (
-        new URLSearchParams(window.location.search).get("cabinet_embed") === "1" &&
+        (typeof window.__protoCabinetEmbedParams === "function"
+          ? window.__protoCabinetEmbedParams()
+          : new URLSearchParams(window.location.search)
+        ).get("cabinet_embed") === "1" &&
         typeof window.__protoCabinetEmbedBack === "function"
       ) {
         window.__protoCabinetEmbedBack();
@@ -374,7 +377,11 @@
     state.lastFocus = el.openPurchases;
     const cabinetEmbed = (() => {
       try {
-        return new URLSearchParams(window.location.search).get("cabinet_embed") === "1";
+        return (
+          typeof window.__protoCabinetEmbedParams === "function"
+            ? window.__protoCabinetEmbedParams()
+            : new URLSearchParams(window.location.search)
+        ).get("cabinet_embed") === "1";
       } catch (_) {
         return false;
       }

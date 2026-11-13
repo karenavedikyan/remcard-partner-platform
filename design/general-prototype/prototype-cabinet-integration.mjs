@@ -103,7 +103,14 @@ assert.match(
 const srcdocLoader = readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8");
 assert.match(srcdocLoader, /import\.meta\.url/, "standalone asset base from module URL not location.href");
 assert.match(srcdocLoader, /__protoCabinetEmbedSearch/, "srcdoc boot injects embed query for opaque child");
-assert.match(srcdocLoader, /waitForStandaloneFrameContent/, "srcdoc path waits for native child DOM");
+assert.match(srcdocLoader, /waitForEmbedChildContentReady/, "opaque srcdoc waits on child postMessage");
+assert.match(srcdocLoader, /__protoCabinetEmbedSessionToken/, "srcdoc boot carries per-open session token");
+assert.match(srcdocLoader, /__protoCabinetEmbedHash/, "srcdoc boot preserves guest hash without HTML comment");
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8"),
+  /srcdoc.*<!--#/,
+  "guest hash is not appended as HTML comment",
+);
 assert.match(srcdocLoader, /#partner-title/, "143 content probe blocks badge-only false positive");
 assert.match(
   readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
@@ -115,8 +122,17 @@ assert.match(
   /if \(useSrcdoc\) syncEmbeddedPageBadge\(null\)/,
   "preview embed defers page badge until content mount",
 );
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /allow-scripts allow-forms/,
+  "preview srcdoc uses opaque sandbox without allow-same-origin",
+);
 const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
 assert.match(embedChild, /__protoCabinetEmbedParams/, "embed child reads injected search in srcdoc");
+assert.match(embedChild, /embed-content-ready/, "embed child signals model readiness to opaque parent");
+assert.match(embedChild, /__protoCabinetEffectiveHash/, "embed child exposes effective guest hash in srcdoc");
+assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8"), /__protoCabinetEmbedParams/, "144 reads injected embed params in srcdoc");
+assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail-embed.js"), "utf8"), /__protoCabinetEmbedParams/, "144 embed module reads injected params");
 assert.match(embedChild, /replace:/, "embed child posts replace nav");
 const embedRole = readFileSync(path.join(root, "standalone-embed-role.js"), "utf8");
 assert.match(embedRole, /scanSaleRelockScheduled/, "146 sale guard coalesces relock rAF");

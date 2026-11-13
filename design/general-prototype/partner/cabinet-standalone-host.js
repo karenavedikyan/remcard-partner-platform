@@ -2,8 +2,10 @@ import {
   buildStandaloneNavigationUrl,
   loadStandaloneSrcdoc,
   shouldUseSrcdocStandaloneLoad,
+  waitForEmbedChildContentReady,
   waitForStandaloneFrameContent,
-} from "./cabinet-standalone-srcdoc.js?v=embed8";
+} from "./cabinet-standalone-srcdoc.js?v=embed9";
+import { demoRandomToken } from "./demo-random-id.js";
 
 export const STANDALONE_BY_N = {
   139: { path: "certificate.html", title: "Гостевой сертификат", guest: true },
@@ -132,6 +134,7 @@ export function createCabinetStandaloneHost(config) {
   let openPageN = null;
   let openQuery = "";
   let openCtx = null;
+  let openEmbedToken = "";
   let resizeObserver = null;
   let embedGuardKey = "";
 
@@ -304,6 +307,7 @@ export function createCabinetStandaloneHost(config) {
     openPageN = null;
     openQuery = "";
     openCtx = null;
+    openEmbedToken = "";
     syncEmbeddedPageBadge(null);
     unwatchLayout();
     if (reset) writeStack([]);
@@ -389,7 +393,12 @@ export function createCabinetStandaloneHost(config) {
     titleEl.textContent = def.title;
     openPageN = pageN;
     openQuery = extraQuery;
+    openEmbedToken = demoRandomToken(12);
     const useSrcdoc = shouldUseSrcdocStandaloneLoad();
+    frame.setAttribute(
+      "sandbox",
+      useSrcdoc ? "allow-scripts allow-forms" : "allow-scripts allow-same-origin allow-forms",
+    );
     if (useSrcdoc) syncEmbeddedPageBadge(null);
     else syncEmbeddedPageBadge(pageN);
     document.querySelector(".shell")?.classList.add("cabinet-standalone-active");
@@ -406,10 +415,14 @@ export function createCabinetStandaloneHost(config) {
       frame.dataset.embedContentReady = "1";
     };
 
+    const waitReady = ({ timeoutMs = 20000 } = {}) =>
+      waitForEmbedChildContentReady(frame, { pageN, token: openEmbedToken, timeoutMs });
+    const contentReadyPromise = useSrcdoc ? null : waitReady({ timeoutMs: 20000 });
+
     frame.onload = () => {
       sendContextToFrame();
-      if (!useSrcdoc) {
-        void waitForStandaloneFrameContent(frame, pageN)
+      if (!useSrcdoc && contentReadyPromise) {
+        void contentReadyPromise
           .then(commitStandaloneReady)
           .catch(() => {
             notify?.("Встроенная страница не загрузилась. Обновите просмотр.", "info");
@@ -419,11 +432,15 @@ export function createCabinetStandaloneHost(config) {
     };
     if (useSrcdoc) {
       delete frame.dataset.embedContentReady;
-      void loadStandaloneSrcdoc(frame, pageN, def.path, extraQuery, urlBridge, { guestHash })
-        .then(() => waitForStandaloneFrameContent(frame, pageN))
+      frame.dataset.embedSessionToken = openEmbedToken;
+      const contentReady = waitReady({ timeoutMs: 25000 });
+      void loadStandaloneSrcdoc(frame, pageN, def.path, extraQuery, urlBridge, {
+        guestHash,
+        sessionToken: openEmbedToken,
+      })
         .then(() => {
           sendContextToFrame();
-          return waitForStandaloneFrameContent(frame, pageN, { timeoutMs: 12000 });
+          return contentReady;
         })
         .then(commitStandaloneReady)
         .catch(() => {
@@ -449,6 +466,7 @@ export function createCabinetStandaloneHost(config) {
     if (!data || data.source !== "proto-cabinet-embed") return;
 
     if (data.type === "ready" || data.type === "need-context") {
+      if (openEmbedToken && data.token && data.token !== openEmbedToken) return;
       try {
         frame.contentWindow?.postMessage(
           { source: "proto-cabinet-host", type: "theme", theme: currentTheme() },
@@ -456,6 +474,14 @@ export function createCabinetStandaloneHost(config) {
         );
       } catch (_) {}
       sendContextToFrame();
+      return;
+    }
+    if (data.type === "embed-content-ready") {
+      if (ev.source !== frame.contentWindow) return;
+      if (openEmbedToken && data.token && data.token !== openEmbedToken) return;
+      if (openPageN != null && data.pageN != null && Number(data.pageN) !== Number(openPageN)) return;
+      syncEmbeddedPageBadge(openPageN);
+      frame.dataset.embedContentReady = "1";
       return;
     }
     if (data.type === "nav" && data.pageN) {
