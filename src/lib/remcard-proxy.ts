@@ -363,6 +363,47 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["POST"]),
       pattern: /^\/api\/bonus\/c[a-z0-9]{20,}\/pay$/i,
     },
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/client-appeals$/ },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/client-appeals\/batch$/,
+    },
+    {
+      methods: new Set(["GET", "POST"]),
+      pattern: /^\/api\/pro\/client-appeals\/working-stages$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/client-appeals\/certificate-entry$/,
+    },
+    {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+\/order-link$/,
+    },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern:
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+$/,
+    },
+    {
+      methods: new Set(["PATCH"]),
+      pattern:
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+\/stage$/,
+    },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/referred-appeals$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/referred-appeals\/by-partner\/[\w-]+$/,
+    },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/referred-appeals\/personal-batch$/ },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/referred-appeals\/(?!personal-batch$|by-partner$)[\w-]+$/,
+    },
+    {
+      methods: new Set(["PATCH"]),
+      pattern: /^\/api\/pro\/referred-appeals\/[\w-]+\/personal-meta$/,
+    },
   ];
 
 export function isMultipartFormDataContentType(contentType: string | null): boolean {

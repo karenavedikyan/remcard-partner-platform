@@ -10,18 +10,19 @@ import { ReceivingAppealsBlocked } from "./ReceivingAppealsBlocked";
 
 type Props = {
   accessMode: OwnerClientsAccessMode;
+  initialDirection?: ClientsParityDirection;
 };
 
 function atPartnersTabEnabled(mode: OwnerClientsAccessMode): boolean {
   return mode === "specialist" || mode === "business";
 }
 
-export function ClientsDirectionWorkspace({ accessMode }: Props) {
+export function ClientsDirectionWorkspace({ accessMode, initialDirection = "incoming" }: Props) {
   if (accessMode === "agent") {
     return <ObserverPartnersWorkspace />;
   }
 
-  const [direction, setDirection] = useState<ClientsParityDirection>("incoming");
+  const [direction, setDirection] = useState<ClientsParityDirection>(initialDirection);
 
   if (!atPartnersTabEnabled(accessMode)) {
     return <AgentClientsList accessMode={accessMode} />;

@@ -58,6 +58,9 @@ import {
   type ScannerEmptyActivityProbe,
 } from "@/lib/scanner-empty/eligibility";
 import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
+import { receivingAppealPurchaseDetailHrefWithReturn } from "@/lib/clients-parity/receiving-appeal-routes";
+import { ReceivingAppealOrderLinkBanner } from "./ReceivingAppealOrderLinkBanner";
+import { useReceivingAppealOrderLink } from "./useReceivingAppealOrderLink";
 import styles from "./scanner.module.css";
 
 const SCANNER_WORKBENCH_ID = "scanner-workbench";
@@ -66,6 +69,7 @@ type ScanMode = "manual" | "camera" | "success";
 
 type ScannerHubProps = {
   userId: string;
+  receivingAppealId?: string | null;
 };
 
 function formatUsage(usageCount: number, maxUsages: number) {
@@ -184,7 +188,8 @@ function RestoredAttemptBlock({
   );
 }
 
-export function ScannerHub({ userId }: ScannerHubProps) {
+export function ScannerHub({ userId, receivingAppealId = null }: ScannerHubProps) {
+  const appealLink = useReceivingAppealOrderLink(receivingAppealId);
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
   const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
@@ -291,6 +296,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setOrderUncertain(false);
           setOrderConflict(false);
           setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
+          if (receivingAppealId && appealLink.appealWire) {
+            void appealLink.linkAfterOrderSuccess(data.order.id);
+          }
           break;
         }
         case "conflict": {
@@ -335,7 +343,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           break;
       }
     },
-    [userId],
+    [appealLink, receivingAppealId, userId],
   );
 
   const executeOrderPost = useCallback(
@@ -443,6 +451,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         setPreviewSession(session);
 
         if ("allowed" in data && data.allowed) {
+          if (!appealLink.assertPreviewAllowed(data.certificate.id)) {
+            setPreviewError(
+              "Сертификат документа не совпадает с привязанным обращением.",
+            );
+            setPreviewSession(null);
+            setMode("manual");
+            return;
+          }
           if (options?.restoreAttempt) {
             setAmountDrafts(amountDraftsFromAttempt(options.restoreAttempt));
             setRewardDrafts(Object.fromEntries(options.restoreAttempt.body.items.map(item =>
@@ -597,6 +613,11 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   if (mode === "success" && success) {
     return (
       <div>
+        {receivingAppealId && appealLink.appealLoadError ? (
+          <p role="alert" data-testid="ca-scanner-appeal-load-error">
+            {appealLink.appealLoadError}
+          </p>
+        ) : null}
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
@@ -623,9 +644,28 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             </p>
           ) : null}
         </div>
+        {receivingAppealId && appealLink.appealWire ? (
+          <ReceivingAppealOrderLinkBanner
+            appealId={appealLink.appealWire.appealId}
+            orderId={success.order.id}
+            linking={appealLink.linking}
+            linkError={appealLink.linkError}
+            linked={appealLink.linked}
+            onRetryLink={() => {
+              void appealLink.retryLinkOnly();
+            }}
+          />
+        ) : null}
         <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
           <Link
-            href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
+            href={
+              receivingAppealId && appealLink.appealWire
+                ? receivingAppealPurchaseDetailHrefWithReturn(
+                    success.order.id,
+                    appealLink.appealWire.appealId,
+                  )
+                : `/history/purchases/${encodeURIComponent(success.order.id)}`
+            }
             className={styles.openHistoryLink}
           >
             Открыть покупку

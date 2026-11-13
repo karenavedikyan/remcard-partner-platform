@@ -1,9 +1,9 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { Suspense, type ComponentType, type ReactNode } from "react";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
-import { ClientsDirectionWorkspace } from "@/components/clients/direction/ClientsDirectionWorkspace";
+import { ClientsDirectionWorkspaceWithQuery } from "@/components/clients/direction/ClientsDirectionWorkspaceWithQuery";
 import {
   useOwnerClientsBusinessPartnerType,
   useOwnerClientsMode,
@@ -35,7 +35,9 @@ function ClientsListBody() {
         title={heading.title}
         description={heading.description}
       />
-      <ClientsDirectionWorkspace accessMode={mode} />
+      <Suspense fallback={null}>
+        <ClientsDirectionWorkspaceWithQuery accessMode={mode} />
+      </Suspense>
     </>
   );
 }

@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { SessionGate } from "@/components/auth/SessionGate";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { ScannerHub } from "@/components/scanner/ScannerHub";
+import { ScannerHubWithAppeal } from "@/components/scanner/ScannerHubWithAppeal";
 import { requireProPageUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,9 @@ export default async function ScannerPage() {
         title="Сканер"
         description="Сканируйте QR или введите код, проверьте документ и подтвердите покупку."
       />
-      <ScannerHub userId={user.id} />
+      <Suspense fallback={<p data-testid="ca-scanner-loading">Загрузка…</p>}>
+        <ScannerHubWithAppeal userId={user.id} />
+      </Suspense>
     </CabinetShell>
   );
 }
