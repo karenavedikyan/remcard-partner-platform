@@ -70,6 +70,14 @@ for (const [hash, id] of cases) {
   assert.equal(page?.id, id, `${hash} -> ${id}`);
 }
 
+function normalizeWithRetired(rawHash) {
+  let route = (rawHash || "").replace(/^#\/?/, "").split("?")[0];
+  route = route.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (route === "vacancies") route = "";
+  return route;
+}
+assert.equal(match(normalizeWithRetired("#/vacancies"))?.id, "client:home", "retired vacancies resolves as home");
+
 const clientPages = PAGE_DEFS.filter((p) => p.zone === "client");
 assert.equal(clientPages.length, 36);
 assert.equal(clientPages[0].id, "client:home");

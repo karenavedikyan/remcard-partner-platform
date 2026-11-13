@@ -35,7 +35,16 @@ const PAGE_DEFS = [
   { n: 33, id: "client:legal-cookies", title: "Клиент · legal cookies", zone: "client", clientPath: "legal/cookies", r2: false },
   { n: 34, id: "client:about", title: "Клиент · о проекте", zone: "client", clientPath: "about", r2: false },
   { n: 35, id: "client:contacts", title: "Клиент · контакты", zone: "client", clientPath: "contacts", r2: false },
-  { n: 36, id: "client:vacancies", title: "Клиент · вакансии", zone: "client", clientPath: "vacancies", r2: false },
+  {
+    n: 36,
+    id: "client:vacancies",
+    title: "Книга §36 · зарезервировано",
+    zone: "client",
+    r2: false,
+    bookReserved: true,
+    tocHidden: true,
+    clientRetired: true,
+  },
   { n: 37, id: "client:install", title: "Клиент · установка PWA", zone: "client", clientPath: "install", r2: false },
   { n: 38, id: "admin:overview", title: "Админ · обзор", zone: "admin", adminView: "overview" },
   { n: 39, id: "admin:partners", title: "Админ · партнёры", zone: "admin", adminView: "partners" },
@@ -311,7 +320,6 @@ const PAGE_DEFS = [
     (r) => (r === "legal/cookies" ? "client:legal-cookies" : null),
     (r) => (r === "about" ? "client:about" : null),
     (r) => (r === "contacts" ? "client:contacts" : null),
-    (r) => (r === "vacancies" ? "client:vacancies" : null),
     (r) => (r === "install" ? "client:install" : null),
     (r) => (r === "" || r === "home" ? "client:home" : null),
   ];
@@ -354,9 +362,23 @@ const PAGE_DEFS = [
     return tail || "index.html";
   }
 
+  const CLIENT_RETIRED_ROUTES = new Set(["vacancies"]);
+
+  function redirectRetiredClientRoute(route) {
+    if (!CLIENT_RETIRED_ROUTES.has(route)) return false;
+    try {
+      const base = `${location.pathname || ""}${location.search || ""}`;
+      if ((location.hash || "").replace(/^#\/?/, "").split("?")[0].replace(/^\/+/, "") === route) {
+        history.replaceState(null, "", `${base}#/`);
+      }
+    } catch (_) {}
+    return true;
+  }
+
   function normalizeClientRoute(rawHash) {
     let route = (rawHash || "").replace(/^#\/?/, "").split("?")[0];
     route = route.replace(/^\/+/, "").replace(/\/+$/, "");
+    if (redirectRetiredClientRoute(route)) route = "";
     if (route === "services") return "care";
     const service = route.match(/^service\/(.+)$/);
     if (service) return `care/${service[1]}`;
@@ -577,6 +599,7 @@ const PAGE_DEFS = [
       return `${hubUrl("partner/index.html")}?${params}`;
     }
     if (page.zone === "client") {
+      if (page.clientRetired || page.bookReserved) return hubUrl("client/index.html");
       if (page.clientDemoHash) {
         const h = page.clientDemoHash.startsWith("#") ? page.clientDemoHash : `#/${page.clientDemoHash}`;
         return `${hubUrl("client/index.html")}${h}`;
@@ -759,7 +782,7 @@ const PAGE_DEFS = [
 
   function buildToc() {
     const rel = readPrototypeRelease();
-    listEl.innerHTML = PAGE_DEFS.map((p) => {
+    listEl.innerHTML = PAGE_DEFS.filter((p) => !p.tocHidden).map((p) => {
       const r2Locked = p.r2 && rel !== 2;
       const tocHint = p.tocOpen;
       if (r2Locked || tocHint) {

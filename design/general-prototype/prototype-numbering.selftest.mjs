@@ -39,6 +39,9 @@ for (const v of caViews) {
 assert.match(js, /readClientAppealsView/, "DOM resolver for client-appeals");
 assert.match(js, /readWalletTemplate/, "DOM resolver for wallet templates");
 assert.match(js, /CLIENT_ROUTE_MATCHERS/, "authoritative client matchers");
+assert.match(js, /tocHidden/, "reserved book slots hidden from TOC");
+assert.doesNotMatch(js, /\(r\) => \(r === "vacancies"/, "vacancies removed from client matchers");
+assert.ok(PAGE_DEFS.some((p) => p.n === 36 && p.bookReserved), "page 36 reserved in book");
 
 const adminViews = new Set(PAGE_DEFS.filter((p) => p.adminView).map((p) => p.adminView));
 for (const v of ["overview", "partners", "clients", "team", "tasks", "analytics", "results", "notifications", "settings"]) {

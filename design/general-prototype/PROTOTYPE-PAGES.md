@@ -39,7 +39,7 @@
 | 33 | `client:legal-cookies` | Клиент · legal cookies |
 | 34 | `client:about` | Клиент · о проекте |
 | 35 | `client:contacts` | Клиент · контакты |
-| 36 | `client:vacancies` | Клиент · вакансии |
+| 36 | `client:vacancies` | Книга §36 · зарезервировано (вакансии сняты с прототипа, TOC и маршрутов нет) |
 | 37 | `client:install` | Клиент · установка PWA |
 | 38 | `admin:overview` | Админ · обзор |
 | 39 | `admin:partners` | Админ · партнёры |

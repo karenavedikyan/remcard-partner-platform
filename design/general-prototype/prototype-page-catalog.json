@@ -250,7 +250,7 @@
     {
       "n": 36,
       "id": "client:vacancies",
-      "title": "Клиент · вакансии",
+      "title": "Книга §36 · зарезервировано",
       "zone": "client",
       "r2": false
     },
@@ -740,7 +740,7 @@
     {
       "n": 106,
       "id": "partner:agent:clients-list",
-      "title": "Кабинет агента · Клиенты",
+      "title": "Кабинет агента · Мои клиенты у партнёров",
       "zone": "partner",
       "r2": false
     },
@@ -987,14 +987,14 @@
       "id": "partner:assignment-guest",
       "title": "Поручение исполнителю",
       "zone": "standalone",
-      "r2": false
+      "r2": true
     },
     {
       "n": 142,
       "id": "partner:observer-guest",
       "title": "Наблюдение за объектом",
       "zone": "standalone",
-      "r2": false
+      "r2": true
     },
     {
       "n": 143,

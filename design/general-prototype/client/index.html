@@ -23,10 +23,20 @@
     </section>
   </main>
   <script>
-    document.getElementById("route-hint").textContent = location.hash || "(пусто)";
-    window.addEventListener("hashchange", function () {
-      document.getElementById("route-hint").textContent = location.hash || "(пусто)";
-    });
+    function syncRouteHint() {
+      var el = document.getElementById("route-hint");
+      if (!el) return;
+      el.textContent = location.hash || "(пусто)";
+    }
+  function guardRetiredClientRoutes() {
+      var route = (location.hash || "").replace(/^#\/?/, "").split("?")[0].replace(/^\/+/, "").replace(/\/+$/, "");
+      if (route === "vacancies") {
+        history.replaceState(null, "", (location.pathname || "") + (location.search || "") + "#/");
+      }
+      syncRouteHint();
+    }
+    guardRetiredClientRoutes();
+    window.addEventListener("hashchange", guardRetiredClientRoutes);
   </script>
 </body>
 </html>
