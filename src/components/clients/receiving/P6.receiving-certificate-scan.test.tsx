@@ -24,6 +24,6 @@ describe("P6.receiving certificate scan affordance", () => {
       "https://remcard.ru/certificate/RC-FROM-URL",
     );
     await user.click(screen.getByRole("button", { name: /Проверить и продолжить/i }));
-    expect(onSubmit).toHaveBeenCalledWith({ certificateCode: "RC-FROM-URL" });
+    expect(onSubmit).toHaveBeenCalledWith({ promoCode: "RC-FROM-URL" });
   });
 });

@@ -7,7 +7,9 @@ import {
 } from "@/lib/clients-parity/receiving-appeals-api";
 import styles from "./receiving.module.css";
 
-/** Manual create — prototype renderManualInline / nav:manual. */
+const CUSTOM_CHANNEL_VALUE = "__custom__";
+
+/** Manual create — prototype renderManualInline (frozen): name, interest, contact, channel. */
 export type ReceivingAppealFormProps = {
   disabled?: boolean;
   persistBlockedMessage?: string;
@@ -24,7 +26,8 @@ export function ReceivingAppealForm({
   const [clientName, setClientName] = useState("");
   const [interest, setInterest] = useState("");
   const [clientContact, setClientContact] = useState("");
-  const [manualChannel, setManualChannel] = useState<ReceivingAppealCreateBody["manualChannel"]>("phone");
+  const [channelSelect, setChannelSelect] = useState<string>(RECEIVING_MANUAL_CHANNEL_OPTIONS[0]!.key);
+  const [customChannel, setCustomChannel] = useState("");
   const [error, setError] = useState("");
 
   return (
@@ -47,11 +50,19 @@ export function ReceivingAppealForm({
             setError("Укажите имя или компанию.");
             return;
           }
+          let manualSourceKey = channelSelect;
+          if (channelSelect === CUSTOM_CHANNEL_VALUE) {
+            manualSourceKey = customChannel.trim();
+            if (!manualSourceKey) {
+              setError("Укажите свой канал или выберите из списка.");
+              return;
+            }
+          }
           void onSubmit({
             clientName: name,
             interest: interest.trim() || undefined,
             clientContact: clientContact.trim() || undefined,
-            manualChannel,
+            manualSourceKey,
           });
         }}
       >
@@ -65,7 +76,6 @@ export function ReceivingAppealForm({
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
           />
-          <small className="input-hint">Как к вам обращаются в переписке или CRM.</small>
         </label>
         <label className="field">
           Запрос / интерес
@@ -76,7 +86,6 @@ export function ReceivingAppealForm({
             placeholder="Что хотят купить или заказать"
             onChange={(e) => setInterest(e.target.value)}
           />
-          <small className="input-hint">Попадёт в карточку и список обращений.</small>
         </label>
         <div className="ca-manual-grid">
           <label className="field">
@@ -88,26 +97,38 @@ export function ReceivingAppealForm({
               placeholder="Телефон или @username"
               onChange={(e) => setClientContact(e.target.value)}
             />
-            <small className="input-hint">Только для вашей команды.</small>
           </label>
           <label className="field">
             Канал
             <select
               name="source"
-              value={manualChannel}
-              onChange={(e) =>
-                setManualChannel(e.target.value as ReceivingAppealCreateBody["manualChannel"])
-              }
+              value={channelSelect}
+              onChange={(e) => setChannelSelect(e.target.value)}
             >
               {RECEIVING_MANUAL_CHANNEL_OPTIONS.map((o) => (
                 <option key={o.key} value={o.key}>
                   {o.label}
                 </option>
               ))}
+              <option value={CUSTOM_CHANNEL_VALUE}>+ Свой канал</option>
             </select>
-            <small className="input-hint">Откуда пришёл клиент.</small>
           </label>
         </div>
+        {channelSelect === CUSTOM_CHANNEL_VALUE ? (
+          <label className="field">
+            Свой канал
+            <input
+              name="customChannel"
+              maxLength={80}
+              value={customChannel}
+              placeholder="Название канала"
+              onChange={(e) => setCustomChannel(e.target.value)}
+            />
+            <small className="input-hint">
+              Сохранение произвольных каналов — по контракту K8 (справочник); иначе только пресеты.
+            </small>
+          </label>
+        ) : null}
         {error ? (
           <p className="field-error" id="ca-manual-error" role="alert">
             {error}

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   filterReceivingAppeals,
+  formatReceivingPaidRubFromKopecks,
+  receivingStageLabelsFromSettings,
   receivingStatusFilterOptions,
   RECEIVING_LIST_SOURCE_OPTIONS,
   type ReceivingAppealsListResponse,
@@ -76,7 +78,8 @@ function rowSourceMeta(row: ReceivingAppealListRow): string {
 }
 
 function paidLabel(row: ReceivingAppealListRow): string | null {
-  if (row.paidAmount != null) return `${row.paidAmount} ₽`;
+  const rub = formatReceivingPaidRubFromKopecks(row.paidAmountKopecks);
+  if (rub) return rub;
   if (row.paidAt) return "Оплачено";
   return null;
 }
@@ -121,9 +124,9 @@ export function ReceivingAppealsList({
   const statusOptions = useMemo(
     () =>
       serverBackedFilters
-        ? [filters.status]
+        ? receivingStageLabelsFromSettings(data.settings)
         : receivingStatusFilterOptions(data.appeals, stageLabelById),
-    [data.appeals, filters, serverBackedFilters, stageLabelById],
+    [data.appeals, data.settings, serverBackedFilters, stageLabelById, filters.status],
   );
 
   const bulkOn = !readOnly && Boolean(bulk);

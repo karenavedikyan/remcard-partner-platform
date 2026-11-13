@@ -53,7 +53,7 @@ export function ReceivingCertificateScan({
           }
           setSubmitting(true);
           try {
-            await onSubmit({ certificateCode });
+            await onSubmit({ promoCode: certificateCode });
           } catch (caught) {
             setError(caught instanceof Error ? caught.message : "Не удалось обработать сертификат");
           } finally {

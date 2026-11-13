@@ -13,6 +13,7 @@ import {
   receivingAppealsMutationsAllowed,
   receivingListHasMore,
   type ReceivingListFilters,
+  type ReceivingPartnerSettings,
   type ReceivingAppealsListResponse,
   type ReceivingAppealsLoadResult,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -52,8 +53,13 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   const serverBacked = proxyReady && !previewData;
 
   const applyListPage = useCallback(
-    async (filters: ReceivingListFilters, cursor?: string | null, append?: boolean) => {
-      const res = await fetchReceivingAppealsWorkspace(filters, cursor);
+    async (
+      filters: ReceivingListFilters,
+      cursor?: string | null,
+      append?: boolean,
+      settingsForQuery?: ReceivingPartnerSettings | null,
+    ) => {
+      const res = await fetchReceivingAppealsWorkspace(filters, cursor, settingsForQuery);
       if (!res.ok) {
         if (!append) {
           setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
@@ -77,12 +83,12 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   );
 
   const reload = useCallback(async () => {
-    return applyListPage(listFilters, null, false);
-  }, [applyListPage, listFilters]);
+    return applyListPage(listFilters, null, false, data?.settings);
+  }, [applyListPage, listFilters, data?.settings]);
 
   useEffect(() => {
     if (previewData) return;
-    void applyListPage(listFilters, null, false);
+    void applyListPage(listFilters, null, false, undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only; filter changes use onListFiltersChange
   }, [previewData]);
 
@@ -90,17 +96,18 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     (next: ReceivingListFilters) => {
       setListFilters(next);
       if (serverBacked) {
-        void applyListPage(next, null, false);
+        void applyListPage(next, null, false, data?.settings);
       }
     },
-    [applyListPage, serverBacked],
+    [applyListPage, data?.settings, serverBacked],
   );
 
   const onLoadMore = useCallback(() => {
     if (!data?.nextCursor || loadingMore) return;
     setLoadingMore(true);
-    void applyListPage(listFilters, data.nextCursor, true).finally(() => setLoadingMore(false));
-  }, [applyListPage, data?.nextCursor, listFilters, loadingMore]);
+    void applyListPage(listFilters, data.nextCursor, true, data.settings)
+      .finally(() => setLoadingMore(false));
+  }, [applyListPage, data?.nextCursor, data?.settings, listFilters, loadingMore]);
 
   const bulkCallbacks = useMemo(
     () => ({

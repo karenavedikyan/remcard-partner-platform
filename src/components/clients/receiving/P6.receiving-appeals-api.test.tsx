@@ -68,7 +68,7 @@ describe("P6.receiving-appeals-api contract gate", () => {
     expect(
       toK1ReceivingAppealCreateBody({
         clientName: "ООО Ромашка",
-        manualChannel: "visit",
+        manualSourceKey: "visit",
       }),
     ).toEqual({
       clientDisplayName: "ООО Ромашка",
@@ -105,15 +105,36 @@ describe("P6.receiving-appeals-api contract gate", () => {
     expect(receivingAppealsMutationsAllowed(ro)).toBe(false);
   });
 
-  it("buildReceivingAppealsListQuery maps bucket to tab", () => {
+  it("buildReceivingAppealsListQuery uses bucket and maps stage label to stageKey", () => {
     expect(
-      buildReceivingAppealsListQuery({
-        q: "иван",
-        bucket: "archive",
-        source: "cert",
-        status: "Замер",
-      }),
-    ).toBe("?tab=archive&source=cert&q=%D0%B8%D0%B2%D0%B0%D0%BD&stage=%D0%97%D0%B0%D0%BC%D0%B5%D1%80");
+      buildReceivingAppealsListQuery(
+        {
+          q: "иван",
+          bucket: "archive",
+          source: "cert",
+          status: "Замер",
+        },
+        null,
+        { workingStages: [{ id: "ws_measure", label: "Замер" }], refusalReasons: [], archivedStages: [] },
+      ),
+    ).toBe("?bucket=archive&source=cert&q=%D0%B8%D0%B2%D0%B0%D0%BD&stage=ws_measure");
+  });
+
+  it("maps paidAmountKopecks to display rubles", () => {
+    const ui = mapReceivingAppealListRowFromWire({
+      id: "p",
+      clientDisplayName: "x",
+      receivingPartnerUserId: "u",
+      stageKey: "sys_new",
+      paidAmountKopecks: 12345,
+      referrerProUserId: "ref",
+      originKind: "certificate",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    expect(ui.paidAmountKopecks).toBe(12345);
+    expect(ui.referrerPartnerId).toBe("ref");
+    expect(ui.sourceKey).toBe("certificate");
   });
 
   it("findActiveReceivingAppeal scopes by receiving User.id", () => {
@@ -142,7 +163,7 @@ describe("P6.receiving-appeals-api contract gate", () => {
 
   it("certificate-entry proxy not ready — blocked without fake success", async () => {
     expect(isReceivingCertificateEntryProxyReady()).toBe(false);
-    const res = await submitReceivingCertificateEntry({ certificateCode: "RC-1" }, { readOnly: false });
+    const res = await submitReceivingCertificateEntry({ promoCode: "RC-1" }, { readOnly: false });
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.code).toBe("BLOCKED_CONTRACT");

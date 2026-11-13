@@ -89,6 +89,22 @@ export type ReceivingAppealHistoryEntry = {
   reason?: string;
 };
 
+export type ReceivingAppealHistoryWire = {
+  at: string;
+  authorLabel: string;
+  text: string;
+  reason?: string;
+};
+
+export function mapReceivingHistoryFromWire(entries: ReceivingAppealHistoryWire[]): ReceivingAppealHistoryEntry[] {
+  return entries.map((e) => ({
+    at: e.at,
+    author: e.authorLabel,
+    text: e.text,
+    reason: e.reason,
+  }));
+}
+
 /**
  * K8/K1 list row wire (K8 `1894569a` / K1 `83f279e8`) — map via `mapReceivingAppealListRowFromWire`.
  * P2 may centralize in `contracts.ts`; П6 owns explicit mapper until re-export.
@@ -101,26 +117,28 @@ export type ReceivingAppealListRowWire = {
   receivingPartnerId?: string | null;
   receivingOrganizationId?: string | null;
   receivingBranchId?: string | null;
-  referrerPartnerId?: string | null;
+  referrerProUserId?: string | null;
   interest?: string | null;
-  clientCity?: string | null;
   budgetHint?: string | null;
   stageKey?: string | null;
   refusedReason?: string | null;
   shippedAt?: string | null;
-  paidAmount?: number | null;
+  paidAmountKopecks?: number | null;
   paidAt?: string | null;
-  originKind?: string | null;
+  originKind?: "certificate" | "manual" | string | null;
   manualSourceKey?: string | null;
   purchaseOrderId?: string | null;
   createdAt?: string;
   updatedAt?: string;
   bucket?: ReceivingListBucket;
-  /** Legacy tolerance during transition — do not emit from new server. */
+  /** Legacy tolerance — not emitted from K8 `0f4fe833`. */
   clientName?: string | null;
   stageId?: string | null;
   sourceKey?: string | null;
   purchaseId?: string | null;
+  referrerPartnerId?: string | null;
+  paidAmount?: number | null;
+  clientCity?: string | null;
   manualEntry?: boolean;
 };
 
@@ -139,14 +157,17 @@ export type ReceivingAppealListRow = {
   /** Optional when solo specialist has no owned org; never required for UI visibility. */
   receivingOrganizationId?: string | null;
   receivingBranchId?: string | null;
+  /** UI alias — wire `referrerProUserId`. */
   referrerPartnerId: string;
   interest: string;
-  clientCity?: string | null;
   budgetHint?: string | null;
   stageId: string;
   refusedReason?: string | null;
   shippedAt?: string | null;
-  paidAmount?: number | null;
+  /** Canonical kopecks from server. */
+  paidAmountKopecks?: number | null;
+  /** Display rubles derived from kopecks ÷ 100 (no settlement math). */
+  paidAmountRub?: number | null;
   paidAt?: string | null;
   sourceKey?: string;
   /** K1 `manualSourceKey` when origin is manual. */
@@ -159,14 +180,41 @@ export type ReceivingAppealListRow = {
   bucket?: ReceivingListBucket;
 };
 
-/** Detail — receiving-owner fields (never leak via observer/referrer DTO). P4 owner. */
+/** Detail row — receiving-owner fields. P4 renders full payload. */
 export type ReceivingAppealDetail = ReceivingAppealListRow & {
   privateNotes?: string;
   clientContact?: string | null;
-  history: ReceivingAppealHistoryEntry[];
   discountPercent?: number;
   certValidUntil?: string | null;
 };
+
+/** GET `/api/pro/client-appeals/:id` top-level wire (K1 `5a51d7b7`). */
+export type ReceivingAppealDetailWire = {
+  appeal: ReceivingAppealListRowWire;
+  revision: string | number;
+  history: ReceivingAppealHistoryWire[];
+  workingStages?: ReceivingWorkingStage[];
+  refusalReasons?: string[];
+};
+
+/** Mapped detail for P4 — preserves `revision` for CAS writes. */
+export type ReceivingAppealDetailPayload = {
+  appeal: ReceivingAppealDetail;
+  revision: string | number;
+  history: ReceivingAppealHistoryEntry[];
+  workingStages: ReceivingWorkingStage[];
+  refusalReasons: string[];
+};
+
+export function mapReceivingAppealDetailFromWire(wire: ReceivingAppealDetailWire): ReceivingAppealDetailPayload {
+  return {
+    appeal: mapReceivingAppealListRowFromWire(wire.appeal) as ReceivingAppealDetail,
+    revision: wire.revision,
+    history: mapReceivingHistoryFromWire(wire.history ?? []),
+    workingStages: wire.workingStages ?? [],
+    refusalReasons: wire.refusalReasons ?? [],
+  };
+}
 
 export type ReceivingWorkingStage = {
   id: string;
@@ -183,6 +231,35 @@ export type ReceivingPartnerSettings = {
   refusalReasons: string[];
   archivedStages: ReceivingWorkingStage[];
 };
+
+/** GET working-stages wire — unwrap `{ settings, settings.version }`. */
+export type ReceivingPartnerSettingsWire = {
+  settings: ReceivingPartnerSettings & { version?: string | number };
+};
+
+export type ReceivingPartnerSettingsSnapshot = {
+  settings: ReceivingPartnerSettings;
+  version?: string | number;
+};
+
+export function unwrapReceivingPartnerSettingsWire(
+  wire: ReceivingPartnerSettingsWire | ReceivingPartnerSettings | null | undefined,
+): ReceivingPartnerSettingsSnapshot | null {
+  if (!wire) return null;
+  if ("settings" in wire && wire.settings) {
+    const { version, ...rest } = wire.settings;
+    return {
+      settings: {
+        workingStages: rest.workingStages ?? [],
+        refusalReasons: rest.refusalReasons ?? [],
+        archivedStages: rest.archivedStages ?? [],
+        receivingPartnerUserId: rest.receivingPartnerUserId,
+      },
+      version,
+    };
+  }
+  return { settings: wire as ReceivingPartnerSettings };
+}
 
 export function isReceivingSettingsMaterialized(settings: ReceivingPartnerSettings): boolean {
   return (
@@ -226,9 +303,11 @@ export function filterReceivingAppeals(
 ): ReceivingAppealListRow[] {
   let list = appeals.filter((a) => (a.bucket ?? "active") === filters.bucket);
   if (filters.source === "cert") {
-    list = list.filter((a) => Boolean(a.certificateId) && !a.manualEntry);
+    list = list.filter(
+      (a) => a.sourceKey === "certificate" || (Boolean(a.certificateId) && !a.manualEntry),
+    );
   } else if (filters.source === "manual") {
-    list = list.filter((a) => a.manualEntry);
+    list = list.filter((a) => a.sourceKey === "manual" || a.manualEntry);
   }
   if (filters.status !== DEFAULT_STATUS_LABEL) {
     list = list.filter((a) => stageLabelById(a) === filters.status);
@@ -236,7 +315,7 @@ export function filterReceivingAppeals(
   const q = filters.q.trim().toLowerCase();
   if (q) {
     list = list.filter((a) =>
-      [a.clientName, a.certificateId, a.id, a.interest, a.referrerPartnerId]
+      [a.clientName, a.certificateId, a.id, a.interest, a.referrerPartnerId, a.stageId]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -303,6 +382,7 @@ export type ReceivingAppealsListResponse = {
   tab?: string | null;
   kpis?: ReceivingListKpis;
   settings?: ReceivingPartnerSettings;
+  settingsVersion?: string | number;
   /** Future K1 — not invented when absent. */
   access?: ReceivingPrincipalAccess;
   principal?: ReceivingSessionPrincipal;
@@ -334,18 +414,62 @@ export type K1ClientAppealsListWire = {
   data?: K1ClientAppealsListWire;
 };
 
-/** List GET query — coordinate names with K1/P2 (bucket→`tab`). */
+const RECEIVING_SYSTEM_STAGE_LABELS: Record<string, string> = {
+  [RECEIVING_SYSTEM_STAGE.NEW]: "Новый",
+  [RECEIVING_SYSTEM_STAGE.PAID]: "Оплачено",
+  [RECEIVING_SYSTEM_STAGE.SHIPPED]: "Отгружено",
+  [RECEIVING_SYSTEM_STAGE.RETURN]: "Возврат",
+  [RECEIVING_SYSTEM_STAGE.REFUSED]: "Отказ",
+};
+
+/** Map UI status filter label → `stageKey` for K1 list query (never send label). */
+export function receivingStageKeyForStatusFilter(
+  statusLabel: string,
+  settings?: ReceivingPartnerSettings | null,
+): string | null {
+  if (statusLabel === DEFAULT_STATUS_LABEL) return null;
+  for (const stage of settings?.workingStages ?? []) {
+    if (stage.label === statusLabel) return stage.id;
+  }
+  for (const [key, label] of Object.entries(RECEIVING_SYSTEM_STAGE_LABELS)) {
+    if (label === statusLabel) return key;
+  }
+  if (Object.values(RECEIVING_SYSTEM_STAGE).includes(statusLabel as (typeof RECEIVING_SYSTEM_STAGE)[keyof typeof RECEIVING_SYSTEM_STAGE])) {
+    return statusLabel;
+  }
+  return null;
+}
+
+export function receivingStageLabelsFromSettings(
+  settings?: ReceivingPartnerSettings | null,
+): string[] {
+  const labels = new Set<string>([DEFAULT_STATUS_LABEL]);
+  for (const s of settings?.workingStages ?? []) labels.add(s.label);
+  for (const label of Object.values(RECEIVING_SYSTEM_STAGE_LABELS)) labels.add(label);
+  return [...labels];
+}
+
+export function formatReceivingPaidRubFromKopecks(kopecks: number | null | undefined): string | null {
+  if (kopecks == null || !Number.isFinite(kopecks)) return null;
+  const rub = Math.trunc(kopecks / 100);
+  const frac = Math.abs(kopecks % 100);
+  return frac === 0 ? `${rub} ₽` : `${rub},${String(frac).padStart(2, "0")} ₽`;
+}
+
+/** List GET query — K1 reads `bucket` + `stage` (stageKey). */
 export function buildReceivingAppealsListQuery(
   filters?: Partial<ReceivingListFilters>,
   cursor?: string | null,
+  settings?: ReceivingPartnerSettings | null,
 ): string {
   const params = new URLSearchParams();
-  if (filters?.bucket) params.set("tab", filters.bucket);
+  if (filters?.bucket) params.set("bucket", filters.bucket);
   if (filters?.source && filters.source !== "all") params.set("source", filters.source);
   const q = filters?.q?.trim();
   if (q) params.set("q", q);
   if (filters?.status && filters.status !== DEFAULT_STATUS_LABEL) {
-    params.set("stage", filters.status);
+    const stageKey = receivingStageKeyForStatusFilter(filters.status, settings);
+    if (stageKey) params.set("stage", stageKey);
   }
   if (cursor) params.set("cursor", cursor);
   const qs = params.toString();
@@ -358,6 +482,9 @@ export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWi
   const manualSourceKey = wire.manualSourceKey?.trim() || null;
   const manualEntry =
     wire.manualEntry === true || originKind === "manual" || Boolean(manualSourceKey);
+  const paidAmountKopecks =
+    wire.paidAmountKopecks ??
+    (typeof wire.paidAmount === "number" ? Math.round(wire.paidAmount * 100) : null);
   const row: ReceivingAppealListRow = {
     id: wire.id,
     clientName: (wire.clientDisplayName ?? wire.clientName ?? "").trim() || "—",
@@ -366,14 +493,14 @@ export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWi
     receivingPartnerId: (wire.receivingPartnerId ?? uid).trim() || uid,
     receivingOrganizationId: wire.receivingOrganizationId,
     receivingBranchId: wire.receivingBranchId,
-    referrerPartnerId: wire.referrerPartnerId?.trim() ?? "",
+    referrerPartnerId: (wire.referrerProUserId ?? wire.referrerPartnerId ?? "").trim(),
     interest: wire.interest?.trim() ?? "—",
-    clientCity: wire.clientCity,
     budgetHint: wire.budgetHint,
     stageId: (wire.stageKey ?? wire.stageId ?? "").trim() || RECEIVING_SYSTEM_STAGE.NEW,
     refusedReason: wire.refusedReason,
     shippedAt: wire.shippedAt,
-    paidAmount: wire.paidAmount,
+    paidAmountKopecks,
+    paidAmountRub: paidAmountKopecks != null ? paidAmountKopecks / 100 : null,
     paidAt: wire.paidAt,
     sourceKey: originKind || undefined,
     manualSourceKey,
@@ -432,90 +559,92 @@ export function coerceK1ClientAppealsListPayload(
 }
 
 /** Form/UI body (prototype names). */
+/** Prototype manual form — name / interest / contact / channel (no speculative city/notes in П6). */
 export type ReceivingAppealCreateBody = {
   clientName: string;
   interest?: string;
-  clientCity?: string;
   clientContact?: string;
-  manualChannel?: "phone" | "messenger" | "visit" | "ads" | "other";
-  privateNotes?: string;
+  manualSourceKey?: string;
 };
 
-/** K1 POST wire (`83f279e8`). */
+/** K1 POST wire — `manualSourceKey` may be preset or custom channel text (K8). */
 export type ReceivingAppealCreateWire = {
   clientDisplayName: string;
   interest?: string;
-  clientCity?: string;
   clientContact?: string;
   manualSourceKey?: string;
-  privateNotes?: string;
 };
 
 export function toK1ReceivingAppealCreateBody(body: ReceivingAppealCreateBody): ReceivingAppealCreateWire {
   return {
     clientDisplayName: body.clientName.trim(),
     interest: body.interest?.trim() || undefined,
-    clientCity: body.clientCity?.trim() || undefined,
     clientContact: body.clientContact?.trim() || undefined,
-    manualSourceKey: body.manualChannel,
-    privateNotes: body.privateNotes?.trim() || undefined,
+    manualSourceKey: body.manualSourceKey?.trim() || undefined,
   };
 }
 
-/** UI patch — P4 detail; map to K1 when PATCH allowlisted. */
-export type ReceivingAppealPatchBody = {
-  stageId?: string;
-  refusedReason?: string | null;
+/** Profile PATCH — no stage/finance (K1 rejects immutable fields on `/:id`). */
+export type ReceivingAppealProfilePatchBody = {
   privateNotes?: string;
-  shippedAt?: string | null;
-  paidAt?: string | null;
-  paidAmount?: number | null;
+  clientContact?: string;
+  interest?: string;
+  expectedRevision: string | number;
 };
 
-export type ReceivingAppealPatchWire = {
-  stageKey?: string;
-  refusedReason?: string | null;
+export type ReceivingAppealProfilePatchWire = {
   privateNotes?: string;
-  shippedAt?: string | null;
-  paidAt?: string | null;
-  paidAmount?: number | null;
+  clientContact?: string;
+  interest?: string;
+  expectedRevision: string | number;
 };
 
-export function toK1ReceivingAppealPatchBody(body: ReceivingAppealPatchBody): ReceivingAppealPatchWire {
-  return {
-    stageKey: body.stageId,
-    refusedReason: body.refusedReason,
-    privateNotes: body.privateNotes,
-    shippedAt: body.shippedAt,
-    paidAt: body.paidAt,
-    paidAmount: body.paidAmount,
-  };
+/** Stage PATCH — `PATCH /:id/stage` only. */
+export type ReceivingAppealStagePatchBody = {
+  stageKey: string;
+  refusedReason?: string | null;
+  expectedRevision: string | number;
+};
+
+export type ReceivingAppealFinancePatchBlockedNote =
+  "Оплата и отгрузка не сохраняются из Clients UI — только серверные финансовые потоки.";
+
+export const RECEIVING_FINANCE_PATCH_FROZEN =
+  "Оплата/отгрузка не редактируются из Clients UI (K1 immutable finance fields)." as ReceivingAppealFinancePatchBlockedNote;
+
+export function isReceivingAppealProfilePatchProxyReady(id = "x"): boolean {
+  return isAllowedProxyRoute("PATCH", `/api/pro/client-appeals/${id}`);
 }
 
-/** P1 production pin: GET-only on `/api/pro/client-appeals/:id` until K1+P1 land PATCH. */
-export function isReceivingAppealPatchProxyReady(): boolean {
-  return isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/x");
+export function isReceivingAppealStagePatchProxyReady(id = "x"): boolean {
+  return isAllowedProxyRoute("PATCH", `/api/pro/client-appeals/${id}/stage`);
 }
-
-export const RECEIVING_DETAIL_PATCH_BLOCKED =
-  "PATCH /api/pro/client-appeals/:id ждёт K1 Clients-only handler и P1 allowlist (wire: GET-only).";
 
 /**
  * K1 certificate entry — POST body (Clients-only route; does not call store order POST).
  * `certificateCode` = qrCode or promoCode (same as `POST /api/store/order/preview`).
  * K1 chains: `authorizeStoreScan` → read-only `validateCertificateForStore` → idempotent appeal find/create.
  */
+/** UI extracts promo from QR; wire field is `promoCode` (K1). */
 export type ReceivingCertificateEntryBody = {
-  certificateCode: string;
+  promoCode: string;
 };
 
-export type ReceivingCertificateEntrySuccess = {
-  outcome: "created" | "existing";
-  appeal: ReceivingAppealListRowWire | ReceivingAppealListRow;
+/** HTTP 200 with `valid: false` is a real invalid result — not an error throw. */
+export type ReceivingCertificateEntryWireResponse = {
+  valid: boolean;
+  message?: string | null;
+  outcome?: "created" | "existing";
+  appeal?: ReceivingAppealListRowWire;
 };
 
 export type ReceivingCertificateEntryResult =
-  | { ok: true; appealId: string } & ReceivingCertificateEntrySuccess
+  | {
+      ok: true;
+      appealId: string;
+      outcome: "created" | "existing";
+      appeal: ReceivingAppealListRow;
+    }
   | {
       ok: false;
       code: "BLOCKED_CONTRACT" | "FORBIDDEN" | "INVALID" | "CONFLICT" | "ERROR";
@@ -554,17 +683,28 @@ export async function submitReceivingCertificateEntry(
     };
   }
   try {
-    const payload = await remcardFetch<ReceivingCertificateEntrySuccess>(RECEIVING_CERT_ENTRY_PATH, {
+    const payload = await remcardFetch<ReceivingCertificateEntryWireResponse>(RECEIVING_CERT_ENTRY_PATH, {
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ promoCode: body.promoCode }),
     });
-    const appealRow =
-      "clientDisplayName" in payload.appeal || "stageKey" in payload.appeal
-        ? mapReceivingAppealListRowFromWire(payload.appeal as ReceivingAppealListRowWire)
-        : coerceReceivingAppealListRow(payload.appeal as ReceivingAppealListRow);
+    if (payload.valid === false) {
+      return {
+        ok: false,
+        code: "INVALID",
+        message: payload.message?.trim() || "Сертификат недействителен или срок истёк.",
+      };
+    }
+    if (!payload.appeal) {
+      return {
+        ok: false,
+        code: "ERROR",
+        message: payload.message?.trim() || "Нет данных обращения после проверки сертификата.",
+      };
+    }
+    const appealRow = mapReceivingAppealListRowFromWire(payload.appeal);
     return {
       ok: true,
-      outcome: payload.outcome,
+      outcome: payload.outcome ?? "created",
       appeal: appealRow,
       appealId: appealRow.id,
     };
@@ -593,7 +733,7 @@ export async function submitReceivingCertificateEntry(
 export type ReceivingAppealsBatchBody = {
   ids: string[];
   action: "archive" | "unarchive" | "trash" | "restore" | "patch";
-  patch?: Pick<ReceivingAppealPatchBody, "stageId" | "privateNotes">;
+  patch?: { stageKey?: string; privateNotes?: string };
 };
 
 export type ReceivingAppealsLoadResult =
@@ -631,26 +771,30 @@ export function isReceivingAppealsProxyReady(): boolean {
 export async function fetchReceivingAppealsWorkspace(
   filters?: Partial<ReceivingListFilters>,
   cursor?: string | null,
+  settingsForQuery?: ReceivingPartnerSettings | null,
 ): Promise<ReceivingAppealsLoadResult> {
   if (!isReceivingAppealsProxyReady()) {
     return receivingContractBlocked();
   }
-  const listPath = `/api/pro/client-appeals${buildReceivingAppealsListQuery(filters, cursor)}`;
+  const listPath = `/api/pro/client-appeals${buildReceivingAppealsListQuery(filters, cursor, settingsForQuery)}`;
   try {
     const [listWire, settingsWire] = await Promise.all([
       remcardFetch<K1ClientAppealsListWire>(listPath),
-      remcardFetch<ReceivingPartnerSettings>("/api/pro/client-appeals/working-stages").catch(
+      remcardFetch<ReceivingPartnerSettingsWire>("/api/pro/client-appeals/working-stages").catch(
         () => null,
       ),
     ]);
     const data = coerceK1ClientAppealsListPayload(listWire);
-    if (settingsWire) {
-      data.settings = {
-        ...(data.settings ?? RECEIVING_EMPTY_SETTINGS),
-        ...settingsWire,
-        receivingPartnerUserId:
-          settingsWire.receivingPartnerUserId ?? data.principal?.receivingPartnerUserId,
-      };
+    const unwrapped = unwrapReceivingPartnerSettingsWire(settingsWire);
+    if (unwrapped) {
+      data.settings = unwrapped.settings;
+      data.settingsVersion = unwrapped.version;
+      if (unwrapped.settings.receivingPartnerUserId && data.principal) {
+        data.principal = {
+          ...data.principal,
+          receivingPartnerUserId: unwrapped.settings.receivingPartnerUserId,
+        };
+      }
     }
     return { ok: true, data };
   } catch (caught) {
@@ -701,7 +845,7 @@ export async function createReceivingAppeal(
 export async function fetchReceivingAppealDetail(
   id: string,
 ): Promise<
-  | { ok: true; appeal: ReceivingAppealDetail }
+  | { ok: true; data: ReceivingAppealDetailPayload }
   | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string }
 > {
   const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
@@ -709,8 +853,8 @@ export async function fetchReceivingAppealDetail(
     return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
   }
   try {
-    const payload = await remcardFetch<{ appeal: ReceivingAppealDetail }>(path);
-    return { ok: true, appeal: payload.appeal };
+    const payload = await remcardFetch<ReceivingAppealDetailWire>(path);
+    return { ok: true, data: mapReceivingAppealDetailFromWire(payload) };
   } catch (caught) {
     return {
       ok: false,
@@ -720,51 +864,68 @@ export async function fetchReceivingAppealDetail(
   }
 }
 
-/** Stage / field updates — **PATCH** only (not POST). */
-export async function patchReceivingAppeal(
-  id: string,
-  body: ReceivingAppealPatchBody,
+function assertReceivingMutationAllowed(
   gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
-): Promise<ReceivingAppealsLoadResult> {
+): string | null {
   const readOnly =
     gate && "readOnly" in gate
       ? gate.readOnly === true
       : gate
         ? !normalizeReceivingAccess(gate).mutationsAllowed
         : true;
-  if (readOnly) {
-    return {
-      ok: false,
-      code: "ERROR",
-      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
-    };
-  }
+  return readOnly ? RECEIVING_ACCESS_LIST_ONLY_DENIAL : null;
+}
+
+export async function patchReceivingAppealProfile(
+  id: string,
+  body: ReceivingAppealProfilePatchBody,
+  gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
+): Promise<ReceivingAppealsLoadResult> {
+  const denied = assertReceivingMutationAllowed(gate);
+  if (denied) return { ok: false, code: "ERROR", message: denied };
   const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
-  if (!isReceivingAppealPatchProxyReady()) {
+  if (!isReceivingAppealProfilePatchProxyReady(id)) {
     return {
       ok: false,
       code: "BLOCKED_CONTRACT",
-      message: RECEIVING_DETAIL_PATCH_BLOCKED,
-    };
-  }
-  if (!isAllowedProxyRoute("PATCH", path)) {
-    return {
-      ok: false,
-      code: "BLOCKED_CONTRACT",
-      message: RECEIVING_DETAIL_PATCH_BLOCKED,
+      message: "PATCH profile ждёт P1 allowlist.",
     };
   }
   try {
-    await remcardFetch(path, {
-      method: "PATCH",
-      body: JSON.stringify(toK1ReceivingAppealPatchBody(body)),
-    });
+    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить обращение",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль",
+    };
+  }
+}
+
+export async function patchReceivingAppealStage(
+  id: string,
+  body: ReceivingAppealStagePatchBody,
+  gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
+): Promise<ReceivingAppealsLoadResult> {
+  const denied = assertReceivingMutationAllowed(gate);
+  if (denied) return { ok: false, code: "ERROR", message: denied };
+  const path = `/api/pro/client-appeals/${encodeURIComponent(id)}/stage`;
+  if (!isReceivingAppealStagePatchProxyReady(id)) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "PATCH stage ждёт K1 `/:id/stage` + P1 allowlist.",
+    };
+  }
+  try {
+    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    return fetchReceivingAppealsWorkspace();
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сменить этап",
     };
   }
 }
