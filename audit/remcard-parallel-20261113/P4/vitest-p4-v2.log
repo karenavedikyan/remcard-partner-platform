@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/P4.ObserverPartnerDetailView.test.tsx (6 tests) 178ms
+ ✓ src/components/clients/observer/P4.observer-detail-navigation.test.tsx (3 tests) 256ms
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests) 855ms
+ ✓ src/components/clients/observer/P4.ObserverClientDetailView.test.tsx (7 tests) 133ms
+ ✓ src/components/clients/observer/ObserverPartnerDetailView.test.tsx (1 test) 79ms
+
+ Test Files  5 passed (5)
+      Tests  24 passed (24)
+   Start at  14:52:20
+   Duration  1.99s (transform 389ms, setup 813ms, collect 776ms, tests 1.50s, environment 1.63s, prepare 304ms)
+

@@ -85,3 +85,37 @@ function StatPair({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+type PartnerMissingProps = {
+  partnerId?: string;
+  onBack: () => void;
+};
+
+/** Synthetic 404 — shell renders when `nav.partnerId` does not resolve (read P3). */
+export function ObserverPartnerDetailMissing({ partnerId, onBack }: PartnerMissingProps) {
+  return (
+    <div
+      className={styles.section}
+      data-testid="ca-observer-partner-page"
+      data-ca-state="missing"
+    >
+      <button
+        type="button"
+        className={styles.backBtn}
+        data-ca-action="observer:back"
+        data-testid="ca-clients-back"
+        onClick={onBack}
+      >
+        ← Назад к партнёрам
+      </button>
+      <section className={styles.blocked} data-testid="ca-observer-partner-missing">
+        <h2>Партнёр не найден</h2>
+        <p className={styles.mutedSmall}>
+          {partnerId
+            ? `Партнёр «${partnerId}» недоступен в текущем списке.`
+            : "Партнёр недоступен в текущем списке."}
+        </p>
+      </section>
+    </div>
+  );
+}

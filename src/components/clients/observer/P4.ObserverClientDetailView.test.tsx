@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ObserverClientDetailView } from "./ObserverClientDetailView";
+import {
+  ObserverClientDetailMissing,
+  ObserverClientDetailView,
+  resolveObserverClientBackLabel,
+} from "./ObserverClientDetailView";
 import {
   OBSERVER_FIXTURE_APPEALS,
   OBSERVER_FIXTURE_PARTNERS,
@@ -32,6 +36,41 @@ describe("P4.ObserverClientDetailView", () => {
     expect(screen.getByTestId("ca-observer-client-timeline-na")).toHaveTextContent(
       "BLK-OBSERVER-REFERRED",
     );
+  });
+
+  it("maps backFrom to prototype labels without shell wiring", () => {
+    expect(resolveObserverClientBackLabel("partner-clients")).toBe("← К списку клиентов");
+    expect(resolveObserverClientBackLabel("partners-list")).toBe("← К партнёрам");
+    expect(resolveObserverClientBackLabel("flat-list")).toBe("← Назад к списку");
+    expect(resolveObserverClientBackLabel(undefined, "← custom")).toBe("← custom");
+  });
+
+  it("exposes appeal id for long identifiers", () => {
+    const longId = "ref-" + "x".repeat(48);
+    render(
+      <ObserverClientDetailView
+        appeal={{ ...appeal, id: longId }}
+        partner={partner}
+        onBack={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-appeal-id")).toHaveTextContent(longId);
+  });
+
+  it("renders missing record shell with back", async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(
+      <ObserverClientDetailMissing
+        clientId="ghost-ref"
+        backFrom="partner-clients"
+        onBack={onBack}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-client-missing")).toBeTruthy();
+    await user.click(screen.getByTestId("ca-clients-back"));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("← К списку клиентов")).toBeTruthy();
   });
 
   it("supports contextual back label and activation", async () => {

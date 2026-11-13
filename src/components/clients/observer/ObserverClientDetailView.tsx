@@ -8,11 +8,26 @@ import {
 import type { ObserverPartnerMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
 import styles from "./observer.module.css";
 
+/** Where the client detail was opened from (prototype back labels). */
+export type ObserverClientBackFrom = "partner-clients" | "partners-list" | "flat-list";
+
+export function resolveObserverClientBackLabel(
+  backFrom?: ObserverClientBackFrom,
+  backLabel?: string,
+): string {
+  if (backLabel) return backLabel;
+  if (backFrom === "partner-clients") return "← К списку клиентов";
+  if (backFrom === "partners-list") return "← К партнёрам";
+  if (backFrom === "flat-list") return "← Назад к списку";
+  return "← Назад";
+}
+
 type Props = {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;
   onBack: () => void;
-  /** Prototype «К списку клиентов» vs «К партнёрам» — set by list shell when wired. */
+  backFrom?: ObserverClientBackFrom;
+  /** Overrides `backFrom` when the shell needs an explicit string. */
   backLabel?: string;
 };
 
@@ -20,11 +35,13 @@ export function ObserverClientDetailView({
   appeal,
   partner,
   onBack,
-  backLabel = "← Назад",
+  backFrom,
+  backLabel,
 }: Props) {
   const clientName = displayClientName(appeal);
   const interest = appeal.interest?.trim();
   const certificate = appeal.certificateId?.trim();
+  const resolvedBackLabel = resolveObserverClientBackLabel(backFrom, backLabel);
 
   return (
     <div className={styles.section} data-testid="ca-observer-client-page">
@@ -33,16 +50,21 @@ export function ObserverClientDetailView({
         className={styles.backBtn}
         data-ca-action="observer:back"
         data-testid="ca-clients-back"
-        aria-label={backLabel.replace(/^←\s*/, "")}
         onClick={onBack}
       >
-        {backLabel}
+        {resolvedBackLabel}
       </button>
       <header className={styles.partnerPageHead}>
         {interest ? <p className={styles.mutedSmall}>{interest}</p> : null}
         <h2 id="ca-observer-client-title">{clientName}</h2>
       </header>
       <dl className={styles.detailGrid} aria-labelledby="ca-observer-client-title">
+        <div>
+          <dt>ID направления</dt>
+          <dd>
+            <code data-testid="ca-observer-appeal-id">{appeal.id}</code>
+          </dd>
+        </div>
         <div>
           <dt>Партнёр</dt>
           <dd>
@@ -89,6 +111,48 @@ export function ObserverClientDetailView({
       >
         Публичная хронология и данные покупки недоступны без подтверждённого контракта направлений
         (BLK-OBSERVER-REFERRED).
+      </section>
+    </div>
+  );
+}
+
+type ClientMissingProps = {
+  clientId?: string;
+  onBack: () => void;
+  backFrom?: ObserverClientBackFrom;
+  backLabel?: string;
+};
+
+/** Synthetic 404 — shell renders when `nav.clientId` does not resolve (read P3). */
+export function ObserverClientDetailMissing({
+  clientId,
+  onBack,
+  backFrom,
+  backLabel,
+}: ClientMissingProps) {
+  const resolvedBackLabel = resolveObserverClientBackLabel(backFrom, backLabel);
+  return (
+    <div
+      className={styles.section}
+      data-testid="ca-observer-client-page"
+      data-ca-state="missing"
+    >
+      <button
+        type="button"
+        className={styles.backBtn}
+        data-ca-action="observer:back"
+        data-testid="ca-clients-back"
+        onClick={onBack}
+      >
+        {resolvedBackLabel}
+      </button>
+      <section className={styles.blocked} data-testid="ca-observer-client-missing">
+        <h2>Направление не найдено</h2>
+        <p className={styles.mutedSmall}>
+          {clientId
+            ? `Запись «${clientId}» отсутствует в доступном списке или скрыта фильтрами.`
+            : "Запись отсутствует в доступном списке или скрыта фильтрами."}
+        </p>
       </section>
     </div>
   );

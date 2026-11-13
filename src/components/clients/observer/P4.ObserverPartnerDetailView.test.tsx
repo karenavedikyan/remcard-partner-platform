@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ObserverPartnerDetailView } from "./ObserverPartnerDetailView";
+import {
+  ObserverPartnerDetailMissing,
+  ObserverPartnerDetailView,
+} from "./ObserverPartnerDetailView";
 import {
   OBSERVER_FIXTURE_APPEALS,
   OBSERVER_FIXTURE_PARTNERS,
@@ -60,6 +63,34 @@ describe("P4.ObserverPartnerDetailView", () => {
     const back = screen.getByTestId("ca-clients-back");
     expect(back).toHaveFocus();
     await user.keyboard("{Enter}");
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps long partner title readable in heading", () => {
+    const appeals = OBSERVER_FIXTURE_APPEALS.filter((a) => a.receivingPartnerId === longPartner.id);
+    render(
+      <ObserverPartnerDetailView
+        partner={longPartner}
+        appeals={appeals}
+        selectedIds={new Set()}
+        onBack={() => undefined}
+        onClientOpen={() => undefined}
+        onClientSelect={() => undefined}
+      />,
+    );
+    const title = screen.getByRole("heading", { level: 2 });
+    expect(title.textContent?.length).toBeGreaterThan(40);
+    expect(title).toHaveAttribute("id", "ca-observer-partner-title");
+  });
+
+  it("missing partner record exposes back and message", async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    render(<ObserverPartnerDetailMissing partnerId="unknown-partner" onBack={onBack} />);
+    expect(screen.getByTestId("ca-observer-partner-missing")).toHaveTextContent("unknown-partner");
+    await user.keyboard("{Tab}");
+    expect(screen.getByTestId("ca-clients-back")).toHaveFocus();
+    await user.keyboard(" ");
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 

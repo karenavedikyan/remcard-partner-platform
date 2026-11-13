@@ -26,6 +26,20 @@ describe("P4.observer-detail-navigation", () => {
     expect(screen.getByTestId("ca-observer-partner-page")).toBeTruthy();
   });
 
+  it("flat list uses generic back until shell passes backFrom", async () => {
+    const user = userEvent.setup();
+    render(
+      <ObserverPartnersListView
+        appeals={OBSERVER_FIXTURE_APPEALS}
+        partners={OBSERVER_FIXTURE_PARTNERS}
+        dataContract={{ status: "ready" }}
+        initialLayout="list"
+      />,
+    );
+    await user.click(screen.getAllByTestId("ca-observer-client-row")[0].querySelector("button")!);
+    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("← Назад");
+  });
+
   it("flat list → client → list (synthetic missing partner route)", async () => {
     const user = userEvent.setup();
     render(
