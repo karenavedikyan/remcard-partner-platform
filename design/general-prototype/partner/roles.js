@@ -25,7 +25,7 @@ import {
   parseStandaloneDeepLink,
   prepareGuestStandaloneOpen,
   waitForCabinetReady,
-} from "./cabinet-standalone-host.js?v=embed10";
+} from "./cabinet-standalone-host.js?v=embed11";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
@@ -3171,6 +3171,7 @@ function ensureCabinetScreenForStandalone() {
   regBtn?.setAttribute("aria-pressed", "false");
 }
 function protoCabinetTocStandalone(pageN) {
+  window.__protoCloseBookToc?.();
   if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
     U("Страницы 141 и 142 доступны в релизе R2 из раздела «Клиенты».", "info");
     return;

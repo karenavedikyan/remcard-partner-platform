@@ -182,25 +182,6 @@ export function createCabinetStandaloneHost(config) {
     return 0;
   }
 
-  function reviewerDockBottomReserve(viewportHeight) {
-    const flow = document.querySelector(".proto-page-flow");
-    let reserve = 0;
-    if (flow) {
-      const fr = flow.getBoundingClientRect();
-      if (fr.height > 4 && fr.top < viewportHeight) {
-        reserve = Math.max(reserve, viewportHeight - fr.top + 8);
-      }
-    }
-    const panel = document.querySelector('.proto-page-panel[data-open="true"]');
-    if (panel) {
-      const pr = panel.getBoundingClientRect();
-      if (pr.height > 4 && pr.top < viewportHeight) {
-        reserve = Math.max(reserve, viewportHeight - pr.top + 8);
-      }
-    }
-    return reserve;
-  }
-
   function reposition() {
     if (hostEl.hidden) return;
     const target = contentTarget();
@@ -212,11 +193,11 @@ export function createCabinetStandaloneHost(config) {
     const vv = window.visualViewport;
     const viewportTop = vv?.offsetTop ?? 0;
     const viewportHeight = vv?.height ?? window.innerHeight;
-    const bottomInset = Math.max(mobileBottomInset(), reviewerDockBottomReserve(viewportHeight));
+    const viewportBottom = viewportTop + viewportHeight;
     const top = Math.max(viewportTop, rect.top);
+    const bottomInset = mobileBottomInset();
     const barH = hostEl.querySelector(".cabinet-standalone-host__bar")?.offsetHeight || 48;
-    const available = viewportHeight - bottomInset - (top - viewportTop) - 4;
-    const height = Math.max(160, Math.min(available, viewportHeight - (top - viewportTop) - bottomInset));
+    const height = Math.max(160, viewportBottom - top - bottomInset - 4);
     hostEl.style.position = "fixed";
     hostEl.style.left = `${rect.left}px`;
     hostEl.style.top = `${top}px`;

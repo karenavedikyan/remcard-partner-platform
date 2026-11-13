@@ -219,6 +219,16 @@ assert.match(
   "proto_standalone deep link shows cabinet before embed host",
 );
 assert.match(
+  readFileSync(path.join(root, "prototype-numbering.js"), "utf8"),
+  /__protoCloseBookToc/,
+  "book TOC can close on programmatic page launch",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /viewportBottom - top - bottomInset/,
+  "embed host height follows viewport, not short home main block",
+);
+assert.match(
   readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),
   /publicHtml/,
   "140 opaque embed applies host-rendered recommendation HTML",

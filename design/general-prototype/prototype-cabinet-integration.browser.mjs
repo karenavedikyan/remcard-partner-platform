@@ -793,10 +793,11 @@ try {
     });
     assert.ok(dockZ?.hostActive, `embed host class at ${viewport.width}px`);
     assert.ok(dockZ && dockZ.flowZ > dockZ.hostZ, `reviewer dock above portal at ${viewport.width}px`);
-    const flowBox = await dockPage.locator(".proto-page-flow").boundingBox();
     const hostBox = await dockPage.locator("[data-testid='cabinet-standalone-host']").boundingBox();
-    assert.ok(flowBox && hostBox, `dock and host measurable at ${viewport.width}px`);
-    assert.ok(hostBox.y + hostBox.height <= flowBox.y + 2, `embed ends above reviewer dock at ${viewport.width}px`);
+    const viewportH = viewport.height;
+    assert.ok(hostBox, `embed host measurable at ${viewport.width}px`);
+    assert.ok(hostBox.height > viewport.width > 600 ? 400 : 260, `embed host uses viewport (${hostBox.height}px at ${viewport.width}px)`);
+    assert.ok(hostBox.y + hostBox.height <= viewportH + 4, "embed host stays within viewport");
     await dockPage.close();
   }
 
@@ -1022,6 +1023,19 @@ try {
     null,
     { timeout: 30000 },
   );
+  const hub140Layout = await hubToc.evaluate(() => {
+    const host = document.querySelector("[data-testid='cabinet-standalone-host']");
+    const panel = document.querySelector(".proto-page-panel");
+    const frame = document.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      panelOpen: panel?.getAttribute("data-open") === "true",
+      hostHeight: host?.getBoundingClientRect().height || 0,
+      frameHeight: frame?.getBoundingClientRect().height || 0,
+    };
+  });
+  assert.equal(hub140Layout.panelOpen, false, "book TOC must close after launching a page");
+  assert.ok(hub140Layout.hostHeight > 320, `embed host height must use viewport (${hub140Layout.hostHeight})`);
+  assert.ok(hub140Layout.frameHeight > 240, `embed iframe height (${hub140Layout.frameHeight})`);
   const hub140Frame = hubToc.frameLocator('[data-testid="cabinet-standalone-frame"]');
   await hub140Frame.getByText(/Дизайн-макет публичной рекомендации/i).waitFor({ timeout: 15000 });
   const hub140Qr = await hub140Frame.locator("[data-recommendation-qr]").evaluate((img) => ({

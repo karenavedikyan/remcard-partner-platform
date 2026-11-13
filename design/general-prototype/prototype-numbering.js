@@ -695,6 +695,7 @@ const PAGE_DEFS = [
       return;
     }
     closeActiveAppDialogs();
+    if (panelEl?.getAttribute("data-open") === "true") togglePanel(false);
     const rel = pathnameRel();
     if (page.cabinetEmbed && CABINET_EMBED_OPEN[page.n]) {
       ev?.preventDefault();
@@ -916,6 +917,9 @@ const PAGE_DEFS = [
   window.protoPageByNumber = (n) => byN.get(Number(n));
   window.protoHubUrl = hubUrl;
   window.protoPathnameRel = pathnameRel;
+  window.__protoCloseBookToc = function protoCloseBookToc() {
+    if (panelEl?.getAttribute("data-open") === "true") togglePanel(false);
+  };
 
   let embedCabinetChild = false;
   try {
