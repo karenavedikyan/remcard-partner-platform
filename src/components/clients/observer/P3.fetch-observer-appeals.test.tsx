@@ -3,6 +3,7 @@ import {
   fetchObserverReferredAppeals,
   mapK8AppealStageKey,
   OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS,
+  resolveReceivingPrincipalId,
 } from "@/lib/clients-parity/fetch-observer-appeals";
 
 describe("P3 fetchObserverReferredAppeals", () => {
@@ -25,6 +26,55 @@ describe("P3 fetchObserverReferredAppeals", () => {
     }
   });
 
+  it("prefers receivingPartnerUserId over branch for card key", () => {
+    const id = resolveReceivingPrincipalId({
+      receivingPartnerUserId: "user-rcv",
+      receivingBranchId: "branch-x",
+    });
+    expect(id).toBe("user-rcv");
+  });
+
+  it("parses solo specialist list without branch (User principal only)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            items: [
+              {
+                id: "a1",
+                clientDisplayName: "Иван",
+                receivingPartnerUserId: "solo-user-1",
+                stageKey: "sys_new",
+                updatedAt: "2026-01-01T00:00:00.000Z",
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+            ],
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            receivingPartners: [
+              {
+                receivingPartnerUserId: "solo-user-1",
+                displayName: "Специалист Соло",
+                city: "Сочи",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const res = await fetchObserverReferredAppeals();
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.appeals[0]?.receivingPartnerId).toBe("solo-user-1");
+      expect(res.partners[0]?.id).toBe("solo-user-1");
+      expect(res.partners[0]?.name).toBe("Специалист Соло");
+    }
+  });
+
   it("parses K2 paginated list with receivingPartners and overlays", async () => {
     vi.stubGlobal(
       "fetch",
@@ -35,7 +85,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
               {
                 id: "a1",
                 clientDisplayName: "Иван",
-                receivingBranchId: "p1",
+                receivingPartnerUserId: "p1",
                 stageKey: "sys_new",
                 updatedAt: "2026-01-01T00:00:00.000Z",
                 createdAt: "2026-01-01T00:00:00.000Z",
@@ -46,7 +96,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
             limit: 100,
             total: 1,
             hasMore: false,
-            receivingPartners: [{ branchId: "p1", displayName: "Партнёр" }],
+            receivingPartners: [{ receivingPartnerUserId: "p1", displayName: "Партнёр" }],
           }),
           { status: 200 },
         ),
@@ -72,7 +122,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
               {
                 id: "a1",
                 clientDisplayName: "Иван",
-                receivingBranchId: "branch-1",
+                receivingPartnerUserId: "user-rcv-1",
                 referrerProUserId: "user-me",
                 stageKey: "sys_paid",
                 updatedAt: "2026-01-02T00:00:00.000Z",
@@ -86,7 +136,7 @@ describe("P3 fetchObserverReferredAppeals", () => {
             limit: 100,
             total: 1,
             hasMore: false,
-            receivingPartners: [{ branchId: "branch-1", displayName: "Филиал" }],
+            receivingPartners: [{ receivingPartnerUserId: "user-rcv-1", displayName: "Филиал" }],
             personalOverlays: [{ appealId: "a1", alias: "V", bucket: "active", version: 2 }],
           }),
           { status: 200 },

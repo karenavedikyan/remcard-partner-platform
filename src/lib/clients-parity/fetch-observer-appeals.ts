@@ -11,6 +11,9 @@ import type {
  * `karenavedikyan/remcard-navigator` @ `fc33b4fae859fb692757807c3b27696b66d57558`
  * — `src/lib/clientAppeals/contract.ts`, `HANDOFF.md`.
  * P2 BFF forwards K2 observer GET; this adapter maps wire → UI view-model only.
+ *
+ * Identity (Root 2026-11-13): UI `receivingPartnerId` = trusted **receiving principal User.id**
+ * (`receivingPartnerUserId` on wire). `receivingBranchId` is optional scope metadata only.
  */
 export const OBSERVER_REFERRED_APPEALS_LIST_PATH = "/api/pro/referred-appeals";
 
@@ -114,6 +117,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Canonical receiving card key — User.id first; branch ids are transition-only fallback. */
+export function resolveReceivingPrincipalId(row: Record<string, unknown>): string {
+  if (typeof row.receivingPartnerUserId === "string" && row.receivingPartnerUserId) {
+    return row.receivingPartnerUserId;
+  }
+  if (typeof row.receivingPartnerId === "string" && row.receivingPartnerId) {
+    return row.receivingPartnerId;
+  }
+  if (typeof row.receivingBranchId === "string" && row.receivingBranchId) {
+    return row.receivingBranchId;
+  }
+  return "";
+}
+
+function resolvePartnerMetaId(row: Record<string, unknown>): string {
+  if (typeof row.receivingPartnerUserId === "string" && row.receivingPartnerUserId) {
+    return row.receivingPartnerUserId;
+  }
+  if (typeof row.userId === "string" && row.userId) {
+    return row.userId;
+  }
+  if (typeof row.branchId === "string" && row.branchId) {
+    return row.branchId;
+  }
+  if (typeof row.receivingBranchId === "string" && row.receivingBranchId) {
+    return row.receivingBranchId;
+  }
+  if (typeof row.id === "string" && row.id) {
+    return row.id;
+  }
+  return "";
+}
+
 function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal | null {
   const id = typeof row.id === "string" ? row.id : "";
   const clientName =
@@ -122,12 +158,7 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
       : typeof row.clientName === "string"
         ? row.clientName
         : "";
-  const receivingPartnerId =
-    typeof row.receivingBranchId === "string"
-      ? row.receivingBranchId
-      : typeof row.receivingPartnerId === "string"
-        ? row.receivingPartnerId
-        : "";
+  const receivingPartnerId = resolveReceivingPrincipalId(row);
   const referrerPartnerId =
     typeof row.referrerProUserId === "string"
       ? row.referrerProUserId
@@ -172,14 +203,7 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
 }
 
 function parsePartnerRow(row: Record<string, unknown>): ObserverPartnerMeta | null {
-  const id =
-    typeof row.branchId === "string"
-      ? row.branchId
-      : typeof row.receivingBranchId === "string"
-        ? row.receivingBranchId
-        : typeof row.id === "string"
-          ? row.id
-          : "";
+  const id = resolvePartnerMetaId(row);
   const name =
     typeof row.displayName === "string"
       ? row.displayName
@@ -202,6 +226,49 @@ function parsePartnerRow(row: Record<string, unknown>): ObserverPartnerMeta | nu
   };
 }
 
+function registerPartnerMeta(
+  partners: Map<string, ObserverPartnerMeta>,
+  principalId: string,
+  meta: ObserverPartnerMeta,
+): void {
+  if (!principalId) return;
+  partners.set(principalId, { ...meta, id: principalId });
+}
+
+function partnerMetaFromItemRow(row: Record<string, unknown>): ObserverPartnerMeta | null {
+  const principalId = resolveReceivingPrincipalId(row);
+  const embedded = row.receivingPartner;
+  if (isRecord(embedded)) {
+    const base = parsePartnerRow(embedded);
+    if (base) return { ...base, id: principalId || base.id };
+  }
+  const branch = row.receivingBranch;
+  if (isRecord(branch) && principalId) {
+    const base = parsePartnerRow(branch);
+    if (base) {
+      return {
+        id: principalId,
+        name: base.name,
+        city: base.city,
+        category: base.category,
+      };
+    }
+  }
+  if (principalId && typeof row.receivingPartnerDisplayName === "string") {
+    return {
+      id: principalId,
+      name: row.receivingPartnerDisplayName,
+      city:
+        typeof row.receivingPartnerCity === "string"
+          ? row.receivingPartnerCity
+          : row.receivingPartnerCity === null
+            ? null
+            : undefined,
+    };
+  }
+  return null;
+}
+
 function mergePartners(
   partners: Map<string, ObserverPartnerMeta>,
   rows: unknown[],
@@ -210,16 +277,28 @@ function mergePartners(
   for (const row of rows) {
     if (!isRecord(row)) continue;
     if (fromItems) {
-      const branch = row.receivingBranch;
-      if (isRecord(branch)) {
-        const mapped = parsePartnerRow(branch);
-        if (mapped) partners.set(mapped.id, mapped);
+      const fromItem = partnerMetaFromItemRow(row);
+      if (fromItem) {
+        registerPartnerMeta(partners, fromItem.id, fromItem);
       }
       continue;
     }
     const mapped = parsePartnerRow(row);
-    if (mapped) partners.set(mapped.id, mapped);
+    if (mapped) registerPartnerMeta(partners, mapped.id, mapped);
   }
+}
+
+function assertPartnerMetaForAppeals(
+  appeals: ObserverReferredAppeal[],
+  partners: Map<string, ObserverPartnerMeta>,
+): string | null {
+  for (const appeal of appeals) {
+    const meta = partners.get(appeal.receivingPartnerId);
+    if (!meta?.name) {
+      return `Нет метаданных принимающего партнёра (receivingPartnerUserId=${appeal.receivingPartnerId}).`;
+    }
+  }
+  return null;
 }
 
 function extractOverlayFromItem(
@@ -332,11 +411,9 @@ function parseListPayload(payload: unknown): ParsedListBundle | { error: string 
   const total = typeof payload.total === "number" ? payload.total : appeals.length;
   const empty = payload.empty === true;
 
-  if (total > 0 && appeals.length > 0 && partners.size === 0) {
-    return {
-      error:
-        "Ответ K2 содержит обращения без метаданных филиала (ожидается receivingPartners или receivingBranch).",
-    };
+  const missingMeta = assertPartnerMetaForAppeals(appeals, partners);
+  if (total > 0 && appeals.length > 0 && missingMeta) {
+    return { error: missingMeta };
   }
 
   if (total > 0 && appeals.length === 0) {

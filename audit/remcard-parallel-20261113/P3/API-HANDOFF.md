@@ -35,11 +35,14 @@ Legacy `{ appeals, partners }` ещё читается для тестов/пе�
 
 **Wire (K2/K8 observer-safe slice)** — only these appeal fields may reach the adapter (see `OBSERVER_APPEAL_FORBIDDEN_WIRE_FIELDS` in `fetch-observer-appeals.ts`):
 
-| K8 `contract.ts` | Partner UI `types.ts` |
-|------------------|-------------------------|
+See also [`K8-IDENTITY-DTO.md`](K8-IDENTITY-DTO.md) (Root receiving principal correction).
+
+| K8/K2 wire | Partner UI `types.ts` |
+|------------|-------------------------|
 | `clientDisplayName` | `clientName` |
-| `receivingBranchId` | `receivingPartnerId` (branch id = card key) |
-| `referrerProUserId` | `referrerPartnerId` (**pro user id** until P2 renames) |
+| **`receivingPartnerUserId`** | **`receivingPartnerId` (User.id, not Branch)** |
+| `receivingBranchId` | optional scope only — not card key |
+| `referrerProUserId` | `referrerPartnerId` |
 | `stageKey` (`sys_*` / `ws_*`) | `stageId` via `mapK8AppealStageKey` |
 | `createdAt` | `referralAt` when `referralAt` absent |
 | `certificateId`, `interest`, `updatedAt` | same |
