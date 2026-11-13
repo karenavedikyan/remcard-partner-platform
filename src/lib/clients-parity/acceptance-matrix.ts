@@ -23,6 +23,17 @@ function row(id: string, status: AcceptanceStatus, note: string, blockerId?: str
   return { id, status, note, blockerId };
 }
 
+/** Computer V6 — isolated regressions only (pin 78e48521). Does not lift C01–C56 section acceptance. */
+export const COMPUTER_V6_ISOLATED_PASS_IDS = [
+  "REG-V6-MOBILE-CLICK-8",
+  "REG-V6-KPI-RESIZE",
+  "REG-V6-EDIT-CANCEL",
+  "REG-V6-SAVE-DISABLED",
+  "REG-V6-COMPONENT-VITEST",
+] as const;
+
+export const AUTHOR_HANDOFF_AUDIT_SHA = "78e4852194a0b9d307ee92743ae754dd18d5a9ba";
+
 /** C01–C56 registry for implementation author (REMCLIENTS-PARITY-20261113-V1). */
 export function buildClientsAcceptanceMatrix(): AcceptanceRow[] {
   return [
@@ -86,9 +97,17 @@ export function buildClientsAcceptanceMatrix(): AcceptanceRow[] {
     row("C43", "NOT_STARTED", "Полный computed-style diff per component — нет overlay PASS."),
     row("C44", "IN_PROGRESS", "4/8/12/16/44px spot-check в CSS + vitest."),
     row("C45", "NOT_STARTED", "Light/dark screenshot pairs — QA bc-0a64ca5a."),
-    row("C46", "NOT_STARTED", "Viewport matrix screenshots — QA."),
-    row("C47", "NOT_STARTED", "getBoundingClientRect ≤1px — QA overlay."),
-    row("C48", "NOT_STARTED", "Screenshot overlay PASS — QA audit."),
+    row(
+      "C46",
+      "NOT_STARTED",
+      "Viewport matrix screenshots — QA; Computer V6 used real clicks/child bounds, not full screenshot parity.",
+    ),
+    row(
+      "C47",
+      "NOT_STARTED",
+      "getBoundingClientRect ≤1px overlay — QA; V6 mobile open-button bounds measured separately (audit JSON).",
+    ),
+    row("C48", "NOT_STARTED", "Screenshot overlay PASS — QA audit; NOT claimed at auditSha."),
     row("C49", "NOT_STARTED", "Overflow/regression sweep."),
     row("C50", "IN_PROGRESS", "focus-visible на disclosure/summary, tabs, checkbox aria-checked mixed."),
     row("C51", "NOT_STARTED", "loading/error сетевые сценарии observer."),

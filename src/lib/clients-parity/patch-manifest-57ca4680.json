@@ -1,6 +1,9 @@
 {
   "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "taskId": "REMCLIENTS-V4-COMPUTER-REVIEW",
+  "taskId": "REMCLIENTS-V6-AUTHOR-HANDOFF",
+  "auditSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+  "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "authorHandoffManifest": "src/lib/clients-parity/author-handoff-v6.json",
   "excludeFromCherryPick": [
     "src/components/clients/OwnerClientsGate.tsx",
     "src/components/clients/OwnerClientsModeContext.tsx",

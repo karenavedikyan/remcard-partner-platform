@@ -1,6 +1,6 @@
 {
-  "measuredAt": "2026-11-13T10:40:00.017Z",
-  "candidateSha": "771eb56a24445544877c4674b1cec24ffe493715",
+  "measuredAt": "2026-11-13T10:47:19.097Z",
+  "candidateSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
   "prototypeReferenceSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "harness": "scripts/clients-parity-20261113/observer-list-harness",
   "viewportHeight": 812,

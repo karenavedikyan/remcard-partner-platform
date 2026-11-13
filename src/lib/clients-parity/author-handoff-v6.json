@@ -1,0 +1,116 @@
+{
+  "taskId": "REMCLIENTS-V6-COMPUTER-RESULTS",
+  "authors": {
+    "implementation": "bc-597b1474",
+    "auditor": "bc-0a64ca5a"
+  },
+  "shas": {
+    "auditSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+    "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+    "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+    "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+    "supersedesComputerPin": "d1da948491293c1a8ba77d4854191347708b4379",
+    "staleAuditorPinDoNotUse": "42f9fae9",
+    "unrelatedClientR1Local": "26cf40bd"
+  },
+  "transferPolicy": {
+    "wholeBranchTransferForbidden": true,
+    "productionGateContextRoutesHistoryVerbatim": true,
+    "noSubstituteApi": true,
+    "noFakeLocalPersistence": true,
+    "noDbRightsFormulasInfrastructureDeployment": true
+  },
+  "productionReadOnlyAtBase": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/lib/onboarding-step/history-link-eligibility.ts",
+    "src/lib/onboarding-step/history-link-eligibility.test.ts",
+    "src/app/clients/page.tsx (on 57ca4680; cabinet route used on parity branch only)"
+  ],
+  "productionApplySnippetOnly": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
+  "selectedPureObserverUiAtAuditSha": [
+    "src/components/clients/observer/ObserverPartnersListView.tsx",
+    "src/components/clients/observer/ObserverPartnerCard.tsx",
+    "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+    "src/components/clients/observer/ObserverClientDetailView.tsx",
+    "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+    "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
+    "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+    "src/components/clients/observer/ObserverPersonalTools.tsx",
+    "src/components/clients/observer/ObserverFilterChips.tsx",
+    "src/components/clients/observer/ObserverContractBlocked.tsx",
+    "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+    "src/components/clients/observer/observer.module.css"
+  ],
+  "directionShellAtAuditSha": [
+    "src/components/clients/ClientsListWorkspace.tsx",
+    "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+    "src/components/clients/direction/ClientsDirectionTabs.tsx",
+    "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
+  ],
+  "parityLibAtAuditSha": [
+    "src/lib/clients-parity/contracts.ts",
+    "src/lib/clients-parity/fetch-observer-appeals.ts",
+    "src/lib/clients-parity/filter-observer.ts",
+    "src/lib/clients-parity/observer-display.ts",
+    "src/lib/clients-parity/observer-stats.ts",
+    "src/lib/clients-parity/types.ts",
+    "src/lib/clients-parity/production-compat.ts",
+    "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
+    "src/lib/clients-parity/patch-manifest-57ca4680.json"
+  ],
+  "auditArtifactsAtAuditSha": [
+    "src/lib/clients-parity/audit/mobile-client-row-computed.json",
+    "src/lib/clients-parity/audit/stats-grid-computed.json"
+  ],
+  "auditReplayScripts": [
+    "scripts/clients-parity-20261113/measure-observer-mobile-rows.mjs",
+    "scripts/clients-parity-20261113/measure-observer-stats-grid.mjs",
+    "scripts/clients-parity-20261113/observer-list-harness/"
+  ],
+  "computerV6IsolatedPassOnly": [
+    {
+      "id": "REG-V6-MOBILE-CLICK-8",
+      "note": "320/360/375/768 × light/dark: partner-page, expanded group, flat list → client → back; child open button width>0 height 47.5px (375 ~299px per Computer)."
+    },
+    {
+      "id": "REG-V6-KPI-RESIZE",
+      "note": "Live 1440→1024→768→375→360→320→1440 both themes: KPI 4/4/4/4/2/2/4."
+    },
+    {
+      "id": "REG-V6-EDIT-CANCEL",
+      "note": "Edit/cancel discards alias draft (all 8 browser samples); not persistence."
+    },
+    {
+      "id": "REG-V6-SAVE-DISABLED",
+      "note": "Save control genuinely disabled (BLOCKED_PERSISTENCE); no in-memory fake save."
+    },
+    {
+      "id": "REG-V6-COMPONENT-VITEST",
+      "note": "2 fixture files / 8 ObserverPartnersListView tests PASS (jsdom; not a substitute for Computer browser pass)."
+    }
+  ],
+  "explicitRemainingBlockers": [
+    "BLK-RECEIVING-APPEALS",
+    "BLK-OBSERVER-REFERRED",
+    "BLK-OBSERVER-PERSONAL-PERSIST",
+    "FULL-SECTION-ACCEPTANCE-56",
+    "VISUAL-PROTOTYPE-PARITY-C46-C48",
+    "SERVER-REFERRED-APPEALS-CONTRACT",
+    "PERSONAL-OVERLAY-API-MAPPING"
+  ],
+  "forbiddenClaims": [
+    "Section «Клиенты» publication",
+    "fetchObserverReferredAppeals production ok:true",
+    "Personal save/archive/trash persistence",
+    "AgentClient deletion or CRM API as observer personal substitute",
+    "document.scrollWidth alone as mobile PASS",
+    "ffd4aa61 / d1da9484 screenshots as proof of auditSha"
+  ],
+  "auditorInstructions": {
+    "pinSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+    "doNotUsePin": "42f9fae9 (V5-only)",
+    "measureChildBoundsAndRealClicks": true,
+    "doNotPromoteMissingBackendToPass": true
+  }
+}
