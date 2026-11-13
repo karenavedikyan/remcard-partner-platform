@@ -502,8 +502,11 @@ export function ObserverPartnersListView({
 
       {showDatasetEmpty ? (
         <section className={styles.empty} data-testid="ca-observer-empty-dataset">
-          <h2>В активном списке нет записей</h2>
-          <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
+          <h2>Пока нет направленных клиентов</h2>
+          <p className={styles.intro}>
+            Здесь появятся клиенты, которых вы направили партнёрам по сертификату. Личные архив и корзина не
+            меняют данные у принимающего партнёра.
+          </p>
         </section>
       ) : null}
 

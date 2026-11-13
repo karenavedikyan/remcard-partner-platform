@@ -2,13 +2,11 @@
  * П3 workspace bridge → П5 `observer-personal-api.ts` (K5 wire). Do not duplicate mutation logic here.
  */
 import {
+  applyObserverPersonalEdit,
   mapProjectionToPartnerMeta,
-  moveObserverPersonalBucket,
   personalMutationErrorMessage,
   personalMutationFailedIds,
-  restoreObserverPersonal,
-  saveObserverPersonalBulkTag,
-  saveObserverPersonalSingle,
+  runObserverPersonalConfirmAction,
   type PersonalMutationResult,
 } from "@/lib/clients-parity/observer-personal-api";
 import type { ObserverPersonalMeta } from "@/lib/clients-parity/types";
@@ -68,18 +66,13 @@ export function createObserverPersonalPersistenceBridge(
 
   return {
     onSavePersonal: async ({ mode, ids, draft }) => {
-      if (mode === "bulk") {
-        const result = await saveObserverPersonalBulkTag(ids, draft.tag, {
-          expectedVersions: Object.fromEntries(
-            ids.map((id) => [id, getExpectedVersions()[id] ?? 0]),
-          ),
-        });
-        bumpVersions(result);
-        return toPersistResult(result);
-      }
-      const id = ids[0];
-      if (!id) return { ok: false, message: "Не выбрана запись." };
-      const result = await saveObserverPersonalSingle(id, draft, getExpectedVersions()[id] ?? 0);
+      const expectedVersions = Object.fromEntries(
+        ids.map((id) => [id, getExpectedVersions()[id] ?? 0]),
+      );
+      const result = await applyObserverPersonalEdit(mode, ids, draft, {
+        expectedVersion: mode === "single" ? getExpectedVersions()[ids[0]!] ?? 0 : undefined,
+        expectedVersions: mode === "bulk" ? expectedVersions : undefined,
+      });
       bumpVersions(result);
       return toPersistResult(result);
     },
@@ -88,10 +81,7 @@ export function createObserverPersonalPersistenceBridge(
       const expectedVersions = Object.fromEntries(
         ids.map((id) => [id, getExpectedVersions()[id] ?? 0]),
       );
-      const result =
-        action === "restore"
-          ? await restoreObserverPersonal(ids, { expectedVersions })
-          : await moveObserverPersonalBucket(ids, action, { expectedVersions });
+      const result = await runObserverPersonalConfirmAction(action, ids, { expectedVersions });
       bumpVersions(result);
       return toPersistResult(result);
     },

@@ -39,6 +39,19 @@ describe("P3.ObserverPartnersListView states", () => {
     expect(screen.getAllByTestId("ca-observer-partner-card").length).toBe(2);
   });
 
+  it("dataset empty shows directed-clients copy not bucket copy", () => {
+    render(
+      <ObserverPartnersListView
+        appeals={[]}
+        partners={[]}
+        dataContract={{ status: "ready" }}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-empty-dataset")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Пока нет направленных клиентов" })).toBeTruthy();
+    expect(screen.queryByText(/Переключите вкладку списка/)).toBeNull();
+  });
+
   it("dataContract blocked still renders filter shell without cards", () => {
     render(
       <ObserverPartnersListView

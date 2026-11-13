@@ -7,6 +7,7 @@ import type {
 } from "./types";
 
 /**
+ * Frozen wire (Root SOURCE-PREP): K2 `c49d71dce`, K8 dto `8f4d336ad`, identity `receivingPartnerUserId`.
  * K8 canonical source (candidate, not release):
  * `karenavedikyan/remcard-navigator` @ `fc33b4fae859fb692757807c3b27696b66d57558`
  * — `src/lib/clientAppeals/contract.ts`, `HANDOFF.md`.
