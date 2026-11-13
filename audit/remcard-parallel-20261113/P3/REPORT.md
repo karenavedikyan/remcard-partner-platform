@@ -6,7 +6,8 @@
 | --- | --- |
 | Agent | П3 (bc-409f1419) |
 | Branch | `cursor/remcard-p3-acceptance-20261113` |
-| Tip (this delta) | *(see commit below)* |
+| Tip (this delta) | `142c418b78175ff2ed7417918dd8f90361d3d5ba` |
+| Prior tip | `85e0b3d78175ff2ed7417918dd8f90361d3d5ba` |
 | Base (author candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
 | Prototype ref | `3dc31836cd18d9209c20097f18b906dd276f7af6` (`design/general-prototype/partner/client-appeals.js`) |
 | Production tip (read-only) | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
@@ -54,6 +55,11 @@ Result: **20/20 PASS** (5 P3 files + legacy list view) — see `vitest-p3.log`.
 - **П6 (direction)**: `ObserverPartnersWorkspace` / direction tabs — not П3 list overview.
 - **П7**: `.ca-personal-partners .ca-observer-stats` grid (4 col / 360→2 col), disclosure show/hide CSS, chip spacing.
 - **Platform**: Referred appeals fetch + personal-meta persistence API (section BLOCKED per team brief).
+
+## Git metadata (new commit)
+
+- Intended: **Author/Committer** `karenavedikyan <105862906+karenavedikyan@users.noreply.github.com>`, single trailer `Co-authored-by: Perplexity <noreply@perplexity.ai>`.
+- **BLOCKED (platform)**: push appended extra `Co-authored-by: Аведикян Карен <karenavedikyan@users.noreply.github.com>` on `142c418b`; not rewritten per team policy.
 
 ## Remaining work
 
