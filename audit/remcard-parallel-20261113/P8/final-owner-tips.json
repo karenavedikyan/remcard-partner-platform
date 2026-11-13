@@ -6,7 +6,9 @@
     "P6_rejected_prior": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
     "P8_prior": "1e8b7649fe444736f1685ad38e373a9ac9922c79"
   },
-  "NAVIGATOR_SOURCE": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "NAVIGATOR_K8_HANDOFF": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
+  "NAVIGATOR_K8_SCHEMA_CORE": "fc33b4fae859fb692757807c3b27696b66d57558",
+  "NAVIGATOR_K8_BRANCH": "cursor/remcard-k8-acceptance-20261113",
   "NAVIGATOR_CLIENT_PROFILE": "89fb8e073c39c8dbd329996940b85c6a86751868",
   "PRODUCTION_PARTNER": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "user_auth_20261113": "prepare_api_migrations_only_no_prod_apply",
