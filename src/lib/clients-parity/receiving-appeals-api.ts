@@ -933,6 +933,54 @@ export type ReceivingAppealsBatchBody = {
   patch?: { stageKey?: string; privateNotes?: string };
 };
 
+/** K1 batch response — consumed by P5 `normalizeReceivingBatchResponse`. */
+export type ReceivingAppealsBatchResponseWire = {
+  action: "archive" | "unarchive" | "trash" | "restore";
+  updatedIds: string[];
+  skippedIds: string[];
+  failures: { id: string; code?: string; reason?: string; message?: string }[];
+};
+
+export type PostReceivingAppealsBatchResult =
+  | { ok: true; data: ReceivingAppealsBatchResponseWire }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string };
+
+const RECEIVING_BATCH_PATH = "/api/pro/client-appeals/batch";
+
+export function isReceivingBatchProxyReady(): boolean {
+  return isAllowedProxyRoute("POST", RECEIVING_BATCH_PATH);
+}
+
+export async function postReceivingAppealsBatch(body: {
+  action: ReceivingAppealsBatchResponseWire["action"];
+  ids: string[];
+}): Promise<PostReceivingAppealsBatchResult> {
+  const ids = body.ids.map((id) => id.trim()).filter(Boolean);
+  if (ids.length === 0) {
+    return { ok: false, code: "ERROR", message: "Не выбрано ни одного обращения." };
+  }
+  if (!isReceivingBatchProxyReady()) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "POST /api/pro/client-appeals/batch ждёт P1 allowlist и K1 handler.",
+    };
+  }
+  try {
+    const data = await remcardFetch<ReceivingAppealsBatchResponseWire>(RECEIVING_BATCH_PATH, {
+      method: "POST",
+      body: JSON.stringify({ action: body.action, ids } satisfies ReceivingAppealsBatchBody),
+    });
+    return { ok: true, data };
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить групповое действие",
+    };
+  }
+}
+
 export type ReceivingAppealsLoadResult =
   | { ok: true; data: ReceivingAppealsListResponse }
   | {

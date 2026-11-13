@@ -10,7 +10,9 @@ import {
   findDuplicateManualChannelLabel,
   isReceivingAppealActive,
   isReceivingAppealsProxyReady,
+  isReceivingBatchProxyReady,
   isReceivingCertificateEntryProxyReady,
+  postReceivingAppealsBatch,
   isReceivingSettingsMaterialized,
   mapReceivingAppealDetailFieldsFromWire,
   postReceivingManualChannel,
@@ -222,6 +224,13 @@ describe("P6.receiving-appeals-api contract gate", () => {
     if (!res.ok) {
       expect(res.code).toBe("BLOCKED_CONTRACT");
     }
+  });
+
+  it("postReceivingAppealsBatch blocked without P1 batch allowlist", async () => {
+    expect(isReceivingBatchProxyReady()).toBe(false);
+    const res = await postReceivingAppealsBatch({ action: "archive", ids: ["a1"] });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe("BLOCKED_CONTRACT");
   });
 
   it("postReceivingWorkingStagesMutation blocked without P1 allowlist", async () => {

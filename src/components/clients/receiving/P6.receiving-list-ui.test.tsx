@@ -77,7 +77,13 @@ describe("P6.receiving list UI (prototype-bound, synthetic)", () => {
     render(<ReceivingAppealsList data={FIXTURE_LIST_ONLY} readOnly stageLabelById={(r) => r.stageId} />);
     expect(screen.getByText(/Только просмотр/i)).toBeTruthy();
     expect(screen.queryByTestId("ca-receiving-toolbar")).toBeNull();
-    expect(screen.queryByTestId("ca-receiving-bulk-bar")).toBeNull();
+    expect(screen.queryByTestId("ca-receiving-bulk-actions")).toBeNull();
+  });
+
+  it("workspace mounts P5 bulk toolbar when mutations allowed", () => {
+    render(<ReceivingAppealsWorkspace previewData={FIXTURE} />);
+    expect(screen.getByTestId("ca-receiving-bulk-actions")).toBeTruthy();
+    expect(screen.getByText(/Массовые действия принимающего/i)).toBeTruthy();
   });
 
   it("workspace preview navigates to manual form without API", async () => {

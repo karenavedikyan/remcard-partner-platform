@@ -12,18 +12,18 @@ import {
   type ReceivingListBucket,
   type ReceivingListFilters,
 } from "@/lib/clients-parity/receiving-appeals-api";
+import { ReceivingBulkActions, type ReceivingBulkAction, type ReceivingBulkContractState } from "./ReceivingBulkActions";
 import styles from "./receiving.module.css";
 
-/** P5 — bulk selection and batch actions. */
+/** P5 toolbar wired by P6 workspace — K1 batch via `postReceivingAppealsBatch`. */
 export type ReceivingBulkCallbacks = {
   selectedIds: ReadonlySet<string>;
   onToggleRow: (id: string, checked: boolean) => void;
   onToggleSelectAll: (ids: string[], checked: boolean) => void;
-  onBulkEditOpen?: () => void;
-  onBulkArchiveAsk?: () => void;
-  onBulkTrashAsk?: () => void;
-  onBulkRestoreAsk?: () => void;
-  onBulkClear?: () => void;
+  onBulkAction: (action: ReceivingBulkAction) => void;
+  contractState?: ReceivingBulkContractState;
+  partialError?: string | null;
+  batchNotice?: string | null;
 };
 
 export type ReceivingAppealsListProps = {
@@ -131,9 +131,13 @@ export function ReceivingAppealsList({
 
   const bulkOn = !readOnly && Boolean(bulk);
   const selected = bulk?.selectedIds ?? new Set<string>();
-  const selCount = bulkOn ? [...selected].filter((id) => filtered.some((a) => a.id === id)).length : 0;
+  const visibleIds = filtered.map((a) => a.id);
+  const selInView = bulkOn ? visibleIds.filter((id) => selected.has(id)) : [];
+  const selCount = selInView.length;
   const allChecked =
     bulkOn && filtered.length > 0 && filtered.every((a) => selected.has(a.id));
+  const someChecked = bulkOn && selCount > 0 && !allChecked && filtered.length > 0;
+  const selectionOutsideView = bulkOn ? Math.max(0, selected.size - selCount) : 0;
 
   const emptyCopy = EMPTY_BUCKET_COPY[filters.bucket];
 
@@ -212,40 +216,25 @@ export function ReceivingAppealsList({
         <p className="notice">Только просмотр: изменять статусы и заметки нельзя.</p>
       )}
 
-      {bulkOn && selCount > 0 ? (
-        <div
-          className="ca-bulk-bar panel"
-          role="toolbar"
-          aria-label="Групповые действия"
-          data-testid="ca-receiving-bulk-bar"
-        >
-          <span className="ca-bulk-count">
-            Выбрано: <strong>{selCount}</strong>
-          </span>
-          <div className="ca-bulk-actions">
-            {filters.bucket === "active" ? (
-              <>
-                <button type="button" className="btn ghost small-btn" onClick={bulk?.onBulkEditOpen}>
-                  Редактировать
-                </button>
-                <button type="button" className="btn ghost small-btn" onClick={bulk?.onBulkArchiveAsk}>
-                  В архив
-                </button>
-                <button type="button" className="btn ghost small-btn" onClick={bulk?.onBulkTrashAsk}>
-                  Удалить
-                </button>
-              </>
-            ) : null}
-            {filters.bucket === "trash" ? (
-              <button type="button" className="btn primary small-btn" onClick={bulk?.onBulkRestoreAsk}>
-                Восстановить
-              </button>
-            ) : null}
-            <button type="button" className="btn ghost small-btn" onClick={bulk?.onBulkClear}>
-              Сбросить выбор
-            </button>
-          </div>
-        </div>
+      {bulkOn ? (
+        <ReceivingBulkActions
+          bucket={filters.bucket}
+          selectedCount={selected.size}
+          visibleCount={filtered.length}
+          allVisibleSelected={allChecked}
+          someVisibleSelected={someChecked || selCount > 0}
+          contractState={bulk?.contractState ?? "blocked"}
+          partialError={bulk?.partialError ?? null}
+          batchNotice={bulk?.batchNotice ?? null}
+          selectionOutsideView={selectionOutsideView}
+          onSelectAll={(checked) =>
+            bulk?.onToggleSelectAll(
+              filtered.map((a) => a.id),
+              checked,
+            )
+          }
+          onAction={(action) => bulk?.onBulkAction(action)}
+        />
       ) : null}
 
       <div className="ca-filters panel" data-testid="ca-receiving-filters">
