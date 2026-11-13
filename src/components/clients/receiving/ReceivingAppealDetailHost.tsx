@@ -21,6 +21,9 @@ import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope
 /** P4 read-only dependency: `receiving-detail-actions-contract.ts` @ `6b7c38d3` (Root packages; P6 does not commit P4). */
 export const P4_RECEIVING_DETAIL_UI_SHA = "6b7c38d3" as const;
 
+/** View body without shell `onBack` — host passes `onBack` at render site. */
+export type ReceivingAppealDetailViewModel = Omit<ReceivingAppealDetailProps, "onBack">;
+
 export type ReceivingAppealDetailHostProps = {
   appealId: string;
   readOnly?: boolean;
@@ -232,7 +235,7 @@ export function ReceivingAppealDetailHost({
     [afterSuccessfulMutation, appealId],
   );
 
-  const viewProps = useMemo((): ReceivingAppealDetailProps | null => {
+  const viewProps = useMemo((): ReceivingAppealDetailViewModel | null => {
     if (phase === "missing") return { status: "missing", appealId };
     if (phase === "error" && loadError) {
       return {
