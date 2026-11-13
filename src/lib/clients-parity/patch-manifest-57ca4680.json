@@ -1,9 +1,15 @@
 {
   "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "taskId": "REMCLIENTS-V7-CASCADE-EXACT-PARITY",
-  "auditShaPinAfterComputer": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "taskId": "REMCLIENTS-V8-HANDOFF-PIN-ONLY",
+  "computerCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "metadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
+  "shaPinLegend": {
+    "productFixSha": "Product/CSS/tests commit only (observer.module.css V7 cascade + parity assertions). Pin for cherry-pick and Computer candidate.",
+    "metadataTipSha": "Handoff JSON/docs stamp after product fix; same tree as productFixSha for parity files, no additional product delta.",
+    "staleDoNotUse": "5063368a, 0729c12f, 78e48521 — superseded metadata or pre-parity CSS"
+  },
   "supersedesAuditPin": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
-  "productFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
   "authorHandoffManifest": "src/lib/clients-parity/author-handoff-v6.json",
   "excludeFromCherryPick": [
     "src/components/clients/OwnerClientsGate.tsx",

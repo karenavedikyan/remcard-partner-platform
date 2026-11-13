@@ -23,7 +23,15 @@ function row(id: string, status: AcceptanceStatus, note: string, blockerId?: str
   return { id, status, note, blockerId };
 }
 
-/** Computer V6 — isolated regressions only (pin 78e48521). Does not lift C01–C56 section acceptance. */
+/** Computer V8 — isolated regressions only (product pin 140de0a8). Does not lift C01–C56 section acceptance. */
+export const COMPUTER_V8_ISOLATED_PASS_IDS = [
+  "REG-V8-GROUPED-ROW-PARITY",
+  "REG-V8-MOBILE-NAV",
+  "REG-V8-KPI",
+  "REG-V8-COMPONENT-VITEST",
+] as const;
+
+/** @deprecated use COMPUTER_V8_ISOLATED_PASS_IDS */
 export const COMPUTER_V6_ISOLATED_PASS_IDS = [
   "REG-V6-MOBILE-CLICK-8",
   "REG-V6-KPI-RESIZE",
@@ -32,7 +40,11 @@ export const COMPUTER_V6_ISOLATED_PASS_IDS = [
   "REG-V6-COMPONENT-VITEST",
 ] as const;
 
-export const AUTHOR_HANDOFF_AUDIT_SHA = "140de0a83044f324bf455ac2dfb87b17432fb8d1";
+export const AUTHOR_HANDOFF_PRODUCT_SHA = "140de0a83044f324bf455ac2dfb87b17432fb8d1";
+export const AUTHOR_HANDOFF_METADATA_TIP_SHA = "fc39afb73d4cb555c632a949400305b9d4031094";
+
+/** @deprecated use AUTHOR_HANDOFF_PRODUCT_SHA */
+export const AUTHOR_HANDOFF_AUDIT_SHA = AUTHOR_HANDOFF_PRODUCT_SHA;
 
 /** C01–C56 registry for implementation author (REMCLIENTS-PARITY-20261113-V1). */
 export function buildClientsAcceptanceMatrix(): AcceptanceRow[] {

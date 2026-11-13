@@ -1,14 +1,19 @@
 {
-  "taskId": "REMCLIENTS-V7-CASCADE-EXACT-PARITY",
+  "taskId": "REMCLIENTS-V8-HANDOFF-PIN-ONLY",
   "supersedesProductFix": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
-  "v7Note": "Removed obsolete max768 grid-template-areas; prototype max1100 grouped + max760 flat only. Grouped status+updated |Δtop|≤1px at 320–1024.",
+  "v7ProductNote": "Removed obsolete max768 grid-template-areas; prototype max1100 grouped + max760 flat only. Grouped status+updated |Δtop|≤1px at 320–1024.",
   "authors": {
     "implementation": "bc-597b1474",
     "auditor": "bc-0a64ca5a"
   },
   "shas": {
-    "auditSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "computerCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
     "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "metadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
+    "staleMetadataDoNotUse": {
+      "patchManifestProductFixSha5063368a": "Superseded V6 mobile stack; corrected in V8 handoff",
+      "priorAuditSha0729c12f": "Grouped row parity FAIL before 140de0a8"
+    },
     "priorAuditShaDoNotUse": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
     "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
     "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
@@ -71,7 +76,25 @@
     "scripts/clients-parity-20261113/measure-observer-stats-grid.mjs",
     "scripts/clients-parity-20261113/observer-list-harness/"
   ],
-  "computerV6IsolatedPassOnly": [
+  "computerV8IsolatedPassOnly": [
+    {
+      "id": "REG-V8-GROUPED-ROW-PARITY",
+      "note": "320–1024 light/dark: status/updated same row (y e.g. 281.5), gridTemplateAreas none grouped+flat."
+    },
+    {
+      "id": "REG-V8-MOBILE-NAV",
+      "note": "Real client/back from partner-page, expanded group, flat list."
+    },
+    {
+      "id": "REG-V8-KPI",
+      "note": "KPI 4 above 360px, 2 at ≤360; no overflow claim as full parity."
+    },
+    {
+      "id": "REG-V8-COMPONENT-VITEST",
+      "note": "2 fixture files / 8 ObserverPartnersListView tests PASS — not section acceptance."
+    }
+  ],
+  "computerV6IsolatedPassOnlySuperseded": [
     {
       "id": "REG-V6-MOBILE-CLICK-8",
       "note": "320/360/375/768 × light/dark: partner-page, expanded group, flat list → client → back; child open button width>0 height 47.5px (375 ~299px per Computer)."
@@ -111,8 +134,10 @@
     "ffd4aa61 / d1da9484 screenshots as proof of auditSha"
   ],
   "auditorInstructions": {
-    "pinSha": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
-    "doNotUsePin": "42f9fae9 (V5-only)",
+    "pinProductSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "optionalMetadataTipSha": "fc39afb73d4cb555c632a949400305b9d4031094",
+    "computerVerifiedTip": "fc39afb73d4cb555c632a949400305b9d4031094",
+    "doNotUsePin": "5063368a metadata; 0729c12f; 65df323e pre-V7; 42f9fae9 V5",
     "measureChildBoundsAndRealClicks": true,
     "doNotPromoteMissingBackendToPass": true
   }
