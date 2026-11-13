@@ -50,11 +50,13 @@
     "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
     "routeManifestDoc": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
     "navigatorBackendCandidates": {
-      "K8_contract": "6f09c23e",
-      "K1_receiving": "f722a164",
-      "K2_observerGet": "3c6ccc19",
+      "K8_contract": "1894569a",
+      "K1_receiving": "83f279e8",
+      "K2_observerGet": "78ce748d",
       "K5_personal": "6c444487"
     },
+    "pendingProxyAfterK1DetailPatch": ["PATCH /api/pro/client-appeals/:id"],
+    "rootAssemblyPinDoc": "audit/remcard-parallel-20261113/P1/ROOT-BACKEND-ASSEMBLY-PIN.md",
     "proxyWhitelistedClientsSection": {
       "K1": [
         "GET,POST /api/pro/client-appeals",
@@ -74,7 +76,7 @@
         "POST /api/pro/referred-appeals/personal-batch"
       ]
     },
-    "k2ListResponseAt3c6ccc19": "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
+    "k2ListResponseAt78ce748d": "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
     "p5RejectedInventedRoutesDoNotWhitelist": [
       "/api/pro/client-appeals/:id/personal-overlay",
       "/api/pro/client-appeals/personal-overlay/batch"
@@ -88,7 +90,7 @@
     "p2MatrixSha": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
   },
   "k8NavigatorCandidatesNotAccepted": {
-    "canonicalContractSha": "6f09c23e",
+    "canonicalContractSha": "1894569a",
     "supersededCandidateDoNotWireProduct": "fc33b4fae859fb692757807c3b27696b66d57558",
     "coordinationDoc": "audit/remcard-parallel-20261113/P1/K8-K1-PROXY-COORDINATION.md",
     "clientProfileProductionSha": "89fb8e073c39c8dbd329996940b85c6a86751868",
@@ -103,17 +105,18 @@
     "receivingPrincipalCanonicalPin": "src/lib/clients-parity/canonical-receiving-principal.json"
   },
   "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
-  "parallelAssemblyTips20261113V4": {
-    "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
-    "P2_operationMatrix8137": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-    "P3_resolverPending": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
-    "P4_product": "eb4592fd64f33763f705bfda564b4988a8267c2b",
-    "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6_acceptedUntilCorrection": "981c72aff23595d32e157dc9642e08c02a0cb70d",
-    "P6_rejectedDoNotUse": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
-    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
-    "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd"
+  "rootFixedAssemblyPinDoc": "audit/remcard-parallel-20261113/P1/ROOT-BACKEND-ASSEMBLY-PIN.md",
+  "parallelAssemblyTips20261113RootFixed": {
+    "P1": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+    "P2": "9f7c3755",
+    "P3": "b85efb54",
+    "P4": "1850d088",
+    "P5": "6a72f353",
+    "P6": "06f7e6bb",
+    "navigatorBackend_K8": "1894569a",
+    "navigatorBackend_K1": "83f279e8",
+    "navigatorBackend_K2": "78ce748d",
+    "navigatorBackend_K5": "6c444487"
   },
   "p2OperationMatrix8137Finding": "No complete no-schema path to full section publish under current restrictions",
   "preserveBase57caByteIdentical": [

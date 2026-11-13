@@ -6,7 +6,8 @@
     "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
     "partnerProductionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
     "navigatorSpecialistR06Eligibility": "89fb8e073c39c8dbd329996940b85c6a86751868:src/lib/specialistR06Eligibility.ts",
-    "k8ContractCandidateRetractedFields": "fc33b4fae859fb692757807c3b27696b66d57558:src/lib/clientAppeals/contract.ts (receivingBranchId/receivingOrganizationId required)",
+    "k8CanonicalContractSha": "1894569a",
+    "k8SupersededCandidates": "fc33b4fa; f722a164 contract lineage",
     "p2Matrix": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
   },
   "soloSpecialistEligibilityFact": {

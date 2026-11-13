@@ -122,17 +122,22 @@
     }
   ],
   "clientsSectionPublishable": false,
-  "parallelAssemblyTips20261113V4": {
-    "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
-    "P2_operationMatrix8137": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-    "P3_resolverPending": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
-    "P4_product": "eb4592fd64f33763f705bfda564b4988a8267c2b",
-    "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6_acceptedUntilCorrection": "981c72aff23595d32e157dc9642e08c02a0cb70d",
-    "P6_rejectedDoNotUse": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
-    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
-    "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "rootFixedAssemblyPin": "audit/remcard-parallel-20261113/P1/ROOT-BACKEND-ASSEMBLY-PIN.md",
+  "parallelAssemblyTips20261113RootFixed": {
+    "P1_proxyWire": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+    "P2": "9f7c3755",
+    "P3": "b85efb54",
+    "P4": "1850d088",
+    "P5": "6a72f353",
+    "P6": "06f7e6bb",
+    "P2_operationMatrix8137_heritage": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
+    "P7_prior": "30a292d002d56e0daaeebdff62d1fce902590362",
+    "navigatorBackend": {
+      "K8": "1894569a",
+      "K1": "83f279e8",
+      "K2": "78ce748d",
+      "K5": "6c444487"
+    },
     "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
   },
   "p2OperationMatrix8137Finding": "No complete no-schema path under current restrictions — server contracts blocked",
@@ -145,12 +150,13 @@
     "uiFieldAlias": "types.ts receivingPartnerId => receivingPartnerUserId"
   },
   "navigatorClientsBackendCandidates": {
-    "K8": "6f09c23e",
-    "K1": "f722a164",
-    "K2": "3c6ccc19",
+    "K8": "1894569a",
+    "K1": "83f279e8",
+    "K2": "78ce748d",
     "K5": "6c444487",
     "profilePublishedNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"
   },
+  "p1ProxyPendingAfterK1DetailPatch": ["PATCH /api/pro/client-appeals/:id"],
   "p1ProxyHandoffEarly": {
     "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
     "routeManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
@@ -174,7 +180,7 @@
     {
       "id": "INT-K8-RECEIVING-PRINCIPAL",
       "owner": "K8",
-      "canonicalContractSha": "6f09c23e",
+      "canonicalContractSha": "1894569a",
       "supersededCandidate": "fc33b4fae859fb692757807c3b27696b66d57558",
       "missing": "Additive schema: required receivingPartnerUserId; optional org/branch; active slot per User.id principal",
       "blocks": "clientsSectionPublishable",
@@ -183,8 +189,8 @@
     {
       "id": "INT-P2-CONTRACTS",
       "owner": "P2",
-      "tip": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-      "missing": "Single revised DTO after K8 principal correction; matrix 8137 lineage",
+      "tip": "9f7c3755",
+      "missing": "DTO/contracts @ 9f7c3755 against K8 1894569a / K2 78ce748d",
       "blocks": "clientsSectionPublishable"
     },
     {

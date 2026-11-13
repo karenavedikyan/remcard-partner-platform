@@ -8,21 +8,22 @@ import sys
 BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 
 NAVIGATOR_CLIENTS_BACKEND = {
-    "K8_contract": "6f09c23e",
-    "K1_receiving": "f722a164",
-    "K2_observerGet": "3c6ccc19",
+    "K8_contract": "1894569a",
+    "K1_receiving": "83f279e8",
+    "K2_observerGet": "78ce748d",
     "K5_personal": "6c444487",
     "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868",
 }
 
+# Root fixed assembly (partner parallel tips) — paths from owner branches only.
 AGENT_TIPS = {
-    "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
-    "P2": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-    "P3": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
-    "P4": "eb4592fd64f33763f705bfda564b4988a8267c2b",
+    "P1": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+    "P2": "9f7c3755",
+    "P3": "b85efb54",
+    "P4": "1850d088",
     "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P5": "6a72f353",
+    "P6": "06f7e6bb",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62",
 }

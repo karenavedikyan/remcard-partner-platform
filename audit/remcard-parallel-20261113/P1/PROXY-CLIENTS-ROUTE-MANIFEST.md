@@ -3,18 +3,20 @@
 **Wire status:** `src/lib/remcard-proxy.ts` allowlist matches navigator route exports below.  
 **Not publishable:** DB not applied; `clientsSectionPublishable: false`. Profile `89fb8e07` published ≠ section ready.
 
-## Navigator candidate SHAs
+## Navigator backend assembly (Root fixed)
 
 | Owner | SHA | Scope |
 |-------|-----|--------|
-| K8 core/contract | `6f09c23e` | `receivingPartnerUserId` required; org/branch optional |
-| K1 receiving | `f722a164` | `client-appeals/*` |
-| K2 observer read | `3c6ccc19` | `referred-appeals/*` GET |
+| K8 core/contract | `1894569a` | `receivingPartnerUserId` required; org/branch optional |
+| K1 receiving | `83f279e8` | `client-appeals/*` |
+| K2 observer read | `78ce748d` | `referred-appeals/*` GET (`receivingPartnerUserId` list filter) |
 | K5 observer personal | `6c444487` | personal-meta PATCH, personal-batch POST |
+
+Partner proxy wire reviewed @ P1 `6eda0029`. Pin doc: `ROOT-BACKEND-ASSEMBLY-PIN.md`.
 
 ## Added to `ALLOWED_ROUTES` (exact)
 
-### K1 @ f722a164
+### K1 @ 83f279e8
 
 | Method(s) | Pattern |
 |-----------|---------|
@@ -25,7 +27,7 @@
 | GET, POST, PATCH, DELETE | `/api/pro/client-appeals/working-stages` |
 | POST | `/api/pro/client-appeals/certificate-entry` (501 until scan hook) |
 
-### K2 @ 3c6ccc19
+### K2 @ 78ce748d
 
 | Method(s) | Pattern |
 |-----------|---------|
@@ -46,16 +48,22 @@ List JSON: `{ appeals, partners, personalMeta, page, limit, total, hasMore, empt
 
 | Method | Path | Reason |
 |--------|------|--------|
-| PATCH | `/api/pro/client-appeals/:id` | **Not exported** @ f722a164 (detail GET only) |
+| PATCH | `/api/pro/client-appeals/:id` | **Not exported** @ 83f279e8 (detail GET only; K1 assigned PATCH + P6 adapter) |
 | POST | `/api/pro/client-appeals/:id/stage` | Source exports **PATCH** on `.../stage`, not POST |
 | PATCH, POST | `/api/pro/client-appeals/.../personal-overlay*` | P5 invention; use K5 `referred-appeals` paths |
 | PATCH, DELETE, … | `/api/pro/referred-appeals/:id` | K2 detail is **GET-only** |
 | * | `/api/pro/agent-clients*` as referred substitute | Different CRM; keep existing agent-clients allowlist only |
 | * | Wildcard `/api/pro/*` | Forbidden |
 
+## Pending allowlist (after K1 export)
+
+| Method | Path | Owner |
+|--------|------|--------|
+| PATCH | `/api/pro/client-appeals/:id` | K1 → then P1 add PATCH on reserved `:id` regex only |
+
 ## Interface notes (not P1 product)
 
-- K2 `by-partner` @ 3c6ccc19 still documents `partnerId` as `receivingBranchId` — **P2/K2** align with K8 `6f09c23e` User.id principal.
+- K2 list @ `78ce748d` filters `receivingPartnerUserId` — **P2/P3** DTO adapters own field mapping.
 - Financial read projection: K8 owns; bonus payout ≠ client purchase total/date.
 
 ## Regex guardrails
