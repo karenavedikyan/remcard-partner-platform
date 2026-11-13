@@ -1,12 +1,5 @@
-RUN  v3.2.7 — REM-PUBLISH-RESIDUAL-20261113-V2
+RUN  v3.2.7 — P3-only tip (P4 detail not on branch)
 
- ✓ P3.ObserverFilterChips.test.tsx (3)
- ✓ P3.ObserverPartnerCard.test.tsx (3)
- ✓ P3.ObserverPartnersListView.roundtrip.test.tsx (3)
- ✓ P3.ObserverPartnersListView.back-label.test.tsx (4)
- ✓ P3.ObserverPartnersListView.states.test.tsx (3)
- ↓ P3.observer-list-harness.computed.test.tsx (1 skipped — Playwright Chromium not installed)
- ✓ ObserverPartnersListView.test.tsx (7)
-
- Test Files  7 passed
-      Tests  23 passed | 1 skipped (24)
+ Test Files  6 passed
+      Tests  15 passed | 3 skipped (18)
+  skipped: 2 back-label (need P4 stack), 1 harness (no chromium)

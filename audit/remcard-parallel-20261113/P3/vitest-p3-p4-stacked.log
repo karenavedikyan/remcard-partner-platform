@@ -1,0 +1,4 @@
+# Verified locally: temporary `git checkout effd85f3` on P4 detail files only
+RUN  P3.ObserverPartnersListView.back-label.test.tsx
+ Test Files  1 passed (1)
+      Tests  5 passed (5)

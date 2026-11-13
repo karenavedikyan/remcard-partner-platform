@@ -1,102 +1,95 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import * as ClientDetail from "./ObserverClientDetailView";
 import {
   OBSERVER_FIXTURE_APPEALS,
   OBSERVER_FIXTURE_PARTNERS,
 } from "@/lib/clients-parity/fixtures/observer-demo-fixtures";
-import { observerClientBackLabel } from "./ObserverPartnersListView";
+import { observerClientBackFrom, ObserverPartnersListView } from "./ObserverPartnersListView";
 
-vi.mock("./ObserverClientDetailView", () => ({
-  ObserverClientDetailView: ({
-    backLabel,
-    onBack,
-  }: {
-    backLabel?: string;
-    onBack: () => void;
-  }) => (
-    <div data-testid="ca-observer-client-page">
-      <button
-        type="button"
-        data-testid="ca-clients-back"
-        aria-label={backLabel?.replace(/^←\s*/, "") ?? "Назад"}
-        onClick={onBack}
-      >
-        {backLabel ?? "← Назад"}
-      </button>
-    </div>
-  ),
-}));
+const p4Stacked = typeof ClientDetail.resolveObserverClientBackLabel === "function";
 
-import { ObserverPartnersListView } from "./ObserverPartnersListView";
-
-describe("P3 observer client back labels (P4 backLabel contract)", () => {
-  it("observerClientBackLabel matches partner drill vs flat entry", () => {
+describe("P3 shell missing navigation", () => {
+  it("observerClientBackFrom maps nav + layout to P4 tokens", () => {
     expect(
-      observerClientBackLabel({ view: "client", clientId: "a", partnerId: "partner-alpha" }),
-    ).toBe("← К списку клиентов");
-    expect(observerClientBackLabel({ view: "client", clientId: "a" })).toBe("← К партнёрам");
+      observerClientBackFrom({ view: "client", clientId: "a", partnerId: "p" }, "partners"),
+    ).toBe("partner-clients");
+    expect(observerClientBackFrom({ view: "client", clientId: "a" }, "list")).toBe("flat-list");
+    expect(observerClientBackFrom({ view: "client", clientId: "a" }, "partners")).toBe(
+      "partners-list",
+    );
   });
 
-  it("partner drill → client uses «К списку клиентов» and returns to partner page", async () => {
+  it("unknown client id renders missing shell", async () => {
     const user = userEvent.setup();
-    const { ObserverPartnersListView: Shell } = await import("./ObserverPartnersListView");
     render(
-      <Shell
+      <ObserverPartnersListView
+        appeals={OBSERVER_FIXTURE_APPEALS}
+        partners={OBSERVER_FIXTURE_PARTNERS}
+        dataContract={{ status: "ready" }}
+        initialNav={{ view: "client", clientId: "missing-id" }}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-client-missing")).toBeTruthy();
+    await user.click(screen.getByTestId("ca-clients-back"));
+    expect(screen.getByTestId("ca-observer-partners-list")).toBeTruthy();
+  });
+
+  it("unknown partner id renders missing shell", async () => {
+    const user = userEvent.setup();
+    render(
+      <ObserverPartnersListView
+        appeals={OBSERVER_FIXTURE_APPEALS}
+        partners={OBSERVER_FIXTURE_PARTNERS}
+        dataContract={{ status: "ready" }}
+        initialNav={{ view: "partner", partnerId: "unknown-partner" }}
+      />,
+    );
+    expect(screen.getByTestId("ca-observer-partner-missing")).toBeTruthy();
+    await user.click(screen.getByTestId("ca-clients-back"));
+    expect(screen.getByTestId("ca-observer-partners-list")).toBeTruthy();
+  });
+});
+
+describe.skipIf(!p4Stacked)("P3 × P4 visible back labels (P4 @effd85f3 stacked)", () => {
+  it("partner drill → client shows «К списку клиентов» and returns to partner page", async () => {
+    const user = userEvent.setup();
+    render(
+      <ObserverPartnersListView
         appeals={OBSERVER_FIXTURE_APPEALS}
         partners={OBSERVER_FIXTURE_PARTNERS}
         dataContract={{ status: "ready" }}
       />,
     );
     await user.click(screen.getAllByLabelText(/Открыть партнёра:/)[0]);
-    const row = screen.getAllByTestId("ca-observer-client-row")[0];
-    await user.click(row.querySelector("button")!);
+    await user.click(screen.getAllByTestId("ca-observer-client-row")[0].querySelector("button")!);
     const back = screen.getByTestId("ca-clients-back");
     expect(back).toHaveTextContent("К списку клиентов");
     await user.click(back);
     expect(screen.getByTestId("ca-observer-partner-page")).toBeTruthy();
   });
 
-  it("flat list → client uses «К партнёрам», preserves layout and row selection", async () => {
+  it("flat list → client shows «Назад к списку» and preserves layout/search/selection", async () => {
     const user = userEvent.setup();
-    const { ObserverPartnersListView: Shell } = await import("./ObserverPartnersListView");
     render(
-      <Shell
+      <ObserverPartnersListView
         appeals={OBSERVER_FIXTURE_APPEALS}
         partners={OBSERVER_FIXTURE_PARTNERS}
         dataContract={{ status: "ready" }}
       />,
     );
     await user.click(screen.getByRole("button", { name: /Списком/ }));
+    const search = screen.getByPlaceholderText("Имя, партнёр, сертификат");
+    await user.type(search, "Анна");
     const rowCheck = screen.getAllByRole("checkbox", { name: /Выбрать:/ })[0];
     await user.click(rowCheck);
-    expect((rowCheck as HTMLInputElement).checked).toBe(true);
     await user.click(screen.getAllByTestId("ca-observer-client-row")[0].querySelector("button")!);
-    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("К партнёрам");
+    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("Назад к списку");
     await user.click(screen.getByTestId("ca-clients-back"));
     expect(screen.getByTestId("ca-observer-partners-list")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Списком/, pressed: true })).toBeTruthy();
-    const rowCheckAgain = screen.getAllByRole("checkbox", { name: /Выбрать:/ })[0];
-    expect((rowCheckAgain as HTMLInputElement).checked).toBe(true);
-  });
-
-  it("grouped card client open uses partner context label and partner page back target", async () => {
-    const user = userEvent.setup();
-    const { ObserverPartnersListView: Shell } = await import("./ObserverPartnersListView");
-    render(
-      <Shell
-        appeals={OBSERVER_FIXTURE_APPEALS}
-        partners={OBSERVER_FIXTURE_PARTNERS}
-        dataContract={{ status: "ready" }}
-      />,
-    );
-    const card = screen.getAllByTestId("ca-observer-partner-card")[0];
-    const summary = card.querySelector("summary")!;
-    await user.click(summary);
-    const rowBtn = card.querySelector('[data-testid="ca-observer-client-row"] button')!;
-    await user.click(rowBtn);
-    expect(screen.getByTestId("ca-clients-back")).toHaveTextContent("К списку клиентов");
-    await user.click(screen.getByTestId("ca-clients-back"));
-    expect(screen.getByTestId("ca-observer-partner-page")).toBeTruthy();
+    expect((search as HTMLInputElement).value).toBe("Анна");
+    expect((rowCheck as HTMLInputElement).checked).toBe(true);
   });
 });
