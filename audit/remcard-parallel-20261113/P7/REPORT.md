@@ -98,3 +98,9 @@ Mobile harness (shared V7): grouped status/updated same row @320–1024; open bu
 **Fix (observer.module.css only):** `--observer-accent` on `.section`, `.blocked`, `.partnerCard`, `.personalTools`; eight call sites use `var(--observer-accent)` (prototype `--accent` when present, else `--accent-emphasis` / `--primary`).
 
 **Tests:** `P7.observer-accent-contrast.test.ts` injects real `src/app/globals.css` + module CSS; dark pressed controls resolve `rgb(253,164,175)` and pass WCAG AA 4.5:1 on `--surface`. P7 total **22** tests PASS via `vitest.p7.config.ts`; shared regression **36** PASS.
+
+## Visual comparison ledger (READ-ONLY, tip 9280f9e7)
+
+Delivered: `VISUAL-COMPARISON-LEDGER.md`, `prototype-css-chain.json`, `paired-computed.json`, `measure-paired-visual.mjs`, 16 paired screenshots (`screenshots/`). Product not modified.
+
+Key **computed** mismatches: bucket pressed 12px/4px+tint (proto) vs 16px/8px+surface (product); disclosure summary 14px vs 16px. Key **computed** matches: KPI 20px, grouped row grids @320–1440, min-height 44px. **OPEN:** 1024, short-height, full keyboard, full Next shell.

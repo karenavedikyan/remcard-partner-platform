@@ -1,0 +1,790 @@
+{
+  "sha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "tip": "9280f9e7",
+  "computed": [
+    {
+      "theme": "light",
+      "width": 320,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(36, 38, 35)"
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 254
+      },
+      "row": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 120px 120px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 288
+      }
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(37, 41, 35)"
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 254
+      },
+      "row": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 120px 120px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 288
+      }
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(36, 38, 35)"
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      },
+      "row": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 147.5px 147.5px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 343
+      }
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(37, 41, 35)"
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      },
+      "row": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 147.5px 147.5px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 343
+      }
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(36, 38, 35)"
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 702
+      },
+      "row": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 344px 344px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 736
+      }
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(37, 41, 35)"
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 702
+      },
+      "row": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 344px 344px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 736
+      }
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(187, 48, 53)",
+        "backgroundColor": "rgb(250, 233, 232)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(36, 38, 35)"
+      },
+      "summary": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 1374
+      },
+      "row": {
+        "color": "rgb(36, 38, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "14px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 630.906px 410.094px 145px 150px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 48.5,
+        "width": 1408
+      }
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(159, 18, 57)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(37, 41, 35)"
+      },
+      "summary": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 1374
+      },
+      "row": {
+        "color": "rgb(37, 41, 35)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "14px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 630.906px 410.094px 145px 150px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 49.796875,
+        "width": 1408
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(241, 240, 235)"
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 254
+      },
+      "row": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 120px 120px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 288
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(240, 241, 236)"
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 254
+      },
+      "row": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 120px 120px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 288
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(241, 240, 235)"
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      },
+      "row": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 147.5px 147.5px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 343
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(240, 241, 236)"
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 309
+      },
+      "row": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 147.5px 147.5px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 343
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(241, 240, 235)"
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 702
+      },
+      "row": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 344px 344px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 60.5,
+        "width": 736
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(240, 241, 236)"
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 702
+      },
+      "row": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "20px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 344px 344px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 61.796875,
+        "width": 736
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "side": "proto",
+      "bucket": {
+        "color": "rgb(244, 147, 145)",
+        "backgroundColor": "rgb(59, 39, 41)",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "padding": "4px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 104.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(241, 240, 235)"
+      },
+      "summary": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 1374
+      },
+      "row": {
+        "color": "rgb(241, 240, 235)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "14px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 630.906px 410.094px 145px 150px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 48.5,
+        "width": 1408
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "side": "product",
+      "bucket": {
+        "color": "rgb(253, 164, 175)",
+        "backgroundColor": "rgb(32, 37, 32)",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "padding": "8px 12px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 44,
+        "width": 118.65625
+      },
+      "kpi": {
+        "fontSize": "20px",
+        "lineHeight": "26px",
+        "color": "rgb(240, 241, 236)"
+      },
+      "summary": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "8px 0px 0px",
+        "minHeight": "44px",
+        "gridTemplateColumns": "none",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 45,
+        "width": 1374
+      },
+      "row": {
+        "color": "rgb(240, 241, 236)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "padding": "14px 0px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "24px 630.906px 410.094px 145px 150px",
+        "outlineWidth": "0px",
+        "outlineOffset": "0px",
+        "height": 49.796875,
+        "width": 1408
+      }
+    }
+  ]
+}

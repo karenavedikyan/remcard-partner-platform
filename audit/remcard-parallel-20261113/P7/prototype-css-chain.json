@@ -1,0 +1,30 @@
+{
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productTip": "9280f9e7279da14964574a6d1585499134ac7f8c",
+  "catalogObserverPages": [86, 87, 106, 113, 114, 142],
+  "partnerIndexStylesheets": [
+    "roles.css",
+    "partners-redesign.css",
+    "cooperation-controls.css",
+    "profile-wizard.css",
+    "wallet-accruals.css",
+    "empty-states.css",
+    "account-session.css",
+    "partner-type.css",
+    "registration-entry.css",
+    "registration-welcome.css",
+    "care-services.css",
+    "client-appeals.css",
+    "cabinet-standalone-host.css"
+  ],
+  "observerPrimaryCss": "client-appeals.css",
+  "observerJs": ["client-appeals.js", "observer-personal-list.js"],
+  "clientZone": {
+    "accountJs": "design/general-prototype/client/account.js",
+    "indexHtml": "design/general-prototype/client/index.html",
+    "note": "No design/general-prototype/client/*.css in frozen tree; client/index.html links only prototype-numbering.css"
+  },
+  "productObserverCss": "src/components/clients/observer/observer.module.css",
+  "productGlobals": "src/app/globals.css",
+  "pairedHarnessScript": "audit/remcard-parallel-20261113/P7/measure-paired-visual.mjs"
+}
