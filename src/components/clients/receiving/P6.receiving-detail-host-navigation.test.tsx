@@ -3,9 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
-  buildReceivingAppealDetailReadyForHost,
+  buildReceivingAppealDetailReady,
+  filterStageOptionsForDirectPatch,
   receivingAppealPurchaseDetailHref,
-} from "./receiving-detail-host-wiring";
+} from "./receiving-detail-actions-contract";
 import { ReceivingAppealDetailHost, P4_RECEIVING_DETAIL_UI_SHA } from "./ReceivingAppealDetailHost";
 
 const push = vi.fn();
@@ -44,14 +45,18 @@ vi.mock("@/lib/clients-parity/receiving-appeals-api", async (importOriginal) => 
 });
 
 describe("P6.receiving-detail-host navigation", () => {
-  it("documents P4 finance contract dependency SHA", () => {
+  it("documents P4 contract dependency SHA", () => {
     expect(P4_RECEIVING_DETAIL_UI_SHA).toBe("6b7c38d3");
     expect(receivingAppealPurchaseDetailHref("ord-42")).toBe("/history/purchases/ord-42");
+    expect(filterStageOptionsForDirectPatch([{ id: "sys_paid" }, { id: "ws_new" }])).toEqual([
+      { id: "ws_new" },
+    ]);
   });
 
-  it("builder exposes markPaid via order pipeline when host wires onOpenOrderPipeline", () => {
+  it("P4 builder: markPaid uses onOpenOrderPipeline when wired", () => {
     const pipeline = vi.fn();
-    const ready = buildReceivingAppealDetailReadyForHost({
+    const ready = buildReceivingAppealDetailReady({
+      appealId: "a",
       mapped: {
         status: "ready",
         revision: 1,
@@ -60,10 +65,12 @@ describe("P6.receiving-detail-host navigation", () => {
           id: "a",
           clientName: "c",
           stageId: "ws_new",
+          stageLabel: "Новый",
+          updatedAt: "2026-01-01T00:00:00Z",
           purchaseOrderId: null,
         },
         history: [],
-        workingStages: [{ id: "ws_new", label: "Н" }],
+        workingStages: [{ id: "ws_new", label: "Н" }, { id: "sys_paid", label: "Опл" }],
         refusalReasons: [],
       },
       readOnly: false,
@@ -75,7 +82,6 @@ describe("P6.receiving-detail-host navigation", () => {
     expect(ready.actions?.markPaid?.supported).toBe(true);
     ready.actions?.markPaid?.onMarkPaid?.();
     expect(pipeline).toHaveBeenCalledTimes(1);
-    expect(ready.actions?.workingStages?.some((s) => s.id === "sys_paid")).toBe(false);
   });
 
   it("mocked journey: detail → scanner (mark paid) → back to list", async () => {
@@ -116,18 +122,27 @@ describe("P6.receiving-detail-host navigation", () => {
       await user.click(purchaseBtn);
       expect(push).toHaveBeenCalledWith("/history/purchases/ord-42");
     } else {
-      const orderOnly = buildReceivingAppealDetailReadyForHost({
+      const openPurchase = vi.fn(() => push(receivingAppealPurchaseDetailHref("ord-42")));
+      const ready = buildReceivingAppealDetailReady({
+        appealId: "a",
         mapped: {
           status: "ready",
           revision: 1,
           readOnly: false,
-          appeal: { id: "a", clientName: "c", stageId: "ws_new", purchaseOrderId: "ord-42" },
+          appeal: {
+            id: "a",
+            clientName: "c",
+            stageId: "ws_new",
+            stageLabel: "Н",
+            updatedAt: "2026-01-01T00:00:00Z",
+            purchaseOrderId: "ord-42",
+          },
           history: [],
           workingStages: [],
           refusalReasons: [],
         },
         readOnly: false,
-        openPurchaseOrder: () => push(receivingAppealPurchaseDetailHref("ord-42")),
+        openPurchaseOrder: openPurchase,
         onOpenOrderPipeline: () => push(RECEIVING_APPEAL_ORDER_PIPELINE_HREF),
         mutateProfile: vi.fn(),
         mutateStage: vi.fn(),

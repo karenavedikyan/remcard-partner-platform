@@ -8,21 +8,18 @@ import {
   patchReceivingAppealStageCas,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingAppealDetailView, type ReceivingAppealDetailProps } from "./ReceivingAppealDetailView";
-import type {
-  ReceivingAppealDetailMutationOutcome,
-  ReceivingAppealProfilePatchInput,
-  ReceivingAppealStagePatchInput,
+import {
+  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
+  buildReceivingAppealDetailReady,
+  receivingAppealPurchaseDetailHref,
+  type ReceivingAppealDetailMutationOutcome,
+  type ReceivingAppealProfilePatchInput,
+  type ReceivingAppealStagePatchInput,
 } from "./receiving-detail-actions-contract";
 import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope-bridge";
-import {
-  P4_RECEIVING_DETAIL_CONTRACT_REF,
-  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
-  buildReceivingAppealDetailReadyForHost,
-  receivingAppealPurchaseDetailHref,
-} from "./receiving-detail-host-wiring";
 
-/** P4 UI + finance contract — `git show 6b7c38d3:.../ReceivingAppealDetailView.tsx` (Root merges; P6 does not commit P4). */
-export const P4_RECEIVING_DETAIL_UI_SHA = P4_RECEIVING_DETAIL_CONTRACT_REF;
+/** P4 read-only dependency: `receiving-detail-actions-contract.ts` @ `6b7c38d3` (Root packages; P6 does not commit P4). */
+export const P4_RECEIVING_DETAIL_UI_SHA = "6b7c38d3" as const;
 
 export type ReceivingAppealDetailHostProps = {
   appealId: string;
@@ -164,7 +161,8 @@ export function ReceivingAppealDetailHost({
       };
     }
     if (phase === "ready" && mapped?.status === "ready") {
-      return buildReceivingAppealDetailReadyForHost({
+      return buildReceivingAppealDetailReady({
+        appealId,
         mapped,
         readOnly,
         busy,
