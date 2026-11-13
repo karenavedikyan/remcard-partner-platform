@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx (2 tests) 81ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionTabs.keyboard.test.tsx (4 tests) 120ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx (4 tests) 132ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.loader-isolation.test.tsx (3 tests) 108ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.keyboard.test.tsx (1 test) 98ms
+ ✓ src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx (1 test) 54ms
+ ✓ src/components/clients/observer/P6.ObserverContractBlocked.test.tsx (2 tests) 24ms
+
+ Test Files  7 passed (7)
+      Tests  17 passed (17)
+   Start at  14:52:12
+   Duration  2.19s (transform 517ms, setup 998ms, collect 890ms, tests 618ms, environment 1.91s, prepare 417ms)
+
