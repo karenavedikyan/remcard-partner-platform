@@ -1,8 +1,8 @@
 "use client";
 
-import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { OwnerClientsGate } from "@/components/clients/OwnerClientsGate";
+import { ClientsDirectionWorkspace } from "@/components/clients/direction/ClientsDirectionWorkspace";
 import {
   useOwnerClientsBusinessPartnerType,
   useOwnerClientsMode,
@@ -16,11 +16,17 @@ function ClientsListBody() {
   const heading =
     mode === "business" && businessPartnerType
       ? businessClientsPageCopy(businessPartnerType)
-      : {
-          eyebrow: mode === "specialist" ? "Специалист" : "АГЕНТ",
-          title: "Клиенты",
-          description: "Клиенты, с которыми вы работаете в кабинете.",
-        };
+      : mode === "agent"
+        ? {
+            eyebrow: "АГЕНТ",
+            title: "Мои клиенты у партнёров",
+            description: "Направленные клиенты и статусы у принимающих партнёров.",
+          }
+        : {
+            eyebrow: "Специалист",
+            title: "Клиенты",
+            description: "Клиенты у вас и направления к партнёрам.",
+          };
   return (
     <>
       <PageHeading
@@ -28,7 +34,7 @@ function ClientsListBody() {
         title={heading.title}
         description={heading.description}
       />
-      <AgentClientsList accessMode={mode} />
+      <ClientsDirectionWorkspace accessMode={mode} />
     </>
   );
 }
@@ -37,6 +43,7 @@ type Props = {
   canLinkOnboardingHistory?: boolean;
 };
 
+/** Export matches `patch-ClientsListWorkspace-57ca4680.snippet.txt` on production gate signature. */
 export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
   return (
     <OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>

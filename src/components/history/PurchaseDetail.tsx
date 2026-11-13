@@ -20,6 +20,7 @@ import type { AccrualRow, PurchaseItemRow, PurchaseRow } from "@/lib/history-typ
 import type { AuthUser } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PurchaseAppealReturnLink } from "@/components/history/PurchaseAppealReturnLink";
 import { PurchaseReceivingClientPanel } from "@/components/history/PurchaseReceivingClientPanel";
 import { RewardLifecyclePanel } from "@/components/settlements/RewardLifecyclePanel";
 import styles from "./PurchaseDetail.module.css";
@@ -184,6 +185,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
       <div className={styles.error} role="alert">
         <p>{error}</p>
         <Button onClick={() => void load()}>Повторить</Button>
+        <PurchaseAppealReturnLink />
       </div>
     );
   }
@@ -201,6 +203,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
             Все операции по документу {promoHint}
           </Link>
         ) : null}
+        <PurchaseAppealReturnLink />
         <Link href="/history">← К истории</Link>
       </div>
     );
@@ -216,6 +219,7 @@ export function PurchaseDetail({ user, purchaseId, promoHint }: PurchaseDetailPr
         <Link className={styles.backLink} href="/history">
           ← К истории
         </Link>
+        <PurchaseAppealReturnLink linkClassName={styles.backLink} />
       </nav>
 
       <div className={styles.titleRow}>

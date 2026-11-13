@@ -10,6 +10,7 @@ import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { orderPreviewToStoreCertificate } from "@/lib/order-preview-certificate";
 import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
 import {
   resolveScannerBranchContext,
@@ -77,6 +78,12 @@ import {
   type ScannerEmptyActivityProbe,
 } from "@/lib/scanner-empty/eligibility";
 import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
+import { parseScannerAppealQueryValues } from "@/lib/scanner/receiving-appeal-handoff";
+import { useReceivingAppealScannerHandoff } from "./useReceivingAppealScannerHandoff";
+import {
+  ReceivingAppealScannerBanner,
+  ReceivingAppealScannerSuccessLinkPanel,
+} from "./ReceivingAppealScannerPanels";
 import styles from "./scanner.module.css";
 import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
 import { isScannerWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
@@ -220,6 +227,12 @@ function RestoredAttemptBlock({
 }
 
 export function ScannerHub({ userId }: ScannerHubProps) {
+  const searchParams = useSearchParams();
+  const receivingHandoff = useReceivingAppealScannerHandoff(
+    searchParams ? parseScannerAppealQueryValues(searchParams.getAll("appealId")) : { mode: "none" },
+  );
+  const receivingRef = useRef(receivingHandoff);
+  receivingRef.current = receivingHandoff;
   const presentation = useCabinetPresentation();
   const branchResolution: ScannerBranchResolution = useMemo(
     () =>
@@ -274,6 +287,16 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   }, [branchResolution, operationBranchId]);
 
   orderBranchIdForRequestRef.current = orderBranchIdForRequest;
+
+  const prefillAppealGenRef = useRef(0);
+  useEffect(() => {
+    const code = receivingHandoff.certificatePrefillCode;
+    if (!code || !receivingHandoff.appealScoped) {
+      return;
+    }
+    const gen = ++prefillAppealGenRef.current;
+    setManualCode((prev) => (prev.trim() ? prev : gen === prefillAppealGenRef.current ? code : prev));
+  }, [receivingHandoff.appealScoped, receivingHandoff.certificatePrefillCode, receivingHandoff.appealId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -455,6 +478,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       outcome: ReturnType<typeof classifyStoreOrderPostResponse>,
       wasRetry: boolean,
       certificateCode: string,
+      idempotencyKey: string,
     ) => {
       switch (outcome.kind) {
         case "success": {
@@ -470,6 +494,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setOrderUncertain(false);
           setOrderConflict(false);
           setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
+          const handoff = receivingRef.current;
+          if (handoff.appealId) {
+            handoff.beginOrderLinkAfterSuccess(data.order.id, idempotencyKey);
+          }
           break;
         }
         case "conflict": {
@@ -519,6 +547,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const executeOrderPost = useCallback(
     async (record: StoreOrderAttemptRecord, wasRetry: boolean) => {
+      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry);
       markStoreOrderAttemptInFlight(userId);
       setStoredAttempt({ ...record, status: "in_flight" });
       setSubmitting(true);
@@ -536,6 +565,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           classifyStoreOrderPostResponse({ status: 201, payload, wasRetry }),
           wasRetry,
           record.body.certificateCode,
+          record.idempotencyKey,
         );
       } catch (caught) {
         if (caught instanceof RemcardApiError) {
@@ -548,12 +578,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             }),
             wasRetry,
             record.body.certificateCode,
+            record.idempotencyKey,
           );
         } else {
           applyPostOutcome(
             classifyStoreOrderNetworkFailure(wasRetry),
             wasRetry,
             record.body.certificateCode,
+            record.idempotencyKey,
           );
         }
       } finally {
@@ -669,6 +701,19 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           )
         ) {
           return;
+        }
+
+        if ("allowed" in data && data.allowed) {
+          const certMismatch = receivingRef.current.assertPreviewAllowed(data);
+          if (certMismatch) {
+            if (!options?.optional) {
+              setPreviewError(certMismatch);
+              setPreviewSession(null);
+            } else {
+              setPreviewError(certMismatch);
+            }
+            return;
+          }
         }
 
         const session: PreviewSession = {
@@ -876,6 +921,19 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       return;
     }
 
+    const handoff = receivingRef.current;
+    if (handoff.appealInvalid || (handoff.appealScoped && !handoff.allowsNewStoreOrder)) {
+      setSubmitError(
+        handoff.context.status === "ready" && handoff.context.orderAlreadyLinked
+          ? "К обращению уже привязан заказ."
+          : "Нет права оформить покупку для этого обращения.",
+      );
+      return;
+    }
+    if (handoff.requiresAppealReady) {
+      setSubmitError("Загружаем обращение. Повторите после готовности контекста.");
+      return;
+    }
     if (!presentation?.contextReady) {
       setSubmitError("Контекст рабочего места ещё загружается. Повторите поиск.");
       return;
@@ -984,9 +1042,49 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
 
+  if (receivingHandoff.appealInvalid) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
+  if (
+    receivingHandoff.appealScoped &&
+    (receivingHandoff.context.status === "forbidden" ||
+      receivingHandoff.context.status === "not_found" ||
+      receivingHandoff.context.status === "blocked" ||
+      receivingHandoff.context.status === "error")
+  ) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
+  if (
+    receivingHandoff.appealScoped &&
+    receivingHandoff.context.status === "ready" &&
+    receivingHandoff.context.orderAlreadyLinked &&
+    mode !== "success"
+  ) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
   if (mode === "success" && success) {
+    const appealId = receivingHandoff.appealId;
     return (
       <div>
+        <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
@@ -1013,23 +1111,33 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             </p>
           ) : null}
         </div>
-        <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
-          <Link
-            href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
-            className={styles.openHistoryLink}
-          >
-            Открыть покупку
-          </Link>
-          <Link
-            href={`/history?search=${encodeURIComponent(confirmedCode)}`}
-            className={styles.openHistoryLink}
-          >
-            Все операции по документу
-          </Link>
-          <Button className={scannerButtonStyles.controlButton} onClick={resetAll}>
-            Новая покупка
-          </Button>
-        </div>
+        {appealId ? (
+          <ReceivingAppealScannerSuccessLinkPanel
+            appealId={appealId}
+            orderId={success.order.id}
+            linkPhase={receivingHandoff.linkPhase}
+            linkError={receivingHandoff.linkError}
+            onRetryLink={receivingHandoff.retryOrderLinkOnly}
+          />
+        ) : (
+          <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
+            <Link
+              href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
+              className={styles.openHistoryLink}
+            >
+              Открыть покупку
+            </Link>
+            <Link
+              href={`/history?search=${encodeURIComponent(confirmedCode)}`}
+              className={styles.openHistoryLink}
+            >
+              Все операции по документу
+            </Link>
+            <Button className={scannerButtonStyles.controlButton} onClick={resetAll}>
+              Новая покупка
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -1044,6 +1152,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       ) ?? activeOperationBranchLabel;
     return (
       <div>
+        <ReceivingAppealScannerBanner
+          context={receivingHandoff.context}
+          appealId={receivingHandoff.appealId}
+        />
         {showRestoredBlock ? (
           <RestoredAttemptBlock
             storedAttempt={storedAttempt}
@@ -1259,6 +1371,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   return (
     <>
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
       ) : null}
