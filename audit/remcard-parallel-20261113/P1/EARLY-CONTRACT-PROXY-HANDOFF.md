@@ -5,7 +5,7 @@
 | Item | Value |
 |------|--------|
 | Section publishable | **false** |
-| `remcard-proxy.ts` wire | **K5 write paths only** (personal-meta, personal-batch); K2 GET **pending** P3 adapter |
+| `remcard-proxy.ts` wire | **K1/K2/K5** source routes whitelisted — see `PROXY-CLIENTS-ROUTE-MANIFEST.md` |
 | Receiving identity | **Canonical correction** → `RECEIVING-PRINCIPAL-CANONICAL.md` + `canonical-receiving-principal.json` |
 | DB migrate/deploy | **separate user confirmation** — not this agent |
 | P2 matrix | `ac2d4a7b` → `audit/.../P2/contract-operation-matrix-8137.md` |

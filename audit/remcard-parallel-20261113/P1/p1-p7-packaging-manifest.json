@@ -40,7 +40,8 @@
       "src/components/clients/ClientsListWorkspace.tsx",
       "src/components/clients/ClientDetailWorkspace.tsx",
       "src/lib/clients-parity/patch-manifest-57ca4680.json",
-      "src/lib/clients-parity/author-handoff-v6.json"
+      "src/lib/clients-parity/author-handoff-v6.json",
+      "src/lib/remcard-proxy.ts"
     ],
     "P2": [],
     "P3": [
@@ -478,6 +479,18 @@
       "reasonCode": "owner-tip-extract",
       "p7TipBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
       "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/remcard-proxy.ts",
+      "owner": "P1",
+      "sourceSha": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
+      "gitBlobSha": "d8f1a4535f7a1a355f2451c0aee2b2d175949e54",
+      "contentSha256": "070acd1ebdd5ddfc2571cc76ea22e6fa0ec88f5cc75f739d761a909acca9d6aa",
+      "gitStatusVs57ca": "M",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d8f1a4535f7a1a355f2451c0aee2b2d175949e54",
+      "matchesP7WholeTree": true
     }
   ],
   "productionBundleFromOwnerTips": [
@@ -804,6 +817,18 @@
       "reasonCode": "owner-tip-extract",
       "p7TipBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
       "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/remcard-proxy.ts",
+      "owner": "P1",
+      "sourceSha": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
+      "gitBlobSha": "d8f1a4535f7a1a355f2451c0aee2b2d175949e54",
+      "contentSha256": "070acd1ebdd5ddfc2571cc76ea22e6fa0ec88f5cc75f739d761a909acca9d6aa",
+      "gitStatusVs57ca": "M",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d8f1a4535f7a1a355f2451c0aee2b2d175949e54",
+      "matchesP7WholeTree": true
     }
   ],
   "p1SnippetTransformation": {
@@ -1062,6 +1087,14 @@
     "wholeBranchTransferForbidden": true,
     "profClientsPackagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
     "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+    "navigatorClientsBackendCandidates": {
+      "K8_contract": "6f09c23e",
+      "K1_receiving": "f722a164",
+      "K2_observerGet": "3c6ccc19",
+      "K5_personal": "6c444487",
+      "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"
+    },
+    "p1ProxyRouteManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
     "navigatorReleaseBranchNote": "release/prof-backend-v1-20261007 (remote ref not fetched here; SHA object present locally)",
     "prototypePin": "3dc31836cd18d9209c20097f18b906dd276f7af6",
     "deployableIndependentUiOnly": {
@@ -1092,7 +1125,8 @@
         "src/lib/clients-parity/observer-stats.ts",
         "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
         "src/lib/clients-parity/production-compat.ts",
-        "src/lib/clients-parity/types.ts"
+        "src/lib/clients-parity/types.ts",
+        "src/lib/remcard-proxy.ts"
       ],
       "partialApply": [
         "src/components/clients/ClientsListWorkspace.tsx"

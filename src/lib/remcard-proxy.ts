@@ -182,14 +182,44 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET", "PATCH", "DELETE"]),
       pattern: /^\/api\/pro\/agent-clients\/[\w-]+$/,
     },
-    /* P1/K5: observer personal overlay — navigator @ 86ac3e35 (not P5 client-appeals paths). */
+    /* Clients appeals — navigator source exports (K1/K2/K5); strict segments, no /api/pro/* wildcard. */
+    { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/client-appeals$/ },
     {
-      methods: new Set(["PATCH"]),
-      pattern: /^\/api\/pro\/referred-appeals\/[\w-]+\/personal-meta$/,
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/pro\/client-appeals\/batch$/,
+    },
+    {
+      methods: new Set(["GET", "POST", "PATCH", "DELETE"]),
+      pattern: /^\/api\/pro\/client-appeals\/working-stages$/,
     },
     {
       methods: new Set(["POST"]),
-      pattern: /^\/api\/pro\/referred-appeals\/personal-batch$/,
+      pattern: /^\/api\/pro\/client-appeals\/certificate-entry$/,
+    },
+    {
+      methods: new Set(["GET"]),
+      pattern:
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+$/,
+    },
+    {
+      methods: new Set(["PATCH"]),
+      pattern:
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+\/stage$/,
+    },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/referred-appeals$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/referred-appeals\/by-partner\/[\w-]+$/,
+    },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/referred-appeals\/personal-batch$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern:
+        /^\/api\/pro\/referred-appeals\/(?!personal-batch$|by-partner$)[\w-]+$/,
+    },
+    {
+      methods: new Set(["PATCH"]),
+      pattern: /^\/api\/pro\/referred-appeals\/[\w-]+\/personal-meta$/,
     },
     { methods: new Set(["GET", "POST"]), pattern: /^\/api\/pro\/agent-certificates$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/agent-certificates\/batch$/ },

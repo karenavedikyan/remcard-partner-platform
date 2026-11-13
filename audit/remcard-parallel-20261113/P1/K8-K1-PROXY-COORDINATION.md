@@ -80,7 +80,7 @@ Hook in `storeCertificateScan.ts` **not editable** by P1/K8 in this tranche.
 
 ## Partner proxy coordination (blocked)
 
-**P1 (20:49 MSK):** K5 paths **whitelisted** in `remcard-proxy.ts` @ navigator `86ac3e35`. K2 GET paths **not** whitelisted until P3 adapter + Root accept.
+**P1:** `remcard-proxy.ts` whitelists **K1** `f722a164`, **K2** `3c6ccc19`, **K5** `6c444487` per `PROXY-CLIENTS-ROUTE-MANIFEST.md`. K8 contract **`6f09c23e`** (not `fc33b4fa`).
 
 | Intended owner | Likely upstream path (confirm with K2/K5) | Partner `ALLOWED_ROUTES` |
 |----------------|-------------------------------------------|---------------------------|
@@ -89,7 +89,7 @@ Hook in `storeCertificateScan.ts` **not editable** by P1/K8 in this tranche.
 | K2 | `GET /api/pro/referred-appeals/by-partner/:partnerId` | idem |
 | K5 | `PATCH /api/pro/referred-appeals/:id/personal-meta` | idem |
 | K5 | `POST /api/pro/referred-appeals/personal-batch` | idem |
-| K1 | `/api/pro/client-appeals*` | **not** in agent observer proxy set |
+| K1 | `/api/pro/client-appeals*` (receiving) | **whitelisted** for direction workspace; observer agent mode does not call receiving writes |
 | — | `/api/pro/agent-clients*` | **never** substitute for referred ids |
 
 Rules unchanged: preserve auth headers, no host/env edits, strict method+pattern, no wildcards.

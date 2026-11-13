@@ -7,6 +7,14 @@ import sys
 
 BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 
+NAVIGATOR_CLIENTS_BACKEND = {
+    "K8_contract": "6f09c23e",
+    "K1_receiving": "f722a164",
+    "K2_observerGet": "3c6ccc19",
+    "K5_personal": "6c444487",
+    "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868",
+}
+
 AGENT_TIPS = {
     "P1": "ca2221e22f9abe727b088328ddb6a8fa56f4e76d",
     "P2": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
@@ -32,6 +40,7 @@ OWNER_PRODUCT: dict[str, list[str]] = {
         "src/components/clients/ClientDetailWorkspace.tsx",
         "src/lib/clients-parity/patch-manifest-57ca4680.json",
         "src/lib/clients-parity/author-handoff-v6.json",
+        "src/lib/remcard-proxy.ts",
     ],
     "P2": [],
     "P3": [
@@ -504,6 +513,8 @@ def build_publication_reconcile(bundle: list[dict], preserve: list[dict]) -> dic
         "wholeBranchTransferForbidden": True,
         "profClientsPackagingBaseSha": BASE,
         "navigatorReleasePin": NAVIGATOR_RELEASE_PIN,
+        "navigatorClientsBackendCandidates": NAVIGATOR_CLIENTS_BACKEND,
+        "p1ProxyRouteManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
         "navigatorReleaseBranchNote": "release/prof-backend-v1-20261007 (remote ref not fetched here; SHA object present locally)",
         "prototypePin": "3dc31836cd18d9209c20097f18b906dd276f7af6",
         "deployableIndependentUiOnly": {

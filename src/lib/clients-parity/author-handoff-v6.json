@@ -144,8 +144,16 @@
     "requiredField": "receivingPartnerUserId",
     "uiFieldAlias": "types.ts receivingPartnerId => receivingPartnerUserId"
   },
+  "navigatorClientsBackendCandidates": {
+    "K8": "6f09c23e",
+    "K1": "f722a164",
+    "K2": "3c6ccc19",
+    "K5": "6c444487",
+    "profilePublishedNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"
+  },
   "p1ProxyHandoffEarly": {
-    "wireBlockedUntil": "K2 GET after P3 adapter; K5 personal-meta + personal-batch whitelisted @ 171b7982",
+    "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
+    "routeManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
     "dbMigrateDeploy": "separate user confirmation only",
     "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
     "clientProfilePinInProgress": "89fb8e073c39c8dbd329996940b85c6a86751868",
@@ -166,7 +174,8 @@
     {
       "id": "INT-K8-RECEIVING-PRINCIPAL",
       "owner": "K8",
-      "retractedCandidate": "fc33b4fae859fb692757807c3b27696b66d57558",
+      "canonicalContractSha": "6f09c23e",
+      "supersededCandidate": "fc33b4fae859fb692757807c3b27696b66d57558",
       "missing": "Additive schema: required receivingPartnerUserId; optional org/branch; active slot per User.id principal",
       "blocks": "clientsSectionPublishable",
       "p1PinOnly": "canonical-receiving-principal.json"

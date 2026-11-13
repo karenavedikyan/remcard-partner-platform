@@ -433,11 +433,30 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/referred-appeals"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/referred-appeals/appeal_1"), true);
+    assert.equal(
+      isAllowedProxyRoute("GET", "/api/pro/referred-appeals/by-partner/branch_1"),
+      true,
+    );
     assert.equal(
       isAllowedProxyRoute("PATCH", "/api/pro/referred-appeals/appeal_1/personal-meta"),
       true,
     );
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/referred-appeals/personal-batch"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/client-appeals"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/appeal_1"), true);
+    assert.equal(
+      isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1/stage"),
+      true,
+    );
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/client-appeals/batch"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/working-stages"), true);
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/client-appeals/certificate-entry"),
+      true,
+    );
     assert.equal(
       isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1/personal-overlay"),
       false,
@@ -446,6 +465,11 @@ describe("remcard proxy transport checks", () => {
       isAllowedProxyRoute("POST", "/api/pro/client-appeals/personal-overlay/batch"),
       false,
     );
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1"), false);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/referred-appeals/appeal_1"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/referred-appeals/personal-batch"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/batch"), false);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/referred-appeals/by-partner"), false);
     assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
   });
 

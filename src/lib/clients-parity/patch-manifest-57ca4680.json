@@ -47,34 +47,49 @@
   "clientsSectionPublishable": false,
   "p1ProxyOwner": {
     "file": "src/lib/remcard-proxy.ts",
-    "wireStatus": "K5_PERSONAL_META_AND_BATCH_WHITELISTED_K2_GET_PENDING",
-    "navigatorOwners": "K8/K1/K2/K5",
-    "proxyWhitelistedK5Only": [
-      "PATCH /api/pro/referred-appeals/:id/personal-meta",
-      "POST /api/pro/referred-appeals/personal-batch"
-    ],
-    "k5NavigatorTip": "86ac3e354dc543817c061cb43565d0bf77545ab0",
-    "k2NavigatorTipListResponse": "72193c78 — GET returns {items,page,limit,total,hasMore,empty}",
-    "pendingK2ProxyAllowlistAfterP3Adapter": [
-      "GET /api/pro/referred-appeals",
-      "GET /api/pro/referred-appeals/:id",
-      "GET /api/pro/referred-appeals/by-partner/:partnerId"
-    ],
+    "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
+    "routeManifestDoc": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
+    "navigatorBackendCandidates": {
+      "K8_contract": "6f09c23e",
+      "K1_receiving": "f722a164",
+      "K2_observerGet": "3c6ccc19",
+      "K5_personal": "6c444487"
+    },
+    "proxyWhitelistedClientsSection": {
+      "K1": [
+        "GET,POST /api/pro/client-appeals",
+        "GET /api/pro/client-appeals/:id",
+        "PATCH /api/pro/client-appeals/:id/stage",
+        "POST /api/pro/client-appeals/batch",
+        "GET,POST,PATCH,DELETE /api/pro/client-appeals/working-stages",
+        "POST /api/pro/client-appeals/certificate-entry"
+      ],
+      "K2": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "K5": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ]
+    },
+    "k2ListResponseAt3c6ccc19": "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
     "p5RejectedInventedRoutesDoNotWhitelist": [
       "/api/pro/client-appeals/:id/personal-overlay",
       "/api/pro/client-appeals/personal-overlay/batch"
     ],
-    "explicitlyNotForObserverProxy": [
-      "/api/pro/client-appeals",
-      "/api/pro/agent-clients",
-      "/api/pro/agent-clients/batch"
+    "rejectedNotInNavigatorExports": [
+      "PATCH /api/pro/client-appeals/:id",
+      "PATCH /api/pro/referred-appeals/:id",
+      "POST /api/pro/client-appeals/:id/stage"
     ],
     "handoffDoc": "audit/remcard-parallel-20261113/P1/EARLY-CONTRACT-PROXY-HANDOFF.md",
     "p2MatrixSha": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
   },
   "k8NavigatorCandidatesNotAccepted": {
-    "handoffRef": "16253b84",
-    "schemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+    "canonicalContractSha": "6f09c23e",
+    "supersededCandidateDoNotWireProduct": "fc33b4fae859fb692757807c3b27696b66d57558",
     "coordinationDoc": "audit/remcard-parallel-20261113/P1/K8-K1-PROXY-COORDINATION.md",
     "clientProfileProductionSha": "89fb8e073c39c8dbd329996940b85c6a86751868",
     "rootGapsDoNotPropagate": [
