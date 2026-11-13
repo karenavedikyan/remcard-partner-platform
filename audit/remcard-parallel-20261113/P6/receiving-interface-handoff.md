@@ -23,6 +23,10 @@
 
 **Entity `ReceivingAppealListRow`** mirrors prototype `Appeal` typedef (lines 218–243 in JS).
 
+## K8 canonical contract (candidate — **not on origin yet**)
+
+See `k8-root-gap-handoff-20261113.md` for Root gaps #1–#5, ACCESS BLOCKED on `fc33b4fa` / `16253b84`, and scan→appeal integration proposal.
+
 ## K1 / P1 decisions required (before UI replaces blocker)
 
 1. Confirm origin routes + auth: receiving partner only (`receivingPartnerId` scoped to session).

@@ -1,7 +1,14 @@
 /**
  * Receiving CRM («Клиенты у меня») — typed contract surface for prototype client-appeals.js.
  * Loads only when P1 proxy allowlists routes; otherwise honest BLOCKED_CONTRACT (no fixtures).
+ *
+ * **K8 canonical sync (pending push):** `src/lib/clientAppeals/contract.ts` @
+ * `fc33b4fae859fb692757807c3b27696b66d57558` + `HANDOFF.md` @ `16253b84` on branch
+ * `cursor/remcard-k8-acceptance-20261113` — **not readable on origin/GitHub API yet**;
+ * re-import DTOs when K8 lands; do not invent competing schemas or localStorage settings.
  */
+export const RECEIVING_API_CONTRACT_NOTE =
+  "K8_CANDIDATE_PENDING: partnerSettings persistence requires K8 additive storage, not API constants.";
 
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
@@ -15,6 +22,7 @@ export type ReceivingAppealHistoryEntry = {
   reason?: string;
 };
 
+/** List row — public columns only (prototype renderListPage table). */
 export type ReceivingAppealListRow = {
   id: string;
   clientName: string;
@@ -30,11 +38,19 @@ export type ReceivingAppealListRow = {
   paidAmount?: number | null;
   paidAt?: string | null;
   sourceKey?: string;
-  clientContact?: string | null;
   purchaseId?: string | null;
   createdAt: string;
   updatedAt: string;
   manualEntry?: boolean;
+};
+
+/** Detail — receiving-owner fields (never leak via observer/referrer DTO). P4 owner. */
+export type ReceivingAppealDetail = ReceivingAppealListRow & {
+  privateNotes?: string;
+  clientContact?: string | null;
+  history: ReceivingAppealHistoryEntry[];
+  discountPercent?: number;
+  certValidUntil?: string | null;
 };
 
 export type ReceivingWorkingStage = {
@@ -42,11 +58,23 @@ export type ReceivingWorkingStage = {
   label: string;
 };
 
+/**
+ * Prototype `partnerSettings` — must be persisted (K8 additive settings storage).
+ * Constants-only defaults are **not** production-ready (Root review fc33b4fa gap #2).
+ */
 export type ReceivingPartnerSettings = {
   workingStages: ReceivingWorkingStage[];
   refusalReasons: string[];
   archivedStages: ReceivingWorkingStage[];
 };
+
+export function isReceivingSettingsMaterialized(settings: ReceivingPartnerSettings): boolean {
+  return (
+    settings.workingStages.length > 0 ||
+    settings.refusalReasons.length > 0 ||
+    settings.archivedStages.length > 0
+  );
+}
 
 export type ReceivingListBucket = "active" | "archive" | "trash";
 
@@ -173,6 +201,29 @@ export async function createReceivingAppeal(
       ok: false,
       code: "ERROR",
       message: caught instanceof RemcardApiError ? caught.message : "Не удалось создать обращение",
+    };
+  }
+}
+
+/** P4 detail load — GET must be read-only on server (no write side effects). */
+export async function fetchReceivingAppealDetail(
+  id: string,
+): Promise<
+  | { ok: true; appeal: ReceivingAppealDetail }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string }
+> {
+  const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
+  if (!isAllowedProxyRoute("GET", path)) {
+    return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
+  }
+  try {
+    const payload = await remcardFetch<{ appeal: ReceivingAppealDetail }>(path);
+    return { ok: true, appeal: payload.appeal };
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить обращение",
     };
   }
 }
