@@ -2,10 +2,14 @@
  * Receiving CRM («Клиенты у меня») — typed contract surface for prototype client-appeals.js.
  * Loads only when P1 proxy allowlists routes; otherwise honest BLOCKED_CONTRACT (no fixtures).
  *
- * **K8 canonical sync (pending push):** `src/lib/clientAppeals/contract.ts` @
- * `fc33b4fae859fb692757807c3b27696b66d57558` + `HANDOFF.md` @ `16253b84` on branch
- * `cursor/remcard-k8-acceptance-20261113` — **not readable on origin/GitHub API yet**;
- * re-import DTOs when K8 lands; do not invent competing schemas or localStorage settings.
+ * **Identity (Root 20:32 MSK, source-verified):** canonical receiving owner =
+ * `receivingPartnerUserId` (trusted session User.id). Prototype `receivingPartnerId` keys
+ * `PARTNERS` / `partnerSettings` — **partner User id, not Branch.id**. Solo R06 specialist
+ * without owned Organization: `receivingOrganizationId` / `receivingBranchId` **null** —
+ * receiving still authorized via `requireOwnerClientsContext`; no dummy org creation.
+ *
+ * **K8 canonical sync (pending push):** `src/lib/clientAppeals/contract.ts` — re-export when
+ * on origin; until then this file is the P2-coordinated DTO surface (no Branch-as-principal).
  */
 export const RECEIVING_API_CONTRACT_NOTE =
   "K8_CANDIDATE_PENDING: partnerSettings persistence requires K8 additive storage, not API constants.";
@@ -14,7 +18,70 @@ import { remcardFetch, RemcardApiError } from "@/lib/api-client";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import { isAllowedProxyRoute } from "@/lib/remcard-proxy";
 
-/** Prototype Appeal typedef (incoming receivingPartnerId scope). */
+/** System stage ids — prototype `SYSTEM` constant (client-appeals.js). */
+export const RECEIVING_SYSTEM_STAGE = {
+  NEW: "sys_new",
+  PAID: "sys_paid",
+  SHIPPED: "sys_shipped",
+  RETURN: "sys_return",
+  REFUSED: "sys_refused",
+} as const;
+
+/** Trusted receiving owner from session (K1). Org/branch optional metadata only. */
+export type ReceivingSessionPrincipal = {
+  receivingPartnerUserId: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
+};
+
+export function normalizeReceivingSessionPrincipal(
+  raw?: Partial<ReceivingSessionPrincipal> | null,
+  appeals?: ReceivingAppealListRow[],
+): ReceivingSessionPrincipal {
+  const fromAppeal = appeals?.[0] ? receivingAppealOwnerUserId(appeals[0]) : undefined;
+  return {
+    receivingPartnerUserId: String(raw?.receivingPartnerUserId ?? fromAppeal ?? "").trim(),
+    receivingOrganizationId: raw?.receivingOrganizationId ?? null,
+    receivingBranchId: raw?.receivingBranchId ?? null,
+  };
+}
+
+/** Canonical User.id for appeal row; `receivingPartnerId` legacy alias (never Branch.id). */
+export function receivingAppealOwnerUserId(
+  row: Pick<ReceivingAppealListRow, "receivingPartnerUserId" | "receivingPartnerId">,
+): string {
+  return (row.receivingPartnerUserId ?? row.receivingPartnerId).trim();
+}
+
+/**
+ * Prototype `isActiveAppeal` — only refused/return are inactive.
+ * UI `bucket` archive/trash does **not** affect active-cert uniqueness (K8 must not conflate).
+ */
+export function isReceivingAppealActive(
+  appeal: Pick<ReceivingAppealListRow, "stageId">,
+): boolean {
+  return (
+    appeal.stageId !== RECEIVING_SYSTEM_STAGE.REFUSED &&
+    appeal.stageId !== RECEIVING_SYSTEM_STAGE.RETURN
+  );
+}
+
+/** Prototype `findActiveAppeal(certificateId, receivingPartnerId)` — scope by User.id. */
+export function findActiveReceivingAppeal(
+  appeals: ReceivingAppealListRow[],
+  certificateId: string,
+  receivingPartnerUserId: string,
+): ReceivingAppealListRow | undefined {
+  const ownerId = receivingPartnerUserId.trim();
+  return appeals.find(
+    (a) =>
+      a.certificateId === certificateId &&
+      receivingAppealOwnerUserId(a) === ownerId &&
+      isReceivingAppealActive(a),
+  );
+}
+
+/** Prototype Appeal typedef (incoming scope = receiving owner User.id). */
 export type ReceivingAppealHistoryEntry = {
   at: string;
   author: string;
@@ -27,7 +94,16 @@ export type ReceivingAppealListRow = {
   id: string;
   clientName: string;
   certificateId: string;
+  /** Trusted receiving owner User.id (K8 / K1). */
+  receivingPartnerUserId: string;
+  /**
+   * Wire compatibility + prototype field name — **same User.id as `receivingPartnerUserId`**.
+   * Not Branch.id (Root retracts Branch-as-receiver interpretation).
+   */
   receivingPartnerId: string;
+  /** Optional when solo specialist has no owned org; never required for UI visibility. */
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
   referrerPartnerId: string;
   interest: string;
   clientCity?: string | null;
@@ -61,10 +137,11 @@ export type ReceivingWorkingStage = {
 };
 
 /**
- * Prototype `partnerSettings` — must be persisted (K8 additive settings storage).
- * Constants-only defaults are **not** production-ready (Root review fc33b4fa gap #2).
+ * Prototype `partnerSettings[partnerId]` — `partnerId` = receiving owner **User.id**.
+ * Must be persisted (K8 additive settings storage scoped to `receivingPartnerUserId`).
  */
 export type ReceivingPartnerSettings = {
+  receivingPartnerUserId?: string;
   workingStages: ReceivingWorkingStage[];
   refusalReasons: string[];
   archivedStages: ReceivingWorkingStage[];
@@ -182,6 +259,8 @@ export type ReceivingAppealsListResponse = {
   kpis: ReceivingListKpis;
   settings: ReceivingPartnerSettings;
   access: ReceivingPrincipalAccess;
+  /** Session receiving principal — org/branch may be null for eligible solo specialist. */
+  principal: ReceivingSessionPrincipal;
 };
 
 export type ReceivingAppealCreateBody = {
@@ -252,13 +331,22 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
         () => null,
       ),
     ]);
+    const appeals = list.appeals ?? [];
+    const principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
+    const mergedSettings =
+      settings ?? list.settings ?? { workingStages: [], refusalReasons: [], archivedStages: [] };
     return {
       ok: true,
       data: {
-        appeals: list.appeals ?? [],
+        appeals,
         kpis: list.kpis ?? { inWork: 0, paid: 0, shipped: 0, conv: "—" },
-        settings: settings ?? list.settings ?? { workingStages: [], refusalReasons: [], archivedStages: [] },
+        settings: {
+          ...mergedSettings,
+          receivingPartnerUserId:
+            mergedSettings.receivingPartnerUserId ?? principal.receivingPartnerUserId,
+        },
         access: normalizeReceivingAccess(list.access),
+        principal,
       },
     };
   } catch (caught) {

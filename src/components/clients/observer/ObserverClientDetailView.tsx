@@ -24,7 +24,7 @@ export function ObserverClientDetailView({ appeal, partner, onBack }: Props) {
       <dl className={styles.detailGrid}>
         <div>
           <dt>Партнёр</dt>
-          <dd>{partner?.name ?? appeal.receivingPartnerId}</dd>
+          <dd>{partner?.name ?? appeal.receivingPartnerUserId ?? appeal.receivingPartnerId}</dd>
         </div>
         <div>
           <dt>Статус у партнёра</dt>

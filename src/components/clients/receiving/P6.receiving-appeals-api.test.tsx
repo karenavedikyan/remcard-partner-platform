@@ -1,11 +1,55 @@
 import { describe, expect, it } from "vitest";
 import {
   fetchReceivingAppealsWorkspace,
+  findActiveReceivingAppeal,
+  isReceivingAppealActive,
   isReceivingAppealsProxyReady,
   isReceivingSettingsMaterialized,
+  RECEIVING_SYSTEM_STAGE,
+  type ReceivingAppealListRow,
 } from "@/lib/clients-parity/receiving-appeals-api";
 
+const baseRow = (overrides: Partial<ReceivingAppealListRow>): ReceivingAppealListRow => ({
+  id: "x",
+  clientName: "c",
+  certificateId: "CERT-1",
+  receivingPartnerUserId: "user-17",
+  receivingPartnerId: "user-17",
+  referrerPartnerId: "ref",
+  interest: "—",
+  stageId: RECEIVING_SYSTEM_STAGE.NEW,
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-01-01T00:00:00Z",
+  ...overrides,
+});
+
 describe("P6.receiving-appeals-api contract gate", () => {
+  it("isActiveAppeal matches prototype (refused/return only)", () => {
+    expect(isReceivingAppealActive(baseRow({ stageId: "ws_measure" }))).toBe(true);
+    expect(isReceivingAppealActive(baseRow({ stageId: RECEIVING_SYSTEM_STAGE.REFUSED }))).toBe(
+      false,
+    );
+    expect(
+      isReceivingAppealActive(
+        baseRow({ stageId: "ws_measure", bucket: "archive" }),
+      ),
+    ).toBe(true);
+  });
+
+  it("findActiveReceivingAppeal scopes by receiving User.id", () => {
+    const appeals = [
+      baseRow({ id: "a1", certificateId: "C-9" }),
+      baseRow({
+        id: "a2",
+        certificateId: "C-9",
+        receivingPartnerUserId: "other-user",
+        receivingPartnerId: "other-user",
+        stageId: RECEIVING_SYSTEM_STAGE.REFUSED,
+      }),
+    ];
+    expect(findActiveReceivingAppeal(appeals, "C-9", "user-17")?.id).toBe("a1");
+    expect(findActiveReceivingAppeal(appeals, "C-9", "missing")).toBeUndefined();
+  });
   it("empty settings are not materialized until K8 persistence", () => {
     expect(
       isReceivingSettingsMaterialized({

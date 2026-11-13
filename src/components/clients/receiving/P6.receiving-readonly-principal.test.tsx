@@ -10,7 +10,8 @@ const LIST_ONLY: ReceivingAppealsListResponse = {
       id: "a1",
       clientName: "Read only",
       certificateId: "C",
-      receivingPartnerId: "r",
+      receivingPartnerUserId: "user-r",
+      receivingPartnerId: "user-r",
       referrerPartnerId: "f",
       interest: "—",
       stageId: "s",
@@ -24,6 +25,11 @@ const LIST_ONLY: ReceivingAppealsListResponse = {
     listAllowed: true,
     mutationsAllowed: false,
     denialCode: "OWNER_CLIENTS_LIST_CONTEXT_ONLY",
+  },
+  principal: {
+    receivingPartnerUserId: "user-r",
+    receivingOrganizationId: null,
+    receivingBranchId: null,
   },
 };
 

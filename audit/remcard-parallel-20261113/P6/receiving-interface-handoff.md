@@ -21,7 +21,8 @@
 | `renderSettingsInline` | `GET/POST …/working-stages` | **П6** `WorkingStagesEditor` |
 | `commitStageChange` | `PATCH` stage fields | P4 + wallet owners |
 
-**Entity `ReceivingAppealListRow`** mirrors prototype `Appeal` typedef (lines 218–243 in JS).
+**Entity `ReceivingAppealListRow`** mirrors prototype `Appeal` typedef (lines 218–243 in JS).  
+**Identity:** `receivingPartnerUserId` = User.id; see `receiving-identity-correction-handoff.md` (not Branch.id).
 
 ## K8 canonical contract (candidate — **not on origin yet**)
 

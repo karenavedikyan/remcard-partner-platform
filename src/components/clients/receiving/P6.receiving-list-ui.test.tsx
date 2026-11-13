@@ -11,7 +11,8 @@ const FIXTURE: ReceivingAppealsListResponse = {
       id: "a-demo-1",
       clientName: "Олег Петров",
       certificateId: "DEMO-CERT-2048",
-      receivingPartnerId: "p-recv",
+      receivingPartnerUserId: "user-solo-017",
+      receivingPartnerId: "user-solo-017",
       referrerPartnerId: "p-ref",
       interest: "Гостиная, мягкая мебель",
       stageId: "ws_proposal",
@@ -23,7 +24,8 @@ const FIXTURE: ReceivingAppealsListResponse = {
       id: "a-demo-2",
       clientName: "Без сертификата",
       certificateId: "",
-      receivingPartnerId: "p-recv",
+      receivingPartnerUserId: "user-solo-017",
+      receivingPartnerId: "user-solo-017",
       referrerPartnerId: "p-ref",
       interest: "Замер",
       stageId: "ws_measure",
@@ -43,6 +45,11 @@ const FIXTURE: ReceivingAppealsListResponse = {
     archivedStages: [],
   },
   access: { listAllowed: true, mutationsAllowed: true },
+  principal: {
+    receivingPartnerUserId: "user-solo-017",
+    receivingOrganizationId: null,
+    receivingBranchId: null,
+  },
 };
 
 const FIXTURE_LIST_ONLY: ReceivingAppealsListResponse = {
