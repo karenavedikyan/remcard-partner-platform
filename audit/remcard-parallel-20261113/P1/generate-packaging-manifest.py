@@ -16,13 +16,24 @@ NAVIGATOR_CLIENTS_BACKEND = {
     "sourcePrepFrozen": True,
 }
 
-P6_HANDOFF_TIP = "78fd46e70fa6cd5b1eb08aa79a9554505a121c00"
-P5_RECEIVING_BULK_TIP = "ca2855fb"
+P6_REJECTED_BULK_TIP = "3d6c7637"
+P6_DETAIL_SETTINGS_PIN = "86251070900989cf82100376ffb870535f0477f3"
+P6_TRANSPORT_PIN = "78fd46e70fa6cd5b1eb08aa79a9554505a121c00"
+P6_HANDOFF_TIP = P6_DETAIL_SETTINGS_PIN
+P5_RECEIVING_BULK_TIP = "1298491f"
 P6_EXCLUDE_VENDOR_P5_PATHS = [
     "src/components/clients/receiving/ReceivingBulkActions.tsx",
     "src/components/clients/receiving/receiving-bulk-handoff.ts",
+    "src/components/clients/receiving/ReceivingBulkToolbar.tsx",
+    "src/components/clients/receiving/ReceivingBulkEditPanel.tsx",
+    "src/lib/clients-parity/receiving-bulk-contract.ts",
 ]
-P5_RECEIVING_BULK_PATHS = list(P6_EXCLUDE_VENDOR_P5_PATHS)
+P5_RECEIVING_BULK_PATHS = [
+    "src/components/clients/receiving/ReceivingBulkToolbar.tsx",
+    "src/components/clients/receiving/ReceivingBulkEditPanel.tsx",
+    "src/components/clients/receiving/receiving-bulk-handoff.ts",
+    "src/lib/clients-parity/receiving-bulk-contract.ts",
+]
 P6_RECEIVING_PRODUCT_PATHS = [
     "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
     "src/components/clients/receiving/ReceivingAppealsList.tsx",
@@ -590,11 +601,15 @@ def main() -> None:
         },
         "ownerProductAllowlist": OWNER_PRODUCT,
         "p6P5VendorExclusion": {
-            "p6HandoffTip": P6_HANDOFF_TIP,
+            "collisionMapDoc": "audit/remcard-parallel-20261113/P1/P5-P6-BULK-COLLISION-MAP.md",
+            "p6RejectedBulkWholeTip": P6_REJECTED_BULK_TIP,
+            "p6DetailSettingsPin": P6_DETAIL_SETTINGS_PIN,
+            "p6TransportPin": P6_TRANSPORT_PIN,
+            "p6OwnerAssemblyDefaultTip": P6_HANDOFF_TIP,
             "p5ReceivingBulkTip": P5_RECEIVING_BULK_TIP,
             "excludeFromP6OwnershipSelectP5Blob": P6_EXCLUDE_VENDOR_P5_PATHS,
-            "p5ReceivingBulkPaths": P5_RECEIVING_BULK_PATHS,
-            "doc": "audit/remcard-parallel-20261113/P1/P6-P5-VENDOR-EXCLUSION.md",
+            "p5SelectOriginalPaths": P5_RECEIVING_BULK_PATHS,
+            "legacyDoc": "audit/remcard-parallel-20261113/P1/P6-P5-VENDOR-EXCLUSION.md",
         },
         "p6ReceivingProxyReadiness": {
             "partnerProxyPin": "2b2b32b8",

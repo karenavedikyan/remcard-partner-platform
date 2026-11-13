@@ -1,7 +1,8 @@
 # P6 — receiving proxy readiness (P1 source truth)
 
 **P6 handoff tip:** `78fd46e70fa6cd5b1eb08aa79a9554505a121c00`  
-**Partner proxy pin:** `2b2b32b8` (detail PATCH) + batch already allowlisted  
+**Partner proxy pin:** `0bb25b9b` / `2b2b32b8` lineage — `remcard-proxy.ts` **unchanged** this turn  
+**Production `57ca4680`:** receiving product UI **absent**; proxy source-prep ≠ mounted pages  
 **K1 frozen:** `a71b8f37f526d775cd99f0535705be678b72261e`
 
 ## `isReceivingBatchProxyReady()` @ 78fd46e7

@@ -21,11 +21,12 @@ Pages **5–13** numbering frozen (home, purchases/leads, wallet **7**, reviews,
 
 | Area | Status |
 |------|--------|
-| Client wallet / purchases / leads UI | К owners resume **original** client UI responsibilities; backend pins frozen |
-| Client «Клиенты» surfaces (if any on navigator client app) | Not partner `57ca` Clients section — coordinate with К; **NOT_VERIFIED** mounted review |
-| Auth / Telegram-MAX / partner routing | **Unchanged** per production profile — do not replace Login/Profile wholesale |
-| Clients DB migrate | **Not authorized** — synthetic UI review does not need real DB |
-| Partner Clients publication | **Explicitly not authorized** |
+| Book **5** home, **6** purchases/leads, **7** wallet (not old LEVELS p7), **8–13** | К resume **original** client UI; prototype `3dc31836` book frozen — **NOT_VERIFIED** live pages |
+| Client wallet / lead detail / notifications | К owners; no whole-branch Profile/Login overwrite |
+| Vacancies | **Excluded** (none) |
+| Auth / Telegram-MAX / partner routing @ `89fb8e07` | **Unchanged** |
+| Clients DB migrate | **Not authorized** |
+| Partner Clients @ `57ca` | No receiving/observer product mount; proxy source-prep on partner branch only |
 
 ## Partner side (this repo) — user-visible residual
 

@@ -1,20 +1,18 @@
-# P6 @ 78fd46e7 — exclude vendored P5 paths from P6 ownership
+# P6 — exclude P5 bulk duplicates from P6 ownership
 
-Root assembly must **not** treat P6 commit copies as authoritative for P5 bulk UI.
+Superseded detail: **`P5-P6-BULK-COLLISION-MAP.md`**.
 
-## P5 canonical (handoff in 78fd46e7 audit)
+Root **rejects** P6 whole tip `3d6c7637` (duplicate `ReceivingBulkToolbar`, `receiving-bulk-contract`, collision on `ReceivingBulkEditPanel` vs P5 `1298491f`).
 
-| Artifact | Owner | Pin |
-|----------|-------|-----|
-| `ReceivingBulkActions.tsx` | **P5** | `ca2855fb` (vendored into P6 tree; select **P5 blob** at publish) |
-| `receiving-bulk-handoff.ts` | **P5** | `ca2855fb` |
+## P5 canonical @ `1298491f`
 
-## Paths present @ P6 `78fd46e7` (collision)
+Toolbar, edit, confirm, helpers — **P5 blobs only** (see collision map).
 
-These exist under `src/components/clients/receiving/` in the P6 commit but are **excluded from P6 `ownerProductAllowlist`** in `generate-packaging-manifest.py`:
+## Exclude from any P6 bundle (never publish as P6-owned)
 
-- `src/components/clients/receiving/ReceivingBulkActions.tsx`
-- `src/components/clients/receiving/receiving-bulk-handoff.ts`
+- `ReceivingBulkActions.tsx`, `receiving-bulk-handoff.ts` (legacy @ `78fd46e7` vendoring)
+- `ReceivingBulkToolbar.tsx`, `ReceivingBulkEditPanel.tsx` (@ `3d6c7637` duplicates)
+- `receiving-bulk-contract.ts`
 
 ## P6-owned @ 78fd46e7 (receiving workspace)
 

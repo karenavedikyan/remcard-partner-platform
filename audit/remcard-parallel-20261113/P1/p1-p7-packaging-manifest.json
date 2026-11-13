@@ -13,7 +13,7 @@
     "P4": "1850d088",
     "P4_audit": "ad7b0824b39ffedd576af84d18be64782611d6b5",
     "P5": "6a72f353",
-    "P6": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    "P6": "86251070900989cf82100376ffb870535f0477f3",
     "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
   },
@@ -83,17 +83,26 @@
     "P8": []
   },
   "p6P5VendorExclusion": {
-    "p6HandoffTip": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-    "p5ReceivingBulkTip": "ca2855fb",
+    "collisionMapDoc": "audit/remcard-parallel-20261113/P1/P5-P6-BULK-COLLISION-MAP.md",
+    "p6RejectedBulkWholeTip": "3d6c7637",
+    "p6DetailSettingsPin": "86251070900989cf82100376ffb870535f0477f3",
+    "p6TransportPin": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    "p6OwnerAssemblyDefaultTip": "86251070900989cf82100376ffb870535f0477f3",
+    "p5ReceivingBulkTip": "1298491f",
     "excludeFromP6OwnershipSelectP5Blob": [
       "src/components/clients/receiving/ReceivingBulkActions.tsx",
-      "src/components/clients/receiving/receiving-bulk-handoff.ts"
+      "src/components/clients/receiving/receiving-bulk-handoff.ts",
+      "src/components/clients/receiving/ReceivingBulkToolbar.tsx",
+      "src/components/clients/receiving/ReceivingBulkEditPanel.tsx",
+      "src/lib/clients-parity/receiving-bulk-contract.ts"
     ],
-    "p5ReceivingBulkPaths": [
-      "src/components/clients/receiving/ReceivingBulkActions.tsx",
-      "src/components/clients/receiving/receiving-bulk-handoff.ts"
+    "p5SelectOriginalPaths": [
+      "src/components/clients/receiving/ReceivingBulkToolbar.tsx",
+      "src/components/clients/receiving/ReceivingBulkEditPanel.tsx",
+      "src/components/clients/receiving/receiving-bulk-handoff.ts",
+      "src/lib/clients-parity/receiving-bulk-contract.ts"
     ],
-    "doc": "audit/remcard-parallel-20261113/P1/P6-P5-VENDOR-EXCLUSION.md"
+    "legacyDoc": "audit/remcard-parallel-20261113/P1/P6-P5-VENDOR-EXCLUSION.md"
   },
   "p6ReceivingProxyReadiness": {
     "partnerProxyPin": "2b2b32b8",
@@ -179,7 +188,7 @@
     {
       "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
       "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
       "gitStatusVs57ca": "A",
@@ -191,7 +200,7 @@
     {
       "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "1f5a87d732f3e9bb281b3d48e565c1f71df1f9fd",
       "contentSha256": "66aded6644c388ff06fc234b473eb99ca75217225432358147a721e36e92d332",
       "gitStatusVs57ca": "A",
@@ -203,7 +212,7 @@
     {
       "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
       "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
       "gitStatusVs57ca": "A",
@@ -221,7 +230,7 @@
     {
       "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
       "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
       "gitStatusVs57ca": "A",
@@ -305,7 +314,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "473382616e4a4524c08756f903e4bfbb0a6dd33c",
       "contentSha256": "9df7ec22330bfd797c9c0c9dd87183e2f6595671453ba8c2605fe8515b92b910",
       "gitStatusVs57ca": "?",
@@ -317,7 +326,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "29514322b5541a2200e2a7f6463b682aeaa98b97",
       "contentSha256": "66dcbaa1cbd5500a7d184ebe7d7a82a4811559bc6caf94813ae85c12d43fa919",
       "gitStatusVs57ca": "?",
@@ -329,7 +338,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealForm.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "5c4cd8e4b946928113df2a799deea8ffa6b1fbd9",
       "contentSha256": "d30000067a1d3ecbaaf470248890dbb1e4563e9d0a293018799324b62c6393af",
       "gitStatusVs57ca": "?",
@@ -341,7 +350,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealHistory.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "9d2e5db7dc948a47dcec0379d33bd44847c1fb44",
       "contentSha256": "3c6d26324fee53b396d48d0a629067693ce3ddab602cab93b38b12275d354b7c",
       "gitStatusVs57ca": "?",
@@ -353,9 +362,9 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealsList.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "c98ca0f608a0a70c34542dfdec109272d05e7add",
-      "contentSha256": "0aeb98ebbe608ec1b544bca21721a462b1a9f89dbe7f3d213ef2a6b4ce44c3ef",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "232ef8d7a1b42c21558f81b2c4a8227dde5adb09",
+      "contentSha256": "0b0dc51c91c6fdacf46651084c56070145c02aceea8b01fd2f434707914bcc05",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -365,9 +374,9 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "8514d4418e234154169739d0021ec8b437cae56c",
-      "contentSha256": "199c1cc2e94466da7fba3e766464347931eb44411f3f44e79bff74df2687cdb1",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "b489805b2687671af8a39bd5c9423a04dd687864",
+      "contentSha256": "baefacf12567cc5b5d452872ae37fdd0c737f5826ab2bcb46359832f7791d86f",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -377,7 +386,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingCertificateScan.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "602a2f4251178ef2ba69e9e613f265749151fd13",
       "contentSha256": "db1689669036f34974073bae25a16dbcb469037d23d67c48c96f5e825fe0c8ce",
       "gitStatusVs57ca": "?",
@@ -389,7 +398,7 @@
     {
       "path": "src/components/clients/receiving/WorkingStagesEditor.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "298c12dd2f0f912fe4487493c70906abe07e624f",
       "contentSha256": "1fbf3f30cecc8158390345439fc319ca65877c7642df4e8d36ef609ae9cdeb64",
       "gitStatusVs57ca": "?",
@@ -401,7 +410,7 @@
     {
       "path": "src/components/clients/receiving/detail-contract-alignment.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "a273e728f136b3bff9c3496c2fd52583824cac59",
       "contentSha256": "d708f26975f257444d4b43556da8cbe3ef4467b540c58fdecf3a975f8603238e",
       "gitStatusVs57ca": "?",
@@ -413,7 +422,7 @@
     {
       "path": "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "1e9276caa9b0c83ec023383e7a91065dae65455f",
       "contentSha256": "203308e0afc19b464e8b58a744111e91d300ba70bae1aa5ddf4a56f6db5ca6c0",
       "gitStatusVs57ca": "?",
@@ -425,7 +434,7 @@
     {
       "path": "src/components/clients/receiving/receiving.module.css",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "74bc969fd7139a2864ef643e03dea985d344d0d5",
       "contentSha256": "3438f76d5e29fc2f0c2dfa57c57223a71f39ecb44b94ccf2c637669c1318263e",
       "gitStatusVs57ca": "?",
@@ -581,9 +590,9 @@
     {
       "path": "src/lib/clients-parity/receiving-appeals-api.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "17ca8d4c540822f2ce17ad92fa8f7cf0b1eb4d34",
-      "contentSha256": "f3fec9805a38b9cc9d1c46b1b655985348391bdab29552d6b6db8dc26b02cbbe",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "96406c0a54b1776ce750e184e053e43908946191",
+      "contentSha256": "1db9575465c39225f03189547cbb8cf2c9accc23658343e66887f9703fbff1fe",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -631,7 +640,7 @@
     {
       "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
       "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
       "gitStatusVs57ca": "A",
@@ -643,7 +652,7 @@
     {
       "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "1f5a87d732f3e9bb281b3d48e565c1f71df1f9fd",
       "contentSha256": "66aded6644c388ff06fc234b473eb99ca75217225432358147a721e36e92d332",
       "gitStatusVs57ca": "A",
@@ -655,7 +664,7 @@
     {
       "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
       "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
       "gitStatusVs57ca": "A",
@@ -667,7 +676,7 @@
     {
       "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
       "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
       "gitStatusVs57ca": "A",
@@ -703,7 +712,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailHost.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "473382616e4a4524c08756f903e4bfbb0a6dd33c",
       "contentSha256": "9df7ec22330bfd797c9c0c9dd87183e2f6595671453ba8c2605fe8515b92b910",
       "gitStatusVs57ca": "?",
@@ -715,7 +724,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealDetailView.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "29514322b5541a2200e2a7f6463b682aeaa98b97",
       "contentSha256": "66dcbaa1cbd5500a7d184ebe7d7a82a4811559bc6caf94813ae85c12d43fa919",
       "gitStatusVs57ca": "?",
@@ -727,7 +736,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealForm.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "5c4cd8e4b946928113df2a799deea8ffa6b1fbd9",
       "contentSha256": "d30000067a1d3ecbaaf470248890dbb1e4563e9d0a293018799324b62c6393af",
       "gitStatusVs57ca": "?",
@@ -739,7 +748,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealHistory.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "9d2e5db7dc948a47dcec0379d33bd44847c1fb44",
       "contentSha256": "3c6d26324fee53b396d48d0a629067693ce3ddab602cab93b38b12275d354b7c",
       "gitStatusVs57ca": "?",
@@ -751,9 +760,9 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealsList.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "c98ca0f608a0a70c34542dfdec109272d05e7add",
-      "contentSha256": "0aeb98ebbe608ec1b544bca21721a462b1a9f89dbe7f3d213ef2a6b4ce44c3ef",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "232ef8d7a1b42c21558f81b2c4a8227dde5adb09",
+      "contentSha256": "0b0dc51c91c6fdacf46651084c56070145c02aceea8b01fd2f434707914bcc05",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -763,9 +772,9 @@
     {
       "path": "src/components/clients/receiving/ReceivingAppealsWorkspace.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "8514d4418e234154169739d0021ec8b437cae56c",
-      "contentSha256": "199c1cc2e94466da7fba3e766464347931eb44411f3f44e79bff74df2687cdb1",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "b489805b2687671af8a39bd5c9423a04dd687864",
+      "contentSha256": "baefacf12567cc5b5d452872ae37fdd0c737f5826ab2bcb46359832f7791d86f",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -775,7 +784,7 @@
     {
       "path": "src/components/clients/receiving/ReceivingCertificateScan.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "602a2f4251178ef2ba69e9e613f265749151fd13",
       "contentSha256": "db1689669036f34974073bae25a16dbcb469037d23d67c48c96f5e825fe0c8ce",
       "gitStatusVs57ca": "?",
@@ -787,7 +796,7 @@
     {
       "path": "src/components/clients/receiving/WorkingStagesEditor.tsx",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "298c12dd2f0f912fe4487493c70906abe07e624f",
       "contentSha256": "1fbf3f30cecc8158390345439fc319ca65877c7642df4e8d36ef609ae9cdeb64",
       "gitStatusVs57ca": "?",
@@ -799,7 +808,7 @@
     {
       "path": "src/components/clients/receiving/detail-contract-alignment.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "a273e728f136b3bff9c3496c2fd52583824cac59",
       "contentSha256": "d708f26975f257444d4b43556da8cbe3ef4467b540c58fdecf3a975f8603238e",
       "gitStatusVs57ca": "?",
@@ -811,7 +820,7 @@
     {
       "path": "src/components/clients/receiving/receiving-detail-envelope-bridge.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "1e9276caa9b0c83ec023383e7a91065dae65455f",
       "contentSha256": "203308e0afc19b464e8b58a744111e91d300ba70bae1aa5ddf4a56f6db5ca6c0",
       "gitStatusVs57ca": "?",
@@ -823,7 +832,7 @@
     {
       "path": "src/components/clients/receiving/receiving.module.css",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "gitBlobSha": "74bc969fd7139a2864ef643e03dea985d344d0d5",
       "contentSha256": "3438f76d5e29fc2f0c2dfa57c57223a71f39ecb44b94ccf2c637669c1318263e",
       "gitStatusVs57ca": "?",
@@ -955,9 +964,9 @@
     {
       "path": "src/lib/clients-parity/receiving-appeals-api.ts",
       "owner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
-      "gitBlobSha": "17ca8d4c540822f2ce17ad92fa8f7cf0b1eb4d34",
-      "contentSha256": "f3fec9805a38b9cc9d1c46b1b655985348391bdab29552d6b6db8dc26b02cbbe",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
+      "gitBlobSha": "96406c0a54b1776ce750e184e053e43908946191",
+      "contentSha256": "1db9575465c39225f03189547cbb8cf2c9accc23658343e66887f9703fbff1fe",
       "gitStatusVs57ca": "?",
       "packaging": "include",
       "reasonCode": "owner-tip-extract",
@@ -1144,7 +1153,7 @@
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "db35888f0818828394190be7f9b530c24591be29",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1152,7 +1161,7 @@
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionTabs.keyboard.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "b0cf3769e496b85898479c6a2faeffceb1a0c50e",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1160,7 +1169,7 @@
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "e1728cf178e65d12f0d2f37e22459948aa7fa65b",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1168,7 +1177,7 @@
     {
       "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.keyboard.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "5630775985c76d8900b6b95f1cb39d6b576e1591",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1176,7 +1185,7 @@
     {
       "path": "src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "b933960eabe783f31ba95a616c2cfc153ef52ee5",
       "packaging": "QA_MANIFEST_ONLY"
@@ -1184,7 +1193,7 @@
     {
       "path": "src/components/clients/observer/P6.ObserverContractBlocked.test.tsx",
       "qaOwner": "P6",
-      "sourceSha": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+      "sourceSha": "86251070900989cf82100376ffb870535f0477f3",
       "presentAtOwnerTip": true,
       "gitBlobSha": "211e5a0169aa9b7c76802c08cf8452346ee94af1",
       "packaging": "QA_MANIFEST_ONLY"

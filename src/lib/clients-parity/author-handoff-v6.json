@@ -129,7 +129,10 @@
     "P3": "b85efb54",
     "P4": "1850d088",
     "P5": "6a72f353",
-    "P6": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    "P6_detailSettings": "86251070900989cf82100376ffb870535f0477f3",
+    "P6_transport": "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    "P6_rejectedBulkTip": "3d6c7637",
+    "P5_receivingBulk": "1298491f",
     "P2_operationMatrix8137_heritage": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
     "P7_prior": "30a292d002d56e0daaeebdff62d1fce902590362",
     "navigatorBackend": {
