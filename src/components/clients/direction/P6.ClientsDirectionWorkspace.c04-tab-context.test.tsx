@@ -48,7 +48,7 @@ describe("P6.ClientsDirectionWorkspace C04 tab context", () => {
     expect(observerLoad.fetchObserverReferredAppeals).toHaveBeenCalledTimes(1);
   });
 
-  it("resets direction and observer mount on accessMode change", async () => {
+  it("resets direction and observer mount when keyed tabbed role changes", async () => {
     const user = userEvent.setup();
     const { rerender } = render(wrap("specialist", <ClientsDirectionWorkspace accessMode="specialist" />));
     await user.click(screen.getByRole("tab", { name: "Мои клиенты у партнёров" }));
@@ -58,5 +58,6 @@ describe("P6.ClientsDirectionWorkspace C04 tab context", () => {
     expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
     expect(screen.queryByTestId("ca-clients-panel-at-partners")).toBeNull();
     expect(screen.getByRole("tab", { name: "Клиенты у меня" })).toHaveAttribute("aria-selected", "true");
+    expect(observerLoad.fetchObserverReferredAppeals).toHaveBeenCalledTimes(1);
   });
 });
