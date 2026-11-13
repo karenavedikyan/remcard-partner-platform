@@ -1,7 +1,9 @@
 # Whole-section unresolved matrix (P2 inventory)
 
-**Root prepared source @ 2026-11-13 21:24 MSK:** K8 `8f4d336a`, K1 `a71b8f37`, K2 `c49d71dc`, K5 `6c444487`, P1 `2b2b32b8`, P4 `10c25fe6`, P6 wire `5092f756`.  
-Prototype: `3dc31836`. **Section acceptance: BLOCKED** (prod DB, proxy live, mounted UI).
+**Backend frozen:** K8 `8f4d336a`, K1 `a71b8f37`, K2 `c49d71dc`, K5 `6c444487`.  
+**Mounted UI (git show):** P4 `10c25fe6`, P5 `ca2855fb`, P6 `78fd46e7`, P1 `2b2b32b8`.  
+**P2 tip:** `cursor/2-06bf` inventory only — mounted UI commits not merged here.  
+Prototype: `3dc31836`. **Section acceptance: BLOCKED** (P1 proxy, prod DB, Root integrate, browser NOT_VERIFIED).
 
 | Req / gap | Owner | Status | Precise fix |
 | --- | --- | --- | --- |
@@ -10,7 +12,10 @@ Prototype: `3dc31836`. **Section acceptance: BLOCKED** (prod DB, proxy live, mou
 | K2 route value exports | K2 | **RESOLVED** | `observerAccess.ts` @ c49d71dc |
 | manualChannels persist | K8+K1 | **RESOLVED** | JSON `settings.manualChannels`; POST `kind: manualChannel`; VarChar(80) `manualSourceKey` |
 | Certificate create opts | K8 | **RESOLVED** | `{ createdHistoryEvent? }` @ 8f4d336a — K1 wires only |
-| List bucket vs tab | P6 | **RESOLVED** | Bucket mapper @ 5092f756 — UI mount unverified |
+| List bucket vs tab | P6 | **SOURCE_VERIFIED** | Query `bucket` @ 78fd46e7 — browser NOT_VERIFIED |
+| Batch lifecycle | P5+P6 | **SOURCE_VERIFIED** | Toolbar → postReceivingAppealsBatch; K1 wire lacks `action` echo — `mapK1BatchHttpForP5Normalize` |
+| Bulk field edit panel | P4+P6 | UNRESOLVED | `edit-open` → notice only; no multi PATCH panel |
+| K1 bulk-edit batch | K1 | UNRESOLVED | `action:bulk-edit` server-side — not in P5 toolbar |
 | P6 list envelope / pagination | P6 | UNRESOLVED | Split settings GET; server cursor pages |
 | P6 payCategories UI | P6+profile | UNRESOLVED | Not on settings API — existing order/catalog + GAP-K8-N purchase read |
 | Partner cards by principal | K2 | UNRESOLVED | `GAP-K8-P` partner meta |

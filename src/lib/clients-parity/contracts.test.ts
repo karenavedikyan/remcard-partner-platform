@@ -22,6 +22,9 @@ import {
   CLIENTS_PROTOTYPE_PARTNER_OVERLAY,
   CLIENTS_MANUAL_CHANNELS_WIRE,
   CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF,
+  CLIENTS_MOUNTED_UI_HANDOFF,
+  RECEIVING_BATCH_TRANSPORT_CONTRACT,
+  RECEIVING_NONFINANCIAL_PATCH_CONTRACT,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -38,6 +41,7 @@ import {
   mapReceivingAppealWireToUiRow,
   mapReceivingUiManualCreateToK1Post,
   mapReceivingUiCertificateCodeToK1Promo,
+  mapK1BatchHttpForP5Normalize,
   normalizeK1ReceivingDetailHttp,
   normalizeK1ReceivingListHttp,
 } from "./types";
@@ -68,7 +72,10 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8).toMatch(/^8f4d336a/);
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^a71b8f37/);
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2).toMatch(/^c49d71dc/);
-    expect(CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins.p6).toMatch(/^5092f756/);
+    expect(CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins.p6).toMatch(/^78fd46e7/);
+    expect(CLIENTS_MOUNTED_UI_HANDOFF.p5Tip).toMatch(/^ca2855fb/);
+    expect(RECEIVING_BATCH_TRANSPORT_CONTRACT.k1ResponseOmitsAction).toBe(true);
+    expect(RECEIVING_NONFINANCIAL_PATCH_CONTRACT.forbiddenOnProfile).toContain("paidAmountKopecks");
     expect(CLIENTS_RECEIVING_HTTP_CONTRACT.stagePatchPath).toContain("/stage");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k1HttpReceivingActual.shape).toContain("appeals");
     expect(CLIENTS_PURCHASE_READ_SEMANTICS.status).toBe("PARTIAL_K8_1894569a_K2_DIVERGES");
@@ -155,6 +162,13 @@ describe("clients parity contracts", () => {
     expect(detail.revision).toBe(1000);
     expect(detail.history[0]?.author).toBe("Менеджер");
     expect(RECEIVING_K1_P6_LIST_WIRE_CONTRACT.k1ListActual5a51d7b7).toContain("bucket");
+    const batch = mapK1BatchHttpForP5Normalize("archive", {
+      updatedIds: ["a1"],
+      skippedIds: ["a2"],
+      failures: [{ id: "a2", code: "NOT_FOUND" }],
+    });
+    expect(batch.action).toBe("archive");
+    expect(batch.failures[0]?.code).toBe("NOT_FOUND");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");

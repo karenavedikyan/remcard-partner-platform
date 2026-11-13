@@ -666,5 +666,36 @@ export function normalizeK1ReceivingDetailHttp(json: K1ReceivingDetailHttpActual
 export function unwrapK1WorkingStagesResponse(
   payload: ReceivingPartnerSettingsWire | { settings: ReceivingPartnerSettingsWire },
 ): ReceivingPartnerSettingsWire {
-  return "settings" in payload ? payload.settings : payload;
+  const raw = "settings" in payload ? payload.settings : payload;
+  return {
+    ...raw,
+    manualChannels: raw.manualChannels ?? [],
+  };
+}
+
+/** K1 `batchReceivingAppeals` JSON @ a71b8f37 — no `action` field on wire. */
+export type K1ReceivingBatchHttpActual = {
+  updatedIds: string[];
+  skippedIds: string[];
+  failures: Array<{ id: string; code: string }>;
+};
+
+export type ReceivingCrmBatchAction = "archive" | "unarchive" | "trash" | "restore";
+
+/** Feed P5 `normalizeReceivingBatchResponse` after P6 POST. */
+export function mapK1BatchHttpForP5Normalize(
+  requestedAction: ReceivingCrmBatchAction,
+  wire: K1ReceivingBatchHttpActual,
+): {
+  action: ReceivingCrmBatchAction;
+  updatedIds: string[];
+  skippedIds: string[];
+  failures: Array<{ id: string; code?: string; reason?: string; message?: string }>;
+} {
+  return {
+    action: requestedAction,
+    updatedIds: wire.updatedIds ?? [],
+    skippedIds: wire.skippedIds ?? [],
+    failures: (wire.failures ?? []).map((f) => ({ id: f.id, code: f.code })),
+  };
 }

@@ -134,7 +134,7 @@ export const CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF = {
     k5: "6c4444879d5651679c969b8009b3f39d05302c43",
     p1: "2b2b32b8",
     p4: "10c25fe6",
-    p6: "5092f756ab6e7c08d0ed066c45a3eefb5ab6c843",
+    p6: "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
   },
   assemblyNote: "60 root production files; 11 route modules; offline validate + isolated prisma generate @ 8f4d336a",
   notDone: "full project type-clean; 2 missing env type libraries; prod DB approval; mounted UI acceptance",
@@ -328,12 +328,13 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
   },
   batchPost: {
     path: "POST /api/pro/client-appeals/batch",
-    bodyActual: "{ ids[], action: archive | unarchive | bulk-edit, stageKey?, note?, appendNote? }",
-    responseActual: "{ updated, failures?: [{ id, code }] }",
-    bodyTargetLifecycle:
-      "action archive | delete | unarchive | restore — maps K8 applyReceivingBulkLifecycle kinds",
-    responseTarget: "{ updatedIds, skippedIds?, failures: [{ id, code }] }",
-    gap: "GAP-K1-HTTP-BATCH-LIFECYCLE — delete(trash) + restore not on HTTP batch @ 83f279e8",
+    bodyLifecycle: "{ ids[], action: archive | unarchive | trash | restore }",
+    bodyBulkEdit: "{ ids[], action: bulk-edit, bulkStageKey?, bulkNote?, appendNote? }",
+    responseK1_a71b8f37: "{ updatedIds, skippedIds, failures: [{ id, code }] } — no action echo",
+    p5Consumer: "receiving-bulk-handoff.normalizeReceivingBatchResponse",
+    p6Client: "postReceivingAppealsBatch @ 78fd46e7 — lifecycle only",
+    gapLifecycle: "RESOLVED_a71b8f37 trash via action delete|trash mapping in K1 repository",
+    gapBulkEditUi: "UNRESOLVED — prototype bulk-edit panel not wired; K1 bulk-edit exists server-side",
   },
   workingStages: {
     path: "/api/pro/client-appeals/working-stages",
@@ -399,8 +400,90 @@ export const CLIENTS_PARTNER_OWNER_TIPS = {
   p2: "5285f36e",
   p3: "b85efb54",
   p4: "10c25fe6",
-  p5: "6a72f353",
-  p6: "5092f756",
+  p5: "ca2855fb",
+  p6: "78fd46e7",
+} as const;
+
+/**
+ * Mounted partner UI @ 2026-11-13 (read via git show — not merged on P2 tip until Root integrates).
+ * Backend pins frozen @ CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.
+ */
+export const CLIENTS_MOUNTED_UI_HANDOFF = {
+  p4Tip: "10c25fe6da3f655dfea9e7267d55511fdcef4698",
+  p5Tip: "ca2855fb9b470d04b4d7358b74776cefe79a93f8",
+  p6Tip: "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+  p4Verified: {
+    component: "ReceivingAppealDetailView + detail-contract-alignment.ts",
+    actionsType: "ReceivingAppealDetailActions",
+    profilePatchFields: ["privateNotes"],
+    stagePatch: "onApplyStage → PATCH /:id/stage with expectedRevision",
+    purchase: "markPaid.supported=false — existing order flows only; no formula change",
+    verification: "SOURCE_VERIFIED unit tests @ P4 tip",
+  },
+  p5Verified: {
+    toolbar: "ReceivingBulkActions.tsx",
+    adapter: "receiving-bulk-handoff.ts — normalizeReceivingBatchResponse",
+    batchActions: ["archive", "unarchive", "trash", "restore"],
+    editOpen: "patch-multi → per-id PATCH loop (P6), not batch transport",
+    verification: "SOURCE_VERIFIED P5.receiving-bulk-handoff.test.tsx",
+  },
+  p6Verified: {
+    api: "receiving-appeals-api.ts @ 78fd46e7",
+    bucket: "buildReceivingAppealsListQuery sets bucket; list wire bucket echo",
+    batchClient: "postReceivingAppealsBatch — lifecycle only on wire",
+    bulkUi: "ReceivingAppealsWorkspace mounts P5 toolbar + confirm dialog",
+    revision409: "submitReceivingCertificateEntry maps RemcardApiError 409 → CONFLICT",
+    manualChannels: "postReceivingManualChannel kind manualChannel; create validates custom key",
+    verification: "SOURCE_VERIFIED focused vitest; browser NOT_VERIFIED",
+  },
+  p6NotOnP2Branch: "Mounted tips exist on parallel owner commits — P2 tip 629ddd53 inventory only",
+} as const;
+
+/** Legal non-financial writes — per appeal id; optimistic lock via expectedRevision (ms). */
+export const RECEIVING_NONFINANCIAL_PATCH_CONTRACT = {
+  profileRoute: "PATCH /api/pro/client-appeals/:id",
+  allowedOnProfile: [
+    "clientDisplayName",
+    "interest",
+    "clientCity",
+    "clientContact",
+    "budgetHint",
+    "privateNotes",
+    "manualSourceKey",
+  ],
+  forbiddenOnProfile: [
+    "stageKey",
+    "paidAmountKopecks",
+    "purchaseOrderId",
+    "orderId",
+    "referrerProUserId",
+    "shippedAt",
+    "paidAt",
+  ],
+  stageRoute: "PATCH /api/pro/client-appeals/:id/stage",
+  allowedOnStage: ["stageKey", "refusedReason", "shippedAt", "expectedRevision"],
+  p4MountedFields: ["privateNotes", "stageKey+refusedReason"],
+  p6MountedProfileFields: ["privateNotes", "clientContact", "interest"],
+  financeFrozen:
+    "No paid amount / payout / order creation from Clients bulk or profile PATCH — markPaid UI blocked @ P4",
+} as const;
+
+/**
+ * Batch transport vs field edits (prototype bulk archive/trash vs bulk-edit stage/notes).
+ */
+export const RECEIVING_BATCH_TRANSPORT_CONTRACT = {
+  route: "POST /api/pro/client-appeals/batch",
+  lifecycleActions: ["archive", "unarchive", "trash", "restore"] as const,
+  k1LifecycleWire: "{ ids, action } → { updatedIds, skippedIds, failures[] }",
+  k1ResponseOmitsAction: true,
+  p5NormalizeInput: "P6 must pass requested action into normalizeReceivingBatchResponse (K1 does not echo action)",
+  k1BulkEditSeparate: {
+    action: "bulk-edit",
+    body: "{ ids, action: bulk-edit, bulkStageKey?, bulkNote?, appendNote? }",
+    note: "K1 server bulk stage/notes — not mounted in P5 toolbar @ ca2855fb; not patch-multi HTTP",
+  },
+  forbiddenInBatch: ["paidAmount", "orderId", "purchase", "payout"],
+  uiBulkEdit: "ReceivingBulkAction edit-open → patch-multi → serial profile/stage PATCH (P4 fields only)",
 } as const;
 
 /**
@@ -461,7 +544,7 @@ export const CLIENTS_PROTOTYPE_PARTNER_OVERLAY = {
 /** P6 @ 4dca7af7 — Root-reviewed wire defects vs K1 @ 5a51d7b7 (P6 fixes via types.ts mappers). */
 export const RECEIVING_P6_WIRE_DEFECTS = {
   p6BaselineTip: "4dca7af7",
-  p6WireAlignTip: "5092f756ab6e7c08d0ed066c45a3eefb5ab6c843",
+  p6WireAlignTip: "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
   k1Tip: "a71b8f37f526d775cd99f0535705be678b72261e",
   bucketNotTab: {
     defect: "P6 treated tab as bucket; K1 parseReceivingListQuery uses bucket only",
@@ -824,19 +907,26 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
   },
   {
     id: "GAP-K1-HTTP-BATCH-LIFECYCLE",
-    owner: "K1",
+    owner: "K1+P5+P6",
     topic: "Batch HTTP lacks delete(trash) + restore; partial failures not aligned with K8 applyReceivingBulkLifecycle",
+    status: "RESOLVED_a71b8f37_mounted_ca2855fb_78fd46e7",
+    requiredFix:
+      "POST archive|unarchive|trash|restore → updatedIds/skippedIds/failures; P6 inject action for P5 normalize",
+  },
+  {
+    id: "GAP-K1-BATCH-BULK-EDIT",
+    owner: "K1+P6",
+    topic: "K1 `action:bulk-edit` stage/notes batch — prototype bulk edit; not P5 toolbar lifecycle",
     status: "UNRESOLVED",
-    requiredFix: "POST batch actions archive|delete|unarchive|restore with per-id outcomes",
+    requiredFix: "Separate UI from edit-open patch-multi; use K1 bulk-edit when product accepts",
   },
   {
     id: "GAP-P6-DETAIL-PATCH-PATH",
-    owner: "P6+P1+K1",
-    topic:
-      "P6 @ 4dca7af7 conflates CRM PATCH with stage/finance on PATCH .../:id — K1 @ 5a51d7b7 splits profile vs /stage",
-    status: "PARTIAL_K1_DONE_P6_UNRESOLVED",
+    owner: "P6+P4+P1",
+    topic: "Detail CRM/stage PATCH wiring",
+    status: "PARTIAL_10c25fe6_P4_actions",
     requiredFix:
-      "P6: profile mapReceivingUiProfilePatchToK1 → PATCH :id; stage mapReceivingUiStageIdToK1StagePatch → PATCH :stage; P1 proxy @ 2b2b32b8",
+      "P6 hosts wire ReceivingAppealDetailActions → profile + stage PATCH; P1 allowlist; no finance on profile",
   },
   {
     id: "GAP-P6-CERT-PROMOCODE",
@@ -930,8 +1020,8 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-P6-BUCKET-TAB",
     owner: "P6",
     topic: "List bucket conflated with tab incoming",
-    status: "RESOLVED_5092f756",
-    requiredFix: "K1 bucket query + normalizeK1ReceivingListHttp.bucket — verify mounted UI",
+    status: "SOURCE_VERIFIED_78fd46e7",
+    requiredFix: "bucket query on GET — browser mount NOT_VERIFIED on P2 VM",
   },
   {
     id: "GAP-K8-O",
