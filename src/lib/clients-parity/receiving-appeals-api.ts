@@ -256,22 +256,64 @@ export function normalizeReceivingAccess(
   };
 }
 
+/** UI view-model after K1 adapter (`coerceK1ClientAppealsListPayload`). */
 export type ReceivingAppealsListResponse = {
   appeals: ReceivingAppealListRow[];
-  kpis: ReceivingListKpis;
-  settings: ReceivingPartnerSettings;
-  access: ReceivingPrincipalAccess;
-  /** Session receiving principal — org/branch may be null for eligible solo specialist. */
-  principal: ReceivingSessionPrincipal;
+  /** K1 `83f279e8` — sole write gate until `access` lands. */
+  readOnly: boolean;
+  nextCursor?: string | null;
+  /** Server echo of active list tab/bucket when present. */
+  tab?: string | null;
+  kpis?: ReceivingListKpis;
+  settings?: ReceivingPartnerSettings;
+  /** Future K1 — not invented when absent. */
+  access?: ReceivingPrincipalAccess;
+  principal?: ReceivingSessionPrincipal;
 };
 
-/**
- * K1 wire payload (`f722a164` handoff). Optional `data` wrapper only — no other envelopes.
- * @see audit/remcard-parallel-20261113/P6/k1-f722a164-list-handoff.md
- */
-export type K1ClientAppealsListWire = ReceivingAppealsListResponse & {
-  data?: ReceivingAppealsListResponse;
+export const RECEIVING_EMPTY_SETTINGS: ReceivingPartnerSettings = {
+  workingStages: [],
+  refusalReasons: [],
+  archivedStages: [],
 };
+
+export function receivingAppealsMutationsAllowed(data: Pick<ReceivingAppealsListResponse, "readOnly">): boolean {
+  return data.readOnly !== true;
+}
+
+/**
+ * K1 GET wire (`83f279e8`): `{ appeals, nextCursor, tab, readOnly }` (+ optional fields when aligned).
+ * @see audit/remcard-parallel-20261113/P6/k1-83f279e8-list-envelope.md
+ */
+export type K1ClientAppealsListWire = {
+  appeals?: ReceivingAppealListRow[];
+  nextCursor?: string | null;
+  tab?: string | null;
+  readOnly?: boolean;
+  kpis?: ReceivingListKpis;
+  settings?: ReceivingPartnerSettings;
+  access?: Partial<ReceivingPrincipalAccess>;
+  principal?: Partial<ReceivingSessionPrincipal>;
+  data?: K1ClientAppealsListWire;
+};
+
+/** List GET query — coordinate names with K1/P2 (bucket→`tab`). */
+export function buildReceivingAppealsListQuery(
+  filters?: Partial<ReceivingListFilters>,
+  cursor?: string | null,
+): string {
+  const params = new URLSearchParams();
+  if (filters?.bucket) params.set("tab", filters.bucket);
+  if (filters?.source && filters.source !== "all") params.set("source", filters.source);
+  const q = filters?.q?.trim();
+  if (q) params.set("q", q);
+  if (filters?.status && filters.status !== DEFAULT_STATUS_LABEL) {
+    params.set("stage", filters.status);
+  }
+  if (cursor) params.set("cursor", cursor);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
 
 export function coerceReceivingAppealListRow(row: ReceivingAppealListRow): ReceivingAppealListRow {
   const uid = receivingAppealOwnerUserId(row);
@@ -287,25 +329,22 @@ export function coerceReceivingAppealListRow(row: ReceivingAppealListRow): Recei
 export function coerceK1ClientAppealsListPayload(
   wire: K1ClientAppealsListWire,
 ): ReceivingAppealsListResponse {
-  const list = wire.data?.appeals ? wire.data : wire;
+  const list: K1ClientAppealsListWire = wire.data?.appeals != null ? wire.data : wire;
   const appeals = (list.appeals ?? []).map(coerceReceivingAppealListRow);
-  const principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
-  const mergedSettings = list.settings ?? {
-    workingStages: [],
-    refusalReasons: [],
-    archivedStages: [],
-  };
-  return {
+  const readOnly = list.readOnly === true;
+  const out: ReceivingAppealsListResponse = {
     appeals,
-    kpis: list.kpis ?? { inWork: 0, paid: 0, shipped: 0, conv: "—" },
-    settings: {
-      ...mergedSettings,
-      receivingPartnerUserId:
-        mergedSettings.receivingPartnerUserId ?? principal.receivingPartnerUserId,
-    },
-    access: normalizeReceivingAccess(list.access),
-    principal,
+    readOnly,
+    nextCursor: list.nextCursor ?? null,
+    tab: list.tab ?? null,
   };
+  if (list.kpis) out.kpis = list.kpis;
+  if (list.settings) out.settings = list.settings;
+  if (list.access) out.access = normalizeReceivingAccess(list.access);
+  if (list.principal) {
+    out.principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
+  }
+  return out;
 }
 
 export type ReceivingAppealCreateBody = {
@@ -357,9 +396,15 @@ export function isReceivingCertificateEntryProxyReady(): boolean {
 
 export async function submitReceivingCertificateEntry(
   body: ReceivingCertificateEntryBody,
-  access?: ReceivingPrincipalAccess,
+  gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
 ): Promise<ReceivingCertificateEntryResult> {
-  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+  const readOnly =
+    gate && "readOnly" in gate
+      ? gate.readOnly === true
+      : gate
+        ? !normalizeReceivingAccess(gate).mutationsAllowed
+        : true;
+  if (readOnly) {
     return {
       ok: false,
       code: "FORBIDDEN",
@@ -444,13 +489,17 @@ export function isReceivingAppealsProxyReady(): boolean {
  * Primary workspace load — GET /api/pro/client-appeals (+ optional working-stages).
  * Does not call network until proxy ready.
  */
-export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppealsLoadResult> {
+export async function fetchReceivingAppealsWorkspace(
+  filters?: Partial<ReceivingListFilters>,
+  cursor?: string | null,
+): Promise<ReceivingAppealsLoadResult> {
   if (!isReceivingAppealsProxyReady()) {
     return receivingContractBlocked();
   }
+  const listPath = `/api/pro/client-appeals${buildReceivingAppealsListQuery(filters, cursor)}`;
   try {
     const [listWire, settingsWire] = await Promise.all([
-      remcardFetch<K1ClientAppealsListWire>("/api/pro/client-appeals"),
+      remcardFetch<K1ClientAppealsListWire>(listPath),
       remcardFetch<ReceivingPartnerSettings>("/api/pro/client-appeals/working-stages").catch(
         () => null,
       ),
@@ -458,10 +507,10 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
     const data = coerceK1ClientAppealsListPayload(listWire);
     if (settingsWire) {
       data.settings = {
-        ...data.settings,
+        ...(data.settings ?? RECEIVING_EMPTY_SETTINGS),
         ...settingsWire,
         receivingPartnerUserId:
-          settingsWire.receivingPartnerUserId ?? data.principal.receivingPartnerUserId,
+          settingsWire.receivingPartnerUserId ?? data.principal?.receivingPartnerUserId,
       };
     }
     return { ok: true, data };
@@ -476,9 +525,15 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
 
 export async function createReceivingAppeal(
   body: ReceivingAppealCreateBody,
-  access?: ReceivingPrincipalAccess,
+  gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
 ): Promise<ReceivingAppealsLoadResult> {
-  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+  const readOnly =
+    gate && "readOnly" in gate
+      ? gate.readOnly === true
+      : gate
+        ? !normalizeReceivingAccess(gate).mutationsAllowed
+        : true;
+  if (readOnly) {
     return {
       ok: false,
       code: "ERROR",
@@ -526,12 +581,19 @@ export async function fetchReceivingAppealDetail(
   }
 }
 
+/** Stage / field updates — **PATCH** only (not POST). */
 export async function patchReceivingAppeal(
   id: string,
   body: ReceivingAppealPatchBody,
-  access?: ReceivingPrincipalAccess,
+  gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
 ): Promise<ReceivingAppealsLoadResult> {
-  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+  const readOnly =
+    gate && "readOnly" in gate
+      ? gate.readOnly === true
+      : gate
+        ? !normalizeReceivingAccess(gate).mutationsAllowed
+        : true;
+  if (readOnly) {
     return {
       ok: false,
       code: "ERROR",

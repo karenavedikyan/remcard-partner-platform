@@ -23,12 +23,9 @@ const SOLO_SPECIALIST: ReceivingAppealsListResponse = {
   ],
   kpis: { inWork: 1, paid: 0, shipped: 0, conv: "0%" },
   settings: { workingStages: [{ id: "ws_measure", label: "Замер" }], refusalReasons: [], archivedStages: [] },
-  access: { listAllowed: true, mutationsAllowed: true },
-  principal: {
-    receivingPartnerUserId: "usr-solo-r06",
-    receivingOrganizationId: null,
-    receivingBranchId: null,
-  },
+  readOnly: false,
+  tab: "active",
+  nextCursor: null,
 };
 
 describe("P6.receiving solo specialist without organization", () => {

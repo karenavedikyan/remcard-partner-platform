@@ -19,18 +19,9 @@ const LIST_ONLY: ReceivingAppealsListResponse = {
       updatedAt: "2026-11-01T00:00:00Z",
     },
   ],
+  readOnly: true,
   kpis: { inWork: 1, paid: 0, shipped: 0, conv: "0%" },
   settings: { workingStages: [], refusalReasons: [], archivedStages: [] },
-  access: {
-    listAllowed: true,
-    mutationsAllowed: false,
-    denialCode: "OWNER_CLIENTS_LIST_CONTEXT_ONLY",
-  },
-  principal: {
-    receivingPartnerUserId: "user-r",
-    receivingOrganizationId: null,
-    receivingBranchId: null,
-  },
 };
 
 describe("P6.receiving read-only org-workplace principal", () => {

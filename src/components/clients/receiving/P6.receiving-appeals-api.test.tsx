@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   fetchReceivingAppealsWorkspace,
+  buildReceivingAppealsListQuery,
   coerceK1ClientAppealsListPayload,
   coerceReceivingAppealListRow,
+  receivingAppealsMutationsAllowed,
   findActiveReceivingAppeal,
   isReceivingAppealActive,
   isReceivingAppealsProxyReady,
@@ -40,24 +42,32 @@ describe("P6.receiving-appeals-api contract gate", () => {
     ).toBe(true);
   });
 
-  it("coerceK1 payload unwraps data and fills receivingPartnerUserId", () => {
+  it("coerceK1 83f279e8 wire uses readOnly, not invented write access", () => {
     const row = baseRow({ receivingPartnerUserId: "", receivingPartnerId: "only-alias" });
     const out = coerceK1ClientAppealsListPayload({
-      data: {
-        appeals: [row],
-        kpis: { inWork: 1, paid: 0, shipped: 0, conv: "0%" },
-        settings: { workingStages: [], refusalReasons: [], archivedStages: [] },
-        access: { listAllowed: true, mutationsAllowed: true },
-        principal: {
-          receivingPartnerUserId: "session-user",
-          receivingOrganizationId: null,
-          receivingBranchId: null,
-        },
-      },
+      appeals: [row],
+      nextCursor: "c2",
+      tab: "active",
+      readOnly: false,
     });
-    expect(out.principal.receivingPartnerUserId).toBe("session-user");
-    expect(coerceReceivingAppealListRow(row).receivingPartnerUserId).toBe("only-alias");
+    expect(out.readOnly).toBe(false);
+    expect(receivingAppealsMutationsAllowed(out)).toBe(true);
+    expect(out.kpis).toBeUndefined();
     expect(out.appeals[0]?.receivingPartnerUserId).toBe("only-alias");
+
+    const ro = coerceK1ClientAppealsListPayload({ appeals: [], readOnly: true });
+    expect(receivingAppealsMutationsAllowed(ro)).toBe(false);
+  });
+
+  it("buildReceivingAppealsListQuery maps bucket to tab", () => {
+    expect(
+      buildReceivingAppealsListQuery({
+        q: "иван",
+        bucket: "archive",
+        source: "cert",
+        status: "Замер",
+      }),
+    ).toBe("?tab=archive&source=cert&q=%D0%B8%D0%B2%D0%B0%D0%BD&stage=%D0%97%D0%B0%D0%BC%D0%B5%D1%80");
   });
 
   it("findActiveReceivingAppeal scopes by receiving User.id", () => {
@@ -86,10 +96,7 @@ describe("P6.receiving-appeals-api contract gate", () => {
 
   it("certificate-entry proxy not ready — blocked without fake success", async () => {
     expect(isReceivingCertificateEntryProxyReady()).toBe(false);
-    const res = await submitReceivingCertificateEntry({ certificateCode: "RC-1" }, {
-      listAllowed: true,
-      mutationsAllowed: true,
-    });
+    const res = await submitReceivingCertificateEntry({ certificateCode: "RC-1" }, { readOnly: false });
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.code).toBe("BLOCKED_CONTRACT");

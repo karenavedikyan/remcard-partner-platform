@@ -1,6 +1,6 @@
-# П6 → K1 list consumer (`f722a164`) — **ACCESS BLOCKED on origin**
+# П6 → K1 list consumer — **superseded by `k1-83f279e8-list-envelope.md`**
 
-**Read status:** `git fetch origin f722a164` → ref missing (2026-11-13). П6 wires against Root-reported shape; re-sync `receiving-appeals-api.ts` when K1 lands.
+K1 **`83f279e8`** actual GET: `{ appeals, nextCursor, tab, readOnly }` — not `principal`/`access` yet.
 
 ## GET `/api/pro/client-appeals` (no client-invented query scope)
 

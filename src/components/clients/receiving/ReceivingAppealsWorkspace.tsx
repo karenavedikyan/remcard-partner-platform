@@ -8,6 +8,8 @@ import {
   isReceivingCertificateEntryProxyReady,
   submitReceivingCertificateEntry,
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+  RECEIVING_EMPTY_SETTINGS,
+  receivingAppealsMutationsAllowed,
   type ReceivingAppealsListResponse,
   type ReceivingAppealsLoadResult,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -122,14 +124,15 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     return <ReceivingAppealsBlocked />;
   }
 
-  const access = data.access;
-  const mutationsAllowed = access.mutationsAllowed;
-  const readOnly = !mutationsAllowed;
+  const readOnly = data.readOnly === true;
+  const mutationsAllowed = receivingAppealsMutationsAllowed(data);
+  const denialMessage =
+    data.access?.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL;
 
-  if (!access.listAllowed) {
+  if (data.access?.listAllowed === false) {
     return (
       <section data-testid="ca-receiving-list-denied" role="alert">
-        <p>{access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL}</p>
+        <p>{denialMessage}</p>
       </section>
     );
   }
@@ -139,7 +142,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       <p className="notice">
         Только просмотр: изменять статусы, создавать обращения и настраивать этапы нельзя.
       </p>
-      <p className="small muted">{access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL}</p>
+      <p className="small muted">{denialMessage}</p>
       <button type="button" className="btn ghost" onClick={() => setView("list")}>
         К списку
       </button>
@@ -158,7 +161,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
           if (!proxyReady || readOnly) return;
-          const res = await createReceivingAppeal(body, access);
+          const res = await createReceivingAppeal(body, data);
           if (!res.ok) {
             setPersistNotice(res.message);
             return;
@@ -173,7 +176,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   if (view === "settings") {
     return (
       <WorkingStagesEditor
-        settings={data.settings}
+        settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
         disabled={!proxyReady || readOnly}
         onCancel={() => setView("list")}
         onSave={async () => {
@@ -188,13 +191,12 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       <ReceivingCertificateScan
         disabled={!certEntryReady || readOnly}
         persistBlockedMessage={
-          readOnly
-            ? (access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+          readOnly ? denialMessage
             : "Certificate-entry ждёт K1 route + P1 allowlist (authorizeStoreScan без правки store scan)."
         }
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
-          const res = await submitReceivingCertificateEntry(body, access);
+          const res = await submitReceivingCertificateEntry(body, data);
           if (!res.ok) {
             throw new Error(res.message);
           }
@@ -243,19 +245,17 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
           mutationsAllowed
             ? () => setView("manual")
             : () =>
-                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+                setPersistNotice(denialMessage)
         }
         onNavigateSettings={
           mutationsAllowed
             ? () => setView("settings")
-            : () =>
-                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+            : () => setPersistNotice(denialMessage)
         }
         onNavigateScan={
           mutationsAllowed
             ? () => setView("scan")
-            : () =>
-                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+            : () => setPersistNotice(denialMessage)
         }
         onNavigateAnalytics={() =>
           setPersistNotice("Аналитика воронки — страница п.85 после receiving list API.")

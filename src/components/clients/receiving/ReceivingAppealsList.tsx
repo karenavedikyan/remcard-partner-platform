@@ -121,21 +121,23 @@ export function ReceivingAppealsList({
 
   return (
     <div className={styles.receivingShell} data-testid="ca-receiving-appeals-list">
-      <div className={styles.kpiStrip} role="list">
-        {(
-          [
-            ["В работе", data.kpis.inWork],
-            ["Оплачено", data.kpis.paid],
-            ["Отгружено", data.kpis.shipped],
-            ["Конверсия в оплату", data.kpis.conv],
-          ] as const
-        ).map(([label, val]) => (
-          <div key={label} className={`panel ${styles.kpi}`} role="listitem">
-            <span className="small muted">{label}</span>
-            <strong className={styles.kpiVal}>{String(val)}</strong>
-          </div>
-        ))}
-      </div>
+      {data.kpis ? (
+        <div className={styles.kpiStrip} role="list" data-testid="ca-receiving-kpi-strip">
+          {(
+            [
+              ["В работе", data.kpis.inWork],
+              ["Оплачено", data.kpis.paid],
+              ["Отгружено", data.kpis.shipped],
+              ["Конверсия в оплату", data.kpis.conv],
+            ] as const
+          ).map(([label, val]) => (
+            <div key={label} className={`panel ${styles.kpi}`} role="listitem">
+              <span className="small muted">{label}</span>
+              <strong className={styles.kpiVal}>{String(val)}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div
         className="ca-bucket-tabs ca-seg"

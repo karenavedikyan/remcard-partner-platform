@@ -35,6 +35,9 @@ const FIXTURE: ReceivingAppealsListResponse = {
       bucket: "active",
     },
   ],
+  readOnly: false,
+  nextCursor: null,
+  tab: "active",
   kpis: { inWork: 2, paid: 0, shipped: 0, conv: "0%" },
   settings: {
     workingStages: [
@@ -44,21 +47,11 @@ const FIXTURE: ReceivingAppealsListResponse = {
     refusalReasons: ["Цена", "Сроки"],
     archivedStages: [],
   },
-  access: { listAllowed: true, mutationsAllowed: true },
-  principal: {
-    receivingPartnerUserId: "user-solo-017",
-    receivingOrganizationId: null,
-    receivingBranchId: null,
-  },
 };
 
 const FIXTURE_LIST_ONLY: ReceivingAppealsListResponse = {
   ...FIXTURE,
-  access: {
-    listAllowed: true,
-    mutationsAllowed: false,
-    denialCode: "OWNER_CLIENTS_LIST_CONTEXT_ONLY",
-  },
+  readOnly: true,
 };
 
 describe("P6.receiving list UI (prototype-bound, synthetic)", () => {
