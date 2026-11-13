@@ -22,13 +22,13 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 
 | Owner | Tip | Notes |
 |-------|-----|--------|
-| P1 | **`f43f9e22`** (proxy pin **`0bb25b9b`**) | Packaging + verified client-appeals / referred allowlist in source — **not on `57ca`** |
-| P2 | **`120d9a4a`** | Typed blockers + batch vs patch-multi handoff |
-| P3 | **`67fc52d9`** | Observer persistence bridge; synthetic list states **4/4 PASS** |
-| P4 | **`497f313d`** | `buildReceivingAppealDetailReady`; **Root OPEN:** `sys_paid` shipped copy |
-| P5 | **`99d4c9f0`** (originals **`1298491f`**) | Bulk panels + handoff |
-| P6 | **`4ac14afe`** | Imports P5; detail host + bulk apply; duplicate contract **removed** |
-| P7 | **`9094f523`** | Clients shell chrome only |
+| P1 | **`f43f9e22`** (proxy **`0bb25b9b`**) | Packaging — **not on `57ca`** |
+| P2 | **`457a417c`** (`cursor/2-06bf`) | K1 access envelope for P6 gates |
+| P3 | **`b1c1684e`** | Observer mappers |
+| P4 | **`9d22694f`** | Detail actions TS; **Root OPEN:** `sys_paid` copy |
+| P5 | **`164b8dbe`** | Personal mutation bridge |
+| P6 | **`2375944e`** | Detail CAS + double-JSON + nav tests — **slice only** (`GATE-DELTA-20261113-1930.md`) |
+| P7 | **`9094f523`** | Shell chrome — **not** full font/geometry acceptance |
 | P8 | audit tip | Audit only |
 
 **Superseded:** duplicate-path narrative @ `3d6c7637` — corrective assembly @ `4ac14afe`. Detail: **`GATE-DELTA-20261113-1900.md`**.
