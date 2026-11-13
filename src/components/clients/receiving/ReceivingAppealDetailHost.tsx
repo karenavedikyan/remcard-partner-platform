@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   fetchReceivingAppealDetailWire,
@@ -45,6 +45,12 @@ function toMutationOutcome(
   };
 }
 
+type DetailSessionKey = {
+  appealId: string;
+  readOnly: boolean;
+  referrerPartnerName: string | null | undefined;
+};
+
 export function ReceivingAppealDetailHost({
   appealId,
   readOnly = false,
@@ -61,43 +67,118 @@ export function ReceivingAppealDetailHost({
   );
   const [busy, setBusy] = useState<{ notes?: boolean; stage?: boolean }>({});
   const [actionError, setActionError] = useState<{ notes?: string; stage?: string }>({});
+  const [detailRefreshNotice, setDetailRefreshNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
-  const load = useCallback(async () => {
-    setPhase("loading");
-    setLoadError(null);
-    const res = await fetchReceivingAppealDetailWire(appealId);
-    if (!res.ok) {
-      if (res.code === "NOT_FOUND") {
-        setPhase("missing");
+  const detailGenerationRef = useRef(0);
+  const sessionKeyRef = useRef<DetailSessionKey>({
+    appealId,
+    readOnly,
+    referrerPartnerName,
+  });
+
+  const bumpDetailGeneration = useCallback(() => {
+    detailGenerationRef.current += 1;
+    return detailGenerationRef.current;
+  }, []);
+
+  const isStaleGeneration = useCallback(
+    (generation: number, session: DetailSessionKey) => {
+      if (generation !== detailGenerationRef.current) return true;
+      const cur = sessionKeyRef.current;
+      return (
+        cur.appealId !== session.appealId ||
+        cur.readOnly !== session.readOnly ||
+        cur.referrerPartnerName !== session.referrerPartnerName
+      );
+    },
+    [],
+  );
+
+  const applyDetailWire = useCallback(
+    (
+      session: DetailSessionKey,
+      res: Awaited<ReturnType<typeof fetchReceivingAppealDetailWire>>,
+    ) => {
+      if (!res.ok) {
+        if (res.code === "NOT_FOUND") {
+          setPhase("missing");
+          setMapped(null);
+          return;
+        }
+        setPhase("error");
+        setLoadError(res.message);
         setMapped(null);
         return;
       }
-      setPhase("error");
-      setLoadError(res.message);
-      setMapped(null);
-      return;
+      const rev =
+        typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision) || 0;
+      onRevisionLoaded?.(rev);
+      setMapped(
+        receivingAppealDetailWireToP4Mapped(res.wire, {
+          readOnly: session.readOnly,
+          referrerPartnerName: session.referrerPartnerName,
+        }),
+      );
+      setActionError({});
+      setPhase("ready");
+    },
+    [onRevisionLoaded],
+  );
+
+  const fetchDetailForSession = useCallback(
+    async (session: DetailSessionKey, generation: number, showLoading: boolean) => {
+      if (showLoading) {
+        setPhase("loading");
+        setLoadError(null);
+      }
+      const res = await fetchReceivingAppealDetailWire(session.appealId);
+      if (isStaleGeneration(generation, session)) {
+        return { applied: false as const, stale: true as const };
+      }
+      if (!res.ok) {
+        if (showLoading) {
+          applyDetailWire(session, res);
+          return { applied: true as const, stale: false as const, ok: false as const };
+        }
+        return { applied: false as const, stale: false as const, ok: false as const };
+      }
+      applyDetailWire(session, res);
+      return { applied: true as const, stale: false as const, ok: true as const };
+    },
+    [applyDetailWire, isStaleGeneration],
+  );
+
+  const refreshMappedDetail = useCallback(async (): Promise<boolean> => {
+    const session = sessionKeyRef.current;
+    const generation = detailGenerationRef.current;
+    const result = await fetchDetailForSession(session, generation, false);
+    if (result.stale) return false;
+    if (result.ok === false) {
+      setDetailRefreshNotice(
+        "Сохранено; карточку не удалось обновить — обновите страницу или откройте карточку снова.",
+      );
+      return false;
     }
-    const rev =
-      typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision) || 0;
-    onRevisionLoaded?.(rev);
-    setMapped(
-      receivingAppealDetailWireToP4Mapped(res.wire, {
-        readOnly,
-        referrerPartnerName,
-      }),
-    );
-    setActionError({});
-    setPhase("ready");
-  }, [appealId, onRevisionLoaded, readOnly, referrerPartnerName]);
+    if (!result.applied) return false;
+    setDetailRefreshNotice(null);
+    return true;
+  }, [fetchDetailForSession]);
 
   useEffect(() => {
-    void load();
-  }, [load, reloadToken]);
+    sessionKeyRef.current = { appealId, readOnly, referrerPartnerName };
+    const generation = bumpDetailGeneration();
+    void fetchDetailForSession(sessionKeyRef.current, generation, true);
+  }, [appealId, readOnly, referrerPartnerName, reloadToken, bumpDetailGeneration, fetchDetailForSession]);
 
   const reloadDetail = useCallback(async () => {
     setReloadToken((t) => t + 1);
   }, []);
+
+  const afterSuccessfulMutation = useCallback(async () => {
+    await onAppealMutated?.();
+    await refreshMappedDetail();
+  }, [onAppealMutated, refreshMappedDetail]);
 
   const onOpenOrderPipeline = useCallback(() => {
     router.push(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
@@ -122,12 +203,12 @@ export function ReceivingAppealDetailHost({
       const outcome = toMutationOutcome(result);
       if (!outcome.ok) {
         setActionError((e) => ({ ...e, notes: outcome.message }));
-      } else {
-        await onAppealMutated?.();
+        return outcome;
       }
-      return outcome;
+      await afterSuccessfulMutation();
+      return { ok: true };
     },
-    [appealId, onAppealMutated],
+    [afterSuccessfulMutation, appealId],
   );
 
   const mutateStage = useCallback(
@@ -143,12 +224,12 @@ export function ReceivingAppealDetailHost({
       const outcome = toMutationOutcome(result);
       if (!outcome.ok) {
         setActionError((e) => ({ ...e, stage: outcome.message }));
-      } else {
-        await onAppealMutated?.();
+        return outcome;
       }
-      return outcome;
+      await afterSuccessfulMutation();
+      return { ok: true };
     },
-    [appealId, onAppealMutated],
+    [afterSuccessfulMutation, appealId],
   );
 
   const viewProps = useMemo((): ReceivingAppealDetailProps | null => {
@@ -210,5 +291,14 @@ export function ReceivingAppealDetailHost({
     );
   }
 
-  return <ReceivingAppealDetailView {...viewProps} onBack={onBack} />;
+  return (
+    <>
+      {detailRefreshNotice ? (
+        <p className="notice" role="status" data-testid="ca-receiving-detail-refresh-notice">
+          {detailRefreshNotice}
+        </p>
+      ) : null}
+      <ReceivingAppealDetailView {...viewProps} onBack={onBack} />
+    </>
+  );
 }
