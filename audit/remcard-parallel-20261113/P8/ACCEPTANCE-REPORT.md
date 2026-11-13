@@ -1,5 +1,9 @@
 # П8 — Независимая приёмка C01–C56
 
+## RELEASE GATE (user priority — publish when ready)
+
+**`RELEASE-GATE.md` · NO-GO** until G1–G5 close. Navigator pin **`8137ddd1`** — P2 must re-prove (stale `3c37ca25` scan still MISSING).
+
 ## REM-PUBLISH-RESIDUAL-V2 (2026-11-13)
 
 See **`PUBLICATION-RESIDUAL-V2.md`** and **`requirement-ledger-publish-v2.json`**. P7 final tip **`30a292d0`**. P8 **did not** re-run component suite this pass.

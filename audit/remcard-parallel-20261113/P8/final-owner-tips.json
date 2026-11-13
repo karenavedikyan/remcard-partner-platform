@@ -1,14 +1,17 @@
 {
   "TIPS": {
     "P1": "20b93f87544ca0b59857be73ce46b2e62afe466e",
-    "P2": "1340a128e0e436b39d36feabb6b0c1a894b132a5",
-    "P3": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
-    "P4": "effd85f3e7ca8b4ce1a373074e95d975d89cc492",
+    "P2_acceptance_branch": "1340a128e0e436b39d36feabb6b0c1a894b132a5",
+    "P2_residual_navigator_scan": "ea9bd5ddbb3598747c782eca720e2cfd3becb9ff",
+    "P3": "9c3221adb336f783d173c92a3408af18522aa35c",
+    "P4": "f7198e9d78c15d6e59d339cce79f84a5c6d4a5cf",
     "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
     "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
-    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
-    "P8": "2a9af427fed47c21bae49d786846c52167476875"
+    "P7": "43c6bd83a8f47f33f7cbdac40b6fb8192db65879",
+    "P7_css_product_pin": "c5c7f2091187565d5cf883a5ec18d3a2b4009d24",
+    "P8": "53a5ce7462197eac96019de4f114be92d534203d"
   },
-  "NAVIGATOR_RELEASE": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
+  "NAVIGATOR_RELEASE_USER_PIN": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "NAVIGATOR_RELEASE_STALE_IN_P2_SCAN": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
   "PRODUCTION": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 }
