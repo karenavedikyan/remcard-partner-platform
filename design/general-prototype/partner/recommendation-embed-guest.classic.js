@@ -49,7 +49,9 @@
 
   function hydrateQr(scope, payload) {
     const img = scope.querySelector("[data-recommendation-qr]");
-    if (img && payload?.qrDataUrl) img.src = payload.qrDataUrl;
+    const src = payload?.qrDataUrl ? String(payload.qrDataUrl) : "";
+    if (!img || !/^data:image\/(?:png|jpeg|jpg);/i.test(src) || src.length < 512) return;
+    img.src = src;
   }
 
   function bindCard(card, payload) {

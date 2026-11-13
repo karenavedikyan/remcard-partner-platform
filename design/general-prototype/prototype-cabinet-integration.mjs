@@ -194,6 +194,16 @@ assert.match(
   "QR bundle invokes chunk factory before toDataURL",
 );
 assert.match(
+  readFileSync(path.join(root, "partner/qrcode-bundle-api.js"), "utf8"),
+  /cachedQrcodeApi/,
+  "QR bundle initializes chunk API once",
+);
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /certificateQrcode\.(?:toDataURL|toString)/,
+  "roles.js must not call qrcode chunk factory without interop",
+);
+assert.match(
   readFileSync(path.join(root, "partner/certificate-view.js"), "utf8"),
   /qrcode-bundle-api/,
   "certificate card QR uses initialized bundle API",

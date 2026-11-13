@@ -1,15 +1,24 @@
 import { a as qrcodeModuleRef } from "./chunk-3HBG25M4.js";
 import { c as esmInterop } from "./chunk-5TBO732O.js";
 
-/** Invoke esbuild CJS chunk factory and return the QRCode API (toDataURL, toCanvas, …). */
+let cachedQrcodeApi = null;
+
+/** Invoke esbuild CJS chunk factory once and return the QRCode API (toDataURL, toCanvas, …). */
 export function qrcodeBundleApi() {
+  if (cachedQrcodeApi) return cachedQrcodeApi;
   const mod =
     typeof qrcodeModuleRef === "function" ? esmInterop(qrcodeModuleRef(), 1) : esmInterop(qrcodeModuleRef, 1);
   const api = mod?.default || mod;
   if (typeof api?.toDataURL !== "function") {
     throw new Error("qrcode chunk did not expose toDataURL");
   }
-  return api;
+  cachedQrcodeApi = api;
+  return cachedQrcodeApi;
+}
+
+export function isQrRasterDataUrl(src) {
+  const s = String(src || "");
+  return /^data:image\/(?:png|jpeg|jpg);/i.test(s) && s.length >= 512;
 }
 
 export async function qrRasterDataUrl(text, { width = 600, margin = 3, errorCorrectionLevel = "M" } = {}) {
@@ -22,8 +31,7 @@ export async function qrRasterDataUrl(text, { width = 600, margin = 3, errorCorr
       margin,
       errorCorrectionLevel,
     });
-    if (!/^data:image\/(?:png|jpeg|jpg);/i.test(dataUrl || "")) return "";
-    if ((dataUrl || "").length < 512) return "";
+    if (!isQrRasterDataUrl(dataUrl)) return "";
     return dataUrl;
   } catch (_) {
     return "";
