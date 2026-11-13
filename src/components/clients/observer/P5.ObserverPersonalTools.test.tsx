@@ -116,6 +116,11 @@ describe("P5 ObserverPersonalTools", () => {
     expect(screen.getByText(/BLOCKED_PERSISTENCE: тест/)).toBeTruthy();
   });
 
+  it("surfaces selection hidden by current filter", () => {
+    renderTools({ selectedCount: 1, someVisibleSelected: true, selectionOutsideView: 2 });
+    expect(screen.getByText(/Ещё 2 скрыто фильтром/)).toBeTruthy();
+  });
+
   it("bucket and layout buttons invoke handlers", () => {
     const onBucket = vi.fn();
     const onLayout = vi.fn();

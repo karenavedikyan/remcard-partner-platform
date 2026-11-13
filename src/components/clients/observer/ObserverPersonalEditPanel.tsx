@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import styles from "./observer.module.css";
 
 export type PersonalEditDraft = {
@@ -9,16 +9,33 @@ export type PersonalEditDraft = {
   note: string;
 };
 
+export type ObserverPersonalPersistenceStatus = "blocked" | "ready" | "pending" | "error";
+
 type Props = {
   mode: "single" | "bulk";
   count: number;
   initial?: PersonalEditDraft;
+  persistenceStatus?: ObserverPersonalPersistenceStatus;
+  saveError?: string | null;
   onCancel: () => void;
-  onAttemptSave: () => void;
+  /** Legacy blocked path: parent shows global notice without mutating. */
+  onAttemptSave?: () => void;
+  /** Called only when persistenceStatus is ready; must not write without confirmed API. */
+  onSave?: (draft: PersonalEditDraft) => void;
 };
 
-export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAttemptSave }: Props) {
+export function ObserverPersonalEditPanel({
+  mode,
+  count,
+  initial,
+  persistenceStatus = "blocked",
+  saveError,
+  onCancel,
+  onAttemptSave,
+  onSave,
+}: Props) {
   const titleId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
   const [alias, setAlias] = useState(initial?.alias ?? "");
   const [tag, setTag] = useState(initial?.tag ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
@@ -29,14 +46,45 @@ export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAt
     setNote(initial?.note ?? "");
   }, [initial, mode, count]);
 
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLElement>("input,textarea")?.focus({ preventScroll: true });
+  }, [mode, count]);
+
+  const draft = (): PersonalEditDraft => ({
+    alias: alias.trim(),
+    tag: tag.trim(),
+    note: note.trim(),
+  });
+
+  const saveDisabled = persistenceStatus === "blocked" || persistenceStatus === "pending";
+
+  const saveLabel =
+    persistenceStatus === "pending"
+      ? "Сохранение…"
+      : persistenceStatus === "blocked"
+        ? "Сохранить (недоступно)"
+        : mode === "single"
+          ? "Сохранить для себя"
+          : `Применить к ${count} записям`;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (persistenceStatus === "ready" && onSave) {
+      onSave(draft());
+      return;
+    }
+    if (persistenceStatus === "blocked" && onAttemptSave) {
+      onAttemptSave();
+    }
+  };
+
   return (
     <form
+      ref={formRef}
       className={styles.editPanel}
       data-observer-personal-edit
-      onSubmit={(e) => {
-        e.preventDefault();
-        onAttemptSave();
-      }}
+      data-persistence-status={persistenceStatus}
+      onSubmit={submit}
       aria-labelledby={titleId}
     >
       <h3 id={titleId}>
@@ -76,6 +124,11 @@ export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAt
       ) : (
         <p className={styles.mutedSmall}>Пустое поле удалит метку у выбранных записей.</p>
       )}
+      {saveError ? (
+        <p className={styles.persistenceNotice} role="alert">
+          {saveError}
+        </p>
+      ) : null}
       <div className={styles.personalActions}>
         <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
           Отмена
@@ -83,12 +136,12 @@ export function ObserverPersonalEditPanel({ mode, count, initial, onCancel, onAt
         <button
           type="submit"
           className={styles.primaryBtn}
-          disabled
-          aria-disabled="true"
-          title="BLOCKED_PERSISTENCE"
+          disabled={saveDisabled}
+          aria-disabled={saveDisabled}
+          title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
           data-observer-action="save"
         >
-          Сохранить (недоступно)
+          {saveLabel}
         </button>
       </div>
     </form>

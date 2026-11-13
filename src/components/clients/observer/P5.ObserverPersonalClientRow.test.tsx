@@ -21,6 +21,8 @@ describe("P5 ObserverPersonalClientRow", () => {
     expect(screen.getByText("Для меня")).toBeTruthy();
     expect(screen.getByText("важно")).toBeTruthy();
     expect(screen.getByText("Перезвонить")).toBeTruthy();
+    const row = screen.getByTestId("ca-observer-client-row");
+    expect(row.getAttribute("data-selected")).toBe("false");
     await user.click(screen.getByRole("checkbox", { name: /Выбрать: Для меня/ }));
     expect(onSelect).toHaveBeenCalledWith(true);
   });

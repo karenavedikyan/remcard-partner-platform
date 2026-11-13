@@ -27,6 +27,8 @@ type Props = {
   onRequestTrash?: () => void;
   onRequestRestore?: () => void;
   persistenceNotice?: string | null;
+  /** When parent still holds ids filtered out of the current view (prototype prunes on refresh). */
+  selectionOutsideView?: number;
 };
 
 export function ObserverPersonalTools({
@@ -47,6 +49,7 @@ export function ObserverPersonalTools({
   onRequestTrash,
   onRequestRestore,
   persistenceNotice,
+  selectionOutsideView = 0,
 }: Props) {
   const selectRef = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -125,6 +128,11 @@ export function ObserverPersonalTools({
         <strong className={styles.selectedCount} role="status">
           Выбрано: {selectedCount}
         </strong>
+        {selectionOutsideView > 0 ? (
+          <span className={styles.mutedSmall} role="status">
+            Ещё {selectionOutsideView} скрыто фильтром
+          </span>
+        ) : null}
         {selectedCount > 0 ? (
           <div className={styles.personalActions}>
             {bucket !== "trash" ? (

@@ -1,10 +1,13 @@
 "use client";
 
 import styles from "./observer.module.css";
+import type { ObserverPersonalPersistenceStatus } from "./ObserverPersonalEditPanel";
 
 type Props = {
   kind: "archived" | "trash" | "restore";
   count: number;
+  persistenceStatus?: ObserverPersonalPersistenceStatus;
+  partialError?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -27,23 +30,46 @@ const COPY = {
   },
 };
 
-export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm }: Props) {
+export function ObserverPersonalConfirmPanel({
+  kind,
+  count,
+  persistenceStatus = "blocked",
+  partialError,
+  onCancel,
+  onConfirm,
+}: Props) {
   const c = COPY[kind];
+  const confirmBlocked = persistenceStatus === "blocked" || persistenceStatus === "pending";
+  const confirmLabel =
+    persistenceStatus === "pending"
+      ? "Выполняется…"
+      : persistenceStatus === "blocked"
+        ? `${c.confirm} (недоступно)`
+        : c.confirm;
+
   return (
     <section
       className={styles.confirmPanel}
       role="region"
       aria-label="Подтверждение действия"
       data-testid="ca-observer-personal-confirm"
+      data-persistence-status={persistenceStatus}
     >
       <h3>{c.title}</h3>
       <p>
         Выбрано записей: {count}. {c.body}
       </p>
-      <p className={styles.mutedSmall}>
-        Без API personal-meta подтверждение только покажет уведомление BLOCKED_PERSISTENCE; списки и
-        данные партнёров не изменятся.
-      </p>
+      {persistenceStatus === "blocked" ? (
+        <p className={styles.mutedSmall}>
+          Сохранение личного списка ожидает подтверждённого API personal-meta (P2). Данные партнёров и
+          глобальный CRM не меняются.
+        </p>
+      ) : null}
+      {partialError ? (
+        <p className={styles.persistenceNotice} role="alert">
+          {partialError}
+        </p>
+      ) : null}
       <div className={styles.personalActions}>
         <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
           Отмена
@@ -52,10 +78,14 @@ export function ObserverPersonalConfirmPanel({ kind, count, onCancel, onConfirm 
           type="button"
           className={styles.primaryBtn}
           data-observer-action="confirm"
-          title="BLOCKED_PERSISTENCE"
-          onClick={onConfirm}
+          disabled={confirmBlocked}
+          aria-disabled={confirmBlocked}
+          title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
+          onClick={() => {
+            if (!confirmBlocked) onConfirm();
+          }}
         >
-          {c.confirm}
+          {confirmLabel}
         </button>
       </div>
     </section>

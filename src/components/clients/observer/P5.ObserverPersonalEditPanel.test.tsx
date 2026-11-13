@@ -80,4 +80,21 @@ describe("P5 ObserverPersonalEditPanel", () => {
     );
     expect((screen.getByLabelText("Имя для себя") as HTMLInputElement).value).toBe("Свежее");
   });
+
+  it("ready mode submits trimmed draft via onSave", async () => {
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ObserverPersonalEditPanel
+        mode="single"
+        count={1}
+        persistenceStatus="ready"
+        onCancel={vi.fn()}
+        onSave={onSave}
+      />,
+    );
+    await user.type(screen.getByLabelText("Имя для себя"), "  Алиас  ");
+    await user.click(screen.getByRole("button", { name: "Сохранить для себя" }));
+    expect(onSave).toHaveBeenCalledWith({ alias: "Алиас", tag: "", note: "" });
+  });
 });

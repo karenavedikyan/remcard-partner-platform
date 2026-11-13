@@ -37,6 +37,7 @@ export function ObserverPersonalClientRow({
     <div
       className={`${styles.personalRow}${grouped ? ` ${styles.personalRowGrouped}` : ""}`}
       data-personal-row={appeal.id}
+      data-selected={selected ? "true" : "false"}
       data-testid="ca-observer-client-row"
     >
       <label className={styles.personalCheck}>
