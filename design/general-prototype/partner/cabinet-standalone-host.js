@@ -5,7 +5,7 @@ import {
   StandaloneSrcdocStaleError,
   waitForEmbedChildContentReady,
   waitForStandaloneFrameContent,
-} from "./cabinet-standalone-srcdoc.js?v=embed11";
+} from "./cabinet-standalone-srcdoc.js?v=embed12";
 import { demoRandomToken } from "./demo-random-id.js";
 
 export const STANDALONE_BY_N = {

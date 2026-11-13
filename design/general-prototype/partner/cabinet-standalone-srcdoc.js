@@ -150,11 +150,30 @@ export function buildStandaloneNavigationUrl(pageN, defPath, extraQuery, bridge)
   }
 }
 
+export const EMBED_SRCDOC_FONT_FALLBACK_STYLE =
+  '<style data-proto-embed-font-fallback>html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}</style>';
+
+const GOOGLE_FONT_STYLESHEET =
+  /<link\b[^>]*\bhref\s*=\s*["']https:\/\/fonts\.googleapis\.com\/[^"']+["'][^>]*>/gi;
+const GOOGLE_FONT_PRECONNECT =
+  /<link\b[^>]*\b(?:rel\s*=\s*["']preconnect["'][^>]*href\s*=\s*["']https:\/\/fonts\.(?:googleapis|gstatic)\.com[^"']*["']|href\s*=\s*["']https:\/\/fonts\.(?:googleapis|gstatic)\.com[^"']*["'][^>]*rel\s*=\s*["']preconnect["'])[^>]*>/gi;
+
+/** Opaque embed srcdoc must not block script/DOM on third-party font CDNs. */
+export function decoupleExternalFontsForEmbedSrcdoc(html) {
+  let out = String(html || "");
+  out = out.replace(GOOGLE_FONT_PRECONNECT, "");
+  out = out.replace(GOOGLE_FONT_STYLESHEET, "");
+  if (!out.includes("data-proto-embed-font-fallback")) {
+    out = out.replace(/<head([^>]*)>/i, `<head$1>${EMBED_SRCDOC_FONT_FALLBACK_STYLE}`);
+  }
+  return out;
+}
+
 export function injectSrcdocEmbedBoot(html, queryString, baseHref, { sessionToken = "", guestHash = "" } = {}) {
   const q = queryString.startsWith("?") ? queryString.slice(1) : queryString;
   const hash = guestHash ? String(guestHash).replace(/^#/, "") : "";
   const boot = `<script>window.__protoCabinetEmbedSearch=${JSON.stringify(q)};window.__protoCabinetEmbedSessionToken=${JSON.stringify(sessionToken)};window.__protoCabinetEmbedHash=${JSON.stringify(hash)};</script>`;
-  let out = html;
+  let out = decoupleExternalFontsForEmbedSrcdoc(html);
   if (!/<base\s/i.test(out)) {
     out = out.replace(/<head([^>]*)>/i, `<head$1><base href="${escapeAttr(baseHref)}">`);
   }

@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { decoupleExternalFontsForEmbedSrcdoc } from "./partner/cabinet-standalone-srcdoc.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
@@ -118,6 +119,17 @@ assert.match(srcdocLoader, /__protoCabinetEmbedSearch/, "srcdoc boot injects emb
 assert.match(srcdocLoader, /waitForEmbedChildContentReady/, "opaque srcdoc waits on child postMessage");
 assert.match(srcdocLoader, /__protoCabinetEmbedSessionToken/, "srcdoc boot carries per-open session token");
 assert.match(srcdocLoader, /__protoCabinetEmbedHash/, "srcdoc boot preserves guest hash without HTML comment");
+assert.match(srcdocLoader, /decoupleExternalFontsForEmbedSrcdoc/, "srcdoc boot strips blocking Google Font links");
+assert.match(srcdocLoader, /data-proto-embed-font-fallback/, "srcdoc embed injects system font fallback");
+const coopHtml = readFileSync(path.join(root, "partner/partner-cooperation-detail.html"), "utf8");
+assert.match(coopHtml, /fonts\.googleapis\.com/, "143 standalone page keeps Google Fonts for direct open");
+const srcdocCoop = decoupleExternalFontsForEmbedSrcdoc(coopHtml);
+assert.doesNotMatch(srcdocCoop, /fonts\.googleapis\.com/, "143 srcdoc must not request Google Fonts CSS");
+assert.match(srcdocCoop, /partner-cooperation-detail\.css/, "143 srcdoc keeps local stylesheet");
+const walletHtml = readFileSync(path.join(root, "partner/partner-wallet-history.html"), "utf8");
+const srcdoc147 = decoupleExternalFontsForEmbedSrcdoc(walletHtml);
+assert.doesNotMatch(srcdoc147, /fonts\.googleapis\.com/, "147 srcdoc must not request Google Fonts CSS");
+assert.match(srcdoc147, /partner-wallet-history\.css/, "147 srcdoc keeps local stylesheet");
 assert.doesNotMatch(
   readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8"),
   /srcdoc.*<!--#/,

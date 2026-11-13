@@ -1812,6 +1812,82 @@ try {
   await retryFailNest.unroute(/partner-cooperation-detail\.html/i);
   await retryFailNest.close();
 
+  const hungFontsNest = await browser.newPage();
+  await hungFontsNest.setViewportSize({ width: 654, height: 763 });
+  let releaseHungFonts = null;
+  const holdHungFonts = new Promise((resolve) => {
+    releaseHungFonts = resolve;
+  });
+  const hangGoogleFonts = async (route) => {
+    await holdHungFonts;
+    await route.continue();
+  };
+  await enterNestStoreCabinet(hungFontsNest);
+  await hungFontsNest.route(/:\/\/fonts\.googleapis\.com\//, hangGoogleFonts);
+  await hungFontsNest.route(/:\/\/fonts\.gstatic\.com\//, hangGoogleFonts);
+  await hungFontsNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await hungFontsNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      return (
+        frame?.dataset?.embedContentReady === "1" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143 &&
+        host?.dataset?.embedLoadState !== "stalled"
+      );
+    },
+    null,
+    { timeout: 35000 },
+  );
+  const beforeFontRelease = await hungFontsNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
+      ready: frame?.dataset?.embedContentReady,
+      token: frame?.dataset?.embedSessionToken || "",
+    };
+  });
+  assert.equal(beforeFontRelease.badge, 143);
+  assert.equal(beforeFontRelease.ready, "1");
+  releaseHungFonts?.();
+  await hungFontsNest.waitForTimeout(1200);
+  const afterFontRelease = await hungFontsNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
+      ready: frame?.dataset?.embedContentReady,
+      token: frame?.dataset?.embedSessionToken || "",
+    };
+  });
+  assert.equal(afterFontRelease.badge, 143, "releasing font CDN must not reset embed badge");
+  assert.equal(afterFontRelease.ready, "1", "embed stays content-ready after font CDN unlock");
+  assert.equal(afterFontRelease.token, beforeFontRelease.token, "embed session token stable after font release");
+  await hungFontsNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await hungFontsNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return frame?.dataset?.embedContentReady === "1" && doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147;
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await hungFontsNest.unroute(/:\/\/fonts\.googleapis\.com\//);
+  await hungFontsNest.unroute(/:\/\/fonts\.gstatic\.com\//);
+  await hungFontsNest.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();
