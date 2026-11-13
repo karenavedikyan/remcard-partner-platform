@@ -85,7 +85,7 @@ describe("P7 — observer accent with production globals.css", () => {
     });
 
     for (const theme of THEMES) {
-      it(`${theme}: pressed bucket/layout text ≥ ${MIN_CONTRAST_AA}:1 on --surface`, async () => {
+      it(`${theme}: pressed bucket/layout text ≥ ${MIN_CONTRAST_AA}:1 on pressed tint`, async () => {
         const context = await browser.newContext({ viewport: { width: 768, height: 400 } });
         const page = await context.newPage();
         await page.setContent(buildProductionTokenHarness(theme), { waitUntil: "domcontentloaded" });
@@ -99,7 +99,7 @@ describe("P7 — observer accent with production globals.css", () => {
               fontSize: cs.fontSize,
             };
           });
-          expect(metrics.fontSize).toBe("16px");
+          expect(metrics.fontSize).toBe("12px");
           const fg = parseRgbTriplet(metrics.color);
           const bg = parseRgbTriplet(metrics.backgroundColor);
           expect(fg, `fg ${metrics.color}`).not.toBeNull();
