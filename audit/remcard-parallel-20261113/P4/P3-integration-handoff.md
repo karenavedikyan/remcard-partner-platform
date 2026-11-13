@@ -1,6 +1,6 @@
 # P3 ← P4 integration handoff (observer detail)
 
-**P4 source tip:** see latest on `cursor/remcard-p4-acceptance-20261113` (`resolveObserverClientBackFrom` added after `effd85f3`).  
+**P4 source tip:** `28aa18ab1bdc42aa35c3a063c75e60e32f23bee9` on `cursor/remcard-p4-acceptance-20261113`.  
 **Branch:** `cursor/remcard-p4-acceptance-20261113`  
 **P3 file (do not edit from P4):** `src/components/clients/observer/ObserverPartnersListView.tsx`
 
