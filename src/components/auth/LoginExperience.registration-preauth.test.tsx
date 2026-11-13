@@ -4,7 +4,49 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { LoginExperience, resolveRegistrationJoinKindAfterHydration } from "./LoginExperience";
 import { saveRegistrationWizardState } from "@/lib/registration/draft";
-import { savePreAuthConsentAck } from "@/lib/registration/pre-auth-consent";
+import {
+  clearPreAuthConsentSnapshot,
+  createPreAuthAttemptId,
+  savePreAuthConsentSnapshot,
+} from "@/lib/registration/pre-auth-consent";
+
+const { qaPreAuthConsents } = vi.hoisted(() => ({
+  qaPreAuthConsents: {
+    contractVersion: "2026-11-13.pre-auth-consent.v1",
+    available: true,
+    requirements: [
+      {
+        kind: "PERSONAL_DATA",
+        legalDocumentId: "qa-privacy",
+        version: "2026-11-01",
+        documentUrl: "/privacy",
+      },
+      {
+        kind: "TERMS",
+        legalDocumentId: "qa-terms",
+        version: "2026-11-01",
+        documentUrl: "/terms",
+      },
+      {
+        kind: "PUBLIC_OFFER_PRO",
+        legalDocumentId: "qa-offer",
+        version: "2026-11-01",
+        documentUrl: "/legal/public-offer-pro",
+      },
+    ],
+  },
+}));
+
+vi.mock("@/lib/registration/capabilities", () => ({
+  fetchRegistrationCapabilitiesClient: vi.fn().mockResolvedValue({
+    contractVersion: "test",
+    welcomeEnabled: true,
+    agentRegistrationPathEnabled: true,
+    joinRegistrationPathEnabled: true,
+    legacyLoginPathEnabled: true,
+    preAuthConsents: qaPreAuthConsents,
+  }),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
@@ -38,6 +80,7 @@ function renderRegistrationLogin(returnTo: string) {
 describe("LoginExperience registration pre-auth", () => {
   beforeEach(() => {
     sessionStorage.clear();
+    clearPreAuthConsentSnapshot("agent");
   });
 
   it("shows local consent before AuthFlow for join finish returnTo", async () => {
@@ -45,7 +88,11 @@ describe("LoginExperience registration pre-auth", () => {
     renderRegistrationLogin("/join?phase=finish&role=agent");
     expect(await screen.findByTestId("registration-pre-auth-consent")).toBeInTheDocument();
     expect(screen.queryByTestId("auth-flow")).toBeNull();
-    for (const label of [/персональных данных/i, /пользовательское/i, /публичную оферту/i]) {
+    for (const label of [
+      /обработку персональных данных/i,
+      /пользовательское соглашение/i,
+      /публичную оферту/i,
+    ]) {
       await user.click(screen.getByRole("checkbox", { name: label }));
     }
     await user.click(screen.getByRole("button", { name: /продолжить к max/i }));
@@ -60,7 +107,7 @@ describe("LoginExperience registration pre-auth", () => {
   });
 
   it("opens AuthFlow after hydration when pre-auth ack is already stored", async () => {
-    savePreAuthConsentAck("agent");
+    savePreAuthConsentSnapshot("agent", qaPreAuthConsents.requirements, createPreAuthAttemptId());
     renderRegistrationLogin("/join?phase=finish&role=agent");
     expect(await screen.findByTestId("auth-flow")).toBeInTheDocument();
     expect(screen.queryByTestId("registration-pre-auth-consent")).toBeNull();
