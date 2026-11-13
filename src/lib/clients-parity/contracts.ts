@@ -115,10 +115,10 @@ export const CLIENTS_RECEIVING_IDENTITY = {
   activeAppealPredicate:
     "isActiveAppealStage @ 6f09c23e; cert unique (certificateId, receivingPartnerUserId) stage-only filter (GAP-K8-L lifecycle)",
   k8IdentityTip: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
-  k8AssemblyTip: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
-  k1Tip: "83f279e86009fb79778f9edc4f83c633a20405b7",
+  k8AssemblyTip: "0f4fe83359491012c76597fa31ad10fa2a5e0a29",
+  k1Tip: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
   k2ListTip: "3c6ccc197bd565dba57feca81c42af48869ef62e",
-  k2AssemblyTip: "78ce748da4908542ee60ea8a09ce0fc8aed4b6ac",
+  k2AssemblyTip: "df8ed8a524492ddad098beb3f9bf6f909017fbc4",
   k5Tip: "6c4444879d5651679c969b8009b3f39d05302c43",
 } as const;
 
@@ -160,9 +160,9 @@ export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b
 
 /** Parallel navigator tips accepted for contract inventory (source prep only — not prod release). */
 export const CLIENTS_NAVIGATOR_FIXED_ASSEMBLY = {
-  k8: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
-  k1: "83f279e86009fb79778f9edc4f83c633a20405b7",
-  k2: "78ce748da4908542ee60ea8a09ce0fc8aed4b6ac",
+  k8: "0f4fe83359491012c76597fa31ad10fa2a5e0a29",
+  k1: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
+  k2: "df8ed8a524492ddad098beb3f9bf6f909017fbc4",
   k5: "6c4444879d5651679c969b8009b3f39d05302c43",
   k8ContractModule: "src/lib/clientAppeals/contract.ts",
   k8ReceivingList: "src/lib/clientAppeals/receivingList.ts",
@@ -260,13 +260,13 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     owner: "K1",
     route: "GET /api/pro/client-appeals",
     commitSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1,
-    shape: "{ appeals, nextCursor, tab, readOnly }",
+    shape: "{ appeals, nextCursor, bucket, tab, principal, access, readOnly }",
     rowDto: "ClientAppealRecord via mapPartnerClientAppealToRecord @ K8 recordMap",
     queryActual: "archived=1 | active(default), q, limit, cursor",
     queryTarget:
       "bucket=active|archive|trash, sourceFilter=all|manual|cert, stageKey, search q, cursor, take — @ K8 receivingList.buildReceivingListWhere",
-    accessGap: "GAP-K1-HTTP-ACCESS — no principal/access JSON; P6 needs ReceivingAppealsAccessWire",
-    bucketGap: "GAP-K1-HTTP-BUCKET — archived boolean vs K8 trash/archive/active",
+    accessGap: "RESOLVED_5a51d7b7 — buildReceivingAccessEnvelope",
+    bucketGap: "RESOLVED_5a51d7b7 — parseReceivingListQuery bucket + sourceFilter + stageKey",
   },
   k1HttpReceivingTargetP6: {
     owner: "P6 + K1",
@@ -328,6 +328,20 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
     body: "{ clientDisplayName | displayName, manualSourceKey | sourceKey, interest?, clientCity?, clientContact? }",
     response201: "{ appeal }",
   },
+  profilePatch: {
+    path: "PATCH /api/pro/client-appeals/:appealId",
+    owner: "K1",
+    body: "AppealProfilePatchInput — clientDisplayName|clientName, manualSourceKey|manualChannel, privateNotes, …",
+    forbidden: "stageKey/stageId/paidAmountKopecks on this route",
+    response200: "{ appeal, revision }",
+  },
+  certificateEntry: {
+    path: "POST /api/pro/client-appeals/certificate-entry",
+    body: "{ promoCode }",
+    p6Alias: "certificateCode → promoCode",
+    response: "{ valid: true, outcome, appeal } | { valid: false, reason } @ 200",
+    k8CreateOpts: "createCertificateAppealIfNoneActive(data, { createdHistoryEvent? }) @ K8 0f4fe833",
+  },
   p1AllowlistPatterns: [
     "^/api/pro/client-appeals$",
     "^/api/pro/client-appeals/[\\w-]+$",
@@ -356,12 +370,90 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
 
 /** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
 export const CLIENTS_PARTNER_OWNER_TIPS = {
-  p1: "6eda0029",
+  p1: "2b2b32b8",
   p2: "9f7c3755",
   p3: "b85efb54",
   p4: "1850d088",
   p5: "6a72f353",
-  p6: "06f7e6bb",
+  p6: "4dca7af7",
+} as const;
+
+/**
+ * Prototype partner overlay vs K8 persistence — do not claim implemented without schema/API.
+ * @see client-appeals.js manualChannelsFor / payCategoriesFor / addWorkspaceChannel
+ */
+export const CLIENTS_PROTOTYPE_PARTNER_OVERLAY = {
+  manualChannels: {
+    prototype:
+      "partnerOverlay.manualChannels[] + MANUAL_CHANNEL_OPTIONS (phone,messenger,visit,ads,other) + custom { key, label }",
+    prototypeFn: "manualChannelsFor",
+    k8Persisted: "manualSourceKey on appeal row only — contract ClientAppealManualSourceKey",
+    k1SettingsApi: "working-stages handles workingStages/refusalReasons — NOT custom channel catalog",
+    p6Status: "SOURCE_GAP — display built-in options; custom channel CRUD is in-memory prototype only until K8 additive settings",
+    financeChange: "PROHIBITED_IN_CLIENTS_PREP",
+  },
+  payCategories: {
+    prototype:
+      "partnerOverlay.payCategories[] + profilePayCategories(config) for purchase/accrual UI",
+    prototypeFn: "payCategoriesFor / renderPayCategoryOptions",
+    k8Persisted: "NOT in PartnerClientAppealPartnerSettings @ 0f4fe833",
+    existingProd: "Store order / wallet reward categories — separate financial APIs",
+    p6Status: "DISPLAY_ONLY_OR_OUT_OF_SCOPE — purchase form categories come from profile/catalog APIs, not client-appeals list",
+    financeChange: "PROHIBITED — no new settlement in Clients prep",
+  },
+  workingStagesRefusalReasons: {
+    prototype: "partnerSettings[receivingPartnerId].workingStages + refusalReasons",
+    k8Persisted: "PartnerClientAppealPartnerSettings @ receivingPartnerUserId",
+    k1Wire: "GET/POST/PATCH/DELETE /api/pro/client-appeals/working-stages",
+  },
+} as const;
+
+/** P6 @ 4dca7af7 — Root-reviewed wire defects vs K1 @ 5a51d7b7 (P6 fixes via types.ts mappers). */
+export const RECEIVING_P6_WIRE_DEFECTS = {
+  p6Tip: "4dca7af7",
+  k1Tip: "5a51d7b71f72d665af033b33cfed9bfa5634ed39",
+  bucketNotTab: {
+    defect: "P6 filters local bucket using row.bucket; list wire uses top-level `bucket` + constant `tab: incoming`",
+    fix: "Pass `bucket` query on GET; use response.bucket; do not treat tab as bucket",
+  },
+  stageKeyNotLabel: {
+    defect: "P6 status filter compares stage display labels; K1 filters `stageKey` id on server",
+    fix: "Filter query stageKey=id; UI label via workingStages + SYSTEM stage map only",
+  },
+  wireFieldNames: {
+    defect: "P6 UI expects clientName/stageId; K1 DTO uses clientDisplayName/stageKey",
+    fix: "mapReceivingAppealWireToUiRow",
+  },
+  listEnvelope: {
+    defect: "P6 merged kpis/settings/principal into one GET",
+    k1Actual:
+      "{ appeals, nextCursor, bucket, tab, principal, access, readOnly }",
+    fix: "normalizeK1ReceivingListHttp + separate GET working-stages",
+  },
+  settingsVersion: {
+    defect: "P6 expects bare settings object",
+    k1Get: "{ settings } (version inside settings row)",
+    k1Mutate: "{ settings, version }",
+    fix: "unwrapK1WorkingStagesResponse; use settings.version for optimistic lock",
+  },
+  certificateEntry: {
+    defect: "P6 POST certificateCode",
+    k1Body: "{ promoCode }",
+    k1Invalid: "200 { valid: false, reason } — not transport error",
+    fix: "map certificateCode → promoCode; handle valid:false",
+  },
+  detailShape: {
+    defect: "P6 nests history under appeal or omits revision",
+    k1Get: "top-level { appeal, revision, history, workingStages, refusalReasons, ...access }",
+    fix: "normalizeK1ReceivingDetailHttp",
+  },
+  patchRouting: {
+    defect: "P6 PATCH /:id with stageId/paidAmount for stage changes",
+    k1ProfilePatch: "PATCH /:id — CRM fields only (parseAppealProfilePatch)",
+    k1StagePatch: "PATCH /:id/stage — stageKey + refusedReason + shippedAt",
+    immutableOnProfilePatch: "stageKey, paidAmountKopecks, orderId, … — APPEAL_FIELD_IMMUTABLE",
+    p1Proxy: "GET+PATCH /client-appeals/:id @ 2b2b32b8",
+  },
 } as const;
 
 /**
@@ -400,8 +492,10 @@ export const RECEIVING_STAGE_PATCH_UI_TO_K1_MAP = {
  * List/load split — actual K1 vs P6 @ 06f7e6bb mistaken merged envelope.
  */
 export const RECEIVING_K1_P6_LIST_WIRE_CONTRACT = {
-  k1ListActual83f279e8: "{ appeals, nextCursor, tab, readOnly }",
-  k1ListTarget: "same + access/principal; bucket filters on query",
+  k1ListActual5a51d7b7:
+    "{ appeals, nextCursor, bucket, tab: incoming, principal, access, readOnly }",
+  k1ListLegacy83f279e8: "{ appeals, nextCursor, tab, readOnly }",
+  k1ListTarget: "5a51d7b7 shape — query bucket|sourceFilter|stageKey|cursor|limit",
   separateLoads: {
     settings: "GET /api/pro/client-appeals/working-stages → { settings }",
     kpis: "NOT on list wire @ 83f279e8 — P6 derives from loaded page only until K1 adds aggregation",
@@ -666,15 +760,15 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K1-HTTP-ACCESS",
     owner: "K1",
     topic: "GET list/detail omit ReceivingAppealsAccessWire (principal ids, accessMode, readOnly only partial)",
-    status: "UNRESOLVED",
-    requiredFix: "Emit access block on list+detail per CLIENTS_RECEIVING_HTTP_CONTRACT.listTarget",
+    status: "RESOLVED_5a51d7b7",
+    requiredFix: "buildReceivingAccessEnvelope on list+detail — map via mapK1AccessWireToP6Gates",
   },
   {
     id: "GAP-K1-HTTP-BUCKET",
     owner: "K1",
     topic: "List query archived=1 vs K8 bucket active|archive|trash + sourceFilter + stageKey",
-    status: "UNRESOLVED",
-    requiredFix: "Route delegates to K8 buildReceivingListWhere query params",
+    status: "RESOLVED_5a51d7b7",
+    requiredFix: "parseReceivingListQuery + response.bucket — P6 must not use tab as bucket",
   },
   {
     id: "GAP-K1-HTTP-BATCH-LIFECYCLE",
@@ -686,10 +780,25 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
   {
     id: "GAP-P6-DETAIL-PATCH-PATH",
     owner: "P6+P1+K1",
-    topic: "P6 @ 06f7e6bb PATCH /api/pro/client-appeals/:id — K1 exports GET on [id] only; stage via /stage",
-    status: "UNRESOLVED",
+    topic:
+      "P6 @ 4dca7af7 conflates CRM PATCH with stage/finance on PATCH .../:id — K1 @ 5a51d7b7 splits profile vs /stage",
+    status: "PARTIAL_K1_DONE_P6_UNRESOLVED",
     requiredFix:
-      "P6 stage via RECEIVING_STAGE_PATCH_UI_TO_K1_MAP; field PATCH only after K1 route + P1 allowlist",
+      "P6: profile mapReceivingUiProfilePatchToK1 → PATCH :id; stage mapReceivingUiStageIdToK1StagePatch → PATCH :stage; P1 proxy @ 2b2b32b8",
+  },
+  {
+    id: "GAP-P6-CERT-PROMOCODE",
+    owner: "P6",
+    topic: "certificate-entry POST sends certificateCode; K1 requires promoCode @ 5a51d7b7",
+    status: "UNRESOLVED",
+    requiredFix: "mapReceivingUiCertificateCodeToK1Promo; handle 200 { valid: false, reason }",
+  },
+  {
+    id: "GAP-P6-STAGE-LABEL-FILTER",
+    owner: "P6",
+    topic: "Client-side status filter compares stage labels; list query must send stageKey id",
+    status: "UNRESOLVED",
+    requiredFix: "RECEIVING_P6_WIRE_DEFECTS.stageKeyNotLabel — filter by sys_* + workingStages[].id",
   },
   {
     id: "GAP-P6-LIST-PAGINATION",
@@ -725,17 +834,32 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K2-OBSERVER-TIMELINE-RAW",
     owner: "K2+K8",
     topic: "Detail GET maps PartnerClientAppealHistoryEvent.text without publicReferrerTimeline filter",
-    status: "UNRESOLVED",
+    status: "PARTIAL_df8ed8a5",
     requiredFix:
-      "K8 publicReferrerTimeline helper; K2 detail returns ObserverPublicTimelineEvent[] only",
+      "K2 @ df8ed8a5 projectObserverPublicHistory — verify wire is ObserverPublicTimelineEvent[] only end-to-end",
   },
   {
     id: "GAP-K8-PUBLIC-TIMELINE",
     owner: "K8",
     topic:
       "Persisted history → prototype isPublicReferrerHistoryEntry/publicHistoryLine in shared module for K1 audit + K2 observer",
-    status: "IN_PROGRESS",
-    requiredFix: "Export from src/lib/clientAppeals/ (e.g. publicReferrerTimeline.ts) @ next K8 tip",
+    status: "PARTIAL_0f4fe833",
+    requiredFix:
+      "K8 referrerPublicHistory @ 0f4fe833; K1 certificate create uses { createdHistoryEvent? } — do not duplicate in P2",
+  },
+  {
+    id: "GAP-K8-MANUAL-CHANNELS-CUSTOM",
+    owner: "K8+K1",
+    topic: "Prototype addWorkspaceChannel / manualChannels[] — no persisted custom channel catalog",
+    status: "UNRESOLVED",
+    requiredFix: "CLIENTS_PROTOTYPE_PARTNER_OVERLAY.manualChannels — built-in manualSourceKey only until schema",
+  },
+  {
+    id: "GAP-K8-PAY-CATEGORIES",
+    owner: "K8+profile",
+    topic: "Prototype payCategories / profilePayCategories — not in client-appeals settings API",
+    status: "OUT_OF_SCOPE_FINANCE",
+    requiredFix: "DISPLAY_ONLY — existing store/order category APIs; no Clients prep settlement change",
   },
   {
     id: "GAP-K8-O",
@@ -907,7 +1031,7 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     authGate:
       "requireReceivingAppealsListContext @ 83f279e8; agent 403 CLIENT_APPEALS_AGENT_OBSERVER_ONLY",
     notes:
-      "200: appeals, nextCursor, tab, readOnly — GAP-K1-HTTP-ACCESS/BUCKET. See CLIENTS_RECEIVING_HTTP_CONTRACT.",
+      "200: appeals, nextCursor, bucket, tab, principal, access, readOnly @ 5a51d7b7. Query bucket|sourceFilter|stageKey.",
   },
   {
     method: "POST",
@@ -925,7 +1049,17 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     status: "DRAFT_K8",
     owner: "K1",
     authGate: "same list context; readOnly on org workplace",
-    notes: "200: appeal, revision, history, workingStages, refusalReasons, readOnly",
+    notes:
+      "200: appeal, revision, history, workingStages, refusalReasons top-level + access @ 5a51d7b7 — normalizeK1ReceivingDetailHttp",
+  },
+  {
+    method: "PATCH",
+    path: "/api/pro/client-appeals/:appealId",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "requireReceivingAppealsWriteContext; parseAppealProfilePatch — no stageKey on body",
+    notes: "CRM profile PATCH only — P1 proxy GET+PATCH @ 2b2b32b8",
   },
   {
     method: "PATCH",

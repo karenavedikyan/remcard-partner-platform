@@ -304,8 +304,34 @@ export type ReceivingAppealsAccessWire = {
   accessMode: "specialist" | "business" | "org_workplace_read";
 };
 
-/** K1 GET list @ 83f279e8 actual JSON. */
+/** K1 buildReceivingAccessEnvelope @ 5a51d7b7 — list + detail spreads. */
+export type K1ReceivingAccessEnvelope = {
+  principal: {
+    receivingPartnerUserId: string;
+    receivingOrganizationId: string | null;
+    receivingBranchId: string | null;
+    actorUserId: string;
+    ownerUserId: string;
+  };
+  access: {
+    listAllowed: true;
+    mutationsAllowed: boolean;
+    denialCode: string | null;
+  };
+  readOnly: boolean;
+};
+
+/** K1 GET list @ 5a51d7b7 actual JSON (bucket on wire; tab is display-only incoming). */
 export type K1ReceivingListHttpActual = {
+  appeals: ReceivingClientAppealRecordWire[];
+  nextCursor: string | null;
+  bucket: ClientAppealReceivingBucket;
+  tab: "incoming";
+  readOnly: boolean;
+} & Partial<K1ReceivingAccessEnvelope>;
+
+/** Legacy list JSON before bucket/access — P6 mapper still accepts missing bucket. */
+export type K1ReceivingListHttpLegacy = {
   appeals: ReceivingClientAppealRecordWire[];
   nextCursor: string | null;
   tab: "incoming";
@@ -313,12 +339,8 @@ export type K1ReceivingListHttpActual = {
 };
 
 /** P6 + K1 target list JSON after GAP-K1-HTTP-* closed. */
-export type K1ReceivingListHttpTarget = K1ReceivingListHttpActual & {
-  bucket: ClientAppealReceivingBucket;
-  sourceFilter?: ClientAppealReceivingSourceFilter;
-  stageKey?: string | "all";
-  access: ReceivingAppealsAccessWire;
-};
+export type K1ReceivingListHttpTarget = K1ReceivingListHttpActual &
+  Required<Pick<K1ReceivingAccessEnvelope, "principal" | "access">>;
 
 /** K8 `ClientAppealRecord` wire on receiving routes (CRM fields allowed). */
 export type ReceivingClientAppealRecordWire = {
@@ -356,6 +378,39 @@ export type ReceivingAppealStagePatchBody = {
   refusedReason?: string | null;
   shippedAt?: string | null;
 };
+
+/** K1 parseAppealProfilePatch — PATCH /client-appeals/:id (not stage). */
+export type ReceivingAppealProfilePatchBody = {
+  clientDisplayName?: string;
+  /** P6 alias */
+  clientName?: string;
+  manualSourceKey?: string | null;
+  manualChannel?: string | null;
+  interest?: string | null;
+  clientCity?: string | null;
+  clientContact?: string | null;
+  budgetHint?: string | null;
+  privateNotes?: string | null;
+  expectedRevision?: number | null;
+};
+
+export type ReceivingCertificateEntryPostWire = {
+  promoCode: string;
+};
+
+export type ReceivingCertificateEntryResponse =
+  | { valid: true; outcome: string; appeal?: ReceivingClientAppealRecordWire }
+  | { valid: false; reason: string };
+
+/** K1 GET detail @ 5a51d7b7 — history/revision are siblings of appeal, not nested. */
+export type K1ReceivingDetailHttpActual = {
+  appeal: ReceivingClientAppealRecordWire;
+  revision: number;
+  history: ReceivingAppealHistoryWireEntry[];
+  workingStages: ClientAppealWorkingStage[];
+  refusalReasons: string[];
+  readOnly?: boolean;
+} & Partial<K1ReceivingAccessEnvelope>;
 
 export type ReceivingPartnerSettingsWire = {
   receivingPartnerUserId: string;
@@ -487,10 +542,19 @@ export function mapReceivingUiStageIdToK1StagePatch(stageId: string): ReceivingA
 }
 
 export function mapK1AccessWireToP6Gates(input: {
-  access?: Partial<ReceivingAppealsAccessWire> | null;
+  access?: Partial<ReceivingAppealsAccessWire> | K1ReceivingAccessEnvelope["access"] | null;
   readOnly?: boolean;
+  envelope?: Partial<K1ReceivingAccessEnvelope> | null;
 }): ReceivingUiPrincipalAccess {
-  const readOnly = input.readOnly === true || input.access?.readOnly === true;
+  const k1Access = input.envelope?.access ?? input.access;
+  if (k1Access && "mutationsAllowed" in k1Access && typeof k1Access.mutationsAllowed === "boolean") {
+    return {
+      listAllowed: k1Access.listAllowed !== false,
+      mutationsAllowed: k1Access.mutationsAllowed,
+      denialCode: k1Access.denialCode ?? null,
+    };
+  }
+  const readOnly = input.readOnly === true || input.envelope?.readOnly === true || input.access?.readOnly === true;
   const accessMode = input.access?.accessMode;
   const orgListOnly = accessMode === "org_workplace_read";
   return {
@@ -500,21 +564,72 @@ export function mapK1AccessWireToP6Gates(input: {
   };
 }
 
+export function mapReceivingUiCertificateCodeToK1Promo(
+  certificateCode: string,
+): ReceivingCertificateEntryPostWire {
+  return { promoCode: certificateCode.trim() };
+}
+
+export function mapReceivingUiProfilePatchToK1(
+  patch: ReceivingAppealProfilePatchBody,
+): Omit<ReceivingAppealProfilePatchBody, "clientName" | "manualChannel"> & {
+  clientDisplayName?: string;
+} {
+  const { clientName, manualChannel, ...rest } = patch;
+  return {
+    ...rest,
+    clientDisplayName: patch.clientDisplayName ?? clientName,
+    manualSourceKey: patch.manualSourceKey ?? manualChannel ?? undefined,
+  };
+}
+
 export function normalizeK1ReceivingListHttp(
-  json: K1ReceivingListHttpActual & { access?: Partial<ReceivingAppealsAccessWire> },
+  json: K1ReceivingListHttpActual | K1ReceivingListHttpLegacy,
 ): {
   appeals: ReceivingAppealUiListRow[];
   nextCursor: string | null;
+  bucket: ClientAppealReceivingBucket;
   tab: "incoming";
   readOnly: boolean;
   access: ReceivingUiPrincipalAccess;
 } {
+  const bucket = "bucket" in json && json.bucket ? json.bucket : "active";
   return {
-    appeals: (json.appeals ?? []).map(mapReceivingAppealWireToUiRow),
+    appeals: (json.appeals ?? []).map((row) => ({ ...mapReceivingAppealWireToUiRow(row), bucket })),
     nextCursor: json.nextCursor ?? null,
+    bucket,
     tab: json.tab ?? "incoming",
     readOnly: json.readOnly === true,
-    access: mapK1AccessWireToP6Gates({ access: json.access, readOnly: json.readOnly }),
+    access: mapK1AccessWireToP6Gates({
+      envelope: "access" in json ? (json as K1ReceivingListHttpActual) : null,
+      readOnly: json.readOnly,
+    }),
+  };
+}
+
+export function normalizeK1ReceivingDetailHttp(json: K1ReceivingDetailHttpActual): {
+  appeal: ReceivingAppealUiListRow;
+  revision: number;
+  history: ObserverAppealHistoryEntry[];
+  workingStages: ClientAppealWorkingStage[];
+  refusalReasons: string[];
+  access: ReceivingUiPrincipalAccess;
+} {
+  return {
+    appeal: mapReceivingAppealWireToUiRow(json.appeal),
+    revision: json.revision,
+    history: (json.history ?? []).map((h) => ({
+      at: h.at,
+      author: h.authorLabel,
+      text: h.text,
+      reason: h.reason ?? undefined,
+    })),
+    workingStages: json.workingStages ?? [],
+    refusalReasons: json.refusalReasons ?? [],
+    access: mapK1AccessWireToP6Gates({
+      envelope: json,
+      readOnly: json.readOnly,
+    }),
   };
 }
 

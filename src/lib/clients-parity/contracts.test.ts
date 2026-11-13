@@ -18,6 +18,8 @@ import {
   RECEIVING_APPEAL_K1_TO_UI_MAP,
   RECEIVING_K1_P6_LIST_WIRE_CONTRACT,
   RECEIVING_MANUAL_POST_UI_TO_K1_MAP,
+  RECEIVING_P6_WIRE_DEFECTS,
+  CLIENTS_PROTOTYPE_PARTNER_OVERLAY,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -32,6 +34,8 @@ import {
   CLIENTS_APPEAL_SYSTEM_STAGE,
   mapReceivingAppealWireToUiRow,
   mapReceivingUiManualCreateToK1Post,
+  mapReceivingUiCertificateCodeToK1Promo,
+  normalizeK1ReceivingDetailHttp,
   normalizeK1ReceivingListHttp,
 } from "./types";
 
@@ -58,7 +62,9 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^6f09c23e/);
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverActual.shape).toContain("appeals");
     expect(CLIENTS_PURCHASE_READ_SEMANTICS.blockerId).toBe("BLK-CLIENTS-PURCHASE-READ");
-    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^83f279e8/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8).toMatch(/^0f4fe833/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^5a51d7b7/);
+    expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2).toMatch(/^df8ed8a5/);
     expect(CLIENTS_RECEIVING_HTTP_CONTRACT.stagePatchPath).toContain("/stage");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k1HttpReceivingActual.shape).toContain("appeals");
     expect(CLIENTS_PURCHASE_READ_SEMANTICS.status).toBe("PARTIAL_K8_1894569a_K2_DIVERGES");
@@ -72,7 +78,11 @@ describe("clients parity contracts", () => {
       "src/lib/clients-parity/contracts.ts",
     );
     expect(CLIENTS_K8_UNRESOLVED_GAPS.map((g) => g.id)).toContain("GAP-K8-N");
-    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K1-HTTP-ACCESS");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).not.toContain("GAP-K1-HTTP-ACCESS");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).not.toContain("GAP-K1-HTTP-BUCKET");
+    expect(CLIENTS_K8_UNRESOLVED_GAPS.map((g) => g.id)).toContain("GAP-P6-CERT-PROMOCODE");
+    expect(RECEIVING_P6_WIRE_DEFECTS.certificateEntry.k1Body).toContain("promoCode");
+    expect(CLIENTS_PROTOTYPE_PARTNER_OVERLAY.payCategories.financeChange).toContain("PROHIBITED");
     expect(CLIENTS_OBSERVER_REFERRER_LIST_SCOPE.explicitNonFilters[0]).toContain("deletedAt");
     expect(CLIENTS_OBSERVER_PUBLIC_TIMELINE.wireFields).toEqual(["at", "text"]);
     expect(CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT.route).toContain("referred-appeals");
@@ -107,10 +117,36 @@ describe("clients parity contracts", () => {
     const list = normalizeK1ReceivingListHttp({
       appeals: [],
       nextCursor: null,
+      bucket: "archive",
       tab: "incoming",
       readOnly: true,
+      access: { listAllowed: true, mutationsAllowed: false, denialCode: "OWNER_CLIENTS_ORG_WORKPLACE_READ_ONLY" },
     });
+    expect(list.bucket).toBe("archive");
     expect(list.access.mutationsAllowed).toBe(false);
+    expect(mapReceivingUiCertificateCodeToK1Promo("ABC")).toEqual({ promoCode: "ABC" });
+    const detail = normalizeK1ReceivingDetailHttp({
+      appeal: {
+        id: "a1",
+        clientDisplayName: "Иван",
+        certificateId: "c1",
+        receivingPartnerUserId: "u1",
+        receivingOrganizationId: null,
+        receivingBranchId: null,
+        referrerProUserId: "r1",
+        originKind: "CERTIFICATE",
+        stageKey: "sys_new",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+      revision: 1000,
+      history: [{ at: "2026-01-02T00:00:00.000Z", authorLabel: "Менеджер", text: "Создано" }],
+      workingStages: [{ id: "w1", label: "В работе" }],
+      refusalReasons: ["Дорого"],
+    });
+    expect(detail.revision).toBe(1000);
+    expect(detail.history[0]?.author).toBe("Менеджер");
+    expect(RECEIVING_K1_P6_LIST_WIRE_CONTRACT.k1ListActual5a51d7b7).toContain("bucket");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");
