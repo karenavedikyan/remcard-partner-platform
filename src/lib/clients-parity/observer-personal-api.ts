@@ -477,7 +477,10 @@ export function personalMutationFailedIds(result: PersonalMutationResult): strin
 }
 
 export function personalMutationPreserveSelection(result: PersonalMutationResult): boolean {
-  if (!result.ok) return result.preserveUi;
+  if (!result.ok) {
+    if (result.kind === "blocked_contract") return true;
+    return result.preserveUi;
+  }
   if (result.kind === "partial") return true;
   return false;
 }
