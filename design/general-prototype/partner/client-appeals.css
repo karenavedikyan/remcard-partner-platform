@@ -348,6 +348,9 @@ button.ca-row{font:inherit;color:inherit}
   .ca-personal-actions .btn{min-height:44px}
   .ca-personal-buckets .btn,.ca-personal-layout .btn{min-height:44px}
 }
+@media(max-width:360px){
+  .ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+}
 .ca-section--observer{gap:var(--s4,16px)}
 .ca-section--observer .ca-preview-opt-in{margin-bottom:0}
 .ca-section--observer .ca-preview-directions,.ca-section--observer .ca-observer-filters{margin-bottom:0}
