@@ -62,5 +62,5 @@
     "requirement-matrix-c01-c56.json",
     "v8-corrected-patch-manifest-57ca4680.json"
   ],
-  "auditSha": "PENDING"
+  "auditSha": "af24a883bc698541e6b032a0bd8eb2c828e06d4e"
 }
