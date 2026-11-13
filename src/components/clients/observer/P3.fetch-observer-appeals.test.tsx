@@ -26,6 +26,43 @@ describe("P3 fetchObserverReferredAppeals", () => {
     }
   });
 
+  it("maps null certificateId to empty string (P2 120d9a4a)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            appeals: [
+              {
+                id: "a-manual",
+                clientDisplayName: "Без сертификата",
+                receivingPartnerUserId: "u1",
+                certificateId: null,
+                stageKey: "sys_new",
+                updatedAt: "2026-01-01T00:00:00.000Z",
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+            ],
+            partners: [{ receivingPartnerUserId: "u1", displayName: "П", receivingOrganizationId: null, receivingBranchId: null }],
+            personalMeta: {},
+            page: 1,
+            limit: 100,
+            total: 1,
+            hasMore: false,
+            empty: false,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const res = await fetchObserverReferredAppeals();
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.appeals[0]?.certificateId).toBe("");
+      expect(res.partners[0]?.receivingBranchId).toBe(null);
+    }
+  });
+
   it("prefers receivingPartnerUserId over branch for card key", () => {
     const id = resolveReceivingPrincipalId({
       receivingPartnerUserId: "user-rcv",

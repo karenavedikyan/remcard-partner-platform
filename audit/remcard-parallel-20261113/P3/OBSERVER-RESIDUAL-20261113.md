@@ -11,6 +11,7 @@
 | K2 | `c49d71dc` | GET `{ appeals, partners, personalMeta, page… }` |
 | K5 | `6c444487` | personal-meta / personal-batch |
 | P5 HTTP | `a7b111d2` (partner-platform branch tip) | `applyObserverPersonalEdit`, `runObserverPersonalConfirmAction` |
+| P2 types | `120d9a4a` | `certificateId: string`; partner `receivingOrganizationId` / `receivingBranchId`: `string \| null` |
 
 ## Owned product files (П3)
 

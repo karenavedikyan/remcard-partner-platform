@@ -122,6 +122,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Wire optional nullable string (solo specialist: org/branch absent → null). */
+function wireNullableString(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (value === null) return null;
+  return null;
+}
+
+/** P2 @ 120d9a4a: UI `certificateId` is string; null/absent on wire → "". */
+function wireCertificateId(value: unknown): string {
+  if (typeof value === "string") return value;
+  return "";
+}
+
+function partnerScopeFromWire(row: Record<string, unknown>): Pick<
+  ObserverPartnerMeta,
+  "receivingOrganizationId" | "receivingBranchId"
+> {
+  return {
+    receivingOrganizationId: wireNullableString(row.receivingOrganizationId),
+    receivingBranchId: wireNullableString(row.receivingBranchId),
+  };
+}
+
 /** Canonical receiving card key — User.id first; branch ids are transition-only fallback. */
 export function resolveReceivingPrincipalId(row: Record<string, unknown>): string {
   if (typeof row.receivingPartnerUserId === "string" && row.receivingPartnerUserId) {
@@ -191,17 +214,16 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
     return null;
   }
 
+  const scope = partnerScopeFromWire(row);
+
   return {
     id,
     clientName,
     interest: typeof row.interest === "string" ? row.interest : row.interest === null ? null : undefined,
-    certificateId:
-      typeof row.certificateId === "string"
-        ? row.certificateId
-        : row.certificateId === null
-          ? null
-          : undefined,
+    certificateId: wireCertificateId(row.certificateId),
     receivingPartnerId,
+    receivingOrganizationId: scope.receivingOrganizationId,
+    receivingBranchId: scope.receivingBranchId,
     /** K2 list omits referrer on row; viewer scope is session (referrer-only GET). */
     referrerPartnerId: sessionReferrer,
     updatedAt,
@@ -219,6 +241,7 @@ function parsePartnerRow(row: Record<string, unknown>): ObserverPartnerMeta | nu
         ? row.name
         : "";
   if (!id || !name) return null;
+  const scope = partnerScopeFromWire(row);
   return {
     id,
     name,
@@ -231,6 +254,8 @@ function parsePartnerRow(row: Record<string, unknown>): ObserverPartnerMeta | nu
           : row.category === null
             ? null
             : undefined,
+    receivingOrganizationId: scope.receivingOrganizationId,
+    receivingBranchId: scope.receivingBranchId,
   };
 }
 
@@ -254,15 +279,19 @@ function partnerMetaFromItemRow(row: Record<string, unknown>): ObserverPartnerMe
   if (isRecord(branch) && principalId) {
     const base = parsePartnerRow(branch);
     if (base) {
+      const scope = partnerScopeFromWire(row);
       return {
         id: principalId,
         name: base.name,
         city: base.city,
         category: base.category,
+        receivingOrganizationId: scope.receivingOrganizationId ?? base.receivingOrganizationId,
+        receivingBranchId: scope.receivingBranchId ?? base.receivingBranchId,
       };
     }
   }
   if (principalId && typeof row.receivingPartnerDisplayName === "string") {
+    const scope = partnerScopeFromWire(row);
     return {
       id: principalId,
       name: row.receivingPartnerDisplayName,
@@ -272,6 +301,8 @@ function partnerMetaFromItemRow(row: Record<string, unknown>): ObserverPartnerMe
           : row.receivingPartnerCity === null
             ? null
             : undefined,
+      receivingOrganizationId: scope.receivingOrganizationId,
+      receivingBranchId: scope.receivingBranchId,
     };
   }
   return null;

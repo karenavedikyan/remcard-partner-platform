@@ -533,8 +533,10 @@ export function ObserverPartnersListView({
             const partner = partnersById.get(partnerId) ?? {
               id: partnerId,
               name: "Партнёр",
-              city: "",
-              category: "",
+              city: null,
+              category: null,
+              receivingOrganizationId: null,
+              receivingBranchId: null,
             };
             const { selected: pSel, partial } = partnerSelectionState(partnerId);
             const expanded = openPartners[partnerId] ?? Boolean(filters.q.trim());
