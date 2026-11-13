@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RemcardApiError } from "@/lib/api-client";
 import {
+  applyObserverPersonalEdit,
   isPersonalPersistProxyBlocked,
   moveObserverPersonalBucket,
   patchObserverPersonalMeta,
+  personalMutationAppliedIds,
+  personalMutationFailedIds,
+  personalMutationRetainSelectedIds,
   postObserverPersonalBatch,
   restoreObserverPersonal,
+  runObserverPersonalConfirmAction,
   saveObserverPersonalBulkTag,
   saveObserverPersonalSingle,
 } from "./observer-personal-api";
@@ -207,5 +212,105 @@ describe("P5 observer-personal-api (K5 @ 86ac3e35)", () => {
 
   it("isPersonalPersistProxyBlocked ignores ordinary 404", () => {
     expect(isPersonalPersistProxyBlocked(new RemcardApiError(404, "x", { code: "NOT_FOUND" }))).toBe(false);
+  });
+
+  it("batch with missing processed/skipped arrays is safe", async () => {
+    stubFetch(async () =>
+      new Response(
+        JSON.stringify({
+          action: "setTag",
+          mode: "best_effort",
+          processedCount: 0,
+          skippedCount: 0,
+        }),
+        { status: 200 },
+      ),
+    );
+    const result = await postObserverPersonalBatch({ action: "setTag", ids: ["a1"], tag: "t" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.preserveUi).toBe(true);
+  });
+
+  it("confirm trash maps to move target trash (before restore-only trash bucket UI)", async () => {
+    stubFetch(async (_url, init) => {
+      expect(JSON.parse(String(init?.body))).toMatchObject({ action: "move", target: "trash" });
+      return new Response(
+        JSON.stringify({
+          meta: {
+            appealId: "z",
+            alias: null,
+            tag: null,
+            note: null,
+            bucket: "trash",
+            version: 2,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+    await runObserverPersonalConfirmAction("trash", ["z"]);
+  });
+
+  it("confirm restore from trash uses restore action", async () => {
+    stubFetch(async (_url, init) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ action: "restore" });
+      return new Response(
+        JSON.stringify({
+          meta: {
+            appealId: "z",
+            alias: null,
+            tag: null,
+            note: null,
+            bucket: "active",
+            version: 3,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+    await runObserverPersonalConfirmAction("restore", ["z"]);
+  });
+
+  it("partial retains failed ids for selection helper", async () => {
+    const partial = {
+      ok: true as const,
+      kind: "partial" as const,
+      appliedIds: ["ok"],
+      failed: [{ appealId: "bad", code: "version_conflict", message: "x" }],
+    };
+    expect(personalMutationFailedIds(partial)).toEqual(["bad"]);
+    expect(personalMutationAppliedIds(partial)).toEqual(["ok"]);
+    expect(personalMutationRetainSelectedIds(["ok"], partial)).toEqual(expect.arrayContaining(["ok", "bad"]));
+  });
+
+  it("applyObserverPersonalEdit bulk uses setTag only", async () => {
+    stubFetch(async (url, init) => {
+      expect(String(url)).toContain("personal-batch");
+      expect(JSON.parse(String(init?.body))).toMatchObject({ action: "setTag", tag: "vip" });
+      return new Response(
+        JSON.stringify({
+          action: "setTag",
+          mode: "best_effort",
+          processedCount: 1,
+          skippedCount: 0,
+          processed: [
+            {
+              appealId: "1",
+              alias: null,
+              tag: "vip",
+              note: null,
+              bucket: "active",
+              version: 1,
+              updatedAt: "2026-11-13T00:00:00Z",
+            },
+          ],
+          skipped: [],
+        }),
+        { status: 200 },
+      );
+    });
+    await applyObserverPersonalEdit("bulk", ["1"], { alias: "ignored", tag: "vip", note: "n" });
   });
 });

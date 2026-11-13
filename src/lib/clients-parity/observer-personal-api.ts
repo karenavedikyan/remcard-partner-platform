@@ -6,6 +6,12 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { ObserverPersonalBucket, ObserverPersonalMeta } from "@/lib/clients-parity/types";
 
 export const K5_NAVIGATOR_CONTRACT_REF = "86ac3e354dc543817c061cb43565d0bf77545ab0" as const;
+/** Session + principal gate (referrer-only overlays); K5 source-only. */
+export const K5_NAVIGATOR_GATE_REF = "6c444487" as const;
+/** Receiving list identity: `receivingPartnerUserId` = User.id; org/branch optional (K8). */
+export const K8_RECEIVING_IDENTITY_REF = "6f09c23e" as const;
+
+export type ObserverPersonalConfirmKind = "archived" | "trash" | "restore";
 
 export const OBSERVER_PERSONAL_META_ROUTE = "/api/pro/referred-appeals/:appealId/personal-meta" as const;
 export const OBSERVER_PERSONAL_BATCH_ROUTE = "/api/pro/referred-appeals/personal-batch" as const;
@@ -233,9 +239,19 @@ function mapHttpError(error: RemcardApiError): PersonalMutationResult {
 }
 
 function normalizeBatchResponse(raw: PersonalBatchResponse, ids: string[]): PersonalMutationResult {
-  const appliedIds = raw.processed.map((p) => p.appealId);
-  const maps = metaMapFromProjections(raw.processed);
-  const failed = raw.skipped.map((s) => mapSkippedReason(s.reason, s.appealId));
+  const processed = Array.isArray(raw.processed) ? raw.processed : [];
+  const skipped = Array.isArray(raw.skipped) ? raw.skipped : [];
+  const appliedIds = processed.map((p) => p.appealId);
+  const maps = metaMapFromProjections(processed);
+  const failed = skipped.map((s) => mapSkippedReason(s.reason, s.appealId));
+  if (processed.length === 0 && skipped.length === 0 && ids.length > 0) {
+    return {
+      ok: false,
+      kind: "error",
+      message: "Пустой ответ personal-batch.",
+      preserveUi: true,
+    };
+  }
   if (failed.length === 0) {
     return {
       ok: true,
@@ -357,6 +373,55 @@ export async function restoreObserverPersonal(
   );
 }
 
+/** Confirm panel kinds → K5 move/restore (trash from active or archived; not from trash). */
+export async function runObserverPersonalConfirmAction(
+  kind: ObserverPersonalConfirmKind,
+  ids: string[],
+  options?: { expectedVersions?: Record<string, number>; mode?: K5PersonalBatchMode; signal?: AbortSignal },
+): Promise<PersonalMutationResult> {
+  if (ids.length === 0) {
+    return {
+      ok: false,
+      kind: "error",
+      message: "Нет выбранных записей.",
+      preserveUi: true,
+    };
+  }
+  if (kind === "restore") return restoreObserverPersonal(ids, options);
+  if (kind === "archived") return moveObserverPersonalBucket(ids, "archived", options);
+  return moveObserverPersonalBucket(ids, "trash", options);
+}
+
+/** Single row: full meta patch; bulk: tag-only via batch `setTag` (prototype bulk edit). */
+export async function applyObserverPersonalEdit(
+  mode: "single" | "bulk",
+  appealIds: string[],
+  draft: { alias: string; tag: string; note: string },
+  options?: {
+    expectedVersion?: number | null;
+    expectedVersions?: Record<string, number>;
+    mode?: K5PersonalBatchMode;
+    signal?: AbortSignal;
+  },
+): Promise<PersonalMutationResult> {
+  if (appealIds.length === 0) {
+    return {
+      ok: false,
+      kind: "error",
+      message: "Нет выбранных записей.",
+      preserveUi: true,
+    };
+  }
+  if (mode === "single") {
+    return saveObserverPersonalSingle(appealIds[0]!, draft, options?.expectedVersion, options?.signal);
+  }
+  return saveObserverPersonalBulkTag(appealIds, draft.tag, {
+    expectedVersions: options?.expectedVersions,
+    mode: options?.mode,
+    signal: options?.signal,
+  });
+}
+
 export async function moveObserverPersonalBucket(
   ids: string[],
   target: K5PersonalMoveTarget,
@@ -415,6 +480,26 @@ export function personalMutationPreserveSelection(result: PersonalMutationResult
   if (!result.ok) return result.preserveUi;
   if (result.kind === "partial") return true;
   return false;
+}
+
+/** P3: drop only successfully mutated ids; keep failed/conflict selection + edit draft. */
+export function personalMutationAppliedIds(result: PersonalMutationResult): string[] {
+  if (!result.ok) return [];
+  return result.appliedIds;
+}
+
+/**
+ * P3 selection merge after mutation:
+ * - partial/error with failed ids: union failed into current selection (never clear failed rows)
+ * - full success: caller may remove `personalMutationAppliedIds` from selection only
+ */
+export function personalMutationRetainSelectedIds(
+  currentSelected: readonly string[],
+  result: PersonalMutationResult,
+): string[] {
+  const base = new Set(currentSelected);
+  for (const id of personalMutationFailedIds(result)) base.add(id);
+  return [...base];
 }
 
 export type ObserverPersonalMetaMap = Record<string, ObserverPersonalMeta>;

@@ -8,9 +8,11 @@
 | --- | --- |
 | `patchObserverPersonalMeta(id, patch)` | `PATCH /api/pro/referred-appeals/:id/personal-meta` |
 | `postObserverPersonalBatch(op)` | `POST /api/pro/referred-appeals/personal-batch` |
-| `saveObserverPersonalSingle` / `saveObserverPersonalBulkTag` / `moveObserverPersonalBucket` | Prototype ops; **not** AgentClient |
-| `PersonalMutationResult` | `full` \| `partial` \| `blocked_contract` \| `error` + `preserveUi` |
-| `personalMutationFailedIds` | Partial: keep failed row selected |
+| `saveObserverPersonalSingle` / `saveObserverPersonalBulkTag` / `moveObserverPersonalBucket` / `restoreObserverPersonal` | Prototype ops; **not** AgentClient |
+| `runObserverPersonalConfirmAction` / `applyObserverPersonalEdit` | **P3** orchestration entrypoints |
+| `personalMutationRetainSelectedIds` | Keep failed + conflict selection |
+| `PersonalMutationResult` | `full` \| `partial` \| `blocked_contract` \| `conflict` \| `error` + `preserveUi` |
+| `personalMutationFailedIds` / `personalMutationAppliedIds` | Partial: never clear failed row selection |
 
 ## P1 dependency
 
@@ -23,8 +25,9 @@ Until then: client returns `blocked_contract` (403/404).
 
 ## P3 dependency
 
-- Load `metaById` from referred list response or dedicated GET.
-- On success refetch appeals + meta; on partial merge `metaById` and pass `selectionOutsideView`, `saveError`, `persistenceStatus`.
+- **Import only** `observer-personal-api.ts` — see `P3-EXPORT-COORDINATION.md`.
+- Load `metaById` from list overlays; paginate K2 `items`.
+- On success refetch; on partial/conflict **do not** close panel or clear draft; use `personalMutationRetainSelectedIds`.
 
 ## Parent list (orchestrator, not П5)
 
@@ -32,8 +35,8 @@ Wire `ObserverPartnersListView` / workspace:
 
 ```typescript
 persistenceStatus: metaContractReady ? (pending ? "pending" : error ? "error" : "ready") : "blocked"
-onSave: (draft) => run saveObserverPersonalSingle / saveObserverPersonalBulkTag
-onConfirm: () => run moveObserverPersonalBucket(..., kindToBucket)
+onSave: (draft) => applyObserverPersonalEdit(panel.mode, panel.ids, draft, versions)
+onConfirm: () => runObserverPersonalConfirmAction(panel.action, panel.ids, versions)
 selectionOutsideView: selected.size - selectedInView.length
 ```
 
