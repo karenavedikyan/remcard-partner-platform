@@ -10,6 +10,7 @@ import {
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   RECEIVING_EMPTY_SETTINGS,
   mergeReceivingAppealPages,
+  fetchReceivingPartnerSettings,
   receivingAppealsMutationsAllowed,
   receivingListHasMore,
   type ReceivingListFilters,
@@ -22,6 +23,7 @@ import { ReceivingAppealForm } from "./ReceivingAppealForm";
 import { ReceivingAppealsList } from "./ReceivingAppealsList";
 import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
+import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
 import styles from "./receiving.module.css";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
@@ -222,14 +224,38 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   }
 
   if (view === "settings") {
+    const refreshSettings = async () => {
+      const res = await fetchReceivingPartnerSettings();
+      if (res.ok) {
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                settings: res.snapshot.settings,
+                settingsVersion: res.snapshot.version ?? prev.settingsVersion,
+              }
+            : prev,
+        );
+      }
+    };
     return (
       <WorkingStagesEditor
         settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
-        disabled={!proxyReady || readOnly}
+        settingsVersion={data.settingsVersion}
+        disabled={readOnly}
         onCancel={() => setView("list")}
-        onSave={async () => {
-          setPersistNotice("BLOCKED_PERSISTENCE: POST working-stages ждёт K8 storage + K1.");
+        onSettingsUpdated={(snapshot) => {
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  settings: snapshot.settings,
+                  settingsVersion: snapshot.version ?? prev.settingsVersion,
+                }
+              : prev,
+          );
         }}
+        onRefetchSettings={refreshSettings}
       />
     );
   }
@@ -257,17 +283,17 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   }
 
   if (view === "detail" && detailId) {
+    const listRow = data.appeals.find((row) => row.id === detailId);
     return (
-      <section className="panel stack" data-testid="ca-receiving-detail-shell">
-        <h2>Обращение</h2>
-        <p className="muted">
-          Детальная карточка <strong>{detailId}</strong> — владелец <strong>P4</strong> (
-          `fetchReceivingAppealDetail`).
-        </p>
-        <button type="button" className="btn ghost" onClick={() => setView("list")}>
-          Назад к списку
-        </button>
-      </section>
+      <ReceivingAppealDetailHost
+        appealId={detailId}
+        readOnly={readOnly}
+        referrerPartnerName={listRow?.referrerPartnerId ?? null}
+        onBack={() => {
+          setView("list");
+          setDetailId(null);
+        }}
+      />
     );
   }
 

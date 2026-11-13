@@ -14,6 +14,7 @@ import {
   isReceivingSettingsMaterialized,
   mapReceivingAppealDetailFieldsFromWire,
   postReceivingManualChannel,
+  postReceivingWorkingStagesMutation,
   receivingManualChannelOptions,
   submitReceivingCertificateEntry,
   RECEIVING_SYSTEM_STAGE,
@@ -221,5 +222,14 @@ describe("P6.receiving-appeals-api contract gate", () => {
     if (!res.ok) {
       expect(res.code).toBe("BLOCKED_CONTRACT");
     }
+  });
+
+  it("postReceivingWorkingStagesMutation blocked without P1 allowlist", async () => {
+    const res = await postReceivingWorkingStagesMutation({
+      kind: "addWorkingStage",
+      label: "Замер",
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe("BLOCKED_CONTRACT");
   });
 });

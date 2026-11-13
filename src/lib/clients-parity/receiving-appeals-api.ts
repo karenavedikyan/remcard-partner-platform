@@ -453,15 +453,119 @@ export function findDuplicateManualChannelLabel(
   return channels.find((c) => c.label.trim().toLowerCase() === lower) ?? null;
 }
 
-export type PostReceivingManualChannelBody = {
-  kind: "manualChannel";
-  label: string;
-  expectedVersion?: string | number;
-};
+/** K1 `51353825` working-stages POST kinds (prototype settings actions). */
+export type PostReceivingWorkingStagesBody =
+  | { kind: "manualChannel"; label: string; expectedVersion?: string | number }
+  | { kind: "addWorkingStage"; label: string; expectedVersion?: string | number }
+  | { kind: "renameWorkingStage"; stageId: string; label: string; expectedVersion?: string | number }
+  | { kind: "archiveWorkingStage"; stageId: string; expectedVersion?: string | number }
+  | { kind: "restoreWorkingStage"; stageId: string; expectedVersion?: string | number }
+  | { kind: "moveWorkingStage"; stageId: string; direction: "up" | "down"; expectedVersion?: string | number }
+  | { kind: "addRefusalReason"; label: string; expectedVersion?: string | number }
+  | { kind: "renameRefusalReason"; previousLabel: string; label: string; expectedVersion?: string | number }
+  | { kind: "removeRefusalReason"; label: string; expectedVersion?: string | number }
+  | {
+      kind: "saveSettings";
+      workingStages: ReceivingWorkingStage[];
+      refusalReasons: string[];
+      archivedStages: ReceivingWorkingStage[];
+      expectedVersion?: string | number;
+    };
+
+export type PostReceivingManualChannelBody = Extract<PostReceivingWorkingStagesBody, { kind: "manualChannel" }>;
+
+export type PostReceivingWorkingStagesResult =
+  | { ok: true; snapshot: ReceivingPartnerSettingsSnapshot }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "VALIDATION" | "CONFLICT" | "ERROR"; message: string };
+
+const RECEIVING_WORKING_STAGES_PATH = "/api/pro/client-appeals/working-stages";
+
+export function isReceivingWorkingStagesPostReady(): boolean {
+  return isAllowedProxyRoute("POST", RECEIVING_WORKING_STAGES_PATH);
+}
+
+export function findDuplicateWorkingStageLabel(
+  label: string,
+  stages: ReceivingWorkingStage[],
+): ReceivingWorkingStage | null {
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  return stages.find((s) => s.label.trim().toLowerCase() === lower) ?? null;
+}
+
+export function findDuplicateRefusalReasonLabel(
+  label: string,
+  reasons: string[],
+): string | null {
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  return reasons.find((r) => r.trim().toLowerCase() === lower) ?? null;
+}
+
+export async function fetchReceivingPartnerSettings(): Promise<
+  | { ok: true; snapshot: ReceivingPartnerSettingsSnapshot }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string }
+> {
+  if (!isAllowedProxyRoute("GET", RECEIVING_WORKING_STAGES_PATH)) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "GET working-stages ждёт P1 allowlist.",
+    };
+  }
+  try {
+    const wire = await remcardFetch<ReceivingPartnerSettingsWire>(RECEIVING_WORKING_STAGES_PATH);
+    const snapshot = unwrapReceivingPartnerSettingsWire(wire);
+    if (!snapshot) {
+      return { ok: false, code: "ERROR", message: "Пустой ответ настроек." };
+    }
+    return { ok: true, snapshot };
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки",
+    };
+  }
+}
+
+export async function postReceivingWorkingStagesMutation(
+  body: PostReceivingWorkingStagesBody,
+): Promise<PostReceivingWorkingStagesResult> {
+  if (!isReceivingWorkingStagesPostReady()) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "POST working-stages ждёт K1 handler и P1 allowlist.",
+    };
+  }
+  try {
+    const payload = await remcardFetch<ReceivingPartnerSettingsWire>(RECEIVING_WORKING_STAGES_PATH, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const snapshot = unwrapReceivingPartnerSettingsWire(payload);
+    if (!snapshot) {
+      return { ok: false, code: "ERROR", message: "Пустой ответ настроек после сохранения." };
+    }
+    return { ok: true, snapshot };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 409) {
+      return { ok: false, code: "CONFLICT", message: caught.message };
+    }
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить настройки",
+    };
+  }
+}
 
 export type PostReceivingManualChannelResult =
   | { ok: true; snapshot: ReceivingPartnerSettingsSnapshot; channel: ReceivingManualChannel }
-  | { ok: false; code: "BLOCKED_CONTRACT" | "VALIDATION" | "ERROR"; message: string };
+  | { ok: false; code: "BLOCKED_CONTRACT" | "VALIDATION" | "CONFLICT" | "ERROR"; message: string };
 
 export async function postReceivingManualChannel(
   label: string,
@@ -471,46 +575,20 @@ export async function postReceivingManualChannel(
   if (!trimmed) {
     return { ok: false, code: "VALIDATION", message: "Введите название канала." };
   }
-  const path = "/api/pro/client-appeals/working-stages";
-  if (!isAllowedProxyRoute("POST", path)) {
-    return {
-      ok: false,
-      code: "BLOCKED_CONTRACT",
-      message: "Сохранение канала ждёт K1 working-stages POST и P1 allowlist.",
-    };
+  const res = await postReceivingWorkingStagesMutation({
+    kind: "manualChannel",
+    label: trimmed,
+    expectedVersion,
+  });
+  if (!res.ok) return res;
+  const channel =
+    res.snapshot.settings.manualChannels?.find(
+      (c) => c.label.trim().toLowerCase() === trimmed.toLowerCase(),
+    ) ?? null;
+  if (!channel) {
+    return { ok: false, code: "ERROR", message: "Сервер не вернул сохранённый канал." };
   }
-  try {
-    const payload = await remcardFetch<ReceivingPartnerSettingsWire>(path, {
-      method: "POST",
-      body: JSON.stringify({
-        kind: "manualChannel",
-        label: trimmed,
-        expectedVersion,
-      } satisfies PostReceivingManualChannelBody),
-    });
-    const snapshot = unwrapReceivingPartnerSettingsWire(payload);
-    if (!snapshot) {
-      return { ok: false, code: "ERROR", message: "Пустой ответ настроек после сохранения канала." };
-    }
-    const channel =
-      snapshot.settings.manualChannels?.find(
-        (c) => c.label.trim().toLowerCase() === trimmed.toLowerCase(),
-      ) ?? null;
-    if (!channel) {
-      return {
-        ok: false,
-        code: "ERROR",
-        message: "Сервер не вернул сохранённый канал.",
-      };
-    }
-    return { ok: true, snapshot, channel };
-  } catch (caught) {
-    return {
-      ok: false,
-      code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить канал",
-    };
-  }
+  return { ok: true, snapshot: res.snapshot, channel };
 }
 
 export function receivingAppealsMutationsAllowed(data: Pick<ReceivingAppealsListResponse, "readOnly">): boolean {
@@ -967,14 +1045,39 @@ export async function fetchReceivingAppealDetail(
   | { ok: true; data: ReceivingAppealDetailPayload }
   | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string }
 > {
+  const raw = await fetchReceivingAppealDetailWire(id);
+  if (!raw.ok) {
+    return {
+      ok: false,
+      code: raw.code === "NOT_FOUND" ? "ERROR" : raw.code,
+      message: raw.message,
+    };
+  }
+  return { ok: true, data: mapReceivingAppealDetailFromWire(raw.wire) };
+}
+
+/** Raw K1 GET envelope for P4 mapper (`receiving-detail-envelope-bridge.ts`). */
+export async function fetchReceivingAppealDetailWire(
+  id: string,
+): Promise<
+  | { ok: true; wire: ReceivingAppealDetailWire }
+  | {
+      ok: false;
+      code: "BLOCKED_CONTRACT" | "NOT_FOUND" | "ERROR";
+      message: string;
+    }
+> {
   const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
   if (!isAllowedProxyRoute("GET", path)) {
     return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
   }
   try {
     const payload = await remcardFetch<ReceivingAppealDetailWire>(path);
-    return { ok: true, data: mapReceivingAppealDetailFromWire(payload) };
+    return { ok: true, wire: payload };
   } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 404) {
+      return { ok: false, code: "NOT_FOUND", message: "Обращение не найдено." };
+    }
     return {
       ok: false,
       code: "ERROR",
