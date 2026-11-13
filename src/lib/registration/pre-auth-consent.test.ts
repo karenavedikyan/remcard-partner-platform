@@ -11,6 +11,7 @@ import {
   loadPreAuthConsentSnapshot,
   preAuthDocumentHref,
   savePreAuthConsentSnapshot,
+  PRE_AUTH_CONSENT_TTL_MS,
 } from "./pre-auth-consent.ts";
 
 describe("registration pre-auth consent snapshot", () => {
@@ -113,6 +114,40 @@ describe("registration pre-auth consent snapshot", () => {
       }),
     );
     assert.equal(loadPreAuthConsentSnapshot("agent"), null);
+  });
+
+  it("rejects snapshot whose lifetime exceeds advertised TTL", () => {
+    const now = Date.now();
+    const attempt = createPreAuthAttemptId();
+    sessionStorage.setItem(
+      "remcard.registration.preAuthConsent.snapshot.v2:agent",
+      JSON.stringify({
+        contractVersion: "2026-11-13.pre-auth-consent.v1",
+        registrationKind: "agent",
+        acceptedAt: now,
+        expiresAt: now + PRE_AUTH_CONSENT_TTL_MS + 5 * 60_000,
+        attemptId: attempt,
+        requirements: QA_PRE_AUTH_CONSENTS.requirements,
+      }),
+    );
+    assert.equal(loadPreAuthConsentSnapshot("agent"), null);
+  });
+
+  it("rejects stale acceptedAt even when expiresAt is forged forward", () => {
+    const now = Date.now();
+    const attempt = createPreAuthAttemptId();
+    sessionStorage.setItem(
+      "remcard.registration.preAuthConsent.snapshot.v2:company",
+      JSON.stringify({
+        contractVersion: "2026-11-13.pre-auth-consent.v1",
+        registrationKind: "company",
+        acceptedAt: now - PRE_AUTH_CONSENT_TTL_MS - 5 * 60_000,
+        expiresAt: now + PRE_AUTH_CONSENT_TTL_MS,
+        attemptId: attempt,
+        requirements: QA_PRE_AUTH_CONSENTS.requirements,
+      }),
+    );
+    assert.equal(loadPreAuthConsentSnapshot("company"), null);
   });
 
   it("clears snapshot for a different resumed user", () => {

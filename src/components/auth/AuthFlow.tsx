@@ -259,7 +259,11 @@ export function AuthFlow({
         }
         if (result.status === "needs_ui") {
           if (result.message) setError(result.message);
-          return { action: "apply", readiness: current };
+          const refreshed = await reloadReadiness();
+          if (!refreshed) {
+            return { action: "stop" };
+          }
+          return { action: "apply", readiness: refreshed };
         }
         return { action: "apply", readiness: current };
       } finally {

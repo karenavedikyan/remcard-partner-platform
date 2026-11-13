@@ -15,6 +15,7 @@ export type { RegistrationPreAuthConsentKind };
 
 export const PRE_AUTH_CONSENT_SNAPSHOT_CONTRACT = "2026-11-13.pre-auth-consent.v1";
 export const PRE_AUTH_CONSENT_TTL_MS = 30 * 60 * 1000;
+export const PRE_AUTH_CONSENT_CLOCK_SKEW_MS = 60_000;
 
 export type PreAuthConsentSnapshot = {
   contractVersion: string;
@@ -123,9 +124,16 @@ function validateSnapshotShape(
   const expiresAt = row.expiresAt;
   if (typeof acceptedAt !== "number" || !Number.isFinite(acceptedAt)) return null;
   if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt)) return null;
-  if (acceptedAt > Date.now() + 60_000) return null;
+  const now = Date.now();
+  if (acceptedAt > now + PRE_AUTH_CONSENT_CLOCK_SKEW_MS) return null;
   if (expiresAt <= acceptedAt) return null;
-  if (Date.now() > expiresAt) return null;
+  if (now > expiresAt) return null;
+  if (expiresAt - acceptedAt > PRE_AUTH_CONSENT_TTL_MS + PRE_AUTH_CONSENT_CLOCK_SKEW_MS) {
+    return null;
+  }
+  if (acceptedAt < now - PRE_AUTH_CONSENT_TTL_MS - PRE_AUTH_CONSENT_CLOCK_SKEW_MS) {
+    return null;
+  }
   if (!Array.isArray(row.requirements)) return null;
   if (row.requirements.length !== REGISTRATION_PRE_AUTH_CONSENT_KINDS.length) return null;
   const kinds = new Set<string>();

@@ -96,6 +96,32 @@ describe("applyRegistrationPreAuthConsentHandoff", () => {
     expect(loadPreAuthConsentSnapshot("agent")?.verifiedForUserId).toBe("user-a");
   });
 
+  it("returns needs_ui with only unmatched docs after partial record (TERMS changed)", async () => {
+    seedAgentHandoff("user-a");
+    const termsV2 = {
+      kind: "TERMS" as const,
+      legalDocumentId: "terms-v2",
+      version: "2026-12-01",
+      url: "/terms",
+      status: "missing" as const,
+    };
+    const readiness: CabinetReadiness = {
+      ...pendingReadiness,
+      missingConsents: pendingReadiness.missingConsents.map((row) =>
+        row.kind === "TERMS" ? termsV2 : row,
+      ),
+    };
+    vi.mocked(recordConsentRequirements).mockResolvedValue(undefined);
+    const result = await applyRegistrationPreAuthConsentHandoff("agent", "user-a", readiness);
+    expect(result.status).toBe("needs_ui");
+    expect(recordConsentRequirements).toHaveBeenCalledTimes(1);
+    const posted = vi.mocked(recordConsentRequirements).mock.calls[0]?.[0] ?? [];
+    expect(posted.map((row) => row.kind).sort()).toEqual(["PERSONAL_DATA", "PUBLIC_OFFER_PRO"]);
+    if (result.status === "needs_ui") {
+      expect(result.unmatchedPending?.map((row) => row.kind)).toEqual(["TERMS"]);
+    }
+  });
+
   it("skips POST when snapshot is not bound to a verified user", async () => {
     const attempt = createPreAuthAttemptId();
     savePreAuthConsentSnapshot("agent", QA_PRE_AUTH_CONSENTS.requirements, attempt);

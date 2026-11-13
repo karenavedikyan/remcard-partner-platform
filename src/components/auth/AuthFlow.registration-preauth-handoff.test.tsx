@@ -135,6 +135,24 @@ describe("AuthFlow registration pre-auth handoff", () => {
   it("shows consent step when snapshot version does not match readiness", async () => {
     savePreAuthConsentSnapshot("specialist", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
     let sessionActive = false;
+    const termsV2 = {
+      kind: "TERMS" as const,
+      legalDocumentId: "terms-v2",
+      version: "2026-12-01",
+      url: "/terms",
+      status: "missing" as const,
+    };
+    const readinessTermsChanged = {
+      ...registrationPending,
+      missingConsents: registrationPending.missingConsents.map((row) =>
+        row.kind === "TERMS" ? termsV2 : row,
+      ),
+    };
+    const readinessTermsOnly = {
+      ...registrationPending,
+      missingConsents: [termsV2],
+    };
+    let readinessCalls = 0;
     vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
       sessionActive
         ? { ok: true, data: { user: { id: "reg-user-2", role: "PRO" } } }
@@ -147,16 +165,12 @@ describe("AuthFlow registration pre-auth handoff", () => {
       }
       return { ok: true };
     });
-    vi.mocked(fetchReadinessSafe).mockResolvedValue({
-      ok: true,
-      data: {
-        ...registrationPending,
-        missingConsents: registrationPending.missingConsents.map((row) =>
-          row.kind === "TERMS"
-            ? { ...row, legalDocumentId: "terms-v2", version: "2026-12-01" }
-            : row,
-        ),
-      },
+    vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
+      readinessCalls += 1;
+      return {
+        ok: true,
+        data: readinessCalls === 1 ? readinessTermsChanged : readinessTermsOnly,
+      };
     });
 
     const ui = userEvent.setup();
@@ -177,7 +191,84 @@ describe("AuthFlow registration pre-auth handoff", () => {
     await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
 
     expect(await screen.findByText(/обязательные соглашения/i)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /пользовательское соглашение/i })).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /обработку персональных данных/i })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /публичную оферту/i })).toBeNull();
     clearPreAuthConsentSnapshot("specialist");
+  });
+
+  it("after partial pre-auth record shows only remaining consent checkboxes (company)", async () => {
+    savePreAuthConsentSnapshot("company", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    const recorded: string[] = [];
+    const termsV2 = {
+      kind: "TERMS" as const,
+      legalDocumentId: "terms-v2",
+      version: "2026-12-01",
+      url: "/terms",
+      status: "missing" as const,
+    };
+    const readinessAllThreeTermsChanged = {
+      ...registrationPending,
+      missingConsents: registrationPending.missingConsents.map((row) =>
+        row.kind === "TERMS" ? termsV2 : row,
+      ),
+    };
+    const readinessTermsOnly = {
+      ...registrationPending,
+      missingConsents: [termsV2],
+    };
+    let readinessCalls = 0;
+
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-company-partial", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      if (path === "/api/account/consent") {
+        recorded.push((init?.body as { kind: string }).kind);
+        return { ok: true };
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
+      readinessCalls += 1;
+      return {
+        ok: true,
+        data: readinessCalls === 1 ? readinessAllThreeTermsChanged : readinessTermsOnly,
+      };
+    });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=company"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="company"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с telegram/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "444444");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    await waitFor(() => {
+      expect(recorded).toEqual(["PERSONAL_DATA", "PUBLIC_OFFER_PRO"]);
+    });
+    expect(await screen.findByText(/обязательные соглашения/i)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /пользовательское соглашение/i })).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /обработку персональных данных/i })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /публичную оферту/i })).toBeNull();
+    clearPreAuthConsentSnapshot("company");
   });
 
   it("opens session retry (not consent checkboxes) when consent POST fails with 5xx", async () => {
