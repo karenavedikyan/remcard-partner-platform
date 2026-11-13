@@ -14,9 +14,9 @@ describe("clients pages RSC boundary", () => {
   });
 
   it("uses client workspaces for serializable RSC children", () => {
-    expect(readFileSync(path.join(clientsAppDir, "page.tsx"), "utf8")).toContain(
-      "ClientsListWorkspace",
-    );
+    const page = readFileSync(path.join(clientsAppDir, "page.tsx"), "utf8");
+    expect(page).toContain("ClientsListWorkspace");
+    expect(page).toContain("canLinkOnboardingHistory");
     expect(readFileSync(path.join(clientsAppDir, "[id]/page.tsx"), "utf8")).toContain(
       "ClientDetailWorkspace",
     );

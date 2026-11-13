@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import { render, screen, findByTestId } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { ClientsDirectionWorkspace } from "./ClientsDirectionWorkspace";
 import { OwnerClientsModeProvider } from "@/components/clients/OwnerClientsModeContext";
 
@@ -17,10 +17,10 @@ function wrap(mode: "agent" | "specialist" | "business", ui: ReactNode) {
 
 describe("ClientsDirectionWorkspace", () => {
   it("agent shows observer list without CRM add control", async () => {
-    const { container } = render(wrap("agent", <ClientsDirectionWorkspace accessMode="agent" />));
-    expect(screen.getByTestId("ca-observer-partners-list")).toBeTruthy();
+    render(wrap("agent", <ClientsDirectionWorkspace accessMode="agent" />));
+    expect(await screen.findByTestId("ca-observer-partners-list")).toBeTruthy();
     expect(screen.queryByTestId("clients-page-add")).toBeNull();
-    expect(await findByTestId(container, "clients-parity-contract-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("clients-parity-contract-blocked")).toBeTruthy();
   });
 
   it("specialist shows direction tabs and receiving blocker on incoming", () => {
