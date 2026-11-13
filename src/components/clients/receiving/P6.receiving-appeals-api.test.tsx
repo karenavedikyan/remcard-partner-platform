@@ -3,7 +3,7 @@ import {
   fetchReceivingAppealsWorkspace,
   isReceivingAppealsProxyReady,
   isReceivingSettingsMaterialized,
-} from "./receiving-appeals-api";
+} from "@/lib/clients-parity/receiving-appeals-api";
 
 describe("P6.receiving-appeals-api contract gate", () => {
   it("empty settings are not materialized until K8 persistence", () => {
