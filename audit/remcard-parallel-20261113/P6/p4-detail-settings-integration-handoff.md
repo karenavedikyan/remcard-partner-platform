@@ -32,7 +32,7 @@ Detail CAS helpers: `patchReceivingAppealProfileCas`, `patchReceivingAppealStage
 ## Remaining / not whole-section
 
 - Source on branch: P1 `0bb25b9b` proxy uses `isAllowedProxyRoute` — batch/detail/PATCH ready in **source**; production deploy pin may still lag (separate from contract).
-- P4 finance affordances (mark paid, paid review, shipped) — host exposes `supported: false` + frozen copy.
+- Finance UI (P4 contract, P6 host **does not** wire `onOpenPaidReview`): `markPaid.supported === false` with `RECEIVING_MARK_PAID_ABSENT_REASON`; `paidReview.supported === false` with `RECEIVING_PAID_REVIEW_ABSENT_REASON` (`receiving-detail-actions-contract.ts`, missing host callback `onOpenPaidReview`). No profile finance PATCH.
 - P1 allowlist for GET detail + PATCH profile/stage + POST working-stages on production pin.
 - K8 migration apply — separate DB approval.
 - Bulk/list finance — P5 / wallet owners.
