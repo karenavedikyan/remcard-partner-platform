@@ -203,7 +203,7 @@ function ObserverClientDetailReadyBody({
       {publicTimeline !== undefined ? (
         <ReceivingAppealHistory
           entries={publicTimeline.map((row) => ({ at: row.at, text: row.text }))}
-          projection="referrer-public"
+          projection="k2-referrer-public"
           refusedReason={refusedReason}
           emptyLabel="Публичных событий пока нет."
         />

@@ -12,24 +12,17 @@ export type ReceivingAppealHistoryEntry = {
   author?: string;
 };
 
-export type ReceivingHistoryProjection = "receiving-full" | "referrer-public";
+export type ReceivingHistoryProjection =
+  | "receiving-full"
+  | "referrer-public"
+  /** K2 GET detail `timeline` — already public; Observer only (no raw-event re-parse). */
+  | "k2-referrer-public";
 
 const PUBLIC_PAID_HISTORY = /^оплачено(?=\s|[·:—(]|$)/i;
 const PUBLIC_SHIPPED_HISTORY = /^отгружено(?=\s|[·:—(]|$)/i;
 
-/** K2 GET detail — pre-projected `{at,text}`; distinct from raw receiving history strings. */
-export function isK2CanonicalPublicHistoryText(text: string): boolean {
-  const t = text.trim();
-  if (!t) return false;
-  if (/^этап:\s+/i.test(t) && !/^этап изменён:/i.test(t)) return true;
-  if (/^отказ:\s+/i.test(t)) return true;
-  if (/^статус:\s+/i.test(t)) return true;
-  if (/^создано обращение по сертификату$/i.test(t)) return true;
-  if (/^оплачено$/i.test(t)) return true;
-  if (/^отгружено$/i.test(t)) return true;
-  if (/^возврат/i.test(t)) return true;
-  return false;
-}
+const REFERRER_PRIVATE_HISTORY = /служебн|заметк|архив|корзин|скрыто|перемещено|вручную/i;
+const K2_INJECTED_PRIVATE_MARK = /private_sentinel/i;
 
 /** K2 safe projection — frozen prototype `isPublicReferrerHistoryEntry` / `publicHistoryLine`. */
 export function isPublicReferrerHistoryEntry(
@@ -38,8 +31,7 @@ export function isPublicReferrerHistoryEntry(
 ): boolean {
   const t = String(entry.text || "").trim();
   if (!t) return false;
-  if (/служебн|заметк|архив|корзин|скрыто|перемещено|вручную/i.test(t)) return false;
-  if (isK2CanonicalPublicHistoryText(t)) return true;
+  if (REFERRER_PRIVATE_HISTORY.test(t)) return false;
   if (/группов/i.test(t) && !/^этап изменён:/i.test(t)) return false;
   if (/^этап изменён:/i.test(t)) return true;
   if (/^статус:/i.test(t)) return true;
@@ -58,7 +50,6 @@ export function publicHistoryLine(
   refusedReason?: string | null,
 ): string {
   const t = String(entry.text || "").trim();
-  if (isK2CanonicalPublicHistoryText(t)) return t;
   if (/^этап изменён:\s*/i.test(t)) {
     const label = t.replace(/^этап изменён:\s*/i, "").replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
     return label ? `Этап: ${label}` : "";
@@ -74,6 +65,20 @@ export function publicHistoryLine(
   return "";
 }
 
+function projectK2ReferrerPublicHistory(
+  entries: ReceivingAppealHistoryEntry[],
+): { at: string; text: string }[] {
+  return [...entries]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .map((e) => ({ at: e.at, text: String(e.text || "").trim() }))
+    .filter(
+      (e) =>
+        e.text.length > 0 &&
+        !REFERRER_PRIVATE_HISTORY.test(e.text) &&
+        !K2_INJECTED_PRIVATE_MARK.test(e.text),
+    );
+}
+
 export function projectReceivingHistory(
   entries: ReceivingAppealHistoryEntry[],
   projection: ReceivingHistoryProjection,
@@ -87,6 +92,9 @@ export function projectReceivingHistory(
       at: e.at,
       text: [e.text, e.reason ? `— ${e.reason}` : ""].join("").trim(),
     }));
+  }
+  if (projection === "k2-referrer-public") {
+    return projectK2ReferrerPublicHistory(entries);
   }
   return sorted
     .filter((e) => isPublicReferrerHistoryEntry(e, refusedReason))
@@ -111,7 +119,7 @@ export function ReceivingAppealHistory({
   return (
     <section className={styles.blocked} data-testid="ca-receiving-appeal-history">
       <h3>История</h3>
-      {projection === "referrer-public" ? (
+      {projection === "referrer-public" || projection === "k2-referrer-public" ? (
         <p className={styles.mutedSmall}>Без внутренних заметок принимающего партнёра.</p>
       ) : null}
       {rows.length === 0 ? (
