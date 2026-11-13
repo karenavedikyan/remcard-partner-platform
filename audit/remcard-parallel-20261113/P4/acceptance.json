@@ -1,0 +1,14 @@
+{
+  "agent": "П4",
+  "title": "Карточки партнёра и клиента",
+  "baseSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+  "branch": "cursor/remcard-p4-acceptance-20261113",
+  "commitSha": "6c74deb2f1d9a5fe2fc3cecdfabba919f5a61300",
+  "tests": {
+    "command": "./node_modules/.bin/vitest run src/components/clients/observer/P4.ObserverPartnerDetailView.test.tsx src/components/clients/observer/P4.ObserverClientDetailView.test.tsx src/components/clients/observer/P4.observer-detail-navigation.test.tsx src/components/clients/observer/ObserverPartnerDetailView.test.tsx",
+    "passed": 11,
+    "failed": 0,
+    "files": 4
+  },
+  "browserCoverage": "BLOCKED"
+}

@@ -23,40 +23,61 @@ export function ObserverPartnerDetailView({
   onClientSelect,
 }: Props) {
   const stats = partnerAppealStats(appeals);
+  const metaLine = [partner.category, partner.city].filter(Boolean).join(" · ");
+
   return (
     <div className={styles.section} data-testid="ca-observer-partner-page">
-      <button type="button" className={styles.backBtn} data-ca-action="observer:back" onClick={onBack}>
+      <button
+        type="button"
+        className={styles.backBtn}
+        data-ca-action="observer:back"
+        data-testid="ca-clients-back"
+        onClick={onBack}
+      >
         ← Назад к партнёрам
       </button>
       <header className={styles.partnerPageHead}>
-        <h2>{partner.name}</h2>
+        <h2 id="ca-observer-partner-title">{partner.name}</h2>
+        {metaLine ? <p className={styles.mutedSmall}>{metaLine}</p> : null}
         <p className={styles.mutedSmall}>
-          {[partner.category, partner.city].filter(Boolean).join(" · ")}
+          Направлено {stats.total} · в работе {stats.inWork} · дошли до оплаты {stats.paidThrough} ·
+          возвратов {stats.returns} · отказов {stats.refusals}
         </p>
-        <dl className={styles.statsInline} role="list">
-          <MotionStat label="Направлено" value={stats.total} />
-          <MotionStat label="С оплатой" value={stats.paidThrough} />
+        <dl className={styles.statsInline} role="list" aria-label="Ключевые показатели партнёра">
+          <StatPair label="Направлено" value={stats.total} />
+          <StatPair label="С оплатой" value={stats.paidThrough} />
         </dl>
       </header>
-      <div className={styles.personalRows}>
-        {appeals.map((a) => (
-          <ObserverPersonalClientRow
-            key={a.id}
-            appeal={a}
-            selected={selectedIds.has(a.id)}
-            onSelect={(c) => onClientSelect(a.id, c)}
-            grouped
-            showEdit={false}
-            onOpen={() => onClientOpen(a.id)}
-            onEdit={undefined}
-          />
-        ))}
-      </div>
+      {appeals.length === 0 ? (
+        <p className={styles.mutedSmall} data-testid="ca-observer-partner-filter-empty">
+          Нет обращений по выбранным фильтрам.
+        </p>
+      ) : (
+        <div
+          className={styles.personalRows}
+          aria-labelledby="ca-observer-partner-title"
+          role="region"
+          aria-label="Клиенты у партнёра"
+        >
+          {appeals.map((a) => (
+            <ObserverPersonalClientRow
+              key={a.id}
+              appeal={a}
+              selected={selectedIds.has(a.id)}
+              onSelect={(c) => onClientSelect(a.id, c)}
+              grouped
+              showEdit={false}
+              onOpen={() => onClientOpen(a.id)}
+              onEdit={undefined}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function MotionStat({ label, value }: { label: string; value: number }) {
+function StatPair({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <dt>{label}</dt>

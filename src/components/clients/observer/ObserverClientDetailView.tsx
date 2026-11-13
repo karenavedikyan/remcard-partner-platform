@@ -12,19 +12,46 @@ type Props = {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;
   onBack: () => void;
+  /** Prototype «К списку клиентов» vs «К партнёрам» — set by list shell when wired. */
+  backLabel?: string;
 };
 
-export function ObserverClientDetailView({ appeal, partner, onBack }: Props) {
+export function ObserverClientDetailView({
+  appeal,
+  partner,
+  onBack,
+  backLabel = "← Назад",
+}: Props) {
+  const clientName = displayClientName(appeal);
+  const interest = appeal.interest?.trim();
+  const certificate = appeal.certificateId?.trim();
+
   return (
     <div className={styles.section} data-testid="ca-observer-client-page">
-      <button type="button" className={styles.backBtn} data-ca-action="observer:back" onClick={onBack}>
-        ← Назад
+      <button
+        type="button"
+        className={styles.backBtn}
+        data-ca-action="observer:back"
+        data-testid="ca-clients-back"
+        aria-label={backLabel.replace(/^←\s*/, "")}
+        onClick={onBack}
+      >
+        {backLabel}
       </button>
-      <h2>{displayClientName(appeal)}</h2>
-      <dl className={styles.detailGrid}>
+      <header className={styles.partnerPageHead}>
+        {interest ? <p className={styles.mutedSmall}>{interest}</p> : null}
+        <h2 id="ca-observer-client-title">{clientName}</h2>
+      </header>
+      <dl className={styles.detailGrid} aria-labelledby="ca-observer-client-title">
         <div>
           <dt>Партнёр</dt>
-          <dd>{partner?.name ?? appeal.receivingPartnerId}</dd>
+          <dd>
+            {partner?.name ?? (
+              <span data-testid="ca-observer-partner-unavailable">
+                Партнёр недоступен ({appeal.receivingPartnerId})
+              </span>
+            )}
+          </dd>
         </div>
         <div>
           <dt>Статус у партнёра</dt>
@@ -32,7 +59,21 @@ export function ObserverClientDetailView({ appeal, partner, onBack }: Props) {
         </div>
         <div>
           <dt>Интерес</dt>
-          <dd>{appeal.interest || appeal.certificateId || "—"}</dd>
+          <dd>{interest || "—"}</dd>
+        </div>
+        <div>
+          <dt>Сертификат</dt>
+          <dd>{certificate || "—"}</dd>
+        </div>
+        <div>
+          <dt>Направлено</dt>
+          <dd>
+            {appeal.referralAt ? (
+              <time dateTime={appeal.referralAt}>{formatObserverDateTime(appeal.referralAt)}</time>
+            ) : (
+              "—"
+            )}
+          </dd>
         </div>
         <div>
           <dt>Обновлено</dt>
@@ -41,10 +82,14 @@ export function ObserverClientDetailView({ appeal, partner, onBack }: Props) {
           </dd>
         </div>
       </dl>
-      <p className={styles.mutedSmall}>
-        Внутренние заметки принимающего и данные покупки здесь не показываются (только публичный контур
-        направления).
-      </p>
+      <section
+        className={styles.mutedSmall}
+        data-testid="ca-observer-client-timeline-na"
+        aria-label="Хронология направления"
+      >
+        Публичная хронология и данные покупки недоступны без подтверждённого контракта направлений
+        (BLK-OBSERVER-REFERRED).
+      </section>
     </div>
   );
 }
