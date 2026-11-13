@@ -9,17 +9,19 @@
 | GET detail | K1 + P1 | `fetchReceivingAppealDetailWire` → loading / missing / error / ready |
 | Settings UI | P6 `WorkingStagesEditor` | Prototype add/rename/archive/restore + reasons |
 | Settings POST | K1 `51353825` | `postReceivingWorkingStagesMutation` kinds + `expectedVersion` |
-| Notes/stage PATCH on detail | P4 follow-up | **Out of scope** this turn — P4 owns controls; host is read-only display |
+| Notes/stage PATCH on detail | P6 host + P4 UI @ `10c25fe6` | `ReceivingAppealDetailHost` → `patchReceivingAppeal*Cas`; finance actions frozen |
 
-## P4 paths vendored for compile (Root assembly)
+## HTTP / transport (P6 only)
 
-Unmodified from `origin/cursor/remcard-p4-acceptance-20261113` @ `789bacfe`:
+All K1 fetch/PATCH clients: `src/lib/clients-parity/receiving-appeals-api.ts`  
+Detail CAS helpers: `patchReceivingAppealProfileCas`, `patchReceivingAppealStageCas`, `fetchReceivingAppealDetailWire`.
 
-- `ReceivingAppealDetailView.tsx`
-- `ReceivingAppealHistory.tsx`
-- `detail-contract-alignment.ts`
+## P4 UI dependency (read-only SHA)
 
-P6 did not edit P4 UI logic. Root may replace with P4 tip at merge.
+- **Detail controls UI:** `10c25fe6` — `ReceivingAppealDetailView.tsx` (notes/stage/purchase affordances via `actions` prop).
+- **Mapper:** `detail-contract-alignment.ts` — P6+P4 shared; private fields on DTO when not `readOnly`.
+- **P6 host:** `ReceivingAppealDetailHost.tsx` wires `actions` → CAS PATCH; 409 → `onConflict` reload.
+- P4 `ReceivingAppealHistory.tsx` remains on branch from earlier assembly; Root replaces from P4 owner tip.
 
 ## K1 POST `working-stages` kinds (P6 adapter — confirm vs K1 `51353825`)
 
@@ -29,7 +31,8 @@ P6 did not edit P4 UI logic. Root may replace with P4 tip at merge.
 
 ## Remaining / not whole-section
 
-- P4 detail **write** controls (notes, stage picker, refusal panel) — separate P4 task; props not wired until P4 lands controls.
-- P1 allowlist for GET detail + POST working-stages on production pin.
+- Source-only: detail notes/stage **blocked** until P1 allowlist + mounted synthetic/real API (not prod pin today).
+- P4 finance affordances (mark paid, paid review, shipped) — host exposes `supported: false` + frozen copy.
+- P1 allowlist for GET detail + PATCH profile/stage + POST working-stages on production pin.
 - K8 migration apply — separate DB approval.
 - Bulk/list finance — P5 / wallet owners.

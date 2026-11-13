@@ -1146,6 +1146,62 @@ function assertReceivingMutationAllowed(
   return readOnly ? RECEIVING_ACCESS_LIST_ONLY_DENIAL : null;
 }
 
+export type ReceivingAppealPatchOneResult =
+  | { ok: true }
+  | { ok: false; code: "CONFLICT" | "BLOCKED_CONTRACT" | "ERROR"; message: string };
+
+/** Detail host — profile PATCH with CAS, no list reload. */
+export async function patchReceivingAppealProfileCas(
+  id: string,
+  body: ReceivingAppealProfilePatchBody,
+): Promise<ReceivingAppealPatchOneResult> {
+  const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
+  if (!isReceivingAppealProfilePatchProxyReady(id)) {
+    return { ok: false, code: "BLOCKED_CONTRACT", message: "PATCH profile ждёт P1 allowlist." };
+  }
+  try {
+    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    return { ok: true };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 409) {
+      return { ok: false, code: "CONFLICT", message: caught.message };
+    }
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль",
+    };
+  }
+}
+
+/** Detail host — stage PATCH with CAS, no list reload. */
+export async function patchReceivingAppealStageCas(
+  id: string,
+  body: ReceivingAppealStagePatchBody,
+): Promise<ReceivingAppealPatchOneResult> {
+  const path = `/api/pro/client-appeals/${encodeURIComponent(id)}/stage`;
+  if (!isReceivingAppealStagePatchProxyReady(id)) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: "PATCH stage ждёт K1 `/:id/stage` + P1 allowlist.",
+    };
+  }
+  try {
+    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    return { ok: true };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 409) {
+      return { ok: false, code: "CONFLICT", message: caught.message };
+    }
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сменить этап",
+    };
+  }
+}
+
 export async function patchReceivingAppealProfile(
   id: string,
   body: ReceivingAppealProfilePatchBody,

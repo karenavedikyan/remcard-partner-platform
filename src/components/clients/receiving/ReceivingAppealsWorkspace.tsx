@@ -401,6 +401,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
           setView("list");
           setDetailId(null);
         }}
+        onAppealMutated={reload}
       />
     );
   }
