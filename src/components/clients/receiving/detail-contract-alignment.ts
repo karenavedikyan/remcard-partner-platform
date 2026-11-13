@@ -201,11 +201,15 @@ export function k1ReceivingDetailEnvelopeToP4Mapped(
   const stageLabel = resolveClientAppealStageLabel(envelope.appeal.stageKey, envelope.workingStages);
   const sourceLabel = resolveClientAppealSourceLabel(envelope.appeal);
   const appeal: ReceivingAppealDetailDto = {
-    ...receivingRecordToDetailDto(envelope.appeal, {
-      stageLabel,
-      sourceLabel,
-      referrerPartnerName: options?.referrerPartnerName ?? null,
-    }),
+    ...receivingRecordToDetailDto(
+      envelope.appeal,
+      {
+        stageLabel,
+        sourceLabel,
+        referrerPartnerName: options?.referrerPartnerName ?? null,
+      },
+      { includePrivateFields: !options?.readOnly },
+    ),
     ...clientPurchaseDisplayFromRecord(envelope.appeal),
   };
   const history = envelope.history.map(historyEventWireToUi);
@@ -252,18 +256,30 @@ export function p6ReceivingDetailToP4Ready(
 export function receivingRecordToDetailDto(
   record: ClientAppealRecordWire,
   labels: { stageLabel: string; sourceLabel: string; referrerPartnerName: string | null },
+  options?: { includePrivateFields?: boolean },
 ): ReceivingAppealDetailDto {
+  const includePrivate = options?.includePrivateFields !== false;
   return {
     id: record.id,
     clientName: record.clientDisplayName,
     clientContact: record.clientContact,
     interest: record.interest,
+    clientCity: record.clientCity,
+    budgetHint: record.budgetHint,
     stageId: record.stageKey,
     stageLabel: labels.stageLabel,
     certificateId: record.certificateId,
     referrerPartnerName: labels.referrerPartnerName,
     sourceLabel: labels.sourceLabel,
     updatedAt: record.updatedAt,
+    originKind: record.originKind,
+    discountPercent: record.discountPercent,
+    certValidUntil: record.certValidUntil,
+    certValidUntilDisplay: record.certValidUntil
+      ? formatObserverDateTime(record.certValidUntil)
+      : null,
+    privateNotes: includePrivate ? record.privateNotes : null,
+    purchaseOrderId: record.purchaseOrderId,
     receivingPartnerUserId: record.receivingPartnerUserId,
     receivingOrganizationId: record.receivingOrganizationId,
     receivingBranchId: record.receivingBranchId,

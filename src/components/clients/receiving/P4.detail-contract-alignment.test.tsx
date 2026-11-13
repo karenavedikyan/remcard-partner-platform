@@ -88,7 +88,22 @@ describe("P4.detail-contract-alignment (K8 0f4fe833 / K1 5a51d7b7)", () => {
     expect(mapped.appeal.paidDisplayLabel).toContain("₽");
     expect(mapped.history).toHaveLength(1);
     expect(mapped.history[0]?.author).toBe("Система");
+    expect(mapped.appeal.privateNotes).toBe("secret");
     expect(resolveClientAppealStageLabel("ws_custom", mapped.workingStages)).toBe("Согласование");
+  });
+
+  it("readOnly mapper drops privateNotes from appeal DTO", () => {
+    const mapped = k1ReceivingDetailEnvelopeToP4Mapped(
+      {
+        appeal: baseRecord(),
+        revision: 1,
+        history: [],
+        workingStages: [],
+        refusalReasons: [],
+      },
+      { readOnly: true },
+    );
+    expect(mapped.appeal.privateNotes).toBeNull();
   });
 
   it("resolves source labels from originKind and manualSourceKey", () => {

@@ -53,11 +53,29 @@ return (
     appeal={mapped.appeal}
     history={mapped.history}
     readOnly={mapped.readOnly}
+    actions={
+      mapped.readOnly
+        ? undefined
+        : {
+            expectedRevision: mapped.revision,
+            workingStages: mapped.workingStages,
+            refusalReasons: mapped.refusalReasons,
+            onSavePrivateNotes: (privateNotes) =>
+              patchReceivingAppealProfile(id, { privateNotes, expectedRevision: mapped.revision }),
+            onApplyStage: ({ stageKey, refusedReason }) =>
+              patchReceivingAppealStage(id, { stageKey, refusedReason, expectedRevision: mapped.revision }),
+            onOpenPurchaseOrder: mapped.appeal.purchaseOrderId
+              ? () => openExistingOrderFlow(mapped.appeal.purchaseOrderId!)
+              : undefined,
+            markPaid: { supported: false, reason: "…K1 stage/order…" },
+          }
+    }
     onBack={…}
   />
 );
-// retain mapped.revision for PATCH handlers in P6 workspace — not props on P4 view
 ```
+
+`ReceivingAppealDetailActions` — **P6-owned** wiring only; P4 renders controls and calls callbacks (no `remcardFetch` in P4).
 
 ## Writes (K1 — not P4)
 

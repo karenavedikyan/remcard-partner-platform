@@ -8,12 +8,25 @@ const appeal = {
   clientName: "Анна К.",
   clientContact: "+7 900 000-00-00",
   interest: "Кухня",
-  stageId: "new",
+  stageId: "sys_new",
   stageLabel: "Новое обращение",
   certificateId: "CERT-1",
   referrerPartnerName: "Партнёр А",
-  sourceLabel: "Сертификат",
+  sourceLabel: "По сертификату",
+  originKind: "CERTIFICATE" as const,
+  discountPercent: 10,
+  certValidUntilDisplay: "15.04.2027",
+  privateNotes: "Перезвонить",
   updatedAt: "2026-11-10T14:22:00Z",
+};
+
+const baseActions = {
+  expectedRevision: 2,
+  workingStages: [{ id: "ws_custom", label: "Согласование" }],
+  refusalReasons: ["Дорого"],
+  onSavePrivateNotes: vi.fn(),
+  onApplyStage: vi.fn(),
+  markPaid: { supported: false as const, reason: "Только через этап «Оплачено» (K1 stage PATCH)." },
 };
 
 describe("P4.ReceivingAppealDetailView", () => {
@@ -36,23 +49,38 @@ describe("P4.ReceivingAppealDetailView", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("shows ready card and full history", () => {
+  it("shows ready card, notes save and stage apply callbacks", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const onStage = vi.fn();
     render(
       <ReceivingAppealDetailView
         status="ready"
         appeal={appeal}
         history={[
           { at: "2026-11-10T12:00:00Z", text: "Создано обращение по сертификату" },
-          { at: "2026-11-11T12:00:00Z", text: "Служебная заметка", author: "staff" },
         ]}
+        actions={{
+          ...baseActions,
+          onSavePrivateNotes: onSave,
+          onApplyStage: onStage,
+        }}
         onBack={() => undefined}
       />,
     );
     expect(screen.getByTestId("ca-receiving-appeal-id")).toHaveTextContent(appeal.id);
-    expect(screen.getByText("Служебная заметка")).toBeTruthy();
+    expect(screen.getByTestId("ca-receiving-cert-meta")).toBeTruthy();
+    await user.clear(screen.getByTestId("ca-receiving-notes-input"));
+    await user.type(screen.getByTestId("ca-receiving-notes-input"), "Новая заметка");
+    await user.click(screen.getByTestId("ca-receiving-notes-save"));
+    expect(onSave).toHaveBeenCalledWith("Новая заметка");
+    await user.selectOptions(screen.getByTestId("ca-receiving-stage-select"), "ws_custom");
+    await user.click(screen.getByTestId("ca-receiving-stage-apply"));
+    expect(onStage).toHaveBeenCalledWith({ stageKey: "ws_custom", refusedReason: null });
+    expect(screen.getByTestId("ca-receiving-purchase-unsupported")).toHaveTextContent("Оплачено");
   });
 
-  it("readOnly flags observer-safe mode", () => {
+  it("readOnly hides notes and shows readonly hint", () => {
     render(
       <ReceivingAppealDetailView
         status="ready"
@@ -63,5 +91,7 @@ describe("P4.ReceivingAppealDetailView", () => {
       />,
     );
     expect(screen.getByTestId("ca-receiving-appeal-readonly")).toBeTruthy();
+    expect(screen.queryByTestId("ca-receiving-detail-notes")).toBeNull();
+    expect(screen.queryByTestId("ca-receiving-detail-stage")).toBeNull();
   });
 });
