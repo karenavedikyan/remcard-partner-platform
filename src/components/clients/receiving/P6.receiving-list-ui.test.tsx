@@ -42,6 +42,16 @@ const FIXTURE: ReceivingAppealsListResponse = {
     refusalReasons: ["Цена", "Сроки"],
     archivedStages: [],
   },
+  access: { listAllowed: true, mutationsAllowed: true },
+};
+
+const FIXTURE_LIST_ONLY: ReceivingAppealsListResponse = {
+  ...FIXTURE,
+  access: {
+    listAllowed: true,
+    mutationsAllowed: false,
+    denialCode: "OWNER_CLIENTS_LIST_CONTEXT_ONLY",
+  },
 };
 
 describe("P6.receiving list UI (prototype-bound, synthetic)", () => {
@@ -61,6 +71,13 @@ describe("P6.receiving list UI (prototype-bound, synthetic)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /Источник/i }), "manual");
     expect(screen.queryByText("Олег Петров")).toBeNull();
     expect(screen.getByText("Без сертификата")).toBeTruthy();
+  });
+
+  it("list-only principal hides mutation toolbar and bulk", () => {
+    render(<ReceivingAppealsList data={FIXTURE_LIST_ONLY} readOnly stageLabelById={(r) => r.stageId} />);
+    expect(screen.getByText(/Только просмотр/i)).toBeTruthy();
+    expect(screen.queryByTestId("ca-receiving-toolbar")).toBeNull();
+    expect(screen.queryByTestId("ca-receiving-bulk-bar")).toBeNull();
   });
 
   it("workspace preview navigates to manual form without API", async () => {

@@ -69,6 +69,13 @@ Root: ordinary index + `take:5` filter risks missed duplicates under concurrency
 
 ---
 
+## HARD RIGHTS (K1/K7) — UI contract (П6, no gate edits)
+
+- Server field `access: { listAllowed, mutationsAllowed, denialCode? }` on GET list — **default UI: `mutationsAllowed: false`** until explicitly true (owner mutation gate).
+- **Do not** map `canManageLeads` / employee flags to write UI without `mutationsAllowed`.
+- List-only principal: read-only notice, no scan/manual/settings/bulk/create (K7: list context ≠ `requireOwnerClientsContext`).
+- **Out-of-scope decision:** prototype employee receiving **writes** (p.115+) require product/rights decision; **not** silently enabled via K1 gate expansion.
+
 ## П6 preserved (not regressed)
 
 - Hook order: `5b93b6a6` router (`ClientsDirectionWorkspace.tsx` @ `b99680b6`+).

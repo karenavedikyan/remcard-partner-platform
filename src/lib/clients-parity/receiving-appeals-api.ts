@@ -152,10 +152,36 @@ export type ReceivingListKpis = {
   conv: string;
 };
 
+/**
+ * K7/K1 boundary: `requireOwnerClientsListContext` (list GET) vs
+ * `requireOwnerClientsContext` (mutations). UI must follow server flags — never
+ * infer from `canManageLeads` or employee role alone.
+ */
+export type ReceivingPrincipalAccess = {
+  listAllowed: boolean;
+  mutationsAllowed: boolean;
+  /** Reuse origin denial code when list-only principal hits UI (e.g. 403 reason). */
+  denialCode?: string | null;
+};
+
+/** Synthetic marker for list-only org-workplace principal (match K1 when wired). */
+export const RECEIVING_ACCESS_LIST_ONLY_DENIAL = "OWNER_CLIENTS_LIST_CONTEXT_ONLY";
+
+export function normalizeReceivingAccess(
+  raw?: Partial<ReceivingPrincipalAccess> | null,
+): ReceivingPrincipalAccess {
+  return {
+    listAllowed: raw?.listAllowed !== false,
+    mutationsAllowed: raw?.mutationsAllowed === true,
+    denialCode: raw?.denialCode ?? null,
+  };
+}
+
 export type ReceivingAppealsListResponse = {
   appeals: ReceivingAppealListRow[];
   kpis: ReceivingListKpis;
   settings: ReceivingPartnerSettings;
+  access: ReceivingPrincipalAccess;
 };
 
 export type ReceivingAppealCreateBody = {
@@ -232,6 +258,7 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
         appeals: list.appeals ?? [],
         kpis: list.kpis ?? { inWork: 0, paid: 0, shipped: 0, conv: "—" },
         settings: settings ?? list.settings ?? { workingStages: [], refusalReasons: [], archivedStages: [] },
+        access: normalizeReceivingAccess(list.access),
       },
     };
   } catch (caught) {
@@ -245,7 +272,15 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
 
 export async function createReceivingAppeal(
   body: ReceivingAppealCreateBody,
+  access?: ReceivingPrincipalAccess,
 ): Promise<ReceivingAppealsLoadResult> {
+  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+    };
+  }
   if (!isAllowedProxyRoute("POST", "/api/pro/client-appeals")) {
     return receivingContractBlocked();
   }

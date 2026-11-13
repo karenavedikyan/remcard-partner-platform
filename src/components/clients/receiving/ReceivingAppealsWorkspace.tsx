@@ -5,6 +5,7 @@ import {
   createReceivingAppeal,
   fetchReceivingAppealsWorkspace,
   isReceivingAppealsProxyReady,
+  RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   type ReceivingAppealsListResponse,
   type ReceivingAppealsLoadResult,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -117,15 +118,43 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     return <ReceivingAppealsBlocked />;
   }
 
+  const access = data.access;
+  const mutationsAllowed = access.mutationsAllowed;
+  const readOnly = !mutationsAllowed;
+
+  if (!access.listAllowed) {
+    return (
+      <section data-testid="ca-receiving-list-denied" role="alert">
+        <p>{access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL}</p>
+      </section>
+    );
+  }
+
+  const mutationDeniedShell = (
+    <section className="panel stack" data-testid="ca-receiving-mutation-denied" role="alert">
+      <p className="notice">
+        Только просмотр: изменять статусы, создавать обращения и настраивать этапы нельзя.
+      </p>
+      <p className="small muted">{access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL}</p>
+      <button type="button" className="btn ghost" onClick={() => setView("list")}>
+        К списку
+      </button>
+    </section>
+  );
+
+  if ((view === "manual" || view === "settings" || view === "scan") && readOnly) {
+    return mutationDeniedShell;
+  }
+
   if (view === "manual") {
     return (
       <ReceivingAppealForm
-        disabled={!proxyReady}
+        disabled={!proxyReady || readOnly}
         persistBlockedMessage="Создание обращения ждёт P1 proxy и K1 handler."
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
-          if (!proxyReady) return;
-          const res = await createReceivingAppeal(body);
+          if (!proxyReady || readOnly) return;
+          const res = await createReceivingAppeal(body, access);
           if (!res.ok) {
             setPersistNotice(res.message);
             return;
@@ -141,7 +170,7 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     return (
       <WorkingStagesEditor
         settings={data.settings}
-        disabled={!proxyReady}
+        disabled={!proxyReady || readOnly}
         onCancel={() => setView("list")}
         onSave={async () => {
           setPersistNotice("BLOCKED_PERSISTENCE: POST working-stages ждёт K8 storage + K1.");
@@ -193,14 +222,30 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       ) : null}
       <ReceivingAppealsList
         data={data}
-        bulk={bulkCallbacks}
+        readOnly={readOnly}
+        bulk={mutationsAllowed ? bulkCallbacks : undefined}
         onOpenAppeal={(id) => {
           setDetailId(id);
           setView("detail");
         }}
-        onNavigateManual={() => setView("manual")}
-        onNavigateSettings={() => setView("settings")}
-        onNavigateScan={() => setView("scan")}
+        onNavigateManual={
+          mutationsAllowed
+            ? () => setView("manual")
+            : () =>
+                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+        }
+        onNavigateSettings={
+          mutationsAllowed
+            ? () => setView("settings")
+            : () =>
+                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+        }
+        onNavigateScan={
+          mutationsAllowed
+            ? () => setView("scan")
+            : () =>
+                setPersistNotice(access.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL)
+        }
         onNavigateAnalytics={() =>
           setPersistNotice("Аналитика воронки — страница п.85 после receiving list API.")
         }
