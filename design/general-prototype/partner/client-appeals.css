@@ -241,6 +241,51 @@ button.ca-row{font:inherit;color:inherit}
 .ca-observer-stats dt{color:var(--muted);margin:0}
 .ca-observer-stats dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
 .ca-observer-card-foot{margin:0}
+.ca-section--observer [data-testid="ca-observer-partners-list"]{display:grid;gap:16px}
+.content:has(.ca-observer-tools) .page-header h1{line-height:1.2;height:auto;max-width:none;overflow-wrap:anywhere}
+.ca-observer-tools{display:grid;gap:12px;min-width:0}
+.ca-personal-top,.ca-personal-buckets,.ca-personal-layout,.ca-personal-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ca-personal-top{justify-content:space-between}
+.ca-personal-buckets .btn[aria-pressed=true],.ca-personal-layout .btn[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:var(--tint)}
+.ca-personal-buckets .btn span{font-variant-numeric:tabular-nums}
+.ca-personal-scope{margin:0;line-height:1.5}
+.ca-personal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.ca-personal-toolbar>.ca-personal-actions{margin-left:auto}
+.ca-personal-toolbar:has([data-observer-action="clear"]){position:sticky;top:8px;z-index:20;box-shadow:0 6px 20px #0002}
+.ca-personal-check{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:14px;white-space:nowrap}
+.ca-personal-check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex-shrink:0}
+.ca-personal-partners{grid-template-columns:1fr}
+.ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 24px}
+.ca-personal-partners .ca-observer-stats dt{line-height:1.5}
+.ca-personal-group-head{display:flex;gap:12px;align-items:center}
+.ca-personal-partner-open{padding:0;border:0;background:transparent;text-align:left;min-height:44px;color:var(--ink);flex:1}
+.ca-personal-partner-open:hover strong{text-decoration:underline}
+.ca-personal-rows{display:grid;gap:0;min-width:0}
+.ca-personal-row{display:grid;grid-template-columns:24px minmax(0,1fr) minmax(100px,160px) auto;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);min-width:0}
+.ca-personal-row[data-selected=true]{background:var(--tint);box-shadow:8px 0 var(--tint),-8px 0 var(--tint)}
+.ca-personal-open{display:grid;gap:4px;min-width:0;min-height:44px;background:none;border:0;text-align:left;padding:0;color:var(--ink);overflow-wrap:anywhere}
+.ca-personal-open:hover strong{text-decoration:underline}
+.ca-personal-status{display:grid;justify-items:start;gap:6px;min-width:0}
+.ca-personal-status time{line-height:1.4}
+.ca-personal-tag{display:inline-block;justify-self:start;background:var(--offset);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;overflow-wrap:anywhere;max-width:100%}
+.ca-personal-note{white-space:pre-wrap;overflow-wrap:anywhere}
+.ca-personal-notice{padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--offset);display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.ca-personal-edit,.ca-personal-confirm{display:grid;gap:16px;scroll-margin-top:190px}
+.ca-personal-edit h3,.ca-personal-confirm h3,.ca-personal-edit p,.ca-personal-confirm p{margin:0}
+.ca-personal-flat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 16px}
+.ca-personal-flat>.ca-personal-row:first-child{border-top:0}
+@media(max-width:760px){
+  .ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ca-personal-row{grid-template-columns:24px minmax(0,1fr);gap:8px 12px}
+  .ca-personal-row>.ca-personal-check{grid-row:1/4;align-self:start}
+  .ca-personal-row>.ca-personal-status,.ca-personal-row>.btn{grid-column:2;justify-self:start}
+  .ca-personal-status{display:flex;align-items:center;flex-wrap:wrap}
+  .ca-personal-toolbar{padding:12px;gap:8px 12px}
+  .ca-personal-toolbar>.ca-personal-actions{margin-left:0;width:100%}
+  .ca-personal-top{align-items:flex-start;gap:12px}
+  .ca-personal-actions .btn{min-height:44px}
+  .ca-personal-buckets .btn,.ca-personal-layout .btn{min-height:44px}
+}
 .ca-section--observer{gap:var(--s4,16px)}
 .ca-section--observer .ca-preview-opt-in{margin-bottom:0}
 .ca-section--observer .ca-preview-directions,.ca-section--observer .ca-observer-filters{margin-bottom:0}

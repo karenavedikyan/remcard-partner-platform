@@ -7,7 +7,7 @@ import {
   waitForStandaloneFrameContent,
 } from "./cabinet-standalone-srcdoc.js?v=embed12";
 import { demoRandomToken } from "./demo-random-id.js";
-import { hasNativeCabinetPage, mountNativeCabinetPage } from "./cabinet-native-pages.js?v=native1";
+import { hasNativeCabinetPage, mountNativeCabinetPage } from "./cabinet-native-pages.js?v=native2";
 
 export const STANDALONE_BY_N = {
   139: { path: "certificate.html", title: "Гостевой сертификат", guest: true },
@@ -576,7 +576,7 @@ export function createCabinetStandaloneHost(config) {
       frame.removeAttribute("src");
       frame.removeAttribute("srcdoc");
       frame.dataset.embedMount = "native";
-      hostEl.dataset.embedEngine = "native-direct-1";
+      hostEl.dataset.embedEngine = "native-direct-2";
       frame.dataset.embedSessionToken = openEmbedToken;
       const payload = resolveEmbedPayload?.(pageN, openCtx, openQuery);
       nativePage = mountNativeCabinetPage(

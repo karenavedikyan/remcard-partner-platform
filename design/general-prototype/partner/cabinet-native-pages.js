@@ -1,4 +1,4 @@
-import { NATIVE_PAGES } from "./cabinet-native-pages.generated.js?v=native1";
+import { NATIVE_PAGES } from "./cabinet-native-pages.generated.js?v=native2";
 
 export const hasNativeCabinetPage = n => Object.hasOwn(NATIVE_PAGES, n);
 
@@ -20,14 +20,22 @@ export function mountNativeCabinetPage(container, n, payload, { dispatch, theme 
     .native-document{min-height:100%;width:100%}
     .native-body{min-height:100%!important;height:auto!important}
     [hidden]{display:none!important}
-    .native-document .prr-top{display:none!important}
+    .native-document .prr-top,.native-document .pst-top,.native-document .pst-skip{display:none!important}
     .native-document .prr-overlay{position:static!important;min-height:100%;align-items:flex-start!important}
     .native-document .prr-dialog{max-height:none!important;margin:0 auto!important}
     .native-document .partner-dialog{max-width:100%!important}
+    .native-document .pst-overlay{display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
+    .native-document .pst-dialog{max-height:100%!important;min-height:0}
+    .native-document .pst-dialog>h2,.native-document .pst-dialog>.pst-dialog__actions{flex-shrink:0}
   `;
   const docElement = document.createElement("div");
   docElement.className = "native-document cabinet-embed-mode";
   docElement.dataset.theme = theme;
+  if (n === 146) {
+    // Keep the dialog's fixed containing block outside the scrolling form.
+    host.style.overflow = "hidden";
+    docElement.style.cssText = "height:100%;overflow:auto";
+  }
   const body = document.createElement("div");
   body.className = `native-body ${page.bodyClass}`;
   body.innerHTML = page.html;
@@ -40,6 +48,31 @@ export function mountNativeCabinetPage(container, n, payload, { dispatch, theme 
   const params = new URLSearchParams({ cabinet_embed: "1", proto_n: String(n) });
   const location = { search: `?${params}`, hash: "", href: "" };
   let disposed = false;
+  const observers = new Set();
+  const animationFrames = new Set();
+  const runtime = {
+    MutationObserver: class extends MutationObserver {
+      constructor(cb) {
+        super((...args) => { if (!disposed) cb(...args); });
+        observers.add(this);
+      }
+    },
+    requestAnimationFrame(cb) {
+      const id = requestAnimationFrame(time => {
+        animationFrames.delete(id);
+        if (!disposed) cb(time);
+      });
+      animationFrames.add(id);
+      return id;
+    },
+  };
+  function release() {
+    disposed = true;
+    observers.forEach(observer => observer.disconnect());
+    animationFrames.forEach(id => cancelAnimationFrame(id));
+    messages.clear();
+    host.remove();
+  }
   const nativeDocument = {
     documentElement: docElement, body, readyState: "complete",
     querySelector: s => shadow.querySelector(s),
@@ -83,18 +116,18 @@ export function mountNativeCabinetPage(container, n, payload, { dispatch, theme 
     for (const cb of messages) cb(ev);
   }
   try {
-    page.install(nativeDocument, nativeWindow, location, nativeWindow, nativeWindow.matchMedia);
+    page.install(nativeDocument, nativeWindow, location, nativeWindow, nativeWindow.matchMedia, runtime);
     for (const cb of domReady) cb();
     update(payload);
     // Controllers may initialise their own preferred theme; the cabinet owns it.
     docElement.dataset.theme = theme;
   } catch (err) {
-    host.remove();
+    release();
     throw err;
   }
   return {
     update,
     theme(t) { docElement.dataset.theme = t; },
-    destroy() { disposed = true; messages.clear(); host.remove(); },
+    destroy: release,
   };
 }

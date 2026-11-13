@@ -2,6 +2,11 @@
 import { emptyDatasetOn } from "./empty-states.js?v=es2";
 import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-purchase-ledger.js";
 import {
+  observerPersonalState, observerPersonalMeta, observerPersonalBucket,
+  clearObserverPersonalSelection, renderObserverPersonalTools,
+  renderObserverPersonalRow, hydrateObserverPersonal,
+} from "./observer-personal-list.js?v=personal1";
+import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
 } from "./guest-embed-payloads.js";
@@ -2254,7 +2259,7 @@ function observerInWork(appeal) {
 function filterObserverAppeals(s, list) {
   const q = (s.observerQ || "").trim().toLowerCase();
   const cutoff = observerPeriodCutoff(s.observerPeriod || "all");
-  let out = list.slice();
+  let out = list.filter(a => observerPersonalBucket(s, a) === observerPersonalState(s).bucket);
   if (cutoff) out = out.filter((a) => new Date(referralDateIso(a)) >= cutoff);
   if (!q) return out;
   return out.filter((a) => {
@@ -2264,6 +2269,9 @@ function filterObserverAppeals(s, list) {
       a.interest,
       a.certificateId,
       a.id,
+      observerPersonalMeta(s, a.id).alias,
+      observerPersonalMeta(s, a.id).tag,
+      observerPersonalMeta(s, a.id).note,
       partner?.name,
       partner?.city,
       PARTNER_OBSERVER_META[a.receivingPartnerId]?.category,
@@ -2392,6 +2400,11 @@ function renderObserverPartnersList(config) {
   if (!useObserver) return renderListPage(config);
   const base = ownReferredAppeals();
   const filtered = filterObserverAppeals(s, base);
+  const tools = renderObserverPersonalTools(s, filtered, base);
+  const personalRow = a => renderObserverPersonalRow(s, a, {
+    partnerName: PARTNERS[a.receivingPartnerId]?.name || "Партнёр",
+    status: pillHtml(a), date: formatObserverDateTime(a.updatedAt),
+  });
   const byPartner = new Map();
   filtered.forEach((a) => {
     if (!byPartner.has(a.receivingPartnerId)) byPartner.set(a.receivingPartnerId, []);
@@ -2403,10 +2416,15 @@ function renderObserverPartnersList(config) {
       const meta = PARTNER_OBSERVER_META[partnerId];
       const stats = partnerAppealStats(list);
       const last = formatObserverDateTime(stats.lastUpdate);
-      return `<button type="button" class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card" data-ca-action="observer:partner:${esc(partnerId)}">
+      return `<article class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card">
+        <div class="ca-personal-group-head">
+        <label class="ca-personal-check"><input type="checkbox" data-observer-group="${esc(partnerId)}" aria-label="Выбрать клиентов: ${esc(partner.name)}"></label>
+        <button type="button" class="ca-personal-partner-open" data-ca-action="observer:partner:${esc(partnerId)}">
         <div class="ca-observer-partner-card__head">
           <strong>${esc(partner.name)}</strong>
           <span class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</span>
+        </div>
+        </button>
         </div>
         <dl class="ca-observer-stats">
           <div><dt>Направлено</dt><dd>${stats.total}</dd></div>
@@ -2415,15 +2433,17 @@ function renderObserverPartnersList(config) {
           <div><dt>Отказы</dt><dd>${stats.refusals}</dd></div>
         </dl>
         <p class="small muted ca-observer-card-foot">Конверсия в оплату: ${esc(stats.conv)} · Возвратов: ${stats.returns} · Обновлено: ${esc(last)}</p>
-      </button>`;
+        <div class="ca-personal-rows">${list.map(personalRow).join("")}</div>
+      </article>`;
     })
     .join("");
+  const bucketEmpty = !base.some(a => observerPersonalBucket(s, a) === observerPersonalState(s).bucket);
   const empty = !cards
-    ? base.length > 0 && filtered.length === 0
-      ? renderObserverFiltersEmpty()
-      : `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>Пока нет направленных клиентов</h2><p class="muted">Пример ваших направлений · демоданные</p></section>`
+    ? bucketEmpty
+      ? `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>${observerPersonalState(s).bucket === "archived" ? "В архиве пока нет записей" : observerPersonalState(s).bucket === "trash" ? "Корзина пуста" : "В активном списке нет записей"}</h2><p class="muted">Переключите вкладку списка. Данные у партнёров не удаляются.</p></section>`
+      : renderObserverFiltersEmpty()
     : "";
-  return `<div data-testid="ca-observer-partners-list">${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${empty || `<div class="ca-observer-partner-grid">${cards}</div>`}</div>`;
+  return `<div data-testid="ca-observer-partners-list">${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${tools}${empty || (observerPersonalState(s).layout === "list" ? `<div class="ca-personal-rows ca-personal-flat">${filtered.map(personalRow).join("")}</div>` : `<div class="ca-observer-partner-grid ca-personal-partners">${cards}</div>`)}</div>`;
 }
 
 function renderObserverPartnerPage(config) {
@@ -2440,6 +2460,7 @@ function renderObserverPartnerPage(config) {
   }
   const basePartner = ownReferredAppeals().filter((a) => a.receivingPartnerId === partnerId);
   const list = filterObserverAppeals(s, basePartner);
+  const tools = renderObserverPersonalTools(s, list, ownReferredAppeals(), { showLayout: false });
   const stats = partnerAppealStats(list);
   const meta = PARTNER_OBSERVER_META[partnerId];
   const rows = list
@@ -2448,14 +2469,10 @@ function renderObserverPartnerPage(config) {
       const amt = purchase
         ? `<span class="ca-row-amount ca-observer-purchase"><span class="ca-amount ca-observer-purchase__amount">${esc(purchase.amountLabel)}</span><span class="small muted ca-observer-purchase__label">Сумма покупки</span></span>`
         : `<span class="ca-row-amount ca-observer-purchase"><span class="ca-amount ca-amount--empty">—</span></span>`;
-      return `<button type="button" class="ca-row ca-observer-client-row" data-testid="ca-observer-client-row" data-ca-action="observer:client:${esc(a.id)}">
-        <span class="ca-row-name"><strong>${esc(a.clientName)}</strong></span>
-        <span class="ca-row-request muted small">${esc(a.interest || "—")}</span>
-        <span class="ca-row-status">${pillHtml(a)}</span>
-        ${amt}
-        <span class="ca-row-age muted small">${esc(formatObserverDateTime(a.updatedAt))}</span>
-        <span class="ca-chev" aria-hidden="true">›</span>
-      </button>`;
+      return renderObserverPersonalRow(s, a, {
+        partnerName: partner.name, status: `${pillHtml(a)}${amt}`,
+        date: formatObserverDateTime(a.updatedAt),
+      });
     })
     .join("");
   return `<div class="ca-observer-partner-head stack">
@@ -2464,6 +2481,7 @@ function renderObserverPartnerPage(config) {
   </div>
   ${renderObserverFilters(s)}
   ${renderObserverFilterChips(s)}
+  ${tools}
   <div class="ca-observer-client-rows">${
     rows ||
     (basePartner.length > 0 && list.length === 0
@@ -2498,6 +2516,9 @@ function renderObserverClientPage(config) {
   return `<section class="panel stack ca-observer-client">
     <p class="muted">${esc(appeal.interest || "")}</p>
     <p class="small muted">Партнёр: ${esc(partner?.name || "—")}</p>
+    ${observerPersonalMeta(s, appeal.id).alias ? `<p>Имя для себя: <strong>${esc(observerPersonalMeta(s, appeal.id).alias)}</strong></p>` : ""}
+    ${observerPersonalMeta(s, appeal.id).tag ? `<p class="ca-personal-tag">${esc(observerPersonalMeta(s, appeal.id).tag)}</p>` : ""}
+    ${observerPersonalMeta(s, appeal.id).note ? `<p class="ca-personal-note">${esc(observerPersonalMeta(s, appeal.id).note)}</p>` : ""}
   </section>
   <section class="panel stack">
     <h3>Кратко</h3>
@@ -3333,6 +3354,12 @@ export function hydrateClientAppeals(hooks) {
   if (!root) return;
   ensureSeed(config);
   const s = ws(config.key);
+  if (observerActionsAllowed(config)) hydrateObserverPersonal(root, s, {
+    baseRows: ownReferredAppeals,
+    visibleRows: () => filterObserverAppeals(s, ownReferredAppeals().filter(a =>
+      s.view !== "observer-partner" || a.receivingPartnerId === s.observerPartnerId)),
+    refresh: hooks.refresh,
+  });
   activeTab = s.tab;
   const statusEl = root.querySelector('[data-ca-input="status"]');
   if (statusEl) {
@@ -3371,7 +3398,7 @@ export function hydrateClientAppeals(hooks) {
     if (t.matches('[data-ca-input="q"]')) { s.listQ = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="status"]')) { s.listStatus = t.value; clearBulkSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="source"]')) { s.listSource = t.value; clearBulkSelection(s); hooks.refresh(); }
-    if (t.matches('[data-ca-input="observer-q"]')) { s.observerQ = t.value; hooks.refresh(); }
+    if (t.matches('[data-ca-input="observer-q"]')) { s.observerQ = t.value; clearObserverPersonalSelection(s); hooks.refresh(); }
     if (t.matches('[data-ca-input="repair-objects-q"]')) { s.repairObjectsQ = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-from"]')) { s.funnelFrom = t.value; hooks.refresh(); }
     if (t.matches('[data-ca-input="funnel-to"]')) { s.funnelTo = t.value; hooks.refresh(); }
@@ -3407,6 +3434,7 @@ export function hydrateClientAppeals(hooks) {
     }
     if (t.matches('[data-ca-input="observer-period"]')) {
       s.observerPeriod = t.value || "all";
+      clearObserverPersonalSelection(s);
       hooks.refresh();
       return;
     }
@@ -3514,6 +3542,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   }
   if (action.startsWith("observer:partner:")) {
     if (!observerActionsAllowed(config)) return;
+    clearObserverPersonalSelection(s);
     s.observerPartnerId = action.split(":")[2];
     s.observerClientId = null;
     s.view = "observer-partner";
@@ -3522,6 +3551,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   }
   if (action.startsWith("observer:client:")) {
     if (!observerActionsAllowed(config)) return;
+    clearObserverPersonalSelection(s);
     s.observerClientId = action.split(":")[2];
     s.view = "observer-client";
     hooks.refresh();
@@ -3529,6 +3559,7 @@ function handleCaAction(action, config, hooks, triggerEl = null) {
   }
   if (action === "observer:clear-q" || action === "observer:clear-period" || action === "observer:reset-filters") {
     if (!clientsPreviewEligible(config.role, config.readOnly)) return;
+    clearObserverPersonalSelection(s);
     if (action === "observer:clear-q") s.observerQ = "";
     else if (action === "observer:clear-period") s.observerPeriod = "all";
     else resetObserverFilters(s);
