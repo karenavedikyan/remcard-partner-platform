@@ -162,6 +162,13 @@
     "k1Tip": "63a4f3d6",
     "handoffP4P6": "audit/remcard-parallel-20261113/P1/P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md"
   },
+  "p1HistoryPurchaseAppealReturnLink": {
+    "component": "src/components/history/PurchaseAppealReturnLink.tsx",
+    "host": "src/components/history/PurchaseDetail.tsx",
+    "hrefMirror": "src/lib/clients-parity/receiving-appeal-return-href.ts",
+    "p4CanonicalLocalOnly": "receiving-appeal-navigation.ts @ 58088bd3 — never commit",
+    "queryParam": "appealId"
+  },
   "p1ReceivingOrderLinkProxy": {
     "methods": "POST",
     "path": "/api/pro/client-appeals/:id/order-link",

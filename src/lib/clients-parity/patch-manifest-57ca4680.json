@@ -91,6 +91,16 @@
     "handoffDoc": "audit/remcard-parallel-20261113/P1/EARLY-CONTRACT-PROXY-HANDOFF.md",
     "p2MatrixSha": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a"
   },
+  "p1HistoryPurchaseAppealReturn": {
+    "ownerOnlyPaths": [
+      "src/components/history/PurchaseAppealReturnLink.tsx",
+      "src/components/history/P1.PurchaseAppealReturnLink.test.tsx",
+      "src/lib/clients-parity/receiving-appeal-return-href.ts",
+      "src/components/history/PurchaseDetail.tsx"
+    ],
+    "p4HrefPinLocalOnlyDoNotCommit": "receiving-appeal-navigation.ts @ 58088bd3",
+    "contractHref": "/clients?direction=receiving&appealId="
+  },
   "k8NavigatorCandidatesNotAccepted": {
     "canonicalContractSha": "1894569a",
     "supersededCandidateDoNotWireProduct": "fc33b4fae859fb692757807c3b27696b66d57558",

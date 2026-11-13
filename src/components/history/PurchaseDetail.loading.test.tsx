@@ -7,6 +7,9 @@ import { cert, purchaseResponse } from "../../../scripts/reward-lifecycle-qa/pur
 import type { AuthUser } from "@/lib/types";
 import type { ProOrderDetailResponse } from "@/lib/history-types";
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.mock("@/lib/history-loader", () => ({ fetchAccrualRows: vi.fn(), fetchPurchaseByOrderId: vi.fn() }));
 vi.mock("@/components/settlements/RewardLifecyclePanel", () => ({ RewardLifecyclePanel: () => <p>Статус вознаграждения</p> }));
 const user = { id: "qa-user" } as AuthUser;
