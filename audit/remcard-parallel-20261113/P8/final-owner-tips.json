@@ -1,16 +1,14 @@
 {
   "TIPS": {
-    "P1": "20b93f87544ca0b59857be73ce46b2e62afe466e",
     "P2_matrix_8137": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
-    "P3": "fe416e2b19103ca7e7eaf945c179353dd7dc1e45",
-    "P4": "ad7b0824b39ffedd576af84d18be64782611d6b5",
-    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
-    "P6_rejected_c04_attempt": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
-    "P6_last_accepted_baseline": "981c72aff23595d32e157dc9642e08c02a0cb70d",
-    "P7": "43c6bd83a8f47f33f7cbdac40b6fb8192db65879",
-    "P8": "3cf352ee32a585a15482ad6f2b09738a8423d475"
+    "P3_corrected": "4efb42152da230e8d8c9222cc98e5d1a944413fd",
+    "P6_corrected": "5b93b6a63135480088142f98ea300e4540b01cda",
+    "P6_rejected_prior": "12aea8756fb0344a7aaf8f29b3b427a9e6ce204f",
+    "P8_prior": "1e8b7649fe444736f1685ad38e373a9ac9922c79"
   },
-  "NAVIGATOR_RELEASE": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
-  "PRODUCTION": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "C04_status": "NOT_VERIFIED — P6 12aea875 REJECTED; do not close"
+  "NAVIGATOR_SOURCE": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "NAVIGATOR_CLIENT_PROFILE": "89fb8e073c39c8dbd329996940b85c6a86751868",
+  "PRODUCTION_PARTNER": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "user_auth_20261113": "prepare_api_migrations_only_no_prod_apply",
+  "C04": "NOT_VERIFIED — P6 5b93b6a6 under review, not closed"
 }
