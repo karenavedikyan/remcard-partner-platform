@@ -23,6 +23,7 @@ Partner proxy wire reviewed @ P1 `6eda0029`. Pin doc: `ROOT-BACKEND-ASSEMBLY-PIN
 | GET, POST | `/api/pro/client-appeals` |
 | GET, PATCH | `/api/pro/client-appeals/:id` |
 | PATCH | `/api/pro/client-appeals/:id/stage` |
+| POST | `/api/pro/client-appeals/:id/order-link` | Root glue — K1 route SOURCE |
 | POST | `/api/pro/client-appeals/batch` |
 | GET, POST, PATCH, DELETE | `/api/pro/client-appeals/working-stages` |
 | POST | `/api/pro/client-appeals/certificate-entry` (501 until scan hook) |
@@ -70,4 +71,4 @@ List JSON: `{ appeals, partners, personalMeta, page, limit, total, hasMore, empt
 
 ## Scoped test
 
-`tsx --test src/lib/remcard-proxy.test.ts` — **31/31** allowlist assertions in transport suite.
+`tsx --test src/lib/remcard-proxy.test.ts` — **33/33** allowlist assertions in transport suite (incl. `order-link` POST + reserved `batch/order-link` deny).

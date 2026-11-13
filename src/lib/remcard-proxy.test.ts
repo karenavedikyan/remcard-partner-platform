@@ -451,6 +451,14 @@ describe("remcard proxy transport checks", () => {
       isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1/stage"),
       true,
     );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/client-appeals/appeal_1/order-link"),
+      true,
+    );
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/client-appeals/batch/order-link"),
+      false,
+    );
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/client-appeals/batch"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/working-stages"), true);
     assert.equal(

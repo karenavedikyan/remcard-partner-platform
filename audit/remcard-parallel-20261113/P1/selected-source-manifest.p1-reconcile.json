@@ -32,6 +32,8 @@
   "wholeBranchTransferForbidden": true,
   "clientsSectionPublishable": false,
   "primaryOpenBlocker": "order_association_return",
+  "orderLinkGlueContract": "audit/remcard-parallel-20261113/P1/ROOT-ORDER-LINK-GLUE-CONTRACT.md",
+  "p1ProxyOrderLinkPost": "/api/pro/client-appeals/:id/order-link",
   "openAcceptanceGates": [
     "observer",
     "personal",

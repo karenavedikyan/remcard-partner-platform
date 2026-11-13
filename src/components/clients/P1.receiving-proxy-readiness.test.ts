@@ -10,6 +10,10 @@ describe("receiving proxy readiness (P1 allowlist)", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/client-appeals/batch"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/working-stages"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/client-appeals/working-stages"), true);
+    assert.equal(
+      isAllowedProxyRoute("POST", "/api/pro/client-appeals/appeal_1/order-link"),
+      true,
+    );
   });
 
   it("does not claim batch ready via GET batch path", () => {

@@ -206,6 +206,11 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern:
         /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+\/stage$/,
     },
+    {
+      methods: new Set(["POST"]),
+      pattern:
+        /^\/api\/pro\/client-appeals\/(?!batch(?:\/|$)|working-stages(?:\/|$)|certificate-entry(?:\/|$))[\w-]+\/order-link$/,
+    },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/referred-appeals$/ },
     {
       methods: new Set(["GET"]),

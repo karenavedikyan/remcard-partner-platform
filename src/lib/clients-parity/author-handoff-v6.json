@@ -162,6 +162,14 @@
     "k1Tip": "63a4f3d6",
     "handoffP4P6": "audit/remcard-parallel-20261113/P1/P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md"
   },
+  "p1ReceivingOrderLinkProxy": {
+    "methods": "POST",
+    "path": "/api/pro/client-appeals/:id/order-link",
+    "k1RouteExpected": "POST body {orderId, expectedRevision}",
+    "k8Helper": "src/lib/clientAppeals/orderLink.ts",
+    "contractDoc": "audit/remcard-parallel-20261113/P1/ROOT-ORDER-LINK-GLUE-CONTRACT.md",
+    "navigatorSearchAtK1Pin": "order-link not in navigator @ a71b8f37 (SOURCE prep ahead of K1)"
+  },
   "p1ProxyHandoffEarly": {
     "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
     "routeManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",

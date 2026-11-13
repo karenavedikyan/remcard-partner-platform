@@ -64,6 +64,7 @@
         "GET,POST /api/pro/client-appeals",
         "GET,PATCH /api/pro/client-appeals/:id",
         "PATCH /api/pro/client-appeals/:id/stage",
+        "POST /api/pro/client-appeals/:id/order-link",
         "POST /api/pro/client-appeals/batch",
         "GET,POST,PATCH,DELETE /api/pro/client-appeals/working-stages",
         "POST /api/pro/client-appeals/certificate-entry"
