@@ -89,4 +89,12 @@ Mobile harness (shared V7): grouped status/updated same row @320–1024; open bu
 
 ## Git
 
-**Tip:** `671a8fcf37d0ace7250588441dd90557b13fd417`
+**Tip:** see `COMMIT.txt` (latest push).
+
+## Review follow-up (accent / production globals)
+
+**Finding:** Dark theme with production `globals.css` (no `--accent`) left `var(--accent,#c12b2f)` on `--surface #202520` at contrast ~2.71 for 16px bucket/layout pressed state.
+
+**Fix (observer.module.css only):** `--observer-accent` on `.section`, `.blocked`, `.partnerCard`, `.personalTools`; eight call sites use `var(--observer-accent)` (prototype `--accent` when present, else `--accent-emphasis` / `--primary`).
+
+**Tests:** `P7.observer-accent-contrast.test.ts` injects real `src/app/globals.css` + module CSS; dark pressed controls resolve `rgb(253,164,175)` and pass WCAG AA 4.5:1 on `--surface`. P7 total **22** tests PASS via `vitest.p7.config.ts`; shared regression **36** PASS.

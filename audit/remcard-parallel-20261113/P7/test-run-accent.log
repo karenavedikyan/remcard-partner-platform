@@ -1,0 +1,32 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ❯ src/components/clients/observer/P7.observer-accent-contrast.test.ts (5 tests | 1 failed) 376ms
+   ✓ P7 — observer accent with production globals.css > defines --observer-accent cascade (prototype --accent, else cabinet tokens) 1ms
+   × P7 — observer accent with production globals.css > computed WCAG contrast (Playwright + globals.css) > light: pressed bucket/layout text ≥ 4.5:1 on --surface 121ms
+     → light toggle-label: expected 2.619789699514029 to be greater than or equal to 4.5
+   ✓ P7 — observer accent with production globals.css > computed WCAG contrast (Playwright + globals.css) > light: active controls use resolved accent (not hardcoded #c12b2f on dark surface) 57ms
+   ✓ P7 — observer accent with production globals.css > computed WCAG contrast (Playwright + globals.css) > dark: pressed bucket/layout text ≥ 4.5:1 on --surface 77ms
+   ✓ P7 — observer accent with production globals.css > computed WCAG contrast (Playwright + globals.css) > dark: active controls use resolved accent (not hardcoded #c12b2f on dark surface) 58ms
+ ✓ src/components/clients/observer/P7.observer-prototype-layout.test.ts (17 tests) 793ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/clients/observer/P7.observer-accent-contrast.test.ts > P7 — observer accent with production globals.css > computed WCAG contrast (Playwright + globals.css) > light: pressed bucket/layout text ≥ 4.5:1 on --surface
+AssertionError: light toggle-label: expected 2.619789699514029 to be greater than or equal to 4.5
+ ❯ src/components/clients/observer/P7.observer-accent-contrast.test.ts:120:54
+    118|         const bgT = bgParsed ?? parseRgbTriplet(parentBg)!;
+    119|         const toggleRatio = contrastRatio(fgT, bgT);
+    120|         expect(toggleRatio, `${theme} toggle-label`).toBeGreaterThanOr…
+       |                                                      ^
+    121| 
+    122|         await context.close();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 21 passed (22)
+   Start at  12:12:38
+   Duration  1.41s (transform 75ms, setup 210ms, collect 266ms, tests 1.17s, environment 447ms, prepare 88ms)
+

@@ -1,0 +1,15 @@
+{
+  "fix": "--observer-accent: var(--accent, var(--accent-emphasis, var(--primary, #c12b2f)))",
+  "productionGlobalsDark": {
+    "surface": "#202520",
+    "accentEmphasis": "#fda4af",
+    "priorBadAccentFallback": "rgb(193, 43, 47)",
+    "priorContrastOnSurface": 2.712963986772241
+  },
+  "computedAfterFixDark": {
+    "bucketPressedColor": "rgb(253, 164, 175)",
+    "minContrastPressedOnSurface": ">= 4.5 (P7 Playwright + globals.css)"
+  },
+  "prototypeDarkAccentWhenSet": "#f49391",
+  "harnessNote": "Native observer-list harness index omits globals reset; overflow there is QA fixture defect, not product."
+}

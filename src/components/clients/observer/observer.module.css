@@ -1,5 +1,16 @@
 /* Local parity layer — prototype client-appeals.css (.ca-section--observer, compact cards). */
 
+.section,
+.blocked,
+.partnerCard,
+.personalTools {
+  /*
+   * Prototype sets --accent; production globals use --primary / --accent-emphasis.
+   * Keep prototype when present; otherwise map to cabinet tokens (dark: #fda4af on #202520).
+   */
+  --observer-accent: var(--accent, var(--accent-emphasis, var(--primary, #c12b2f)));
+}
+
 .section {
   max-width: 1120px;
   min-width: 0;
@@ -140,7 +151,7 @@
 }
 
 .disclosure summary:focus-visible {
-  outline: 2px solid var(--accent, #c12b2f);
+  outline: 2px solid var(--observer-accent);
   outline-offset: 4px;
   border-radius: 4px;
 }
@@ -170,7 +181,7 @@
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
-  color: var(--accent, #c12b2f);
+  color: var(--observer-accent);
   min-height: 36px;
 }
 
@@ -309,7 +320,7 @@
 }
 
 .partnerArrow {
-  color: var(--accent, #c12b2f);
+  color: var(--observer-accent);
 }
 
 .chips {
@@ -362,8 +373,8 @@
 }
 
 .bucketBtn[aria-pressed="true"] {
-  border-color: var(--accent, #c12b2f);
-  color: var(--accent, #c12b2f);
+  border-color: var(--observer-accent);
+  color: var(--observer-accent);
 }
 
 .personalScope,
@@ -376,7 +387,7 @@
 }
 
 .persistenceNotice {
-  color: var(--accent, #c12b2f);
+  color: var(--observer-accent);
   font-weight: 700;
 }
 
@@ -408,7 +419,7 @@
   width: 20px;
   height: 20px;
   margin: 0;
-  accent-color: var(--accent, #c12b2f);
+  accent-color: var(--observer-accent);
 }
 
 .selectedCount {
@@ -702,7 +713,7 @@
 }
 
 .backBtn:focus-visible {
-  outline: 2px solid var(--accent, #c12b2f);
+  outline: 2px solid var(--observer-accent);
   outline-offset: 4px;
   border-radius: 4px;
 }
