@@ -3,8 +3,11 @@
   "k8Candidate": {
     "branch": "cursor/remcard-k8-acceptance-20261113",
     "handoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-    "schemaCoreSha": "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
-    "priorSchemaCoreSha": "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+    "schemaCoreSha": "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
+    "priorSchemaCoreSha": "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
+    "k1IdentitySha": "f722a164fed0cbbb0315f30237e1568ebf340d69",
+    "k2ListActualSha": "3c6ccc197bd565dba57feca81c42af48869ef62e",
+    "k5IdentitySha": "6c4444879d5651679c969b8009b3f39d05302c43",
     "k1ReceivingDoc": "src/lib/clientAppeals/K1_RECEIVING_API.md",
     "k2ObserverDoc": "src/lib/clientAppeals/K2_OBSERVER_API.md",
     "k2HttpDraftSha": "72193c7853df8291a5b7956059d574b834cdbce7",
@@ -13,7 +16,9 @@
   },
   "listResponseContract": {
     "k8Lib": "{ items, nextCursor }",
-    "k2HttpTarget": "{ items, receivingPartners, personalMeta?, page?, limit?, total?, hasMore?, nextCursor? }",
+    "k2HttpActual": "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
+    "k8LibList": "{ items, nextCursor }",
+    "purchaseReadBlocker": "BLK-CLIENTS-PURCHASE-READ",
     "partnerP3": "{ appeals, partners, personalMeta?, nextCursor? }",
     "forbiddenNavigatorAlias": "appeals"
   },
@@ -42,7 +47,7 @@
   "navigatorActualHttp": {
     "k2ListSha": "72193c7853df8291a5b7956059d574b834cdbce7",
     "k5PersonalSha": "86ac3e354dc543817c061cb43565d0bf77545ab0",
-    "GET /api/pro/referred-appeals": "{ items, page, limit, total, hasMore, empty }",
+    "GET /api/pro/referred-appeals": "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
     "PATCH /api/pro/referred-appeals/:appealId/personal-meta": "{ meta }",
     "POST /api/pro/referred-appeals/personal-batch": "{ action, mode, processedCount, skippedCount, processed, skipped }"
   },
@@ -75,12 +80,10 @@
   },
   "resolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D"],
   "unresolvedGaps": [
-    "GAP-K8-J",
-    "GAP-K8-K",
     "GAP-K8-L",
-    "GAP-K8-M",
-    "GAP-K8-F",
-    "GAP-K8-G",
+    "GAP-K8-N",
+    "GAP-K8-O",
+    "GAP-K8-P",
     "GAP-K8-H",
     "GAP-P5-518f6dd8",
     "GAP-K5-I"

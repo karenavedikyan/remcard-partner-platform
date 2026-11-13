@@ -36,8 +36,8 @@ export type ObserverAppealHistoryEntry = {
 export type ClientsReceivingPartnerIdentity = {
   /** Required trusted column — actual receiving partner principal User.id */
   receivingPartnerUserId: string;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
 };
 
 /** @deprecated Use ClientsReceivingPartnerIdentity */
@@ -52,8 +52,8 @@ export type ObserverAppealK2WireDto = {
   clientDisplayName: string;
   certificateId: string | null;
   receivingPartnerUserId: string;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
   referrerProUserId: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   stageKey: string;
@@ -78,8 +78,8 @@ export type ObserverReceivingPartnerMetaWire = {
   displayName: string;
   city?: string | null;
   category?: string | null;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
 };
 
 /** @deprecated Use ObserverReceivingPartnerMetaWire */
@@ -126,8 +126,8 @@ export type ObserverPartnerMeta = {
   name: string;
   city?: string | null;
   category?: string | null;
-  receivingOrganizationId?: string | null;
-  receivingBranchId?: string | null;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
 };
 
 export type ObserverPartnerAppealStats = {

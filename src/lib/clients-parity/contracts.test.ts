@@ -8,6 +8,7 @@ import {
   CLIENTS_K8_SOURCE_OF_TRUTH,
   CLIENTS_K8_UNRESOLVED_GAPS,
   CLIENTS_LIST_RESPONSE_CONTRACT,
+  CLIENTS_PURCHASE_READ_SEMANTICS,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -40,13 +41,15 @@ describe("clients parity contracts", () => {
 
   it("inventory routes stay NOT_IMPLEMENTED until K1/K2/K5 HTTP lands", () => {
     expect(CLIENTS_K8_SOURCE_OF_TRUTH.status).toBe("DRAFT_K8_CANDIDATE");
-    expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^e11f7e59/);
+    expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^6f09c23e/);
+    expect(CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverActual.shape).toContain("appeals");
+    expect(CLIENTS_PURCHASE_READ_SEMANTICS.blockerId).toBe("BLK-CLIENTS-PURCHASE-READ");
     const notReady = CLIENTS_CANONICAL_ROUTES.filter((r) => r.status !== "READY");
     expect(notReady.length).toBe(CLIENTS_CANONICAL_ROUTES.length);
     expect(routesForBlocker("BLK-OBSERVER-REFERRED").length).toBeGreaterThanOrEqual(4);
     expect(CLIENTS_K8_UNRESOLVED_GAPS.length).toBeGreaterThanOrEqual(10);
     expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-P5-518f6dd8");
-    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K8-J");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K8-N");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");

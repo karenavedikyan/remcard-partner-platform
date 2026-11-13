@@ -31,16 +31,42 @@ export const CLIENTS_RECEIVING_IDENTITY = {
     "list may resolve authorized owner principal for CRM reads; observer personal writes = session viewerUserId only (never org list owner proxy)",
   settingsScopeKey: "receivingPartnerUserId — prototype partnerSettings[receivingPartnerId]",
   activeAppealPredicate:
-    "isActiveAppealStage: inactive only sys_refused | sys_return; separate receiving archive/trash lifecycle (GAP-K8-L)",
+    "isActiveAppealStage @ 6f09c23e; cert unique (certificateId, receivingPartnerUserId) stage-only filter (GAP-K8-L lifecycle)",
+  k8IdentityTip: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
+  k1Tip: "f722a164fed0cbbb0315f30237e1568ebf340d69",
+  k2ListTip: "3c6ccc197bd565dba57feca81c42af48869ef62e",
+  k5Tip: "6c4444879d5651679c969b8009b3f39d05302c43",
 } as const;
 
 export const CLIENTS_ACTIVE_CERTIFICATE_SLOT = {
-  naturalKey: "(certificateId, receivingPartnerUserId) with optional branch dimension when set",
-  k8DraftIndex:
-    "UNRESOLVED @ e11f7e59: partial unique on (certificateId, receivingBranchId) + archivedAt IS NULL",
-  stageFilter: "stageKey NOT IN sys_refused, sys_return — matches isActiveAppealStage",
+  naturalKey: "(certificateId, receivingPartnerUserId)",
+  k8CanonicalIndex:
+    "PartnerClientAppeal_active_certificate_principal_uidx @ 6f09c23e — stageKey NOT IN sys_refused, sys_return",
+  stageFilter: "matches isActiveAppealStage (terminal stages only)",
   lifecycleGap:
-    "Prototype findActiveAppeal does not treat receiver archive UI bucket like archivedAt; K8 must align before duplicate active referrals",
+    "GAP-K8-L: receiving archive/trash vs prototype findActiveAppeal — index ignores archivedAt/deletedAt",
+} as const;
+
+/**
+ * Read-only purchase projection — coordinate canonical source; do NOT change reward lifecycle formulas.
+ * @see src/lib/clientAppeals/appealPurchaseProjection.ts @ K8 6f09c23e
+ */
+export const CLIENTS_PURCHASE_READ_SEMANTICS = {
+  blockerId: "BLK-CLIENTS-PURCHASE-READ",
+  owner: "K8",
+  k8Module: "projectAppealPurchaseFields",
+  currentMapping: {
+    paidAmountKopecks: "rewardSummary(lifecycle).paid — agent/bonus payout allocations, not client purchase total",
+    paidAt: "earliest RewardPayment.status===RECEIVED resolvedAt — payout confirm time, not client paid time",
+    purchaseOrderId: "PartnerClientAppeal.orderId (correct anchor)",
+  },
+  k2MirrorDraft3c6ccc19: {
+    paidAmountKopecks: "Order.totalAmount * 100 when order linked (also not verified against prototype semantics)",
+    divergence: "K2 observerK8Mirror.ts not yet importing K8 appealPurchaseProjection.ts",
+  },
+  p2Position:
+    "Prototype client purchase display needs authoritative read source from existing Order/financial owners — no new settlement rules in Clients prep",
+  status: "UNRESOLVED",
 } as const;
 export const CLIENTS_PARITY_PRODUCTION_BASE_SHA = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79";
 export const CLIENTS_NAVIGATOR_PREP_BASE_SHA = "8137ddd1ae5bad880fa28df34bab04e460bf2bdd";
@@ -54,11 +80,14 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   status: "DRAFT_K8_CANDIDATE",
   navigatorBranch: "cursor/remcard-k8-acceptance-20261113",
   handoffCommitSha: "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-  schemaCoreCommitSha: "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
-  priorSchemaCoreCommitSha: "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+  schemaCoreCommitSha: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
+  priorSchemaCoreCommitSha: "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
+  k1IdentityCommitSha: "f722a164fed0cbbb0315f30237e1568ebf340d69",
+  k5IdentityCommitSha: "6c4444879d5651679c969b8009b3f39d05302c43",
   k1ReceivingDoc: "src/lib/clientAppeals/K1_RECEIVING_API.md",
   k2ObserverDoc: "src/lib/clientAppeals/K2_OBSERVER_API.md",
-  k2HttpDraftCommitSha: "72193c7853df8291a5b7956059d574b834cdbce7",
+  k2HttpObserverActualSha: "3c6ccc197bd565dba57feca81c42af48869ef62e",
+  k2HttpStaleSha: "72193c7853df8291a5b7956059d574b834cdbce7",
   canonicalModule: "src/lib/clientAppeals/contract.ts",
   handoffDoc: "src/lib/clientAppeals/HANDOFF.md",
   migrationDraft: "prisma/migrations/20261113203000_client_appeals/migration.sql",
@@ -69,6 +98,7 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   auditReconcile: "audit/remcard-parallel-20261113/P2/K8-e11f7e59-list-response-reconcile-20261113.md",
   identityCorrectionHandoff:
     "audit/remcard-parallel-20261113/P2/K8-receiving-identity-correction-20261113.md",
+  k2EnvelopeReconcile: "audit/remcard-parallel-20261113/P2/K8-6f09c23e-k2-3c6ccc19-reconcile-20261113.md",
 } as const;
 
 /**
@@ -91,56 +121,50 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     include: "APPEAL_RECORD_LIST_INCLUDE + mapPartnerClientAppealToRecord",
     doc: CLIENTS_K8_SOURCE_OF_TRUTH.k2ObserverDoc,
   },
-  k2HttpObserverTarget: {
-    owner: "K2",
-    route: "GET /api/pro/client-appeals/observer (canonical)",
-    legacyInterimRoute: "/api/pro/referred-appeals",
-    shape:
-      "{ items: ClientAppealObserverReadDto[], receivingPartners: ObserverReceivingPartnerMetaWire[], personalMeta?: Record<string, ObserverPersonalMeta>, page?, limit?, total?, hasMore?, nextCursor? }",
-    pagination: "page/limit until K2 converges with lib cursor; then nextCursor primary",
-    paidAmountRule:
-      "paidAmountKopecks is DTO-only from recordMap.ts (order.totalAmount); not a Prisma column select",
-  },
-  k2HttpObserverActual72193c78: {
+  k2HttpObserverActual: {
     owner: "K2",
     route: "GET /api/pro/referred-appeals",
+    commitSha: "3c6ccc197bd565dba57feca81c42af48869ef62e",
+    shape:
+      "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
+    appealWire: "ClientAppealObserverReadDto[] via toObserverAppealDto(mapPartnerClientAppealToRecord)",
+    partnersWire: "ObserverReceivingPartnerSummary[] — GAP-K8-P: still distinct receivingBranchId",
+    personalMetaWire: "Record<appealId, ObserverPersonalMetaDto | null> per-row overlay join",
+    purchaseReadGap: "BLK-CLIENTS-PURCHASE-READ — mirror uses order.totalAmount, not K8 projection",
+  },
+  k2HttpObserverStale72193c78: {
     shape: "{ items, page, limit, total, hasMore, empty }",
-    missingForP3: [
-      "receivingPartners (by User.id)",
-      "personalMeta",
-      "receivingPartnerUserId on items",
-      "ClientAppealObserverReadDto allowlist fields",
-    ],
-    ormGap: "GAP-K8-F: OBSERVER_APPEAL_ROW_SELECT.paidAmountKopecks",
+    status: "SUPERSEDED by k2HttpObserverActual",
   },
   partnerP3Normalized: {
-    owner: "P3 list fetch (+ P5 field rename only)",
-    shape: "{ appeals, partners, personalMeta?, nextCursor? }",
+    owner: "P3 list fetch (+ field rename via OBSERVER_APPEAL_ADAPTER_MAP)",
+    shape: "{ appeals, partners, personalMeta?, page?, limit?, total?, hasMore? }",
     acceptsAliases: {
       personalMeta: ["personalOverlays"],
     },
-    mapsFromK2Http72193c78: {
-      appeals: "items[] → ObserverReferredAppeal via OBSERVER_APPEAL_ADAPTER_MAP",
-      partners:
-        "receivingPartners[] keyed by receivingPartnerUserId + profile display (not Branch.id mandatory)",
-      personalMeta:
-        "Record<appealId, ObserverPersonalMeta> from K2/K5 embed on list GET only; omit key when server sends none",
-      pagination: "page, limit, total, hasMore (not cursor) until K2 converges with k8 lib",
+    mapsFromK2Http3c6ccc19: {
+      appeals: "passthrough → ObserverReferredAppeal field renames",
+      partners: "passthrough → ObserverPartnerMeta (needs receivingPartnerUserId on wire — GAP-K8-O)",
+      personalMeta: "passthrough; null per appealId means no overlay row",
+      pagination: "page, limit, total, hasMore",
     },
+    k8LibNote: "K8 lib list remains { items, nextCursor } — HTTP envelope above is K2-only",
     type: "ObserverAppealsLoadResult ok branch in types.ts",
   },
 } as const;
 
 /** Navigator routes that exist in source @ 2026-11-13 — inventory authority over P5/P2 rename drafts. */
 export const CLIENTS_NAVIGATOR_ACTUAL_HTTP = {
-  k2ListDraftSha: "72193c7853df8291a5b7956059d574b834cdbce7",
-  k5PersonalDraftSha: "86ac3e354dc543817c061cb43565d0bf77545ab0",
+  k8IdentitySha: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
+  k1IdentitySha: "f722a164fed0cbbb0315f30237e1568ebf340d69",
+  k2ListActualSha: "3c6ccc197bd565dba57feca81c42af48869ef62e",
+  k5PersonalSha: "6c4444879d5651679c969b8009b3f39d05302c43",
   observerList: {
     method: "GET",
     path: "/api/pro/referred-appeals",
     owner: "K2",
     response200:
-      "{ items: ObserverReferredAppeal[], page, limit, total, hasMore, empty }",
+      "{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }",
     errors: "401 UNAUTHORIZED; 403 OBSERVER_REFERRER_INELIGIBLE; 400 OBSERVER_LIST_BAD_QUERY; 503 OBSERVER_APPEALS_SCHEMA_UNAVAILABLE",
     notBlockedContract: "Explicit 401/403/404 are HTTP outcomes, not partner BLOCKED_CONTRACT",
   },
@@ -253,17 +277,16 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     owner: "K8",
     topic:
       "PartnerClientAppeal requires receivingOrganizationId + receivingBranchId NOT NULL — blocks eligible solo specialist (no owned org)",
-    status: "UNRESOLVED",
-    requiredFix:
-      "Add receivingPartnerUserId NOT NULL; org/branch optional; receiving lists/queries keyed by principal",
+    status: "RESOLVED_6f09c23e",
+    requiredFix: "receivingPartnerUserId NOT NULL; org/branch nullable in migration.sql",
   },
   {
     id: "GAP-K8-K",
     owner: "K8+K1",
     topic:
       "Receiving CRM / certificate create paths require owned org+branch — incompatible with solo specialist receiving",
-    status: "UNRESOLVED",
-    requiredFix: "K1 receiving gate: requireOwnerClientsContext receiving principal without forced Organization",
+    status: "RESOLVED_f722a164",
+    requiredFix: "receivingPartnerUserId principal scope in K1 receiving paths",
   },
   {
     id: "GAP-K8-L",
@@ -277,27 +300,46 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K8-M",
     owner: "K2",
     topic:
-      "Observer list/by-partner @72193c78 filters receivingBranchId — must filter/group by receivingPartnerUserId",
-    status: "UNRESOLVED",
-    requiredFix: "Partner metadata from User profile; optional branch fields only when present",
+      "Observer list/by-partner filters receivingBranchId — must filter/group by receivingPartnerUserId",
+    status: "SUPERSEDED_BY_GAP-K8-P",
   },
   {
     id: "GAP-K8-F",
     owner: "K2",
     topic:
-      "GET /api/pro/referred-appeals @72193c78: Prisma select paidAmountKopecks + count where paidAmountKopecks — column does not exist on PartnerClientAppeal",
-    status: "UNRESOLVED",
-    requiredFix:
-      "Use APPEAL_RECORD_LIST_INCLUDE + mapPartnerClientAppealToRecord or toObserverAppealDto; align with observerList.ts",
+      "GET /api/pro/referred-appeals @72193c78: Prisma select paidAmountKopecks — column does not exist",
+    status: "RESOLVED_3c6ccc19",
+    requiredFix: "mapPartnerClientAppealToRecord + order include",
   },
   {
     id: "GAP-K8-G",
-    owner: "K2+K5",
+    owner: "K2",
+    topic: "K2 HTTP list missing appeals/partners/personalMeta envelope",
+    status: "RESOLVED_3c6ccc19",
+    requiredFix: "GET returns appeals, partners, personalMeta @ route.ts",
+  },
+  {
+    id: "GAP-K8-N",
+    owner: "K8+K1+K2",
     topic:
-      "K2 HTTP list missing receivingPartners + personalMeta + receivingPartnerUserId on items",
+      "BLK-CLIENTS-PURCHASE-READ: paidAmountKopecks/paidAt map bonus payout lifecycle, not prototype client purchase",
     status: "UNRESOLVED",
-    requiredFix:
-      "Emit CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget fields on canonical observer GET",
+    requiredFix: "Define canonical read projection without changing rewardSummary/settlement",
+  },
+  {
+    id: "GAP-K8-O",
+    owner: "K2",
+    topic:
+      "observerK8Mirror ClientAppealObserverReadDto omits receivingPartnerUserId; optional org/branch still required strings",
+    status: "UNRESOLVED",
+    requiredFix: "Import K8 contract.ts + dto after merge; align with 6f09c23e",
+  },
+  {
+    id: "GAP-K8-P",
+    owner: "K2",
+    topic: "partners[] built via distinct receivingBranchId — not receivingPartnerUserId principal cards",
+    status: "UNRESOLVED",
+    requiredFix: "distinct + summary keyed by receivingPartnerUserId + User profile metadata",
   },
   {
     id: "GAP-K8-H",
@@ -332,7 +374,7 @@ export const CLIENTS_PARTNER_SETTINGS_SCOPE = {
   prototype: "partnerSettings[receivingPartnerId] keyed by receiving principal User.id",
   k8Target: "PartnerClientAppealPartnerSettings.receivingPartnerUserId @unique",
   k8DraftWrong: "PartnerClientAppealPartnerSettings.organizationId @unique @ e11f7e59 migration",
-  p2Decision: "GAP-K8-J/K — K8 migrates settings FK to receivingPartnerUserId; org/branch optional metadata",
+  p2Decision: "RESOLVED @ 6f09c23e — settings.receivingPartnerUserId @unique",
   appealRowAnchor: "receivingPartnerUserId required; receivingOrganizationId/receivingBranchId optional",
 } as const;
 
@@ -440,7 +482,7 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     owner: "K2",
     authGate: "requireObserverReferredAppealsRead @72193c78",
     notes:
-      "Actual list wire { items, page, limit, total, hasMore }; P3 adapts to appeals/partners/personalMeta. GAP-K8-F/G.",
+      "200: appeals, partners, personalMeta, pagination @3c6ccc19; GAP-K8-O/P/N remain.",
   },
   {
     method: "GET",
