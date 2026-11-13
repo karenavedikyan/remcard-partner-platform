@@ -10,6 +10,7 @@
 | | |
 |---|---|
 | **Client path** | `GET /api/pro/referred-appeals` via `remcardFetch` → `/api/remcard/api/pro/referred-appeals` |
+| **Client drill** | `GET /api/pro/referred-appeals/:id` (K2 `c49d71dc`) via `fetchObserverReferredAppealDetail` → `{ appeal, receivingPartner, timeline[{at,text}], purchase? }`; P3 `ObserverClientDetailHost` |
 | **Implementation** | `src/lib/clients-parity/fetch-observer-appeals.ts` |
 | **BFF today** | **403 Path not allowed** until `remcard-proxy.ts` allowlist (P1/Root), **not** П3 |
 
