@@ -30,4 +30,13 @@ describe("observer visual tokens (numeric, C42/C44 partial)", () => {
     expect(css).not.toMatch(/max-width:\s*375px[\s\S]*\.stats/);
     expect(css).not.toMatch(/max-width:\s*768px[\s\S]*repeat\(2,\s*minmax/);
   });
+
+  it("stacks personal client rows at max-width 768px (no five-column grid)", () => {
+    expect(css).toMatch(
+      /max-width:\s*768px[\s\S]*\.personalRowGrouped[\s\S]*grid-template-areas[\s\S]*"check open"/,
+    );
+    expect(css).not.toMatch(
+      /max-width:\s*768px[\s\S]*\.personalRowGrouped[\s\S]*145px\s+150px/,
+    );
+  });
 });

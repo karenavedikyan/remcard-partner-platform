@@ -1,0 +1,70 @@
+{
+  "measuredAt": "2026-11-13T10:39:33.261Z",
+  "candidateSha": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
+  "prototypeReferenceSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "harness": "scripts/clients-parity-20261113/observer-list-harness",
+  "viewportHeight": 812,
+  "records": [
+    {
+      "innerWidth": 768,
+      "theme": "dark",
+      "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
+      "gridTemplateColumns": "24px 708px",
+      "openButton": {
+        "x": 48,
+        "y": 206,
+        "width": 708,
+        "height": 47.5
+      },
+      "geometryPass": true,
+      "navigationPass": true,
+      "pass": true
+    },
+    {
+      "innerWidth": 375,
+      "theme": "dark",
+      "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
+      "gridTemplateColumns": "24px 315px",
+      "openButton": {
+        "x": 48,
+        "y": 206,
+        "width": 315,
+        "height": 47.5
+      },
+      "geometryPass": true,
+      "navigationPass": true,
+      "pass": true
+    },
+    {
+      "innerWidth": 360,
+      "theme": "dark",
+      "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
+      "gridTemplateColumns": "24px 300px",
+      "openButton": {
+        "x": 48,
+        "y": 206,
+        "width": 300,
+        "height": 47.5
+      },
+      "geometryPass": true,
+      "navigationPass": true,
+      "pass": true
+    },
+    {
+      "innerWidth": 320,
+      "theme": "dark",
+      "selector": "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
+      "gridTemplateColumns": "24px 260px",
+      "openButton": {
+        "x": 48,
+        "y": 206,
+        "width": 260,
+        "height": 47.5
+      },
+      "geometryPass": true,
+      "navigationPass": true,
+      "pass": true
+    }
+  ],
+  "allPass": true
+}

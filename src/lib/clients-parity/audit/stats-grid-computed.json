@@ -1,6 +1,6 @@
 {
-  "measuredAt": "2026-11-13T10:34:15.306Z",
-  "candidateSha": "5f9bf47fe4495c7685453f4850fc1ce967979401",
+  "measuredAt": "2026-11-13T10:39:35.179Z",
+  "candidateSha": "e4ddc09813b5d06909a166a4d1190f79bf6918fb",
   "prototypeReferenceSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "cssSource": "src/components/clients/observer/observer.module.css",
   "selector": ".partnerCard .stats",

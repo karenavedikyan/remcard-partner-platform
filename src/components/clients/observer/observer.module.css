@@ -445,6 +445,87 @@
   grid-template-columns: 24px minmax(0, 1fr) minmax(130px, 0.65fr) 145px 150px;
 }
 
+/* Narrow viewports: stack grouped/flat client rows (prototype observer-personal-list). */
+@media (max-width: 768px) {
+  .clientColumns {
+    display: none;
+  }
+
+  .personalRowGrouped {
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-areas:
+      "check open"
+      "status status"
+      "updated updated"
+      "edit edit";
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: start;
+  }
+
+  .personalRowGrouped > .personalCheck {
+    grid-area: check;
+  }
+
+  .personalRowGrouped > .personalOpen {
+    grid-area: open;
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    align-self: stretch;
+  }
+
+  .personalRowGrouped > .personalStatus {
+    grid-area: status;
+  }
+
+  .personalRowGrouped > .clientUpdated {
+    grid-area: updated;
+  }
+
+  .personalRowGrouped > .ghostBtn {
+    grid-area: edit;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .personalRow:not(.personalRowGrouped) {
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-areas:
+      "check open"
+      "status status"
+      "updated updated"
+      "edit edit";
+    column-gap: 12px;
+    row-gap: 8px;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .personalCheck {
+    grid-area: check;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .personalOpen {
+    grid-area: open;
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .personalStatus {
+    grid-area: status;
+  }
+
+  .personalRow:not(.personalRowGrouped) > time {
+    grid-area: updated;
+  }
+
+  .personalRow:not(.personalRowGrouped) > .ghostBtn {
+    grid-area: edit;
+    justify-self: start;
+    max-width: 100%;
+  }
+}
+
 .personalOpen {
   display: grid;
   gap: 4px;
