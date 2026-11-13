@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import {
-  receivingAppealPurchaseDetailHref,
-  receivingAppealReturnHref,
-} from "@/components/clients/receiving/receiving-detail-actions-contract";
+import { receivingAppealReturnHref } from "@/components/clients/receiving/receiving-detail-actions-contract";
+import { receivingAppealPurchaseDetailHrefForReturn } from "@/lib/scanner/receiving-appeal-handoff";
 import type { ReceivingAppealScannerContext } from "@/lib/scanner/receiving-appeal-handoff";
 import type { ReceivingAppealLinkPhase } from "./useReceivingAppealScannerHandoff";
 import styles from "./scanner.module.css";
@@ -16,6 +14,17 @@ type BannerProps = {
 };
 
 export function ReceivingAppealScannerBanner({ context, appealId }: BannerProps) {
+  if (context.status === "invalid_param") {
+    return (
+      <div className={styles.card} role="alert" data-testid="ca-scanner-receiving-context-invalid">
+        <p className={styles.meta}>{context.message}</p>
+        <Link href="/clients" className={styles.openHistoryLink}>
+          К клиентам
+        </Link>
+      </div>
+    );
+  }
+
   if (!appealId) return null;
 
   if (context.status === "loading") {
@@ -36,7 +45,12 @@ export function ReceivingAppealScannerBanner({ context, appealId }: BannerProps)
         {context.purchaseOrderId ? (
           <p className={styles.meta}>
             Заказ уже привязан:{" "}
-            <Link href={receivingAppealPurchaseDetailHref(context.purchaseOrderId)}>
+            <Link
+              href={receivingAppealPurchaseDetailHrefForReturn(
+                context.purchaseOrderId,
+                context.appealId,
+              )}
+            >
               {context.purchaseOrderId}
             </Link>
           </p>
@@ -89,7 +103,7 @@ export function ReceivingAppealScannerSuccessLinkPanel({
   onRetryLink,
 }: SuccessLinkProps) {
   const returnHref = receivingAppealReturnHref(appealId);
-  const purchaseHref = receivingAppealPurchaseDetailHref(orderId);
+  const purchaseHref = receivingAppealPurchaseDetailHrefForReturn(orderId, appealId);
 
   if (linkPhase === "linked") {
     return (

@@ -12,6 +12,10 @@ vi.mock("./QrScanner", () => ({
   QrScanner: () => null,
 }));
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const USER_ID = "m1fix-store-000000000001";
 const CERT_CODE = "RC-E2E-FLOW-001";
 

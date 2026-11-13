@@ -113,6 +113,8 @@ export type ReceivingAppealListRowWire = {
   id: string;
   clientDisplayName?: string | null;
   certificateId?: string | null;
+  /** K1 scan/preview promo when certificate-bound — never substitute raw certificateId. */
+  certificatePromoCode?: string | null;
   receivingPartnerUserId?: string | null;
   receivingPartnerId?: string | null;
   receivingOrganizationId?: string | null;
@@ -208,6 +210,8 @@ export type ReceivingAppealDetailWire = {
   history: ReceivingAppealHistoryWire[];
   workingStages?: ReceivingWorkingStage[];
   refusalReasons?: string[];
+  readOnly?: boolean;
+  access?: Partial<ReceivingPrincipalAccess>;
 };
 
 /** Mapped detail for P4 — preserves `revision` for CAS writes. */

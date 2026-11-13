@@ -1,3 +1,4 @@
+/** P6 receiving glue: on full branch checkout `57ca4680`, replay `audit/remcard-parallel-20261113/P6/scanner-hub-57ca4680-glue.md` on `ScannerHub.tsx`. */
 "use client";
 
 import Link from "next/link";
@@ -192,9 +193,9 @@ function RestoredAttemptBlock({
 
 export function ScannerHub({ userId }: ScannerHubProps) {
   const searchParams = useSearchParams();
-  const receivingHandoff = useReceivingAppealScannerHandoff(searchParams.get("appealId"));
-  const appealContextReady =
-    !receivingHandoff.appealId || receivingHandoff.context.status === "ready";
+  const receivingHandoff = useReceivingAppealScannerHandoff(searchParams?.get("appealId") ?? null);
+  const receivingRef = useRef(receivingHandoff);
+  receivingRef.current = receivingHandoff;
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
   const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
@@ -220,6 +221,16 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const previewAbortRef = useRef<AbortController | null>(null);
   const submitInFlightRef = useRef(false);
   const sessionOrderCompletedRef = useRef(false);
+  const prefillAppealGenRef = useRef(0);
+
+  useEffect(() => {
+    const code = receivingHandoff.certificatePrefillCode;
+    if (!code || !receivingHandoff.appealScoped) {
+      return;
+    }
+    const gen = ++prefillAppealGenRef.current;
+    setManualCode((prev) => (prev.trim() ? prev : gen === prefillAppealGenRef.current ? code : prev));
+  }, [receivingHandoff.appealScoped, receivingHandoff.certificatePrefillCode, receivingHandoff.appealId]);
 
   const showNewPartnerEmpty = shouldShowScannerNewPartnerEmpty(activityProbe);
 
@@ -301,8 +312,13 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setOrderUncertain(false);
           setOrderConflict(false);
           setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
-          if (receivingHandoff.appealId && receivingHandoff.context.status === "ready") {
-            receivingHandoff.beginOrderLinkAfterSuccess(data.order.id);
+          const handoff = receivingRef.current;
+          if (
+            handoff.appealId &&
+            handoff.context.status === "ready" &&
+            !handoff.context.orderAlreadyLinked
+          ) {
+            handoff.beginOrderLinkAfterSuccess(data.order.id);
           }
           break;
         }
@@ -348,7 +364,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           break;
       }
     },
-    [receivingHandoff, userId],
+    [userId],
   );
 
   const executeOrderPost = useCallback(
@@ -453,7 +469,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         }
 
         if ("allowed" in data && data.allowed) {
-          const certMismatch = receivingHandoff.assertPreviewAllowed(data);
+          const certMismatch = receivingRef.current.assertPreviewAllowed(data);
           if (certMismatch) {
             if (!options?.optional) {
               setPreviewError(certMismatch);
@@ -517,7 +533,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         }
       }
     },
-    [previewLoading, receivingHandoff],
+    [previewLoading],
   );
 
   useEffect(() => {
@@ -559,9 +575,22 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitting ||
       orderUncertain ||
       orderConflict ||
-      !isPreviewSessionAllowed(previewSession) ||
-      !appealContextReady
+      !isPreviewSessionAllowed(previewSession)
     ) {
+      return;
+    }
+
+    const handoff = receivingRef.current;
+    if (handoff.appealInvalid || (handoff.appealScoped && !handoff.allowsNewStoreOrder)) {
+      setSubmitError(
+        handoff.context.status === "ready" && handoff.context.orderAlreadyLinked
+          ? "К обращению уже привязан заказ."
+          : "Нет права оформить покупку для этого обращения.",
+      );
+      return;
+    }
+    if (handoff.requiresAppealReady) {
+      setSubmitError("Загружаем обращение. Повторите после готовности контекста.");
       return;
     }
 
@@ -603,7 +632,6 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     await executeOrderPost(created.record, false);
   }, [
     amountDrafts,
-    appealContextReady,
     rewardDrafts,
     executeOrderPost,
     orderConflict,
@@ -622,12 +650,34 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
 
+  if (receivingHandoff.appealInvalid) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
   if (
-    receivingHandoff.appealId &&
+    receivingHandoff.appealScoped &&
     (receivingHandoff.context.status === "forbidden" ||
       receivingHandoff.context.status === "not_found" ||
       receivingHandoff.context.status === "blocked" ||
       receivingHandoff.context.status === "error")
+  ) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
+  if (
+    receivingHandoff.appealScoped &&
+    receivingHandoff.context.status === "ready" &&
+    receivingHandoff.context.orderAlreadyLinked
   ) {
     return (
       <ReceivingAppealScannerBanner

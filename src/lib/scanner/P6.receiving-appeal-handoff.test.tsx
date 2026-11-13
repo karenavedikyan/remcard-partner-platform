@@ -37,6 +37,7 @@ describe("P6.receiving-appeal-handoff", () => {
           id: "ap_x",
           clientDisplayName: "Клиент",
           certificateId: "cert-1",
+          certificatePromoCode: "RC-PREFILL",
           purchaseOrderId: null,
           stageKey: "ws_new",
           createdAt: "2026-01-01T00:00:00Z",
@@ -44,6 +45,8 @@ describe("P6.receiving-appeal-handoff", () => {
         },
         revision: 4,
         history: [],
+        readOnly: false,
+        access: { listAllowed: true, mutationsAllowed: true },
       },
     });
     const ctx = await loadReceivingAppealScannerContext("ap_x");
@@ -52,6 +55,28 @@ describe("P6.receiving-appeal-handoff", () => {
       appealId: "ap_x",
       revision: 4,
       certificateId: "cert-1",
+      certificatePrefillCode: "RC-PREFILL",
     });
+  });
+
+  it("read-only detail fails closed", async () => {
+    vi.spyOn(api, "fetchReceivingAppealDetailWire").mockResolvedValue({
+      ok: true,
+      wire: {
+        appeal: {
+          id: "ap_ro",
+          clientDisplayName: "RO",
+          purchaseOrderId: null,
+          stageKey: "ws_new",
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z",
+        },
+        revision: 1,
+        history: [],
+        readOnly: true,
+      },
+    });
+    const ctx = await loadReceivingAppealScannerContext("ap_ro");
+    expect(ctx.status).toBe("forbidden");
   });
 });
