@@ -5,7 +5,7 @@ import {
   StandaloneSrcdocStaleError,
   waitForEmbedChildContentReady,
   waitForStandaloneFrameContent,
-} from "./cabinet-standalone-srcdoc.js?v=embed10";
+} from "./cabinet-standalone-srcdoc.js?v=embed11";
 import { demoRandomToken } from "./demo-random-id.js";
 
 export const STANDALONE_BY_N = {
@@ -138,11 +138,20 @@ export function createCabinetStandaloneHost(config) {
       <span class="cabinet-standalone-host__title" data-standalone-title></span>
       <button type="button" class="cabinet-standalone-host__btn" data-action="proto-standalone-close" data-testid="proto-standalone-close">Закрыть</button>
     </header>
-    <iframe class="cabinet-standalone-host__frame" title="Встроенный макет прототипа" sandbox="allow-scripts allow-same-origin allow-forms" data-testid="cabinet-standalone-frame"></iframe>`;
+    <div class="cabinet-standalone-host__stage">
+      <iframe class="cabinet-standalone-host__frame" title="Встроенный макет прототипа" sandbox="allow-scripts allow-same-origin allow-forms" data-testid="cabinet-standalone-frame"></iframe>
+      <div class="cabinet-standalone-host__load" data-embed-load-state data-testid="proto-embed-load-state" hidden>
+        <p class="cabinet-standalone-host__load-msg" data-embed-load-msg>Загрузка макета…</p>
+        <button type="button" class="cabinet-standalone-host__btn cabinet-standalone-host__btn--retry" data-action="proto-embed-retry" data-testid="proto-embed-retry" hidden>Повторить загрузку</button>
+      </div>
+    </div>`;
   document.body.appendChild(hostEl);
 
   const frame = hostEl.querySelector("[data-testid='cabinet-standalone-frame']");
   const titleEl = hostEl.querySelector("[data-standalone-title]");
+  const loadStateEl = hostEl.querySelector("[data-embed-load-state]");
+  const loadMsgEl = hostEl.querySelector("[data-embed-load-msg]");
+  const loadRetryEl = hostEl.querySelector("[data-action='proto-embed-retry']");
 
   let openPageN = null;
   let openQuery = "";
@@ -154,12 +163,58 @@ export function createCabinetStandaloneHost(config) {
   let srcdocFetchAbort = null;
   let srcdocReadyAbort = null;
   let contextSendGeneration = 0;
+  let contextPulseTimer = 0;
+
+  function stopContextPulse() {
+    if (contextPulseTimer) {
+      clearInterval(contextPulseTimer);
+      contextPulseTimer = 0;
+    }
+  }
+
+  function startContextPulse() {
+    stopContextPulse();
+    let ticks = 0;
+    contextPulseTimer = setInterval(() => {
+      if (hostEl.hidden || frame.dataset.embedContentReady === "1") {
+        stopContextPulse();
+        return;
+      }
+      if (ticks++ >= 48) {
+        stopContextPulse();
+        return;
+      }
+      void sendContextToFrame();
+    }, 400);
+  }
+
+  function setEmbedLoadState(state, message) {
+    hostEl.dataset.embedLoadState = state || "";
+    if (!loadStateEl) return;
+    if (state === "ready" || state === "idle") {
+      loadStateEl.hidden = true;
+      frame.hidden = false;
+      if (loadRetryEl) loadRetryEl.hidden = true;
+      return;
+    }
+    loadStateEl.hidden = false;
+    if (loadMsgEl) {
+      loadMsgEl.textContent =
+        message ||
+        (state === "stalled"
+          ? "Макет не ответил вовремя. Можно повторить без выхода из кабинета."
+          : "Загрузка макета…");
+    }
+    if (loadRetryEl) loadRetryEl.hidden = state !== "stalled";
+    frame.hidden = state === "stalled";
+  }
 
   function embedTokenMatches(dataToken) {
     return String(dataToken ?? "") === String(openEmbedToken ?? "");
   }
 
   function abortPendingSrcdocWork() {
+    stopContextPulse();
     srcdocFetchAbort?.abort();
     srcdocFetchAbort = null;
     srcdocReadyAbort?.abort();
@@ -326,6 +381,7 @@ export function createCabinetStandaloneHost(config) {
   function closeHost({ back = false, reset = false } = {}) {
     contextSendGeneration += 1;
     abortPendingSrcdocWork();
+    setEmbedLoadState("idle");
     srcdocLoadGeneration += 1;
     hostEl.hidden = true;
     document.querySelector(".shell")?.classList.remove("cabinet-standalone-active");
@@ -470,8 +526,24 @@ export function createCabinetStandaloneHost(config) {
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
     const commitStandaloneReady = () => {
       if (!assertSrcdocSessionActive()) return;
+      stopContextPulse();
       syncEmbeddedPageBadge(loadPageN);
       frame.dataset.embedContentReady = "1";
+      setEmbedLoadState("ready");
+    };
+
+    const markStandaloneStalled = (err) => {
+      if (!assertSrcdocSessionActive()) return;
+      stopContextPulse();
+      srcdocFetchAbort?.abort();
+      srcdocReadyAbort?.abort();
+      const timedOut = /timeout/i.test(String(err?.message || ""));
+      setEmbedLoadState(
+        "stalled",
+        timedOut
+          ? "Макет долго отвечает. Нажмите «Повторить», чтобы обновить сессию."
+          : "Не удалось отобразить макет. Повторите загрузку.",
+      );
     };
 
     const waitReady = ({ timeoutMs = 20000, signal = null, requireToken = true } = {}) =>
@@ -481,62 +553,77 @@ export function createCabinetStandaloneHost(config) {
         timeoutMs,
         signal,
       });
-    const contentReadyPromise = useSrcdoc ? null : waitReady({ timeoutMs: 20000, requireToken: false });
 
-    frame.onload = () => {
-      if (!assertSrcdocSessionActive() && useSrcdoc) return;
-      if (!useSrcdoc) sendContextToFrame();
-      if (!useSrcdoc && contentReadyPromise) {
-        void contentReadyPromise
-          .then(() => {
-            if (openPageN !== loadPageN || openEmbedToken !== loadToken) return;
-            commitStandaloneReady();
-          })
-          .catch((err) => {
-            if (err?.name === "AbortError") return;
-            if (openPageN !== loadPageN || openEmbedToken !== loadToken) return;
-            notify?.("Встроенная страница не загрузилась. Обновите просмотр.", "info");
-            closeHost();
-          });
-      }
+    const awaitEmbedContentReady = async (
+      loadAbort,
+      { requireToken = true, timeoutMs = 25000, opaqueSrcdoc = false } = {},
+    ) => {
+      const msgReady = observeEmbedReadyAbort(
+        waitReady({ timeoutMs, signal: loadAbort.signal, requireToken }),
+      );
+      if (opaqueSrcdoc) return msgReady;
+      return Promise.race([
+        msgReady,
+        waitForStandaloneFrameContent(frame, loadPageN, { timeoutMs }),
+      ]);
     };
-    if (useSrcdoc) {
+
+    const runSrcdocLoad = async () => {
+      setEmbedLoadState("loading");
+      startContextPulse();
       delete frame.dataset.embedContentReady;
       frame.dataset.embedSessionToken = loadToken;
-      srcdocReadyAbort = new AbortController();
-      const contentReady = observeEmbedReadyAbort(
-        waitReady({
-          timeoutMs: 25000,
-          signal: srcdocReadyAbort.signal,
+      frame.hidden = false;
+      const loadAbort = new AbortController();
+      srcdocFetchAbort = loadAbort;
+      srcdocReadyAbort = loadAbort;
+      try {
+        const mountedUrl = await loadStandaloneSrcdoc(frame, loadPageN, def.path, extraQuery, urlBridge, {
+          guestHash,
+          sessionToken: loadToken,
+          signal: loadAbort.signal,
+          assertActive: assertSrcdocSessionActive,
+        });
+        if (!mountedUrl || !assertSrcdocSessionActive()) return;
+        void sendContextToFrame();
+        await awaitEmbedContentReady(loadAbort, {
           requireToken: true,
-        }),
-      );
-      srcdocFetchAbort = new AbortController();
-      void loadStandaloneSrcdoc(frame, loadPageN, def.path, extraQuery, urlBridge, {
-        guestHash,
-        sessionToken: loadToken,
-        signal: srcdocFetchAbort.signal,
-        assertActive: assertSrcdocSessionActive,
-      })
-        .then((mountedUrl) => {
-          if (!mountedUrl || !assertSrcdocSessionActive()) return null;
-          return contentReady;
-        })
-        .then((ready) => {
-          if (!ready || !assertSrcdocSessionActive()) return;
+          timeoutMs: 25000,
+          opaqueSrcdoc: true,
+        });
+        if (!assertSrcdocSessionActive()) return;
+        commitStandaloneReady();
+      } catch (err) {
+        if (err?.name === "AbortError" || err instanceof StandaloneSrcdocStaleError) return;
+        markStandaloneStalled(err);
+      }
+    };
+
+    frame.onload = null;
+
+    if (useSrcdoc) {
+      void runSrcdocLoad();
+      return true;
+    }
+
+    setEmbedLoadState("loading");
+    startContextPulse();
+    const nativeLoadAbort = new AbortController();
+    srcdocFetchAbort = nativeLoadAbort;
+    srcdocReadyAbort = nativeLoadAbort;
+    frame.onload = () => {
+      if (!assertSrcdocSessionActive()) return;
+      void sendContextToFrame();
+      void observeEmbedReadyAbort(awaitEmbedContentReady(nativeLoadAbort, { requireToken: false, timeoutMs: 20000 }))
+        .then(() => {
+          if (openPageN !== loadPageN || openEmbedToken !== loadToken) return;
           commitStandaloneReady();
         })
         .catch((err) => {
-          if (err?.name === "AbortError" || err instanceof StandaloneSrcdocStaleError) return;
-          if (!assertSrcdocSessionActive()) return;
-          notify?.(
-            "В preview вложенный макет открывается через загрузку HTML, а не iframe.src (CSP frame-ancestors). Не удалось отобразить страницу.",
-            "info",
-          );
-          closeHost({ reset: false });
+          if (err?.name === "AbortError") return;
+          markStandaloneStalled(err);
         });
-      return true;
-    }
+    };
     frame.removeAttribute("srcdoc");
     delete frame.dataset.embedMount;
     delete frame.dataset.embedContentReady;
@@ -567,10 +654,14 @@ export function createCabinetStandaloneHost(config) {
       if (frame.dataset.embedMount === "srcdoc") {
         if (!embedTokenMatches(data.token)) return;
       } else if (String(data.token ?? "") !== "" && !embedTokenMatches(data.token)) return;
+      stopContextPulse();
+      srcdocFetchAbort?.abort();
+      srcdocReadyAbort?.abort();
       syncEmbeddedPageBadge(openPageN);
       frame.dataset.embedContentReady = "1";
       if (data.guestMarker) frame.dataset.embedGuestMarker = String(data.guestMarker);
       else delete frame.dataset.embedGuestMarker;
+      setEmbedLoadState("ready");
       return;
     }
     if (data.type === "nav" && data.pageN) {
@@ -610,6 +701,19 @@ export function createCabinetStandaloneHost(config) {
   } catch (_) {}
 
   hostEl.addEventListener("click", (e) => {
+    const retry = e.target.closest('[data-action="proto-embed-retry"]');
+    if (retry) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!openPageN) return;
+      doOpen(openPageN, {
+        embedCtx: openCtx,
+        extraQuery: openQuery,
+        replace: true,
+        chain: false,
+      });
+      return;
+    }
     const back = e.target.closest('[data-action="proto-standalone-back"]');
     const close = e.target.closest('[data-action="proto-standalone-close"]');
     if (!back && !close) return;

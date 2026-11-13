@@ -213,14 +213,13 @@
     window.__protoCabinetEmbedSignalContentReady?.(143);
   }
 
+  mountPanelMode();
   window.__protoCabinetEmbedAdapterReady?.(143);
   post({ type: "need-context", pageN: 143 });
   document.addEventListener("DOMContentLoaded", () => {
-    mountPanelMode();
     post({ type: "need-context", pageN: 143 });
     wireCoopClick("pause", "toggle-pause");
     wireCoopClick("edit-terms", "edit-terms");
     wireCoopClick("certificate", "certificate");
-    signalCoopEmbedReady();
   });
 })();

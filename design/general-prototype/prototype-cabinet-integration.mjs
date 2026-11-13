@@ -313,6 +313,19 @@ assert.match(hostJs, /abortPendingSrcdocWork/, "host cancels in-flight srcdoc wo
 assert.match(hostJs, /assertSrcdocSessionActive/, "host ties srcdoc load to open generation and token");
 assert.match(hostJs, /srcdocLoadGeneration/, "stale srcdoc generation guard");
 assert.match(hostJs, /observeEmbedReadyAbort/, "srcdoc readiness abort observed immediately");
+assert.match(hostJs, /setEmbedLoadState/, "host shows in-portal load and stall states");
+assert.match(hostJs, /proto-embed-retry/, "host can retry embed load without closing cabinet");
+assert.match(hostJs, /startContextPulse/, "host resends context until content-ready");
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8"),
+  /DOMContentLoaded[\s\S]*signalCoopEmbedReady/,
+  "143 must not claim content-ready before host context",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8"),
+  /mountPanelMode\(\);[\s\S]*__protoCabinetEmbedAdapterReady/,
+  "143 mounts embed panel before adapter handshake",
+);
 assert.match(embedChild, /__protoCabinetEffectiveHash/, "embed child exposes effective guest hash in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8"), /__protoCabinetEmbedParams/, "144 reads injected embed params in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail-embed.js"), "utf8"), /__protoCabinetEmbedParams/, "144 embed module reads injected params");

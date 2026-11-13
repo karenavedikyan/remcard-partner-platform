@@ -1661,6 +1661,157 @@ try {
   );
   await opaqueCtx.close();
 
+  async function enterNestStoreCabinet(page) {
+    await page.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+    await page.waitForFunction(
+      () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+      null,
+      { timeout: 25000 },
+    );
+    await page.evaluate(() => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+      if (roleEl) {
+        roleEl.value = "store";
+        roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      doc?.documentElement?.setAttribute("data-theme", "dark");
+      doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+    });
+    await page.waitForFunction(
+      () => document.querySelector("#cabinet")?.contentDocument?.querySelector(".shell aside.sidebar"),
+      null,
+      { timeout: 25000 },
+    );
+  }
+
+  const mobileDarkDirect = await browser.newPage();
+  await mobileDarkDirect.setViewportSize({ width: 654, height: 763 });
+  await mobileDarkDirect.emulateMedia({ colorScheme: "dark" });
+  await enterNestStoreCabinet(mobileDarkDirect);
+  await mobileDarkDirect.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"], [data-action="nav:links"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await mobileDarkDirect.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        host &&
+        !host.hidden &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143 &&
+        frame?.dataset?.embedContentReady === "1" &&
+        host.dataset.embedLoadState !== "stalled"
+      );
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await mobileDarkDirect.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await mobileDarkDirect.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return (
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 &&
+        frame?.dataset?.embedContentReady === "1"
+      );
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await mobileDarkDirect.close();
+
+  const slowReadyNest = await browser.newPage();
+  await slowReadyNest.setViewportSize({ width: 375, height: 812 });
+  let releaseSlow143 = null;
+  const holdSlow143 = new Promise((resolve) => {
+    releaseSlow143 = resolve;
+  });
+  await slowReadyNest.route(/partner-cooperation-detail\.html/i, async (route) => {
+    await holdSlow143;
+    await route.continue();
+  });
+  await enterNestStoreCabinet(slowReadyNest);
+  await slowReadyNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await slowReadyNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const load = doc?.querySelector("[data-testid='proto-embed-load-state']");
+      return load && !load.hidden;
+    },
+    null,
+    { timeout: 15000 },
+  );
+  const badgeBeforeSlow = await slowReadyNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    return doc?.defaultView?.__protoCabinetEmbeddedPage?.n ?? null;
+  });
+  assert.equal(badgeBeforeSlow, null, "reviewer badge must stay on parent page until content-ready");
+  releaseSlow143?.();
+  await slowReadyNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return frame?.dataset?.embedContentReady === "1" && doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143;
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await slowReadyNest.unroute(/partner-cooperation-detail\.html/i);
+  await slowReadyNest.close();
+
+  const retryFailNest = await browser.newPage();
+  await retryFailNest.setViewportSize({ width: 1280, height: 900 });
+  let fail143Once = true;
+  await retryFailNest.route(/partner-cooperation-detail\.html/i, async (route) => {
+    if (fail143Once) {
+      fail143Once = false;
+      await route.abort("failed");
+      return;
+    }
+    await route.continue();
+  });
+  await enterNestStoreCabinet(retryFailNest);
+  await retryFailNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await retryFailNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      return doc?.querySelector("[data-testid='cabinet-standalone-host']")?.dataset?.embedLoadState === "stalled";
+    },
+    null,
+    { timeout: 35000 },
+  );
+  const cabRetry = retryFailNest.frameLocator("#cabinet");
+  await cabRetry.locator("[data-testid='proto-embed-retry']").click();
+  await retryFailNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return frame?.dataset?.embedContentReady === "1" && doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143;
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await retryFailNest.unroute(/partner-cooperation-detail\.html/i);
+  await retryFailNest.close();
+
   console.log("prototype-cabinet-integration.browser.mjs: ok");
 } finally {
   await browser.close();

@@ -73,6 +73,14 @@ html[data-theme="dark"] .cabinet-standalone-host--portal {
   text-overflow: ellipsis;
 }
 
+.cabinet-standalone-host__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .cabinet-standalone-host__frame {
   flex: 1 1 auto;
   min-height: 0;
@@ -80,6 +88,39 @@ html[data-theme="dark"] .cabinet-standalone-host--portal {
   border: 0;
   background: var(--embed-host-bg, #f6f6f4);
   overflow: hidden;
+}
+
+.cabinet-standalone-host__load[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.cabinet-standalone-host__load {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--embed-host-bg, #f6f6f4) 92%, transparent);
+  color: var(--embed-host-muted, #61645f);
+  z-index: 2;
+}
+
+.cabinet-standalone-host__load-msg {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 22rem;
+}
+
+.cabinet-standalone-host__btn--retry {
+  border-color: var(--embed-host-accent, #bb3035);
+  color: var(--embed-host-accent, #bb3035) !important;
+  -webkit-text-fill-color: var(--embed-host-accent, #bb3035);
 }
 
 /* Keep main column geometry for portal math; hide stale list rows in the dock gap. */
