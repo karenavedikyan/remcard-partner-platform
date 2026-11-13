@@ -1,7 +1,8 @@
 {
-  "task": "P1-P7 selected-file packaging (read-only)",
+  "task": "P1-P7 owner-tip assembly (parallel branches)",
   "packagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
-  "combinedProductContentTip": "9280f9e7279da14964574a6d1585499134ac7f8c",
+  "assemblyModel": "byte-extract each path from reviewed owner tip SHA (NOT P7 whole tree)",
+  "rejectsManifestSha": "e90615aa819c32caf787e74bd8e751f182d83545",
   "agentTipsReviewed": {
     "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
     "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
@@ -12,40 +13,45 @@
     "P7": "9280f9e7279da14964574a6d1585499134ac7f8c",
     "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
   },
-  "productFixPinReference": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-  "prototypePin": "3dc31836cd18d9209c20097f18b906dd276f7af6",
-  "prototypeAccess": "OK: design/general-prototype/prototype-page-catalog.json at prototype pin",
-  "clientDetailWorkspaceVs57ca": "noDelta",
-  "productionApplyListExport": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
-  "deadCodeOnBranchNotFor57ca": [
-    "ProductionOwnerClientsGate cast in ClientsListWorkspace.tsx",
-    "canLinkOnboardingHistory forwarded to parity gate that does not consume it"
-  ],
-  "counts": {
-    "filesScanned": 64,
-    "productionBundleInclude": 30,
-    "excluded": 34
+  "ownerProductAllowlist": {
+    "P1": [
+      "src/components/clients/ClientsListWorkspace.tsx",
+      "src/components/clients/ClientDetailWorkspace.tsx",
+      "src/lib/clients-parity/patch-manifest-57ca4680.json",
+      "src/lib/clients-parity/author-handoff-v6.json"
+    ],
+    "P2": [],
+    "P3": [
+      "src/components/clients/observer/ObserverPartnersListView.tsx",
+      "src/components/clients/observer/ObserverPartnerCard.tsx",
+      "src/components/clients/observer/ObserverFilterChips.tsx"
+    ],
+    "P4": [
+      "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+      "src/components/clients/observer/ObserverClientDetailView.tsx"
+    ],
+    "P5": [
+      "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+      "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+      "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
+      "src/components/clients/observer/ObserverPersonalTools.tsx"
+    ],
+    "P6": [
+      "src/components/clients/direction/ClientsDirectionTabs.tsx",
+      "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+      "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+      "src/components/clients/observer/ObserverContractBlocked.tsx"
+    ],
+    "P7": [
+      "src/components/clients/observer/observer.module.css"
+    ],
+    "P8": []
   },
-  "productionBundlePaths": [
-    "src/components/clients/ClientsListWorkspace.tsx",
-    "src/components/clients/direction/ClientsDirectionTabs.tsx",
-    "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
-    "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+  "p1ScaffoldDependencies": [
+    "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
     "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
     "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
     "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
-    "src/components/clients/observer/ObserverClientDetailView.tsx",
-    "src/components/clients/observer/ObserverContractBlocked.tsx",
-    "src/components/clients/observer/ObserverFilterChips.tsx",
-    "src/components/clients/observer/ObserverPartnerCard.tsx",
-    "src/components/clients/observer/ObserverPartnerDetailView.tsx",
-    "src/components/clients/observer/ObserverPartnersListView.tsx",
-    "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
-    "src/components/clients/observer/ObserverPersonalClientRow.tsx",
-    "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
-    "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
-    "src/components/clients/observer/ObserverPersonalTools.tsx",
-    "src/components/clients/observer/observer.module.css",
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/fetch-observer-appeals.ts",
     "src/lib/clients-parity/filter-observer.ts",
@@ -58,568 +64,1025 @@
     "src/lib/clients-parity/production-compat.ts",
     "src/lib/clients-parity/types.ts"
   ],
-  "files": [
+  "ownerRootAssembly": [
     {
-      "path": "scripts/clients-parity-20261113/assert-observer-mobile-client-click.browser.mjs",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/generate-element-state-matrix.mjs",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/measure-observer-mobile-rows.mjs",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/measure-observer-stats-grid.mjs",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/observer-list-harness/index.html",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/observer-list-harness/main.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/observer-list-harness/stubs/next-link.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "scripts/clients-parity-20261113/observer-list-harness/vite.config.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "REPLAY_HARNESS_NOT_PRODUCTION"
-    },
-    {
-      "path": "src/components/clients/ClientsListWorkspace.history-prop.test.tsx",
-      "gitStatusVs57ca": "D",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/ClientsListWorkspace.props.test.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "path": "src/components/clients/ClientDetailWorkspace.tsx",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "f2510a49f871e2027bb8c87d85bbedb98bb8ca2b",
+      "contentSha256": "3229c207fd1554bfbc5dd6421b482b04bd52a1ab8ce3d96c9b101ef49231acc0",
+      "gitStatusVs57ca": "M",
+      "packaging": "omit",
+      "reasonCode": "noDelta-vs-57ca",
+      "p7TipBlobSha": "f2510a49f871e2027bb8c87d85bbedb98bb8ca2b",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "18060d05ffa9ab40df2499325bbe1fa5e004f151",
+      "contentSha256": "745a932a0614c074c694d89cee83f72ad8d738098c082c152b3780330ada6e24",
       "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include-partial",
-      "reasonCode": "APPLY_BODY_FROM_TIP_EXPORT_FROM_SNIPPET"
-    },
-    {
-      "path": "src/components/clients/OwnerClientsGate.test.tsx",
-      "gitStatusVs57ca": "D",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/OwnerClientsGate.tsx",
-      "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "BLOCKED_SHARED_GATE_CONTEXT"
-    },
-    {
-      "path": "src/components/clients/OwnerClientsModeContext.tsx",
-      "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "BLOCKED_SHARED_GATE_CONTEXT"
+      "reasonCode": "body-from-owner-tip-export-via-snippet-on-57ca",
+      "p7TipBlobSha": "18060d05ffa9ab40df2499325bbe1fa5e004f151",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
+      "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/direction/ClientsDirectionWorkspace.test.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2d29bf54011578bf063e442c9c1a5a38b658aebc",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "b3ebe0e4fc108ff7c8653f1a785881f68f8cb152",
+      "contentSha256": "ecc42e76387426e155754b90ca617f7e3ceba0b2582ae929f7891104ec30e015",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "7e8a97a38b0a210c81a6e51579ab6b15bdaf4553",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
+      "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "49a942519afaf8a8c7cb3368e7cd94aba3eedf92",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
+      "contentSha256": "fa74008eb9f0e85e6b09130b43597804eb6132668e30cb555ba36934a1996556",
       "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
+      "contentSha256": "29146e0b1bc5d280aba30d7dea05091c2e41510e53a3662145cf7509f089cc95",
       "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.test.tsx",
-      "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
+      "contentSha256": "8d3f22b91502dda299668a0acf01a5b7de3608f6b6321d496e0989e2bf75f449",
       "gitStatusVs57ca": "M",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverClientDetailView.tsx",
+      "owner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "gitBlobSha": "b07f837d52e7384af216cb92c9698515bb251c70",
+      "contentSha256": "37524169b7a4669f3a1cb681bc4f31e3c655d2fa99bf6b70040e529f770738de",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P5",
-      "contentSourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2e8fe34345e63a77b6097eba21e814c3f0937e5d",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
+      "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "74c52cb852c37cb6e84cfe95921b35bfdc53d37b",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverFilterChips.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "86f3d9bdbd9aab543fa888b00a8fbeb16883e2b5",
+      "contentSha256": "cb88e7272e2c6be4547466be7cc3ba3955b21947f927a5baa6538c3b9a232d20",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P4",
-      "contentSourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "618f60c7f6359b8f3d1654ef75ae0477fa617202",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverPartnerCard.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "8cc5823d00ec3fd9936ef8a584bcdeb13b672133",
+      "contentSha256": "1d5a2a7facd73079db2c1717a5de0a1e29b4fd756764b9c4288c11515dae9948",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/observer/ObserverPartnerDetailView.test.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "8cc5823d00ec3fd9936ef8a584bcdeb13b672133",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+      "owner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "gitBlobSha": "0e374e9d2ea9b30b65cdb49d8857548ac8fddf39",
+      "contentSha256": "442948857156f59618b415118fb8c095dc848f227309230d992e4f19d357387e",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P5",
-      "contentSourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/observer/ObserverPartnersListView.test.tsx",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d745820abeab6cad47048fb8cca797a6be0dc5af",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverPartnersListView.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "1a3a8851e0cb3a2e87dfdf1aa239299e50e9a94c",
+      "contentSha256": "36f9132a592c823abb4e03867251876e3d53fff02af0d3862651768eea8958f5",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P4",
-      "contentSourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0dfed0e723dc30a362369c5ce7a3ac7271fc784d",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
+      "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "288740b72477580cc0b6f31486aab4f1e9ea6925",
+      "contentSha256": "962fd23aef783b051f255f0d279a26e98b6affcb43259fabc0b67899773eb03f",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "288740b72477580cc0b6f31486aab4f1e9ea6925",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "68b4ef1671c77bbe92c517facabeaa2f4af9d2eb",
+      "contentSha256": "42abcaae00a0832176189e44588a379d947e555b4f287466c48c54e8bcfe2d4d",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P6",
-      "contentSourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "633177bf9a3dec4f893f29fcf86ba6f1c9b23f10",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "5cfe27f390f20d2e875416954e652279bd8e22ed",
+      "contentSha256": "91ccd40865d532b147aae6f7333a20c655a7d3f118d207f912b696565f8c6805",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "5cfe27f390f20d2e875416954e652279bd8e22ed",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/ObserverPersonalTools.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "3e1c633dcaa2953a634857a31010ea479c23d67b",
+      "contentSha256": "551366176c4bf736b13d7ead892ae78575a0381345f1539e3bfa84b119b5a3f2",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/observer/P7.observer-accent-contrast.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
-    },
-    {
-      "path": "src/components/clients/observer/P7.observer-prototype-layout.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "3e1c633dcaa2953a634857a31010ea479c23d67b",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/components/clients/observer/observer.module.css",
+      "owner": "P7",
+      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "gitBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "contentSha256": "70fd30ec5d8f6cc91c92ce805c27ace0f5fac9c443a45bd773849d355f797ed7",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P7",
-      "contentSourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/acceptance-matrix.json",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_MATRIX_NOT_RUNTIME"
-    },
-    {
-      "path": "src/lib/clients-parity/acceptance-matrix.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_MATRIX_NOT_RUNTIME"
-    },
-    {
-      "path": "src/lib/clients-parity/audit/mobile-client-row-computed.json",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "AUDIT_COMPUTED_ARTIFACT"
-    },
-    {
-      "path": "src/lib/clients-parity/audit/stats-grid-computed.json",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "AUDIT_COMPUTED_ARTIFACT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/author-handoff-v6.json",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "c5bdbfb1ace3d07e208ee2aa082223f41543a1f0",
+      "contentSha256": "aab05e11d4f774753363cd3f724e0ca5e1a72494d2a932ae96a4f8c6aa95e8bd",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P2",
-      "contentSourceSha": "e0063d15cb2887f61077cdfad066615845837bb0",
       "packaging": "exclude",
-      "reasonCode": "PACKAGING_METADATA"
-    },
-    {
-      "path": "src/lib/clients-parity/contracts.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "packaging-metadata-not-runtime",
+      "p7TipBlobSha": "149bb63635e2358bca2dd1bdc18034cdcffcdbd7",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/lib/clients-parity/contracts.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
+      "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/element-state-matrix.csv",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_MATRIX_NOT_RUNTIME"
-    },
-    {
-      "path": "src/lib/clients-parity/element-state-matrix.json",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_MATRIX_NOT_RUNTIME"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
+      "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include-with-blocker",
-      "reasonCode": "BLK_OBSERVER_REFERRED_CONTRACT"
+      "reasonCode": "BLK-OBSERVER-REFERRED",
+      "p7TipBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/filter-observer.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
+      "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_FIXTURE"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/observer-display.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
+      "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/observer-mobile-navigation.computed.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
+      "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
+      "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
+      "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/observer-stats-grid.computed.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/observer-stats.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/observer-stats.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
+      "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/observer-visual-tokens.test.ts",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_TEST_NOT_PRODUCT"
-    },
-    {
-      "path": "src/lib/clients-parity/page-matrix.json",
-      "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "packaging": "exclude",
-      "reasonCode": "QA_MATRIX_NOT_RUNTIME"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
+      "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/patch-manifest-57ca4680.json",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "b7e9d7b7e1515e2be65564b33eaf9ce68e73c864",
+      "contentSha256": "d6dc0b101fd2e0d3cdaa9ab7edabc7b27a17667f1f9105bb60c8696a963f01e6",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P2",
-      "contentSourceSha": "e0063d15cb2887f61077cdfad066615845837bb0",
       "packaging": "exclude",
-      "reasonCode": "PACKAGING_METADATA"
+      "reasonCode": "packaging-metadata-not-runtime",
+      "p7TipBlobSha": "e695dffdb79435984f60712da51dda0483f7d73e",
+      "matchesP7WholeTree": false
     },
     {
       "path": "src/lib/clients-parity/production-compat.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
+      "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
+      "matchesP7WholeTree": true
     },
     {
       "path": "src/lib/clients-parity/types.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
+      "contentSha256": "de949fcceb420b625cf7b59f9aa4264cece53d7e32af266cf588fd52164c7159",
       "gitStatusVs57ca": "A",
-      "contentSourceAgent": "P1",
-      "contentSourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
       "packaging": "include",
-      "reasonCode": "SELECTED_PRODUCT"
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
+      "matchesP7WholeTree": true
+    }
+  ],
+  "productionBundleFromOwnerTips": [
+    {
+      "path": "src/components/clients/ClientsListWorkspace.tsx",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "18060d05ffa9ab40df2499325bbe1fa5e004f151",
+      "contentSha256": "745a932a0614c074c694d89cee83f72ad8d738098c082c152b3780330ada6e24",
+      "gitStatusVs57ca": "M",
+      "packaging": "include-partial",
+      "reasonCode": "body-from-owner-tip-export-via-snippet-on-57ca",
+      "p7TipBlobSha": "18060d05ffa9ab40df2499325bbe1fa5e004f151",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "6c601f681e7b7508da7eecf18857d16dd57951f4",
+      "contentSha256": "e4b7de2c17a9a559abbb0ebb16d1d4266c2e3bc0d4d1fcd65f5a3ee5833e18bc",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2d29bf54011578bf063e442c9c1a5a38b658aebc",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "b3ebe0e4fc108ff7c8653f1a785881f68f8cb152",
+      "contentSha256": "ecc42e76387426e155754b90ca617f7e3ceba0b2582ae929f7891104ec30e015",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "7e8a97a38b0a210c81a6e51579ab6b15bdaf4553",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "4a10373a3f2a85a52ec4f3242037cfab40501311",
+      "contentSha256": "9e89ef3973fff05edb28e5d31fcee684fd5f617230e957df8c33f9840a72f89c",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "49a942519afaf8a8c7cb3368e7cd94aba3eedf92",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/new-partner-empty/ClientsNewPartnerEmptyState.tsx",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
+      "contentSha256": "fa74008eb9f0e85e6b09130b43597804eb6132668e30cb555ba36934a1996556",
+      "gitStatusVs57ca": "M",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "1bc65a39e6d39bccb967cfd0215fae67001d2fe0",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/new-partner-empty/clients-new-partner-empty.module.css",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
+      "contentSha256": "29146e0b1bc5d280aba30d7dea05091c2e41510e53a3662145cf7509f089cc95",
+      "gitStatusVs57ca": "M",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "cc7b6d3a08f72b7feb0ba6d1d307add3529ffb26",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/new-partner-empty/clientsEmptyCopy.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
+      "contentSha256": "8d3f22b91502dda299668a0acf01a5b7de3608f6b6321d496e0989e2bf75f449",
+      "gitStatusVs57ca": "M",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "a714b5ae8d3c4439b0b9c060ca40c45a135f6415",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/ObserverClientDetailView.tsx",
+      "owner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "gitBlobSha": "b07f837d52e7384af216cb92c9698515bb251c70",
+      "contentSha256": "37524169b7a4669f3a1cb681bc4f31e3c655d2fa99bf6b70040e529f770738de",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2e8fe34345e63a77b6097eba21e814c3f0937e5d",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverContractBlocked.tsx",
+      "owner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "gitBlobSha": "a608ec5cd192f02c0f3b9b945559524022061157",
+      "contentSha256": "7a600f1a6ff18e898c59cd2641e74f5ef6abcbe8e565a0312faee5d88ac79d61",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "74c52cb852c37cb6e84cfe95921b35bfdc53d37b",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverFilterChips.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "86f3d9bdbd9aab543fa888b00a8fbeb16883e2b5",
+      "contentSha256": "cb88e7272e2c6be4547466be7cc3ba3955b21947f927a5baa6538c3b9a232d20",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "618f60c7f6359b8f3d1654ef75ae0477fa617202",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPartnerCard.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "8cc5823d00ec3fd9936ef8a584bcdeb13b672133",
+      "contentSha256": "1d5a2a7facd73079db2c1717a5de0a1e29b4fd756764b9c4288c11515dae9948",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "8cc5823d00ec3fd9936ef8a584bcdeb13b672133",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+      "owner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "gitBlobSha": "0e374e9d2ea9b30b65cdb49d8857548ac8fddf39",
+      "contentSha256": "442948857156f59618b415118fb8c095dc848f227309230d992e4f19d357387e",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d745820abeab6cad47048fb8cca797a6be0dc5af",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPartnersListView.tsx",
+      "owner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "gitBlobSha": "1a3a8851e0cb3a2e87dfdf1aa239299e50e9a94c",
+      "contentSha256": "36f9132a592c823abb4e03867251876e3d53fff02af0d3862651768eea8958f5",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0dfed0e723dc30a362369c5ce7a3ac7271fc784d",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
+      "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "288740b72477580cc0b6f31486aab4f1e9ea6925",
+      "contentSha256": "962fd23aef783b051f255f0d279a26e98b6affcb43259fabc0b67899773eb03f",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "288740b72477580cc0b6f31486aab4f1e9ea6925",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "68b4ef1671c77bbe92c517facabeaa2f4af9d2eb",
+      "contentSha256": "42abcaae00a0832176189e44588a379d947e555b4f287466c48c54e8bcfe2d4d",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "633177bf9a3dec4f893f29fcf86ba6f1c9b23f10",
+      "matchesP7WholeTree": false
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPersonalEditPanel.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "5cfe27f390f20d2e875416954e652279bd8e22ed",
+      "contentSha256": "91ccd40865d532b147aae6f7333a20c655a7d3f118d207f912b696565f8c6805",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "5cfe27f390f20d2e875416954e652279bd8e22ed",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPersonalTools.tsx",
+      "owner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "gitBlobSha": "3e1c633dcaa2953a634857a31010ea479c23d67b",
+      "contentSha256": "551366176c4bf736b13d7ead892ae78575a0381345f1539e3bfa84b119b5a3f2",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "3e1c633dcaa2953a634857a31010ea479c23d67b",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/components/clients/observer/observer.module.css",
+      "owner": "P7",
+      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "gitBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "contentSha256": "70fd30ec5d8f6cc91c92ce805c27ace0f5fac9c443a45bd773849d355f797ed7",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "d96d026f0f685547659e54f5f7ed5c4927322fdf",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/contracts.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
+      "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
+      "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
+      "gitStatusVs57ca": "A",
+      "packaging": "include-with-blocker",
+      "reasonCode": "BLK-OBSERVER-REFERRED",
+      "p7TipBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/filter-observer.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
+      "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/observer-display.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
+      "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
+      "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
+      "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
+      "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/observer-stats.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
+      "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
+      "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/production-compat.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
+      "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
+      "matchesP7WholeTree": true
+    },
+    {
+      "path": "src/lib/clients-parity/types.ts",
+      "owner": "P1-scaffold",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
+      "contentSha256": "de949fcceb420b625cf7b59f9aa4264cece53d7e32af266cf588fd52164c7159",
+      "gitStatusVs57ca": "A",
+      "packaging": "include",
+      "reasonCode": "owner-tip-extract",
+      "p7TipBlobSha": "0fa638cda90d7b3e59942dbe80927624e6766935",
+      "matchesP7WholeTree": true
+    }
+  ],
+  "p1SnippetTransformation": {
+    "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+    "listBodySource": {
+      "path": "src/components/clients/ClientsListWorkspace.tsx",
+      "owner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "18060d05ffa9ab40df2499325bbe1fa5e004f151"
+    },
+    "productionExportArtifact": {
+      "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d"
+    },
+    "transformOn57ca": [
+      "Replace ClientsListWorkspace export block with snippet (direct OwnerClientsGate, no ProductionOwnerClientsGate cast)",
+      "Keep ClientsListBody + ClientsDirectionWorkspace imports from P1 tip file body",
+      "Do not cherry-pick parity-branch cast or Gate R5 typing shim"
+    ],
+    "forbiddenOn57caFromBranch": [
+      "ProductionOwnerClientsGate cast",
+      "Forwarding canLinkOnboardingHistory into parity OwnerClientsGate that ignores it"
+    ]
+  },
+  "qaTestManifest": [
+    {
+      "path": "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
+      "qaOwner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "f548bf227ca9b04870e66312181deb14101622fe",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx",
+      "qaOwner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "56b01f043063c3072d91fb1440c6b1fd8a85d3e4",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/ClientsListWorkspace.props.test.tsx",
+      "qaOwner": "P1",
+      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "3b553aab2756442a3e8bf77a3b1c6eb4abf7260a",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P3.ObserverFilterChips.test.tsx",
+      "qaOwner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "bd6d99a153c7418e38249711fa35ac4cd3b10464",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P3.ObserverPartnerCard.test.tsx",
+      "qaOwner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "8d001a29aa3541eca701f371769c27a526a13401",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx",
+      "qaOwner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "72d3dcf4ed752799c19a471c819218fec099645b",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx",
+      "qaOwner": "P3",
+      "sourceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "3152e7ea486b58d087e127afd45ac5ec2f55823f",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P4.ObserverClientDetailView.test.tsx",
+      "qaOwner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "77d9e6b609a5927a9e9d56c5b48cffbdf6a890a5",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P4.ObserverPartnerDetailView.test.tsx",
+      "qaOwner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "e53b51120bb5327277916f09c342689d63bfa1e7",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P4.observer-detail-navigation.test.tsx",
+      "qaOwner": "P4",
+      "sourceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "4c7f022a27953f7f1fdd3a0bc95b89cc323ba102",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P5.ObserverPersonalClientRow.test.tsx",
+      "qaOwner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "1a7f1816dc2782f9f0b32f88b0686ac14bc4298e",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P5.ObserverPersonalConfirmPanel.test.tsx",
+      "qaOwner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "3d37eccc75933320ea423ccc39228fb6dd50937c",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P5.ObserverPersonalEditPanel.test.tsx",
+      "qaOwner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "fb53e46e63cf88f9f63be63bf493d0704fcef5e5",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P5.ObserverPersonalTools.test.tsx",
+      "qaOwner": "P5",
+      "sourceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "9b6acbfc0cfc344e9c18e30641cfc78b74e06abd",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "db35888f0818828394190be7f9b530c24591be29",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/direction/P6.ClientsDirectionTabs.keyboard.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "b0cf3769e496b85898479c6a2faeffceb1a0c50e",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "9087a7b975d23888d45f4bc5c6d71abe81ad5124",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/direction/P6.ClientsDirectionWorkspace.keyboard.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "b041583bf372e66cbe79507a5889706b915110b3",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "b933960eabe783f31ba95a616c2cfc153ef52ee5",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P6.ObserverContractBlocked.test.tsx",
+      "qaOwner": "P6",
+      "sourceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "211e5a0169aa9b7c76802c08cf8452346ee94af1",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P7.observer-accent-contrast.test.ts",
+      "qaOwner": "P7",
+      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "32df1ee8c13547b1db0a51244763960a202faeb8",
+      "packaging": "QA_MANIFEST_ONLY"
+    },
+    {
+      "path": "src/components/clients/observer/P7.observer-prototype-layout.test.ts",
+      "qaOwner": "P7",
+      "sourceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "presentAtOwnerTip": true,
+      "gitBlobSha": "5755e9eded6baf7545abf483b077dbde6b5753f8",
+      "packaging": "QA_MANIFEST_ONLY"
     }
   ],
   "sharedInfrastructureBlockers": [
     {
       "id": "BLK-GATE-API",
-      "path": "src/components/clients/OwnerClientsGate.tsx",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "vs57ca": "Branch gate: client remcardFetch R03/R06/me; production: useBusinessSectionDispatch + canLinkOnboardingHistory",
-      "packaging": "NEVER_INCLUDE"
+      "paths": [
+        "src/components/clients/OwnerClientsGate.tsx"
+      ],
+      "packaging": "NEVER_INCLUDE_FROM_BRANCH"
     },
     {
       "id": "BLK-CONTEXT-HISTORY",
-      "path": "src/components/clients/OwnerClientsModeContext.tsx",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "vs57ca": "Branch removes useOwnerClientsCanLinkOnboardingHistory; production 57ca retains hook",
-      "packaging": "NEVER_INCLUDE"
+      "paths": [
+        "src/components/clients/OwnerClientsModeContext.tsx"
+      ],
+      "packaging": "NEVER_INCLUDE_FROM_BRANCH"
     },
     {
       "id": "BLK-CABINET-ROUTES",
-      "path": "src/app/(cabinet)/clients/**",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "vs57ca": "Parity routes omit history prop; production uses src/app/clients/page.tsx",
+      "paths": [
+        "src/app/(cabinet)/clients/**"
+      ],
       "packaging": "NEVER_INCLUDE"
     },
     {
       "id": "BLK-VITEST",
-      "path": "vitest.config.ts",
-      "sourceSha": "branch",
-      "vs57ca": "Modified on branch; excluded by manifest policy",
+      "paths": [
+        "vitest.config.ts"
+      ],
       "packaging": "NEVER_INCLUDE"
-    },
-    {
-      "id": "BLK-HISTORY-TEST-REGRESSION",
-      "path": "src/components/clients/ClientsListWorkspace.history-prop.test.tsx",
-      "sourceSha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
-      "vs57ca": "Deleted on branch; preserve 57ca copy in any packaging",
-      "packaging": "PRESERVE_57ca"
-    },
-    {
-      "id": "BLK-P1-TESTS-DROPPED-P2",
-      "path": "src/components/clients/P1.*.compat.test.tsx",
-      "sourceSha": "e0063d15cb2887f61077cdfad066615845837bb0",
-      "vs57ca": "On P1 c3d7c13d only; removed by P2 e0063d15 from combined line",
-      "packaging": "QA_ONLY_ON_P1_BRANCH"
     }
+  ],
+  "blockedPaths57caPreserve": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/app/(cabinet)/clients/page.tsx",
+    "src/app/(cabinet)/clients/[id]/page.tsx",
+    "vitest.config.ts",
+    "src/lib/onboarding-step/history-link-eligibility.ts"
   ],
   "sectionBlockers": [
     "FULL-SECTION-ACCEPTANCE",
     "BLK-OBSERVER-REFERRED",
     "BLK-OBSERVER-PERSONAL-PERSIST",
     "BLK-RECEIVING-APPEALS"
+  ],
+  "validation": {
+    "deterministicChecksPassed": true,
+    "failures": []
+  },
+  "p7MismatchEvidence": [
+    {
+      "path": "src/components/clients/direction/ClientsDirectionTabs.tsx",
+      "ownerBlob": "6c601f681e7b7508da7eecf18857d16dd57951f4",
+      "p7Blob": "2d29bf54011578bf063e442c9c1a5a38b658aebc"
+    },
+    {
+      "path": "src/components/clients/observer/ObserverPartnersListView.tsx",
+      "ownerBlob": "1a3a8851e0cb3a2e87dfdf1aa239299e50e9a94c",
+      "p7Blob": "0dfed0e723dc30a362369c5ce7a3ac7271fc784d"
+    }
   ]
 }
