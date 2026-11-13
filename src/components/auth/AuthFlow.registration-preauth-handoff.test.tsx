@@ -180,6 +180,97 @@ describe("AuthFlow registration pre-auth handoff", () => {
     clearPreAuthConsentSnapshot("specialist");
   });
 
+  it("opens session retry (not consent checkboxes) when consent POST fails with 5xx", async () => {
+    savePreAuthConsentSnapshot("agent", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-5xx", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      if (path === "/api/account/consent") {
+        throw new RemcardApiError(503, "upstream", { error: "UPSTREAM" });
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockResolvedValue({ ok: true, data: registrationPending });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=agent"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="agent"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с max/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "222222");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    expect(await screen.findByText(/попробуйте снова|не удалось/i)).toBeInTheDocument();
+    expect(screen.queryByText(/обязательные соглашения/i)).toBeNull();
+    clearPreAuthConsentSnapshot("agent");
+  });
+
+  it("opens session retry when readiness refresh fails after successful consent POST", async () => {
+    savePreAuthConsentSnapshot("company", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
+    let sessionActive = false;
+    let readinessCalls = 0;
+    vi.mocked(fetchAuthMeSafe).mockImplementation(async () =>
+      sessionActive
+        ? { ok: true, data: { user: { id: "reg-user-readiness", role: "PRO" } } }
+        : { ok: false, kind: "unauthorized" },
+    );
+    vi.mocked(remcardFetch).mockImplementation(async (path) => {
+      if (path === "/api/auth/verify-code") {
+        sessionActive = true;
+        return { ok: true };
+      }
+      if (path === "/api/account/consent") {
+        return { ok: true };
+      }
+      return { ok: true };
+    });
+    vi.mocked(fetchReadinessSafe).mockImplementation(async () => {
+      readinessCalls += 1;
+      if (readinessCalls === 1) {
+        return { ok: true, data: registrationPending };
+      }
+      return { ok: false, kind: "network" };
+    });
+
+    const ui = userEvent.setup();
+    render(
+      <CookieConsentProvider>
+        <AuthFlow
+          returnTo="/join?phase=finish&role=company"
+          checkSessionOnMount={false}
+          registrationAgentJoin
+          registrationJoinKind="company"
+          registrationMessengerGateReady
+        />
+      </CookieConsentProvider>,
+    );
+
+    await ui.click(await screen.findByRole("button", { name: /продолжить с telegram/i }));
+    await ui.type(screen.getByPlaceholderText("000000"), "333333");
+    await ui.click(screen.getByRole("button", { name: /подтвердить и продолжить/i }));
+
+    expect(await screen.findByText(/проверьте соединение/i)).toBeInTheDocument();
+    expect(screen.queryByText(/обязательные соглашения/i)).toBeNull();
+    clearPreAuthConsentSnapshot("company");
+  });
+
   it("surfaces 409 mismatch from consent API without redirect", async () => {
     savePreAuthConsentSnapshot("store", QA_PRE_AUTH_CONSENTS.requirements, createPreAuthAttemptId());
     let sessionActive = false;

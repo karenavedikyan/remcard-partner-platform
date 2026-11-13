@@ -32,11 +32,15 @@ import {
   type AuthLoginProvider,
 } from "@/lib/auth-flow";
 import { getMaxBotLoginUrl, getTelegramBotLoginUrl } from "@/lib/auth-config";
-import { applyRegistrationPreAuthConsentHandoff } from "@/lib/registration/pre-auth-consent-handoff";
 import {
+  applyRegistrationPreAuthConsentHandoff,
+  type PreAuthHandoffRetryKind,
+} from "@/lib/registration/pre-auth-consent-handoff";
+import {
+  bindPreAuthSnapshotToVerifiedUser,
   clearPreAuthSnapshotForDifferentUser,
   discardStalePreAuthSnapshotOnSessionResume,
-  isPreAuthHandoffPending,
+  isPreAuthHandoffPendingForUser,
   loadPreAuthConsentSnapshot,
   markPreAuthHandoffPending,
 } from "@/lib/registration/pre-auth-consent";
@@ -65,6 +69,10 @@ type AuthFlowProps = {
 };
 
 type RetryKind = "network" | "server" | "session_lost";
+
+type PreAuthHandoffApplyOutcome =
+  | { action: "apply"; readiness: CabinetReadiness }
+  | { action: "stop" };
 
 const REASON_MESSAGES: Record<string, string> = {
   session: "Сессия завершилась. Войдите снова.",
@@ -199,16 +207,37 @@ export function AuthFlow({
     return result.data;
   }, [handleSessionFailure]);
 
+  const surfacePreAuthHandoffError = useCallback(
+    (retryKind: PreAuthHandoffRetryKind, message: string) => {
+      if (retryKind === "blocked") {
+        setError(message);
+        setStep("blocked");
+        return;
+      }
+      if (retryKind === "session_lost") {
+        setRetryKind("session_lost");
+        setError(message || sessionRetryMessage("session_lost"));
+        setStep("session_retry");
+        return;
+      }
+      const kind: RetryKind = retryKind === "network" ? "network" : "server";
+      setRetryKind(kind);
+      setError(message || sessionRetryMessage(kind));
+      setStep("session_retry");
+    },
+    [],
+  );
+
   const maybeApplyPreAuthHandoff = useCallback(
-    async (userId: string, current: CabinetReadiness): Promise<CabinetReadiness> => {
+    async (userId: string, current: CabinetReadiness): Promise<PreAuthHandoffApplyOutcome> => {
       if (!registrationAgentJoin || !registrationJoinKind || !userId) {
-        return current;
+        return { action: "apply", readiness: current };
       }
       if (!hasPendingRegistrationConsents(current)) {
-        return current;
+        return { action: "apply", readiness: current };
       }
       if (preAuthHandoffLock.current) {
-        return current;
+        return { action: "apply", readiness: current };
       }
       preAuthHandoffLock.current = true;
       try {
@@ -219,17 +248,25 @@ export function AuthFlow({
         );
         if (result.status === "applied") {
           const refreshed = await reloadReadiness();
-          return refreshed ?? current;
+          if (!refreshed) {
+            return { action: "stop" };
+          }
+          return { action: "apply", readiness: refreshed };
         }
-        if (result.status === "needs_ui" || result.status === "error") {
+        if (result.status === "error") {
+          surfacePreAuthHandoffError(result.retryKind, result.message);
+          return { action: "stop" };
+        }
+        if (result.status === "needs_ui") {
           if (result.message) setError(result.message);
+          return { action: "apply", readiness: current };
         }
-        return current;
+        return { action: "apply", readiness: current };
       } finally {
         preAuthHandoffLock.current = false;
       }
     },
-    [registrationAgentJoin, registrationJoinKind, reloadReadiness],
+    [registrationAgentJoin, registrationJoinKind, reloadReadiness, surfacePreAuthHandoffError],
   );
 
   const runSessionCheck = useCallback(
@@ -272,9 +309,14 @@ export function AuthFlow({
         userId &&
         registrationAgentJoin &&
         registrationJoinKind &&
-        isPreAuthHandoffPending(registrationJoinKind)
+        isPreAuthHandoffPendingForUser(registrationJoinKind, userId)
       ) {
-        readinessData = await maybeApplyPreAuthHandoff(userId, readinessData);
+        const handoff = await maybeApplyPreAuthHandoff(userId, readinessData);
+        if (handoff.action === "stop") {
+          setBooting(false);
+          return;
+        }
+        readinessData = handoff.readiness;
       }
       applyReadiness(readinessData);
       setBooting(false);
@@ -386,8 +428,9 @@ export function AuthFlow({
 
         const snapshot =
           registrationJoinKind != null ? loadPreAuthConsentSnapshot(registrationJoinKind) : null;
-        if (snapshot) {
+        if (snapshot && userId) {
           markPreAuthHandoffPending(snapshot.registrationKind, snapshot.attemptId);
+          bindPreAuthSnapshotToVerifiedUser(snapshot.registrationKind, userId);
         }
 
         setStep("loading_readiness");
@@ -398,7 +441,11 @@ export function AuthFlow({
         }
         let readinessData = readinessResult.data;
         if (userId && registrationAgentJoin && registrationJoinKind) {
-          readinessData = await maybeApplyPreAuthHandoff(userId, readinessData);
+          const handoff = await maybeApplyPreAuthHandoff(userId, readinessData);
+          if (handoff.action === "stop") {
+            return;
+          }
+          readinessData = handoff.readiness;
         }
         applyReadiness(readinessData);
       } catch (caught) {

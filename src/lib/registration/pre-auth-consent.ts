@@ -23,8 +23,19 @@ export type PreAuthConsentSnapshot = {
   expiresAt: number;
   requirements: PreAuthConsentRequirement[];
   attemptId: string;
+  /** Set immediately after OTP verify, before any consent POST (prevents cross-user replay). */
+  verifiedForUserId?: string;
   consumedForUserId?: string;
 };
+
+const JOIN_KINDS_WITH_PREAUTH = new Set<RegistrationKind>([
+  "agent",
+  "specialist",
+  "store",
+  "company",
+]);
+
+const memorySnapshotByKind = new Map<RegistrationKind, PreAuthConsentSnapshot>();
 
 const SNAPSHOT_PREFIX = "remcard.registration.preAuthConsent.snapshot.v2";
 const HANDOFF_PREFIX = "remcard.registration.preAuthConsent.handoff.v1";
@@ -80,30 +91,101 @@ export function createPreAuthAttemptId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function parseSnapshot(raw: string | null): PreAuthConsentSnapshot | null {
+function isValidPreAuthRequirement(value: unknown): value is PreAuthConsentRequirement {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  if (!REGISTRATION_PRE_AUTH_CONSENT_KINDS.includes(row.kind as RegistrationPreAuthConsentKind)) {
+    return false;
+  }
+  if (typeof row.legalDocumentId !== "string" || !row.legalDocumentId.trim()) return false;
+  if (typeof row.version !== "string" || !row.version.trim()) return false;
+  if (typeof row.documentUrl !== "string" || !row.documentUrl.trim()) return false;
+  return true;
+}
+
+function validateSnapshotShape(
+  parsed: unknown,
+  expectedKind?: RegistrationKind,
+): PreAuthConsentSnapshot | null {
+  if (!parsed || typeof parsed !== "object") return null;
+  const row = parsed as Record<string, unknown>;
+  if (row.contractVersion !== PRE_AUTH_CONSENT_SNAPSHOT_CONTRACT) return null;
+  const registrationKind = row.registrationKind;
+  if (
+    typeof registrationKind !== "string" ||
+    !JOIN_KINDS_WITH_PREAUTH.has(registrationKind as RegistrationKind)
+  ) {
+    return null;
+  }
+  if (expectedKind && registrationKind !== expectedKind) return null;
+  if (typeof row.attemptId !== "string" || !row.attemptId.trim()) return null;
+  const acceptedAt = row.acceptedAt;
+  const expiresAt = row.expiresAt;
+  if (typeof acceptedAt !== "number" || !Number.isFinite(acceptedAt)) return null;
+  if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt)) return null;
+  if (acceptedAt > Date.now() + 60_000) return null;
+  if (expiresAt <= acceptedAt) return null;
+  if (Date.now() > expiresAt) return null;
+  if (!Array.isArray(row.requirements)) return null;
+  if (row.requirements.length !== REGISTRATION_PRE_AUTH_CONSENT_KINDS.length) return null;
+  const kinds = new Set<string>();
+  for (const req of row.requirements) {
+    if (!isValidPreAuthRequirement(req)) return null;
+    if (kinds.has(req.kind)) return null;
+    kinds.add(req.kind);
+  }
+  for (const kind of REGISTRATION_PRE_AUTH_CONSENT_KINDS) {
+    if (!kinds.has(kind)) return null;
+  }
+  const verifiedForUserId = row.verifiedForUserId;
+  const consumedForUserId = row.consumedForUserId;
+  if (verifiedForUserId != null && (typeof verifiedForUserId !== "string" || !verifiedForUserId.trim())) {
+    return null;
+  }
+  if (consumedForUserId != null && (typeof consumedForUserId !== "string" || !consumedForUserId.trim())) {
+    return null;
+  }
+  return {
+    contractVersion: PRE_AUTH_CONSENT_SNAPSHOT_CONTRACT,
+    registrationKind: registrationKind as RegistrationKind,
+    acceptedAt,
+    expiresAt,
+    requirements: row.requirements,
+    attemptId: row.attemptId.trim(),
+    verifiedForUserId: typeof verifiedForUserId === "string" ? verifiedForUserId.trim() : undefined,
+    consumedForUserId: typeof consumedForUserId === "string" ? consumedForUserId.trim() : undefined,
+  };
+}
+
+function parseSnapshot(raw: string | null, kind?: RegistrationKind): PreAuthConsentSnapshot | null {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as PreAuthConsentSnapshot;
-    if (
-      parsed?.contractVersion !== PRE_AUTH_CONSENT_SNAPSHOT_CONTRACT ||
-      !parsed.registrationKind ||
-      !Array.isArray(parsed.requirements) ||
-      typeof parsed.acceptedAt !== "number" ||
-      typeof parsed.expiresAt !== "number" ||
-      typeof parsed.attemptId !== "string"
-    ) {
+    const validated = validateSnapshotShape(JSON.parse(raw), kind);
+    if (!validated) {
+      if (kind) removeSessionStorage(snapshotKey(kind));
       return null;
     }
-    if (Date.now() > parsed.expiresAt) return null;
-    return parsed;
+    return validated;
   } catch {
+    if (kind) removeSessionStorage(snapshotKey(kind));
     return null;
   }
 }
 
 export function loadPreAuthConsentSnapshot(kind: RegistrationKind): PreAuthConsentSnapshot | null {
   purgeLegacyBooleanAck(kind);
-  return parseSnapshot(readSessionStorage(snapshotKey(kind)));
+  const fromSession = parseSnapshot(readSessionStorage(snapshotKey(kind)), kind);
+  if (fromSession) {
+    memorySnapshotByKind.delete(kind);
+    return fromSession;
+  }
+  const fromMemory = memorySnapshotByKind.get(kind);
+  if (fromMemory && fromMemory.registrationKind === kind) {
+    const validated = validateSnapshotShape(fromMemory, kind);
+    if (validated) return validated;
+    memorySnapshotByKind.delete(kind);
+  }
+  return null;
 }
 
 export function savePreAuthConsentSnapshot(
@@ -112,6 +194,7 @@ export function savePreAuthConsentSnapshot(
   attemptId: string,
 ): boolean {
   purgeLegacyBooleanAck(kind);
+  if (!JOIN_KINDS_WITH_PREAUTH.has(kind)) return false;
   const snapshot: PreAuthConsentSnapshot = {
     contractVersion: PRE_AUTH_CONSENT_SNAPSHOT_CONTRACT,
     registrationKind: kind,
@@ -120,29 +203,31 @@ export function savePreAuthConsentSnapshot(
     requirements,
     attemptId,
   };
-  return writeSessionStorage(snapshotKey(kind), JSON.stringify(snapshot));
+  const validated = validateSnapshotShape(snapshot, kind);
+  if (!validated) return false;
+  const persisted = writeSessionStorage(snapshotKey(kind), JSON.stringify(validated));
+  if (persisted) {
+    memorySnapshotByKind.delete(kind);
+    return true;
+  }
+  return false;
 }
 
 export function clearPreAuthConsentSnapshot(kind: RegistrationKind): void {
   removeSessionStorage(snapshotKey(kind));
   removeSessionStorage(handoffKey(kind));
   purgeLegacyBooleanAck(kind);
+  memorySnapshotByKind.delete(kind);
 }
 
 /** @deprecated Use clearPreAuthConsentSnapshot */
 export const clearPreAuthConsentAck = clearPreAuthConsentSnapshot;
 
-const JOIN_KINDS_WITH_SNAPSHOT: RegistrationKind[] = [
-  "agent",
-  "specialist",
-  "store",
-  "company",
-];
-
 export function clearAllPreAuthConsentAcks(): void {
-  for (const kind of JOIN_KINDS_WITH_SNAPSHOT) {
+  for (const kind of JOIN_KINDS_WITH_PREAUTH) {
     clearPreAuthConsentSnapshot(kind);
   }
+  memorySnapshotByKind.clear();
 }
 
 export function snapshotMatchesCapability(
@@ -197,11 +282,43 @@ export function isPreAuthHandoffPending(kind: RegistrationKind): boolean {
   return pendingAttempt === snapshot.attemptId;
 }
 
+export function isPreAuthHandoffPendingForUser(kind: RegistrationKind, userId: string): boolean {
+  if (!userId) return false;
+  const snapshot = loadPreAuthConsentSnapshot(kind);
+  if (!snapshot?.verifiedForUserId || snapshot.verifiedForUserId !== userId) return false;
+  return isPreAuthHandoffPending(kind);
+}
+
+export function bindPreAuthSnapshotToVerifiedUser(kind: RegistrationKind, userId: string): boolean {
+  if (!userId) return false;
+  const snapshot = loadPreAuthConsentSnapshot(kind);
+  if (!snapshot || snapshot.consumedForUserId) return false;
+  if (snapshot.verifiedForUserId && snapshot.verifiedForUserId !== userId) {
+    clearPreAuthConsentSnapshot(kind);
+    return false;
+  }
+  if (snapshot.verifiedForUserId === userId) return true;
+  const next: PreAuthConsentSnapshot = { ...snapshot, verifiedForUserId: userId };
+  const persisted = writeSessionStorage(snapshotKey(kind), JSON.stringify(next));
+  if (!persisted) return false;
+  memorySnapshotByKind.delete(kind);
+  return true;
+}
+
+export function assertPreAuthSnapshotUser(kind: RegistrationKind, userId: string): "ok" | "missing" | "different" {
+  const snapshot = loadPreAuthConsentSnapshot(kind);
+  if (!snapshot) return "missing";
+  if (!snapshot.verifiedForUserId) return "missing";
+  if (snapshot.verifiedForUserId !== userId) return "different";
+  return "ok";
+}
+
 /** Drop unconsumed snapshots when an unrelated session resumes (no fresh verify). */
 export function discardStalePreAuthSnapshotOnSessionResume(kind: RegistrationKind): void {
   const snapshot = loadPreAuthConsentSnapshot(kind);
   if (!snapshot) return;
   if (snapshot.consumedForUserId) return;
+  if (snapshot.verifiedForUserId) return;
   if (isPreAuthHandoffPending(kind)) return;
   clearPreAuthConsentSnapshot(kind);
 }
@@ -216,8 +333,9 @@ export function markPreAuthSnapshotConsumed(kind: RegistrationKind, userId: stri
 
 export function clearPreAuthSnapshotForDifferentUser(kind: RegistrationKind, userId: string): void {
   const snapshot = loadPreAuthConsentSnapshot(kind);
-  if (!snapshot?.consumedForUserId) return;
-  if (snapshot.consumedForUserId !== userId) {
+  if (!snapshot) return;
+  const owner = snapshot.verifiedForUserId ?? snapshot.consumedForUserId;
+  if (owner && owner !== userId) {
     clearPreAuthConsentSnapshot(kind);
   }
 }

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { QA_PRE_AUTH_CONSENTS } from "./pre-auth-consent-fixtures.ts";
 import {
+  bindPreAuthSnapshotToVerifiedUser,
   clearPreAuthConsentSnapshot,
+  clearPreAuthSnapshotForDifferentUser,
   createPreAuthAttemptId,
   isPreAuthMessengerGateReady,
   loadPreAuthConsentAck,
@@ -56,5 +58,68 @@ describe("registration pre-auth consent snapshot", () => {
   it("uses requirement document URLs when present", () => {
     const req = QA_PRE_AUTH_CONSENTS.requirements[0];
     assert.equal(preAuthDocumentHref("https://remcard.ru", "PERSONAL_DATA", req), "https://remcard.ru/privacy");
+  });
+
+  it("rejects malformed snapshot JSON without authorizing messenger gate", () => {
+    const key = "remcard.registration.preAuthConsent.snapshot.v2:agent";
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        contractVersion: "2026-11-13.pre-auth-consent.v1",
+        registrationKind: "agent",
+        acceptedAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+        attemptId: "bad",
+        requirements: [
+          { kind: "PERSONAL_DATA", legalDocumentId: "x", version: "1", documentUrl: "/privacy" },
+          null,
+          { kind: "PUBLIC_OFFER_PRO", legalDocumentId: "z", version: "1", documentUrl: "/offer" },
+        ],
+      }),
+    );
+    assert.equal(loadPreAuthConsentSnapshot("agent"), null);
+    assert.equal(isPreAuthMessengerGateReady("agent", QA_PRE_AUTH_CONSENTS), false);
+    assert.equal(sessionStorage.getItem(key), null);
+  });
+
+  it("rejects duplicate requirement kinds and unknown registration kind", () => {
+    const attempt = createPreAuthAttemptId();
+    sessionStorage.setItem(
+      "remcard.registration.preAuthConsent.snapshot.v2:employee",
+      JSON.stringify({
+        contractVersion: "2026-11-13.pre-auth-consent.v1",
+        registrationKind: "employee",
+        acceptedAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+        attemptId: attempt,
+        requirements: QA_PRE_AUTH_CONSENTS.requirements,
+      }),
+    );
+    assert.equal(loadPreAuthConsentSnapshot("employee"), null);
+
+    sessionStorage.setItem(
+      "remcard.registration.preAuthConsent.snapshot.v2:agent",
+      JSON.stringify({
+        contractVersion: "2026-11-13.pre-auth-consent.v1",
+        registrationKind: "agent",
+        acceptedAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+        attemptId: attempt,
+        requirements: [
+          QA_PRE_AUTH_CONSENTS.requirements[0],
+          QA_PRE_AUTH_CONSENTS.requirements[0],
+          QA_PRE_AUTH_CONSENTS.requirements[2],
+        ],
+      }),
+    );
+    assert.equal(loadPreAuthConsentSnapshot("agent"), null);
+  });
+
+  it("clears snapshot for a different resumed user", () => {
+    const attempt = createPreAuthAttemptId();
+    savePreAuthConsentSnapshot("company", QA_PRE_AUTH_CONSENTS.requirements, attempt);
+    bindPreAuthSnapshotToVerifiedUser("company", "user-a");
+    clearPreAuthSnapshotForDifferentUser("company", "user-b");
+    assert.equal(loadPreAuthConsentSnapshot("company"), null);
   });
 });

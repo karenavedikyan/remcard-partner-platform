@@ -128,6 +128,7 @@ export default defineConfig({
       "src/components/scanner/**/*.test.tsx",
       "src/lib/r03-theme-assert.test.ts",
       "src/components/auth/LoginExperience.test.tsx",
+      "src/lib/registration/pre-auth-consent-handoff.vitest.ts",
       "src/lib/agent-r04/partner-filters.test.ts",
       "src/lib/agent-r04/partner-list-row.test.ts",
       "src/lib/agent-r04/partnership-action-icons.test.ts",

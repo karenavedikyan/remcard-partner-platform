@@ -5,17 +5,21 @@ import { isDocumentVersionMismatch, recordConsentRequirements } from "@/lib/auth
 import { RemcardApiError } from "@/lib/api-client";
 import type { RegistrationKind } from "./types";
 import {
+  assertPreAuthSnapshotUser,
+  bindPreAuthSnapshotToVerifiedUser,
   clearPreAuthConsentSnapshot,
   loadPreAuthConsentSnapshot,
   markPreAuthSnapshotConsumed,
   type PreAuthConsentSnapshot,
 } from "./pre-auth-consent";
 
+export type PreAuthHandoffRetryKind = "session_lost" | "server" | "network" | "blocked";
+
 export type PreAuthHandoffResult =
   | { status: "skipped" }
   | { status: "applied" }
   | { status: "needs_ui"; message?: string; unmatchedPending?: ConsentRequirement[] }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; retryKind: PreAuthHandoffRetryKind };
 
 function snapshotEntryForPending(
   snapshot: PreAuthConsentSnapshot,
@@ -86,6 +90,23 @@ export async function applyRegistrationPreAuthConsentHandoff(
     return { status: "skipped" };
   }
 
+  const userBinding = assertPreAuthSnapshotUser(kind, userId);
+  if (userBinding === "different") {
+    clearPreAuthConsentSnapshot(kind);
+    return {
+      status: "needs_ui",
+      message: "Соглашения относятся к другому входу. Подтвердите документы снова.",
+      unmatchedPending: pending,
+    };
+  }
+  if (userBinding === "missing") {
+    return {
+      status: "needs_ui",
+      message: "Подтвердите соглашения после проверки личности.",
+      unmatchedPending: pending,
+    };
+  }
+
   const { matching, unmatchedPending } = partitionPendingByPreAuthSnapshot(snapshot, pending);
   if (matching.length === 0) {
     clearPreAuthConsentSnapshot(kind);
@@ -98,6 +119,13 @@ export async function applyRegistrationPreAuthConsentHandoff(
   }
 
   const accepted = new Set(matching.map((req) => consentRequirementKey(req)));
+  if (!bindPreAuthSnapshotToVerifiedUser(kind, userId)) {
+    return {
+      status: "error",
+      message: "Не удалось закрепить соглашения за входом. Повторите проверку.",
+      retryKind: "server",
+    };
+  }
   try {
     await recordConsentRequirements(matching, accepted);
   } catch (caught) {
@@ -114,11 +142,33 @@ export async function applyRegistrationPreAuthConsentHandoff(
     }
     if (caught instanceof RemcardApiError) {
       if (caught.status === 401) {
-        return { status: "error", message: "Сессия завершилась. Войдите снова." };
+        return {
+          status: "error",
+          message: "Сессия завершилась. Войдите снова.",
+          retryKind: "session_lost",
+        };
       }
-      return { status: "error", message: caught.message };
+      if (caught.status === 403) {
+        return {
+          status: "error",
+          message: "Аккаунт заблокирован.",
+          retryKind: "blocked",
+        };
+      }
+      if (caught.status >= 500) {
+        return {
+          status: "error",
+          message: caught.message,
+          retryKind: "server",
+        };
+      }
+      return { status: "error", message: caught.message, retryKind: "server" };
     }
-    return { status: "error", message: "Не удалось сохранить согласия. Попробуйте позже." };
+    return {
+      status: "error",
+      message: "Не удалось сохранить согласия. Попробуйте позже.",
+      retryKind: "network",
+    };
   }
 
   if (unmatchedPending.length > 0) {
