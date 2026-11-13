@@ -544,7 +544,7 @@ export async function postReceivingWorkingStagesMutation(
   try {
     const payload = await remcardFetch<ReceivingPartnerSettingsWire>(RECEIVING_WORKING_STAGES_PATH, {
       method: "POST",
-      body: JSON.stringify(body),
+      body,
     });
     const snapshot = unwrapReceivingPartnerSettingsWire(payload);
     if (!snapshot) {
@@ -882,7 +882,7 @@ export async function submitReceivingCertificateEntry(
   try {
     const payload = await remcardFetch<ReceivingCertificateEntryWireResponse>(RECEIVING_CERT_ENTRY_PATH, {
       method: "POST",
-      body: JSON.stringify({ promoCode: body.promoCode }),
+      body: { promoCode: body.promoCode },
     });
     if (payload.valid === false) {
       return {
@@ -969,7 +969,7 @@ export async function postReceivingAppealsBatch(body: {
   try {
     const data = await remcardFetch<ReceivingAppealsBatchResponseWire>(RECEIVING_BATCH_PATH, {
       method: "POST",
-      body: JSON.stringify({ action: body.action, ids } satisfies ReceivingAppealsBatchBody),
+      body: { action: body.action, ids } satisfies ReceivingAppealsBatchBody,
     });
     return { ok: true, data };
   } catch (caught) {
@@ -1074,7 +1074,7 @@ export async function createReceivingAppeal(
   try {
     await remcardFetch<{ appeal: ReceivingAppealListRowWire }>("/api/pro/client-appeals", {
       method: "POST",
-      body: JSON.stringify(toK1ReceivingAppealCreateBody(body)),
+      body: toK1ReceivingAppealCreateBody(body),
     });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
@@ -1160,7 +1160,7 @@ export async function patchReceivingAppealProfileCas(
     return { ok: false, code: "BLOCKED_CONTRACT", message: "PATCH profile ждёт P1 allowlist." };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    await remcardFetch(path, { method: "PATCH", body });
     return { ok: true };
   } catch (caught) {
     if (caught instanceof RemcardApiError && caught.status === 409) {
@@ -1188,7 +1188,7 @@ export async function patchReceivingAppealStageCas(
     };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    await remcardFetch(path, { method: "PATCH", body });
     return { ok: true };
   } catch (caught) {
     if (caught instanceof RemcardApiError && caught.status === 409) {
@@ -1218,7 +1218,7 @@ export async function patchReceivingAppealProfile(
     };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    await remcardFetch(path, { method: "PATCH", body });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
     return {
@@ -1245,7 +1245,7 @@ export async function patchReceivingAppealStage(
     };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body: JSON.stringify(body) });
+    await remcardFetch(path, { method: "PATCH", body });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
     return {
