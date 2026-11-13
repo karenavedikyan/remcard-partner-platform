@@ -20,6 +20,20 @@ describe("P4.ReceivingAppealHistory (K2 projection)", () => {
     expect(projected.map((r) => r.text)).toEqual(["Оплачено", "Этап: В работе"]);
   });
 
+  it("passes K2 canonical timeline lines without double projection", () => {
+    const k2 = [
+      { at: "2026-11-09T10:00:00Z", text: "Этап: В работе" },
+      { at: "2026-11-10T10:00:00Z", text: "Отказ: Нет наличия" },
+      { at: "2026-11-12T10:00:00Z", text: "Оплачено" },
+    ];
+    const projected = projectReceivingHistory(k2, "referrer-public");
+    expect(projected.map((r) => r.text)).toEqual([
+      "Оплачено",
+      "Отказ: Нет наличия",
+      "Этап: В работе",
+    ]);
+  });
+
   it("renders empty public state", () => {
     render(
       <ReceivingAppealHistory

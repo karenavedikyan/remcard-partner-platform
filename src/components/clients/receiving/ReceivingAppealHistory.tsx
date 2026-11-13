@@ -17,6 +17,20 @@ export type ReceivingHistoryProjection = "receiving-full" | "referrer-public";
 const PUBLIC_PAID_HISTORY = /^оплачено(?=\s|[·:—(]|$)/i;
 const PUBLIC_SHIPPED_HISTORY = /^отгружено(?=\s|[·:—(]|$)/i;
 
+/** K2 GET detail — pre-projected `{at,text}`; distinct from raw receiving history strings. */
+export function isK2CanonicalPublicHistoryText(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (/^этап:\s+/i.test(t) && !/^этап изменён:/i.test(t)) return true;
+  if (/^отказ:\s+/i.test(t)) return true;
+  if (/^статус:\s+/i.test(t)) return true;
+  if (/^создано обращение по сертификату$/i.test(t)) return true;
+  if (/^оплачено$/i.test(t)) return true;
+  if (/^отгружено$/i.test(t)) return true;
+  if (/^возврат/i.test(t)) return true;
+  return false;
+}
+
 /** K2 safe projection — frozen prototype `isPublicReferrerHistoryEntry` / `publicHistoryLine`. */
 export function isPublicReferrerHistoryEntry(
   entry: ReceivingAppealHistoryEntry,
@@ -25,6 +39,7 @@ export function isPublicReferrerHistoryEntry(
   const t = String(entry.text || "").trim();
   if (!t) return false;
   if (/служебн|заметк|архив|корзин|скрыто|перемещено|вручную/i.test(t)) return false;
+  if (isK2CanonicalPublicHistoryText(t)) return true;
   if (/группов/i.test(t) && !/^этап изменён:/i.test(t)) return false;
   if (/^этап изменён:/i.test(t)) return true;
   if (/^статус:/i.test(t)) return true;
@@ -43,6 +58,7 @@ export function publicHistoryLine(
   refusedReason?: string | null,
 ): string {
   const t = String(entry.text || "").trim();
+  if (isK2CanonicalPublicHistoryText(t)) return t;
   if (/^этап изменён:\s*/i.test(t)) {
     const label = t.replace(/^этап изменён:\s*/i, "").replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
     return label ? `Этап: ${label}` : "";
