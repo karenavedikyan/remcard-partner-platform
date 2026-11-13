@@ -22,16 +22,18 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 
 | Owner | Tip | Notes |
 |-------|-----|--------|
-| P1 | **`0bb25b9b`** | List, `POST …/batch`, detail `PATCH`, `…/stage`, working-stages, certificate-entry **in source** |
-| P2 | (coordination) | Envelopes / `409` — not re-audited this pass |
-| P3 | — | Observer shell on **P8 branch** still proxy-blocked |
-| P4 | **`497f313d`** | `buildReceivingAppealDetailReady` in `receiving-detail-actions-contract.ts` |
-| P5 | **`1298491f`** (after `ca2855fb`) | `ReceivingBulkActions`, `ReceivingBulkEditPanel`, `ReceivingBulkConfirmPanel`, `receiving-bulk-handoff.ts` |
-| P6 | **`3d6c7637`** (current; not `78fd46e7`/`5092` alone) | Workspace/transport — **Root rejects duplicate P5 paths @ this tip** |
-| P7 | — | Nav/shell — not expanded this pass |
+| P1 | **`f43f9e22`** (proxy pin **`0bb25b9b`**) | Packaging + verified client-appeals / referred allowlist in source — **not on `57ca`** |
+| P2 | **`120d9a4a`** | Typed blockers + batch vs patch-multi handoff |
+| P3 | **`67fc52d9`** | Observer persistence bridge; synthetic list states **4/4 PASS** |
+| P4 | **`497f313d`** | `buildReceivingAppealDetailReady`; **Root OPEN:** `sys_paid` shipped copy |
+| P5 | **`99d4c9f0`** (originals **`1298491f`**) | Bulk panels + handoff |
+| P6 | **`4ac14afe`** | Imports P5; detail host + bulk apply; duplicate contract **removed** |
+| P7 | **`9094f523`** | Clients shell chrome only |
 | P8 | audit tip | Audit only |
 
-### Root ownership correction @ `3d6c7637` (rejected workaround — selective handoff)
+**Superseded:** duplicate-path narrative @ `3d6c7637` — corrective assembly @ `4ac14afe`. Detail: **`GATE-DELTA-20261113-1900.md`**.
+
+### Historical ownership correction @ `3d6c7637` (archived — selective handoff)
 
 | Path | Owner (take) | @ `3d6c7637` problem |
 |------|----------------|----------------------|

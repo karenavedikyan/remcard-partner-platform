@@ -1,24 +1,25 @@
 # Root selected-path handoff (P8 mirror)
 
-**Date:** 2026-11-13 REM-DUAL-FRONT correction  
-**Rule:** File-owner wins; reject P6 duplicate of P5 at same path.
+**Updated:** 2026-11-13 19:00 UTC · **Supersedes** `3d6c7637` duplicate workaround (corrected @ P6 `4ac14afe`).
 
 ## Take (by owner SHA)
 
 | SHA | Include paths (representative) |
 |-----|--------------------------------|
-| **P5 `1298491f`** | `ReceivingBulkActions.tsx`, `ReceivingBulkEditPanel.tsx`, `ReceivingBulkConfirmPanel.tsx`, `receiving-bulk-handoff.ts` |
-| **P4 `497f313d`** | `receiving-detail-actions-contract.ts`, `ReceivingAppealDetailView.tsx` (actions) |
-| **P1 `0bb25b9b`** | `remcard-proxy.ts` Clients allowlist (batch, detail PATCH, stage, settings) |
-| **P6 `3d6c7637`** | `ReceivingAppealsWorkspace.tsx`, `ReceivingAppealDetailHost.tsx`, `receiving-bulk-apply.ts`, `receiving-appeals-api.ts` (transport), `ClientsDirectionWorkspace.tsx` mount — **exclude** duplicate bulk UI/contract paths |
+| **P5 `1298491f` / lock `99d4c9f0`** | `ReceivingBulkActions.tsx`, `ReceivingBulkEditPanel.tsx`, `ReceivingBulkConfirmPanel.tsx`, `receiving-bulk-handoff.ts` |
+| **P4 `497f313d`** | `receiving-detail-actions-contract.ts` (+ Root **sys_paid** copy fix still open) |
+| **P1 `0bb25b9b`** (pin in P1 docs `f43f9e22`) | `remcard-proxy.ts` client-appeals + referred-appeals allowlist |
+| **P6 `4ac14afe`** | `ReceivingAppealsWorkspace.tsx`, `ClientsDirectionWorkspace.tsx` incoming mount, `ReceivingAppealDetailHost.tsx`, `receiving-bulk-apply.ts`, `receiving-appeals-api.ts` — **imports P5**, no `receiving-bulk-contract.ts` |
+| **P3 `67fc52d9`** | `createObserverPersonalPersistenceBridge.ts`, observer list UX |
 | **К frozen** | navigator pins unchanged |
 
-## Reject from P6 `3d6c7637` (keep P5 originals instead)
+## Reject / obsolete
 
-- `src/lib/clients-parity/receiving-bulk-contract.ts` (use P5 handoff)
-- `src/components/clients/receiving/ReceivingBulkToolbar.tsx` (use P5 `ReceivingBulkActions.tsx`)
-- `src/components/clients/receiving/ReceivingBulkEditPanel.tsx` when content ≠ P5 `1298491f`
+- P6 `3d6c7637` duplicate `receiving-bulk-contract.ts` / toolbar fork — **removed** @ `4ac14afe`
+- Whole-branch rejection of P6 — **withdrawn**; only path-level rules above
 
 ## Dependency
 
-P6 workspace must import P5 panels/handoff + P6 `applyReceivingBulkEditsPerId` after Root merge order.
+Root publish order: P5 bulk UI → P6 workspace/host/transport → P1 proxy on integration branch → P3 persistence bridge mounted from parent shell (**P7** chrome optional).
+
+See **`GATE-DELTA-20261113-1900.md`** for release blockers.
