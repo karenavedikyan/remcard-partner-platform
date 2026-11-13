@@ -5,7 +5,36 @@
 import type { ReceivingAppealBucket } from "./ReceivingBulkActions";
 import type { ReceivingBulkAction } from "./ReceivingBulkActions";
 
-export const K1_RECEIVING_BATCH_REF = "51353825" as const;
+export const K1_RECEIVING_BATCH_REF = "a71b8f37f526d775cd99f0535705be678b72261e" as const;
+/** P2 partner types pin — per-id PATCH body + `expectedRevision` (no batch-edit route). */
+export const P2_RECEIVING_PATCH_REF = "c49d71dceae8e221fc3e321056b091d7e3347be5" as const;
+
+export type ReceivingBulkConfirmKind = "archive" | "delete" | "unarchive" | "restore";
+
+export type ReceivingWorkingStageOption = { id: string; label: string };
+
+/** Draft from `ReceivingBulkEditPanel` (prototype `renderBulkEditPanel`). */
+export type ReceivingBulkEditDraft = {
+  stageId: string;
+  serviceNote: string;
+  appendNote: boolean;
+};
+
+/**
+ * P6 transport: one `PATCH /api/pro/client-appeals/:id` per intent (sequential or parallel).
+ * Field names follow P2 `ClientAppealPatch` — P6 `receiving-appeals-api.ts` maps to wire JSON.
+ */
+export type ReceivingAppealPatchBody = {
+  expectedRevision?: number;
+  stageId?: string;
+  serviceNote?: string;
+  serviceNoteAppend?: boolean;
+};
+
+export type ReceivingAppealPatchIntent = {
+  appealId: string;
+  body: ReceivingAppealPatchBody;
+};
 
 /** Navigator batch body action (K1). Not financial ops. */
 export type ReceivingCrmBatchAction = "archive" | "unarchive" | "trash" | "restore";
@@ -47,6 +76,64 @@ export type ReceivingBulkMutationResult =
     };
 
 export type ReceivingBulkEditScope = "patch-single" | "patch-multi";
+
+export function receivingConfirmToBatchAction(kind: ReceivingBulkConfirmKind): ReceivingCrmBatchAction {
+  if (kind === "delete") return "trash";
+  return kind;
+}
+
+export function buildReceivingBulkPatchIntents(
+  appealIds: readonly string[],
+  draft: ReceivingBulkEditDraft,
+  opts: {
+    stageBlocked: boolean;
+    stageLockedIds?: ReadonlySet<string>;
+    revisions?: Record<string, number>;
+  },
+): { intents: ReceivingAppealPatchIntent[]; validationError?: string } {
+  const wantStage = !opts.stageBlocked && Boolean(draft.stageId.trim());
+  const wantNote = Boolean(draft.serviceNote.trim());
+  if (!wantStage && !wantNote) {
+    return { intents: [], validationError: "Укажите этап или заметку" };
+  }
+  const intents: ReceivingAppealPatchIntent[] = [];
+  for (const appealId of appealIds) {
+    const body: ReceivingAppealPatchBody = {
+      expectedRevision: opts.revisions?.[appealId],
+    };
+    if (wantStage && !opts.stageLockedIds?.has(appealId)) {
+      body.stageId = draft.stageId;
+    }
+    if (wantNote) {
+      body.serviceNote = draft.serviceNote;
+      body.serviceNoteAppend = draft.appendNote;
+    }
+    if (body.stageId || body.serviceNote) {
+      intents.push({ appealId, body });
+    }
+  }
+  return { intents };
+}
+
+export function aggregateReceivingPatchResults(
+  outcomes: Array<{ appealId: string; ok: boolean; reason?: string; message?: string }>,
+): ReceivingBulkMutationResult {
+  const updatedIds = outcomes.filter((o) => o.ok).map((o) => o.appealId);
+  const failures: ReceivingBatchFailure[] = outcomes
+    .filter((o) => !o.ok)
+    .map((o) => ({
+      id: o.appealId,
+      reason: o.reason ?? "patch_failed",
+      message: o.message ?? "Не удалось обновить.",
+    }));
+  const skippedIds = failures.map((f) => f.id);
+  return normalizeReceivingBatchResponse({
+    action: "archive",
+    updatedIds,
+    skippedIds,
+    failures,
+  });
+}
 
 export function receivingToolbarToBatchAction(
   action: ReceivingBulkAction,

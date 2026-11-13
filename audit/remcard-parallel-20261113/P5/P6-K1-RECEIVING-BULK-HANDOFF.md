@@ -1,6 +1,6 @@
 # P6 workspace ↔ K1 batch ↔ П5 `ReceivingBulkActions`
 
-**Refs (user audit):** K1 `51353825`, P6 workspace `5092f756`, P1 proxy `2b2b32b8`, K5 gate `6c444487`. SHAs not merged on partner `origin` at П5 read time — contract from K1 source task.
+**Refs:** K1 `a71b8f37`, P2 PATCH types `c49d71dc`, P6 workspace `78fd46e7` (not on partner `origin` at П5 read). **П5 @ tip** owns panels + handoff; P6 must not vendor copies.
 
 ## K1 HTTP
 
@@ -25,8 +25,10 @@
 
 | File | Role |
 | --- | --- |
-| `ReceivingBulkActions.tsx` | Toolbar UI + `onAction` |
-| `receiving-bulk-handoff.ts` | Map UI → K1 action, normalize response, selection merge |
+| `ReceivingBulkActions.tsx` | Toolbar + `edit-open` |
+| `ReceivingBulkEditPanel.tsx` | Prototype bulk edit (stage + service note) |
+| `ReceivingBulkConfirmPanel.tsx` | archive/delete/unarchive/restore confirm |
+| `receiving-bulk-handoff.ts` | batch + **per-id PATCH intents** + selection merge |
 
 **Not here:** `receiving-appeals-api.ts` (P6/K1), proxy (P1), workspace mount (P6).
 
@@ -56,7 +58,7 @@ import { postClientAppealsBatch } from "@/lib/.../receiving-appeals-api"; // P6 
     }
   const mapped = receivingToolbarToBatchAction(action, bucket);
   if (mapped === "patch-multi") {
-    openEditPanel([...selected]);
+    setBulkPanel("edit");
     return;
   }
   if (!mapped) return;
@@ -85,7 +87,76 @@ import { postClientAppealsBatch } from "@/lib/.../receiving-appeals-api"; // P6 
 | `unarchive-ask` | archive | `unarchive` |
 | `delete-ask` | archive | `trash` |
 | `restore-ask` | trash | `restore` |
-| `edit-open` | active | **PATCH** (P6 form), not batch |
+| `edit-open` | active | **`ReceivingBulkEditPanel`** → per-id `PATCH` (P6 transport), not batch |
+
+## Bulk edit (per-id PATCH, P6 transport)
+
+```tsx
+import { ReceivingBulkEditPanel } from "@/components/clients/receiving/ReceivingBulkEditPanel";
+import {
+  aggregateReceivingPatchResults,
+  buildReceivingBulkPatchIntents,
+  receivingBulkMergeSelection,
+} from "@/components/clients/receiving/receiving-bulk-handoff";
+import { patchClientAppeal } from ".../receiving-appeals-api"; // P6 only
+
+{bulkPanel === "edit" ? (
+  <ReceivingBulkEditPanel
+    count={selected.size}
+    stageOptions={workingStageOptions}
+    stageBlocked={selectionHasFinancialStage}
+    contractState={batchContractState}
+    saveError={editError}
+    onCancel={() => setBulkPanel(null)}
+    onApply={async (draft) => {
+      const { intents, validationError } = buildReceivingBulkPatchIntents([...selected], draft, {
+        stageBlocked,
+        stageLockedIds,
+        revisions,
+      });
+      if (validationError) {
+        setEditError(validationError);
+        return;
+      }
+      setBatchContractState("pending");
+      const outcomes = await Promise.all(
+        intents.map(async ({ appealId, body }) => {
+          try {
+            await patchClientAppeal(appealId, body);
+            return { appealId, ok: true as const };
+          } catch (e) {
+            return { appealId, ok: false as const, reason: "patch_failed", message: String(e) };
+          }
+        }),
+      );
+      const result = aggregateReceivingPatchResults(outcomes);
+      setEditError(receivingBulkErrorMessage(result));
+      if (result.ok) await refetchList();
+      if (receivingBulkPreserveSelection(result)) {
+        setSelected(receivingBulkMergeSelection([...selected], result));
+      }
+      if (result.ok && result.kind === "full") setBulkPanel(null);
+      setBatchContractState("ready");
+    }}
+  />
+) : null}
+```
+
+```tsx
+import { ReceivingBulkConfirmPanel } from "@/components/clients/receiving/ReceivingBulkConfirmPanel";
+import { receivingConfirmToBatchAction } from "@/components/clients/receiving/receiving-bulk-handoff";
+
+{bulkConfirm ? (
+  <ReceivingBulkConfirmPanel
+    kind={bulkConfirm}
+    count={selected.size}
+    contractState={batchContractState}
+    partialError={batchPartialMessage}
+    onCancel={() => setBulkConfirm(null)}
+    onConfirm={() => runBatch(receivingConfirmToBatchAction(bulkConfirm))}
+  />
+) : null}
+```
 
 ## vs observer personal
 
