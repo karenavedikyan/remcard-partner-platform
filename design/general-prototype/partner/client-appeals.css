@@ -255,10 +255,40 @@ button.ca-row{font:inherit;color:inherit}
 .ca-personal-check{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:14px;white-space:nowrap}
 .ca-personal-check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex-shrink:0}
 .ca-personal-partners{grid-template-columns:1fr}
-.ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 24px}
-.ca-personal-partners .ca-observer-stats dt{line-height:1.5}
+.ca-personal-partners>.ca-observer-partner-card{cursor:default;gap:20px;padding:24px;min-width:0}
+.ca-personal-partners>.ca-observer-partner-card:hover{background:var(--surface);border-color:var(--line)}
+.ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ca-personal-partners .ca-observer-stats>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--offset)}
+.ca-personal-partners .ca-observer-stats dt{line-height:1.5;font-size:13px;overflow-wrap:anywhere}
+.ca-personal-partners .ca-observer-stats dd{order:-1;font-size:28px;line-height:1.25;letter-spacing:-.03em;color:var(--ink)}
+.ca-observer-partner-kicker{font-size:11px;line-height:1.5;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.ca-personal-partners .ca-observer-partner-card__head strong{font-size:18px;line-height:1.4}
+.ca-observer-partner-category,.ca-observer-partner-city{font-size:14px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.ca-observer-open-label{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap;align-self:center}
+.ca-observer-card-meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr);gap:16px;margin:0;padding:0 0 20px;border-bottom:1px solid var(--line)}
+.ca-observer-card-meta>div{display:grid;align-content:start;gap:4px;min-width:0}
+.ca-observer-card-meta dt{font-size:13px;line-height:1.5;color:var(--muted)}
+.ca-observer-card-meta dd{margin:0;font-size:18px;font-weight:800;line-height:1.5;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ca-observer-card-meta .ca-observer-card-update dd{font-size:14px;font-weight:600}
+.ca-observer-clients-heading{display:grid;gap:4px}
+.ca-observer-clients-heading h2{font-size:16px;line-height:1.5}
+.ca-observer-clients-heading h2 span{display:inline-grid;place-items:center;min-width:24px;min-height:24px;margin-left:4px;padding:0 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ca-observer-clients-heading p{font-size:12px;line-height:1.5;color:var(--muted);max-width:none}
+.ca-observer-client-columns,.ca-personal-row.ca-observer-card-client{display:grid;grid-template-columns:24px minmax(0,1fr) minmax(130px,.65fr) 145px 150px;gap:12px;min-width:0;align-items:start}
+.ca-observer-client-columns{align-items:center;color:var(--muted);font-size:12px;line-height:1.5;padding:0 0 10px;border-bottom:1px solid var(--line);margin-bottom:-20px}
+.ca-observer-card-client:first-child{border-top:0}
+.ca-observer-card-client .ca-personal-open{gap:4px}
+.ca-observer-card-client .ca-personal-open strong{font-size:15px;line-height:1.5}
+.ca-observer-card-client .ca-personal-open>.small{font-size:13px;line-height:1.5}
+.ca-observer-card-client .ca-personal-status{align-content:start}
+[data-theme=light] .ca-observer-card-client .ca-pill--good,[data-theme=light] .ca-observer-card-client .ca-pill--shipped{color:#116f34}
+[data-theme=light] .ca-observer-card-client .ca-pill--warn{color:#a34b08}
+.ca-observer-card-client .ca-personal-status>*{white-space:normal;max-width:100%;overflow-wrap:anywhere}
+.ca-observer-client-updated{min-width:0;display:grid;gap:4px;font-size:13px;line-height:1.5;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.ca-observer-cell-label{display:none}
+.ca-observer-card-client>.btn{font-size:12px;padding:10px 12px;min-height:44px;white-space:normal;line-height:1.5}
 .ca-personal-group-head{display:flex;gap:12px;align-items:center}
-.ca-personal-partner-open{padding:0;border:0;background:transparent;text-align:left;min-height:44px;color:var(--ink);flex:1}
+.ca-personal-partner-open{display:flex;justify-content:space-between;gap:20px;padding:0;border:0;background:transparent;text-align:left;min-height:44px;min-width:0;color:var(--ink);flex:1}
 .ca-personal-partner-open:hover strong{text-decoration:underline}
 .ca-personal-rows{display:grid;gap:0;min-width:0}
 .ca-personal-row{display:grid;grid-template-columns:24px minmax(0,1fr) minmax(100px,160px) auto;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);min-width:0}
@@ -274,8 +304,29 @@ button.ca-row{font:inherit;color:inherit}
 .ca-personal-edit h3,.ca-personal-confirm h3,.ca-personal-edit p,.ca-personal-confirm p{margin:0}
 .ca-personal-flat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 16px}
 .ca-personal-flat>.ca-personal-row:first-child{border-top:0}
+@media(min-width:1101px){
+  .ca-observer-partner-card[data-observer-bucket=trash] .ca-observer-client-columns,.ca-observer-partner-card[data-observer-bucket=trash] .ca-observer-card-client{grid-template-columns:24px minmax(0,1fr) minmax(130px,.65fr) 145px}
+}
+@media(max-width:1100px){
+  .ca-observer-client-columns{display:none}
+  .ca-personal-row.ca-observer-card-client{grid-template-columns:24px repeat(2,minmax(0,1fr));gap:12px;align-items:start;padding:20px 0}
+  .ca-personal-row.ca-observer-card-client>.ca-personal-check{grid-column:1;grid-row:1/4;align-self:start}
+  .ca-personal-row.ca-observer-card-client>.ca-personal-open,.ca-personal-row.ca-observer-card-client>.btn{grid-column:2/-1;justify-self:start}
+  .ca-personal-row.ca-observer-card-client>.ca-personal-status{grid-column:2;justify-self:start}
+  .ca-personal-row.ca-observer-card-client>.ca-observer-client-updated{grid-column:3;justify-self:start}
+  .ca-observer-card-client .ca-personal-status{display:grid;gap:4px;justify-items:start}
+  .ca-observer-cell-label{display:block;font-size:12px;line-height:1.5;color:var(--muted);font-weight:500}
+}
 @media(max-width:760px){
+  .ca-personal-partners>.ca-observer-partner-card{padding:16px;gap:16px}
   .ca-personal-partners .ca-observer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ca-personal-partners .ca-observer-stats>div{padding:12px}
+  .ca-observer-card-meta{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .ca-observer-card-update{grid-column:1/-1}
+  .ca-personal-partner-open{flex-direction:column;gap:8px;align-items:flex-start}
+  .ca-observer-open-label{align-self:flex-start;white-space:normal}
+  .ca-personal-group-head{align-items:flex-start}
+  .ca-personal-group-head>.ca-personal-check{margin-top:4px}
   .ca-personal-row{grid-template-columns:24px minmax(0,1fr);gap:8px 12px}
   .ca-personal-row>.ca-personal-check{grid-row:1/4;align-self:start}
   .ca-personal-row>.ca-personal-status,.ca-personal-row>.btn{grid-column:2;justify-self:start}

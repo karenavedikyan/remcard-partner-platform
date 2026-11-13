@@ -24,20 +24,21 @@ export function clearObserverPersonalSelection(workspace) {
   p.panel = null;
 }
 
-export function renderObserverPersonalRow(workspace, row, { partnerName, status, date }) {
+export function renderObserverPersonalRow(workspace, row, { partnerName, status, date, grouped = false }) {
   const p = observerPersonalState(workspace), m = p.meta[row.id] || {};
   const name = m.alias || row.clientName;
-  return `<div class="ca-personal-row" data-personal-row="${escapeHtml(row.id)}" data-selected="${p.selected.includes(row.id)}">
+  return `<div class="ca-personal-row${grouped ? " ca-observer-card-client" : ""}" data-personal-row="${escapeHtml(row.id)}" data-selected="${p.selected.includes(row.id)}">
     <label class="ca-personal-check"><input type="checkbox" data-observer-id="${escapeHtml(row.id)}" ${p.selected.includes(row.id) ? "checked" : ""} aria-label="Выбрать: ${escapeHtml(name)}"></label>
     <button type="button" class="ca-personal-open" data-testid="ca-observer-client-row" data-ca-action="observer:client:${escapeHtml(row.id)}">
       <strong>${escapeHtml(name)}</strong>
       ${m.alias && m.alias !== row.clientName ? `<span class="small muted">У партнёра: ${escapeHtml(row.clientName)}</span>` : ""}
-      <span class="small muted">${escapeHtml(partnerName)} · ${escapeHtml(row.interest || row.certificateId || "")}</span>
-      ${m.tag ? `<span class="ca-personal-tag">${escapeHtml(m.tag)}</span>` : ""}
-      ${m.note ? `<span class="small ca-personal-note">${escapeHtml(m.note)}</span>` : ""}
+      <span class="small muted">${grouped ? "" : `${escapeHtml(partnerName)} · `}${escapeHtml(row.interest || row.certificateId || "Интерес не указан")}</span>
+      ${m.tag ? `<span class="ca-personal-tag">${grouped ? "Моя метка: " : ""}${escapeHtml(m.tag)}</span>` : ""}
+      ${m.note ? `<span class="small ca-personal-note">${grouped ? "Моя заметка: " : ""}${escapeHtml(m.note)}</span>` : ""}
     </button>
-    <div class="ca-personal-status">${status}<time class="small muted">${escapeHtml(date)}</time></div>
-    ${p.bucket !== "trash" ? `<button type="button" class="btn ghost small-btn" data-observer-action="edit:${escapeHtml(row.id)}" aria-label="Редактировать личную запись: ${escapeHtml(name)}">Изменить</button>` : ""}
+    <div class="ca-personal-status">${grouped ? '<span class="ca-observer-cell-label">Статус у партнёра</span>' : ""}${status}${grouped ? "" : `<time class="small muted">${escapeHtml(date)}</time>`}</div>
+    ${grouped ? `<div class="ca-observer-client-updated"><span class="ca-observer-cell-label">Обновлено</span><time datetime="${escapeHtml(row.updatedAt || "")}">${escapeHtml(date)}</time></div>` : ""}
+    ${p.bucket !== "trash" ? `<button type="button" class="btn ghost small-btn" data-observer-action="edit:${escapeHtml(row.id)}" aria-label="Редактировать личную запись: ${escapeHtml(name)}">${grouped ? "Изменить для себя" : "Изменить"}</button>` : ""}
   </div>`;
 }
 

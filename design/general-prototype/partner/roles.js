@@ -53,7 +53,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca35";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca36-card";
 import {
   assignmentHandoffModel,
   buildRepairEmbedCtx,

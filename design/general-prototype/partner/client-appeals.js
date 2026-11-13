@@ -5,7 +5,7 @@ import {
   observerPersonalState, observerPersonalMeta, observerPersonalBucket,
   clearObserverPersonalSelection, renderObserverPersonalTools,
   renderObserverPersonalRow, hydrateObserverPersonal,
-} from "./observer-personal-list.js?v=personal1";
+} from "./observer-personal-list.js?v=personal-card2";
 import {
   clientAppealsPurchaseCtx,
   clientAppealsReceiptCtx,
@@ -2401,9 +2401,9 @@ function renderObserverPartnersList(config) {
   const base = ownReferredAppeals();
   const filtered = filterObserverAppeals(s, base);
   const tools = renderObserverPersonalTools(s, filtered, base);
-  const personalRow = a => renderObserverPersonalRow(s, a, {
+  const personalRow = (a, grouped = false) => renderObserverPersonalRow(s, a, {
     partnerName: PARTNERS[a.receivingPartnerId]?.name || "Партнёр",
-    status: pillHtml(a), date: formatObserverDateTime(a.updatedAt),
+    status: pillHtml(a), date: formatObserverDateTime(a.updatedAt), grouped,
   });
   const byPartner = new Map();
   filtered.forEach((a) => {
@@ -2416,24 +2416,33 @@ function renderObserverPartnersList(config) {
       const meta = PARTNER_OBSERVER_META[partnerId];
       const stats = partnerAppealStats(list);
       const last = formatObserverDateTime(stats.lastUpdate);
-      return `<article class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card">
+      return `<article class="panel ca-observer-partner-card" data-testid="ca-observer-partner-card" data-observer-bucket="${esc(observerPersonalState(s).bucket)}">
         <div class="ca-personal-group-head">
         <label class="ca-personal-check"><input type="checkbox" data-observer-group="${esc(partnerId)}" aria-label="Выбрать клиентов: ${esc(partner.name)}"></label>
         <button type="button" class="ca-personal-partner-open" data-ca-action="observer:partner:${esc(partnerId)}">
         <div class="ca-observer-partner-card__head">
+          <span class="ca-observer-partner-kicker">Партнёр</span>
           <strong>${esc(partner.name)}</strong>
-          <span class="small muted">${esc(meta?.category || "")}${meta?.category && partner.city ? " · " : ""}${esc(partner.city || "")}</span>
+          ${meta?.category ? `<span class="ca-observer-partner-category">${esc(meta.category)}</span>` : ""}
+          ${partner.city ? `<span class="ca-observer-partner-city">${esc(partner.city)}</span>` : ""}
         </div>
+        <span class="ca-observer-open-label">Открыть партнёра <span aria-hidden="true">→</span></span>
         </button>
         </div>
-        <dl class="ca-observer-stats">
-          <div><dt>Направлено</dt><dd>${stats.total}</dd></div>
-          <div><dt>В работе</dt><dd>${stats.inWork}</dd></div>
+        <dl class="ca-observer-stats" aria-label="Показатели видимых клиентов">
+          <div><dt>Всего направлено</dt><dd>${stats.total}</dd></div>
+          <div><dt>Сейчас в работе</dt><dd>${stats.inWork}</dd></div>
           <div><dt>Дошли до оплаты</dt><dd>${stats.paidThrough}</dd></div>
           <div><dt>Отказы</dt><dd>${stats.refusals}</dd></div>
         </dl>
-        <p class="small muted ca-observer-card-foot">Конверсия в оплату: ${esc(stats.conv)} · Возвратов: ${stats.returns} · Обновлено: ${esc(last)}</p>
-        <div class="ca-personal-rows">${list.map(personalRow).join("")}</div>
+        <dl class="ca-observer-card-meta">
+          <div><dt>Конверсия в оплату</dt><dd>${esc(stats.conv)}</dd></div>
+          <div><dt>Возвраты</dt><dd>${stats.returns}</dd></div>
+          <div class="ca-observer-card-update"><dt>Последнее обновление</dt><dd><time datetime="${esc(stats.lastUpdate)}">${esc(last)}</time></dd></div>
+        </dl>
+        <div class="ca-observer-clients-heading"><h2>Клиенты у партнёра <span>${list.length}</span></h2><p>Показатели выше относятся к клиентам в этом списке.${stats.returns ? " Клиенты с возвратом также могут входить в число дошедших до оплаты." : ""}</p></div>
+        <div class="ca-observer-client-columns" aria-hidden="true"><span></span><span>Клиент и интерес</span><span>Статус у партнёра</span><span>Обновлено</span>${observerPersonalState(s).bucket !== "trash" ? "<span>Личная запись</span>" : ""}</div>
+        <div class="ca-personal-rows">${list.map(a => personalRow(a, true)).join("")}</div>
       </article>`;
     })
     .join("");
@@ -2443,7 +2452,7 @@ function renderObserverPartnersList(config) {
       ? `<section class="panel empty ca-empty" data-testid="ca-observer-empty"><h2>${observerPersonalState(s).bucket === "archived" ? "В архиве пока нет записей" : observerPersonalState(s).bucket === "trash" ? "Корзина пуста" : "В активном списке нет записей"}</h2><p class="muted">Переключите вкладку списка. Данные у партнёров не удаляются.</p></section>`
       : renderObserverFiltersEmpty()
     : "";
-  return `<div data-testid="ca-observer-partners-list">${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${tools}${empty || (observerPersonalState(s).layout === "list" ? `<div class="ca-personal-rows ca-personal-flat">${filtered.map(personalRow).join("")}</div>` : `<div class="ca-observer-partner-grid ca-personal-partners">${cards}</div>`)}</div>`;
+  return `<div data-testid="ca-observer-partners-list">${renderClientsDirectionTabs(config)}${renderObserverFilters(s)}${renderObserverFilterChips(s)}${tools}${empty || (observerPersonalState(s).layout === "list" ? `<div class="ca-personal-rows ca-personal-flat">${filtered.map(a => personalRow(a)).join("")}</div>` : `<div class="ca-observer-partner-grid ca-personal-partners">${cards}</div>`)}</div>`;
 }
 
 function renderObserverPartnerPage(config) {

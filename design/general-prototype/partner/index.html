@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="./registration-entry.css">
   <link rel="stylesheet" href="./registration-welcome.css">
   <link rel="stylesheet" href="./care-services.css?v=care6">
-  <link rel="stylesheet" href="./client-appeals.css?v=ca20">
+  <link rel="stylesheet" href="./client-appeals.css?v=observer-card2">
   <link rel="stylesheet" href="./cabinet-standalone-host.css?v=embed5">
 </head>
 <body>
@@ -33,7 +33,7 @@
   <dialog id="role-dialog" aria-labelledby="dialog-title"></dialog>
   <div id="live" class="sr-only" role="status" aria-live="polite"></div>
   <script type="module">
-    import("./roles.js?v=cabinet-parity-20261113-1").catch(() => {
+    import("./roles.js?v=observer-card-20261113-1").catch(() => {
       const message = document.getElementById("load-message");
       if (message) message.textContent = "Не удалось загрузить прототип. Проверьте соединение и откройте его заново.";
     });
