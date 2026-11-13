@@ -27,10 +27,9 @@
 - `GET /api/pro/client-appeals` → `principal` + rows with `receivingPartnerUserId`.
 - Settings persistence keyed by `receivingPartnerUserId` (prototype `partnerSettings`).
 
-## Observer (P2 / K2)
+## Observer (P2 / P3 / K2 — **not** implemented on П6 branch)
 
-- `ObserverPartnerMeta.id` = receiving partner **User.id** for grouping/display.
-- `ObserverReferredAppeal.receivingPartnerUserId` preferred; `receivingPartnerId` legacy alias.
+See `p2-p3-p4-alias-handoff.md` — owners apply `receivingPartnerUserId` on observer DTOs/UI.
 
 ## Owners
 

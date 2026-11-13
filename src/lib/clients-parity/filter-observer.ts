@@ -4,7 +4,6 @@ import type {
   ObserverPartnerMeta,
   ObserverReferredAppeal,
 } from "./types";
-import { observerReceivingPartnerKey } from "./types";
 
 export type ObserverFilterState = {
   q: string;
@@ -46,7 +45,7 @@ export function filterObserverAppeals(
   }
   if (!q) return out;
   return out.filter((a) => {
-    const partner = partnersById.get(observerReceivingPartnerKey(a));
+    const partner = partnersById.get(a.receivingPartnerId);
     const meta = personalMeta[a.id];
     const hay = [
       a.clientName,

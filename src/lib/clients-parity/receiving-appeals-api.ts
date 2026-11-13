@@ -50,7 +50,7 @@ export function normalizeReceivingSessionPrincipal(
 export function receivingAppealOwnerUserId(
   row: Pick<ReceivingAppealListRow, "receivingPartnerUserId" | "receivingPartnerId">,
 ): string {
-  return (row.receivingPartnerUserId ?? row.receivingPartnerId).trim();
+  return (row.receivingPartnerUserId?.trim() || row.receivingPartnerId?.trim() || "");
 }
 
 /**
@@ -222,8 +222,10 @@ export function receivingStatusFilterOptions(
   return [...labels];
 }
 
+/** KPI strip — values from K1/K8 server aggregation only (UI does not recompute). */
 export type ReceivingListKpis = {
   inWork: number;
+  /** Count in paid stage — client purchase funnel, not bonus payout. */
   paid: number;
   shipped: number;
   conv: string;
@@ -262,6 +264,49 @@ export type ReceivingAppealsListResponse = {
   /** Session receiving principal — org/branch may be null for eligible solo specialist. */
   principal: ReceivingSessionPrincipal;
 };
+
+/**
+ * K1 wire payload (`f722a164` handoff). Optional `data` wrapper only — no other envelopes.
+ * @see audit/remcard-parallel-20261113/P6/k1-f722a164-list-handoff.md
+ */
+export type K1ClientAppealsListWire = ReceivingAppealsListResponse & {
+  data?: ReceivingAppealsListResponse;
+};
+
+export function coerceReceivingAppealListRow(row: ReceivingAppealListRow): ReceivingAppealListRow {
+  const uid = receivingAppealOwnerUserId(row);
+  if (!uid) return row;
+  return {
+    ...row,
+    receivingPartnerUserId: uid,
+    receivingPartnerId: (row.receivingPartnerId ?? uid).trim() || uid,
+  };
+}
+
+/** Map K1 GET body into workspace view-model (no branch/org query params on fetch). */
+export function coerceK1ClientAppealsListPayload(
+  wire: K1ClientAppealsListWire,
+): ReceivingAppealsListResponse {
+  const list = wire.data?.appeals ? wire.data : wire;
+  const appeals = (list.appeals ?? []).map(coerceReceivingAppealListRow);
+  const principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
+  const mergedSettings = list.settings ?? {
+    workingStages: [],
+    refusalReasons: [],
+    archivedStages: [],
+  };
+  return {
+    appeals,
+    kpis: list.kpis ?? { inWork: 0, paid: 0, shipped: 0, conv: "—" },
+    settings: {
+      ...mergedSettings,
+      receivingPartnerUserId:
+        mergedSettings.receivingPartnerUserId ?? principal.receivingPartnerUserId,
+    },
+    access: normalizeReceivingAccess(list.access),
+    principal,
+  };
+}
 
 export type ReceivingAppealCreateBody = {
   clientName: string;
@@ -325,30 +370,22 @@ export async function fetchReceivingAppealsWorkspace(): Promise<ReceivingAppeals
     return receivingContractBlocked();
   }
   try {
-    const [list, settings] = await Promise.all([
-      remcardFetch<ReceivingAppealsListResponse>("/api/pro/client-appeals"),
+    const [listWire, settingsWire] = await Promise.all([
+      remcardFetch<K1ClientAppealsListWire>("/api/pro/client-appeals"),
       remcardFetch<ReceivingPartnerSettings>("/api/pro/client-appeals/working-stages").catch(
         () => null,
       ),
     ]);
-    const appeals = list.appeals ?? [];
-    const principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
-    const mergedSettings =
-      settings ?? list.settings ?? { workingStages: [], refusalReasons: [], archivedStages: [] };
-    return {
-      ok: true,
-      data: {
-        appeals,
-        kpis: list.kpis ?? { inWork: 0, paid: 0, shipped: 0, conv: "—" },
-        settings: {
-          ...mergedSettings,
-          receivingPartnerUserId:
-            mergedSettings.receivingPartnerUserId ?? principal.receivingPartnerUserId,
-        },
-        access: normalizeReceivingAccess(list.access),
-        principal,
-      },
-    };
+    const data = coerceK1ClientAppealsListPayload(listWire);
+    if (settingsWire) {
+      data.settings = {
+        ...data.settings,
+        ...settingsWire,
+        receivingPartnerUserId:
+          settingsWire.receivingPartnerUserId ?? data.principal.receivingPartnerUserId,
+      };
+    }
+    return { ok: true, data };
   } catch (caught) {
     return {
       ok: false,
@@ -413,7 +450,15 @@ export async function fetchReceivingAppealDetail(
 export async function patchReceivingAppeal(
   id: string,
   body: ReceivingAppealPatchBody,
+  access?: ReceivingPrincipalAccess,
 ): Promise<ReceivingAppealsLoadResult> {
+  if (!normalizeReceivingAccess(access).mutationsAllowed) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+    };
+  }
   if (!isAllowedProxyRoute("PATCH", `/api/pro/client-appeals/${encodeURIComponent(id)}`)) {
     return receivingContractBlocked();
   }

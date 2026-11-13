@@ -1,5 +1,4 @@
 import type { ObserverPartnerAppealStats, ObserverReferredAppeal } from "./types";
-import { observerReceivingPartnerKey } from "./types";
 
 const SYSTEM = {
   NEW: "new",
@@ -43,10 +42,9 @@ export function groupAppealsByPartner(
 ): Map<string, ObserverReferredAppeal[]> {
   const byPartner = new Map<string, ObserverReferredAppeal[]>();
   for (const a of appeals) {
-    const key = observerReceivingPartnerKey(a);
-    const bucket = byPartner.get(key) ?? [];
+    const bucket = byPartner.get(a.receivingPartnerId) ?? [];
     bucket.push(a);
-    byPartner.set(key, bucket);
+    byPartner.set(a.receivingPartnerId, bucket);
   }
   return byPartner;
 }

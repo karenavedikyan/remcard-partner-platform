@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   fetchReceivingAppealsWorkspace,
+  coerceK1ClientAppealsListPayload,
+  coerceReceivingAppealListRow,
   findActiveReceivingAppeal,
   isReceivingAppealActive,
   isReceivingAppealsProxyReady,
@@ -34,6 +36,26 @@ describe("P6.receiving-appeals-api contract gate", () => {
         baseRow({ stageId: "ws_measure", bucket: "archive" }),
       ),
     ).toBe(true);
+  });
+
+  it("coerceK1 payload unwraps data and fills receivingPartnerUserId", () => {
+    const row = baseRow({ receivingPartnerUserId: "", receivingPartnerId: "only-alias" });
+    const out = coerceK1ClientAppealsListPayload({
+      data: {
+        appeals: [row],
+        kpis: { inWork: 1, paid: 0, shipped: 0, conv: "0%" },
+        settings: { workingStages: [], refusalReasons: [], archivedStages: [] },
+        access: { listAllowed: true, mutationsAllowed: true },
+        principal: {
+          receivingPartnerUserId: "session-user",
+          receivingOrganizationId: null,
+          receivingBranchId: null,
+        },
+      },
+    });
+    expect(out.principal.receivingPartnerUserId).toBe("session-user");
+    expect(coerceReceivingAppealListRow(row).receivingPartnerUserId).toBe("only-alias");
+    expect(out.appeals[0]?.receivingPartnerUserId).toBe("only-alias");
   });
 
   it("findActiveReceivingAppeal scopes by receiving User.id", () => {

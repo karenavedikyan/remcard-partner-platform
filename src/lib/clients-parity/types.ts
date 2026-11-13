@@ -13,8 +13,6 @@ export type ObserverReferredAppeal = {
   clientName: string;
   interest?: string | null;
   certificateId?: string | null;
-  /** Receiving owner User.id (prototype PARTNERS key — not Branch.id). */
-  receivingPartnerUserId?: string;
   receivingPartnerId: string;
   referrerPartnerId: string;
   updatedAt: string;
@@ -23,7 +21,6 @@ export type ObserverReferredAppeal = {
 };
 
 export type ObserverPartnerMeta = {
-  /** Partner User principal id for display/stats grouping (not Branch.id). */
   id: string;
   name: string;
   city?: string | null;
@@ -50,12 +47,6 @@ export type ObserverPersonalMeta = {
 };
 
 export type ClientsParityDirection = "incoming" | "at-partners";
-
-export function observerReceivingPartnerKey(
-  appeal: Pick<ObserverReferredAppeal, "receivingPartnerUserId" | "receivingPartnerId">,
-): string {
-  return (appeal.receivingPartnerUserId ?? appeal.receivingPartnerId).trim();
-}
 
 export type ObserverAppealsLoadResult =
   | {

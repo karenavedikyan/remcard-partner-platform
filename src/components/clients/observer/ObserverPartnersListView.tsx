@@ -190,7 +190,7 @@ export function ObserverPartnersListView({
   if (partner) {
       const list = appeals.filter(
         (a) =>
-          (a.receivingPartnerUserId ?? a.receivingPartnerId) === nav.partnerId &&
+          a.receivingPartnerId === nav.partnerId &&
           filterObserverAppeals(filters, [a], partnersById, personalMeta).length > 0,
       );
       return (
@@ -212,7 +212,7 @@ export function ObserverPartnersListView({
       return (
         <ObserverClientDetailView
           appeal={appeal}
-          partner={partnersById.get(appeal.receivingPartnerUserId ?? appeal.receivingPartnerId)}
+          partner={partnersById.get(appeal.receivingPartnerId)}
           onBack={backFromSubView}
         />
       );
