@@ -37,6 +37,7 @@
 | Вкладка «Мои клиенты у партнёров»: observer shell + `BLK-OBSERVER-REFERRED` | **PASS** | Переключение вкладки в тесте; `fetch-observer-appeals.ts` (read-only) |
 | Различие blocked receiving vs blocked observer в UI | **PASS** | `ca-receiving-appeals-blocked` vs `clients-parity-contract-blocked` |
 | Переходы вкладок (tab → tabpanel) | **PASS** | userEvent + `role="tabpanel"` |
+| Клавиатура вкладок (roving `tabIndex`, Arrow/Home/End) | **PASS** | `P6.ClientsDirectionTabs.keyboard.test.tsx`, workspace keyboard integration |
 | Gate loading / error / empty (нет роли) | **BLOCKED (browser)** | `OwnerClientsGate.tsx` — read-only; component tests не покрывают сетевые сценарии |
 | Пустой список / ready observer data | **BLOCKED** | Нет подтверждённого API `referred-appeals`; адаптер всегда `ok: false` |
 | Employee / иные роли в page-matrix | **EXCLUDED** | `OwnerClientsGate` не выдаёт employee mode (`page-matrix` p.115) |
