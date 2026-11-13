@@ -187,7 +187,7 @@ export function ObserverPartnersListView({
 
   if (nav.view === "partner") {
     const partner = partnersById.get(nav.partnerId);
-  if (partner) {
+    if (partner) {
       const list = appeals.filter(
         (a) =>
           a.receivingPartnerId === nav.partnerId &&
@@ -219,9 +219,21 @@ export function ObserverPartnersListView({
     }
   }
 
-  const showFilterEmpty = filtered.length === 0 && appeals.length > 0;
-  const showDatasetEmpty =
-    dataContract.status === "ready" && appeals.length === 0 && !filters.q && filters.period === "all";
+  const bucketEmpty =
+    appeals.length > 0 &&
+    !appeals.some((a) => (personalMeta[a.id]?.bucket ?? "active") === filters.bucket);
+  const showBucketEmpty =
+    dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && bucketEmpty;
+  const showFilterEmpty =
+    dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && !bucketEmpty;
+  const showDatasetEmpty = dataContract.status === "ready" && appeals.length === 0;
+
+  const bucketEmptyHeading =
+    filters.bucket === "archived"
+      ? "В архиве пока нет записей"
+      : filters.bucket === "trash"
+        ? "Корзина пуста"
+        : "В активном списке нет записей";
 
   const editInitial =
     panel?.kind === "edit" && panel.mode === "single" && panel.ids[0]
@@ -279,7 +291,6 @@ export function ObserverPartnersListView({
             <option value="all">Всё время</option>
             <option value="30">30 дней</option>
             <option value="90">90 дней</option>
-            <option value="365">Год</option>
           </select>
         </label>
       </div>
@@ -356,8 +367,15 @@ export function ObserverPartnersListView({
         </section>
       ) : null}
 
-      {showDatasetEmpty ? (
+      {showBucketEmpty ? (
         <section className={styles.empty} data-testid="ca-observer-empty">
+          <h2>{bucketEmptyHeading}</h2>
+          <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
+        </section>
+      ) : null}
+
+      {showDatasetEmpty ? (
+        <section className={styles.empty} data-testid="ca-observer-empty-dataset">
           <h2>В активном списке нет записей</h2>
           <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
         </section>

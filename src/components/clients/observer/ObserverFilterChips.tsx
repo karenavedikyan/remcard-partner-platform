@@ -12,7 +12,6 @@ type Props = {
 const PERIOD_LABELS: Record<string, string> = {
   "30": "30 дней",
   "90": "90 дней",
-  "365": "Год",
 };
 
 export function ObserverFilterChips({ q, period, onClearQ, onClearPeriod }: Props) {
@@ -35,6 +34,7 @@ export function ObserverFilterChips({ q, period, onClearQ, onClearPeriod }: Prop
           type="button"
           className={styles.chip}
           data-ca-action={`observer:clear-${chip.key === "q" ? "q" : "period"}`}
+          aria-label={chip.key === "q" ? "Сбросить поиск" : "Сбросить период направления"}
           onClick={chip.onClear}
         >
           {chip.label} ×
