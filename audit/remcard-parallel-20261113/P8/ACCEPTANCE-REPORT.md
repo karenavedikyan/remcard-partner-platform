@@ -1,5 +1,11 @@
 # П8 — Независимая приёмка C01–C56
 
+## REM-PUBLISH-RESIDUAL-V2 (2026-11-13)
+
+See **`PUBLICATION-RESIDUAL-V2.md`** and **`requirement-ledger-publish-v2.json`**. P7 final tip **`30a292d0`**. P8 **did not** re-run component suite this pass.
+
+Taxonomy counts: `PASS=10` · `REPRODUCED_FAIL=1` · `NOT_VERIFIED=18` · `BLOCKED_CONTRACT=22` · `BLOCKED_PERSISTENCE=4` · `EXCLUDED=1`.
+
 ## Stage 2 — combined parallel tips (2026-11-13)
 
 | Agent | Tip SHA | Product delta (summary) |

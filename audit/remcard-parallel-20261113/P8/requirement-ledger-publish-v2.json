@@ -1,0 +1,1098 @@
+{
+  "task": "REM-PUBLISH-RESIDUAL-20261113-V2",
+  "generatedAt": "2026-11-13T14:53:55.100Z",
+  "p8Agent": "П8 — Независимая приёмка C01–C56",
+  "sectionPublishable": false,
+  "sectionAccepted": false,
+  "clientsSectionPublishable": false,
+  "packagingBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "navigatorReleaseSha": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "finalOwnerTips": {
+    "P1": "20b93f87544ca0b59857be73ce46b2e62afe466e",
+    "P2": "1340a128e0e436b39d36feabb6b0c1a894b132a5",
+    "P3": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+    "P4": "effd85f3e7ca8b4ce1a373074e95d975d89cc492",
+    "P5": "dbbe44557a42eb354397315b70e1290af490c45c",
+    "P6": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+    "P7": "30a292d002d56e0daaeebdff62d1fce902590362",
+    "P8": "2a9af427fed47c21bae49d786846c52167476875"
+  },
+  "rootEvidenceReadOnly": {
+    "p1PublicationReconcile": "20b93f87544ca0b59857be73ce46b2e62afe466e:audit/remcard-parallel-20261113/P1/PUBLICATION-RECONCILE-V2.md",
+    "p1OwnerAssembly": "20b93f87544ca0b59857be73ce46b2e62afe466e:validate-owner-assembly.log (PASS)",
+    "p6PublishResidual": "981c72aff23595d32e157dc9642e08c02a0cb70d:publish-residual-REM-PUBLISH-RESIDUAL-20261113-V2.md",
+    "p7Final": "30a292d002d56e0daaeebdff62d1fce902590362:27 P7 tests + partial screenshots audit tree",
+    "fetchAdapterAtP7": "fetch-observer-appeals.ts always BLOCKED_CONTRACT @30a292d0",
+    "navigatorSearch": "github search referred-appeals/client-appeals on remcard-navigator: 0 hits (incomplete)"
+  },
+  "p8TestsThisPass": {
+    "ran": false,
+    "reason": "Prioritize ledger reconcile; root already green — no duplicate happy-path vitest.",
+    "lastP8Smoke": "vitest-contracts-stage2.log (3 PASS) @2a9af427"
+  },
+  "statusLegend": [
+    "PASS",
+    "REPRODUCED_FAIL",
+    "NOT_VERIFIED",
+    "BLOCKED_CONTRACT",
+    "BLOCKED_PERSISTENCE",
+    "EXCLUDED"
+  ],
+  "p8Counts": {
+    "REPRODUCED_FAIL": 1,
+    "NOT_VERIFIED": 18,
+    "EXCLUDED": 1,
+    "PASS": 10,
+    "BLOCKED_CONTRACT": 22,
+    "BLOCKED_PERSISTENCE": 4,
+    "TOTAL": 56
+  },
+  "requirements": [
+    {
+      "id": "C01",
+      "title": "Clients section routing / packaging onto production base",
+      "p8PublicationStatus": "REPRODUCED_FAIL",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "20b93f87544ca0b59857be73ce46b2e62afe466e",
+      "evidencePaths": [
+        "audit/remcard-parallel-20261113/P1/PUBLICATION-RECONCILE-V2.md",
+        "p1-p7-packaging-manifest.json"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root packaging",
+      "criterion": "Production route + Gate/Context byte-match 57ca4680",
+      "nextAction": "Cherry-pick only deployableIndependentUiOnly paths; never whole branch (P1 manifest).",
+      "p8Evidence": "Tip a36c609b/product 140de0a8 still diverges from EXACT 57ca4680 on Gate/Context/clients route/history helper/vitest. Whole-branch transfer forbidden; selected-file cherry-pick only (exclude list in patch-manifest).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C02",
+      "title": "Agent Clients surface = observer only (no Agent CRM list injection)",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+      "evidencePaths": [
+        "P6.ClientsDirectionWorkspace.test.tsx"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "P6 + Root",
+      "criterion": "Agent observer-only on production-mounted page",
+      "nextAction": "Root: mock gate + `/clients` browser matrix after 57ca assembly.",
+      "p8Evidence": "Component PASS; page acceptance NOT_VERIFIED.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C03",
+      "title": "Specialist/business direction tabs shell",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "981c72aff23595d32e157dc9642e08c02a0cb70d",
+      "evidencePaths": [
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/components/clients/direction/ClientsDirectionTabs.tsx",
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "P6 + Root",
+      "criterion": "Direction tabs on specialist/business production page",
+      "nextAction": "Same as C02; ship P6-owned direction files via manifest only.",
+      "p8Evidence": "Direction tabs UI present; still packaged with forbidden Gate/route delta vs 57ca4680 — FAIL packaging, not missing UI.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C04",
+      "title": "Filter/disclosure continuity across navigations",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverFilterChips.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Filter/disclosure continuity across navigations",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Filter/disclosure continuity across multi-step navigations not proven this pass (Computer exercised open/back, not filter state retention).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C05",
+      "title": "Agent receiving pages 107–112 excluded",
+      "p8PublicationStatus": "EXCLUDED",
+      "uiStatus": "ABSENT_BY_SCOPE",
+      "dataPersistenceStatus": "EXCLUDED",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "C56 scope: agent receiving pages 107–112 not mounted"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Root / Backend",
+      "criterion": "Agent receiving pages 107–112 excluded",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Agent receiving pages 107–112 excluded by scope (C56).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C06",
+      "title": "No role demo switcher / page catalog in production Clients UI",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "No role demo switcher / page catalog in ClientsDirectionWorkspace / observer mounts"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "No role demo switcher / page catalog in production Clients UI",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "No role demo switcher / page catalog injected into production Clients UI.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C07",
+      "title": "Receiving appeals list",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving appeals list",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C08",
+      "title": "Receiving KPI",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving KPI",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C09",
+      "title": "Receiving search/filters",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving search/filters",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C10",
+      "title": "Receiving active/archive/trash buckets",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving active/archive/trash buckets",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C11",
+      "title": "Receiving row selection",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving row selection",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C12",
+      "title": "Receiving bulk actions",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving bulk actions",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C13",
+      "title": "Receiving bulk edit",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving bulk edit",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C14",
+      "title": "Receiving appeal card/detail",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving appeal card/detail",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C15",
+      "title": "Receiving system statuses",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving system statuses",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C16",
+      "title": "Working stages CRUD",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Working stages CRUD",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C17",
+      "title": "Refusal/review actions",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Refusal/review actions",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C18",
+      "title": "Receiving funnel analytics",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving funnel analytics",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C19",
+      "title": "Receiving manual create",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Receiving manual create",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C20",
+      "title": "Certificate new/repeat/invalid flows",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Certificate new/repeat/invalid flows",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C21",
+      "title": "Certificate scanner scenarios",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Certificate scanner scenarios",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C22",
+      "title": "Purchase form",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Purchase form",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C23",
+      "title": "Purchase draft + profile categories",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Purchase draft + profile categories",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C24",
+      "title": "Purchase confirm",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend + receiving product",
+      "criterion": "Purchase confirm",
+      "nextAction": "Add client-appeals + working-stages on navigator ≥3c37ca25; keep agent receiving excluded.",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C25",
+      "title": "Purchase/receipt navigation without preview domain",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "ABSENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "No purchase/receipt nav exercise in this audit"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Purchase/receipt navigation without preview domain",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Purchase/receipt navigation without preview domain not exercised.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C26",
+      "title": "Observer compact partner cards",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "observer.module.css",
+        "audit/.../P7/screenshots/"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "P3+P7",
+      "criterion": "Compact partner cards vs prototype",
+      "nextAction": "Root QA: paired screenshot diff using P7 audit/screenshots; not blocking on missing P8 rerun.",
+      "p8Evidence": "Missing screenshot ≠ functional FAIL; computed/harness PASS per owners.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C27",
+      "title": "Partner card metrics",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnerCard.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P2 contract)",
+      "criterion": "Partner card metrics",
+      "nextAction": "GET /api/pro/referred-appeals* + proxy allowlist; verify vs navigator 3c37ca25.",
+      "p8Evidence": "Metrics markup present in partner card UI; production GET referred-appeals* ABSENT on BE tree; FE adapter returns BLOCKED_CONTRACT. UI present ≠ server support.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C28",
+      "title": "Compact card height/spacing etalon",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css",
+        "src/components/clients/observer/ObserverPartnerCard.tsx"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "P7",
+      "criterion": "Compact card spacing etalon",
+      "nextAction": "Optional P7 follow-up trash-grid; Root overlay diff when shell mocked.",
+      "p8Evidence": "Local CSS compact height orient present; card height/spacing full etalon deltas vs prototype not re-proven PASS.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C29",
+      "title": "Partner details show/hide + client open navigation",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+        "scripts/clients-parity-20261113/observer-list-harness/"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "Partner details show/hide + client open navigation",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Computer V8 @ a36c609b/140de0a8: partner/group/flat → client → back real clicks across 10 width×theme samples; name min-height 44; open h≈47.5. Fixture-only; live API still BLOCKED (C32/C39). Packaging still C01 FAIL.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C30",
+      "title": "openPartners session; reload → collapsed",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "openPartners session; reload → collapsed",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "openPartners session reload→collapsed not proven across real navigation this pass.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C31",
+      "title": "Group/mixed checkbox + select-all; row geometry",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+        "src/components/clients/observer/observer.module.css",
+        "audit/clients-parity-20261113/v7-pin-140de0a8/v7-grouped-parity-report.json"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "Group/mixed checkbox + select-all; row geometry",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Computer V8: child bounds; status/date y shared (281.5 both in Computer report); no dead named tracks; checkbox/group geometry. Fixture harness; scrollWidth alone not used as pass.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C32",
+      "title": "Expanded clients under partner (live data)",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P2 contract)",
+      "criterion": "Expanded clients under partner (live data)",
+      "nextAction": "GET /api/pro/referred-appeals* + proxy allowlist; verify vs navigator 3c37ca25.",
+      "p8Evidence": "Expanded-client UI works on fixtures (Computer PASS). Live production list requires GET /api/pro/referred-appeals* — 0 handlers on BE release tree; FE fetchObserverReferredAppeals returns BLOCKED_CONTRACT. Distinguish: UI present, server absent.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C33",
+      "title": "Observer filters q/period, chips, grouped/flat layout",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverFilterChips.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "Observer filters q/period, chips, grouped/flat layout",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Filters/chips + grouped/flat layout UI present; Computer V8 exercised partner/group/flat open+back on fixtures. Full filter-semantic/visual etalon vs prototype + live data not accepted. Not a personal-edit item (that is C35).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C34",
+      "title": "filterObserverAppeals semantics vs live API",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/lib/clients-parity/filter-observer.ts",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P2 contract)",
+      "criterion": "filterObserverAppeals semantics vs live API",
+      "nextAction": "GET /api/pro/referred-appeals* + proxy allowlist; verify vs navigator 3c37ca25.",
+      "p8Evidence": "filterObserverAppeals helper exists for fixtures; cannot validate semantics against live referred-appeals API (ABSENT).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C35",
+      "title": "Personal alias/tag/note form + persist",
+      "p8PublicationStatus": "BLOCKED_PERSISTENCE",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P5 UI ready)",
+      "criterion": "Personal alias/tag/note form + persist",
+      "nextAction": "personal-meta overlay routes; keep Save disabled until contract proven.",
+      "p8Evidence": "UI form alias/tag/note + cancel present; Save disabled (title BLOCKED_PERSISTENCE). No PATCH personal-meta on BE. Must NOT map to PATCH /api/pro/agent-clients/:id displayName/note.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C36",
+      "title": "Mass personal tag edit + persist",
+      "p8PublicationStatus": "BLOCKED_PERSISTENCE",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalTools.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P5 UI ready)",
+      "criterion": "Mass personal tag edit + persist",
+      "nextAction": "personal-meta overlay routes; keep Save disabled until contract proven.",
+      "p8Evidence": "Bulk edit panel UI + cancel present; save disabled. No mass tag persistence endpoint on BE/FE proxy.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C37",
+      "title": "Personal archive/trash/restore (own list only)",
+      "p8PublicationStatus": "BLOCKED_PERSISTENCE",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P5 UI ready)",
+      "criterion": "Personal archive/trash/restore (own list only)",
+      "nextAction": "personal-meta overlay routes; keep Save disabled until contract proven.",
+      "p8Evidence": "Confirm UI present; confirm → BLOCKED_PERSISTENCE notify, no mutation. agent-clients archive/delete ≠ «удалить только из своего списка». Semantic mismatch, not merely missing UI.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C38",
+      "title": "Personal meta survives reload (production contract)",
+      "p8PublicationStatus": "BLOCKED_PERSISTENCE",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
+        "src/lib/clients-parity/contracts.ts",
+        "01-EARLY-API-OWNERSHIP-PERSISTENCE-BLOCKERS.md"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "Backend (P5 UI ready)",
+      "criterion": "Personal meta survives reload (production contract)",
+      "nextAction": "personal-meta overlay routes; keep Save disabled until contract proven.",
+      "p8Evidence": "Disabled save ≠ persistence PASS. No production personal-meta contract; localStorage/sessionStorage forbidden as substitute.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C39",
+      "title": "Partner detail view + back (live)",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Backend (P2 contract)",
+      "criterion": "Partner detail view + back (live)",
+      "nextAction": "GET /api/pro/referred-appeals* + proxy allowlist; verify vs navigator 3c37ca25.",
+      "p8Evidence": "Partner detail UI + back works on fixtures (Computer). Live partner-scoped referred list ABSENT on server.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C40",
+      "title": "Client public detail + back (live)",
+      "p8PublicationStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "effd85f3e7ca8b4ce1a373074e95d975d89cc492",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverClientDetailView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "owner": "P4",
+      "criterion": "Client detail timeline / purchase with live referred data",
+      "nextAction": "Backend referred-appeals contract; until then NA timeline honest.",
+      "p8Evidence": "Client detail UI + back on fixtures (Computer). Live GET referred-appeals/:id ABSENT on BE.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C41",
+      "title": "URL/id protection",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "URL/id protection",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "URL/id protection not expanded/proven this pass.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C42",
+      "title": "KPI CSS cascade tokens (4 above 360 / 2 at ≤360)",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/observer-stats-grid.computed.test.ts"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "KPI CSS cascade tokens (4 above 360 / 2 at ≤360)",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Computer V8 + vitest: KPI cascade preserved — 4 cols above 360 / 2 at ≤360 across viewport checks.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C43",
+      "title": "Grouped row cascade: status+updated same row; no obsolete areas",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css",
+        "audit/clients-parity-20261113/v7-pin-140de0a8/",
+        "scripts/clients-parity-20261113/audit-v7-140de0a8-grouped-parity.mjs"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Grouped row cascade: status+updated same row; no obsolete areas",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Computer V8 @ 140de0a8: obsolete max768 areas removed; status+updated same row (y shared); no dead named tracks at 320–1024. Prototype max1100 grouped + max760 flat only.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C44",
+      "title": "Spacing/radius full visual pass thresholds",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/observer-visual-tokens.test.ts"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Spacing/radius full visual pass thresholds",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Token spot-checks OK; spacing/radius full visual pass thresholds not re-claimed.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C45",
+      "title": "Light/dark full pixel thresholds",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "P7 + Root QA",
+      "criterion": "Light/dark screenshot pairs full matrix",
+      "nextAction": "P7 delivered partial pairs @30a292d0; Root full-shell compare NOT_VERIFIED.",
+      "p8Evidence": "Do not classify missing full matrix as REPRODUCED_FAIL.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C46",
+      "title": "Viewport matrix real-click + geometry (isolated)",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "test-run-ledger-fix.log",
+        "observer-mobile-navigation.computed.test.ts"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_FULL_APP",
+      "owner": "P7",
+      "criterion": "Isolated viewport harness (not section)",
+      "nextAction": "Included in publishable CSS bundle; does not lift C01/C27.",
+      "p8Evidence": "Isolated viewport real-click + geometry PASS at 140de0a8/a36c609b. Not full pixel/section parity. Do not promote 0729/65df323e click-only.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C47",
+      "title": "Bounding-box overlay ≤1px vs prototype etalon",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "v7 same-row tops measured; full prototype overlay etalon not re-diffed"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root QA",
+      "criterion": "≤1px overlay vs prototype",
+      "nextAction": "Run measure-paired-visual.mjs in CI with mocked shell.",
+      "p8Evidence": "P7 paired-computed partial; full overlay NOT_VERIFIED.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C48",
+      "title": "Screenshot overlay visualPass vs prototype baseline",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "30a292d002d56e0daaeebdff62d1fce902590362",
+      "evidencePaths": [
+        "v7-pin-140de0a8 screenshots = cascade proof only"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root QA",
+      "criterion": "Screenshot overlay PASS",
+      "nextAction": "Same as C45/C47.",
+      "p8Evidence": "Cascade screenshots exist; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C49",
+      "title": "Overflow/regression sweep beyond observer fixture",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Overflow/regression sweep beyond observer fixture",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Full overflow/regression sweep outside observer fixture not run.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C50",
+      "title": "Keyboard/a11y full inventory",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "Keyboard/a11y full inventory",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Keyboard/a11y inventory not fully exercised (spot focus-visible exists; not full pass).",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C51",
+      "title": "Observer network loading/error paths",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Observer network loading/error paths",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Observer network loading/error paths not proven beyond BLOCKED adapter return.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C53",
+      "title": "Form rerender focus",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Form rerender focus",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Form rerender focus not tested.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C54",
+      "title": "Cross-section regressions",
+      "p8PublicationStatus": "NOT_VERIFIED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_VERIFIED",
+      "owner": "Root / Backend",
+      "criterion": "Cross-section regressions",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "Cross-section regressions not run.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C52",
+      "title": "Demo fixtures not wired into production path",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts not imported by production ClientsListWorkspace path"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "Demo fixtures not wired into production path",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "observer-demo-fixtures not imported by production workspace path.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C55",
+      "title": "No real financial ops in this work",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "Read-only audit; no store purchase mutations"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "No real financial ops in this work",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "No real financial ops in candidate Clients work / this audit.",
+      "p8TestsRunThisPass": false
+    },
+    {
+      "id": "C56",
+      "title": "No DB/backend/rights/finance/prod changes by auditor",
+      "p8PublicationStatus": "PASS",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "2a9af427fed47c21bae49d786846c52167476875",
+      "evidencePaths": [
+        "Allowlist-only writes: audit/ + scripts/clients-parity-20261113/"
+      ],
+      "browserProductionCheck": "NOT_VERIFIED_PAGE",
+      "owner": "Root / Backend",
+      "criterion": "No DB/backend/rights/finance/prod changes by auditor",
+      "nextAction": "Implement missing API or publish gate per contracts.ts",
+      "p8Evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod/deploy changes. Forbidden packaging deltas explicit.",
+      "p8TestsRunThisPass": false
+    }
+  ],
+  "unresolvedForRoot": [
+    {
+      "id": "AC-GATE-CONTEXT",
+      "status": "REPRODUCED_FAIL",
+      "owner": "Root packaging",
+      "nextAction": "Never replace 57ca Gate/Context/routes from parallel branch."
+    },
+    {
+      "id": "AC-REFERRED-API",
+      "status": "BLOCKED_CONTRACT",
+      "owner": "Backend",
+      "nextAction": "Ship referred-appeals read API; wire proxy + fetch adapter ok:true."
+    },
+    {
+      "id": "AC-PERSONAL-PERSIST",
+      "status": "BLOCKED_PERSISTENCE",
+      "owner": "Backend",
+      "nextAction": "personal-meta overlay; P5 UI already honest."
+    },
+    {
+      "id": "AC-RECEIVING-APPEALS",
+      "status": "BLOCKED_CONTRACT",
+      "owner": "Backend",
+      "nextAction": "Out of agent scope; specialist receiving remains blocked shell."
+    },
+    {
+      "id": "AC-PAGE-BROWSER",
+      "status": "NOT_VERIFIED",
+      "owner": "Root QA",
+      "nextAction": "Mocked prof.remcard.ru clients routes after cherry-pick assembly."
+    },
+    {
+      "id": "AC-FULL-LEDGER",
+      "status": "PASS",
+      "owner": "P8",
+      "nextAction": "This file; maintain on residual commits only."
+    }
+  ]
+}
