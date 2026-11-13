@@ -1,3 +1,4 @@
 base=9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0
-tip=671a8fcf37d0ace7250588441dd90557b13fd417
+tip=b99b7f522220860896cb76aa07445c7e5a1bfad8
 branch=cursor/remcard-p7-acceptance-20261113
+metadata=author karenavedikyan OK; platform added extra Co-authored-by after Perplexity trailer
