@@ -50,7 +50,7 @@ describe("P6.ClientsDirectionWorkspace role composition", () => {
       "true",
     );
     expect(screen.getByTestId("ca-clients-panel-at-partners")).toBeTruthy();
-    expect(screen.queryByTestId("ca-receiving-appeals-blocked")).toBeNull();
+    expect(screen.getByTestId("ca-clients-panel-incoming")).toHaveAttribute("hidden");
     expect(await screen.findByTestId("clients-parity-contract-blocked")).toBeTruthy();
     expect(screen.getByText(/BLK-OBSERVER-REFERRED/)).toBeTruthy();
   });

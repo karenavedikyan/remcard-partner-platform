@@ -81,7 +81,7 @@ Browser: **NOT_AVAILABLE / NOT_VERIFIED**. Runnable plan for Root QA:
 
 1. **`ObserverPartnersListView`** (foreign owner): when `dataContract.status === "blocked"`, filters/chips/grid chrome remain visible under blocker — misleading vs empty/error distinction.
 2. **Receiving tab**: prototype pages 79–85 expect full CRM; UI shows contract inventory only — correct honesty, not publication-ready receiving product.
-3. **C04**: filter/session context not preserved across tab switches — `NOT_STARTED` in matrix.
+3. **C04**: direction-level context — **IN_PROGRESS (P6):** observer subtree kept mounted (hidden) after first `at-partners` visit; lazy mount before first visit; reset on `accessMode` change. Filter/disclosure state inside `ObserverPartnersListView` still depends on that subtree not unmounting — full parity **not** until observer owner confirms UI state retention.
 4. **Dual eligibility** (agent + specialist APIs true): gate picks **agent** first — document for support, not P6 change.
 
 ## Ready for Root to **publish** (narrow)

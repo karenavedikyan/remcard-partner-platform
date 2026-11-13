@@ -1,0 +1,75 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/direction/P6.ClientsDirectionTabs.keyboard.test.tsx (4 tests) 104ms
+ ❯ src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx (4 tests | 1 failed) 182ms
+   ✓ P6.ClientsDirectionWorkspace role composition > agent: observer-only shell, no direction tabs or receiving CRM 45ms
+   ✓ P6.ClientsDirectionWorkspace role composition > specialist: incoming tab shows receiving contract blocker, not observer blocker 85ms
+   × P6.ClientsDirectionWorkspace role composition > specialist: switching to at-partners shows observer blocked state 48ms
+     → expected <section …(3)>…(3)</section> to be null
+   ✓ P6.ClientsDirectionWorkspace role composition > business: same tab model as specialist with receiving blocker on incoming 2ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.c04-tab-context.test.tsx (2 tests) 187ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.loader-isolation.test.tsx (3 tests) 104ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx (2 tests) 79ms
+ ✓ src/components/clients/direction/P6.ClientsDirectionWorkspace.keyboard.test.tsx (1 test) 89ms
+ ✓ src/components/clients/direction/P6.ReceivingAppealsBlocked.test.tsx (1 test) 50ms
+ ✓ src/components/clients/observer/P6.ObserverContractBlocked.test.tsx (2 tests) 22ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx > P6.ClientsDirectionWorkspace role composition > specialist: switching to at-partners shows observer blocked state
+AssertionError: expected <section …(3)>…(3)</section> to be null
+
+- Expected: 
+null
+
++ Received: 
+<section
+  aria-labelledby="ca-receiving-blocked-title"
+  class="_blocked_08f19d"
+  data-testid="ca-receiving-appeals-blocked"
+>
+  <h2
+    id="ca-receiving-blocked-title"
+  >
+    Клиенты у меня
+  </h2>
+  <p>
+    <strong>
+      BLK-RECEIVING-APPEALS
+    </strong>
+     — 
+    Принимающий CRM «Клиенты у меня» (обращения, этапы, аналитика, покупка).
+  </p>
+  <ul>
+    <li>
+      GET/POST /api/pro/client-appeals (list + create)
+    </li>
+    <li>
+      PATCH /api/pro/client-appeals/:id
+    </li>
+    <li>
+      POST /api/pro/client-appeals/batch
+    </li>
+    <li>
+      GET/POST /api/pro/client-appeals/working-stages
+    </li>
+  </ul>
+</section>
+
+ ❯ src/components/clients/direction/P6.ClientsDirectionWorkspace.test.tsx:53:66
+     51|     );
+     52|     expect(screen.getByTestId("ca-clients-panel-at-partners")).toBeTru…
+     53|     expect(screen.queryByTestId("ca-receiving-appeals-blocked")).toBeN…
+       |                                                                  ^
+     54|     expect(await screen.findByTestId("clients-parity-contract-blocked"…
+     55|     expect(screen.getByText(/BLK-OBSERVER-REFERRED/)).toBeTruthy();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 7 passed (8)
+      Tests  1 failed | 18 passed (19)
+   Start at  17:25:44
+   Duration  3.07s (transform 382ms, setup 1.26s, collect 1.23s, tests 819ms, environment 3.60s, prepare 404ms)
+

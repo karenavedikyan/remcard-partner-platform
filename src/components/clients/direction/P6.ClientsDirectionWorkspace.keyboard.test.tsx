@@ -18,8 +18,9 @@ describe("P6.ClientsDirectionWorkspace keyboard integration", () => {
 
     screen.getByRole("tab", { name: "Клиенты у меня" }).focus();
     await user.keyboard("{ArrowRight}");
-    expect(screen.queryByTestId("ca-clients-panel-incoming")).toBeNull();
-    expect(await screen.findByTestId("ca-clients-panel-at-partners")).toBeTruthy();
+    expect(screen.getByTestId("ca-clients-panel-incoming")).toHaveAttribute("hidden");
+    const atPartnersPanel = await screen.findByTestId("ca-clients-panel-at-partners");
+    expect(atPartnersPanel).not.toHaveAttribute("hidden");
     expect(screen.getByRole("tab", { name: "Мои клиенты у партнёров" })).toHaveAttribute(
       "aria-selected",
       "true",
