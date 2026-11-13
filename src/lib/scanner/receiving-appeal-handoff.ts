@@ -83,7 +83,7 @@ export function parseReceivingAppealRevision(raw: string | number | null | undef
     } catch {
       return null;
     }
-    if (bi < 0n || bi > maxBi) {
+    if (bi < BigInt(0) || bi > maxBi) {
       return null;
     }
     const n = Number(bi);

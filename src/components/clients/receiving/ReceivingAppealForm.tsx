@@ -110,12 +110,19 @@ export function ReceivingAppealForm({
             setError("Выберите канал из списка.");
             return;
           }
-          void onSubmit({
-            clientName: name,
-            interest: interest.trim() || undefined,
-            clientContact: clientContact.trim() || undefined,
-            manualSourceKey: channelSelect,
-          });
+          setError("");
+          void (async () => {
+            try {
+              await onSubmit({
+                clientName: name,
+                interest: interest.trim() || undefined,
+                clientContact: clientContact.trim() || undefined,
+                manualSourceKey: channelSelect,
+              });
+            } catch (caught) {
+              setError(caught instanceof Error ? caught.message : "Не удалось создать обращение.");
+            }
+          })();
         }}
       >
         <label className="field ca-req">

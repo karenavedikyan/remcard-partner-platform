@@ -225,6 +225,14 @@ export function receivingBulkUpdatedIds(result: ReceivingBulkMutationResult): st
 }
 
 /** P6: remove successes only; keep skipped/failed selected; never clear on error. */
+/** Confirm retry posts only IDs still selected (excludes prior partial successes). */
+export function receivingBulkConfirmTargetIds(
+  confirmIds: readonly string[],
+  selected: ReadonlySet<string>,
+): string[] {
+  return confirmIds.filter((id) => selected.has(id));
+}
+
 export function receivingBulkMergeSelection(
   currentSelected: readonly string[],
   result: ReceivingBulkMutationResult,

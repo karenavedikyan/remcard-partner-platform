@@ -955,6 +955,29 @@ export function isReceivingBatchProxyReady(): boolean {
   return isAllowedProxyRoute("POST", RECEIVING_BATCH_PATH);
 }
 
+function coerceReceivingAppealsBatchWire(payload: unknown): ReceivingAppealsBatchResponseWire | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Record<string, unknown>;
+  const updatedIds = Array.isArray(p.updatedIds)
+    ? p.updatedIds.filter((id): id is string => typeof id === "string")
+    : null;
+  if (!updatedIds) return null;
+  const action = p.action;
+  if (action !== "archive" && action !== "unarchive" && action !== "trash" && action !== "restore") {
+    return null;
+  }
+  const skippedIds = Array.isArray(p.skippedIds)
+    ? p.skippedIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const failures = Array.isArray(p.failures)
+    ? p.failures.filter(
+        (f): f is { id: string; code?: string; reason?: string; message?: string } =>
+          Boolean(f) && typeof f === "object" && typeof (f as { id?: unknown }).id === "string",
+      )
+    : [];
+  return { action, updatedIds, skippedIds, failures };
+}
+
 export async function postReceivingAppealsBatch(body: {
   action: ReceivingAppealsBatchResponseWire["action"];
   ids: string[];
@@ -977,6 +1000,12 @@ export async function postReceivingAppealsBatch(body: {
     });
     return { ok: true, data };
   } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.body) {
+      const partial = coerceReceivingAppealsBatchWire(caught.body);
+      if (partial && (caught.status === 409 || partial.updatedIds.length > 0)) {
+        return { ok: true, data: partial };
+      }
+    }
     return {
       ok: false,
       code: "ERROR",

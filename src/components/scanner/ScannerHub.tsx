@@ -1069,7 +1069,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   if (
     receivingHandoff.appealScoped &&
     receivingHandoff.context.status === "ready" &&
-    receivingHandoff.context.orderAlreadyLinked
+    receivingHandoff.context.orderAlreadyLinked &&
+    mode !== "success"
   ) {
     return (
       <ReceivingAppealScannerBanner

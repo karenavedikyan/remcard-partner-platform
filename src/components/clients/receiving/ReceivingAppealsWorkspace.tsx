@@ -37,6 +37,7 @@ import {
 import {
   normalizeReceivingBatchResponse,
   receivingBulkErrorMessage,
+  receivingBulkConfirmTargetIds,
   receivingBulkMergeSelection,
   receivingBulkPreserveSelection,
   receivingConfirmToBatchAction,
@@ -155,11 +156,13 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
 
   const executeBulkConfirmed = useCallback(async () => {
     if (!bulkConfirm) return;
+    const ids = receivingBulkConfirmTargetIds(bulkConfirm.ids, selected);
+    if (ids.length === 0) return;
     setBatchPending(true);
     setBatchPartial(null);
     const res = await postReceivingAppealsBatch({
       action: receivingConfirmToBatchAction(bulkConfirm.kind),
-      ids: bulkConfirm.ids,
+      ids,
     });
     setBatchPending(false);
     if (!res.ok) {
@@ -172,19 +175,20 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
     if (result.ok && result.updatedIds.length > 0) {
       await reload();
     }
-    setSelected((prev) => {
-      if (receivingBulkPreserveSelection(result)) {
-        return new Set(receivingBulkMergeSelection([...prev], result));
-      }
-      if (result.ok) {
-        return new Set(receivingBulkMergeSelection([...prev], result));
-      }
-      return prev;
-    });
+    const mergedSelection = new Set(
+      receivingBulkPreserveSelection(result) || result.ok
+        ? receivingBulkMergeSelection([...selected], result)
+        : [...selected],
+    );
+    setSelected(mergedSelection);
+    if (result.ok && result.kind === "partial") {
+      const remain = receivingBulkConfirmTargetIds(bulkConfirm.ids, mergedSelection);
+      setBulkConfirm((prev) => (prev && remain.length > 0 ? { ...prev, ids: remain } : prev));
+    }
     if (result.ok && result.kind === "full") {
       setBulkConfirm(null);
     }
-  }, [bulkConfirm, reload]);
+  }, [bulkConfirm, reload, selected]);
 
   const executeBulkEdit = useCallback(
     async (draft: Parameters<typeof applyReceivingBulkEditsPerId>[1]) => {
@@ -351,8 +355,7 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
           if (!proxyReady || readOnly) return;
           const res = await createReceivingAppeal(body, data);
           if (!res.ok) {
-            setPersistNotice(res.message);
-            return;
+            throw new Error(res.message);
           }
           setView("list");
           await reload();
