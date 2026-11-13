@@ -132,9 +132,9 @@ export const CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF = {
     k1: "a71b8f37f526d775cd99f0535705be678b72261e",
     k2: "c49d71dceae8e221fc3e321056b091d7e3347be5",
     k5: "6c4444879d5651679c969b8009b3f39d05302c43",
-    p1: "2b2b32b8",
-    p4: "10c25fe6",
-    p6: "78fd46e70fa6cd5b1eb08aa79a9554505a121c00",
+    p1: "f43f9e22",
+    p4: "9d22694f",
+    p6: "2375944e",
   },
   assemblyNote: "60 root production files; 11 route modules; offline validate + isolated prisma generate @ 8f4d336a",
   notDone: "full project type-clean; 2 missing env type libraries; prod DB approval; mounted UI acceptance",
@@ -368,10 +368,17 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
     k8CreateOpts:
       "createCertificateAppealIfNoneActive(data, { createdHistoryEvent? }) @ K8 8f4d336a — CLIENT_APPEAL_CERTIFICATE_CREATED_HISTORY",
   },
+  orderLink: {
+    contractRef: "CLIENTS_RECEIVING_ORDER_LINK_CONTRACT",
+    path: "POST /api/pro/client-appeals/:appealId/order-link",
+    body: "{ orderId, expectedRevision }",
+    k8Module: "linkReceivingAppealOrder @ orderLink.ts (SOURCE PREP — not on K8 tip yet)",
+  },
   p1AllowlistPatterns: [
     "^/api/pro/client-appeals$",
     "^/api/pro/client-appeals/[\\w-]+$",
     "^/api/pro/client-appeals/[\\w-]+/stage$",
+    "^/api/pro/client-appeals/[\\w-]+/order-link$",
     "^/api/pro/client-appeals/batch$",
     "^/api/pro/client-appeals/working-stages$",
     "^/api/pro/client-appeals/certificate-entry$",
@@ -396,12 +403,125 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
 
 /** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
 export const CLIENTS_PARTNER_OWNER_TIPS = {
-  p1: "2b2b32b8",
-  p2: "5285f36e",
-  p3: "b85efb54",
-  p4: "10c25fe6",
-  p5: "ca2855fb",
-  p6: "78fd46e7",
+  p1: "f43f9e22",
+  p2: "457a417c",
+  p3: "b1c1684e",
+  p4: "9d22694f",
+  p5: "164b8dbe",
+  p6: "2375944e",
+  p7: "9094f523",
+} as const;
+
+/**
+ * Root @ 2026-11-13 — appeal → existing store order → persist orderId (SOURCE glue only).
+ * Implementation owners: K8 `orderLink.ts`, K1 route, P4 nav builders, P6 scanner+retry UI, P1 proxy.
+ */
+export const CLIENTS_RECEIVING_ORDER_LINK_CONTRACT = {
+  status: "SOURCE_PREP_P2",
+  backendPins: CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins,
+  uiPins: CLIENTS_PARTNER_OWNER_TIPS,
+  navigation: {
+    owner: "P4",
+    pipelineHref: "buildReceivingAppealOrderPipelineHref(appealId) → /scanner?appealId=ENCODED",
+    returnHref: "receivingAppealReturnHref(id) → /clients?direction=receiving&appealId=ENCODED",
+    forbidden: "arbitrary returnTo / external URL query",
+  },
+  scannerPreflight: {
+    owner: "P6",
+    step: "GET /api/pro/client-appeals/:id — server access + revision + certificateId",
+    certificateRule:
+      "certificate-bound appeal MUST match preview/order certificate; manual null may be explicitly scanned",
+    forbidden: "posted certificate/principal/branch override",
+    storeOrderCreate: "UNCHANGED — existing store order POST only",
+  },
+  http: {
+    method: "POST",
+    path: "/api/pro/client-appeals/:appealId/order-link",
+    owners: { core: "K8", route: "K1", proxy: "P1" },
+    auth: "requireReceivingAppealsWriteContext — same trusted scope as profile/stage PATCH",
+    body: "{ orderId: string, expectedRevision: number }",
+    success200: "{ appealId, orderId, revision, alreadyLinked: boolean }",
+    errorShape: "{ error: string, code: string }",
+    statuses: "400 / 401 / 403 / 404 / 409",
+  },
+  k8Core: {
+    module: "src/lib/clientAppeals/orderLink.ts",
+    export: "linkReceivingAppealOrder",
+    input:
+      "{ appealId, orderId, expectedRevision, actorUserId, receivingPartnerUserId, receivingOrganizationId, receivingBranchId }",
+    scopeRule: "All receiving scope from trusted gate — never from POST body",
+    tx: "CAS updatedAt + set orderId + history event in ONE transaction",
+    idempotent: "same orderId retry → alreadyLinked:true; different order while linked → 409",
+  },
+  schemaReady: {
+    appealOrderId: "PartnerClientAppeal.orderId String? @unique @ 8f4d336a",
+    appealCas: "appealRevisionMs(updatedAt) — K1 mapAppeal @ a71b8f37",
+    orderModel: "Order.certificateId required; storeUserId + proUserId + branchId?",
+    oneToOne: "Order.partnerClientAppeal optional back-relation — global unique prevents double bind",
+  },
+  serverMustValidate: [
+    "appealBelongsToReceivingPrincipal @ appealRowScope.ts",
+    "deletedAt / archivedAt — reject trash/archive bucket links",
+    "expectedRevision matches appeal.updatedAt ms or 409 APPEAL_REVISION_CONFLICT",
+    "Order exists and scoped to same receiving principal (proUserId / branch vs appeal scope — K8 defines exact match)",
+    "appeal.certificateId non-null → Order.certificateId must equal appeal.certificateId",
+    "appeal.certificateId null (MANUAL) → explicit scan/cert rule per Root handoff",
+    "appeal.orderId already set to other id → 409 ORDER_ALREADY_LINKED",
+    "appeal.orderId === orderId → 200 alreadyLinked:true without mutation",
+    "Order not already bound to another appeal (unique orderId on appeal row)",
+  ],
+  financialBoundary: {
+    noClientTrust: "Never accept paid amount/status/stage from client on link",
+    projectionAfterLink:
+      "paidAmountKopecks/paidAt from projectAppealPurchaseFields + orderCountsAsClientPurchase only",
+    noStoreApiChange: "Store order creation unchanged; link is post-success glue only",
+    stageTransition: "Stage to PAID still via existing canTransitionAppealStage + authoritative Order.status",
+  },
+  uiAfterLink: {
+    owner: "P6",
+    onSuccess: "Return receiving card + reload GET detail/history",
+    onLinkFailed: "Order exists; retry POST order-link same orderId only — never re-POST store/order",
+    on409: "Refetch detail revision — no silent override",
+  },
+  securityRisks: [
+    {
+      id: "RISK-ORDER-UNIQUE-STEAL",
+      topic: "Global @unique orderId on appeal — wrong Order scope could bind foreign store order",
+      mitigator: "K8 loads Order + checks proUserId/branch/certificate against trusted receiving scope",
+    },
+    {
+      id: "RISK-CERT-MISMATCH",
+      topic: "Order.certificateId always set; appeal MANUAL may have null certificateId",
+      mitigator: "Explicit MANUAL scan rule; cert appeals require equality",
+    },
+    {
+      id: "RISK-REFERRER-PRO",
+      topic: "Order.proUserId is store-facing pro; appeal.referrerProUserId is issuer — different roles",
+      mitigator: "Do not use referrerProUserId for Order scope; use receivingPartnerUserId + branch",
+    },
+    {
+      id: "RISK-LIFECYCLE-TRASH",
+      topic: "Link on archived/deleted appeal",
+      mitigator: "Reject when deletedAt/archivedAt set",
+    },
+    {
+      id: "RISK-CAS-SKIP",
+      topic: "Link without expectedRevision",
+      mitigator: "Required body field; same updateMany CAS as profile PATCH",
+    },
+  ],
+  gapId: "GAP-K8-ORDER-LINK-ROUTE",
+} as const;
+
+/** P4 navigation helpers — frozen href shapes (no open redirect). */
+export const RECEIVING_APPEAL_NAVIGATION_CONTRACT = {
+  owner: "P4 — canonical builders; P2 types.ts mirrors for contract tests until P4 exports",
+  pipelineQuery: "appealId",
+  pipelinePath: "/scanner",
+  returnQuery: "direction=receiving&appealId",
+  returnPath: "/clients",
+  encode: "encodeURIComponent(appealId)",
+  forbidden: "returnTo, redirect, external URL",
 } as const;
 
 /**
@@ -929,6 +1049,20 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
       "P6 hosts wire ReceivingAppealDetailActions → profile + stage PATCH; P1 allowlist; no finance on profile",
   },
   {
+    id: "GAP-K8-ORDER-LINK-ROUTE",
+    owner: "K8+K1+P1",
+    topic: "POST order-link + linkReceivingAppealOrder — Root glue authorized; not on navigator tip",
+    status: "UNRESOLVED",
+    requiredFix: "CLIENTS_RECEIVING_ORDER_LINK_CONTRACT — implement K8 core + K1 route + P1 allowlist",
+  },
+  {
+    id: "GAP-P6-ORDER-PIPELINE-UI",
+    owner: "P4+P6",
+    topic: "Scanner preflight + order-link retry + safe return href",
+    status: "UNRESOLVED",
+    requiredFix: "RECEIVING_APPEAL_NAVIGATION_CONTRACT + postReceivingAppealOrderLink client (P6)",
+  },
+  {
     id: "GAP-P6-CERT-PROMOCODE",
     owner: "P6",
     topic: "certificate-entry POST sends certificateCode; K1 requires promoCode @ 5a51d7b7",
@@ -1240,6 +1374,16 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     owner: "K1",
     authGate: "write context",
     notes: "GAP-K1-HTTP-BATCH-LIFECYCLE vs prototype delete/restore",
+  },
+  {
+    method: "POST",
+    path: "/api/pro/client-appeals/:appealId/order-link",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "requireReceivingAppealsWriteContext",
+    notes:
+      "CLIENTS_RECEIVING_ORDER_LINK_CONTRACT — link existing Order; no store POST; 409 CAS / alreadyLinked",
   },
   {
     method: "GET",

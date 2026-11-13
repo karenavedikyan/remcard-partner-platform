@@ -696,6 +696,50 @@ export type K1ReceivingBatchHttpActual = {
 export type ReceivingCrmBatchAction = "archive" | "unarchive" | "trash" | "restore";
 
 /** Feed P5 `normalizeReceivingBatchResponse` after P6 POST. */
+/** POST order-link @ CLIENTS_RECEIVING_ORDER_LINK_CONTRACT (K1 wire). */
+export type ReceivingAppealOrderLinkPostBody = {
+  orderId: string;
+  expectedRevision: number;
+};
+
+export type ReceivingAppealOrderLinkSuccess = {
+  appealId: string;
+  orderId: string;
+  revision: number;
+  alreadyLinked: boolean;
+};
+
+export type ReceivingAppealOrderLinkErrorCode =
+  | "APPEAL_REVISION_CONFLICT"
+  | "ORDER_ALREADY_LINKED"
+  | "ORDER_NOT_FOUND"
+  | "ORDER_SCOPE_FORBIDDEN"
+  | "CERTIFICATE_MISMATCH"
+  | "APPEAL_NOT_LINKABLE"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN";
+
+/** K8 `linkReceivingAppealOrder` input — scope from trusted gate only. */
+export type LinkReceivingAppealOrderInput = {
+  appealId: string;
+  orderId: string;
+  expectedRevision: number;
+  actorUserId: string;
+  receivingPartnerUserId: string;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
+};
+
+export function buildReceivingAppealPipelineHref(appealId: string): string {
+  const q = encodeURIComponent(appealId.trim());
+  return `/scanner?appealId=${q}`;
+}
+
+export function buildReceivingAppealReturnHref(appealId: string): string {
+  const q = encodeURIComponent(appealId.trim());
+  return `/clients?direction=receiving&appealId=${q}`;
+}
+
 export function mapK1BatchHttpForP5Normalize(
   requestedAction: ReceivingCrmBatchAction,
   wire: K1ReceivingBatchHttpActual,

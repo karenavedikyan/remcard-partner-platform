@@ -25,7 +25,10 @@ import {
   CLIENTS_MOUNTED_UI_HANDOFF,
   RECEIVING_BATCH_TRANSPORT_CONTRACT,
   RECEIVING_NONFINANCIAL_PATCH_CONTRACT,
+  CLIENTS_RECEIVING_ORDER_LINK_CONTRACT,
+  RECEIVING_APPEAL_NAVIGATION_CONTRACT,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
+  CLIENTS_PARTNER_OWNER_TIPS,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
   CLIENTS_RECEIVING_IDENTITY,
@@ -42,6 +45,8 @@ import {
   mapReceivingUiManualCreateToK1Post,
   mapReceivingUiCertificateCodeToK1Promo,
   mapK1BatchHttpForP5Normalize,
+  buildReceivingAppealPipelineHref,
+  buildReceivingAppealReturnHref,
   normalizeK1ReceivingDetailHttp,
   normalizeK1ReceivingListHttp,
 } from "./types";
@@ -72,8 +77,8 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8).toMatch(/^8f4d336a/);
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1).toMatch(/^a71b8f37/);
     expect(CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2).toMatch(/^c49d71dc/);
-    expect(CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins.p6).toMatch(/^78fd46e7/);
-    expect(CLIENTS_MOUNTED_UI_HANDOFF.p5Tip).toMatch(/^ca2855fb/);
+    expect(CLIENTS_ROOT_PREPARED_SOURCE_HANDOFF.pins.p6).toMatch(/^2375944e/);
+    expect(CLIENTS_PARTNER_OWNER_TIPS.p6).toMatch(/^2375944e/);
     expect(RECEIVING_BATCH_TRANSPORT_CONTRACT.k1ResponseOmitsAction).toBe(true);
     expect(RECEIVING_NONFINANCIAL_PATCH_CONTRACT.forbiddenOnProfile).toContain("paidAmountKopecks");
     expect(CLIENTS_RECEIVING_HTTP_CONTRACT.stagePatchPath).toContain("/stage");
@@ -169,6 +174,11 @@ describe("clients parity contracts", () => {
     });
     expect(batch.action).toBe("archive");
     expect(batch.failures[0]?.code).toBe("NOT_FOUND");
+    expect(CLIENTS_RECEIVING_ORDER_LINK_CONTRACT.http.body).toContain("expectedRevision");
+    expect(CLIENTS_RECEIVING_ORDER_LINK_CONTRACT.securityRisks.length).toBeGreaterThanOrEqual(4);
+    expect(buildReceivingAppealPipelineHref("a/1")).toBe("/scanner?appealId=a%2F1");
+    expect(buildReceivingAppealReturnHref("x")).toContain("direction=receiving");
+    expect(RECEIVING_APPEAL_NAVIGATION_CONTRACT.forbidden).toContain("returnTo");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");
