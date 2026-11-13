@@ -10,6 +10,17 @@
 
 Evidence was collected via **GitHub MCP** at backend tip **`3cb569ffa5f2991be57235622691dc9ff7029050`** (team “current candidate”; 2026-11-13). Full recursive tree SHA: `9b7105af738d8f4a4bc2cc541d78116bd687a1e2`. `main` tip at audit time: `e6696a44` (2026-10-01) — **older** than `3cb569ff`; observer contracts were not found on either tip (tree scan is on candidate only).
 
+### Update — assigned release tip `8137ddd1` (2026-11-13)
+
+| | Value |
+| --- | --- |
+| SHA | `8137ddd1ae5bad880fa28df34bab04e460bf2bdd` |
+| Commit message | `fix(client): align profile card and surface save failures` — **ProfileV2** + K6 client tests only |
+| `search_code` | `referred-appeals`, `client-appeals` → **0** hits |
+| Observer/receiving delta vs `3c37ca25` / `3cb569ff` | **None** (client UI unrelated to partner Clients contracts) |
+
+Operation-level mapping (list/detail/history, overlay, bulk, receiving CRM): **`contract-operation-matrix-8137.md`**.
+
 Prototype cross-check (partner-platform git object `3dc31836`):
 
 - `design/general-prototype/partner/client-appeals.js` — `ownReferredAppeals()`, observer filters

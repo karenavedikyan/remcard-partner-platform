@@ -1,7 +1,10 @@
 {
   "auditor": "P2",
   "baseSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
-  "auditTipSha": "e0063d15cb2887f61077cdfad066615845837bb0",
+  "auditTipSha": "ea9bd5ddbb3598747c782eca720e2cfd3becb9ff",
+  "navigatorAssignedReleaseSha": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
+  "navigatorAssignedReleaseNote": "Tip commit is client ProfileV2 only; 0 observer/referred/client-appeals API changes",
+  "operationMatrixDoc": "audit/remcard-parallel-20261113/P2/contract-operation-matrix-8137.md",
   "navigatorPublishedReleaseSha": "3c37ca2557069a43544b7d72848fd53c37e3be5e",
   "navigatorReleaseBranch": "release/prof-backend-v1-20261007",
   "navigatorBackendTipShaPriorScan": "3cb569ffa5f2991be57235622691dc9ff7029050",
@@ -132,9 +135,21 @@
     }
   ],
   "requirementDisposition": {
+    "C07-C24": "BLOCKED_RECEIVING_APPEALS",
     "C26-C34": "BLOCKED_DATA_or_IN_PROGRESS_UI",
     "C35-C38": "BLOCKED_PERSISTENCE",
     "C39-C40": "BLOCKED_DATA_with_fixture_nav_PASS_in_tests",
     "C41": "NOT_STARTED_server"
-  }
+  },
+  "minimalDecisions8137": [
+    { "id": "D1", "topic": "appealId", "owner": "navigator backend + product" },
+    { "id": "D2", "topic": "stageId mapping Order/cert/workingStages", "owner": "navigator backend" },
+    { "id": "D3", "topic": "referrer read-only auth", "owner": "navigator backend" },
+    { "id": "D4", "topic": "personal overlay persistence", "owner": "navigator backend" },
+    { "id": "D5", "topic": "client-appeals receiving API", "owner": "navigator backend" },
+    { "id": "D6", "topic": "remcard-proxy + adapters", "owner": "P5/P6" },
+    { "id": "D7", "topic": "forbid AgentClient overlay wiring", "owner": "all" }
+  ],
+  "noSchemaCompletePath": false,
+  "noSchemaReason": "P2 forbids new storage/routes; navigator 8137 has no composable Appeal read/overlay/receiving contracts"
 }

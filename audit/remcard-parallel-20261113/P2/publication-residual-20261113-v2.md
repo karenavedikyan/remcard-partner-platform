@@ -7,19 +7,21 @@ Agent: **П2 — Контракты и сохранение Клиентов** (
 | | SHA |
 | --- | --- |
 | Base (team candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
-| Prior audit tip | `50f7307c960622362394a4a7633b195ac891dec4` |
+| Prior audit tip | `ea9bd5ddbb3598747c782eca720e2cfd3becb9ff` → *this turn* |
 | Branch | `cursor/2-06bf` |
 
 ## Backend publication anchor (navigator)
 
 | | Value |
 | --- | --- |
-| Release branch | `release/prof-backend-v1-20261007` |
+| Release branch | `release/prof-backend-v1-20261007` (prior published) |
 | **Published release tip** | **`3c37ca2557069a43544b7d72848fd53c37e3be5e`** |
-| Tree (MCP) | `69610e6cf95c8f1e66ef70ecf68f32fc2ff26d41` |
-| Prior scan | `3cb569ffa5f2991be57235622691dc9ff7029050` |
+| **Assigned navigator tip (audit)** | **`8137ddd1ae5bad880fa28df34bab04e460bf2bdd`** |
+| Prior scan | `3cb569ff` / `3c37ca25` |
 
-**Delta `3cb569ff…` → `3c37ca25…`:** shell/client only (HeaderV2 tablet `lg`, vacancy links removed, `/client/become-pro` → `prof.remcard.ru/join`). **No** new `src/app/api/pro/referred-appeals*`, **no** personal-overlay routes, **no** `appeal`/`observer` paths in tree (0 hits both SHAs).
+**Delta `8137ddd1`:** client `ProfileV2` styling/save UX + K6 tests only. **No** partner Clients API delta. `search_code`: `referred-appeals`, `client-appeals` → **0** hits @ `8137ddd1`.
+
+**Delta `3cb569ff…` → `3c37ca25…`:** shell/client only. **No** observer/receiving routes (unchanged finding).
 
 Prototype (unchanged): `3dc31836` — partner observer in `design/general-prototype/partner/client-appeals.js` + `observer-personal-list.js` (in-memory demo only).
 
@@ -54,7 +56,7 @@ Prototype (unchanged): `3dc31836` — partner observer in `design/general-protot
 | `PATCH /api/certificate/:code/alias` | cert access | `CertificateUserAlias` only |
 | `GET/PATCH /api/pro/partnership-list-preferences/:partnershipId` | partnership owner | `personalAlias` on **Partnership**, not appeal |
 
-Full tables: `navigator-backend-audit.md`.
+Full tables: `navigator-backend-audit.md`. Operation matrix @ `8137ddd1`: **`contract-operation-matrix-8137.md`** (observer O1–O6, overlay P1–P10, receiving R1–R11).
 
 ## Minimal contract proposals (backend owners — not implemented by P2)
 
@@ -99,7 +101,7 @@ Browser contract QA: **NOT_VERIFIED** (no isolated mock backend; egress blocked)
 
 ## Unresolved blocker + next action
 
-**Blocker:** `BLK-OBSERVER-REFERRED` + `BLK-OBSERVER-PERSONAL-PERSIST` remain **MISSING** on published navigator **`3c37ca25`**; partner proxy still unwired.
+**Blocker:** `BLK-OBSERVER-REFERRED` + `BLK-OBSERVER-PERSONAL-PERSIST` + `BLK-RECEIVING-APPEALS` remain **MISSING** on navigator **`8137ddd1`** (same as `3c37ca25` for partner Clients); partner proxy still unwired.
 
 **Next action (ordered):**
 

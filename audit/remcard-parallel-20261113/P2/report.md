@@ -6,9 +6,10 @@
 | --- | --- |
 | Agent | П2 — Контракты и сохранение Клиентов |
 | Branch | `cursor/2-06bf` |
-| Prior audit tip | `e0063d15cb2887f61077cdfad066615845837bb0` |
+| Prior audit tip | `ea9bd5dd` → *this turn commits matrix* |
 | Base SHA (team candidate) | `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0` |
-| Navigator backend scanned | `3cb569ffa5f2991be57235622691dc9ff7029050` |
+| Navigator assigned tip | `8137ddd1ae5bad880fa28df34bab04e460bf2bdd` (client ProfileV2 only) |
+| Navigator prior scans | `3cb569ff`, `3c37ca25` |
 | Production base (reference only) | `57ca4680892ae16c62fc38d0ad2ccb6a404dbd79` |
 | Prototype SHA | `3dc31836cd18d9209c20097f18b906dd276f7af6` |
 | Disk at audit start | 246G free on `/dev/vdc` |
@@ -37,7 +38,7 @@ Whole observer data plane remains **BLOCKED** for production load and persistenc
 
 ### Navigator cross-check (stage 2)
 
-Full tables: `navigator-backend-audit.md`, machine evidence: `P2.navigator-evidence.json`.
+Full tables: `navigator-backend-audit.md`, operation matrix: `contract-operation-matrix-8137.md`, machine evidence: `P2.navigator-evidence.json`.
 
 **Access:** GitHub MCP read of private navigator **succeeded**. `git clone` on the agent VM **failed** (`Repository not found` — token), reported as real access error, not “prototype missing locally”.
 
