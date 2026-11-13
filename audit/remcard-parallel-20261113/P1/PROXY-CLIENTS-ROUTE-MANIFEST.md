@@ -8,7 +8,7 @@
 | Owner | SHA | Scope |
 |-------|-----|--------|
 | K8 core/contract | `1894569a` | `receivingPartnerUserId` required; org/branch optional |
-| K1 receiving | `83f279e8` | `client-appeals/*` |
+| K1 receiving | `63a4f3d6` | `client-appeals/*` (detail GET+PATCH) |
 | K2 observer read | `78ce748d` | `referred-appeals/*` GET (`receivingPartnerUserId` list filter) |
 | K5 observer personal | `6c444487` | personal-meta PATCH, personal-batch POST |
 
@@ -16,12 +16,12 @@ Partner proxy wire reviewed @ P1 `6eda0029`. Pin doc: `ROOT-BACKEND-ASSEMBLY-PIN
 
 ## Added to `ALLOWED_ROUTES` (exact)
 
-### K1 @ 83f279e8
+### K1 @ 63a4f3d6
 
 | Method(s) | Pattern |
 |-----------|---------|
 | GET, POST | `/api/pro/client-appeals` |
-| GET | `/api/pro/client-appeals/:id` |
+| GET, PATCH | `/api/pro/client-appeals/:id` |
 | PATCH | `/api/pro/client-appeals/:id/stage` |
 | POST | `/api/pro/client-appeals/batch` |
 | GET, POST, PATCH, DELETE | `/api/pro/client-appeals/working-stages` |
@@ -48,18 +48,16 @@ List JSON: `{ appeals, partners, personalMeta, page, limit, total, hasMore, empt
 
 | Method | Path | Reason |
 |--------|------|--------|
-| PATCH | `/api/pro/client-appeals/:id` | **Not exported** @ 83f279e8 (detail GET only; K1 assigned PATCH + P6 adapter) |
+| PATCH | `/api/pro/client-appeals/:id/stage` via `.../:id` only | **Wrong path** — stage uses `.../stage` subpath |
 | POST | `/api/pro/client-appeals/:id/stage` | Source exports **PATCH** on `.../stage`, not POST |
 | PATCH, POST | `/api/pro/client-appeals/.../personal-overlay*` | P5 invention; use K5 `referred-appeals` paths |
 | PATCH, DELETE, … | `/api/pro/referred-appeals/:id` | K2 detail is **GET-only** |
 | * | `/api/pro/agent-clients*` as referred substitute | Different CRM; keep existing agent-clients allowlist only |
 | * | Wildcard `/api/pro/*` | Forbidden |
 
-## Pending allowlist (after K1 export)
+## Downstream handoff
 
-| Method | Path | Owner |
-|--------|------|--------|
-| PATCH | `/api/pro/client-appeals/:id` | K1 → then P1 add PATCH on reserved `:id` regex only |
+`P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md` — P6 `4dca7af7`, P2 body coordination.
 
 ## Interface notes (not P1 product)
 

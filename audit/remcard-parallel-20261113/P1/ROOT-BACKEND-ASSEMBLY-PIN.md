@@ -7,7 +7,7 @@ Source-only coordination. **No DB/deploy.** `clientsSectionPublishable: false`.
 | Owner | SHA | Proxy |
 |-------|-----|--------|
 | K8 contract/schema | `1894569a` | (no direct partner proxy) |
-| K1 receiving | `83f279e8` | `client-appeals/*` — **detail `GET` only** on `[id]/route.ts` |
+| K1 receiving | `63a4f3d6` | `client-appeals/*` — detail **`GET` + `PATCH`** on `[id]/route.ts` |
 | K2 observer GET | `78ce748d` | `referred-appeals/*` GET |
 | K5 personal | `6c444487` | unchanged vs prior wire |
 
@@ -20,13 +20,13 @@ Source-only coordination. **No DB/deploy.** `clientsSectionPublishable: false`.
 | P3 | `b85efb54` |
 | P4 | `1850d088` |
 | P5 | `6a72f353` |
-| P6 | `06f7e6bb` |
+| P6 | `4dca7af7` (mappers/cursor; prior pin `06f7e6bb` superseded for detail wire) |
 
 ## P1 proxy review @ `6eda0029`
 
 - **OK:** `.../stage` PATCH, `working-stages` GET/POST/PATCH/DELETE match K1 `83f279e8` exports.
-- **Intentionally absent:** `PATCH /api/pro/client-appeals/:id` — not in K1 source; P6 editor awaits K1 PATCH + adapter (**P6/P2**, not P1).
-- **When K1 ships detail PATCH:** P1 adds **only** `PATCH` to the existing reserved-segment `client-appeals/:id` regex; update `PROXY-CLIENTS-ROUTE-MANIFEST.md` + manifest.
+- **Wired @ K1 `63a4f3d6`:** `PATCH /api/pro/client-appeals/:id` on same regex as GET (profile fields; stage still `.../stage`).
+- **P6 `4dca7af7` / P4:** see `P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md`.
 
 ## Rejected proxy (unchanged)
 

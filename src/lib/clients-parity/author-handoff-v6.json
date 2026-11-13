@@ -129,12 +129,12 @@
     "P3": "b85efb54",
     "P4": "1850d088",
     "P5": "6a72f353",
-    "P6": "06f7e6bb",
+    "P6": "4dca7af7",
     "P2_operationMatrix8137_heritage": "ac2d4a7b365e0fec5e83de3e59e9d624a0908b0a",
     "P7_prior": "30a292d002d56e0daaeebdff62d1fce902590362",
     "navigatorBackend": {
       "K8": "1894569a",
-      "K1": "83f279e8",
+      "K1": "63a4f3d6",
       "K2": "78ce748d",
       "K5": "6c444487"
     },
@@ -151,12 +151,17 @@
   },
   "navigatorClientsBackendCandidates": {
     "K8": "1894569a",
-    "K1": "83f279e8",
+    "K1": "63a4f3d6",
     "K2": "78ce748d",
     "K5": "6c444487",
     "profilePublishedNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"
   },
-  "p1ProxyPendingAfterK1DetailPatch": ["PATCH /api/pro/client-appeals/:id"],
+  "p1ReceivingDetailPatchProxy": {
+    "methods": "GET,PATCH",
+    "path": "/api/pro/client-appeals/:id",
+    "k1Tip": "63a4f3d6",
+    "handoffP4P6": "audit/remcard-parallel-20261113/P1/P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md"
+  },
   "p1ProxyHandoffEarly": {
     "wireStatus": "CLIENTS_K1_K2_K5_SOURCE_ROUTES_WHITELISTED",
     "routeManifest": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",

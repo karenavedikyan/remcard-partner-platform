@@ -7,7 +7,7 @@
     "814df98d_stale_new_partner_empty": "814df98d8a83bae358c9540188aa3800201e2a4c"
   },
   "agentTipsReviewed": {
-    "P1": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+    "P1": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
     "P2": "9f7c3755",
     "P3": "b85efb54",
     "P4": "1850d088",
@@ -123,7 +123,7 @@
     {
       "path": "src/components/clients/ClientDetailWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "f2510a49f871e2027bb8c87d85bbedb98bb8ca2b",
       "contentSha256": "3229c207fd1554bfbc5dd6421b482b04bd52a1ab8ce3d96c9b101ef49231acc0",
       "gitStatusVs57ca": "M",
@@ -135,7 +135,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9",
       "contentSha256": "a1e934e7228c73764d3786f3ef4082ca446d91975dbf2c7373d8eec799f207e7",
       "gitStatusVs57ca": "M",
@@ -201,7 +201,7 @@
     {
       "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
       "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
       "gitStatusVs57ca": "A",
@@ -249,9 +249,9 @@
     {
       "path": "src/lib/clients-parity/author-handoff-v6.json",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
-      "gitBlobSha": "f54db9838eed9aeeb65294e041f95d99a55abccb",
-      "contentSha256": "9dd91444412855140e49bf3b63f0a5ea2fbf963a0f2c0fc7e1306dc8c3fdbc88",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "gitBlobSha": "01e8c0c857c8f9fe7175a070ce02282e078912ee",
+      "contentSha256": "bcf9e542c5e7afc71c7804c6dab6c292d41823419752bf65337a4adcf7b83dee",
       "gitStatusVs57ca": "A",
       "packaging": "exclude",
       "reasonCode": "packaging-metadata-not-runtime",
@@ -261,7 +261,7 @@
     {
       "path": "src/lib/clients-parity/contracts.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
       "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
       "gitStatusVs57ca": "A",
@@ -273,7 +273,7 @@
     {
       "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
       "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
       "gitStatusVs57ca": "A",
@@ -285,7 +285,7 @@
     {
       "path": "src/lib/clients-parity/filter-observer.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
       "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
       "gitStatusVs57ca": "A",
@@ -297,7 +297,7 @@
     {
       "path": "src/lib/clients-parity/observer-display.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
       "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
       "gitStatusVs57ca": "A",
@@ -309,7 +309,7 @@
     {
       "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
       "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
       "gitStatusVs57ca": "A",
@@ -321,7 +321,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
       "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
       "gitStatusVs57ca": "A",
@@ -333,7 +333,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
       "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
       "gitStatusVs57ca": "A",
@@ -345,7 +345,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
       "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
       "gitStatusVs57ca": "A",
@@ -357,7 +357,7 @@
     {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
       "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
       "gitStatusVs57ca": "A",
@@ -369,9 +369,9 @@
     {
       "path": "src/lib/clients-parity/patch-manifest-57ca4680.json",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
-      "gitBlobSha": "6442afd739ba79be6797d396a06f5dad6c225369",
-      "contentSha256": "8108c9513dd27c606a09655428f8418a4d98640a0834fd23faf79912f9d7fda9",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
+      "gitBlobSha": "f07549ea8d406f248f5bd4fcfff3ddf8a849d9ef",
+      "contentSha256": "97ef307aab533219346b4b8ed2190e21bf736d262dfab2436f7d714931ceb269",
       "gitStatusVs57ca": "A",
       "packaging": "exclude",
       "reasonCode": "packaging-metadata-not-runtime",
@@ -381,7 +381,7 @@
     {
       "path": "src/lib/clients-parity/production-compat.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
       "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
       "gitStatusVs57ca": "A",
@@ -393,7 +393,7 @@
     {
       "path": "src/lib/clients-parity/types.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "0c23726fb5d53a97f00d2f04d8a60eb9b0dbc7dc",
       "contentSha256": "d91db48eb7967f035b3705be56951a407e2770dbd2cf23566a836ea33789b213",
       "gitStatusVs57ca": "A",
@@ -405,7 +405,7 @@
     {
       "path": "src/lib/remcard-proxy.ts",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "867c21d83ca0671cbf3f6f95ed9a6fe7a2d805a4",
       "contentSha256": "1cd580188a602d34828c3a8a9fedf064879e0b35e0da369155047584ce93dd21",
       "gitStatusVs57ca": "M",
@@ -419,7 +419,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9",
       "contentSha256": "a1e934e7228c73764d3786f3ef4082ca446d91975dbf2c7373d8eec799f207e7",
       "gitStatusVs57ca": "M",
@@ -431,7 +431,7 @@
     {
       "path": "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "dc5bb32d874d25db7d70a67ac2e684152b338a12",
       "contentSha256": "12f0ff95ad273316193f92acc483097c879c02cae67b6e4c1325954f747a5fee",
       "gitStatusVs57ca": "A",
@@ -455,7 +455,7 @@
     {
       "path": "src/lib/clients-parity/contracts.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "0003d16951fb26c1a75988f98f2796414df51702",
       "contentSha256": "074ecfde6ba5b97c9285e524e80d4657c65f0e6fcc41d788c17fac3589f8a70f",
       "gitStatusVs57ca": "A",
@@ -467,7 +467,7 @@
     {
       "path": "src/lib/clients-parity/fetch-observer-appeals.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "c8cd05f450031d1b38c7f1f9adf0e9d1f78c7005",
       "contentSha256": "2fe025578dc9fa3b86ab16fae03dcc2dbb68e741f8b1d85336015cd97c2a20e4",
       "gitStatusVs57ca": "A",
@@ -479,7 +479,7 @@
     {
       "path": "src/lib/clients-parity/filter-observer.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "873942e4d633fccb2f067f7618f1c899969f2b78",
       "contentSha256": "706ef57bd2f1a96b48f495ea9ef8be16723081f32b80ddf1c54ee1b1131cacea",
       "gitStatusVs57ca": "A",
@@ -491,7 +491,7 @@
     {
       "path": "src/lib/clients-parity/observer-display.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "b1993fe391c244f0fca355a52f891c43f09ef166",
       "contentSha256": "088a62f9ab7cab8981a11ab4e34e4d727b205f4b8a7a201d5ff8c8e282d56ed2",
       "gitStatusVs57ca": "A",
@@ -503,7 +503,7 @@
     {
       "path": "src/lib/clients-parity/observer-personal-row-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "eb676c234d95b755a7283107f47b0b24e1739b78",
       "contentSha256": "ba185bb52b203f0ccab429e63e0cc9a5697c675c435959acbdd39e1c36ab779c",
       "gitStatusVs57ca": "A",
@@ -515,7 +515,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-harness.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "2b9c0556ba4b08207d673ba94085c36e8c1201cc",
       "contentSha256": "de3669adc9ed9196caa52f24e8e249f70f746635983b9db334ec216166632d96",
       "gitStatusVs57ca": "A",
@@ -527,7 +527,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats-grid-spec.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "9d9d512e8f6c0e7b3f55398f13dc97f7a66a656c",
       "contentSha256": "5aa87f92e1f345c1b382260bd9db26b24525a7c078d4b06c2637298984ec53a8",
       "gitStatusVs57ca": "A",
@@ -539,7 +539,7 @@
     {
       "path": "src/lib/clients-parity/observer-stats.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "72feb77a9abda0acd237de96ddb5e25f876862d2",
       "contentSha256": "f86edd6c653268c21d68989ec3a71ea4de0da4225b937aee544217e93ed1b288",
       "gitStatusVs57ca": "A",
@@ -551,7 +551,7 @@
     {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d",
       "contentSha256": "3eeb8616c9753b6b104d98a557063925e22fc8a9ed5efc42d869a6d1b2598413",
       "gitStatusVs57ca": "A",
@@ -563,7 +563,7 @@
     {
       "path": "src/lib/clients-parity/production-compat.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "098985ae68740221b3903d16ebcdecbe78457616",
       "contentSha256": "c12c965f81d895f6f6aac0df67f76293438f1694d506fd3c566783ff419eebb0",
       "gitStatusVs57ca": "A",
@@ -575,7 +575,7 @@
     {
       "path": "src/lib/clients-parity/types.ts",
       "owner": "P1-scaffold",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "0c23726fb5d53a97f00d2f04d8a60eb9b0dbc7dc",
       "contentSha256": "d91db48eb7967f035b3705be56951a407e2770dbd2cf23566a836ea33789b213",
       "gitStatusVs57ca": "A",
@@ -587,7 +587,7 @@
     {
       "path": "src/lib/remcard-proxy.ts",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "867c21d83ca0671cbf3f6f95ed9a6fe7a2d805a4",
       "contentSha256": "1cd580188a602d34828c3a8a9fedf064879e0b35e0da369155047584ce93dd21",
       "gitStatusVs57ca": "M",
@@ -602,12 +602,12 @@
     "listBodySource": {
       "path": "src/components/clients/ClientsListWorkspace.tsx",
       "owner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "418ade49ecc24bbac80b8fcab377211cb6b6a2d9"
     },
     "productionExportArtifact": {
       "path": "src/lib/clients-parity/patch-ClientsListWorkspace-57ca4680.snippet.txt",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "gitBlobSha": "01ce3ba2cf4c65466337b7fb753de9865320c51d"
     },
     "transformOn57ca": [
@@ -632,7 +632,7 @@
     {
       "path": "src/components/clients/P1.ClientsListWorkspace.compat.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "presentAtOwnerTip": true,
       "gitBlobSha": "476702d771b75287fcfcb848e58cc64db73b25ce",
       "packaging": "QA_MANIFEST_ONLY"
@@ -640,7 +640,7 @@
     {
       "path": "src/components/clients/P1.ClientDetailWorkspace.compat.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "presentAtOwnerTip": true,
       "gitBlobSha": "56b01f043063c3072d91fb1440c6b1fd8a85d3e4",
       "packaging": "QA_MANIFEST_ONLY"
@@ -648,7 +648,7 @@
     {
       "path": "src/components/clients/ClientsListWorkspace.props.test.tsx",
       "qaOwner": "P1",
-      "sourceSha": "6eda00294a7a9907cb5be76427d5f8a8caf3e493",
+      "sourceSha": "fd1c66ee45ca9cd6bcbae74fe4fa5d73e88ac4e5",
       "presentAtOwnerTip": true,
       "gitBlobSha": "3b553aab2756442a3e8bf77a3b1c6eb4abf7260a",
       "packaging": "QA_MANIFEST_ONLY"
@@ -855,7 +855,7 @@
     "navigatorReleasePin": "8137ddd1ae5bad880fa28df34bab04e460bf2bdd",
     "navigatorClientsBackendCandidates": {
       "K8_contract": "1894569a",
-      "K1_receiving": "83f279e8",
+      "K1_receiving": "63a4f3d6",
       "K2_observerGet": "78ce748d",
       "K5_personal": "6c444487",
       "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868"

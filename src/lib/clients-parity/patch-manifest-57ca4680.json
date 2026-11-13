@@ -51,16 +51,17 @@
     "routeManifestDoc": "audit/remcard-parallel-20261113/P1/PROXY-CLIENTS-ROUTE-MANIFEST.md",
     "navigatorBackendCandidates": {
       "K8_contract": "1894569a",
-      "K1_receiving": "83f279e8",
+      "K1_receiving": "63a4f3d6",
       "K2_observerGet": "78ce748d",
       "K5_personal": "6c444487"
     },
-    "pendingProxyAfterK1DetailPatch": ["PATCH /api/pro/client-appeals/:id"],
+    "receivingDetailPatchProxy": "GET,PATCH /api/pro/client-appeals/:id @ K1 63a4f3d6",
+    "p4P6Handoff": "audit/remcard-parallel-20261113/P1/P4-P6-RECEIVING-DETAIL-PATCH-HANDOFF.md",
     "rootAssemblyPinDoc": "audit/remcard-parallel-20261113/P1/ROOT-BACKEND-ASSEMBLY-PIN.md",
     "proxyWhitelistedClientsSection": {
       "K1": [
         "GET,POST /api/pro/client-appeals",
-        "GET /api/pro/client-appeals/:id",
+        "GET,PATCH /api/pro/client-appeals/:id",
         "PATCH /api/pro/client-appeals/:id/stage",
         "POST /api/pro/client-appeals/batch",
         "GET,POST,PATCH,DELETE /api/pro/client-appeals/working-stages",
@@ -82,7 +83,6 @@
       "/api/pro/client-appeals/personal-overlay/batch"
     ],
     "rejectedNotInNavigatorExports": [
-      "PATCH /api/pro/client-appeals/:id",
       "PATCH /api/pro/referred-appeals/:id",
       "POST /api/pro/client-appeals/:id/stage"
     ],
@@ -112,9 +112,9 @@
     "P3": "b85efb54",
     "P4": "1850d088",
     "P5": "6a72f353",
-    "P6": "06f7e6bb",
+    "P6": "4dca7af7",
     "navigatorBackend_K8": "1894569a",
-    "navigatorBackend_K1": "83f279e8",
+    "navigatorBackend_K1": "63a4f3d6",
     "navigatorBackend_K2": "78ce748d",
     "navigatorBackend_K5": "6c444487"
   },

@@ -465,7 +465,7 @@ describe("remcard proxy transport checks", () => {
       isAllowedProxyRoute("POST", "/api/pro/client-appeals/personal-overlay/batch"),
       false,
     );
-    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1"), false);
+    assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/appeal_1"), true);
     assert.equal(isAllowedProxyRoute("PATCH", "/api/pro/referred-appeals/appeal_1"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/referred-appeals/personal-batch"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/client-appeals/batch"), false);

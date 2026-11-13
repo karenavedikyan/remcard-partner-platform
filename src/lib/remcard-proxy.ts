@@ -197,7 +197,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/client-appeals\/certificate-entry$/,
     },
     {
-      methods: new Set(["GET"]),
+      methods: new Set(["GET", "PATCH"]),
       pattern:
         /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+$/,
     },

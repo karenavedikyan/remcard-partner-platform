@@ -9,7 +9,7 @@ BASE = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79"
 
 NAVIGATOR_CLIENTS_BACKEND = {
     "K8_contract": "1894569a",
-    "K1_receiving": "83f279e8",
+    "K1_receiving": "63a4f3d6",
     "K2_observerGet": "78ce748d",
     "K5_personal": "6c444487",
     "publishedProfileNotSectionReady": "89fb8e073c39c8dbd329996940b85c6a86751868",
