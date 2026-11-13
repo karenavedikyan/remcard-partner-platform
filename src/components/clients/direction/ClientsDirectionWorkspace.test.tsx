@@ -23,9 +23,9 @@ describe("ClientsDirectionWorkspace", () => {
     expect(await screen.findByTestId("clients-parity-contract-blocked")).toBeTruthy();
   });
 
-  it("specialist shows direction tabs and receiving blocker on incoming", () => {
+  it("specialist shows direction tabs and receiving blocker on incoming", async () => {
     render(wrap("specialist", <ClientsDirectionWorkspace accessMode="specialist" />));
     expect(screen.getByTestId("ca-clients-directions")).toBeTruthy();
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
   });
 });

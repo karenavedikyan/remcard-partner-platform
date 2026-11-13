@@ -27,9 +27,9 @@ describe("P6.ClientsDirectionWorkspace loader isolation", () => {
     vi.restoreAllMocks();
   });
 
-  it("specialist on incoming tab does not mount observer loader", () => {
+  it("specialist on incoming tab does not mount observer loader", async () => {
     render(wrap("specialist", <ClientsDirectionWorkspace accessMode="specialist" />));
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
     expect(observerLoad.fetchObserverReferredAppeals).not.toHaveBeenCalled();
   });
 

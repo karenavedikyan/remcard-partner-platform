@@ -55,7 +55,7 @@ describe("P6.ClientsDirectionWorkspace C04 tab context", () => {
     await screen.findByTestId("ca-observer-partners-list");
 
     rerender(wrap("business", <ClientsDirectionWorkspace accessMode="business" />));
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked", {}, { timeout: 3000 })).toBeTruthy();
     expect(screen.queryByTestId("ca-clients-panel-at-partners")).toBeNull();
     expect(screen.getByRole("tab", { name: "Клиенты у меня" })).toHaveAttribute("aria-selected", "true");
     expect(observerLoad.fetchObserverReferredAppeals).toHaveBeenCalledTimes(1);

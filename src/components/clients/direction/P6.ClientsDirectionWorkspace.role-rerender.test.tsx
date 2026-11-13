@@ -54,7 +54,7 @@ describe("P6.ClientsDirectionWorkspace role rerender", () => {
     rerender(wrap("specialist", <ClientsDirectionWorkspace accessMode="specialist" />));
     expect(screen.getByRole("tab", { name: "Клиенты у меня" })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByTestId("ca-clients-panel-at-partners")).toBeNull();
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
     expect(observerLoad.fetchObserverReferredAppeals).toHaveBeenCalledTimes(2);
   });
 

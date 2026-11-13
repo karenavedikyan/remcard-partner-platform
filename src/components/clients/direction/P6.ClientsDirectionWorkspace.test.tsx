@@ -31,10 +31,10 @@ describe("P6.ClientsDirectionWorkspace role composition", () => {
     expect(screen.getByText(/BLK-OBSERVER-REFERRED/)).toBeTruthy();
   });
 
-  it("specialist: incoming tab shows receiving contract blocker, not observer blocker", () => {
+  it("specialist: incoming tab shows receiving contract blocker, not observer blocker", async () => {
     render(wrap("specialist", <ClientsDirectionWorkspace accessMode="specialist" />));
     expect(screen.getByTestId("ca-clients-directions")).toBeTruthy();
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
     expect(screen.getByText(/BLK-RECEIVING-APPEALS/)).toBeTruthy();
     expect(screen.queryByTestId("clients-parity-contract-blocked")).toBeNull();
     expect(screen.getByRole("tab", { name: "Клиенты у меня" })).toHaveAttribute("aria-selected", "true");
@@ -55,12 +55,12 @@ describe("P6.ClientsDirectionWorkspace role composition", () => {
     expect(screen.getByText(/BLK-OBSERVER-REFERRED/)).toBeTruthy();
   });
 
-  it("business: same tab model as specialist with receiving blocker on incoming", () => {
+  it("business: same tab model as specialist with receiving blocker on incoming", async () => {
     render(
       wrap("business", <ClientsDirectionWorkspace accessMode="business" />, "COMPANY"),
     );
     expect(screen.getByTestId("ca-clients-directions")).toBeTruthy();
-    expect(screen.getByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
+    expect(await screen.findByTestId("ca-receiving-appeals-blocked")).toBeTruthy();
     expect(screen.queryByTestId("ca-observer-partners-list")).toBeNull();
   });
 });

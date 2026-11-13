@@ -6,7 +6,7 @@ import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
 import type { ClientsParityDirection } from "@/lib/clients-parity/types";
 import { ClientsDirectionTabs } from "./ClientsDirectionTabs";
 import { ObserverPartnersWorkspace } from "../observer/ObserverPartnersWorkspace";
-import { ReceivingAppealsBlocked } from "./ReceivingAppealsBlocked";
+import { ReceivingAppealsWorkspace } from "@/components/clients/receiving/ReceivingAppealsWorkspace";
 
 type Props = {
   accessMode: OwnerClientsAccessMode;
@@ -44,7 +44,7 @@ function ClientsDirectionTabbedPane({ accessMode }: TabbedProps) {
         hidden={direction !== "incoming"}
         data-testid="ca-clients-panel-incoming"
       >
-        <ReceivingAppealsBlocked />
+        <ReceivingAppealsWorkspace />
       </div>
       {atPartnersMounted ? (
         <div
