@@ -3,10 +3,19 @@
   "k8Candidate": {
     "branch": "cursor/remcard-k8-acceptance-20261113",
     "handoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-    "schemaCoreSha": "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
-    "priorSchemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+    "schemaCoreSha": "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
+    "priorSchemaCoreSha": "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+    "k1ReceivingDoc": "src/lib/clientAppeals/K1_RECEIVING_API.md",
+    "k2ObserverDoc": "src/lib/clientAppeals/K2_OBSERVER_API.md",
+    "k2HttpDraftSha": "72193c7853df8291a5b7956059d574b834cdbce7",
     "contractModule": "src/lib/clientAppeals/contract.ts",
     "status": "DRAFT_K8_CANDIDATE"
+  },
+  "listResponseContract": {
+    "k8Lib": "{ items, nextCursor }",
+    "k2HttpTarget": "{ items, receivingBranches, personalMeta?, page?, limit?, total?, hasMore?, nextCursor? }",
+    "partnerP3": "{ appeals, partners, personalMeta?, nextCursor? }",
+    "forbiddenNavigatorAlias": "appeals"
   },
   "partnerIdentity": {
     "receivingPartnerPrototypeKey": "receivingPartnerId",
@@ -24,6 +33,7 @@
       "settingsLookupKey": "receivingOrganizationId"
     }
   },
+  "paidAmountKopecksRule": "DTO-only via recordMap.ts (order join); not PartnerClientAppeal column — GAP-K8-F",
   "k2WireAllowlistType": "ObserverAppealK2WireDto",
   "p5AdapterMapConstant": "OBSERVER_APPEAL_ADAPTER_MAP",
   "forbiddenObserverFields": [
@@ -49,8 +59,11 @@
       "GET /api/pro/client-appeals/receiving/working-stages",
       "POST /api/pro/client-appeals/receiving/working-stages"
     ],
-    "P5_P6": ["remcard-proxy + mapK2ObserverAppeal after K2 emits allowlist DTO"]
+    "P5_P6": [
+      "remcard-proxy + map items→appeals, receivingBranches→partners"
+    ]
   },
-  "unresolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D", "GAP-K8-E"],
+  "resolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D"],
+  "unresolvedGaps": ["GAP-K8-E", "GAP-K8-F", "GAP-K8-G", "GAP-K8-H"],
   "sectionReady": false
 }

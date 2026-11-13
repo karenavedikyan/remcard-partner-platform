@@ -19,8 +19,11 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   status: "DRAFT_K8_CANDIDATE",
   navigatorBranch: "cursor/remcard-k8-acceptance-20261113",
   handoffCommitSha: "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-  schemaCoreCommitSha: "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
-  priorSchemaCoreCommitSha: "fc33b4fae859fb692757807c3b27696b66d57558",
+  schemaCoreCommitSha: "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
+  priorSchemaCoreCommitSha: "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+  k1ReceivingDoc: "src/lib/clientAppeals/K1_RECEIVING_API.md",
+  k2ObserverDoc: "src/lib/clientAppeals/K2_OBSERVER_API.md",
+  k2HttpDraftCommitSha: "72193c7853df8291a5b7956059d574b834cdbce7",
   canonicalModule: "src/lib/clientAppeals/contract.ts",
   handoffDoc: "src/lib/clientAppeals/HANDOFF.md",
   migrationDraft: "prisma/migrations/20261113203000_client_appeals/migration.sql",
@@ -28,39 +31,90 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/types.ts",
   ],
-  auditReconcile: "audit/remcard-parallel-20261113/P2/K8-root-gaps-reconcile-20261113.md",
+  auditReconcile: "audit/remcard-parallel-20261113/P2/K8-e11f7e59-list-response-reconcile-20261113.md",
 } as const;
 
-/** Root source review @ 629de67e — candidates only; not accepted release. */
+/**
+ * One canonical list envelope per layer — no competing `{ appeals }` on K8 lib/receiving HTTP.
+ * P5 maps navigator `items` → partner `appeals`; `receivingBranches` → `partners`.
+ */
+export const CLIENTS_LIST_RESPONSE_CONTRACT = {
+  k8LibReceiving: {
+    owner: "K1/K8",
+    fn: "listReceivingAppeals",
+    shape: "{ items: ClientAppealRecord[], nextCursor: string | null }",
+    forbiddenAliases: ["appeals"],
+    doc: CLIENTS_K8_SOURCE_OF_TRUTH.k1ReceivingDoc,
+  },
+  k8LibObserver: {
+    owner: "K2/K8",
+    fn: "listObserverReferrerAppeals",
+    shape: "{ items: ClientAppealRecord[], nextCursor: string | null }",
+    forbiddenAliases: ["appeals"],
+    include: "APPEAL_RECORD_LIST_INCLUDE + mapPartnerClientAppealToRecord",
+    doc: CLIENTS_K8_SOURCE_OF_TRUTH.k2ObserverDoc,
+  },
+  k2HttpObserverTarget: {
+    owner: "K2",
+    route: "GET /api/pro/client-appeals/observer (canonical)",
+    legacyInterimRoute: "/api/pro/referred-appeals",
+    shape:
+      "{ items: ClientAppealObserverReadDto[], receivingBranches: ObserverBranchPartnerMetaWire[], personalMeta?: Record<string, ObserverPersonalMeta>, page?, limit?, total?, hasMore?, nextCursor? }",
+    pagination: "page/limit until K2 converges with lib cursor; then nextCursor primary",
+    paidAmountRule:
+      "paidAmountKopecks is DTO-only from recordMap.ts (order.totalAmount); not a Prisma column select",
+  },
+  k2HttpObserverActual72193c78: {
+    owner: "K2",
+    route: "GET /api/pro/referred-appeals",
+    shape: "{ items, page, limit, total, hasMore, empty }",
+    missingForP3: ["receivingBranches", "personalMeta", "ClientAppealObserverReadDto allowlist fields"],
+    ormGap: "GAP-K8-F: OBSERVER_APPEAL_ROW_SELECT.paidAmountKopecks",
+  },
+  partnerP3Normalized: {
+    owner: "P5 adapter",
+    shape: "{ appeals, partners, personalMeta?, nextCursor? }",
+    mapsFromK2Http: {
+      appeals: "items → ObserverReferredAppeal via OBSERVER_APPEAL_ADAPTER_MAP",
+      partners: "receivingBranches → ObserverPartnerMeta",
+      personalMeta: "passthrough",
+    },
+    type: "ObserverAppealsLoadResult ok branch in types.ts",
+  },
+} as const;
+
+/** Root review @ 629de67e; gaps A–D closed @ e11f7e59 — not accepted production release. */
 export const CLIENTS_K8_UNRESOLVED_GAPS = [
   {
     id: "GAP-K8-A",
     owner: "K8",
     topic:
       "repository.ts: P2002 catch + findFirst inside same $transaction after failed INSERT (aborted PG tx)",
-    status: "UNRESOLVED",
-    requiredFix: "Retry fresh tx / conflict strategy; keep partial unique index",
+    status: "RESOLVED_e11f7e59",
+    requiredFix: "resolveCertificateCreateRace outside aborted tx",
   },
   {
     id: "GAP-K8-B",
     owner: "K8",
     topic:
       "eligibility.ts: canObserverListIncludeAppeal uses ownerUserId only; org workplace must require viewerUserId === eligible principal === referrerProUserId",
-    status: "UNRESOLVED",
+    status: "RESOLVED_e11f7e59",
   },
   {
     id: "GAP-K8-C",
     owner: "K8",
     topic:
       "resolveAppealAccess: optional options default principalAgentObserverOnly=false — receiving must not silently grant when context omitted",
-    status: "UNRESOLVED",
+    status: "RESOLVED_e11f7e59",
+    requiredFix: "TrustedAppealAccessContext required (access.ts)",
   },
   {
     id: "GAP-K8-D",
     owner: "K8",
     topic:
       "dto.ts: Omit/spread blacklist; need explicit observer allowlist matching ObserverAppealK2WireDto in types.ts",
-    status: "UNRESOLVED",
+    status: "RESOLVED_e11f7e59",
+    requiredFix: "ClientAppealObserverReadDto + toObserverAppealDto allowlist",
   },
   {
     id: "GAP-K8-E",
@@ -71,7 +125,38 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     p2AdapterRule:
       "UI group by receivingBranchId; settings API keyed by org until product decides branch-level override",
   },
+  {
+    id: "GAP-K8-F",
+    owner: "K2",
+    topic:
+      "GET /api/pro/referred-appeals @72193c78: Prisma select paidAmountKopecks + count where paidAmountKopecks — column does not exist on PartnerClientAppeal",
+    status: "UNRESOLVED",
+    requiredFix:
+      "Use APPEAL_RECORD_LIST_INCLUDE + mapPartnerClientAppealToRecord or toObserverAppealDto; align with observerList.ts",
+  },
+  {
+    id: "GAP-K8-G",
+    owner: "K2+K5",
+    topic:
+      "K2 HTTP list missing receivingBranches + personalMeta required for P3 ObserverAppealsLoadResult",
+    status: "UNRESOLVED",
+    requiredFix:
+      "Emit CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget fields on canonical observer GET",
+  },
+  {
+    id: "GAP-K8-H",
+    owner: "K2",
+    topic:
+      "Legacy /api/pro/referred-appeals vs GET /api/pro/client-appeals/observer — two route families",
+    status: "UNRESOLVED",
+    requiredFix:
+      "K2 thin routes call k2ObserverApi; deprecate referred-appeals after proxy allowlist",
+  },
 ] as const;
+
+export const CLIENTS_K8_OPEN_GAPS = CLIENTS_K8_UNRESOLVED_GAPS.filter(
+  (g) => g.status === "UNRESOLVED",
+);
 
 export const CLIENTS_PARTNER_SETTINGS_SCOPE = {
   prototype: "partnerSettings[receivingPartnerId] — one pipeline per receiving partner (demo id = branch storefront)",
@@ -123,7 +208,8 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
     owner: "K2",
     authGate:
       "GAP-K8-1: align with ownerClientsAccess principal eligibility + referrerProUserId === viewer; resolveAppealAccess observer; read-only",
-    notes: "200: appeals[], branches[], personalMeta?, nextCursor. Wire: ObserverClientAppealPublicDto (GAP-K8-5).",
+    notes:
+      "200: CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget (items[], receivingBranches[], personalMeta?). P5 → appeals/partners.",
   },
   {
     method: "GET",

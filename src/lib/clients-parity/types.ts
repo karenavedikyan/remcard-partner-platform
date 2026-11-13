@@ -143,6 +143,27 @@ export type ObserverPersonalMeta = {
 
 export type ClientsParityDirection = "incoming" | "at-partners";
 
+/**
+ * K2 navigator HTTP list @ e11f7e59 target (before P5 rename).
+ * @see CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget in contracts.ts
+ */
+export type K2ObserverListHttpResponse = {
+  items: ObserverAppealK2WireDto[];
+  receivingBranches: ObserverBranchPartnerMetaWire[];
+  personalMeta?: Record<string, ObserverPersonalMeta>;
+  page?: number;
+  limit?: number;
+  total?: number;
+  hasMore?: boolean;
+  nextCursor?: string | null;
+};
+
+/** K8 lib + K1 receiving list envelope — not `{ appeals }`. */
+export type ClientAppealsLibListEnvelope<TItem> = {
+  items: TItem[];
+  nextCursor: string | null;
+};
+
 export type ObserverAppealsLoadResult =
   | {
       ok: true;
