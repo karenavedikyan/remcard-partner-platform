@@ -12,6 +12,9 @@
 |-------|-----|------|
 | K8 identity/schema | `6f09c23e` | `receivingPartnerUserId` required; org/branch optional |
 | K2 list HTTP | `3c6ccc19` | `{ appeals, partners, personalMeta, page, limit, total, hasMore, empty }` |
+| K8 assembly | `1894569a` | `contract.ts`, `receivingList.ts`, `appealPurchaseProjection` client purchase |
+| K1 receiving HTTP | `83f279e8` | `/api/pro/client-appeals/**` — see `K1-83f279e8-receiving-envelope-handoff.md` |
+| K2 assembly | `78ce748d` | Observer purchase mirror — converge to K8 projection |
 | K5 personal | `6c444487` / wire `86ac3e35` | PATCH `{ meta }`, POST batch `processed[]` |
 | P5 client | `a7b111d2` | `observer-personal-api.ts` — real referred-appeals paths |
 
@@ -52,7 +55,9 @@ Read-only observer routes only; no `receiving-appeals-api`; purchase fields subj
 ## P6 — receiving CRM only
 
 - `receiving-appeals-api.ts` + receiving UI — **never** observer list stats/filter/detail/personal-meta
-- Uses K1 paths under `/api/pro/client-appeals/receiving/*` when implemented
+- Wire: **`/api/pro/client-appeals`** (no `/receiving` suffix); stage via **`PATCH …/:id/stage`**
+- Expect `ReceivingAppealsAccessWire` on list once **GAP-K1-HTTP-ACCESS** closes; until then only `readOnly` on JSON
+- List target: `bucket`, `sourceFilter`, `stageKey` per K8 `receivingList.ts` — not `archived=1` only
 
 ## P2-only edits
 

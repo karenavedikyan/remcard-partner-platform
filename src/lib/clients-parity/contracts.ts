@@ -33,8 +33,10 @@ export const CLIENTS_RECEIVING_IDENTITY = {
   activeAppealPredicate:
     "isActiveAppealStage @ 6f09c23e; cert unique (certificateId, receivingPartnerUserId) stage-only filter (GAP-K8-L lifecycle)",
   k8IdentityTip: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
-  k1Tip: "f722a164fed0cbbb0315f30237e1568ebf340d69",
+  k8AssemblyTip: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
+  k1Tip: "83f279e86009fb79778f9edc4f83c633a20405b7",
   k2ListTip: "3c6ccc197bd565dba57feca81c42af48869ef62e",
+  k2AssemblyTip: "78ce748da4908542ee60ea8a09ce0fc8aed4b6ac",
   k5Tip: "6c4444879d5651679c969b8009b3f39d05302c43",
 } as const;
 
@@ -48,29 +50,46 @@ export const CLIENTS_ACTIVE_CERTIFICATE_SLOT = {
 } as const;
 
 /**
- * Read-only purchase projection — coordinate canonical source; do NOT change reward lifecycle formulas.
- * @see src/lib/clientAppeals/appealPurchaseProjection.ts @ K8 6f09c23e
+ * Read-only purchase projection — client purchase recognition, not partner bonus payout.
+ * @see appealPurchaseProjection.ts @ K8 1894569a + FINANCIAL_READ_PROJECTION.md
  */
 export const CLIENTS_PURCHASE_READ_SEMANTICS = {
   blockerId: "BLK-CLIENTS-PURCHASE-READ",
   owner: "K8",
   k8Module: "projectAppealPurchaseFields",
+  k8CanonicalSha: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
   currentMapping: {
-    paidAmountKopecks: "rewardSummary(lifecycle).paid — agent/bonus payout allocations, not client purchase total",
-    paidAt: "earliest RewardPayment.status===RECEIVED resolvedAt — payout confirm time, not client paid time",
-    purchaseOrderId: "PartnerClientAppeal.orderId (correct anchor)",
+    paidAmountKopecks:
+      "kopecksFromAmount(Order.totalAmount) when orderCountsAsClientPurchase(Order.status) — agentClientPurchaseRules",
+    paidAt: "always null until Order stores client payment timestamp (never RewardPayment.resolvedAt)",
+    purchaseOrderId: "PartnerClientAppeal.orderId",
   },
-  k2MirrorDraft3c6ccc19: {
-    paidAmountKopecks: "Order.totalAmount * 100 when order linked (also not verified against prototype semantics)",
-    divergence: "K2 observerK8Mirror.ts not yet importing K8 appealPurchaseProjection.ts",
+  k2Assembly78ce748d: {
+    module: "observerPurchaseProjection.ts — lifecycle line gross kopecks interim mirror",
+    divergence: "K2 not yet importing K8 appealPurchaseProjection.ts — amounts/dates may differ until Root merge",
   },
   p2Position:
-    "Prototype client purchase display needs authoritative read source from existing Order/financial owners — no new settlement rules in Clients prep",
-  status: "UNRESOLVED",
+    "P6/P3 display uses K8 canonical after merge; no new settlement rules in partner prep",
+  status: "PARTIAL_K8_1894569a_K2_DIVERGES",
 } as const;
 export const CLIENTS_PARITY_PRODUCTION_BASE_SHA = "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79";
 export const CLIENTS_NAVIGATOR_PREP_BASE_SHA = "8137ddd1ae5bad880fa28df34bab04e460bf2bdd";
 export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b85c6a86751868";
+
+/** Parallel navigator tips accepted for contract inventory (source prep only — not prod release). */
+export const CLIENTS_NAVIGATOR_FIXED_ASSEMBLY = {
+  k8: "1894569ab27179e46f75ce7416dfcc0ca452ab94",
+  k1: "83f279e86009fb79778f9edc4f83c633a20405b7",
+  k2: "78ce748da4908542ee60ea8a09ce0fc8aed4b6ac",
+  k5: "6c4444879d5651679c969b8009b3f39d05302c43",
+  k8ContractModule: "src/lib/clientAppeals/contract.ts",
+  k8ReceivingList: "src/lib/clientAppeals/receivingList.ts",
+  k1RouteTree: "src/app/api/pro/client-appeals/**",
+  crossOwnerWireDoc: "src/lib/clientAppeals/CROSS_OWNER_WIRE.md",
+  crossOwnerWireStale:
+    "CROSS_OWNER_WIRE @ 1894569a still documents K2 72193c78 items + Branch.id — superseded by P2 inventory + K2 list @ 3c6ccc19 / assembly @ 78ce748d",
+  p2ReceivingHandoff: "audit/remcard-parallel-20261113/P2/K1-83f279e8-receiving-envelope-handoff.md",
+} as const;
 
 /**
  * K8 navigator canonical module (CANDIDATE — not accepted release).
@@ -79,12 +98,16 @@ export const CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA = "89fb8e073c39c8dbd329996940b
 export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   status: "DRAFT_K8_CANDIDATE",
   navigatorBranch: "cursor/remcard-k8-acceptance-20261113",
+  assemblyK8Sha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k8,
   handoffCommitSha: "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
   schemaCoreCommitSha: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
   priorSchemaCoreCommitSha: "e11f7e59e6759bf3f67eb1829f7cff0e006de73e",
+  k1HttpTipSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1,
+  k2AssemblyTipSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2,
   k1IdentityCommitSha: "f722a164fed0cbbb0315f30237e1568ebf340d69",
-  k5IdentityCommitSha: "6c4444879d5651679c969b8009b3f39d05302c43",
+  k5IdentityCommitSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k5,
   k1ReceivingDoc: "src/lib/clientAppeals/K1_RECEIVING_API.md",
+  k1ReceivingApiSurface: "src/lib/clientAppeals/k1ReceivingApi.ts",
   k2ObserverDoc: "src/lib/clientAppeals/K2_OBSERVER_API.md",
   k2HttpObserverActualSha: "3c6ccc197bd565dba57feca81c42af48869ef62e",
   k2HttpStaleSha: "72193c7853df8291a5b7956059d574b834cdbce7",
@@ -151,14 +174,98 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     k8LibNote: "K8 lib list remains { items, nextCursor } — HTTP envelope above is K2-only",
     type: "ObserverAppealsLoadResult ok branch in types.ts",
   },
+  k1HttpReceivingActual: {
+    owner: "K1",
+    route: "GET /api/pro/client-appeals",
+    commitSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1,
+    shape: "{ appeals, nextCursor, tab, readOnly }",
+    rowDto: "ClientAppealRecord via mapPartnerClientAppealToRecord @ K8 recordMap",
+    queryActual: "archived=1 | active(default), q, limit, cursor",
+    queryTarget:
+      "bucket=active|archive|trash, sourceFilter=all|manual|cert, stageKey, search q, cursor, take — @ K8 receivingList.buildReceivingListWhere",
+    accessGap: "GAP-K1-HTTP-ACCESS — no principal/access JSON; P6 needs ReceivingAppealsAccessWire",
+    bucketGap: "GAP-K1-HTTP-BUCKET — archived boolean vs K8 trash/archive/active",
+  },
+  k1HttpReceivingTargetP6: {
+    owner: "P6 + K1",
+    shape:
+      "{ appeals, nextCursor, tab, bucket, sourceFilter?, stageKey?, access, readOnly }",
+    accessType: "ReceivingAppealsAccessWire in types.ts",
+    libAlign: "K8 listReceivingAppeals returns items[] — HTTP uses appeals alias for prototype parity",
+  },
+} as const;
+
+/**
+ * Receiving CRM HTTP — live K1 @ 83f279e8 vs K8 primitives @ 1894569a.
+ * Paths are `/api/pro/client-appeals` (no `/receiving` suffix). P1/P6 proxy must match.
+ */
+export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
+  prefix: "/api/pro/client-appeals",
+  stagePatchPath: "PATCH /api/pro/client-appeals/:id/stage",
+  forbiddenInventions: [
+    "POST /api/pro/client-appeals/:id/stage",
+    "/api/pro/client-appeals/receiving/**",
+    "settings keyed by organizationId only @ stale K1_RECEIVING_API prose",
+  ],
+  listGet: CLIENTS_LIST_RESPONSE_CONTRACT.k1HttpReceivingActual,
+  listTarget: CLIENTS_LIST_RESPONSE_CONTRACT.k1HttpReceivingTargetP6,
+  detailGet: {
+    path: "GET /api/pro/client-appeals/:id",
+    response200: "{ appeal, revision, history, workingStages, refusalReasons, readOnly }",
+    historyWire: "authorLabel (map to prototype author in P6)",
+  },
+  stagePatch: {
+    path: "PATCH /api/pro/client-appeals/:id/stage",
+    body: "{ stageKey | stageId, expectedRevision?, refusedReason?, shippedAt? }",
+    response200: "{ appeal, revision }",
+    errors: "404; 403 FOREIGN_APPEAL; 409 APPEAL_REVISION_CONFLICT; 422 transition code",
+    k8Primitive: "updateReceivingAppealWorkingStage + canTransitionToStage @ k1ReceivingApi",
+    prototypeRef: "applyStageChangeCabinet / canTransitionTo — not POST stage",
+  },
+  batchPost: {
+    path: "POST /api/pro/client-appeals/batch",
+    bodyActual: "{ ids[], action: archive | unarchive | bulk-edit, stageKey?, note?, appendNote? }",
+    responseActual: "{ updated, failures?: [{ id, code }] }",
+    bodyTargetLifecycle:
+      "action archive | delete | unarchive | restore — maps K8 applyReceivingBulkLifecycle kinds",
+    responseTarget: "{ updatedIds, skippedIds?, failures: [{ id, code }] }",
+    gap: "GAP-K1-HTTP-BATCH-LIFECYCLE — delete(trash) + restore not on HTTP batch @ 83f279e8",
+  },
+  workingStages: {
+    path: "/api/pro/client-appeals/working-stages",
+    get200: "{ settings: ClientAppealPartnerSettingsRecord }",
+    settingsKey: "receivingPartnerUserId @ unique (K8 settingsRepository)",
+    postBody: "{ kind: workingStage | refusalReason, label? | reason?, expectedVersion? }",
+    patchBody: "{ id, label?, restore?: true, expectedVersion? }",
+    deleteQuery: "?stageId=&expectedVersion=",
+    post200: "{ settings, version }",
+    k8Note: "K8 savePartnerAppealSettings atomic version — K1 HTTP uses mutatePartnerWorkingStages operations",
+  },
+  manualPost: {
+    path: "POST /api/pro/client-appeals",
+    body: "{ clientDisplayName | displayName, manualSourceKey | sourceKey, interest?, clientCity?, clientContact? }",
+    response201: "{ appeal }",
+  },
+  p1AllowlistPatterns: [
+    "^/api/pro/client-appeals$",
+    "^/api/pro/client-appeals/[\\w-]+$",
+    "^/api/pro/client-appeals/[\\w-]+/stage$",
+    "^/api/pro/client-appeals/batch$",
+    "^/api/pro/client-appeals/working-stages$",
+    "^/api/pro/client-appeals/certificate-entry$",
+  ],
+  p6Owner: "receiving-appeals-api.ts maps wire → ReceivingClientAppeal UI models",
 } as const;
 
 /** Navigator routes that exist in source @ 2026-11-13 — inventory authority over P5/P2 rename drafts. */
 export const CLIENTS_NAVIGATOR_ACTUAL_HTTP = {
+  assembly: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY,
   k8IdentitySha: "6f09c23e41ae7ea16a691dc9372bbaf70934cc88",
+  k1HttpTipSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k1,
   k1IdentitySha: "f722a164fed0cbbb0315f30237e1568ebf340d69",
   k2ListActualSha: "3c6ccc197bd565dba57feca81c42af48869ef62e",
-  k5PersonalSha: "6c4444879d5651679c969b8009b3f39d05302c43",
+  k2AssemblyTipSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k2,
+  k5PersonalSha: CLIENTS_NAVIGATOR_FIXED_ASSEMBLY.k5,
   observerList: {
     method: "GET",
     path: "/api/pro/referred-appeals",
@@ -381,9 +488,37 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K8-N",
     owner: "K8+K1+K2",
     topic:
-      "BLK-CLIENTS-PURCHASE-READ: paidAmountKopecks/paidAt map bonus payout lifecycle, not prototype client purchase",
+      "BLK-CLIENTS-PURCHASE-READ: unify client purchase projection across K8 @1894569a and K2 @78ce748d",
+    status: "PARTIAL_1894569a",
+    requiredFix: "K2 imports K8 appealPurchaseProjection; P6 reads paidAt null gap until Order timestamp exists",
+  },
+  {
+    id: "GAP-K1-HTTP-ACCESS",
+    owner: "K1",
+    topic: "GET list/detail omit ReceivingAppealsAccessWire (principal ids, accessMode, readOnly only partial)",
     status: "UNRESOLVED",
-    requiredFix: "Define canonical read projection without changing rewardSummary/settlement",
+    requiredFix: "Emit access block on list+detail per CLIENTS_RECEIVING_HTTP_CONTRACT.listTarget",
+  },
+  {
+    id: "GAP-K1-HTTP-BUCKET",
+    owner: "K1",
+    topic: "List query archived=1 vs K8 bucket active|archive|trash + sourceFilter + stageKey",
+    status: "UNRESOLVED",
+    requiredFix: "Route delegates to K8 buildReceivingListWhere query params",
+  },
+  {
+    id: "GAP-K1-HTTP-BATCH-LIFECYCLE",
+    owner: "K1",
+    topic: "Batch HTTP lacks delete(trash) + restore; partial failures not aligned with K8 applyReceivingBulkLifecycle",
+    status: "UNRESOLVED",
+    requiredFix: "POST batch actions archive|delete|unarchive|restore with per-id outcomes",
+  },
+  {
+    id: "GAP-K8-CROSS-WIRE-STALE",
+    owner: "K8",
+    topic: "CROSS_OWNER_WIRE.md cites K2 72193c78 items + Branch.id partner cards",
+    status: "UNRESOLVED",
+    requiredFix: "K8 doc points to 3c6ccc19 appeals envelope + receivingPartnerUserId (P2 inventory authoritative until K8 edits)",
   },
   {
     id: "GAP-K8-O",
@@ -548,53 +683,86 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
   },
   {
     method: "GET",
-    path: "/api/pro/client-appeals/receiving",
+    path: "/api/pro/client-appeals",
     blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K1",
-    authGate: "BranchEmployee canManageLeads on receiving branch (forbidden to agent-only observer)",
+    authGate:
+      "requireReceivingAppealsListContext @ 83f279e8; agent 403 CLIENT_APPEALS_AGENT_OBSERVER_ONLY",
+    notes:
+      "200: appeals, nextCursor, tab, readOnly — GAP-K1-HTTP-ACCESS/BUCKET. See CLIENTS_RECEIVING_HTTP_CONTRACT.",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals/receiving",
+    path: "/api/pro/client-appeals",
     blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K1",
-    authGate: "Receiving; manualEntry; cert create via GAP-K8-4 hook path",
-  },
-  {
-    method: "PATCH",
-    path: "/api/pro/client-appeals/receiving/:appealId",
-    blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
-    owner: "K1",
-    authGate: "Receiving; stage transitions per prototype canTransitionTo",
-  },
-  {
-    method: "POST",
-    path: "/api/pro/client-appeals/receiving/batch",
-    blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
-    owner: "K1",
-    authGate: "Receiving owner",
+    authGate: "requireReceivingAppealsWriteContext; reject posted partner ids",
+    notes: "201: { appeal } manual create",
   },
   {
     method: "GET",
-    path: "/api/pro/client-appeals/receiving/working-stages",
+    path: "/api/pro/client-appeals/:appealId",
     blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K1",
-    authGate: "Receiving branch settings",
-    notes: "BLOCKED until GAP-K8-2 schema",
+    authGate: "same list context; readOnly on org workplace",
+    notes: "200: appeal, revision, history, workingStages, refusalReasons, readOnly",
+  },
+  {
+    method: "PATCH",
+    path: "/api/pro/client-appeals/:appealId/stage",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "write context; expectedRevision optimistic lock",
+    notes: "Body stageKey + refusedReason + shippedAt — not POST stage",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals/receiving/working-stages",
+    path: "/api/pro/client-appeals/batch",
     blockerId: "BLK-RECEIVING-APPEALS",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K1",
-    authGate: "Receiving branch settings",
-    notes: "BLOCKED until GAP-K8-2 schema",
+    authGate: "write context",
+    notes: "GAP-K1-HTTP-BATCH-LIFECYCLE vs prototype delete/restore",
+  },
+  {
+    method: "GET",
+    path: "/api/pro/client-appeals/working-stages",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "list/write per method",
+    notes: "200: { settings } keyed by receivingPartnerUserId",
+  },
+  {
+    method: "POST",
+    path: "/api/pro/client-appeals/working-stages",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "write context",
+    notes: "kind workingStage | refusalReason",
+  },
+  {
+    method: "PATCH",
+    path: "/api/pro/client-appeals/working-stages",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "write context",
+    notes: "rename-stage or restore-stage",
+  },
+  {
+    method: "DELETE",
+    path: "/api/pro/client-appeals/working-stages",
+    blockerId: "BLK-RECEIVING-APPEALS",
+    status: "DRAFT_K8",
+    owner: "K1",
+    authGate: "write context",
+    notes: "archive-stage via ?stageId=",
   },
 ];
 

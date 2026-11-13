@@ -1,6 +1,14 @@
 {
   "coordinator": "P2",
   "handoffDoc": "audit/remcard-parallel-20261113/P2/P2-CROSS-OWNER-HANDOFF-20261113.md",
+  "navigatorFixedAssembly": {
+    "k8": "1894569ab27179e46f75ce7416dfcc0ca452ab94",
+    "k1": "83f279e86009fb79778f9edc4f83c633a20405b7",
+    "k2": "78ce748da4908542ee60ea8a09ce0fc8aed4b6ac",
+    "k5": "6c4444879d5651679c969b8009b3f39d05302c43"
+  },
+  "k1ReceivingHandoff": "audit/remcard-parallel-20261113/P2/K1-83f279e8-receiving-envelope-handoff.md",
+  "receivingHttpPrefix": "/api/pro/client-appeals",
   "k8Candidate": {
     "branch": "cursor/remcard-k8-acceptance-20261113",
     "handoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
@@ -81,7 +89,11 @@
     "GAP-K8-O",
     "GAP-K8-P",
     "GAP-K8-H",
-    "GAP-K5-I"
+    "GAP-K5-I",
+    "GAP-K1-HTTP-ACCESS",
+    "GAP-K1-HTTP-BUCKET",
+    "GAP-K1-HTTP-BATCH-LIFECYCLE",
+    "GAP-K8-CROSS-WIRE-STALE"
   ],
   "sectionReady": false,
   "profilePublishedNotClientsReady": "89fb8e073c39c8dbd329996940b85c6a86751868"

@@ -257,8 +257,102 @@ export type ClientAppealWorkingStage = {
   label: string;
 };
 
+/** K8 `receivingList.ts` + prototype cabinet buckets — not observer personal trash. */
+export type ClientAppealReceivingBucket = "active" | "archive" | "trash";
+
+export type ClientAppealReceivingSourceFilter = "all" | "manual" | "cert";
+
+/** K1 HTTP must expose on list/detail for P6 workspace gates @ CLIENTS_RECEIVING_HTTP_CONTRACT. */
+export type ReceivingAppealsAccessWire = {
+  mode: "receiving";
+  actorUserId: string;
+  ownerUserId: string;
+  receivingPartnerUserId: string;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
+  readOnly: boolean;
+  accessMode: "specialist" | "business" | "org_workplace_read";
+};
+
+/** K1 GET list @ 83f279e8 actual JSON. */
+export type K1ReceivingListHttpActual = {
+  appeals: ReceivingClientAppealRecordWire[];
+  nextCursor: string | null;
+  tab: "incoming";
+  readOnly: boolean;
+};
+
+/** P6 + K1 target list JSON after GAP-K1-HTTP-* closed. */
+export type K1ReceivingListHttpTarget = K1ReceivingListHttpActual & {
+  bucket: ClientAppealReceivingBucket;
+  sourceFilter?: ClientAppealReceivingSourceFilter;
+  stageKey?: string | "all";
+  access: ReceivingAppealsAccessWire;
+};
+
+/** K8 `ClientAppealRecord` wire on receiving routes (CRM fields allowed). */
+export type ReceivingClientAppealRecordWire = {
+  id: string;
+  clientDisplayName: string;
+  certificateId: string | null;
+  receivingPartnerUserId: string;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
+  referrerProUserId: string | null;
+  originKind: "CERTIFICATE" | "MANUAL";
+  manualSourceKey?: string | null;
+  stageKey: string;
+  interest?: string | null;
+  clientCity?: string | null;
+  budgetHint?: string | null;
+  refusedReason?: string | null;
+  shippedAt?: string | null;
+  purchaseOrderId?: string | null;
+  paidAmountKopecks?: number | null;
+  paidAt?: string | null;
+  privateNotes?: string | null;
+  clientContact?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  discountPercent?: number | null;
+  certValidUntil?: string | null;
+};
+
+export type ReceivingAppealStagePatchBody = {
+  stageKey?: string;
+  /** Alias accepted by K1 route. */
+  stageId?: string;
+  expectedRevision?: number | null;
+  refusedReason?: string | null;
+  shippedAt?: string | null;
+};
+
+export type ReceivingPartnerSettingsWire = {
+  receivingPartnerUserId: string;
+  receivingOrganizationId: string | null;
+  receivingBranchId: string | null;
+  workingStages: ClientAppealWorkingStage[];
+  refusalReasons: string[];
+  archivedStages: ClientAppealWorkingStage[];
+  version: number;
+  updatedAt: string;
+};
+
+export type ReceivingBatchHttpActual = {
+  updated: number;
+  failures?: Array<{ id: string; code: string }>;
+};
+
+export type ReceivingBatchHttpTarget = {
+  updatedIds: string[];
+  skippedIds?: string[];
+  failures: Array<{ id: string; code: string }>;
+};
+
 export type ReceivingClientAppeal = ObserverReferredAppeal & {
   history: ObserverAppealHistoryEntry[];
   createdAt: string;
   manualEntry?: boolean;
+  privateNotes?: string | null;
+  clientContact?: string | null;
 };
