@@ -81,27 +81,28 @@
       "explicitDemoDisclaimer": "Демо: изменения до обновления страницы.",
       "fields": ["alias max 100", "tag max 40", "note max 1000", "bucket active|archived|trash", "beforeTrash on trash"]
     },
-    "proposedWriteContract": {
-      "note": "Keyed by referred-appeal id (not AgentClient id); per viewing partner user",
-      "PATCH /api/pro/referred-appeals/:id/personal-meta": {
-        "body": {
-          "alias": "string|null max 100",
-          "tag": "string|null max 40",
-          "note": "string|null max 1000",
-          "bucket": "active|archived|trash",
-          "beforeTrash": "active|archived optional when bucket=trash"
-        },
-        "response200": { "meta": "ObserverPersonalMeta" },
-        "mustNotMutate": ["clientName", "receiving partner CRM", "appeal stage", "certificate ledger"]
+    "actualNavigatorDraft86ac3e35": {
+      "PATCH /api/pro/referred-appeals/:appealId/personal-meta": {
+        "bodyKeys": ["expectedVersion", "alias", "tag", "note", "action", "target"],
+        "response200": { "meta": "PersonalMetaProjection" }
       },
       "POST /api/pro/referred-appeals/personal-batch": {
-        "body": {
-          "ids": "string[]",
-          "op": "set-tag|archive|trash|restore",
-          "tag": "string? for set-tag"
-        },
-        "response200": { "updated": "string[]", "skipped": "Array<{id,reason}>" }
-      }
+        "bodyKeys": ["action", "ids", "target", "tag", "mode", "expectedVersions"],
+        "action": "move|restore|setTag",
+        "response200": {
+          "action": "string",
+          "mode": "atomic|best_effort",
+          "processedCount": "number",
+          "skippedCount": "number",
+          "processed": "PersonalMetaProjection[]",
+          "skipped": "{ appealId, reason }[]"
+        }
+      },
+      "p5Wrong518f6dd8": [
+        "PATCH /api/pro/client-appeals/:id/personal-overlay",
+        "POST /api/pro/client-appeals/personal-overlay/batch"
+      ],
+      "proxyOwner": "P1"
     }
   },
   "agentClientCrudContrast": {
@@ -147,7 +148,7 @@
     { "id": "D3", "topic": "referrer read-only auth", "owner": "navigator backend" },
     { "id": "D4", "topic": "personal overlay persistence", "owner": "navigator backend" },
     { "id": "D5", "topic": "client-appeals receiving API", "owner": "navigator backend" },
-    { "id": "D6", "topic": "remcard-proxy + adapters", "owner": "P5/P6" },
+    { "id": "D6", "topic": "remcard-proxy allowlist", "owner": "P1" },
     { "id": "D7", "topic": "forbid AgentClient overlay wiring", "owner": "all" }
   ],
   "noSchemaCompletePath": false,

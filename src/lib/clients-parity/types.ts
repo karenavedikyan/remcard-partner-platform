@@ -164,13 +164,40 @@ export type ClientAppealsLibListEnvelope<TItem> = {
   nextCursor: string | null;
 };
 
+/** K5 PATCH/GET `meta` wire (navigator @ 86ac3e35). */
+export type NavigatorPersonalMetaProjection = {
+  appealId: string;
+  alias: string | null;
+  tag: string | null;
+  note: string | null;
+  bucket: ObserverPersonalBucket;
+  version: number;
+  updatedAt: string;
+};
+
+/** K5 batch row in `processed[]`. */
+export type NavigatorPersonalBatchResult = {
+  action: "move" | "restore" | "setTag";
+  mode: "atomic" | "best_effort";
+  processedCount: number;
+  skippedCount: number;
+  processed: NavigatorPersonalMetaProjection[];
+  skipped: Array<{ appealId: string; reason: string }>;
+};
+
 export type ObserverAppealsLoadResult =
   | {
       ok: true;
       appeals: ObserverReferredAppeal[];
       partners: ObserverPartnerMeta[];
       personalMeta?: Record<string, ObserverPersonalMeta>;
+      /** P3 may read this alias when normalizing list JSON; server target key is `personalMeta`. */
+      personalOverlays?: Record<string, ObserverPersonalMeta>;
       nextCursor?: string | null;
+      page?: number;
+      limit?: number;
+      total?: number;
+      hasMore?: boolean;
     }
   | {
       ok: false;

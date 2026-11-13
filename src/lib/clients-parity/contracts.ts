@@ -72,15 +72,97 @@ export const CLIENTS_LIST_RESPONSE_CONTRACT = {
     ormGap: "GAP-K8-F: OBSERVER_APPEAL_ROW_SELECT.paidAmountKopecks",
   },
   partnerP3Normalized: {
-    owner: "P5 adapter",
+    owner: "P3 list fetch (+ P5 field rename only)",
     shape: "{ appeals, partners, personalMeta?, nextCursor? }",
-    mapsFromK2Http: {
-      appeals: "items → ObserverReferredAppeal via OBSERVER_APPEAL_ADAPTER_MAP",
-      partners: "receivingBranches → ObserverPartnerMeta",
-      personalMeta: "passthrough",
+    acceptsAliases: {
+      personalMeta: ["personalOverlays"],
+    },
+    mapsFromK2Http72193c78: {
+      appeals: "items[] → ObserverReferredAppeal via OBSERVER_APPEAL_ADAPTER_MAP",
+      partners:
+        "derive distinct receivingBranchId from items + branch display join (K2 list must supply branch meta — not invented defaults)",
+      personalMeta:
+        "Record<appealId, ObserverPersonalMeta> from K2/K5 embed on list GET only; omit key when server sends none",
+      pagination: "page, limit, total, hasMore (not cursor) until K2 converges with k8 lib",
     },
     type: "ObserverAppealsLoadResult ok branch in types.ts",
   },
+} as const;
+
+/** Navigator routes that exist in source @ 2026-11-13 — inventory authority over P5/P2 rename drafts. */
+export const CLIENTS_NAVIGATOR_ACTUAL_HTTP = {
+  k2ListDraftSha: "72193c7853df8291a5b7956059d574b834cdbce7",
+  k5PersonalDraftSha: "86ac3e354dc543817c061cb43565d0bf77545ab0",
+  observerList: {
+    method: "GET",
+    path: "/api/pro/referred-appeals",
+    owner: "K2",
+    response200:
+      "{ items: ObserverReferredAppeal[], page, limit, total, hasMore, empty }",
+    errors: "401 UNAUTHORIZED; 403 OBSERVER_REFERRER_INELIGIBLE; 400 OBSERVER_LIST_BAD_QUERY; 503 OBSERVER_APPEALS_SCHEMA_UNAVAILABLE",
+    notBlockedContract: "Explicit 401/403/404 are HTTP outcomes, not partner BLOCKED_CONTRACT",
+  },
+  personalMetaPatch: {
+    method: "PATCH",
+    path: "/api/pro/referred-appeals/:appealId/personal-meta",
+    owner: "K5",
+    bodyKeys: ["expectedVersion?", "alias?", "tag?", "note?", "action?", "target?"],
+    actionValues: "move | restore (field edits when action omitted)",
+    targetValues: "archived | trash when action=move",
+    response200: "{ meta: PersonalMetaProjection }",
+    projectionFields: ["appealId", "alias", "tag", "note", "bucket", "version", "updatedAt"],
+    errors:
+      "401; 403 CSRF|OBSERVER_PERSONAL_INELIGIBLE; 400 VALIDATION; 404 NOT_FOUND; 409 VERSION_CONFLICT|BUCKET_LOCKED; 503 PERSISTENCE_UNAVAILABLE",
+  },
+  personalBatch: {
+    method: "POST",
+    path: "/api/pro/referred-appeals/personal-batch",
+    owner: "K5",
+    bodyKeys: ["action", "ids", "target?", "tag?", "mode?", "expectedVersions?"],
+    actionValues: "move | restore | setTag",
+    modeValues: "atomic | best_effort",
+    response200:
+      "{ action, mode, processedCount, skippedCount, processed: PersonalMetaProjection[], skipped: { appealId, reason }[] }",
+  },
+  p1ProxyAllowlistOwner: "P1",
+  p1MustAllowPatterns: [
+    "^/api/pro/referred-appeals$",
+    "^/api/pro/referred-appeals/[\\w-]+/personal-meta$",
+    "^/api/pro/referred-appeals/personal-batch$",
+  ],
+  p5WrongPathsReject: [
+    "PATCH /api/pro/client-appeals/:appealId/personal-overlay",
+    "POST /api/pro/client-appeals/personal-overlay/batch",
+  ],
+  p5WrongCommit: "518f6dd8c14f43c93354bf00be297e5093abd90f",
+} as const;
+
+/** K5 `PersonalMetaProjection` → prototype `ObserverPersonalMeta` (map key = meta.appealId). */
+export const OBSERVER_K5_META_PROJECTION_MAP = {
+  alias: "alias",
+  tag: "tag",
+  note: "note",
+  bucket: "bucket",
+  version: "version",
+  updatedAt: "updatedAt",
+  beforeTrash: "UNRESOLVED — not in K5 projection JSON (GAP-K5-I)",
+} as const;
+
+/** P5 batch `op` names are NOT navigator wire — map to K5 `action` before HTTP. */
+export const OBSERVER_P5_TO_K5_BATCH_ACTION = {
+  "set-tag": "setTag",
+  "set-bucket": "move",
+  restore: "restore",
+} as const;
+
+export const CLIENTS_SECTION_OWNERS = {
+  navigatorK2List: "K2",
+  navigatorK5Personal: "K5",
+  partnerProxyAllowlist: "P1",
+  partnerListFetchAdapter: "P3",
+  partnerPersonalHttpClient: "P5",
+  partnerUi: "P6",
+  contractInventory: "P2",
 } as const;
 
 /** Root review @ 629de67e; gaps A–D closed @ e11f7e59 — not accepted production release. */
@@ -147,10 +229,24 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     id: "GAP-K8-H",
     owner: "K2",
     topic:
-      "Legacy /api/pro/referred-appeals vs GET /api/pro/client-appeals/observer — two route families",
+      "Inventory target `/api/pro/client-appeals/observer` vs actual `GET /api/pro/referred-appeals` @72193c78",
+    status: "UNRESOLVED",
+    requiredFix: "P1 allowlists actual paths now; optional alias route later — do not block on rename",
+  },
+  {
+    id: "GAP-P5-518f6dd8",
+    owner: "P5",
+    topic:
+      "observer-personal-api.ts calls personal-overlay routes and expects `{ overlay }` — paths do not exist on navigator",
     status: "UNRESOLVED",
     requiredFix:
-      "K2 thin routes call k2ObserverApi; deprecate referred-appeals after proxy allowlist",
+      "Call CLIENTS_NAVIGATOR_ACTUAL_HTTP personal-meta/personal-batch; parse `{ meta }` and batch `processed[]`",
+  },
+  {
+    id: "GAP-K5-I",
+    owner: "K5",
+    topic: "PATCH 200 `meta` projection omits `beforeTrashBucket` (prototype beforeTrash)",
+    status: "UNRESOLVED",
   },
 ] as const;
 
@@ -180,8 +276,11 @@ export const OBSERVER_APPEAL_ADAPTER_MAP = {
   originKind: "manualEntry",
 } as const;
 
-/** Legacy path prefix — superseded by client-appeals/observer/* in K8 handoff. */
-export const CLIENTS_DEPRECATED_ROUTE_PREFIX = "/api/pro/referred-appeals";
+/** Navigator actual observer + personal routes @ K2/K5 drafts (not a deprecated alias). */
+export const CLIENTS_NAVIGATOR_REFERRED_APPEALS_PREFIX = "/api/pro/referred-appeals";
+
+/** @deprecated typo guard — use CLIENTS_NAVIGATOR_REFERRED_APPEALS_PREFIX */
+export const CLIENTS_DEPRECATED_ROUTE_PREFIX = CLIENTS_NAVIGATOR_REFERRED_APPEALS_PREFIX;
 
 export type ContractRouteStatus =
   | "NOT_IMPLEMENTED"
@@ -230,22 +329,33 @@ export const CLIENTS_CANONICAL_ROUTES: ClientsCanonicalRoute[] = [
   },
   {
     method: "PATCH",
-    path: "/api/pro/client-appeals/observer/:appealId/personal-meta",
+    path: "/api/pro/referred-appeals/:appealId/personal-meta",
     blockerId: "BLK-OBSERVER-PERSONAL-PERSIST",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K5",
-    authGate: "viewerUserId + appealId; referrer scope",
+    authGate: "session viewerUserId + CSRF + requireOwnerClientsListContext; row referrerProUserId === viewer",
     notes:
-      "Body: alias, tag, note, bucket, beforeTrash, version. Table: PartnerClientAppealPersonalOverlay.",
+      "Actual @86ac3e35: body expectedVersion?, alias?, tag?, note?, action? move|restore, target?; 200 { meta }. P1 proxy only.",
   },
   {
     method: "POST",
-    path: "/api/pro/client-appeals/observer/personal-batch",
+    path: "/api/pro/referred-appeals/personal-batch",
     blockerId: "BLK-OBSERVER-PERSONAL-PERSIST",
-    status: "NOT_IMPLEMENTED",
+    status: "DRAFT_K8",
     owner: "K5",
     authGate: "same as personal-meta",
-    notes: "Body: ids[], op set-tag|archive|trash|restore",
+    notes:
+      "Actual @86ac3e35: action move|restore|setTag, ids[], mode atomic|best_effort, expectedVersions?; 200 processed/skipped counts.",
+  },
+  {
+    method: "GET",
+    path: "/api/pro/referred-appeals",
+    blockerId: "BLK-OBSERVER-REFERRED",
+    status: "DRAFT_K8",
+    owner: "K2",
+    authGate: "requireObserverReferredAppealsRead @72193c78",
+    notes:
+      "Actual list wire { items, page, limit, total, hasMore }; P3 adapts to appeals/partners/personalMeta. GAP-K8-F/G.",
   },
   {
     method: "GET",
@@ -337,8 +447,9 @@ export const CLIENTS_DECISIONS = [
   {
     id: "D6",
     topic: "partner proxy",
-    p2Position: "P5/P6 add remcard-proxy allowlist + adapters after K8 routes exist.",
-    k8MustPublish: null,
+    p2Position:
+      "P1 alone edits `remcard-proxy.ts` allowlist for navigator paths. P3 list adapter + P5 HTTP client map wire; not proxy ownership.",
+    k8MustPublish: "Stable referred-appeals paths before P1 allowlist merge",
   },
   {
     id: "D7",

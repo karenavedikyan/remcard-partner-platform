@@ -41,15 +41,27 @@
     "clientContact",
     "createdByUserId"
   ],
+  "navigatorActualHttp": {
+    "k2ListSha": "72193c7853df8291a5b7956059d574b834cdbce7",
+    "k5PersonalSha": "86ac3e354dc543817c061cb43565d0bf77545ab0",
+    "GET /api/pro/referred-appeals": "{ items, page, limit, total, hasMore, empty }",
+    "PATCH /api/pro/referred-appeals/:appealId/personal-meta": "{ meta }",
+    "POST /api/pro/referred-appeals/personal-batch": "{ action, mode, processedCount, skippedCount, processed, skipped }"
+  },
+  "p1ProxyOwner": "P1",
+  "p5WrongPathsReject518f6dd8": [
+    "/api/pro/client-appeals/:appealId/personal-overlay",
+    "/api/pro/client-appeals/personal-overlay/batch"
+  ],
   "routeOwners": {
     "K2": [
-      "GET /api/pro/client-appeals/observer",
-      "GET /api/pro/client-appeals/observer/:appealId",
-      "GET /api/pro/client-appeals/observer/by-branch/:receivingBranchId"
+      "GET /api/pro/referred-appeals",
+      "GET /api/pro/referred-appeals/:appealId",
+      "GET /api/pro/referred-appeals/by-partner/:partnerId"
     ],
     "K5": [
-      "PATCH /api/pro/client-appeals/observer/:appealId/personal-meta",
-      "POST /api/pro/client-appeals/observer/personal-batch"
+      "PATCH /api/pro/referred-appeals/:appealId/personal-meta",
+      "POST /api/pro/referred-appeals/personal-batch"
     ],
     "K1": [
       "GET /api/pro/client-appeals/receiving",
@@ -59,11 +71,18 @@
       "GET /api/pro/client-appeals/receiving/working-stages",
       "POST /api/pro/client-appeals/receiving/working-stages"
     ],
-    "P5_P6": [
-      "remcard-proxy + map items→appeals, receivingBranches→partners"
-    ]
+    "P1": ["remcard-proxy.ts allowlist for referred-appeals + personal-meta + personal-batch"],
+    "P3": ["list fetch: items→appeals, branch meta, personalMeta (no fake empty)"],
+    "P5": ["HTTP client to actual K5 paths; map meta projection → ObserverPersonalMeta"]
   },
   "resolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D"],
-  "unresolvedGaps": ["GAP-K8-E", "GAP-K8-F", "GAP-K8-G", "GAP-K8-H"],
+  "unresolvedGaps": [
+    "GAP-K8-E",
+    "GAP-K8-F",
+    "GAP-K8-G",
+    "GAP-K8-H",
+    "GAP-P5-518f6dd8",
+    "GAP-K5-I"
+  ],
   "sectionReady": false
 }
