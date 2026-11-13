@@ -1,0 +1,16 @@
+{
+  "sha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "auditorPinThatMustNotPromote": "65df323e",
+  "viewport": 375,
+  "clickPass": true,
+  "visualParityPass": false,
+  "gridTemplateAreas": "\"check open\" \"status status\" \"updated updated\" \"edit edit\"",
+  "gridTemplateColumns": "24px 151.5px 151.5px",
+  "statusTop": 273.5,
+  "updatedTop": 324.5,
+  "topDelta": 51,
+  "statusGridRow": "status",
+  "updatedGridRow": "updated",
+  "rootCause": "Obsolete @media (max-width:768) grid-template-areas block still present BEFORE prototype max1100/max760 rules; named rows split status/updated despite column template 24+N+N.",
+  "prototypeReference": "3dc31836 client-appeals.css lines 320-328 — no named areas for personalRowGrouped; status+updated auto-place same row cols 2 and 3"
+}

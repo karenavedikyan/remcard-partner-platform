@@ -1,0 +1,55 @@
+{
+  "task": "REMCLIENTS-V7-0729-CASCADE-EXACT-PARITY-FAIL",
+  "implCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "authorTipAtReplay": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
+  "obsoleteVisualFailSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "auditorPinMustNotPromote0729ClickPass": "65df323e",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "priorV6ComputerPin": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
+  "computerAcceptedIsolatedRegressionsOnly": true,
+  "sectionAccepted": false,
+  "publication": false,
+  "0729": {
+    "clickPass": true,
+    "visualSameRowPass": false,
+    "topDeltaPxAt375": 51,
+    "gridTemplateAreas": "\"check open\" \"status status\" \"updated updated\" \"edit edit\"",
+    "statusGridRow": "status",
+    "updatedGridRow": "updated",
+    "note": "Do not promote click PASS to full parity (auditor 65df323e)."
+  },
+  "isolatedAccepted": {
+    "obsoleteMax768AreasRemoved": true,
+    "prototypeMax1100GroupedMax760FlatOnly": true,
+    "groupedStatusUpdatedSameRow_375_360_320_768_1024": true,
+    "flatNoNamedDeadTracks": true,
+    "realClickAndBack": true,
+    "nameMinHeight44": true,
+    "kpiCascadePreserved_4above360_2atLte360": true
+  },
+  "notAccepted": [
+    "fullVisualPrototypeParity",
+    "receivingSideCompletion",
+    "referredAppealsServerContract",
+    "personalOverlayPersistence",
+    "fullC01-C56Acceptance",
+    "wholeBranchTransfer",
+    "0729ClickPassAsFullParity"
+  ],
+  "forbiddenCompatStill": {
+    "OwnerClientsGate": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext": "FORBIDDEN_DELTA",
+    "clientsRoute": "FORBIDDEN_ROUTE_MOVE",
+    "historyLinkEligibility": "FORBIDDEN_HELPER_TOUCH",
+    "vitestConfig": "FORBIDDEN_CONFIG"
+  },
+  "evidence": [
+    "22-V7-CASCADE-EXACT-PARITY-140de0a8.md",
+    "v7-pin-140de0a8/",
+    "requirement-matrix-c01-c56.json"
+  ],
+  "note": "auditSha filled after content commit",
+  "auditSha": "PENDING"
+}
