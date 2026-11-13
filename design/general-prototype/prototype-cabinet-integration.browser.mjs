@@ -1015,6 +1015,14 @@ try {
   const href140 = await hubToc.locator('a[data-page-n="140"]').getAttribute("href");
   assert.match(href140 || "", /proto_standalone=140/, "hub TOC 140 links into partner cabinet");
   assert.doesNotMatch(href140 || "", /recommendation\.html/, "hub TOC must not open orphan 140 HTML");
+  const tocOpenBeforeLaunch = await hubToc.evaluate(() => {
+    const panel = document.querySelector(".proto-page-panel");
+    if (panel?.getAttribute("data-open") !== "true") {
+      document.querySelector(".proto-page-toc-btn")?.click();
+    }
+    return panel?.getAttribute("data-open") === "true";
+  });
+  assert.ok(tocOpenBeforeLaunch, "hub TOC panel is open before book launch");
   await hubToc.locator('a[data-page-n="140"]').click();
   await hubToc.waitForURL(/partner\/index\.html.*proto_standalone=140/, { timeout: 15000 });
   await hubToc.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 25000 });

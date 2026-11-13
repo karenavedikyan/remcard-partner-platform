@@ -244,7 +244,17 @@ assert.match(
 assert.match(
   readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
   /viewportBottom - top - bottomInset/,
-  "embed host height follows viewport, not short home main block",
+  "embed host height follows viewport below content column",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /reviewerDockBottomReserve/,
+  "embed host reserves reviewer dock chrome",
+);
+assert.doesNotMatch(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /proto-page-panel\[data-open="true"\]/,
+  "dock reserve must not treat open TOC popover as bottom inset",
 );
 assert.match(
   readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),

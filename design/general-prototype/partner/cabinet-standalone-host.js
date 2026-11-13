@@ -182,6 +182,16 @@ export function createCabinetStandaloneHost(config) {
     return 0;
   }
 
+  /** Reserve space for the fixed reviewer badge + TOC button bar only (not the expanded TOC panel). */
+  function reviewerDockBottomReserve() {
+    const flow = document.querySelector(".proto-page-flow");
+    if (!flow) return 0;
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    const fr = flow.getBoundingClientRect();
+    if (fr.height <= 4 || fr.top >= vh - 1) return 0;
+    return Math.max(0, Math.ceil(vh - fr.top + 8));
+  }
+
   function reposition() {
     if (hostEl.hidden) return;
     const target = contentTarget();
@@ -195,7 +205,7 @@ export function createCabinetStandaloneHost(config) {
     const viewportHeight = vv?.height ?? window.innerHeight;
     const viewportBottom = viewportTop + viewportHeight;
     const top = Math.max(viewportTop, rect.top);
-    const bottomInset = mobileBottomInset();
+    const bottomInset = Math.max(mobileBottomInset(), reviewerDockBottomReserve());
     const barH = hostEl.querySelector(".cabinet-standalone-host__bar")?.offsetHeight || 48;
     const height = Math.max(160, viewportBottom - top - bottomInset - 4);
     hostEl.style.position = "fixed";
@@ -223,6 +233,8 @@ export function createCabinetStandaloneHost(config) {
     if (flow) resizeObserver.observe(flow);
     const dockPanel = document.querySelector(".proto-page-panel");
     if (dockPanel) resizeObserver.observe(dockPanel);
+    const dockFlow = document.querySelector(".proto-page-flow");
+    if (dockFlow) resizeObserver.observe(dockFlow);
   }
 
   function watchLayout() {
