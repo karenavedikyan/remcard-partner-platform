@@ -3,6 +3,7 @@
  * Run: node design/general-prototype/prototype-cabinet-integration.mjs
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -124,6 +125,11 @@ assert.match(roles, /demoRandomId\(\)/, "roles wires prototype demo id fallback"
 const certView = readFileSync(path.join(root, "partner/certificate-view.js"), "utf8");
 assert.doesNotMatch(certView, /crypto\.randomUUID/, "certificate-view avoids secure-context-only API");
 assert.match(certView, /demoRandomToken/, "certificate display code uses demo token helper");
+assert.match(
+  readFileSync(path.join(root, "partner/demo-random-id.js"), "utf8"),
+  /randomHexByteCount/,
+  "demo ids use hex entropy not uuid zero-prefix slicing",
+);
 assert.doesNotMatch(
   walletHistory,
   /linkedPurchase=isPurchase&&index===0/,
@@ -174,5 +180,15 @@ for (const n of [143, 144, 147]) {
   const html = readFileSync(path.join(root, file), "utf8");
   assert.match(html, /prototype-cabinet-embed\.js/, `${file} embed child script`);
 }
+
+const demoRandomTest = spawnSync(process.execPath, ["demo-random-id.test.mjs"], {
+  cwd: path.join(root, "partner"),
+  encoding: "utf8",
+});
+assert.equal(
+  demoRandomTest.status,
+  0,
+  `demo-random-id.test.mjs failed:\n${demoRandomTest.stderr || demoRandomTest.stdout}`,
+);
 
 console.log("prototype-cabinet-integration.mjs: ok");

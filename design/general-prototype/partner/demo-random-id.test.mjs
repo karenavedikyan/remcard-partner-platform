@@ -4,41 +4,73 @@
 import assert from "node:assert/strict";
 import { demoRandomId, demoRandomToken } from "./demo-random-id.js";
 
-const origRandomUuid = globalThis.crypto?.randomUUID;
+const UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function withoutRandomUuid(run) {
-  if (!globalThis.crypto) {
-    globalThis.crypto = {};
-  }
-  if (origRandomUuid) {
-    try {
-      delete globalThis.crypto.randomUUID;
-    } catch {
-      globalThis.crypto.randomUUID = undefined;
-    }
-  }
+const origCrypto = globalThis.crypto;
+
+function withCryptoStub(stub, run) {
+  Object.defineProperty(globalThis, "crypto", {
+    configurable: true,
+    value: stub,
+  });
   try {
     run();
   } finally {
-    if (origRandomUuid) {
-      globalThis.crypto.randomUUID = origRandomUuid;
+    if (origCrypto) {
+      Object.defineProperty(globalThis, "crypto", { configurable: true, value: origCrypto });
+    } else {
+      delete globalThis.crypto;
     }
   }
 }
 
-withoutRandomUuid(() => {
-  const a = demoRandomId();
-  const b = demoRandomId();
-  assert.notEqual(a, b, "fallback ids must differ within session");
-  assert.match(a, /^[0-9a-f-]{36}$/i, "fallback id is uuid-shaped");
-  const token = demoRandomToken(8);
-  assert.equal(token.length, 8);
-  assert.match(token, /^[0-9A-F]{8}$/);
+withCryptoStub({ getRandomValues: (buf) => buf.fill(0) }, () => {
+  const ids = [];
+  for (let i = 0; i < 8; i += 1) ids.push(demoRandomId());
+  assert.equal(new Set(ids).size, ids.length, "fallback ids must differ when randomUUID missing");
+  for (const id of ids) {
+    assert.match(id, UUID_V4_RE, `id must be uuid v4-shaped: ${id}`);
+    assert.doesNotMatch(id, /^00000000-0000-4000-8000-/i, "must not use constant zero prefix");
+  }
+
+  const tokens = [];
+  for (let i = 0; i < 12; i += 1) tokens.push(demoRandomToken(8));
+  assert.equal(new Set(tokens).size, tokens.length, "12 certificate tokens must not duplicate");
+  for (const token of tokens) {
+    assert.equal(token.length, 8);
+    assert.match(token, /^[0-9A-F]{8}$/);
+    assert.notEqual(token, "00000000", "token must not be all-zero");
+  }
 });
 
-if (origRandomUuid) {
+withCryptoStub(
+  {
+    randomUUID: () => {
+      throw new TypeError("randomUUID unavailable");
+    },
+    getRandomValues: (buf) => {
+      for (let i = 0; i < buf.length; i += 1) buf[i] = (i * 17 + 3) % 256;
+      return buf;
+    },
+  },
+  () => {
+    const id = demoRandomId();
+    assert.match(id, UUID_V4_RE);
+    const a = demoRandomToken(8);
+    const b = demoRandomToken(8);
+    assert.notEqual(a, b);
+  },
+);
+
+withCryptoStub(undefined, () => {
+  const id = demoRandomId();
+  assert.match(id, UUID_V4_RE);
+});
+
+if (origCrypto?.randomUUID) {
   const native = demoRandomId();
-  assert.match(native, /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  assert.match(native, UUID_V4_RE);
 }
 
 console.log("demo-random-id.test.mjs: ok");
