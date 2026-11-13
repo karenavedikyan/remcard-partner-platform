@@ -1,0 +1,10 @@
+ABSENT_ALLOWLIST	REF-GET-LIST	GET /api/pro/referred-appeals
+ABSENT_ALLOWLIST	REF-GET-ONE	GET /api/pro/referred-appeals/:id
+ABSENT_ALLOWLIST	REF-PERSONAL-PATCH	PATCH /api/pro/referred-appeals/:id/personal-meta
+ABSENT_ALLOWLIST	REF-PERSONAL-BATCH	POST /api/pro/referred-appeals/personal-batch
+PRESENT_ALLOWLIST	AGENT-CLIENT-CRUD	AgentClient CRUD (distinct domain)
+PRESENT_ALLOWLIST	PARTNER-LIST-PREF	Partnership list preferences (distinct domain)
+ABSENT_ALLOWLIST	RECEIVING-APPEALS	client-appeals CRM routes
+
+Total allowlist patterns scanned: 142
+Observer/referred gaps (expected ABSENT today): 5
