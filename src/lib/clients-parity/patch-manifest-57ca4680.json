@@ -1,19 +1,42 @@
 {
   "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "taskId": "REMCLIENTS-V4-COMPUTER-REVIEW",
   "excludeFromCherryPick": [
     "src/components/clients/OwnerClientsGate.tsx",
     "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/app/(cabinet)/clients/page.tsx",
     "src/lib/onboarding-step/history-link-eligibility.ts",
-    "vitest.config.ts"
+    "src/lib/onboarding-step/history-link-eligibility.test.ts",
+    "vitest.config.ts",
+    "src/lib/clients-rsc-boundary.test.ts"
+  ],
+  "mustNotDeleteOrMove": [
+    "src/app/clients/page.tsx",
+    "src/app/clients/[id]/page.tsx"
+  ],
+  "mustNotTouchOnProductionBase": [
+    "src/app/clients/page.tsx"
   ],
   "includeForCherryPick": [
     "src/components/clients/ClientsListWorkspace.tsx",
     "src/components/clients/direction/**",
     "src/components/clients/observer/**",
-    "src/lib/clients-parity/**"
+    "src/lib/clients-parity/**",
+    "scripts/clients-parity-20261113/**"
   ],
-  "productionWiringAlreadyPresent": {
+  "productionWiringAlreadyPresentAtBaseSha": {
     "page": "src/app/clients/page.tsx",
-    "snippet": "canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}"
-  }
+    "imports": [
+      "canLinkOnboardingHistoryFromUserRole from @/lib/onboarding-step/history-link-eligibility"
+    ],
+    "jsx": "<ClientsListWorkspace canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)} />",
+    "gate": "src/components/clients/OwnerClientsGate.tsx forwards prop to OwnerClientsModeProvider"
+  },
+  "clientsListWorkspaceProductionApplyNote": "On 57ca4680, drop ProductionOwnerClientsGate cast and use OwnerClientsGate directly; prop forwards to production gate.",
+  "persistenceClaimsForbidden": [
+    "C35 save",
+    "C36 bulk tag save",
+    "C37 archive/trash/restore persistence",
+    "fetchObserverReferredAppeals ok:true"
+  ]
 }

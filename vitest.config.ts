@@ -68,6 +68,7 @@ export default defineConfig({
       "src/lib/clients-parity/observer-visual-tokens.test.ts",
       "src/components/clients/ClientsListWorkspace.props.test.tsx",
       "src/components/clients/observer/ObserverPartnersListView.test.tsx",
+      "src/components/clients/observer/ObserverPartnerDetailView.test.tsx",
       "src/lib/business-owner-certificates/copy.test.ts",
       "src/lib/business-owner-certificates/api.test.ts",
       "src/lib/business-owner-certificates/issuer-api.test.ts",

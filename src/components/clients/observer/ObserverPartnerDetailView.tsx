@@ -33,9 +33,9 @@ export function ObserverPartnerDetailView({
         <p className={styles.mutedSmall}>
           {[partner.category, partner.city].filter(Boolean).join(" · ")}
         </p>
-        <dl className={styles.statsInline}>
-          <motionStat label="Направлено" value={stats.total} />
-          <motionStat label="С оплатой" value={stats.paidThrough} />
+        <dl className={styles.statsInline} role="list">
+          <MotionStat label="Направлено" value={stats.total} />
+          <MotionStat label="С оплатой" value={stats.paidThrough} />
         </dl>
       </header>
       <div className={styles.personalRows}>
@@ -56,7 +56,7 @@ export function ObserverPartnerDetailView({
   );
 }
 
-function motionStat({ label, value }: { label: string; value: number }) {
+function MotionStat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <dt>{label}</dt>

@@ -1,0 +1,12 @@
+// Apply onto base 57ca4680: replace ClientsListWorkspace export only (gate already typed).
+"use client";
+// ...imports unchanged...
+type Props = { canLinkOnboardingHistory?: boolean };
+
+export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
+  return (
+    <OwnerClientsGate canLinkOnboardingHistory={canLinkOnboardingHistory}>
+      <ClientsListBody />
+    </OwnerClientsGate>
+  );
+}

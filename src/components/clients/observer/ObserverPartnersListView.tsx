@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { filterObserverAppeals } from "@/lib/clients-parity/filter-observer";
 import { groupAppealsByPartner } from "@/lib/clients-parity/observer-stats";
+import type { ObserverFilterState } from "@/lib/clients-parity/filter-observer";
 import type {
-  ObserverFilterState,
   ObserverPartnerMeta,
   ObserverPersonalBucket,
   ObserverPersonalMeta,
