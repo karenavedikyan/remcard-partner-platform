@@ -1,6 +1,6 @@
 # П8 — Navigator source gaps ledger (current pins)
 
-**Canonical assembly:** K8 `0f4fe833` · K1 `51353825` · K2 `df8ed8a5` · K5 `6c444487`  
+**Canonical assembly:** K8 `8f4d336a` · K1 `a71b8f37` · K2 `c49d71dc` · K5 `6c444487` — see `GATE-REFRESH-20261113-2124.md`  
 **Schema SQL base:** `1894569a` (unchanged per Root) · **Obsolete pins:** `fc33`, pre-fix `6f09` reward projection
 
 **Whole Clients:** **NO-GO** · **G7:** not started · **Partner @ `57ca4680`:** integration defects remain (see `GATE-REFRESH-20261113-1815.md`)
