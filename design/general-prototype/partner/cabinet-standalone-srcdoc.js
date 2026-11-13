@@ -60,29 +60,44 @@ export function waitForStandaloneFrameContent(frame, pageN, { timeoutMs = 20000 
   });
 }
 
+function embedReadyMessageMatches(d, { pageN, token }) {
+  if (!d || d.source !== "proto-cabinet-embed" || d.type !== "embed-content-ready") return false;
+  const expectToken = token != null ? String(token) : "";
+  if (String(d.token ?? "") !== expectToken) return false;
+  if (pageN != null && (d.pageN == null || Number(d.pageN) !== Number(pageN))) return false;
+  return true;
+}
+
 /** Opaque sandbox: parent cannot read child DOM — wait for postMessage after model application. */
-export function waitForEmbedChildContentReady(frame, { pageN, token, timeoutMs = 20000 } = {}) {
+export function waitForEmbedChildContentReady(frame, { pageN, token, timeoutMs = 20000, signal = null } = {}) {
   if (!frame?.contentWindow) return Promise.reject(new Error("no frame"));
   return new Promise((resolve, reject) => {
+    let settled = false;
     const onMsg = (ev) => {
       if (ev.source !== frame.contentWindow) return;
       const d = ev.data;
-      if (!d || d.source !== "proto-cabinet-embed") return;
-      if (d.type !== "embed-content-ready") return;
-      if (token && d.token && d.token !== token) return;
-      if (pageN != null && d.pageN != null && Number(d.pageN) !== Number(pageN)) return;
-      cleanup();
-      resolve(d);
+      if (!embedReadyMessageMatches(d, { pageN, token })) return;
+      finish(resolve, d);
     };
     const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error(`embed-content-ready timeout n=${pageN}`));
+      finish(reject, new Error(`embed-content-ready timeout n=${pageN}`));
     }, timeoutMs);
+    const onAbort = () => {
+      finish(reject, new DOMException("embed-content-ready aborted", "AbortError"));
+    };
     const cleanup = () => {
       clearTimeout(timer);
       window.removeEventListener("message", onMsg);
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const finish = (fn, arg) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn(arg);
     };
     window.addEventListener("message", onMsg);
+    signal?.addEventListener("abort", onAbort);
   });
 }
 
@@ -149,26 +164,41 @@ export function injectSrcdocEmbedBoot(html, queryString, baseHref, { sessionToke
   return out;
 }
 
+export class StandaloneSrcdocStaleError extends Error {
+  constructor(reason = "stale") {
+    super(reason);
+    this.name = "StandaloneSrcdocStaleError";
+  }
+}
+
 export async function loadStandaloneSrcdoc(
   frame,
   pageN,
   defPath,
   extraQuery,
   bridge,
-  { guestHash = "", sessionToken = "" } = {},
+  { guestHash = "", sessionToken = "", signal = null, assertActive = null } = {},
 ) {
   if (!defPath) throw new Error("unknown standalone page");
   const fetchUrl = buildStandaloneFetchUrl(pageN, defPath, extraQuery, bridge);
   if (!fetchUrl) throw new Error("standalone url");
+  if (assertActive && !assertActive()) throw new StandaloneSrcdocStaleError("pre-fetch");
   const docUrl = new URL(fetchUrl);
-  const response = await fetch(fetchUrl, { credentials: "same-origin", cache: "no-store" });
+  const response = await fetch(fetchUrl, {
+    credentials: "same-origin",
+    cache: "no-store",
+    signal: signal || undefined,
+  });
+  if (assertActive && !assertActive()) throw new StandaloneSrcdocStaleError("post-fetch");
   if (!response.ok) throw new Error(`fetch ${response.status}`);
   const html = await response.text();
+  if (assertActive && !assertActive()) throw new StandaloneSrcdocStaleError("post-read");
   const baseHref = new URL("./", docUrl).href;
   const srcdoc = injectSrcdocEmbedBoot(html, docUrl.search, baseHref, {
     sessionToken,
     guestHash: guestHash ? String(guestHash).replace(/^#/, "") : "",
   });
+  if (assertActive && !assertActive()) throw new StandaloneSrcdocStaleError("pre-mount");
   frame.removeAttribute("src");
   frame.srcdoc = srcdoc;
   frame.dataset.embedUrl = fetchUrl;

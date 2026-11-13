@@ -142,6 +142,14 @@ assert.match(
 const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
 assert.match(embedChild, /__protoCabinetEmbedParams/, "embed child reads injected search in srcdoc");
 assert.match(embedChild, /embed-content-ready/, "embed child signals model readiness to opaque parent");
+const srcdocLoaderFull = readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8");
+assert.match(srcdocLoaderFull, /assertActive/, "srcdoc mount checks session before iframe write");
+assert.match(srcdocLoaderFull, /StandaloneSrcdocStaleError/, "stale srcdoc fetch rejects without mounting");
+assert.match(srcdocLoaderFull, /String\(d\.token/, "embed ready waits for exact token match");
+const hostJs = readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8");
+assert.match(hostJs, /abortPendingSrcdocWork/, "host cancels in-flight srcdoc work on close/reopen");
+assert.match(hostJs, /assertSrcdocSessionActive/, "host ties srcdoc load to open generation and token");
+assert.match(hostJs, /srcdocLoadGeneration/, "stale srcdoc generation guard");
 assert.match(embedChild, /__protoCabinetEffectiveHash/, "embed child exposes effective guest hash in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8"), /__protoCabinetEmbedParams/, "144 reads injected embed params in srcdoc");
 assert.match(readFileSync(path.join(root, "partner/partner-purchase-detail-embed.js"), "utf8"), /__protoCabinetEmbedParams/, "144 embed module reads injected params");

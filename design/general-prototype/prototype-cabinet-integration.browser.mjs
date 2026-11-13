@@ -1005,6 +1005,149 @@ try {
   assert.equal(nest147.badge, 147);
   await previewNest.close();
 
+  const staleRacePage = await browser.newPage();
+  await staleRacePage.setViewportSize({ width: 1280, height: 900 });
+  await staleRacePage.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  let releaseDelayed143 = null;
+  const holdDelayed143 = new Promise((resolve) => {
+    releaseDelayed143 = resolve;
+  });
+  await staleRacePage.route(/partner-cooperation-detail\.html/i, async (route) => {
+    await holdDelayed143;
+    await route.continue();
+  });
+  await staleRacePage.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "store";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await staleRacePage.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector(".shell aside.sidebar"),
+    null,
+    { timeout: 25000 },
+  );
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await staleRacePage.waitForSelector("#cabinet", { timeout: 5000 });
+  await staleRacePage.waitForTimeout(300);
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await staleRacePage.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const title = doc?.querySelector("[data-standalone-title]")?.textContent?.trim() || "";
+      return (
+        host &&
+        !host.hidden &&
+        frame?.dataset?.embedContentReady === "1" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 &&
+        title.includes("История покупок")
+      );
+    },
+    null,
+    { timeout: 30000 },
+  );
+  releaseDelayed143?.();
+  await staleRacePage.waitForTimeout(800);
+  const afterStale = await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      title: doc?.querySelector("[data-standalone-title]")?.textContent?.trim() || "",
+      url: frame?.dataset?.embedUrl || "",
+      badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
+      contentReady: frame?.dataset?.embedContentReady || "",
+    };
+  });
+  assert.equal(afterStale.badge, 147, "delayed 143 response must not replace history badge");
+  assert.ok(afterStale.url.includes("partner-wallet-history"), `embed url must stay on 147, got ${afterStale.url}`);
+  assert.doesNotMatch(afterStale.url, /partner-cooperation-detail/, "stale 143 fetch must not rewrite embed url");
+  assert.match(afterStale.title, /История покупок/, "host title must remain history after stale 143 load");
+  assert.equal(afterStale.contentReady, "1", "history embed stays content-ready after stale response");
+
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+  });
+  await staleRacePage.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
+    null,
+    { timeout: 10000 },
+  );
+  let releaseSecond143 = null;
+  const holdSecond143 = new Promise((resolve) => {
+    releaseSecond143 = resolve;
+  });
+  await staleRacePage.unroute(/partner-cooperation-detail\.html/i);
+  await staleRacePage.route(/partner-cooperation-detail\.html/i, async (route) => {
+    await holdSecond143;
+    await route.continue();
+  });
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await staleRacePage.waitForTimeout(200);
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await staleRacePage.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      return doc?.querySelector("[data-testid='cabinet-standalone-host']") && !doc.querySelector("[data-testid='cabinet-standalone-host']").hidden;
+    },
+    null,
+    { timeout: 15000 },
+  );
+  releaseSecond143?.();
+  await staleRacePage.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      return (
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143 &&
+        doc?.querySelector("[data-testid='cabinet-standalone-frame']")?.dataset?.embedContentReady === "1"
+      );
+    },
+    null,
+    { timeout: 25000 },
+  );
+  await staleRacePage.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const roleEl = doc?.querySelector('[data-testid="scenario-role"]');
+    if (roleEl) {
+      roleEl.value = "agent";
+      roleEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  await staleRacePage.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector("[data-testid='cabinet-standalone-host']")?.hidden,
+    null,
+    { timeout: 15000 },
+  );
+  await staleRacePage.close();
+
   const previewToc = await browser.newPage();
   await previewToc.setViewportSize({ width: 1280, height: 900 });
   await previewToc.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });

@@ -2,9 +2,10 @@ import {
   buildStandaloneNavigationUrl,
   loadStandaloneSrcdoc,
   shouldUseSrcdocStandaloneLoad,
+  StandaloneSrcdocStaleError,
   waitForEmbedChildContentReady,
   waitForStandaloneFrameContent,
-} from "./cabinet-standalone-srcdoc.js?v=embed9";
+} from "./cabinet-standalone-srcdoc.js?v=embed10";
 import { demoRandomToken } from "./demo-random-id.js";
 
 export const STANDALONE_BY_N = {
@@ -137,6 +138,20 @@ export function createCabinetStandaloneHost(config) {
   let openEmbedToken = "";
   let resizeObserver = null;
   let embedGuardKey = "";
+  let srcdocLoadGeneration = 0;
+  let srcdocFetchAbort = null;
+  let srcdocReadyAbort = null;
+
+  function embedTokenMatches(dataToken) {
+    return String(dataToken ?? "") === String(openEmbedToken ?? "");
+  }
+
+  function abortPendingSrcdocWork() {
+    srcdocFetchAbort?.abort();
+    srcdocFetchAbort = null;
+    srcdocReadyAbort?.abort();
+    srcdocReadyAbort = null;
+  }
 
   function contentTarget() {
     return document.querySelector(".shell .content.main, .shell main.content, .shell .content");
@@ -296,6 +311,8 @@ export function createCabinetStandaloneHost(config) {
   }
 
   function closeHost({ back = false, reset = false } = {}) {
+    abortPendingSrcdocWork();
+    srcdocLoadGeneration += 1;
     hostEl.hidden = true;
     document.querySelector(".shell")?.classList.remove("cabinet-standalone-active");
     document.documentElement.classList.remove("proto-cabinet-embed-host-active");
@@ -304,6 +321,7 @@ export function createCabinetStandaloneHost(config) {
     delete frame.dataset.embedMount;
     delete frame.dataset.embedUrl;
     delete frame.dataset.embedContentReady;
+    delete frame.dataset.embedSessionToken;
     openPageN = null;
     openQuery = "";
     openCtx = null;
@@ -390,10 +408,20 @@ export function createCabinetStandaloneHost(config) {
     }
     if (embedCtx != null) openCtx = embedCtx;
 
+    abortPendingSrcdocWork();
+    srcdocLoadGeneration += 1;
+    const loadGeneration = srcdocLoadGeneration;
     titleEl.textContent = def.title;
     openPageN = pageN;
     openQuery = extraQuery;
     openEmbedToken = demoRandomToken(12);
+    const loadToken = openEmbedToken;
+    const loadPageN = pageN;
+  const assertSrcdocSessionActive = () =>
+    !hostEl.hidden &&
+    openEmbedToken === loadToken &&
+    openPageN === loadPageN &&
+    srcdocLoadGeneration === loadGeneration;
     const useSrcdoc = shouldUseSrcdocStandaloneLoad();
     frame.setAttribute(
       "sandbox",
@@ -410,21 +438,32 @@ export function createCabinetStandaloneHost(config) {
     const guestHash = embedCtx?.guestHash;
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
     const commitStandaloneReady = () => {
-      if (openPageN !== pageN) return;
-      syncEmbeddedPageBadge(pageN);
+      if (!assertSrcdocSessionActive()) return;
+      syncEmbeddedPageBadge(loadPageN);
       frame.dataset.embedContentReady = "1";
     };
 
-    const waitReady = ({ timeoutMs = 20000 } = {}) =>
-      waitForEmbedChildContentReady(frame, { pageN, token: openEmbedToken, timeoutMs });
-    const contentReadyPromise = useSrcdoc ? null : waitReady({ timeoutMs: 20000 });
+    const waitReady = ({ timeoutMs = 20000, signal = null, requireToken = true } = {}) =>
+      waitForEmbedChildContentReady(frame, {
+        pageN: loadPageN,
+        token: requireToken ? loadToken : "",
+        timeoutMs,
+        signal,
+      });
+    const contentReadyPromise = useSrcdoc ? null : waitReady({ timeoutMs: 20000, requireToken: false });
 
     frame.onload = () => {
+      if (!assertSrcdocSessionActive() && useSrcdoc) return;
       sendContextToFrame();
       if (!useSrcdoc && contentReadyPromise) {
         void contentReadyPromise
-          .then(commitStandaloneReady)
-          .catch(() => {
+          .then(() => {
+            if (openPageN !== loadPageN || openEmbedToken !== loadToken) return;
+            commitStandaloneReady();
+          })
+          .catch((err) => {
+            if (err?.name === "AbortError") return;
+            if (openPageN !== loadPageN || openEmbedToken !== loadToken) return;
             notify?.("Встроенная страница не загрузилась. Обновите просмотр.", "info");
             closeHost();
           });
@@ -432,18 +471,32 @@ export function createCabinetStandaloneHost(config) {
     };
     if (useSrcdoc) {
       delete frame.dataset.embedContentReady;
-      frame.dataset.embedSessionToken = openEmbedToken;
-      const contentReady = waitReady({ timeoutMs: 25000 });
-      void loadStandaloneSrcdoc(frame, pageN, def.path, extraQuery, urlBridge, {
+      frame.dataset.embedSessionToken = loadToken;
+      srcdocReadyAbort = new AbortController();
+      const contentReady = waitReady({
+        timeoutMs: 25000,
+        signal: srcdocReadyAbort.signal,
+        requireToken: true,
+      });
+      srcdocFetchAbort = new AbortController();
+      void loadStandaloneSrcdoc(frame, loadPageN, def.path, extraQuery, urlBridge, {
         guestHash,
-        sessionToken: openEmbedToken,
+        sessionToken: loadToken,
+        signal: srcdocFetchAbort.signal,
+        assertActive: assertSrcdocSessionActive,
       })
-        .then(() => {
+        .then((mountedUrl) => {
+          if (!mountedUrl || !assertSrcdocSessionActive()) return null;
           sendContextToFrame();
           return contentReady;
         })
-        .then(commitStandaloneReady)
-        .catch(() => {
+        .then((ready) => {
+          if (!ready || !assertSrcdocSessionActive()) return;
+          commitStandaloneReady();
+        })
+        .catch((err) => {
+          if (err?.name === "AbortError" || err instanceof StandaloneSrcdocStaleError) return;
+          if (!assertSrcdocSessionActive()) return;
           notify?.(
             "В preview вложенный макет открывается через загрузку HTML, а не iframe.src (CSP frame-ancestors). Не удалось отобразить страницу.",
             "info",
@@ -466,7 +519,7 @@ export function createCabinetStandaloneHost(config) {
     if (!data || data.source !== "proto-cabinet-embed") return;
 
     if (data.type === "ready" || data.type === "need-context") {
-      if (openEmbedToken && data.token && data.token !== openEmbedToken) return;
+      if (frame.dataset.embedMount === "srcdoc" && !embedTokenMatches(data.token)) return;
       try {
         frame.contentWindow?.postMessage(
           { source: "proto-cabinet-host", type: "theme", theme: currentTheme() },
@@ -478,8 +531,10 @@ export function createCabinetStandaloneHost(config) {
     }
     if (data.type === "embed-content-ready") {
       if (ev.source !== frame.contentWindow) return;
-      if (openEmbedToken && data.token && data.token !== openEmbedToken) return;
-      if (openPageN != null && data.pageN != null && Number(data.pageN) !== Number(openPageN)) return;
+      if (openPageN == null || data.pageN == null || Number(data.pageN) !== Number(openPageN)) return;
+      if (frame.dataset.embedMount === "srcdoc") {
+        if (!embedTokenMatches(data.token)) return;
+      } else if (String(data.token ?? "") !== "" && !embedTokenMatches(data.token)) return;
       syncEmbeddedPageBadge(openPageN);
       frame.dataset.embedContentReady = "1";
       return;
@@ -538,15 +593,19 @@ export function createCabinetStandaloneHost(config) {
     resetHost(reason) {
       if (!hostEl.hidden) closeHost({ reset: true });
       else {
+        abortPendingSrcdocWork();
+        srcdocLoadGeneration += 1;
         openPageN = null;
         openQuery = "";
         openCtx = null;
+        openEmbedToken = "";
         syncEmbeddedPageBadge(null);
         frame.removeAttribute("src");
         frame.removeAttribute("srcdoc");
-    delete frame.dataset.embedMount;
-    delete frame.dataset.embedUrl;
-    delete frame.dataset.embedContentReady;
+        delete frame.dataset.embedMount;
+        delete frame.dataset.embedUrl;
+        delete frame.dataset.embedContentReady;
+        delete frame.dataset.embedSessionToken;
         unwatchLayout();
         document.documentElement.classList.remove("proto-cabinet-embed-host-active");
       }

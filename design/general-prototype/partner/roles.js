@@ -25,7 +25,7 @@ import {
   parseStandaloneDeepLink,
   prepareGuestStandaloneOpen,
   waitForCabinetReady,
-} from "./cabinet-standalone-host.js?v=embed8";
+} from "./cabinet-standalone-host.js?v=embed10";
 import { renderPartnerTypeSettings, hydratePartnerTypeSettings } from "./partner-type.js";
 import { hydrateCatalogWizard } from "./catalog-wizard.js";
 import { catalogPendingView } from "./catalog-status.js";
