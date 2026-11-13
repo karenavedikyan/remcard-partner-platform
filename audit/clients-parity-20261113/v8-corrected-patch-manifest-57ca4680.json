@@ -1,0 +1,52 @@
+{
+  "note": "Auditor-corrected copy for REMCLIENTS-V8. Author tip a36c609b still has stale productFixSha=5063368aea4a4219df354b0fcad7a0eaf9846ac8 in src/lib/clients-parity/patch-manifest-57ca4680.json — author asked to correct; auditor cannot edit product files.",
+  "baseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "taskId": "REMCLIENTS-V8-AUDIT-REMAINING",
+  "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "authorTipSha": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
+  "supersedesProductFix": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "historicalV6ProductFixDoNotUseAsCurrent": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "authorHandoffManifest": "src/lib/clients-parity/author-handoff-v6.json",
+  "excludeFromCherryPick": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/app/(cabinet)/clients/page.tsx",
+    "src/lib/onboarding-step/history-link-eligibility.ts",
+    "src/lib/onboarding-step/history-link-eligibility.test.ts",
+    "vitest.config.ts",
+    "src/lib/clients-rsc-boundary.test.ts"
+  ],
+  "mustRemainVerbatimOnProductionBase": [
+    "src/components/clients/OwnerClientsGate.tsx",
+    "src/components/clients/OwnerClientsModeContext.tsx",
+    "src/app/clients/page.tsx",
+    "src/lib/onboarding-step/history-link-eligibility.ts",
+    "vitest.config.ts"
+  ],
+  "auditorVerifiedAtAuthorTip_a36c609b_vs_57ca4680": {
+    "OwnerClientsGate.tsx": "FORBIDDEN_DELTA",
+    "OwnerClientsModeContext.tsx": "FORBIDDEN_DELTA",
+    "src/app/clients/page.tsx": "FORBIDDEN_DELETED_ON_TIP",
+    "src/app/(cabinet)/clients/page.tsx": "FORBIDDEN_ROUTE_MOVE_PRESENT_ON_TIP",
+    "history-link-eligibility.ts": "FORBIDDEN_HELPER_DELETED_ON_TIP",
+    "vitest.config.ts": "FORBIDDEN_CONFIG_DELTA"
+  },
+  "mustNotDeleteOrMove": [
+    "src/app/clients/page.tsx",
+    "src/app/clients/[id]/page.tsx"
+  ],
+  "includeForCherryPick": [
+    "src/components/clients/ClientsListWorkspace.tsx",
+    "src/components/clients/direction/**",
+    "src/components/clients/observer/**",
+    "src/lib/clients-parity/**",
+    "scripts/clients-parity-20261113/**"
+  ],
+  "wholeBranchTransferForbidden": true,
+  "persistenceClaimsForbidden": [
+    "C35 save",
+    "C36 bulk tag save",
+    "C37 archive/trash/restore persistence",
+    "fetchObserverReferredAppeals ok:true"
+  ]
+}

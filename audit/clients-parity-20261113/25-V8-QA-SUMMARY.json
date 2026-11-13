@@ -1,0 +1,66 @@
+{
+  "task": "REMCLIENTS-V8-AUDIT-REMAINING",
+  "implCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "authorTipSha": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "priorV7AuditSha": "df794142516311827c8a475061a7dc13b789d4f8",
+  "staleProductFixShaDoNotUse": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+  "computerV8": {
+    "acceptedIsolatedOnly": true,
+    "samples": "10 width\u00d7theme 320/360/375/768/1024 light/dark",
+    "sameRow": true,
+    "noDeadNamedTracks": true,
+    "realClickBack_partner_group_flat": true,
+    "kpiViewport": true,
+    "componentTests": "2 files / 8 PASS",
+    "mapsTo": [
+      "C29",
+      "C31",
+      "C42",
+      "C43",
+      "C46"
+    ]
+  },
+  "sectionAccepted": false,
+  "publication": false,
+  "counts": {
+    "PASS_functional": 5,
+    "PASS_safety": 4,
+    "FAIL": 10,
+    "BLOCKED_CONTRACT": 23,
+    "BLOCKED_PERSISTENCE": 4,
+    "NOT_STARTED": 9,
+    "EXCLUDED": 1,
+    "TOTAL": 56
+  },
+  "countCheck": "5+4+10+23+4+9+1=56",
+  "remainingBlockers": [
+    "FORBIDDEN packaging vs 57ca4680 (Gate/Context/route/history helper/vitest)",
+    "BLK-RECEIVING-APPEALS (0 client-appeals/working-stages on BE)",
+    "BLK-OBSERVER-REFERRED (0 referred-appeals on BE)",
+    "BLK-OBSERVER-PERSONAL-PERSIST (0 personal-meta; agent-clients wrong semantics)",
+    "Full visual/pixel etalon FAIL subset",
+    "NOT_STARTED exercise subset"
+  ],
+  "manifest": {
+    "authorPatchManifestStaleProductFixSha": true,
+    "auditorCorrectedCopy": "v8-corrected-patch-manifest-57ca4680.json",
+    "wholeBranchTransferForbidden": true,
+    "productionSurfacesMustStayVerbatim": [
+      "OwnerClientsGate.tsx",
+      "OwnerClientsModeContext.tsx",
+      "src/app/clients/page.tsx",
+      "history-link-eligibility.ts",
+      "vitest.config.ts"
+    ]
+  },
+  "evidence": [
+    "24-V8-AUDIT-REMAINING.md",
+    "26-V8-CONTRACT-INVENTORY-READONLY.md",
+    "requirement-matrix-c01-c56.json",
+    "v8-corrected-patch-manifest-57ca4680.json"
+  ],
+  "auditSha": "PENDING"
+}

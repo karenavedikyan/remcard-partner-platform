@@ -1,346 +1,1152 @@
 {
-  "task": "REMCLIENTS-V7-0729-CASCADE-EXACT-PARITY",
+  "task": "REMCLIENTS-V8-AUDIT-REMAINING",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "implCandidateSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "authorTipSha": "a36c609b7ea7a43ce4f4ec544f7ad0e60b403447",
   "priorV6ComputerPin": "78e4852194a0b9d307ee92743ae754dd18d5a9ba",
   "obsoleteVisualFailShaDoNotPromote": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
   "auditorPinMustNotPromote0729": "65df323e",
-  "authorSubsequentCorrectionSha": "d1da948491293c1a8ba77d4854191347708b4379",
   "matrixEvaluatedAgainst": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-  "priorV3ImplShaDoNotCarry": "ffd4aa6130e92af5d95da21cfe5519133228a962",
+  "computerV8AcceptedIsolatedOnly": true,
+  "computerV8Note": "Independent Computer: a36c609b / product 140de0a8 — 10 width×theme samples 320/360/375/768/1024 light/dark; status/date y shared; no dead named tracks; real client/back partner/group/flat; KPI/viewport; 2 files/8 tests PASS. Accept these isolated regressions only — not whole section.",
   "authorAgent": "bc-597b1474-d7e7-4df1-b4a2-cf2f6abcb629",
+  "auditorAgent": "bc-0a64ca5a-f2c9-465d-86dd-ca006e66cd7a",
   "authorBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
-  "note": "V7: EXACT pin 140de0a8 removes obsolete max768 areas; same-row PASS. 0729 click PASS ≠ visual parity (65df323e). Packaging/contracts still FAIL/BLOCKED. Do not promote missing backend. TOTAL=56.",
+  "note": "V8 remaining ledger: precise UI vs server gaps. productFixSha must be 140de0a8 (author patch-manifest still stale at 5063368 — see auditor corrected copy). Packaging/contracts still FAIL/BLOCKED. TOTAL=56.",
+  "staleAuthorMetadata": {
+    "path": "src/lib/clients-parity/patch-manifest-57ca4680.json",
+    "field": "productFixSha",
+    "staleValue": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
+    "correctValue": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "authorHandoffShasProductFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+    "auditorAction": "Document only — cannot edit author product file from auditor allowlist; corrected copy under audit/clients-parity-20261113/v8-corrected-patch-manifest-57ca4680.json"
+  },
   "counts": {
     "PASS_functional": 5,
     "PASS_safety": 4,
     "FAIL": 10,
-    "BLOCKED": 23,
+    "BLOCKED_CONTRACT": 23,
     "BLOCKED_PERSISTENCE": 4,
     "NOT_STARTED": 9,
     "EXCLUDED": 1,
     "TOTAL": 56
   },
-  "countCheck": "3+4+12+23+4+9+1=56",
+  "countCheck": "5+4+10+23+4+9+1=56",
+  "sectionAccepted": false,
+  "publication": false,
   "requirements": [
     {
       "id": "C01",
+      "title": "Clients section routing / packaging onto production base",
       "status": "FAIL",
-      "evidence": "Forbidden Gate/Context/route/helper/vitest vs 57ca4680 remains at 140de0a8 — whole-branch transfer forbidden."
+      "gapKind": "PACKAGING_FORBIDDEN",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/OwnerClientsGate.tsx (DELTA vs 57ca4680)",
+        "src/components/clients/OwnerClientsModeContext.tsx (DELTA)",
+        "src/app/clients/page.tsx (deleted on tip; cabinet route src/app/(cabinet)/clients/page.tsx added)",
+        "src/lib/onboarding-step/history-link-eligibility.ts (deleted on tip; present on 57ca4680)",
+        "vitest.config.ts (DELTA)"
+      ],
+      "beEvidence": [],
+      "evidence": "Tip a36c609b/product 140de0a8 still diverges from EXACT 57ca4680 on Gate/Context/clients route/history helper/vitest. Whole-branch transfer forbidden; selected-file cherry-pick only (exclude list in patch-manifest)."
     },
     {
       "id": "C02",
+      "title": "Agent Clients surface = observer only (no Agent CRM list injection)",
       "status": "FAIL",
-      "evidence": "Observer UI cascade+KPI fixed at 140de0a8; delivery packaging still forbidden."
+      "gapKind": "PACKAGING_FORBIDDEN",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
+        "src/components/clients/ClientsListWorkspace.tsx",
+        "src/components/clients/OwnerClientsGate.tsx (DELTA vs 57ca4680)",
+        "src/components/clients/OwnerClientsModeContext.tsx (DELTA)"
+      ],
+      "beEvidence": [],
+      "evidence": "Observer-only agent surface exists under ClientsDirectionWorkspace, but delivery packaging still carries forbidden Gate/Context deltas — cannot accept section packaging."
     },
     {
       "id": "C03",
+      "title": "Specialist/business direction tabs shell",
       "status": "FAIL",
-      "evidence": "Direction shell still packaged with forbidden Gate/route delta."
+      "gapKind": "PACKAGING_FORBIDDEN",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/components/clients/direction/ClientsDirectionTabs.tsx",
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
+      ],
+      "beEvidence": [],
+      "evidence": "Direction tabs UI present; still packaged with forbidden Gate/route delta vs 57ca4680 — FAIL packaging, not missing UI."
     },
     {
       "id": "C04",
+      "title": "Filter/disclosure continuity across navigations",
       "status": "NOT_STARTED",
-      "evidence": "Filter/disclosure continuity across navigations not proven this pass."
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "PARTIAL",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverFilterChips.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "beEvidence": [],
+      "evidence": "Filter/disclosure continuity across multi-step navigations not proven this pass (Computer exercised open/back, not filter state retention)."
     },
     {
       "id": "C05",
+      "title": "Agent receiving pages 107–112 excluded",
       "status": "EXCLUDED",
+      "gapKind": "SCOPE_EXCLUDED",
+      "uiState": "ABSENT_BY_SCOPE",
+      "serverState": "N/A",
+      "feEvidence": [
+        "C56 scope: agent receiving pages 107–112 not mounted"
+      ],
+      "beEvidence": [],
       "evidence": "Agent receiving pages 107–112 excluded by scope (C56)."
     },
     {
       "id": "C06",
+      "title": "No role demo switcher / page catalog in production Clients UI",
       "status": "PASS_safety",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [
+        "No role demo switcher / page catalog in ClientsDirectionWorkspace / observer mounts"
+      ],
+      "beEvidence": [],
       "evidence": "No role demo switcher / page catalog injected into production Clients UI.",
       "passKind": "safety"
     },
     {
       "id": "C07",
-      "status": "BLOCKED",
+      "title": "Receiving appeals list",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C08",
-      "status": "BLOCKED",
+      "title": "Receiving KPI",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C09",
-      "status": "BLOCKED",
+      "title": "Receiving search/filters",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C10",
-      "status": "BLOCKED",
+      "title": "Receiving active/archive/trash buckets",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C11",
-      "status": "BLOCKED",
+      "title": "Receiving row selection",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C12",
-      "status": "BLOCKED",
+      "title": "Receiving bulk actions",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C13",
-      "status": "BLOCKED",
+      "title": "Receiving bulk edit",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C14",
-      "status": "BLOCKED",
+      "title": "Receiving appeal card/detail",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C15",
-      "status": "BLOCKED",
+      "title": "Receiving system statuses",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C16",
-      "status": "BLOCKED",
+      "title": "Working stages CRUD",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "No working-stage handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals/working-stages",
+        "GET/POST /api/pro/client-appeals"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C17",
-      "status": "BLOCKED",
+      "title": "Refusal/review actions",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C18",
-      "status": "BLOCKED",
+      "title": "Receiving funnel analytics",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "No receiving funnel analytics contract on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C19",
-      "status": "BLOCKED",
+      "title": "Receiving manual create",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C20",
-      "status": "BLOCKED",
+      "title": "Certificate new/repeat/invalid flows",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C21",
-      "status": "BLOCKED",
+      "title": "Certificate scanner scenarios",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C22",
-      "status": "BLOCKED",
+      "title": "Purchase form",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C23",
-      "status": "BLOCKED",
+      "title": "Purchase draft + profile categories",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C24",
-      "status": "BLOCKED",
+      "title": "Purchase confirm",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-RECEIVING-APPEALS",
-      "evidence": "BE release/prof-backend-v1-20261007: no client-appeals handlers (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "SHELL_BLOCKED",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching client-appeals*",
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 paths matching working-stage*",
+        "Contrast PRESENT (wrong semantics): src/app/api/pro/agent-clients/route.ts (prisma.agentClient owner CRM)",
+        "Contrast PRESENT (order link only): src/app/api/store/orders/[orderId]/receiving-client/route.ts",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET/POST /api/pro/client-appeals",
+        "PATCH /api/pro/client-appeals/:id",
+        "POST /api/pro/client-appeals/batch",
+        "GET/POST /api/pro/client-appeals/working-stages"
+      ],
+      "evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM."
     },
     {
       "id": "C25",
+      "title": "Purchase/receipt navigation without preview domain",
       "status": "NOT_STARTED",
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "ABSENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "No purchase/receipt nav exercise in this audit"
+      ],
+      "beEvidence": [],
       "evidence": "Purchase/receipt navigation without preview domain not exercised."
     },
     {
       "id": "C26",
+      "title": "Observer compact partner cards",
       "status": "FAIL",
-      "evidence": "KPI cols fixed on e4ddc098; compact-card full visual/pixel etalon vs prototype not declared PASS. Packaging forbidden."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnerCard.tsx",
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "evidence": "Compact partner card UI+CSS present; full visual/pixel etalon vs prototype not declared PASS. Live card data blocked by missing referred-appeals. Packaging still forbidden (C01)."
     },
     {
       "id": "C27",
-      "status": "BLOCKED",
+      "title": "Partner card metrics",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "No referred-appeals handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnerCard.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "evidence": "Metrics markup present in partner card UI; production GET referred-appeals* ABSENT on BE tree; FE adapter returns BLOCKED_CONTRACT. UI present ≠ server support."
     },
     {
       "id": "C28",
+      "title": "Compact card height/spacing etalon",
       "status": "FAIL",
-      "evidence": "KPI cols fixed; card height/spacing etalon deltas not re-proven PASS this pass."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/observer.module.css",
+        "src/components/clients/observer/ObserverPartnerCard.tsx"
+      ],
+      "beEvidence": [],
+      "evidence": "Local CSS compact height orient present; card height/spacing full etalon deltas vs prototype not re-proven PASS."
     },
     {
       "id": "C29",
+      "title": "Partner details show/hide + client open navigation",
       "status": "PASS_functional",
-      "evidence": "140de0a8 + prior 78e48521 real Playwright: partner/flat client open+back; open h=47.5; name min-height 44. Packaging still C01 FAIL.",
+      "uiState": "PRESENT",
+      "serverState": "N/A_FIXTURE",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+        "scripts/clients-parity-20261113/observer-list-harness/"
+      ],
+      "beEvidence": [],
+      "evidence": "Computer V8 @ a36c609b/140de0a8: partner/group/flat → client → back real clicks across 10 width×theme samples; name min-height 44; open h≈47.5. Fixture-only; live API still BLOCKED (C32/C39). Packaging still C01 FAIL.",
       "passKind": "functional"
     },
     {
       "id": "C30",
+      "title": "openPartners session; reload → collapsed",
       "status": "NOT_STARTED",
-      "evidence": "session openPartners reload→collapsed not proven across real navigation."
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "PARTIAL",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "beEvidence": [],
+      "evidence": "openPartners session reload→collapsed not proven across real navigation this pass."
     },
     {
       "id": "C31",
+      "title": "Group/mixed checkbox + select-all; row geometry",
       "status": "PASS_functional",
-      "evidence": "140de0a8 child bounds+real clicks PASS; status/updated same-row |Δtop|≤1px; scrollWidth alone not used as pass.",
+      "uiState": "PRESENT",
+      "serverState": "N/A_FIXTURE",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPersonalClientRow.tsx",
+        "src/components/clients/observer/observer.module.css",
+        "audit/clients-parity-20261113/v7-pin-140de0a8/v7-grouped-parity-report.json"
+      ],
+      "beEvidence": [],
+      "evidence": "Computer V8: child bounds; status/date y shared (281.5 both in Computer report); no dead named tracks; checkbox/group geometry. Fixture harness; scrollWidth alone not used as pass.",
       "passKind": "functional"
     },
     {
       "id": "C32",
-      "status": "BLOCKED",
+      "title": "Expanded clients under partner (live data)",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "No referred-appeals handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "evidence": "Expanded-client UI works on fixtures (Computer PASS). Live production list requires GET /api/pro/referred-appeals* — 0 handlers on BE release tree; FE fetchObserverReferredAppeals returns BLOCKED_CONTRACT. Distinguish: UI present, server absent."
     },
     {
       "id": "C33",
+      "title": "Observer filters q/period, chips, grouped/flat layout",
       "status": "FAIL",
-      "evidence": "Personal edit UI form+cancel+disabled save on fresh mount; not functional personal-meta; packaging FAIL."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverFilterChips.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*"
+      ],
+      "evidence": "Filters/chips + grouped/flat layout UI present; Computer V8 exercised partner/group/flat open+back on fixtures. Full filter-semantic/visual etalon vs prototype + live data not accepted. Not a personal-edit item (that is C35)."
     },
     {
       "id": "C34",
-      "status": "BLOCKED",
+      "title": "filterObserverAppeals semantics vs live API",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "No referred-appeals handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/lib/clients-parity/filter-observer.ts",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "evidence": "filterObserverAppeals helper exists for fixtures; cannot validate semantics against live referred-appeals API (ABSENT)."
     },
     {
       "id": "C35",
+      "title": "Personal alias/tag/note form + persist",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "Save disabled UI-only on all 8 samples; no personal-meta API. BLOCKED_PERSISTENCE. Do not map AgentClient delete."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 personal-meta / personalMeta paths",
+        "Wrong-semantics PRESENT: src/app/api/pro/agent-clients/route.ts (owner displayName/note — not referrer overlay)",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ],
+      "evidence": "UI form alias/tag/note + cancel present; Save disabled (title BLOCKED_PERSISTENCE). No PATCH personal-meta on BE. Must NOT map to PATCH /api/pro/agent-clients/:id displayName/note."
     },
     {
       "id": "C36",
+      "title": "Mass personal tag edit + persist",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "No mass tag persistence contract. BLOCKED_PERSISTENCE."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPersonalTools.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx",
+        "src/lib/clients-parity/contracts.ts"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 personal-meta*",
+        "No tag field on agent-clients contract",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ],
+      "evidence": "Bulk edit panel UI + cancel present; save disabled. No mass tag persistence endpoint on BE/FE proxy."
     },
     {
       "id": "C37",
+      "title": "Personal archive/trash/restore (own list only)",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "AgentClient archive/delete ≠ personal trash. BLOCKED_PERSISTENCE / semantic mismatch."
+      "gapKind": "WRONG_SEMANTICS",
+      "uiState": "PRESENT",
+      "serverState": "WRONG_SEMANTICS",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "beEvidence": [
+        "src/app/api/pro/agent-clients/[id]/route.ts DELETE/archive = owned AgentClient entity",
+        "src/app/api/pro/agent-clients/batch/route.ts batch archive|restore|delete",
+        "No personal trash bucket independent of entity delete"
+      ],
+      "missingApi": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ],
+      "evidence": "Confirm UI present; confirm → BLOCKED_PERSISTENCE notify, no mutation. agent-clients archive/delete ≠ «удалить только из своего списка». Semantic mismatch, not merely missing UI."
     },
     {
       "id": "C38",
+      "title": "Personal meta survives reload (production contract)",
       "status": "BLOCKED_PERSISTENCE",
       "blocker": "BLK-OBSERVER-PERSONAL-PERSIST",
-      "evidence": "No production personal-meta contract; disabled save ≠ PASS."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
+        "src/lib/clients-parity/contracts.ts",
+        "01-EARLY-API-OWNERSHIP-PERSISTENCE-BLOCKERS.md"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 personal-meta*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "PATCH /api/pro/referred-appeals/:id/personal-meta",
+        "POST /api/pro/referred-appeals/personal-batch"
+      ],
+      "evidence": "Disabled save ≠ persistence PASS. No production personal-meta contract; localStorage/sessionStorage forbidden as substitute."
     },
     {
       "id": "C39",
-      "status": "BLOCKED",
+      "title": "Partner detail view + back (live)",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "No referred-appeals handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals*",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "evidence": "Partner detail UI + back works on fixtures (Computer). Live partner-scoped referred list ABSENT on server."
     },
     {
       "id": "C40",
-      "status": "BLOCKED",
+      "title": "Client public detail + back (live)",
+      "status": "BLOCKED_CONTRACT",
       "blocker": "BLK-OBSERVER-REFERRED",
-      "evidence": "No referred-appeals handlers on release BE (10-V4)."
+      "gapKind": "MISSING_SERVER",
+      "uiState": "PRESENT",
+      "serverState": "ABSENT",
+      "feEvidence": [
+        "src/components/clients/observer/ObserverClientDetailView.tsx",
+        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
+      ],
+      "beEvidence": [
+        "karenavedikyan/remcard-navigator@release/prof-backend-v1-20261007: 0 referred-appeals/:id",
+        "src/lib/remcard-proxy.ts (allowlist: agent-clients* + store orders receiving-client only; no client-appeals*/referred-appeals*/personal-meta*)"
+      ],
+      "missingApi": [
+        "GET /api/pro/referred-appeals",
+        "GET /api/pro/referred-appeals/:id",
+        "GET /api/pro/referred-appeals/by-partner/:partnerId"
+      ],
+      "evidence": "Client detail UI + back on fixtures (Computer). Live GET referred-appeals/:id ABSENT on BE."
     },
     {
       "id": "C41",
+      "title": "URL/id protection",
       "status": "NOT_STARTED",
-      "evidence": "URL/id protection not expanded this pass."
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
+      "evidence": "URL/id protection not expanded/proven this pass."
     },
     {
       "id": "C42",
+      "title": "KPI CSS cascade tokens (4 above 360 / 2 at ≤360)",
       "status": "PASS_functional",
-      "evidence": "KPI cascade preserved at 140de0a8: 4 cols above 360 / 2 at ≤360 (vitest 13 computed).",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/observer-stats-grid.computed.test.ts"
+      ],
+      "beEvidence": [],
+      "evidence": "Computer V8 + vitest: KPI cascade preserved — 4 cols above 360 / 2 at ≤360 across viewport checks.",
       "passKind": "functional"
     },
     {
       "id": "C43",
+      "title": "Grouped row cascade: status+updated same row; no obsolete areas",
       "status": "PASS_functional",
-      "evidence": "V7 140de0a8: obsolete max768 areas removed; grouped status+updated same row @375/360/320/768/1024; flat no named dead tracks (v7-pin-140de0a8/). 0729 was visual FAIL despite click PASS.",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/observer.module.css",
+        "audit/clients-parity-20261113/v7-pin-140de0a8/",
+        "scripts/clients-parity-20261113/audit-v7-140de0a8-grouped-parity.mjs"
+      ],
+      "beEvidence": [],
+      "evidence": "Computer V8 @ 140de0a8: obsolete max768 areas removed; status+updated same row (y shared); no dead named tracks at 320–1024. Prototype max1100 grouped + max760 flat only.",
       "passKind": "functional"
     },
     {
       "id": "C44",
+      "title": "Spacing/radius full visual pass thresholds",
       "status": "FAIL",
-      "evidence": "KPI cascade OK; spacing/radius full visual pass thresholds not re-claimed."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/observer.module.css",
+        "src/lib/clients-parity/observer-visual-tokens.test.ts"
+      ],
+      "beEvidence": [],
+      "evidence": "Token spot-checks OK; spacing/radius full visual pass thresholds not re-claimed."
     },
     {
       "id": "C45",
+      "title": "Light/dark full pixel thresholds",
       "status": "FAIL",
-      "evidence": "KPI cols OK both themes; full light/dark pixel thresholds not re-claimed PASS."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "beEvidence": [],
+      "evidence": "KPI cols OK both themes in Computer samples; full light/dark pixel thresholds not re-claimed PASS."
     },
     {
       "id": "C46",
+      "title": "Viewport matrix real-click + geometry (isolated)",
       "status": "PASS_functional",
-      "evidence": "KPI + grouped same-row + flat + real clicks at 140de0a8; not full pixel/section parity. Do not promote 0729/65df323e click PASS.",
+      "uiState": "PRESENT",
+      "serverState": "N/A_FIXTURE",
+      "feEvidence": [
+        "Computer V8: 10 samples 320/360/375/768/1024 × light/dark",
+        "2 observer component files / 8 tests PASS"
+      ],
+      "beEvidence": [],
+      "evidence": "Isolated viewport real-click + geometry PASS at 140de0a8/a36c609b. Not full pixel/section parity. Do not promote 0729/65df323e click-only.",
       "passKind": "functional"
     },
     {
       "id": "C47",
+      "title": "Bounding-box overlay ≤1px vs prototype etalon",
       "status": "FAIL",
-      "evidence": "KPI cols OK; bounding-box etalon not re-diffed to PASS."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "v7 same-row tops measured; full prototype overlay etalon not re-diffed"
+      ],
+      "beEvidence": [],
+      "evidence": "Same-row tops asserted; full bounding-box etalon overlay ≤1px vs prototype baseline not re-diffed to PASS."
     },
     {
       "id": "C48",
+      "title": "Screenshot overlay visualPass vs prototype baseline",
       "status": "FAIL",
-      "evidence": "Same-row cascade fixed at 140de0a8; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted."
+      "gapKind": "VISUAL_ETALON_INCOMPLETE",
+      "uiState": "PRESENT",
+      "serverState": "N/A",
+      "feEvidence": [
+        "v7-pin-140de0a8 screenshots = cascade proof only"
+      ],
+      "beEvidence": [],
+      "evidence": "Cascade screenshots exist; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted."
     },
     {
       "id": "C49",
+      "title": "Overflow/regression sweep beyond observer fixture",
       "status": "NOT_STARTED",
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
       "evidence": "Full overflow/regression sweep outside observer fixture not run."
     },
     {
       "id": "C50",
+      "title": "Keyboard/a11y full inventory",
       "status": "NOT_STARTED",
-      "evidence": "Keyboard/a11y inventory not fully exercised."
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
+      "evidence": "Keyboard/a11y inventory not fully exercised (spot focus-visible exists; not full pass)."
     },
     {
       "id": "C51",
+      "title": "Observer network loading/error paths",
       "status": "NOT_STARTED",
-      "evidence": "Network loading/error paths for observer not proven beyond blocked adapter."
-    },
-    {
-      "id": "C52",
-      "status": "PASS_safety",
-      "evidence": "observer-demo-fixtures not imported by production workspace path.",
-      "passKind": "safety"
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
+      "evidence": "Observer network loading/error paths not proven beyond BLOCKED adapter return."
     },
     {
       "id": "C53",
+      "title": "Form rerender focus",
       "status": "NOT_STARTED",
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
       "evidence": "Form rerender focus not tested."
     },
     {
       "id": "C54",
+      "title": "Cross-section regressions",
       "status": "NOT_STARTED",
+      "gapKind": "NOT_EXERCISED",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [],
+      "beEvidence": [],
       "evidence": "Cross-section regressions not run."
     },
     {
-      "id": "C55",
+      "id": "C52",
+      "title": "Demo fixtures not wired into production path",
       "status": "PASS_safety",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [
+        "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts not imported by production ClientsListWorkspace path"
+      ],
+      "beEvidence": [],
+      "evidence": "observer-demo-fixtures not imported by production workspace path.",
+      "passKind": "safety"
+    },
+    {
+      "id": "C55",
+      "title": "No real financial ops in this work",
+      "status": "PASS_safety",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [
+        "Read-only audit; no store purchase mutations"
+      ],
+      "beEvidence": [],
       "evidence": "No real financial ops in candidate Clients work / this audit.",
       "passKind": "safety"
     },
     {
       "id": "C56",
+      "title": "No DB/backend/rights/finance/prod changes by auditor",
       "status": "PASS_safety",
-      "evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod changes by auditor. Forbidden deltas explicit in 09-V4.",
+      "uiState": "N/A",
+      "serverState": "N/A",
+      "feEvidence": [
+        "Allowlist-only writes: audit/ + scripts/clients-parity-20261113/"
+      ],
+      "beEvidence": [
+        "Read-only tree inspect of remcard-navigator; no calls with real accounts/data"
+      ],
+      "evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod/deploy changes. Forbidden packaging deltas explicit.",
       "passKind": "safety"
     }
   ],
-  "correctedFixSha": "5063368aea4a4219df354b0fcad7a0eaf9846ac8",
-  "priorFailSha": "d1da948491293c1a8ba77d4854191347708b4379"
+  "correctedFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+  "priorFailSha": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "v6ProductFixHistorical": "5063368aea4a4219df354b0fcad7a0eaf9846ac8"
 }
