@@ -44,3 +44,5 @@ No `branchId` / `organizationId` query from UI.
 | Working stages | GET/POST | `…/working-stages` | K1+K8 |
 
 П6 adapter: `coerceK1ClientAppealsListPayload`, `fetchReceivingAppealsWorkspace(filters, cursor)`.
+
+Row wire map: `k8-k1-row-dto-map.md`. Pagination: `serverBackedFilters` + `nextCursor` append — no client filter on partial page.

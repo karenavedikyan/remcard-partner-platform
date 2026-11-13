@@ -28,6 +28,11 @@ export type ReceivingAppealsListProps = {
   data: ReceivingAppealsListResponse;
   filters?: ReceivingListFilters;
   onFiltersChange?: (next: ReceivingListFilters) => void;
+  /** K1 paginated list — filters hit server; no client-side filter on partial page. */
+  serverBackedFilters?: boolean;
+  listHasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   onOpenAppeal?: (appealId: string) => void;
   onNavigateScan?: () => void;
   onNavigateManual?: () => void;
@@ -88,6 +93,10 @@ export function ReceivingAppealsList({
   readOnly = false,
   bulk,
   stageLabelById = (r) => r.stageId,
+  serverBackedFilters = false,
+  listHasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }: ReceivingAppealsListProps) {
   const [localFilters, setLocalFilters] = useState<ReceivingListFilters>({
     q: "",
@@ -102,13 +111,19 @@ export function ReceivingAppealsList({
   };
 
   const filtered = useMemo(
-    () => filterReceivingAppeals(data.appeals, filters, stageLabelById),
-    [data.appeals, filters, stageLabelById],
+    () =>
+      serverBackedFilters
+        ? data.appeals
+        : filterReceivingAppeals(data.appeals, filters, stageLabelById),
+    [data.appeals, filters, serverBackedFilters, stageLabelById],
   );
 
   const statusOptions = useMemo(
-    () => receivingStatusFilterOptions(data.appeals, stageLabelById),
-    [data.appeals, stageLabelById],
+    () =>
+      serverBackedFilters
+        ? [filters.status]
+        : receivingStatusFilterOptions(data.appeals, stageLabelById),
+    [data.appeals, filters, serverBackedFilters, stageLabelById],
   );
 
   const bulkOn = !readOnly && Boolean(bulk);
@@ -137,6 +152,12 @@ export function ReceivingAppealsList({
             </div>
           ))}
         </div>
+      ) : null}
+
+      {serverBackedFilters ? (
+        <p className="small muted" data-testid="ca-receiving-server-list-hint">
+          Фильтры и поиск применяются на сервере. {listHasMore ? "Загрузите следующую страницу — в выборке могут быть не все строки." : null}
+        </p>
       ) : null}
 
       <div
@@ -353,6 +374,14 @@ export function ReceivingAppealsList({
           })}
         </div>
       )}
+
+      {listHasMore && onLoadMore ? (
+        <div className="ca-form-actions" data-testid="ca-receiving-load-more">
+          <button type="button" className="btn ghost" disabled={loadingMore} onClick={onLoadMore}>
+            {loadingMore ? "Загрузка…" : "Загрузить ещё"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

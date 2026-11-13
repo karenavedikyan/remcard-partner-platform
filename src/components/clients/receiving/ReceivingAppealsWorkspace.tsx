@@ -9,7 +9,10 @@ import {
   submitReceivingCertificateEntry,
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   RECEIVING_EMPTY_SETTINGS,
+  mergeReceivingAppealPages,
   receivingAppealsMutationsAllowed,
+  receivingListHasMore,
+  type ReceivingListFilters,
   type ReceivingAppealsListResponse,
   type ReceivingAppealsLoadResult,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -36,43 +39,68 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [persistNotice, setPersistNotice] = useState<string | null>(null);
+  const [listFilters, setListFilters] = useState<ReceivingListFilters>({
+    q: "",
+    status: "Все статусы",
+    source: "all",
+    bucket: "active",
+  });
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const proxyReady = isReceivingAppealsProxyReady();
   const certEntryReady = isReceivingCertificateEntryProxyReady();
+  const serverBacked = proxyReady && !previewData;
+
+  const applyListPage = useCallback(
+    async (filters: ReceivingListFilters, cursor?: string | null, append?: boolean) => {
+      const res = await fetchReceivingAppealsWorkspace(filters, cursor);
+      if (!res.ok) {
+        if (!append) {
+          setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
+          setBlocked(res);
+          setData(null);
+        }
+        return res;
+      }
+      setPhase("ready");
+      setBlocked(null);
+      setData((prev) => {
+        if (!append || !prev) return res.data;
+        return {
+          ...res.data,
+          appeals: mergeReceivingAppealPages(prev.appeals, res.data.appeals),
+        };
+      });
+      return res;
+    },
+    [],
+  );
 
   const reload = useCallback(async () => {
-    const res = await fetchReceivingAppealsWorkspace();
-    if (!res.ok) {
-      setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
-      setBlocked(res);
-      setData(null);
-      return res;
-    }
-    setPhase("ready");
-    setData(res.data);
-    setBlocked(null);
-    return res;
-  }, []);
+    return applyListPage(listFilters, null, false);
+  }, [applyListPage, listFilters]);
 
   useEffect(() => {
     if (previewData) return;
-    let cancelled = false;
-    void fetchReceivingAppealsWorkspace().then((res) => {
-      if (cancelled) return;
-      if (!res.ok) {
-        setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
-        setBlocked(res);
-        setData(null);
-        return;
-      }
-      setPhase("ready");
-      setData(res.data);
-      setBlocked(null);
-    });
-    return () => {
-      cancelled = true;
-    };
+    void applyListPage(listFilters, null, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only; filter changes use onListFiltersChange
   }, [previewData]);
+
+  const onListFiltersChange = useCallback(
+    (next: ReceivingListFilters) => {
+      setListFilters(next);
+      if (serverBacked) {
+        void applyListPage(next, null, false);
+      }
+    },
+    [applyListPage, serverBacked],
+  );
+
+  const onLoadMore = useCallback(() => {
+    if (!data?.nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    void applyListPage(listFilters, data.nextCursor, true).finally(() => setLoadingMore(false));
+  }, [applyListPage, data?.nextCursor, listFilters, loadingMore]);
 
   const bulkCallbacks = useMemo(
     () => ({
@@ -235,6 +263,12 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
       ) : null}
       <ReceivingAppealsList
         data={data}
+        filters={listFilters}
+        onFiltersChange={onListFiltersChange}
+        serverBackedFilters={serverBacked}
+        listHasMore={receivingListHasMore(data)}
+        loadingMore={loadingMore}
+        onLoadMore={onLoadMore}
         readOnly={readOnly}
         bulk={mutationsAllowed ? bulkCallbacks : undefined}
         onOpenAppeal={(id) => {

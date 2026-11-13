@@ -3,7 +3,8 @@ import {
   fetchReceivingAppealsWorkspace,
   buildReceivingAppealsListQuery,
   coerceK1ClientAppealsListPayload,
-  coerceReceivingAppealListRow,
+  mapReceivingAppealListRowFromWire,
+  toK1ReceivingAppealCreateBody,
   receivingAppealsMutationsAllowed,
   findActiveReceivingAppeal,
   isReceivingAppealActive,
@@ -42,10 +43,55 @@ describe("P6.receiving-appeals-api contract gate", () => {
     ).toBe(true);
   });
 
+  it("maps K8/K1 wire fields to UI row", () => {
+    const ui = mapReceivingAppealListRowFromWire({
+      id: "a1",
+      clientDisplayName: "Иван",
+      stageKey: "sys_new",
+      originKind: "manual",
+      manualSourceKey: "phone",
+      purchaseOrderId: "ord-9",
+      certificateId: "CERT",
+      receivingPartnerUserId: "u1",
+      referrerPartnerId: "r1",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-02T00:00:00Z",
+    });
+    expect(ui.clientName).toBe("Иван");
+    expect(ui.stageId).toBe("sys_new");
+    expect(ui.manualEntry).toBe(true);
+    expect(ui.manualSourceKey).toBe("phone");
+    expect(ui.purchaseId).toBe("ord-9");
+  });
+
+  it("maps manual create body to K1 POST field names", () => {
+    expect(
+      toK1ReceivingAppealCreateBody({
+        clientName: "ООО Ромашка",
+        manualChannel: "visit",
+      }),
+    ).toEqual({
+      clientDisplayName: "ООО Ромашка",
+      manualSourceKey: "visit",
+    });
+  });
+
   it("coerceK1 83f279e8 wire uses readOnly, not invented write access", () => {
     const row = baseRow({ receivingPartnerUserId: "", receivingPartnerId: "only-alias" });
     const out = coerceK1ClientAppealsListPayload({
-      appeals: [row],
+      appeals: [
+        {
+          id: row.id,
+          clientDisplayName: row.clientName,
+          stageKey: row.stageId,
+          certificateId: row.certificateId,
+          receivingPartnerUserId: "only-alias",
+          receivingPartnerId: "only-alias",
+          referrerPartnerId: row.referrerPartnerId,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        },
+      ],
       nextCursor: "c2",
       tab: "active",
       readOnly: false,

@@ -89,7 +89,42 @@ export type ReceivingAppealHistoryEntry = {
   reason?: string;
 };
 
-/** List row — public columns only (prototype renderListPage table). */
+/**
+ * K8/K1 list row wire (K8 `1894569a` / K1 `83f279e8`) — map via `mapReceivingAppealListRowFromWire`.
+ * P2 may centralize in `contracts.ts`; П6 owns explicit mapper until re-export.
+ */
+export type ReceivingAppealListRowWire = {
+  id: string;
+  clientDisplayName?: string | null;
+  certificateId?: string | null;
+  receivingPartnerUserId?: string | null;
+  receivingPartnerId?: string | null;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
+  referrerPartnerId?: string | null;
+  interest?: string | null;
+  clientCity?: string | null;
+  budgetHint?: string | null;
+  stageKey?: string | null;
+  refusedReason?: string | null;
+  shippedAt?: string | null;
+  paidAmount?: number | null;
+  paidAt?: string | null;
+  originKind?: string | null;
+  manualSourceKey?: string | null;
+  purchaseOrderId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  bucket?: ReceivingListBucket;
+  /** Legacy tolerance during transition — do not emit from new server. */
+  clientName?: string | null;
+  stageId?: string | null;
+  sourceKey?: string | null;
+  purchaseId?: string | null;
+  manualEntry?: boolean;
+};
+
+/** List row — UI view-model (prototype renderListPage table). */
 export type ReceivingAppealListRow = {
   id: string;
   clientName: string;
@@ -114,6 +149,8 @@ export type ReceivingAppealListRow = {
   paidAmount?: number | null;
   paidAt?: string | null;
   sourceKey?: string;
+  /** K1 `manualSourceKey` when origin is manual. */
+  manualSourceKey?: string | null;
   purchaseId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -286,7 +323,7 @@ export function receivingAppealsMutationsAllowed(data: Pick<ReceivingAppealsList
  * @see audit/remcard-parallel-20261113/P6/k1-83f279e8-list-envelope.md
  */
 export type K1ClientAppealsListWire = {
-  appeals?: ReceivingAppealListRow[];
+  appeals?: ReceivingAppealListRowWire[];
   nextCursor?: string | null;
   tab?: string | null;
   readOnly?: boolean;
@@ -315,6 +352,53 @@ export function buildReceivingAppealsListQuery(
   return qs ? `?${qs}` : "";
 }
 
+export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWire): ReceivingAppealListRow {
+  const uid = (wire.receivingPartnerUserId ?? wire.receivingPartnerId ?? "").trim();
+  const originKind = (wire.originKind ?? wire.sourceKey ?? "").trim();
+  const manualSourceKey = wire.manualSourceKey?.trim() || null;
+  const manualEntry =
+    wire.manualEntry === true || originKind === "manual" || Boolean(manualSourceKey);
+  const row: ReceivingAppealListRow = {
+    id: wire.id,
+    clientName: (wire.clientDisplayName ?? wire.clientName ?? "").trim() || "—",
+    certificateId: wire.certificateId?.trim() ?? "",
+    receivingPartnerUserId: uid,
+    receivingPartnerId: (wire.receivingPartnerId ?? uid).trim() || uid,
+    receivingOrganizationId: wire.receivingOrganizationId,
+    receivingBranchId: wire.receivingBranchId,
+    referrerPartnerId: wire.referrerPartnerId?.trim() ?? "",
+    interest: wire.interest?.trim() ?? "—",
+    clientCity: wire.clientCity,
+    budgetHint: wire.budgetHint,
+    stageId: (wire.stageKey ?? wire.stageId ?? "").trim() || RECEIVING_SYSTEM_STAGE.NEW,
+    refusedReason: wire.refusedReason,
+    shippedAt: wire.shippedAt,
+    paidAmount: wire.paidAmount,
+    paidAt: wire.paidAt,
+    sourceKey: originKind || undefined,
+    manualSourceKey,
+    purchaseId: wire.purchaseOrderId ?? wire.purchaseId ?? null,
+    createdAt: wire.createdAt ?? new Date(0).toISOString(),
+    updatedAt: wire.updatedAt ?? wire.createdAt ?? new Date(0).toISOString(),
+    manualEntry,
+    bucket: wire.bucket,
+  };
+  return coerceReceivingAppealListRow(row);
+}
+
+export function mergeReceivingAppealPages(
+  prev: ReceivingAppealListRow[],
+  next: ReceivingAppealListRow[],
+): ReceivingAppealListRow[] {
+  const byId = new Map(prev.map((a) => [a.id, a]));
+  for (const row of next) byId.set(row.id, row);
+  return [...byId.values()];
+}
+
+export function receivingListHasMore(data: Pick<ReceivingAppealsListResponse, "nextCursor">): boolean {
+  return Boolean(data.nextCursor?.trim());
+}
+
 export function coerceReceivingAppealListRow(row: ReceivingAppealListRow): ReceivingAppealListRow {
   const uid = receivingAppealOwnerUserId(row);
   if (!uid) return row;
@@ -330,7 +414,7 @@ export function coerceK1ClientAppealsListPayload(
   wire: K1ClientAppealsListWire,
 ): ReceivingAppealsListResponse {
   const list: K1ClientAppealsListWire = wire.data?.appeals != null ? wire.data : wire;
-  const appeals = (list.appeals ?? []).map(coerceReceivingAppealListRow);
+  const appeals = (list.appeals ?? []).map(mapReceivingAppealListRowFromWire);
   const readOnly = list.readOnly === true;
   const out: ReceivingAppealsListResponse = {
     appeals,
@@ -347,6 +431,7 @@ export function coerceK1ClientAppealsListPayload(
   return out;
 }
 
+/** Form/UI body (prototype names). */
 export type ReceivingAppealCreateBody = {
   clientName: string;
   interest?: string;
@@ -356,6 +441,28 @@ export type ReceivingAppealCreateBody = {
   privateNotes?: string;
 };
 
+/** K1 POST wire (`83f279e8`). */
+export type ReceivingAppealCreateWire = {
+  clientDisplayName: string;
+  interest?: string;
+  clientCity?: string;
+  clientContact?: string;
+  manualSourceKey?: string;
+  privateNotes?: string;
+};
+
+export function toK1ReceivingAppealCreateBody(body: ReceivingAppealCreateBody): ReceivingAppealCreateWire {
+  return {
+    clientDisplayName: body.clientName.trim(),
+    interest: body.interest?.trim() || undefined,
+    clientCity: body.clientCity?.trim() || undefined,
+    clientContact: body.clientContact?.trim() || undefined,
+    manualSourceKey: body.manualChannel,
+    privateNotes: body.privateNotes?.trim() || undefined,
+  };
+}
+
+/** UI patch — P4 detail; map to K1 when PATCH allowlisted. */
 export type ReceivingAppealPatchBody = {
   stageId?: string;
   refusedReason?: string | null;
@@ -364,6 +471,34 @@ export type ReceivingAppealPatchBody = {
   paidAt?: string | null;
   paidAmount?: number | null;
 };
+
+export type ReceivingAppealPatchWire = {
+  stageKey?: string;
+  refusedReason?: string | null;
+  privateNotes?: string;
+  shippedAt?: string | null;
+  paidAt?: string | null;
+  paidAmount?: number | null;
+};
+
+export function toK1ReceivingAppealPatchBody(body: ReceivingAppealPatchBody): ReceivingAppealPatchWire {
+  return {
+    stageKey: body.stageId,
+    refusedReason: body.refusedReason,
+    privateNotes: body.privateNotes,
+    shippedAt: body.shippedAt,
+    paidAt: body.paidAt,
+    paidAmount: body.paidAmount,
+  };
+}
+
+/** P1 production pin: GET-only on `/api/pro/client-appeals/:id` until K1+P1 land PATCH. */
+export function isReceivingAppealPatchProxyReady(): boolean {
+  return isAllowedProxyRoute("PATCH", "/api/pro/client-appeals/x");
+}
+
+export const RECEIVING_DETAIL_PATCH_BLOCKED =
+  "PATCH /api/pro/client-appeals/:id ждёт K1 Clients-only handler и P1 allowlist (wire: GET-only).";
 
 /**
  * K1 certificate entry — POST body (Clients-only route; does not call store order POST).
@@ -376,7 +511,7 @@ export type ReceivingCertificateEntryBody = {
 
 export type ReceivingCertificateEntrySuccess = {
   outcome: "created" | "existing";
-  appeal: ReceivingAppealListRow;
+  appeal: ReceivingAppealListRowWire | ReceivingAppealListRow;
 };
 
 export type ReceivingCertificateEntryResult =
@@ -423,11 +558,15 @@ export async function submitReceivingCertificateEntry(
       method: "POST",
       body: JSON.stringify(body),
     });
+    const appealRow =
+      "clientDisplayName" in payload.appeal || "stageKey" in payload.appeal
+        ? mapReceivingAppealListRowFromWire(payload.appeal as ReceivingAppealListRowWire)
+        : coerceReceivingAppealListRow(payload.appeal as ReceivingAppealListRow);
     return {
       ok: true,
       outcome: payload.outcome,
-      appeal: payload.appeal,
-      appealId: payload.appeal.id,
+      appeal: appealRow,
+      appealId: appealRow.id,
     };
   } catch (caught) {
     if (caught instanceof RemcardApiError) {
@@ -544,9 +683,9 @@ export async function createReceivingAppeal(
     return receivingContractBlocked();
   }
   try {
-    await remcardFetch<{ appeal: ReceivingAppealListRow }>("/api/pro/client-appeals", {
+    await remcardFetch<{ appeal: ReceivingAppealListRowWire }>("/api/pro/client-appeals", {
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify(toK1ReceivingAppealCreateBody(body)),
     });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
@@ -600,13 +739,25 @@ export async function patchReceivingAppeal(
       message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
     };
   }
-  if (!isAllowedProxyRoute("PATCH", `/api/pro/client-appeals/${encodeURIComponent(id)}`)) {
-    return receivingContractBlocked();
+  const path = `/api/pro/client-appeals/${encodeURIComponent(id)}`;
+  if (!isReceivingAppealPatchProxyReady()) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: RECEIVING_DETAIL_PATCH_BLOCKED,
+    };
+  }
+  if (!isAllowedProxyRoute("PATCH", path)) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: RECEIVING_DETAIL_PATCH_BLOCKED,
+    };
   }
   try {
-    await remcardFetch(`/api/pro/client-appeals/${encodeURIComponent(id)}`, {
+    await remcardFetch(path, {
       method: "PATCH",
-      body: JSON.stringify(body),
+      body: JSON.stringify(toK1ReceivingAppealPatchBody(body)),
     });
     return fetchReceivingAppealsWorkspace();
   } catch (caught) {
