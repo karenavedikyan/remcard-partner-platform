@@ -1,13 +1,11 @@
 /**
  * P4 → P6 mount contract (no fetch). P6 `ReceivingAppealDetailHost` wires these handlers.
  *
- * Order pipeline (only approved paid handoff — not completed payment):
- * - `onOpenOrderPipeline` → `RECEIVING_APPEAL_ORDER_PIPELINE_HREF` (`/scanner`, bare nav)
- * - `openPurchaseOrder` → `receivingAppealPurchaseDetailHref(orderId)`
- * Appeal/certificate/return context on scanner: **BLOCKED_CONTRACT** (see audit
- * `prototype-next-step-inline-pay-gap.md`). Never PATCH `sys_paid` from detail.
- *
- * Root UI pins (prep): P4 `9d22694f`, P6 `2375944e`, prototype `3dc31836`.
+ * Root handoff (appeal-scoped navigation — P6 `navigateTo` or explicit callbacks):
+ * - `buildReceivingAppealOrderPipelineHref(appealId)` → `/scanner?appealId=…`
+ * - `receivingAppealReturnHref(appealId)` → `/clients?direction=receiving&appealId=…`
+ * - `receivingAppealPurchaseDetailHref(orderId, appealId?)` → purchase detail + optional context
+ * Store order creation / `POST …/order-link` — K1/K8, not P4. Never PATCH `sys_paid` from detail.
  */
 
 import type {
@@ -20,9 +18,21 @@ import {
   RECEIVING_DETAIL_PURCHASE_UNAVAILABLE,
   RECEIVING_DETAIL_SHIPPED_UNAVAILABLE,
 } from "./receiving-detail-user-copy";
+import {
+  buildReceivingAppealOrderPipelineHref,
+  receivingAppealPurchaseDetailHref,
+} from "./receiving-appeal-navigation";
+
+export {
+  RECEIVING_APPEAL_CONTEXT_QUERY_KEY,
+  RECEIVING_CLIENTS_RECEIVING_DIRECTION,
+  buildReceivingAppealOrderPipelineHref,
+  receivingAppealReturnHref,
+  receivingAppealPurchaseDetailHref,
+} from "./receiving-appeal-navigation";
 
 export const RECEIVING_DETAIL_INTEGRATION_PINS = {
-  p4Detail: "9d22694f",
+  p4Detail: "e0f00c3c",
   p6Host: "2375944e",
   p6Workspace: "2375944e",
   k1: "a71b8f37",
@@ -51,12 +61,7 @@ export const K1_STAGE_REQUIRES_ORDER_PIPELINE = "STAGE_REQUIRES_ORDER_PIPELINE" 
 
 export const STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH = new Set<string>(["sys_paid"]);
 
-/** P6 navigates; P4 does not fetch. Matches `purchaseDetailHref` / wallet history. */
-export function receivingAppealPurchaseDetailHref(purchaseOrderId: string): string {
-  return `/history/purchases/${encodeURIComponent(purchaseOrderId)}`;
-}
-
-/** Existing scanner hub (store order / sale prep) — prod route `/scanner`. */
+/** Scanner base route (contextual entry uses `buildReceivingAppealOrderPipelineHref`). */
 export const RECEIVING_APPEAL_ORDER_PIPELINE_HREF = "/scanner" as const;
 
 /** Safe read-only panel: `src/components/history/PurchaseReceivingClientPanel.tsx` on purchase detail. */
@@ -72,8 +77,8 @@ export const RECEIVING_PAID_REVIEW_ABSENT_REASON = RECEIVING_DETAIL_PURCHASE_UNA
 
 /** Audit / P6 handoff only — not shown in product UI. */
 export const RECEIVING_MARK_PAID_ABSENT_TECH =
-  `K1 ${K1_STAGE_REQUIRES_ORDER_PIPELINE}: wire ${RECEIVING_ORDER_PIPELINE_CALLBACK} → ${RECEIVING_APPEAL_ORDER_PIPELINE_HREF} ` +
-  `or ${RECEIVING_PURCHASE_PANEL_CALLBACK} → receivingAppealPurchaseDetailHref(orderId).`;
+  `K1 ${K1_STAGE_REQUIRES_ORDER_PIPELINE}: wire ${RECEIVING_ORDER_PIPELINE_CALLBACK} → buildReceivingAppealOrderPipelineHref(appealId) ` +
+  `or ${RECEIVING_PURCHASE_PANEL_CALLBACK} → receivingAppealPurchaseDetailHref(orderId, appealId).`;
 
 export function filterStageOptionsForDirectPatch<T extends { id: string }>(options: T[]): T[] {
   return options.filter((o) => !STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH.has(o.id));
@@ -88,12 +93,29 @@ export type ReceivingAppealDetailHostDeps = {
   ) => Promise<ReceivingAppealDetailMutationOutcome>;
   mutateStage: (body: ReceivingAppealStagePatchInput) => Promise<ReceivingAppealDetailMutationOutcome>;
   reloadDetail: () => Promise<void>;
+  /** When set, P4 builds appeal-scoped purchase/scanner hrefs unless callbacks override. */
+  navigateTo?: (href: string) => void;
   openPurchaseOrder?: () => void;
-  /** Certificate/manual without order yet — navigate to `/scanner` (no appeal stage PATCH). */
+  /** Overrides default `buildReceivingAppealOrderPipelineHref(appealId)` navigation. */
   onOpenOrderPipeline?: () => void;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
 };
+
+function resolveOnOpenOrderPipeline(deps: ReceivingAppealDetailHostDeps): (() => void) | undefined {
+  if (deps.onOpenOrderPipeline) return deps.onOpenOrderPipeline;
+  if (!deps.navigateTo) return undefined;
+  const href = buildReceivingAppealOrderPipelineHref(deps.appealId);
+  return () => deps.navigateTo!(href);
+}
+
+function resolveOpenPurchaseOrder(deps: ReceivingAppealDetailHostDeps): (() => void) | undefined {
+  if (deps.openPurchaseOrder) return deps.openPurchaseOrder;
+  const orderId = deps.mapped.appeal.purchaseOrderId?.trim();
+  if (!orderId || !deps.navigateTo) return undefined;
+  const href = receivingAppealPurchaseDetailHref(orderId, deps.appealId);
+  return () => deps.navigateTo!(href);
+}
 
 /** Pure builder for P6 host state — pass fresh `busy`/`error` each render from React state. */
 export function buildReceivingAppealDetailReady(
@@ -102,6 +124,9 @@ export function buildReceivingAppealDetailReady(
   const { mapped, readOnly, busy, error } = deps;
   const revision =
     typeof mapped.revision === "number" ? mapped.revision : Number(mapped.revision) || 0;
+
+  const onOpenOrderPipeline = resolveOnOpenOrderPipeline(deps);
+  const openPurchaseOrder = resolveOpenPurchaseOrder(deps);
 
   const actions: ReceivingAppealDetailActions | undefined = readOnly
     ? undefined
@@ -123,19 +148,19 @@ export function buildReceivingAppealDetailReady(
           });
           if (!result.ok && result.conflict) await deps.reloadDetail();
         },
-        onOpenPurchaseOrder: deps.openPurchaseOrder,
+        onOpenPurchaseOrder: openPurchaseOrder,
         markPaid:
-          deps.onOpenOrderPipeline || deps.openPurchaseOrder
+          onOpenOrderPipeline || openPurchaseOrder
             ? {
                 supported: true,
-                onMarkPaid: deps.onOpenOrderPipeline ?? deps.openPurchaseOrder!,
+                onMarkPaid: onOpenOrderPipeline ?? openPurchaseOrder!,
               }
             : { supported: false, reason: RECEIVING_MARK_PAID_ABSENT_REASON },
         paidReview:
-          deps.openPurchaseOrder || deps.onOpenOrderPipeline
+          openPurchaseOrder || onOpenOrderPipeline
             ? {
                 supported: true,
-                onOpen: deps.openPurchaseOrder ?? deps.onOpenOrderPipeline!,
+                onOpen: openPurchaseOrder ?? onOpenOrderPipeline!,
               }
             : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
         shippedConfirm:

@@ -3,8 +3,10 @@ import {
   RECEIVING_MARK_PAID_ABSENT_REASON,
   RECEIVING_MARK_PAID_ABSENT_TECH,
   buildReceivingAppealDetailReady,
+  buildReceivingAppealOrderPipelineHref,
   filterStageOptionsForDirectPatch,
   receivingAppealPurchaseDetailHref,
+  receivingAppealReturnHref,
 } from "./receiving-detail-actions-contract";
 import { RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE } from "./receiving-detail-user-copy";
 
@@ -20,6 +22,79 @@ describe("P4.receiving-detail-actions-contract", () => {
 
   it("purchase href matches wallet history route", () => {
     expect(receivingAppealPurchaseDetailHref("ord-9")).toBe("/history/purchases/ord-9");
+    expect(receivingAppealPurchaseDetailHref("ord-9", "appeal-a1")).toBe(
+      "/history/purchases/ord-9?appealId=appeal-a1",
+    );
+  });
+
+  it("builds Root handoff scanner and return hrefs with encoding", () => {
+    expect(buildReceivingAppealOrderPipelineHref("ca-appeal-1")).toBe(
+      "/scanner?appealId=ca-appeal-1",
+    );
+    expect(receivingAppealReturnHref("ca-appeal-1")).toBe(
+      "/clients?direction=receiving&appealId=ca-appeal-1",
+    );
+    expect(() => buildReceivingAppealOrderPipelineHref(" id/with space ")).toThrow(/unsafe/);
+    expect(() => receivingAppealReturnHref("")).toThrow(/required/);
+    expect(() => receivingAppealPurchaseDetailHref("ord", "https://evil")).toThrow(/unsafe/);
+  });
+
+  it("wires navigateTo with appeal-scoped hrefs", () => {
+    const navigateTo = vi.fn();
+    const readyNoOrder = buildReceivingAppealDetailReady({
+      appealId: "appeal-42",
+      readOnly: false,
+      mapped: {
+        status: "ready",
+        appeal: {
+          id: "appeal-42",
+          clientName: "X",
+          stageId: "sys_new",
+          stageLabel: "Новое",
+          updatedAt: "x",
+        },
+        history: [],
+        revision: 1,
+        workingStages: [],
+        refusalReasons: [],
+      },
+      mutateProfile: vi.fn(),
+      mutateStage: vi.fn(),
+      reloadDetail: vi.fn(),
+      navigateTo,
+    });
+    readyNoOrder.actions?.paidReview?.supported === true &&
+      readyNoOrder.actions.paidReview.onOpen();
+    expect(navigateTo).toHaveBeenCalledWith("/scanner?appealId=appeal-42");
+
+    navigateTo.mockClear();
+    const readyWithOrder = buildReceivingAppealDetailReady({
+      appealId: "appeal-42",
+      readOnly: false,
+      mapped: {
+        status: "ready",
+        appeal: {
+          id: "appeal-42",
+          clientName: "X",
+          stageId: "sys_new",
+          stageLabel: "Новое",
+          updatedAt: "x",
+          purchaseOrderId: "ord-77",
+        },
+        history: [],
+        revision: 1,
+        workingStages: [],
+        refusalReasons: [],
+      },
+      mutateProfile: vi.fn(),
+      mutateStage: vi.fn(),
+      reloadDetail: vi.fn(),
+      navigateTo,
+    });
+    readyWithOrder.actions?.onOpenPurchaseOrder?.();
+    expect(navigateTo).toHaveBeenCalledWith(
+      "/history/purchases/ord-77?appealId=appeal-42",
+    );
   });
 
   it("mark paid unavailable user copy is not technical", () => {
