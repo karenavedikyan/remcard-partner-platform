@@ -1812,6 +1812,89 @@ try {
   await retryFailNest.unroute(/partner-cooperation-detail\.html/i);
   await retryFailNest.close();
 
+  const hangHtmlSession = await browser.newPage();
+  await hangHtmlSession.setViewportSize({ width: 1280, height: 900 });
+  let releaseHangHtml = null;
+  const holdHangHtml = new Promise((resolve) => {
+    releaseHangHtml = resolve;
+  });
+  await hangHtmlSession.route(/partner-cooperation-detail\.html/i, async (route) => {
+    await holdHangHtml;
+    await route.continue();
+  });
+  await enterNestStoreCabinet(hangHtmlSession);
+  const sessionDeadlineStart = Date.now();
+  await hangHtmlSession.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-action="nav:partners"]')?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await hangHtmlSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      return host?.dataset?.embedLoadState === "stalled" && host?.hidden === false;
+    },
+    null,
+    { timeout: 35000 },
+  );
+  const sessionDeadlineMs = Date.now() - sessionDeadlineStart;
+  assert.ok(
+    sessionDeadlineMs >= 20000 && sessionDeadlineMs < 32000,
+    `stalled HTML must hit whole-session deadline (${sessionDeadlineMs}ms)`,
+  );
+  releaseHangHtml?.();
+  const cabHangHtml = hangHtmlSession.frameLocator("#cabinet");
+  await cabHangHtml.locator("[data-testid='proto-embed-retry']").click();
+  await hangHtmlSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      return frame?.dataset?.embedContentReady === "1" && doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143;
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await hangHtmlSession.unroute(/partner-cooperation-detail\.html/i);
+  let releaseHang147 = null;
+  const holdHang147 = new Promise((resolve) => {
+    releaseHang147 = resolve;
+  });
+  await hangHtmlSession.route(/partner-wallet-history\.html/i, async (route) => {
+    await holdHang147;
+    await route.continue();
+  });
+  const hang147Start = Date.now();
+  await hangHtmlSession.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await hangHtmlSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const host = doc?.querySelector("[data-testid='cabinet-standalone-host']");
+      return host?.dataset?.embedLoadState === "stalled";
+    },
+    null,
+    { timeout: 35000 },
+  );
+  const hang147Ms = Date.now() - hang147Start;
+  assert.ok(hang147Ms >= 20000 && hang147Ms < 32000, `147 stalled HTML session (${hang147Ms}ms)`);
+  releaseHang147?.();
+  await cabHangHtml.locator("[data-testid='proto-embed-retry']").click();
+  await hangHtmlSession.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      return doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 && doc?.querySelector("[data-testid='cabinet-standalone-frame']")?.dataset?.embedContentReady === "1";
+    },
+    null,
+    { timeout: 35000 },
+  );
+  await hangHtmlSession.unroute(/partner-wallet-history\.html/i);
+  await hangHtmlSession.close();
+
   const hungFontsNest = await browser.newPage();
   await hungFontsNest.setViewportSize({ width: 654, height: 763 });
   let releaseHungFonts = null;

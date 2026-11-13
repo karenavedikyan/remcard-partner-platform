@@ -22,6 +22,9 @@ export const STANDALONE_BY_N = {
 
 const RETURN_KEY = "proto_embed_return_stack";
 
+/** Whole srcdoc session (fetch + scripts + embed-content-ready), not fetch-only or ready-only. */
+export const EMBED_SRCDOC_SESSION_MS = 25000;
+
 /** Attach before fetch settles so close/abort during slow srcdoc load cannot surface as unhandled. */
 function observeEmbedReadyAbort(promise) {
   if (!promise?.catch) return promise;
@@ -164,6 +167,32 @@ export function createCabinetStandaloneHost(config) {
   let srcdocReadyAbort = null;
   let contextSendGeneration = 0;
   let contextPulseTimer = 0;
+  let embedSessionDeadlineTimer = 0;
+
+  function clearEmbedSessionDeadline() {
+    if (embedSessionDeadlineTimer) {
+      clearTimeout(embedSessionDeadlineTimer);
+      embedSessionDeadlineTimer = 0;
+    }
+  }
+
+  function armEmbedSessionDeadline({ loadGeneration, loadToken, loadPageN, loadAbort, onTimeout }) {
+    clearEmbedSessionDeadline();
+    embedSessionDeadlineTimer = setTimeout(() => {
+      if (
+        hostEl.hidden ||
+        openEmbedToken !== loadToken ||
+        openPageN !== loadPageN ||
+        srcdocLoadGeneration !== loadGeneration
+      ) {
+        return;
+      }
+      try {
+        loadAbort.abort();
+      } catch (_) {}
+      onTimeout();
+    }, EMBED_SRCDOC_SESSION_MS);
+  }
 
   function stopContextPulse() {
     if (contextPulseTimer) {
@@ -215,6 +244,7 @@ export function createCabinetStandaloneHost(config) {
 
   function abortPendingSrcdocWork() {
     stopContextPulse();
+    clearEmbedSessionDeadline();
     srcdocFetchAbort?.abort();
     srcdocFetchAbort = null;
     srcdocReadyAbort?.abort();
@@ -527,6 +557,7 @@ export function createCabinetStandaloneHost(config) {
     const commitStandaloneReady = () => {
       if (!assertSrcdocSessionActive()) return;
       stopContextPulse();
+      clearEmbedSessionDeadline();
       syncEmbeddedPageBadge(loadPageN);
       frame.dataset.embedContentReady = "1";
       setEmbedLoadState("ready");
@@ -535,6 +566,7 @@ export function createCabinetStandaloneHost(config) {
     const markStandaloneStalled = (err) => {
       if (!assertSrcdocSessionActive()) return;
       stopContextPulse();
+      clearEmbedSessionDeadline();
       srcdocFetchAbort?.abort();
       srcdocReadyAbort?.abort();
       const timedOut = /timeout/i.test(String(err?.message || ""));
@@ -577,6 +609,14 @@ export function createCabinetStandaloneHost(config) {
       const loadAbort = new AbortController();
       srcdocFetchAbort = loadAbort;
       srcdocReadyAbort = loadAbort;
+      armEmbedSessionDeadline({
+        loadGeneration,
+        loadToken,
+        loadPageN,
+        loadAbort,
+        onTimeout: () =>
+          markStandaloneStalled(new Error(`embed session timeout n=${loadPageN}`)),
+      });
       try {
         const mountedUrl = await loadStandaloneSrcdoc(frame, loadPageN, def.path, extraQuery, urlBridge, {
           guestHash,
@@ -588,13 +628,15 @@ export function createCabinetStandaloneHost(config) {
         void sendContextToFrame();
         await awaitEmbedContentReady(loadAbort, {
           requireToken: true,
-          timeoutMs: 25000,
+          timeoutMs: EMBED_SRCDOC_SESSION_MS + 2000,
           opaqueSrcdoc: true,
         });
         if (!assertSrcdocSessionActive()) return;
         commitStandaloneReady();
       } catch (err) {
+        clearEmbedSessionDeadline();
         if (err?.name === "AbortError" || err instanceof StandaloneSrcdocStaleError) return;
+        if (!assertSrcdocSessionActive()) return;
         markStandaloneStalled(err);
       }
     };
@@ -611,6 +653,14 @@ export function createCabinetStandaloneHost(config) {
     const nativeLoadAbort = new AbortController();
     srcdocFetchAbort = nativeLoadAbort;
     srcdocReadyAbort = nativeLoadAbort;
+    armEmbedSessionDeadline({
+      loadGeneration,
+      loadToken,
+      loadPageN,
+      loadAbort: nativeLoadAbort,
+      onTimeout: () =>
+        markStandaloneStalled(new Error(`embed session timeout n=${loadPageN}`)),
+    });
     frame.onload = () => {
       if (!assertSrcdocSessionActive()) return;
       void sendContextToFrame();
@@ -655,6 +705,7 @@ export function createCabinetStandaloneHost(config) {
         if (!embedTokenMatches(data.token)) return;
       } else if (String(data.token ?? "") !== "" && !embedTokenMatches(data.token)) return;
       stopContextPulse();
+      clearEmbedSessionDeadline();
       srcdocFetchAbort?.abort();
       srcdocReadyAbort?.abort();
       syncEmbeddedPageBadge(openPageN);

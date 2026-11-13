@@ -328,6 +328,9 @@ assert.match(hostJs, /observeEmbedReadyAbort/, "srcdoc readiness abort observed 
 assert.match(hostJs, /setEmbedLoadState/, "host shows in-portal load and stall states");
 assert.match(hostJs, /proto-embed-retry/, "host can retry embed load without closing cabinet");
 assert.match(hostJs, /startContextPulse/, "host resends context until content-ready");
+assert.match(hostJs, /EMBED_SRCDOC_SESSION_MS/, "srcdoc session uses whole-open deadline constant");
+assert.match(hostJs, /armEmbedSessionDeadline/, "srcdoc deadline arms before fetch");
+assert.match(hostJs, /clearEmbedSessionDeadline/, "session deadline cleared on ready, close, and retry");
 assert.doesNotMatch(
   readFileSync(path.join(root, "partner/partner-cooperation-detail-embed.js"), "utf8"),
   /DOMContentLoaded[\s\S]*signalCoopEmbedReady/,
