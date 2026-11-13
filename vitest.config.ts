@@ -64,6 +64,7 @@ export default defineConfig({
       "src/lib/business-clients/gate.test.ts",
       "src/lib/business-clients/client-list-row.test.ts",
       "src/lib/clients-parity/contracts.test.ts",
+      "src/lib/clients-parity/P2.observer-display.test.ts",
       "src/lib/clients-parity/observer-stats.test.ts",
       "src/lib/clients-parity/observer-visual-tokens.test.ts",
       "src/lib/clients-parity/observer-stats-grid.computed.test.ts",

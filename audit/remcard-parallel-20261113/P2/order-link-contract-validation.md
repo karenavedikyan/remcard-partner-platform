@@ -41,7 +41,7 @@ Link sets FK only. `paidAmountKopecks` / stage `sys_paid` follow existing `order
 | K8 | `src/lib/clientAppeals/orderLink.ts` |
 | K1 | `POST …/order-link/route.ts` |
 | P1 | Allowlist pattern in `CLIENTS_RECEIVING_HTTP_CONTRACT` |
-| P4 | `buildReceivingAppealOrderPipelineHref` (P2 ships reference in `types.ts` for parity until P4 lands) |
+| P4 | `buildReceivingAppealOrderPipelineHref` + `receivingAppealReturnHref` (canonical — no P2 mirror) |
 | P6 | Scanner preflight GET + `postReceivingAppealOrderLink` + retry UI |
 
 P2 inventory: `CLIENTS_RECEIVING_ORDER_LINK_CONTRACT`, wire types in `types.ts`.

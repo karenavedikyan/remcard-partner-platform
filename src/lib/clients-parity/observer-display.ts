@@ -19,6 +19,7 @@ export function formatObserverDateTime(iso: string): string {
     return new Intl.DateTimeFormat("ru-RU", {
       dateStyle: "medium",
       timeStyle: "short",
+      timeZone: "Europe/Moscow",
     }).format(new Date(iso));
   } catch {
     return iso;

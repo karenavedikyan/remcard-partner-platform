@@ -730,16 +730,6 @@ export type LinkReceivingAppealOrderInput = {
   receivingBranchId: string | null;
 };
 
-export function buildReceivingAppealPipelineHref(appealId: string): string {
-  const q = encodeURIComponent(appealId.trim());
-  return `/scanner?appealId=${q}`;
-}
-
-export function buildReceivingAppealReturnHref(appealId: string): string {
-  const q = encodeURIComponent(appealId.trim());
-  return `/clients?direction=receiving&appealId=${q}`;
-}
-
 export function mapK1BatchHttpForP5Normalize(
   requestedAction: ReceivingCrmBatchAction,
   wire: K1ReceivingBatchHttpActual,

@@ -404,7 +404,7 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
 /** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
 export const CLIENTS_PARTNER_OWNER_TIPS = {
   p1: "f43f9e22",
-  p2: "457a417c",
+  p2: "a9e325ef",
   p3: "b1c1684e",
   p4: "9d22694f",
   p5: "164b8dbe",
@@ -515,7 +515,7 @@ export const CLIENTS_RECEIVING_ORDER_LINK_CONTRACT = {
 
 /** P4 navigation helpers — frozen href shapes (no open redirect). */
 export const RECEIVING_APPEAL_NAVIGATION_CONTRACT = {
-  owner: "P4 — canonical builders; P2 types.ts mirrors for contract tests until P4 exports",
+  owner: "P4 — canonical buildReceivingAppealOrderPipelineHref + receivingAppealReturnHref only",
   pipelineQuery: "appealId",
   pipelinePath: "/scanner",
   returnQuery: "direction=receiving&appealId",

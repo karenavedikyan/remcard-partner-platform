@@ -45,8 +45,6 @@ import {
   mapReceivingUiManualCreateToK1Post,
   mapReceivingUiCertificateCodeToK1Promo,
   mapK1BatchHttpForP5Normalize,
-  buildReceivingAppealPipelineHref,
-  buildReceivingAppealReturnHref,
   normalizeK1ReceivingDetailHttp,
   normalizeK1ReceivingListHttp,
 } from "./types";
@@ -176,9 +174,9 @@ describe("clients parity contracts", () => {
     expect(batch.failures[0]?.code).toBe("NOT_FOUND");
     expect(CLIENTS_RECEIVING_ORDER_LINK_CONTRACT.http.body).toContain("expectedRevision");
     expect(CLIENTS_RECEIVING_ORDER_LINK_CONTRACT.securityRisks.length).toBeGreaterThanOrEqual(4);
-    expect(buildReceivingAppealPipelineHref("a/1")).toBe("/scanner?appealId=a%2F1");
-    expect(buildReceivingAppealReturnHref("x")).toContain("direction=receiving");
+    expect(RECEIVING_APPEAL_NAVIGATION_CONTRACT.owner).toContain("P4");
     expect(RECEIVING_APPEAL_NAVIGATION_CONTRACT.forbidden).toContain("returnTo");
+    expect(RECEIVING_APPEAL_NAVIGATION_CONTRACT.pipelinePath).toBe("/scanner");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");
