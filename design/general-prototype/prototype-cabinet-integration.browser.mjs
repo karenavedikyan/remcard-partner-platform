@@ -815,26 +815,35 @@ try {
   });
   await previewNest.waitForFunction(
     () => {
-      const iframe = document.querySelector("#cabinet")?.contentDocument?.querySelector(
-        "[data-testid='cabinet-standalone-frame']",
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const iframe = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const child = iframe?.contentDocument;
+      return (
+        iframe?.dataset?.embedMount === "srcdoc" &&
+        iframe?.dataset?.embedContentReady === "1" &&
+        Boolean(child?.querySelector("#partner-title")?.textContent?.trim())
       );
-      return iframe?.dataset?.embedMount === "srcdoc";
     },
     null,
-    { timeout: 20000 },
+    { timeout: 25000 },
   );
   const nest143 = await previewNest.evaluate(() => {
     const doc = document.querySelector("#cabinet")?.contentDocument;
     const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    const child = frame?.contentDocument;
     return {
       mount: frame?.dataset?.embedMount || "",
       url: frame?.dataset?.embedUrl || "",
       badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
       hasSrcdoc: Boolean(frame?.getAttribute("srcdoc")),
+      partnerTitle: child?.querySelector("#partner-title")?.textContent?.trim() || "",
+      contentReady: frame?.dataset?.embedContentReady || "",
     };
   });
   assert.equal(nest143.badge, 143);
   assert.equal(nest143.mount, "srcdoc");
+  assert.equal(nest143.contentReady, "1");
+  assert.ok(nest143.partnerTitle.length > 0, "nested 143 must render native partner title, not about:blank");
   assert.ok(nest143.hasSrcdoc, "nested preview must mount embed via fetched srcdoc");
   assert.ok(nest143.url.includes("partner-cooperation-detail"), nest143.url);
   await previewNest.evaluate(() => {
@@ -850,9 +859,12 @@ try {
       const doc = document.querySelector("#cabinet")?.contentDocument;
       const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
       const win = frame?.contentWindow;
+      const child = frame?.contentDocument;
       return (
         doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 &&
         frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        Boolean(child?.querySelector("#history-title")?.textContent?.trim()) &&
         typeof win?.__protoCabinetEmbedParams === "function" &&
         win.__protoCabinetEmbedParams().get("cabinet_embed") === "1"
       );
@@ -878,6 +890,45 @@ try {
   assert.equal(nest147.params, "1");
   assert.ok(nest147.embedDoc, "147 srcdoc child must boot with injected embed query");
   await previewNest.close();
+
+  const previewToc = await browser.newPage();
+  await previewToc.setViewportSize({ width: 1280, height: 900 });
+  await previewToc.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  await previewToc.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await previewToc.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await previewToc.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector(".shell aside.sidebar"),
+    null,
+    { timeout: 25000 },
+  );
+  await previewToc.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector(".proto-page-toc-btn")?.click();
+    doc?.querySelector('a[data-page-n="143"]')?.click();
+  });
+  await previewToc.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const child = frame?.contentDocument;
+      return (
+        frame?.dataset?.embedMount === "srcdoc" &&
+        frame?.dataset?.embedContentReady === "1" &&
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 143 &&
+        Boolean(child?.querySelector("#partner-title")?.textContent?.trim())
+      );
+    },
+    null,
+    { timeout: 25000 },
+  );
+  await previewToc.close();
 
   const cspFixture = await browser.newPage();
   await cspFixture.goto(`${base}/prototype-preview-csp-src-blocked-fixture.html`, { waitUntil: "load" });

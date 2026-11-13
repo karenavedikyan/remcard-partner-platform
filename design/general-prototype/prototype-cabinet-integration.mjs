@@ -98,6 +98,18 @@ assert.match(
 const srcdocLoader = readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8");
 assert.match(srcdocLoader, /import\.meta\.url/, "standalone asset base from module URL not location.href");
 assert.match(srcdocLoader, /__protoCabinetEmbedSearch/, "srcdoc boot injects embed query for opaque child");
+assert.match(srcdocLoader, /waitForStandaloneFrameContent/, "srcdoc path waits for native child DOM");
+assert.match(srcdocLoader, /#partner-title/, "143 content probe blocks badge-only false positive");
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /embedContentReady/,
+  "host marks iframe when native standalone content is present",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /if \(useSrcdoc\) syncEmbeddedPageBadge\(null\)/,
+  "preview embed defers page badge until content mount",
+);
 const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
 assert.match(embedChild, /__protoCabinetEmbedParams/, "embed child reads injected search in srcdoc");
 assert.match(embedChild, /replace:/, "embed child posts replace nav");

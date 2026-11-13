@@ -3,6 +3,63 @@ export const STANDALONE_ASSET_BASE = new URL("./", import.meta.url).href;
 
 const PREVIEW_HOST = /\.pplx\.app$/i;
 
+/** Native DOM markers — embed badge must not show until one matches (avoids about:blank false positives). */
+export const STANDALONE_CONTENT_PROBE = {
+  139: "#recommendation-root, .cert-guest-page main",
+  140: "#recommendation-root, .cert-guest-page main",
+  141: "#assignment-root",
+  142: "#observer-root",
+  143: "#partner-title",
+  144: "#op-title",
+  145: "#prr-main",
+  146: "#pst-root, .pst-page",
+  147: "#history-title",
+};
+
+export function standaloneContentSelector(pageN) {
+  return STANDALONE_CONTENT_PROBE[pageN] || "#main, main";
+}
+
+export function frameHasStandaloneNativeContent(frame, pageN) {
+  if (!frame) return false;
+  try {
+    const doc = frame.contentDocument;
+    if (!doc || !doc.body) return false;
+    const probe = standaloneContentSelector(pageN);
+    for (const sel of probe.split(",").map((s) => s.trim())) {
+      const el = doc.querySelector(sel);
+      if (!el) continue;
+      if (el.id === "partner-title" || el.id === "history-title" || el.id === "op-title") {
+        if ((el.textContent || "").trim().length > 0) return true;
+        continue;
+      }
+      return true;
+    }
+    return doc.body.childElementCount > 0 && doc.body.textContent.trim().length > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
+export function waitForStandaloneFrameContent(frame, pageN, { timeoutMs = 20000 } = {}) {
+  if (!frame) return Promise.reject(new Error("no frame"));
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const tick = () => {
+      if (frameHasStandaloneNativeContent(frame, pageN)) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error(`standalone native content timeout n=${pageN}`));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
 export function shouldUseSrcdocStandaloneLoad() {
   if (typeof window === "undefined") return false;
   try {
@@ -86,5 +143,6 @@ export async function loadStandaloneSrcdoc(
   frame.srcdoc = guestHash ? `${srcdoc}<!--#${guestHash}-->` : srcdoc;
   frame.dataset.embedUrl = fetchUrl;
   frame.dataset.embedMount = "srcdoc";
+  delete frame.dataset.embedContentReady;
   return fetchUrl;
 }

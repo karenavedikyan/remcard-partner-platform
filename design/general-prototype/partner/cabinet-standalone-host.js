@@ -2,7 +2,8 @@ import {
   buildStandaloneNavigationUrl,
   loadStandaloneSrcdoc,
   shouldUseSrcdocStandaloneLoad,
-} from "./cabinet-standalone-srcdoc.js?v=embed7";
+  waitForStandaloneFrameContent,
+} from "./cabinet-standalone-srcdoc.js?v=embed8";
 
 export const STANDALONE_BY_N = {
   139: { path: "certificate.html", title: "Гостевой сертификат", guest: true },
@@ -299,6 +300,7 @@ export function createCabinetStandaloneHost(config) {
     frame.removeAttribute("srcdoc");
     delete frame.dataset.embedMount;
     delete frame.dataset.embedUrl;
+    delete frame.dataset.embedContentReady;
     openPageN = null;
     openQuery = "";
     openCtx = null;
@@ -387,7 +389,9 @@ export function createCabinetStandaloneHost(config) {
     titleEl.textContent = def.title;
     openPageN = pageN;
     openQuery = extraQuery;
-    syncEmbeddedPageBadge(pageN);
+    const useSrcdoc = shouldUseSrcdocStandaloneLoad();
+    if (useSrcdoc) syncEmbeddedPageBadge(null);
+    else syncEmbeddedPageBadge(pageN);
     document.querySelector(".shell")?.classList.add("cabinet-standalone-active");
     document.documentElement.classList.add("proto-cabinet-embed-host-active");
     hostEl.hidden = false;
@@ -396,24 +400,44 @@ export function createCabinetStandaloneHost(config) {
     reposition();
     const guestHash = embedCtx?.guestHash;
     const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
+    const commitStandaloneReady = () => {
+      if (openPageN !== pageN) return;
+      syncEmbeddedPageBadge(pageN);
+      frame.dataset.embedContentReady = "1";
+    };
+
     frame.onload = () => {
       sendContextToFrame();
+      if (!useSrcdoc) {
+        void waitForStandaloneFrameContent(frame, pageN)
+          .then(commitStandaloneReady)
+          .catch(() => {
+            notify?.("Встроенная страница не загрузилась. Обновите просмотр.", "info");
+            closeHost();
+          });
+      }
     };
-    if (shouldUseSrcdocStandaloneLoad()) {
+    if (useSrcdoc) {
+      delete frame.dataset.embedContentReady;
       void loadStandaloneSrcdoc(frame, pageN, def.path, extraQuery, urlBridge, { guestHash })
+        .then(() => waitForStandaloneFrameContent(frame, pageN))
         .then(() => {
           sendContextToFrame();
+          return waitForStandaloneFrameContent(frame, pageN, { timeoutMs: 12000 });
         })
+        .then(commitStandaloneReady)
         .catch(() => {
-          frame.removeAttribute("srcdoc");
-          frame.dataset.embedMount = "src-fallback";
-          frame.dataset.embedUrl = navUrl;
-          frame.src = guestHash ? `${navUrl}#${guestHash}` : navUrl;
+          notify?.(
+            "В preview вложенный макет открывается через загрузку HTML, а не iframe.src (CSP frame-ancestors). Не удалось отобразить страницу.",
+            "info",
+          );
+          closeHost({ reset: false });
         });
       return true;
     }
     frame.removeAttribute("srcdoc");
     delete frame.dataset.embedMount;
+    delete frame.dataset.embedContentReady;
     frame.dataset.embedUrl = navUrl;
     frame.src = guestHash ? `${navUrl}#${guestHash}` : navUrl;
     return true;
@@ -493,9 +517,10 @@ export function createCabinetStandaloneHost(config) {
         openCtx = null;
         syncEmbeddedPageBadge(null);
         frame.removeAttribute("src");
-    frame.removeAttribute("srcdoc");
+        frame.removeAttribute("srcdoc");
     delete frame.dataset.embedMount;
     delete frame.dataset.embedUrl;
+    delete frame.dataset.embedContentReady;
         unwatchLayout();
         document.documentElement.classList.remove("proto-cabinet-embed-host-active");
       }
