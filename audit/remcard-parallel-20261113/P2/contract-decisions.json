@@ -156,8 +156,10 @@
   "k8AdapterHandoff": "audit/remcard-parallel-20261113/P2/k8-adapter-handoff.json",
   "k8SourceStatus": "DRAFT_K8_CANDIDATE",
   "k8HandoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-  "k8SchemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
-  "k8UnresolvedGaps": ["GAP-K8-1", "GAP-K8-2", "GAP-K8-3", "GAP-K8-4", "GAP-K8-5"],
+  "k8SchemaCoreSha": "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+  "k8PriorSchemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+  "k8RootReviewDoc": "audit/remcard-parallel-20261113/P2/K8-629de67-root-review.md",
+  "k8UnresolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D", "GAP-K8-E"],
   "partnerContractInventoryPaths": [
     "src/lib/clients-parity/contracts.ts",
     "src/lib/clients-parity/types.ts"

@@ -29,9 +29,54 @@ export type ObserverAppealHistoryEntry = {
 };
 
 /**
- * Observer list row (partner UI). Maps from K8 `ClientAppealRecord` via adapter.
- * `receivingPartnerId` holds **receivingBranchId** (prototype “partner” key).
- * `referrerPartnerId` holds **referrerProUserId** (User.id).
+ * Canonical partner identity for observer (P2 adapter — not User.id for receiving).
+ * Prototype `receivingPartnerId` → **`receivingBranchId`**.
+ * Prototype `referrerPartnerId` → **`referrerProUserId`** (certificate issuer).
+ */
+export type ObserverBranchPartnerIdentity = {
+  receivingBranchId: string;
+  receivingOrganizationId: string;
+};
+
+/**
+ * K2 observer wire allowlist (GAP-K8-D). P5/P6 map from this — never pass through full row.
+ * K8 must converge `dto.ts` to this shape; until then adapter rejects unknown keys.
+ */
+export type ObserverAppealK2WireDto = {
+  id: string;
+  clientDisplayName: string;
+  certificateId: string | null;
+  receivingBranchId: string;
+  receivingOrganizationId: string;
+  referrerProUserId: string | null;
+  originKind: "CERTIFICATE" | "MANUAL";
+  stageKey: string;
+  interest: string | null;
+  clientCity: string | null;
+  budgetHint: string | null;
+  discountPercent: number | null;
+  certValidUntil: string | null;
+  refusedReason: string | null;
+  shippedAt: string | null;
+  orderId: string | null;
+  paidAmountKopecks: number | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  manualSourceKey?: string | null;
+};
+
+/** Grouping card for observer list — branch display, not org owner User.id. */
+export type ObserverBranchPartnerMetaWire = {
+  receivingBranchId: string;
+  receivingOrganizationId: string;
+  displayName: string;
+  city?: string | null;
+  category?: string | null;
+};
+
+/**
+ * Observer list row (partner UI). Maps from `ObserverAppealK2WireDto` via stable renames only.
  */
 export type ObserverReferredAppeal = {
   id: string;
@@ -53,31 +98,24 @@ export type ObserverReferredAppeal = {
   shippedAt?: string | null;
   paidAmount?: number | null;
   refusedReason?: string | null;
-};
-
-/** K2 wire shape — MUST NOT include receiving CRM tenant fields (GAP-K8-5). */
-export type ObserverClientAppealPublicDto = Omit<
-  ObserverReferredAppeal,
-  never
-> & {
-  /** Explicitly disallowed on observer wire — adapter strips if present in DB DTO. */
-  privateNotes?: never;
-  clientContact?: never;
+  /** Settings scope helper until GAP-K8-E resolved; not shown as partner id in UI. */
+  receivingOrganizationId?: string;
 };
 
 /** Detail — adds immutable timeline (prototype `history[]`). */
-export type ObserverReferredAppealDetail = ObserverClientAppealPublicDto & {
+export type ObserverReferredAppealDetail = ObserverReferredAppeal & {
   history: ObserverAppealHistoryEntry[];
   createdAt: string;
   sourceKey?: string | null;
 };
 
 export type ObserverPartnerMeta = {
-  /** Receiving branch id for grouping (K8 `receivingBranchId`). */
+  /** Same as `receivingBranchId` (prototype receiving partner key). */
   id: string;
   name: string;
   city?: string | null;
   category?: string | null;
+  receivingOrganizationId?: string;
 };
 
 export type ObserverPartnerAppealStats = {

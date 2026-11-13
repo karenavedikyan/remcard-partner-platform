@@ -19,7 +19,8 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   status: "DRAFT_K8_CANDIDATE",
   navigatorBranch: "cursor/remcard-k8-acceptance-20261113",
   handoffCommitSha: "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-  schemaCoreCommitSha: "fc33b4fae859fb692757807c3b27696b66d57558",
+  schemaCoreCommitSha: "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+  priorSchemaCoreCommitSha: "fc33b4fae859fb692757807c3b27696b66d57558",
   canonicalModule: "src/lib/clientAppeals/contract.ts",
   handoffDoc: "src/lib/clientAppeals/HANDOFF.md",
   migrationDraft: "prisma/migrations/20261113203000_client_appeals/migration.sql",
@@ -30,38 +31,69 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
   auditReconcile: "audit/remcard-parallel-20261113/P2/K8-root-gaps-reconcile-20261113.md",
 } as const;
 
+/** Root source review @ 629de67e — candidates only; not accepted release. */
 export const CLIENTS_K8_UNRESOLVED_GAPS = [
   {
-    id: "GAP-K8-1",
+    id: "GAP-K8-A",
     owner: "K8",
-    topic: "Observer auth must match ownerClientsAccess principal agent/specialist, not only BranchEmployee.canViewOwnOperations",
+    topic:
+      "repository.ts: P2002 catch + findFirst inside same $transaction after failed INSERT (aborted PG tx)",
     status: "UNRESOLVED",
+    requiredFix: "Retry fresh tx / conflict strategy; keep partial unique index",
   },
   {
-    id: "GAP-K8-2",
+    id: "GAP-K8-B",
     owner: "K8",
-    topic: "workingStages/refusalReasons/archivedStages persistence missing in fc33 schema",
+    topic:
+      "eligibility.ts: canObserverListIncludeAppeal uses ownerUserId only; org workplace must require viewerUserId === eligible principal === referrerProUserId",
     status: "UNRESOLVED",
   },
   {
-    id: "GAP-K8-3",
+    id: "GAP-K8-C",
     owner: "K8",
-    topic: "Active cert appeal predicate + uniqueness (prototype findActiveAppeal vs isActiveCertificateAppealStage + take:5)",
+    topic:
+      "resolveAppealAccess: optional options default principalAgentObserverOnly=false — receiving must not silently grant when context omitted",
     status: "UNRESOLVED",
   },
   {
-    id: "GAP-K8-4",
-    owner: "Root+K1",
-    topic: "storeCertificateScan.ts hook integration (outside K8 allowlist); idempotent createAppealFromCertificate",
+    id: "GAP-K8-D",
+    owner: "K8",
+    topic:
+      "dto.ts: Omit/spread blacklist; need explicit observer allowlist matching ObserverAppealK2WireDto in types.ts",
     status: "UNRESOLVED",
   },
   {
-    id: "GAP-K8-5",
-    owner: "K2",
-    topic: "Observer GET DTO must strip privateNotes/clientContact; GET must never write",
+    id: "GAP-K8-E",
+    owner: "K8+K1",
+    topic:
+      "PartnerClientAppealPartnerSettings keyed by organizationId vs prototype partnerSettings[receivingPartnerId] (branch)",
     status: "UNRESOLVED",
+    p2AdapterRule:
+      "UI group by receivingBranchId; settings API keyed by org until product decides branch-level override",
   },
 ] as const;
+
+export const CLIENTS_PARTNER_SETTINGS_SCOPE = {
+  prototype: "partnerSettings[receivingPartnerId] — one pipeline per receiving partner (demo id = branch storefront)",
+  k8Candidate629de67: "PartnerClientAppealPartnerSettings.organizationId @unique — shared across org branches",
+  p2Decision: "UNRESOLVED (GAP-K8-E): confirm org-wide vs per-branch before K1 working-stages CRUD",
+  appealRowAnchor: "receivingBranchId + receivingOrganizationId on PartnerClientAppeal",
+} as const;
+
+/** Stable P5/P6 adapter: K2 allowlist DTO → ObserverReferredAppeal (no User.id receiving identity). */
+export const OBSERVER_APPEAL_ADAPTER_MAP = {
+  id: "id",
+  clientDisplayName: "clientName",
+  stageKey: "stageId",
+  referrerProUserId: "referrerPartnerId",
+  receivingBranchId: "receivingPartnerId",
+  receivingOrganizationId: "receivingOrganizationId",
+  orderId: "purchaseId",
+  paidAmountKopecks: "paidAmount",
+  createdAt: "referralAt",
+  manualSourceKey: "manualEntry",
+  originKind: "manualEntry",
+} as const;
 
 /** Legacy path prefix — superseded by client-appeals/observer/* in K8 handoff. */
 export const CLIENTS_DEPRECATED_ROUTE_PREFIX = "/api/pro/referred-appeals";

@@ -6,6 +6,8 @@ import {
   CLIENTS_DECISIONS,
   CLIENTS_K8_SOURCE_OF_TRUTH,
   CLIENTS_K8_UNRESOLVED_GAPS,
+  CLIENTS_PARTNER_SETTINGS_SCOPE,
+  OBSERVER_APPEAL_ADAPTER_MAP,
   routesForBlocker,
 } from "./contracts";
 import { fetchObserverReferredAppeals } from "./fetch-observer-appeals";
@@ -31,10 +33,12 @@ describe("clients parity contracts", () => {
 
   it("inventory routes stay NOT_IMPLEMENTED until K1/K2/K5 HTTP lands", () => {
     expect(CLIENTS_K8_SOURCE_OF_TRUTH.status).toBe("DRAFT_K8_CANDIDATE");
-    expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^fc33b4f/);
+    expect(CLIENTS_K8_SOURCE_OF_TRUTH.schemaCoreCommitSha).toMatch(/^629de67/);
     expect(CLIENTS_CANONICAL_ROUTES.every((r) => r.status === "NOT_IMPLEMENTED")).toBe(true);
     expect(routesForBlocker("BLK-OBSERVER-REFERRED")).toHaveLength(3);
     expect(CLIENTS_K8_UNRESOLVED_GAPS).toHaveLength(5);
+    expect(CLIENTS_PARTNER_SETTINGS_SCOPE.p2Decision).toContain("UNRESOLVED");
+    expect(OBSERVER_APPEAL_ADAPTER_MAP.receivingBranchId).toBe("receivingPartnerId");
     expect(CLIENTS_DECISIONS).toHaveLength(7);
   });
 

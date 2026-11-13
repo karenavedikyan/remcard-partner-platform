@@ -3,9 +3,34 @@
   "k8Candidate": {
     "branch": "cursor/remcard-k8-acceptance-20261113",
     "handoffSha": "16253b84c3d0d35ad0978cb2bde1ccad1d725141",
-    "schemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
-    "contractModule": "src/lib/clientAppeals/contract.ts"
+    "schemaCoreSha": "629de67e4ea4737eb7a855e4ee9808bcd8f8d4d8",
+    "priorSchemaCoreSha": "fc33b4fae859fb692757807c3b27696b66d57558",
+    "contractModule": "src/lib/clientAppeals/contract.ts",
+    "status": "DRAFT_K8_CANDIDATE"
   },
+  "partnerIdentity": {
+    "receivingPartnerPrototypeKey": "receivingPartnerId",
+    "receivingCanonicalId": "receivingBranchId",
+    "referrerPrototypeKey": "referrerPartnerId",
+    "referrerCanonicalId": "referrerProUserId",
+    "forbiddenReceivingId": "User.id of org owner / store account"
+  },
+  "settingsScopeGapE": {
+    "prototype": "partnerSettings keyed by receivingPartnerId (per receiving partner row)",
+    "k8Candidate": "PartnerClientAppealPartnerSettings.organizationId",
+    "status": "UNRESOLVED",
+    "adapterUntilResolved": {
+      "listGroupBy": "receivingBranchId",
+      "settingsLookupKey": "receivingOrganizationId"
+    }
+  },
+  "k2WireAllowlistType": "ObserverAppealK2WireDto",
+  "p5AdapterMapConstant": "OBSERVER_APPEAL_ADAPTER_MAP",
+  "forbiddenObserverFields": [
+    "privateNotes",
+    "clientContact",
+    "createdByUserId"
+  ],
   "routeOwners": {
     "K2": [
       "GET /api/pro/client-appeals/observer",
@@ -24,17 +49,8 @@
       "GET /api/pro/client-appeals/receiving/working-stages",
       "POST /api/pro/client-appeals/receiving/working-stages"
     ],
-    "P5_P6": ["remcard-proxy allowlist + adapters after K2/K5 routes"]
+    "P5_P6": ["remcard-proxy + mapK2ObserverAppeal after K2 emits allowlist DTO"]
   },
-  "fieldMapK8ToPartnerObserver": {
-    "clientDisplayName": "clientName",
-    "stageKey": "stageId",
-    "referrerProUserId": "referrerPartnerId",
-    "receivingBranchId": "receivingPartnerId",
-    "orderId": "purchaseId",
-    "authorLabel": "history[].author"
-  },
-  "stripOnObserverWire": ["privateNotes", "clientContact"],
-  "unresolvedGaps": ["GAP-K8-1", "GAP-K8-2", "GAP-K8-3", "GAP-K8-4", "GAP-K8-5"],
+  "unresolvedGaps": ["GAP-K8-A", "GAP-K8-B", "GAP-K8-C", "GAP-K8-D", "GAP-K8-E"],
   "sectionReady": false
 }
