@@ -82,6 +82,18 @@ export type ObserverReceivingPartnerMetaWire = {
   receivingBranchId: string | null;
 };
 
+/**
+ * K2 GET list `partners[]` @ 3c6ccc19 interim (GAP-K8-P) — distinct branch, not principal id.
+ * P3 maps to `ObserverPartnerMeta` using appeal-level `receivingPartnerUserId` for card keys.
+ */
+export type K2ObserverPartnerSummaryInterim = {
+  receivingBranchId: string;
+  receivingOrganizationId: string;
+  displayName: string;
+  city?: string | null;
+  category?: string | null;
+};
+
 /** @deprecated Use ObserverReceivingPartnerMetaWire */
 export type ObserverBranchPartnerMetaWire = ObserverReceivingPartnerMetaWire;
 
@@ -153,21 +165,41 @@ export type ObserverPersonalMeta = {
   version?: number;
 };
 
+/** Overlay row joined on list @ K2 — may omit beforeTrash/version until GAP-K5-I closed. */
+export type K2PersonalMetaOverlayDto = {
+  alias?: string | null;
+  tag?: string | null;
+  note?: string | null;
+  bucket?: ObserverPersonalBucket;
+};
+
 export type ClientsParityDirection = "incoming" | "at-partners";
 
 /**
- * K2 navigator HTTP list @ e11f7e59 target (before P5 rename).
- * @see CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverTarget in contracts.ts
+ * Accepted K2 HTTP list @ 3c6ccc19 — `{ appeals, partners, personalMeta, … }`.
+ * @see CLIENTS_LIST_RESPONSE_CONTRACT.k2HttpObserverActual in contracts.ts
  */
-export type K2ObserverListHttpResponse = {
+export type K2ObserverReferredAppealsHttpResponse = {
+  appeals: ObserverAppealK2WireDto[];
+  partners: K2ObserverPartnerSummaryInterim[];
+  personalMeta: Record<string, K2PersonalMetaOverlayDto | null>;
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  empty: boolean;
+};
+
+export type K2ObserverListHttpResponse = K2ObserverReferredAppealsHttpResponse;
+
+/** Stale envelope @ 72193c78 — do not implement in P3 fetch. */
+export type K2ObserverListHttpResponseStale72193c78 = {
   items: ObserverAppealK2WireDto[];
-  receivingPartners: ObserverReceivingPartnerMetaWire[];
-  personalMeta?: Record<string, ObserverPersonalMeta>;
-  page?: number;
-  limit?: number;
-  total?: number;
-  hasMore?: boolean;
-  nextCursor?: string | null;
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  empty: boolean;
 };
 
 /** K8 lib + K1 receiving list envelope — not `{ appeals }`. */

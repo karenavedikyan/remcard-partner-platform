@@ -102,8 +102,8 @@ export const CLIENTS_K8_SOURCE_OF_TRUTH = {
 } as const;
 
 /**
- * One canonical list envelope per layer — no competing `{ appeals }` on K8 lib/receiving HTTP.
- * P3 maps navigator `items` → `appeals`; `receivingPartners` → `partners`.
+ * One canonical list envelope per layer — K8 lib receiving stays `{ items }`; K2 HTTP uses `{ appeals }`.
+ * P3 maps K2 `appeals`/`partners`/`personalMeta` → `ObserverAppealsLoadResult` (never stale `items` @ 72193c78).
  */
 export const CLIENTS_LIST_RESPONSE_CONTRACT = {
   k8LibReceiving: {
@@ -201,6 +201,65 @@ export const CLIENTS_NAVIGATOR_ACTUAL_HTTP = {
     "POST /api/pro/client-appeals/personal-overlay/batch",
   ],
   p5WrongCommit: "518f6dd8c14f43c93354bf00be297e5093abd90f",
+  p5CorrectCommit: "a7b111d28f7f83c81244fd401b7ed8c288e1a1ef",
+  p5PersonalClientModule: "src/lib/clients-parity/observer-personal-api.ts",
+} as const;
+
+/** Profile publication ≠ whole «Клиенты» acceptance (Root @ 89fb8e073c39…). */
+export const CLIENTS_PROFILE_PUBLISHED_NOT_SECTION_READY = {
+  profileSelectSha: CLIENTS_NAVIGATOR_PROFILE_SELECT_SHA,
+  meaning: "Navigator profile slice published; observer list/proxy/personal persist still blocked",
+} as const;
+
+/**
+ * Parallel track file ownership — P2 is sole editor of contracts.ts + types.ts inventory.
+ * Root integrates selected paths per owner tip only.
+ */
+export const CLIENTS_PARALLEL_FILE_OWNERSHIP = {
+  p2Exclusive: ["src/lib/clients-parity/contracts.ts", "src/lib/clients-parity/types.ts"],
+  p1: ["src/lib/remcard-proxy.ts", "assembly wiring for Clients routes only"],
+  p3: [
+    "src/lib/clients-parity/fetch-observer-appeals.ts",
+    "observer list/workspace/filter/stats UI paths",
+  ],
+  p3MustImport: [
+    "@/lib/clients-parity/observer-personal-api — owned by P5 @ a7b111d2; P3 must not commit competing client",
+  ],
+  p4: ["observer detail/history UI — read-only; no receiving-appeals-api"],
+  p5: [
+    "src/lib/clients-parity/observer-personal-api.ts",
+    "personal/bulk observer UI components",
+  ],
+  p6: [
+    "src/lib/clients-parity/receiving-appeals-api.ts",
+    "receiving workspace/list/form/stages — never observer stats/filter/detail",
+  ],
+  p7: ["Clients section CSS only"],
+  handoffAudit: "audit/remcard-parallel-20261113/P2/P2-CROSS-OWNER-HANDOFF-20261113.md",
+} as const;
+
+/**
+ * K5 persistence vs wire projection for prototype trash/restore.
+ * @see applyTrashMove / applyRestore @ navigator K5 draft
+ */
+export const CLIENTS_K5_BEFORE_TRASH_SEMANTICS = {
+  serverColumn: "beforeTrashBucket",
+  moveToTrash: "applyTrashMove sets beforeTrashBucket from prior bucket",
+  restore: "applyRestore reads beforeTrashBucket when current bucket is trash",
+  wirePersonalMetaProjection: "PersonalMetaProjection JSON omits beforeTrash — GAP-K5-I",
+  wireListPersonalMeta: "ObserverPersonalMetaDto on list join omits beforeTrash until K2/K5 expose",
+  p5MapProjectionToPartnerMeta: "maps bucket only; version omitted on list meta until list DTO adds it",
+  p5AfterRestore: "must refresh meta.version from PATCH `{ meta }` response — do not infer restore bucket client-side",
+  prototypeRef: "observer-personal-list.js restore from trash",
+} as const;
+
+/** K2 `partners[]` @ 3c6ccc19 vs target principal cards (GAP-K8-P). */
+export const CLIENTS_OBSERVER_PARTNER_WIRE = {
+  targetWire: "ObserverReceivingPartnerMetaWire — key receivingPartnerUserId",
+  k2ActualInterim: "distinct receivingBranchId + receivingOrganizationId + displayName/city/category",
+  p3UiCardKey: "receivingPartnerUserId (from appeal rows); do not treat Branch.id as partner id",
+  p3DisplayRule: "show solo receiving User without Branch when receivingBranchId null",
+  adapterMap: "OBSERVER_PARTNER_META_ADAPTER_MAP",
 } as const;
 
 /** K5 `PersonalMetaProjection` → prototype `ObserverPersonalMeta` (map key = meta.appealId). */
@@ -354,15 +413,18 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     owner: "P5",
     topic:
       "observer-personal-api.ts calls personal-overlay routes and expects `{ overlay }` — paths do not exist on navigator",
-    status: "UNRESOLVED",
+    status: "RESOLVED_a7b111d2",
     requiredFix:
-      "Call CLIENTS_NAVIGATOR_ACTUAL_HTTP personal-meta/personal-batch; parse `{ meta }` and batch `processed[]`",
+      "P3/P4 import observer-personal-api.ts @ a7b111d2; never duplicate HTTP client",
   },
   {
     id: "GAP-K5-I",
-    owner: "K5",
-    topic: "PATCH 200 `meta` projection omits `beforeTrashBucket` (prototype beforeTrash)",
+    owner: "K5+K2+P5",
+    topic:
+      "beforeTrashBucket persisted on move; restore uses it server-side; list + PATCH projections omit beforeTrash on wire",
     status: "UNRESOLVED",
+    requiredFix:
+      "Expose beforeTrash on list personalMeta or document client refresh-only restore; map version on meta after PATCH",
   },
 ] as const;
 

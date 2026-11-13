@@ -8,6 +8,7 @@ import {
   CLIENTS_K8_SOURCE_OF_TRUTH,
   CLIENTS_K8_UNRESOLVED_GAPS,
   CLIENTS_LIST_RESPONSE_CONTRACT,
+  CLIENTS_PARALLEL_FILE_OWNERSHIP,
   CLIENTS_PURCHASE_READ_SEMANTICS,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
@@ -48,7 +49,11 @@ describe("clients parity contracts", () => {
     expect(notReady.length).toBe(CLIENTS_CANONICAL_ROUTES.length);
     expect(routesForBlocker("BLK-OBSERVER-REFERRED").length).toBeGreaterThanOrEqual(4);
     expect(CLIENTS_K8_UNRESOLVED_GAPS.length).toBeGreaterThanOrEqual(10);
-    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-P5-518f6dd8");
+    expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).not.toContain("GAP-P5-518f6dd8");
+    expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.p5CorrectCommit).toMatch(/^a7b111d2/);
+    expect(CLIENTS_PARALLEL_FILE_OWNERSHIP.p2Exclusive).toContain(
+      "src/lib/clients-parity/contracts.ts",
+    );
     expect(CLIENTS_K8_OPEN_GAPS.map((g) => g.id)).toContain("GAP-K8-N");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
