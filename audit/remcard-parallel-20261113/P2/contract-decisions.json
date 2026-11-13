@@ -1,0 +1,123 @@
+{
+  "auditor": "P2",
+  "baseSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+  "auditTipSha": null,
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
+  "verdictSummary": {
+    "BLK-OBSERVER-REFERRED": "ABSENT",
+    "BLK-OBSERVER-PERSONAL-PERSIST": "ABSENT",
+    "agentClientCrudAsSubstitute": "REJECTED"
+  },
+  "referredAppeals": {
+    "status": "ABSENT_IN_REPO",
+    "inventorySource": "src/lib/remcard-proxy.ts ALLOWED_PROXY_ROUTES",
+    "confirmedMissingPatterns": [
+      "^/api/pro/referred-appeals$",
+      "^/api/pro/referred-appeals/[\\w-]+$",
+      "^/api/pro/referred-appeals/by-partner/[\\w-]+$"
+    ],
+    "clientAdapter": {
+      "file": "src/lib/clients-parity/fetch-observer-appeals.ts",
+      "behavior": "Always returns { ok:false, code:BLOCKED_CONTRACT, blockerId:BLK-OBSERVER-REFERRED }",
+      "productionNetworkCall": "NONE"
+    },
+    "prototypeReference": {
+      "file": "design/general-prototype/partner/client-appeals.js",
+      "listFn": "ownReferredAppeals() filters in-memory appeals by referrerPartnerId + certificate flow",
+      "verifiedAtSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+      "access": "git show 3dc31836:design/general-prototype/partner/client-appeals.js (fetched via origin)"
+    },
+    "proposedReadContract": {
+      "note": "Proposal for backend owners only — not implemented or authorized by P2",
+      "GET /api/pro/referred-appeals": {
+        "query": { "q": "string?", "period": "all|30|90|365", "cursor": "string?", "limit": "number?" },
+        "response200": {
+          "appeals": "ObserverReferredAppeal[]",
+          "partners": "ObserverPartnerMeta[]",
+          "nextCursor": "string|null"
+        }
+      },
+      "GET /api/pro/referred-appeals/:id": {
+        "response200": { "appeal": "ObserverReferredAppeal", "partner": "ObserverPartnerMeta" },
+        "response404": "Unknown or not owned by viewer as referrer"
+      },
+      "GET /api/pro/referred-appeals/by-partner/:partnerId": {
+        "response200": { "appeals": "ObserverReferredAppeal[]", "partner": "ObserverPartnerMeta" }
+      }
+    }
+  },
+  "observerPersonalOverlay": {
+    "status": "ABSENT_IN_REPO",
+    "uiBehavior": {
+      "file": "src/components/clients/observer/ObserverPartnersListView.tsx",
+      "personalMetaSource": "displayPersonalMeta prop only; never updated on save",
+      "savePath": "notifyPersistenceBlock → BLOCKED_PERSISTENCE notice; panel closes",
+      "saveButton": "ObserverPersonalEditPanel: disabled, aria-disabled, title BLOCKED_PERSISTENCE"
+    },
+    "prototypeReference": {
+      "file": "design/general-prototype/partner/observer-personal-list.js",
+      "persistence": "In-memory workspace.observerPersonal.meta until page reload",
+      "explicitDemoDisclaimer": "Демо: изменения до обновления страницы.",
+      "fields": ["alias max 100", "tag max 40", "note max 1000", "bucket active|archived|trash", "beforeTrash on trash"]
+    },
+    "proposedWriteContract": {
+      "note": "Keyed by referred-appeal id (not AgentClient id); per viewing partner user",
+      "PATCH /api/pro/referred-appeals/:id/personal-meta": {
+        "body": {
+          "alias": "string|null max 100",
+          "tag": "string|null max 40",
+          "note": "string|null max 1000",
+          "bucket": "active|archived|trash",
+          "beforeTrash": "active|archived optional when bucket=trash"
+        },
+        "response200": { "meta": "ObserverPersonalMeta" },
+        "mustNotMutate": ["clientName", "receiving partner CRM", "appeal stage", "certificate ledger"]
+      },
+      "POST /api/pro/referred-appeals/personal-batch": {
+        "body": {
+          "ids": "string[]",
+          "op": "set-tag|archive|trash|restore",
+          "tag": "string? for set-tag"
+        },
+        "response200": { "updated": "string[]", "skipped": "Array<{id,reason}>" }
+      }
+    }
+  },
+  "agentClientCrudContrast": {
+    "status": "PRESENT_BUT_WRONG_SEMANTICS",
+    "routesInProxy": [
+      "GET|POST /api/pro/agent-clients",
+      "POST /api/pro/agent-clients/batch",
+      "GET|PATCH|DELETE /api/pro/agent-clients/:id"
+    ],
+    "client": "src/lib/agent-r03/api.ts",
+    "rowFields": ["displayName", "phone", "email", "city", "need", "note", "archivedAt"],
+    "batchActions": ["archive", "restore", "delete"],
+    "patchActions": ["archive", "restore via action field"],
+    "notEquivalentBecause": [
+      "AgentClient is referrer-owned CRM contact records, not per-referred-appeal observer overlay",
+      "PATCH mutates canonical displayName/contact fields, not alias-only overlay",
+      "archive/delete affect agent workspace records with certificate linkage rules",
+      "No tag field, no trash/beforeTrash bucket model, no appealId foreign key in API types"
+    ]
+  },
+  "relatedButNotSubstitutes": [
+    {
+      "route": "PATCH /api/certificate/:id/alias",
+      "scope": "Certificate userAlias on agent certificate row",
+      "notObserverPersonalMeta": true
+    },
+    {
+      "route": "PATCH /api/store/orders/:orderId/receiving-client",
+      "scope": "Link purchase to receiving partner client on order",
+      "notReferredAppealsList": true
+    }
+  ],
+  "requirementDisposition": {
+    "C26-C34": "BLOCKED_DATA_or_IN_PROGRESS_UI",
+    "C35-C38": "BLOCKED_PERSISTENCE",
+    "C39-C40": "BLOCKED_DATA_with_fixture_nav_PASS_in_tests",
+    "C41": "NOT_STARTED_server"
+  }
+}
