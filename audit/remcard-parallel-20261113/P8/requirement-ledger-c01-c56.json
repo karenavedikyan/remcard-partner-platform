@@ -1,896 +1,1163 @@
 {
-  "generatedAt": "2026-11-13T11:40:19.146Z",
+  "stage": 2,
+  "generatedAt": "2026-11-13T12:44:10.002Z",
   "p8Agent": "П8 — Независимая приёмка C01–C56",
+  "evaluationModel": "combined_parallel_tips_readonly_git_show",
+  "teamTips": {
+    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+    "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
+    "P3": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+    "P4": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+    "P5": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+    "P6": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+    "P7": "9280f9e7279da14964574a6d1585499134ac7f8c",
+    "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
+  },
+  "sharedProductBase": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
   "productionBaseSha": "57ca4680892ae16c62fc38d0ad2ccb6a404dbd79",
   "productFixSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
-  "authorCandidateSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
-  "priorAuditTipSha": "bbf71e4a4e5815eb93e9b89424dddf41172a40d0",
   "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
-  "p8WorkingBranch": "cursor/remcard-p8-acceptance-20261113",
-  "sectionAccepted": false,
-  "publication": false,
-  "packagingForbidden": {
+  "packagingAtSharedBase": {
     "src/components/clients/OwnerClientsGate.tsx": 148,
     "src/components/clients/OwnerClientsModeContext.tsx": 41,
-    "src/app/clients/page.tsx (vs cabinet route)": 30,
+    "legacyClientsRoute": "absent",
+    "cabinetRoute": "present @9fa6cc42",
     "src/lib/onboarding-step/history-link-eligibility.ts": 49,
     "vitest.config.ts": 64
   },
-  "legacyProductionClientsRoute": "absent",
-  "metadataReconcile": {
-    "v8AuditAtBbf71e4a": "Still noted stale author manifest productFixSha 5063368a",
-    "p8At9fa6cc42": "patch-manifest-57ca4680.json already pins productFixSha=140de0a8 — reconciled without product edits",
-    "productTreeDeltaAfter140de0a8": "diff --git a/src/lib/clients-parity/acceptance-matrix.ts b/src/lib/clients-parity/acceptance-matrix.ts\nindex 81b12580..0ae93693 100644\n--- a/src/lib/clients-parity/acceptance-matrix.ts\n+++ b/src/lib/clients-parity/acceptance-matrix.ts\n@@ -23,7 +23,15 @@ function row(id: string, status: AcceptanceStatus, note: string, blockerId?: str\n   return { id, status, note, blockerId };\n }\n \n-/** Computer V6 — isolated regressions only (pin 78e48521). Does not lift C01–C56 section acceptance. */\n+/** Computer V8 — isolated regressions only (product pin 140de0a8). Does not lift C01–C56 section acceptance. */\n+export const COMPUTER_V8_ISOLATED_PASS_IDS = [\n+  \"REG-V8-GROUPED-ROW-PARITY\",\n+  \"REG-V8-MOBILE-NAV\",\n+  \"REG-V8-KPI\",\n+  \"REG-V8-COMPONENT-VITEST\",\n+] as const;\n+\n+/** @deprecated use COMPUTER_V8_ISOLATED_PASS_IDS */\n export const COMPUTER_V6_ISOLATED_PASS_IDS = [\n   \"REG-V6-MOBILE-CLICK-8\",\n   \"REG-V6-KPI-RESIZE\",\n@@ -32,7 +40,12 @@ export const COMPUTER_V6_ISOLATED_PASS_IDS = [\n   \"REG-V6-COMPONENT-VITEST\",\n ] as const;\n \n-export const AUTHOR_HANDOFF_AUDIT_SHA = \"78e4852194a0b9d307ee92743ae754dd18d5a9ba\";\n+export const AUTHOR_HANDOFF_PRODUCT_SHA = \"140de0a83044f324bf455ac2dfb87b17432fb8d1\";\n+export const AUTHOR_HANDOFF_METADATA_TIP_SHA = \"6355485eb2c531a263545f5159384b88a956aba2\";\n+export const COMPUTER_VERIFIED_METADATA_TIP_SHA = \"a36c609b7ea7a43ce4f4ec544f7ad0e60b403447\";\n+\n+/** @deprecated use AUTHOR_HANDOFF_PRODUCT_SHA */\n+export const AUTHOR_HANDOFF_AUDIT_SHA = AUTHOR_HANDOFF_PRODUCT_SHA;\n \n /** C01–C56 registry for implementation author (REMCLIENTS-PARITY-20261113-V1). */\n export function buildClientsAcceptanceMatrix(): AcceptanceRow[] {\ndiff --git a/src/lib/clients-parity/audit/mobile-client-row-computed.json b/src/lib/clients-parity/audit/mobile-client-row-computed.json\nindex 6fe25926..6ce01701 100644\n--- a/src/lib/clients-parity/audit/mobile-client-row-computed.json\n+++ b/src/lib/clients-parity/audit/mobile-client-row-computed.json\n@@ -1,6 +1,6 @@\n {\n-  \"measuredAt\": \"2026-11-13T10:47:19.097Z\",\n-  \"candidateSha\": \"78e4852194a0b9d307ee92743ae754dd18d5a9ba\",\n+  \"measuredAt\": \"2026-11-13T10:54:50.543Z\",\n+  \"candidateSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n   \"prototypeReferenceSha\": \"3dc31836cd18d9209c20097f18b906dd276f7af6\",\n   \"harness\": \"scripts/clients-parity-20261113/observer-list-harness\",\n   \"viewportHeight\": 812,\n@@ -9,11 +9,16 @@\n       \"innerWidth\": 768,\n       \"theme\": \"dark\",\n       \"selector\": \"[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]\",\n-      \"gridTemplateColumns\": \"24px 708px\",\n+      \"gridTemplateColumns\": \"24px 348px 348px\",\n+      \"rowParity\": {\n+        \"gridTemplateAreas\": \"none\",\n+        \"topDelta\": 0\n+      },\n+      \"parityPass\": true,\n       \"openButton\": {\n         \"x\": 48,\n-        \"y\": 206,\n-        \"width\": 708,\n+        \"y\": 214,\n+        \"width\": 68,\n         \"height\": 47.5\n       },\n       \"geometryPass\": true,\n@@ -24,11 +29,16 @@\n       \"innerWidth\": 375,\n       \"theme\": \"dark\",\n       \"selector\": \"[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]\",\n-      \"gridTemplateColumns\": \"24px 315px\",\n+      \"gridTemplateColumns\": \"24px 151.5px 151.5px\",\n+      \"rowParity\": {\n+        \"gridTemplateAreas\": \"none\",\n+        \"topDelta\": 0\n+      },\n+      \"parityPass\": true,\n       \"openButton\": {\n         \"x\": 48,\n-        \"y\": 206,\n-        \"width\": 315,\n+        \"y\": 214,\n+        \"width\": 68,\n         \"height\": 47.5\n       },\n       \"geometryPass\": true,\n@@ -39,11 +49,16 @@\n       \"innerWidth\": 360,\n       \"theme\": \"dark\",\n       \"selector\": \"[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]\",\n-      \"gridTemplateColumns\": \"24px 300px\",\n+      \"gridTemplateColumns\": \"24px 144px 144px\",\n+      \"rowParity\": {\n+        \"gridTemplateAreas\": \"none\",\n+        \"topDelta\": 0\n+      },\n+      \"parityPass\": true,\n       \"openButton\": {\n         \"x\": 48,\n-        \"y\": 206,\n-        \"width\": 300,\n+        \"y\": 214,\n+        \"width\": 68,\n         \"height\": 47.5\n       },\n       \"geometryPass\": true,\n@@ -54,11 +69,16 @@\n       \"innerWidth\": 320,\n       \"theme\": \"dark\",\n       \"selector\": \"[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]\",\n-      \"gridTemplateColumns\": \"24px 260px\",\n+      \"gridTemplateColumns\": \"24px 124px 124px\",\n+      \"rowParity\": {\n+        \"gridTemplateAreas\": \"none\",\n+        \"topDelta\": 0\n+      },\n+      \"parityPass\": true,\n       \"openButton\": {\n         \"x\": 48,\n-        \"y\": 206,\n-        \"width\": 260,\n+        \"y\": 214,\n+        \"width\": 68,\n         \"height\": 47.5\n       },\n       \"geometryPass\": true,\ndiff --git a/src/lib/clients-parity/audit/stats-grid-computed.json b/src/lib/clients-parity/audit/stats-grid-computed.json\nindex 4d4c858b..3d012434 100644\n--- a/src/lib/clients-parity/audit/stats-grid-computed.json\n+++ b/src/lib/clients-parity/audit/stats-grid-computed.json\n@@ -1,6 +1,6 @@\n {\n-  \"measuredAt\": \"2026-11-13T10:54:27.500Z\",\n-  \"candidateSha\": \"a55dab075859b1dcf24c93098b38943edfe8d7f7\",\n+  \"measuredAt\": \"2026-11-13T10:54:52.458Z\",\n+  \"candidateSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n   \"prototypeReferenceSha\": \"3dc31836cd18d9209c20097f18b906dd276f7af6\",\n   \"cssSource\": \"src/components/clients/observer/observer.module.css\",\n   \"selector\": \".partnerCard .stats\",\ndiff --git a/src/lib/clients-parity/author-handoff-v6.json b/src/lib/clients-parity/author-handoff-v6.json\nindex 72a666ac..149bb636 100644\n--- a/src/lib/clients-parity/author-handoff-v6.json\n+++ b/src/lib/clients-parity/author-handoff-v6.json\n@@ -1,14 +1,20 @@\n {\n-  \"taskId\": \"REMCLIENTS-V7-CASCADE-EXACT-PARITY\",\n+  \"taskId\": \"REMCLIENTS-V8-HANDOFF-PIN-ONLY\",\n   \"supersedesProductFix\": \"0729c12f1e321b1aa458d95016eb4cc3f4428f6f\",\n-  \"v7Note\": \"Removed obsolete max768 grid-template-areas; prototype max1100 grouped + max760 flat only. Grouped status+updated |Δtop|≤1px at 320–1024.\",\n+  \"v7ProductNote\": \"Removed obsolete max768 grid-template-areas; prototype max1100 grouped + max760 flat only. Grouped status+updated |Δtop|≤1px at 320–1024.\",\n   \"authors\": {\n     \"implementation\": \"bc-597b1474\",\n     \"auditor\": \"bc-0a64ca5a\"\n   },\n   \"shas\": {\n-    \"auditSha\": \"78e4852194a0b9d307ee92743ae754dd18d5a9ba\",\n-    \"productFixSha\": \"5063368aea4a4219df354b0fcad7a0eaf9846ac8\",\n+    \"computerCandidateSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n+    \"productFixSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n+    \"metadataTipSha\": \"6355485eb2c531a263545f5159384b88a956aba2\",\n+    \"staleMetadataDoNotUse\": {\n+      \"patchManifestProductFixSha5063368a\": \"Superseded V6 mobile stack; corrected in V8 handoff\",\n+      \"priorAuditSha0729c12f\": \"Grouped row parity FAIL before 140de0a8\"\n+    },\n+    \"priorAuditShaDoNotUse\": \"0729c12f1e321b1aa458d95016eb4cc3f4428f6f\",\n     \"productionBaseSha\": \"57ca4680892ae16c62fc38d0ad2ccb6a404dbd79\",\n     \"prototypeSha\": \"3dc31836cd18d9209c20097f18b906dd276f7af6\",\n     \"supersedesComputerPin\": \"d1da948491293c1a8ba77d4854191347708b4379\",\n@@ -70,7 +76,25 @@\n     \"scripts/clients-parity-20261113/measure-observer-stats-grid.mjs\",\n     \"scripts/clients-parity-20261113/observer-list-harness/\"\n   ],\n-  \"computerV6IsolatedPassOnly\": [\n+  \"computerV8IsolatedPassOnly\": [\n+    {\n+      \"id\": \"REG-V8-GROUPED-ROW-PARITY\",\n+      \"note\": \"320–1024 light/dark: status/updated same row (y e.g. 281.5), gridTemplateAreas none grouped+flat.\"\n+    },\n+    {\n+      \"id\": \"REG-V8-MOBILE-NAV\",\n+      \"note\": \"Real client/back from partner-page, expanded group, flat list.\"\n+    },\n+    {\n+      \"id\": \"REG-V8-KPI\",\n+      \"note\": \"KPI 4 above 360px, 2 at ≤360; no overflow claim as full parity.\"\n+    },\n+    {\n+      \"id\": \"REG-V8-COMPONENT-VITEST\",\n+      \"note\": \"2 fixture files / 8 ObserverPartnersListView tests PASS — not section acceptance.\"\n+    }\n+  ],\n+  \"computerV6IsolatedPassOnlySuperseded\": [\n     {\n       \"id\": \"REG-V6-MOBILE-CLICK-8\",\n       \"note\": \"320/360/375/768 × light/dark: partner-page, expanded group, flat list → client → back; child open button width>0 height 47.5px (375 ~299px per Computer).\"\n@@ -110,8 +134,10 @@\n     \"ffd4aa61 / d1da9484 screenshots as proof of auditSha\"\n   ],\n   \"auditorInstructions\": {\n-    \"pinSha\": \"78e4852194a0b9d307ee92743ae754dd18d5a9ba\",\n-    \"doNotUsePin\": \"42f9fae9 (V5-only)\",\n+    \"pinProductSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n+    \"optionalMetadataTipSha\": \"6355485eb2c531a263545f5159384b88a956aba2\",\n+    \"computerVerifiedTip\": \"a36c609b7ea7a43ce4f4ec544f7ad0e60b403447\",\n+    \"doNotUsePin\": \"5063368a metadata; 0729c12f; 65df323e pre-V7; 42f9fae9 V5\",\n     \"measureChildBoundsAndRealClicks\": true,\n     \"doNotPromoteMissingBackendToPass\": true\n   }\ndiff --git a/src/lib/clients-parity/patch-manifest-57ca4680.json b/src/lib/clients-parity/patch-manifest-57ca4680.json\nindex 2606c038..e695dffd 100644\n--- a/src/lib/clients-parity/patch-manifest-57ca4680.json\n+++ b/src/lib/clients-parity/patch-manifest-57ca4680.json\n@@ -1,9 +1,16 @@\n {\n   \"baseSha\": \"57ca4680892ae16c62fc38d0ad2ccb6a404dbd79\",\n-  \"taskId\": \"REMCLIENTS-V7-CASCADE-EXACT-PARITY\",\n-  \"auditShaPinAfterComputer\": \"pending-v7-commit\",\n+  \"taskId\": \"REMCLIENTS-V8-HANDOFF-PIN-ONLY\",\n+  \"computerCandidateSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n+  \"productFixSha\": \"140de0a83044f324bf455ac2dfb87b17432fb8d1\",\n+  \"metadataTipSha\": \"6355485eb2c531a263545f5159384b88a956aba2\",\n+  \"computerVerifiedTipSha\": \"a36c609b7ea7a43ce4f4ec544f7ad0e60b403447\",\n+  \"shaPinLegend\": {\n+    \"productFixSha\": \"Product/CSS/tests commit only (observer.module.css V7 cascade + parity assertions). Pin for cherry-pick and Computer candidate.\",\n+    \"metadataTipSha\": \"Handoff JSON/docs-only commits; product tree unchanged vs productFixSha.\",\n+    \"staleDoNotUse\": \"5063368a, 0729c12f, 78e48521 — superseded metadata or pre-parity CSS\"\n+  },\n   \"supersedesAuditPin\": \"0729c12f1e321b1aa458d95016eb4cc3f4428f6f\",\n-  \"productFixSha\": \"5063368aea4a4219df354b0fcad7a0eaf9846ac8\",\n   \"authorHandoffManifest\": \"src/lib/clients-parity/author-handoff-v6.json\",\n   \"excludeFromCherryPick\": [\n     \"src/components/clients/OwnerClientsGate.tsx\","
-  },
-  "v7IsolatedPass": {
-    "computerPriorClaim": "2 files / 8 tests on 140de0a8/a36c609b",
-    "p8ReverifiedAt": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
-    "vitestScoped": {
-      "command": "npx vitest run src/lib/clients-parity/ src/components/clients/observer/",
-      "filesPassed": 7,
-      "testsPassed": 41,
-      "browserCoverage": "Playwright chromium harness on loopback :5377 (fixtures only)"
-    },
-    "sectionLift": false,
-    "mapsPartiallyTo": [
-      "C29",
-      "C31",
-      "C33",
-      "C39",
-      "C40",
-      "C42",
-      "C44"
+  "sectionAccepted": false,
+  "publication": false,
+  "externalRootSyntheticQa": {
+    "description": "Root orchestrator: 120 component + 22 P7 + 12 width/theme synthetic browser (dark fallback, contextual return)",
+    "verifiedByP8": false,
+    "doesNotLift": [
+      "backend",
+      "persistence",
+      "pixel_perfect",
+      "section_acceptance"
     ]
   },
-  "browserFullAppCoverage": "BLOCKED (no mocked Next.js egress harness for full cabinet Clients route)",
-  "auditorCounts": {
-    "PASS_functional": 5,
-    "PASS_safety": 4,
-    "FAIL": 10,
-    "BLOCKED_CONTRACT": 23,
-    "BLOCKED_PERSISTENCE": 4,
-    "NOT_STARTED": 9,
-    "EXCLUDED": 1,
-    "TOTAL": 56
+  "ownerTestEvidence": {
+    "P1": {
+      "sha": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+      "log": "audit/.../P1/vitest-run.log",
+      "claimed": "11 tests PASS",
+      "p8Reran": false
+    },
+    "P2": {
+      "sha": "e0063d15cb2887f61077cdfad066615845837bb0",
+      "log": "audit/.../P2/test-run.log",
+      "productWrites": 0,
+      "p8Reran": false
+    },
+    "P3": {
+      "sha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "log": "audit/.../P3/vitest-p3.log",
+      "claimed": "20 tests PASS",
+      "p8Reran": false
+    },
+    "P4": {
+      "sha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "log": "audit/.../P4/vitest-p4.log",
+      "claimed": "11 tests PASS",
+      "p8Reran": false
+    },
+    "P5": {
+      "sha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "log": "audit/.../P5/test-log.txt",
+      "claimed": "18+7 tests PASS",
+      "p8Reran": false
+    },
+    "P6": {
+      "sha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "log": "audit/.../P6/vitest-p6.log",
+      "claimed": "9+ keyboard PASS",
+      "p8Reran": false
+    },
+    "P7": {
+      "sha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "log": "audit/.../P7/test-run.log",
+      "claimed": "22 P7 + 36 shared PASS",
+      "p8Reran": false
+    },
+    "P8_prior": {
+      "sha": "803b45e81334f857e3cebc04794827c4ca03da62",
+      "log": "vitest-scoped.log",
+      "claimed": "41 tests PASS @9fa6cc42",
+      "p8Reran": false
+    }
+  },
+  "p8TestsThisStage": {
+    "command": "npx vitest run src/lib/clients-parity/contracts.test.ts",
+    "atSha": "803b45e81334f857e3cebc04794827c4ca03da62",
+    "files": 1,
+    "testsPassed": 3,
+    "note": "BLOCKED_CONTRACT re-smoke only; parallel P3–P7 product trees verified via git show, not re-run."
+  },
+  "v7IsolatedRegression": {
+    "status": "CLOSED_ON_PRODUCT_FIX",
+    "notClaimedReranThisStage": true,
+    "priorP8Evidence": "vitest-scoped.log (41) @803b45e8 parent tree",
+    "rootSyntheticMayOverlap": true
   },
   "p8Counts": {
     "FAIL": 10,
     "NOT_STARTED": 9,
     "EXCLUDED": 1,
     "PASS_safety": 4,
-    "BLOCKED_CONTRACT": 23,
-    "PASS_functional": 5,
+    "BLOCKED_CONTRACT": 21,
+    "PASS_functional": 7,
     "BLOCKED_PERSISTENCE": 4,
     "TOTAL": 56
   },
+  "p8CountCheck": "56 === 56",
   "requirements": [
     {
       "id": "C01",
       "title": "Clients section routing / packaging onto production base",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Раздел маршрутизирован через ClientsDirectionWorkspace в кабинете.",
-      "blockerId": "PACKAGING_FORBIDDEN",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "PACKAGING_FORBIDDEN @9fa6cc42: legacy route absent; diff lines {\"src/components/clients/OwnerClientsGate.tsx\":148,\"src/components/clients/OwnerClientsModeContext.tsx\":41,\"src/app/clients/page.tsx (vs cabinet route)\":30,\"src/lib/onboarding-step/history-link-eligibility.ts\":49,\"vitest.config.ts\":64}. Observer/direction UI may be present — section packaging not accepted.",
       "gapKind": "PACKAGING_FORBIDDEN",
-      "feEvidence": [
-        "src/components/clients/OwnerClientsGate.tsx (DELTA vs 57ca4680)",
-        "src/components/clients/OwnerClientsModeContext.tsx (DELTA)",
-        "src/app/clients/page.tsx (deleted on tip; cabinet route src/app/(cabinet)/clients/page.tsx added)",
-        "src/lib/onboarding-step/history-link-eligibility.ts (deleted on tip; present on 57ca4680)",
-        "vitest.config.ts (DELTA)"
-      ]
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
+        "src/app/(cabinet)/clients/page.tsx",
+        "src/components/clients/ClientsListWorkspace.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Packaging vs 57ca4680 forbidden; P1 confirms list shell wiring on fixtures only.",
+      "owner": "P1",
+      "p8Evidence": "Packaging vs 57ca4680 forbidden; P1 confirms list shell wiring on fixtures only.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C02",
       "title": "Agent Clients surface = observer only (no Agent CRM list injection)",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Агент: только ObserverPartnersWorkspace, без AgentClientsList/CRM.",
-      "blockerId": "PACKAGING_FORBIDDEN",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "PACKAGING_FORBIDDEN @9fa6cc42: legacy route absent; diff lines {\"src/components/clients/OwnerClientsGate.tsx\":148,\"src/components/clients/OwnerClientsModeContext.tsx\":41,\"src/app/clients/page.tsx (vs cabinet route)\":30,\"src/lib/onboarding-step/history-link-eligibility.ts\":49,\"vitest.config.ts\":64}. Observer/direction UI may be present — section packaging not accepted.",
       "gapKind": "PACKAGING_FORBIDDEN",
-      "feEvidence": [
-        "src/components/clients/observer/ObserverPartnersWorkspace.tsx",
-        "src/components/clients/ClientsListWorkspace.tsx",
-        "src/components/clients/OwnerClientsGate.tsx (DELTA vs 57ca4680)",
-        "src/components/clients/OwnerClientsModeContext.tsx (DELTA)"
-      ]
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "evidencePaths": [
+        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+        "src/components/clients/observer/ObserverPartnersWorkspace.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P6: agent observer-only composition PASS (vitest); section still FAIL packaging.",
+      "owner": "P6",
+      "p8Evidence": "P6: agent observer-only composition PASS (vitest); section still FAIL packaging.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C03",
       "title": "Specialist/business direction tabs shell",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Специалист/бизнес: вкладки направлений как в эталоне.",
-      "blockerId": "PACKAGING_FORBIDDEN",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "PACKAGING_FORBIDDEN @9fa6cc42: legacy route absent; diff lines {\"src/components/clients/OwnerClientsGate.tsx\":148,\"src/components/clients/OwnerClientsModeContext.tsx\":41,\"src/app/clients/page.tsx (vs cabinet route)\":30,\"src/lib/onboarding-step/history-link-eligibility.ts\":49,\"vitest.config.ts\":64}. Observer/direction UI may be present — section packaging not accepted.",
       "gapKind": "PACKAGING_FORBIDDEN",
-      "feEvidence": [
-        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "evidencePaths": [
         "src/components/clients/direction/ClientsDirectionTabs.tsx",
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P6: direction tabs + honest receiving blocker; packaging FAIL.",
+      "owner": "P6",
+      "p8Evidence": "P6: direction tabs + honest receiving blocker; packaging FAIL.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C04",
       "title": "Filter/disclosure continuity across navigations",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Сохранение контекста фильтров/раскрытий между переходами — не реализовано.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Filter/disclosure continuity across multi-step navigations not proven this pass (Computer exercised open/back, not filter state retention).",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "NOT_EXERCISED",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverFilterChips.tsx",
         "src/components/clients/observer/ObserverPartnersListView.tsx"
-      ]
+      ],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Filter/disclosure continuity across multi-step navigations not proven this pass (Computer exercised open/back, not filter state retention).",
+      "owner": "P3",
+      "p8Evidence": "Filter/disclosure continuity across multi-step navigations not proven this pass (Computer exercised open/back, not filter state retention).",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C05",
       "title": "Agent receiving pages 107–112 excluded",
-      "auditorStatus": "EXCLUDED",
-      "authorImplStatus": "EXCLUDED",
-      "authorNote": "107–112 агент: принимающие виды не подключены.",
-      "blockerId": "SCOPE_EXCLUDED",
-      "p8AcceptanceStatus": "EXCLUDED",
-      "p8Evidence": "Agent receiving pages 107–112 excluded by scope (C56).",
       "gapKind": "SCOPE_EXCLUDED",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "EXCLUDED",
+      "uiStatus": "ABSENT_BY_SCOPE",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "C56 scope: agent receiving pages 107–112 not mounted"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Agent receiving pages 107–112 excluded by scope (C56).",
+      "owner": "—",
+      "p8Evidence": "Agent receiving pages 107–112 excluded by scope (C56).",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C06",
       "title": "No role demo switcher / page catalog in production Clients UI",
-      "auditorStatus": "PASS_safety",
-      "authorImplStatus": "PASS",
-      "authorNote": "Демо-переключатели ролей и каталог страниц не добавлены.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_safety",
-      "p8Evidence": "No role demo switcher / page catalog injected into production Clients UI.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "No role demo switcher / page catalog in ClientsDirectionWorkspace / observer mounts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "No role demo switcher / page catalog injected into production Clients UI.",
+      "owner": "P6",
+      "p8Evidence": "No role demo switcher / page catalog injected into production Clients UI.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C07",
       "title": "Receiving appeals list",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Принимающий список.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "evidencePaths": [
+        "src/components/clients/direction/ReceivingAppealsBlocked.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "P6",
       "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
-        "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
-        "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
-        "src/lib/clients-parity/contracts.ts"
-      ]
+      "p8TestsRunByP8": false
     },
     {
       "id": "C08",
       "title": "Receiving KPI",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "KPI принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C09",
       "title": "Receiving search/filters",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Поиск/фильтры принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C10",
       "title": "Receiving active/archive/trash buckets",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Активные/архив/корзина принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C11",
       "title": "Receiving row selection",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Выбор строк принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C12",
       "title": "Receiving bulk actions",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Массовые действия принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C13",
       "title": "Receiving bulk edit",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Массовое редактирование принимающего.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C14",
       "title": "Receiving appeal card/detail",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Карточка обращения.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C15",
       "title": "Receiving system statuses",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Системные статусы.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C16",
       "title": "Working stages CRUD",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Рабочие этапы.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C17",
       "title": "Refusal/review actions",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Действия отказа/review.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C18",
       "title": "Receiving funnel analytics",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Аналитика воронки.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C19",
       "title": "Receiving manual create",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Ручное создание.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C20",
       "title": "Certificate new/repeat/invalid flows",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Сертификат new/repeat/invalid.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C21",
       "title": "Certificate scanner scenarios",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Сканер сценарии.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C22",
       "title": "Purchase form",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Форма покупки.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C23",
       "title": "Purchase draft + profile categories",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Черновик покупки и категории профиля.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C24",
       "title": "Purchase confirm",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Подтверждение покупки.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-RECEIVING-APPEALS",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "SHELL_BLOCKED",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/direction/ReceivingAppealsBlocked.tsx",
         "src/components/clients/direction/ClientsDirectionWorkspace.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "owner": "V8-auditor",
+      "p8Evidence": "UI: ReceivingAppealsBlocked shell intentionally renders missing routes (not a missing-UI gap). Server: remcard-navigator release/prof-backend-v1-20261007 tree (4217 paths) has 0 client-appeals* / working-stage* handlers. FE proxy allowlists only agent-clients* and store order receiving-client (purchase link ≠ appeals CRM). Do not map to agent-clients CRM.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C25",
       "title": "Purchase/receipt navigation without preview domain",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Переходы покупка/квитанция без preview-домена — не проверено.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Purchase/receipt navigation without preview domain not exercised.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "ABSENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "No purchase/receipt nav exercise in this audit"
-      ]
+      ],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Purchase/receipt navigation without preview domain not exercised.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Purchase/receipt navigation without preview domain not exercised.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C26",
       "title": "Observer compact partner cards",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Компактные карточки партнёров: UI + CSS, данные BLOCKED.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Compact partner card UI+CSS present; full visual/pixel etalon vs prototype not declared PASS. Live card data blocked by missing referred-appeals. Packaging still forbidden (C01).",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPartnerCard.tsx",
-        "src/components/clients/observer/observer.module.css",
-        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
-      ]
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P3 vitest grouped cards; P7 compactTop 340px @9280f9e7; pixel etalon still incomplete.",
+      "owner": "P3+P7",
+      "p8Evidence": "P3 vitest grouped cards; P7 compactTop 340px @9280f9e7; pixel etalon still incomplete.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C27",
       "title": "Partner card metrics",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Метрики карточки в разметке; без API нет данных.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-REFERRED",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "e0063d15cb2887f61077cdfad066615845837bb0",
+      "evidencePaths": [
+        "src/lib/clients-parity/fetch-observer-appeals.ts",
+        "src/lib/remcard-proxy.ts"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Metrics markup present in partner card UI; production GET referred-appeals* ABSENT on BE tree; FE adapter returns BLOCKED_CONTRACT. UI present ≠ server support.",
+      "owner": "P2",
       "p8Evidence": "Metrics markup present in partner card UI; production GET referred-appeals* ABSENT on BE tree; FE adapter returns BLOCKED_CONTRACT. UI present ≠ server support.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
-        "src/components/clients/observer/ObserverPartnerCard.tsx",
-        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)",
-        "src/lib/clients-parity/contracts.ts"
-      ]
+      "p8TestsRunByP8": false
     },
     {
       "id": "C28",
       "title": "Compact card height/spacing etalon",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Локальный CSS compact ~125px ориентир.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Local CSS compact height orient present; card height/spacing full etalon deltas vs prototype not re-proven PASS.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
-        "src/components/clients/observer/observer.module.css",
-        "src/components/clients/observer/ObserverPartnerCard.tsx"
-      ]
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "evidencePaths": [
+        "src/components/clients/observer/observer.module.css"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P7 prototype spacing tokens; screenshot overlay still FAIL.",
+      "owner": "P7",
+      "p8Evidence": "P7 prototype spacing tokens; screenshot overlay still FAIL.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C29",
       "title": "Partner details show/hide + client open navigation",
-      "auditorStatus": "PASS_functional",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "details Показать/Скрыть по партнёру (session state); vitest toggle.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_functional",
-      "p8Evidence": "Computer V8 @ a36c609b/140de0a8: partner/group/flat → client → back real clicks across 10 width×theme samples; name min-height 44; open h≈47.5. Fixture-only; live API still BLOCKED (C32/C39). Packaging still C01 FAIL.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A_FIXTURE",
+      "evidenceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPartnerDetailView.tsx",
         "src/components/clients/observer/ObserverPersonalClientRow.tsx",
         "scripts/clients-parity-20261113/observer-list-harness/"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Computer V8 @ a36c609b/140de0a8: partner/group/flat → client → back real clicks across 10 width×theme samples; name min-height 44; open h≈47.5. Fixture-only; live API still BLOCKED (C32/C39). Packaging still C01 FAIL.",
+      "owner": "P3",
+      "p8Evidence": "Computer V8 @ a36c609b/140de0a8: partner/group/flat → client → back real clicks across 10 width×theme samples; name min-height 44; open h≈47.5. Fixture-only; live API still BLOCKED (C32/C39). Packaging still C01 FAIL.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C30",
       "title": "openPartners session; reload → collapsed",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "openPartners в session; reload → свёрнуто.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "openPartners session reload→collapsed not proven across real navigation this pass.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "SESSION_ONLY",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPartnersListView.tsx"
-      ]
+      ],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "openPartners session; reload persistence NOT_STARTED.",
+      "owner": "P3",
+      "p8Evidence": "openPartners session; reload persistence NOT_STARTED.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C31",
       "title": "Group/mixed checkbox + select-all; row geometry",
-      "auditorStatus": "PASS_functional",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Checkbox группы/mixed + select-all; vitest.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_functional",
-      "p8Evidence": "Computer V8: child bounds; status/date y shared (281.5 both in Computer report); no dead named tracks; checkbox/group geometry. Fixture harness; scrollWidth alone not used as pass.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A_FIXTURE",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPersonalClientRow.tsx",
         "src/components/clients/observer/observer.module.css",
         "audit/clients-parity-20261113/v7-pin-140de0a8/v7-grouped-parity-report.json"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Computer V8: child bounds; status/date y shared (281.5 both in Computer report); no dead named tracks; checkbox/group geometry. Fixture harness; scrollWidth alone not used as pass.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Computer V8: child bounds; status/date y shared (281.5 both in Computer report); no dead named tracks; checkbox/group geometry. Fixture harness; scrollWidth alone not used as pass.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C32",
       "title": "Expanded clients under partner (live data)",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Раскрытые клиенты.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-REFERRED",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "Expanded-client UI works on fixtures (Computer PASS). Live production list requires GET /api/pro/referred-appeals* — 0 handlers on BE release tree; FE fetchObserverReferredAppeals returns BLOCKED_CONTRACT. Distinguish: UI present, server absent.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPartnerDetailView.tsx",
         "src/components/clients/observer/ObserverPartnersListView.tsx",
         "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Expanded-client UI works on fixtures (Computer PASS). Live production list requires GET /api/pro/referred-appeals* — 0 handlers on BE release tree; FE fetchObserverReferredAppeals returns BLOCKED_CONTRACT. Distinguish: UI present, server absent.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Expanded-client UI works on fixtures (Computer PASS). Live production list requires GET /api/pro/referred-appeals* — 0 handlers on BE release tree; FE fetchObserverReferredAppeals returns BLOCKED_CONTRACT. Distinguish: UI present, server absent.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C33",
       "title": "Observer filters q/period, chips, grouped/flat layout",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Фильтры q/period, chips, grouped/flat layout; vitest.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Filters/chips + grouped/flat layout UI present; Computer V8 exercised partner/group/flat open+back on fixtures. Full filter-semantic/visual etalon vs prototype + live data not accepted. Not a personal-edit item (that is C35). | V7/V8 isolated vitest PASS @9fa6cc42 does not lift section acceptance.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "PASS_functional",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A_FIXTURE",
+      "evidenceSha": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverFilterChips.tsx",
-        "src/components/clients/observer/ObserverPartnersListView.tsx",
-        "src/components/clients/observer/observer.module.css"
-      ]
+        "src/components/clients/observer/ObserverPartnersListView.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Filters/chips + grouped/flat layout UI present; Computer V8 exercised partner/group/flat open+back on fixtures. Full filter-semantic/visual etalon vs prototype + live data not accepted. Not a personal-edit item (that is C35).",
+      "owner": "P3",
+      "p8Evidence": "Filters/chips + grouped/flat layout UI present; Computer V8 exercised partner/group/flat open+back on fixtures. Full filter-semantic/visual etalon vs prototype + live data not accepted. Not a personal-edit item (that is C35).",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C34",
       "title": "filterObserverAppeals semantics vs live API",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "Семантика filterObserverAppeals vs API.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-REFERRED",
       "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "filterObserverAppeals helper exists for fixtures; cannot validate semantics against live referred-appeals API (ABSENT).",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/lib/clients-parity/filter-observer.ts",
         "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "filterObserverAppeals helper exists for fixtures; cannot validate semantics against live referred-appeals API (ABSENT).",
+      "owner": "V8-auditor",
+      "p8Evidence": "filterObserverAppeals helper exists for fixtures; cannot validate semantics against live referred-appeals API (ABSENT).",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C35",
       "title": "Personal alias/tag/note form + persist",
-      "auditorStatus": "BLOCKED_PERSISTENCE",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "UI-only: форма alias/tag/note, cancel OK; save disabled — НЕ persistence PASS.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-PERSONAL-PERSIST",
       "p8AcceptanceStatus": "BLOCKED_PERSISTENCE",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPersonalEditPanel.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "UI form alias/tag/note + cancel present; Save disabled (title BLOCKED_PERSISTENCE). No PATCH personal-meta on BE. Must NOT map to PATCH /api/pro/agent-clients/:id displayName/note.",
+      "owner": "P5",
       "p8Evidence": "UI form alias/tag/note + cancel present; Save disabled (title BLOCKED_PERSISTENCE). No PATCH personal-meta on BE. Must NOT map to PATCH /api/pro/agent-clients/:id displayName/note.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
-        "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
-        "src/components/clients/observer/ObserverPartnersListView.tsx",
-        "src/lib/clients-parity/contracts.ts"
-      ]
+      "p8TestsRunByP8": false
     },
     {
       "id": "C36",
       "title": "Mass personal tag edit + persist",
-      "auditorStatus": "BLOCKED_PERSISTENCE",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "UI-only: bulk edit panel + cancel; save disabled — НЕ persistence PASS.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-PERSONAL-PERSIST",
       "p8AcceptanceStatus": "BLOCKED_PERSISTENCE",
-      "p8Evidence": "Bulk edit panel UI + cancel present; save disabled. No mass tag persistence endpoint on BE/FE proxy.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPersonalTools.tsx",
         "src/components/clients/observer/ObserverPartnersListView.tsx",
         "src/lib/clients-parity/contracts.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Bulk edit panel UI + cancel present; save disabled. No mass tag persistence endpoint on BE/FE proxy.",
+      "owner": "P5",
+      "p8Evidence": "Bulk edit panel UI + cancel present; save disabled. No mass tag persistence endpoint on BE/FE proxy.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C37",
       "title": "Personal archive/trash/restore (own list only)",
-      "auditorStatus": "BLOCKED_PERSISTENCE",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "UI-only: confirm archive/trash/restore; confirm → BLOCKED_PERSISTENCE, no data change.",
+      "gapKind": "WRONG_SEMANTICS",
       "blockerId": "BLK-OBSERVER-PERSONAL-PERSIST",
       "p8AcceptanceStatus": "BLOCKED_PERSISTENCE",
-      "p8Evidence": "Confirm UI present; confirm → BLOCKED_PERSISTENCE notify, no mutation. agent-clients archive/delete ≠ «удалить только из своего списка». Semantic mismatch, not merely missing UI.",
-      "gapKind": "WRONG_SEMANTICS",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_PERSISTENCE",
+      "evidenceSha": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPersonalConfirmPanel.tsx",
         "src/components/clients/observer/ObserverPartnersListView.tsx"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Confirm UI present; confirm → BLOCKED_PERSISTENCE notify, no mutation. agent-clients archive/delete ≠ «удалить только из своего списка». Semantic mismatch, not merely missing UI.",
+      "owner": "P5",
+      "p8Evidence": "Confirm UI present; confirm → BLOCKED_PERSISTENCE notify, no mutation. agent-clients archive/delete ≠ «удалить только из своего списка». Semantic mismatch, not merely missing UI.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C38",
       "title": "Personal meta survives reload (production contract)",
-      "auditorStatus": "BLOCKED_PERSISTENCE",
-      "authorImplStatus": "BLOCKED",
-      "authorNote": "BLOCKED_PERSISTENCE для личных полей.",
+      "gapKind": "MISSING_SERVER",
       "blockerId": "BLK-OBSERVER-PERSONAL-PERSIST",
       "p8AcceptanceStatus": "BLOCKED_PERSISTENCE",
-      "p8Evidence": "Disabled save ≠ persistence PASS. No production personal-meta contract; localStorage/sessionStorage forbidden as substitute.",
-      "gapKind": "MISSING_SERVER",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/ObserverPersonalEditPanel.tsx (Save disabled, title=BLOCKED_PERSISTENCE)",
         "src/lib/clients-parity/contracts.ts",
         "01-EARLY-API-OWNERSHIP-PERSISTENCE-BLOCKERS.md"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Disabled save ≠ persistence PASS. No production personal-meta contract; localStorage/sessionStorage forbidden as substitute.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Disabled save ≠ persistence PASS. No production personal-meta contract; localStorage/sessionStorage forbidden as substitute.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C39",
       "title": "Partner detail view + back (live)",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Partner detail view + back (fixture nav).",
-      "blockerId": "BLK-OBSERVER-REFERRED",
-      "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "Partner detail UI + back works on fixtures (Computer). Live partner-scoped referred list ABSENT on server.",
       "gapKind": "MISSING_SERVER",
-      "feEvidence": [
-        "src/components/clients/observer/ObserverPartnerDetailView.tsx",
-        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
-      ]
+      "blockerId": "BLK-OBSERVER-REFERRED",
+      "p8AcceptanceStatus": "PASS_functional",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A_FIXTURE",
+      "evidenceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverPartnerDetailView.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P4 synthetic navigation tests; live referred data BLOCKED.",
+      "owner": "P4",
+      "p8Evidence": "P4 synthetic navigation tests; live referred data BLOCKED.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C40",
       "title": "Client public detail + back (live)",
-      "auditorStatus": "BLOCKED_CONTRACT",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "Client public detail view + back (fixture nav).",
-      "blockerId": "BLK-OBSERVER-REFERRED",
-      "p8AcceptanceStatus": "BLOCKED_CONTRACT",
-      "p8Evidence": "Client detail UI + back on fixtures (Computer). Live GET referred-appeals/:id ABSENT on BE.",
       "gapKind": "MISSING_SERVER",
-      "feEvidence": [
-        "src/components/clients/observer/ObserverClientDetailView.tsx",
-        "src/lib/clients-parity/fetch-observer-appeals.ts (returns ok:false BLOCKED_CONTRACT)"
-      ]
+      "blockerId": "BLK-OBSERVER-REFERRED",
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "BLOCKED_CONTRACT",
+      "evidenceSha": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+      "evidencePaths": [
+        "src/components/clients/observer/ObserverClientDetailView.tsx"
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Fields PASS; timeline/purchase BLOCKED (P4 PARTIAL).",
+      "owner": "P4",
+      "p8Evidence": "Fields PASS; timeline/purchase BLOCKED (P4 PARTIAL).",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C41",
       "title": "URL/id protection",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Защита URL/id — серверная, не расширена в UI.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "URL/id protection not expanded/proven this pass.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "URL/id protection not expanded/proven this pass.",
+      "owner": "V8-auditor",
+      "p8Evidence": "URL/id protection not expanded/proven this pass.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C42",
       "title": "KPI CSS cascade tokens (4 above 360 / 2 at ≤360)",
-      "auditorStatus": "PASS_functional",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "CSS module tokens; numeric spot-test only (observer-visual-tokens.test.ts).",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_functional",
-      "p8Evidence": "Computer V8 + vitest: KPI cascade preserved — 4 cols above 360 / 2 at ≤360 across viewport checks.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "evidencePaths": [
         "src/components/clients/observer/observer.module.css",
         "src/lib/clients-parity/observer-stats-grid.computed.test.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "P7 CSS tokens + shared observer-visual-tokens; full computed diff NOT_STARTED.",
+      "owner": "P7",
+      "p8Evidence": "P7 CSS tokens + shared observer-visual-tokens; full computed diff NOT_STARTED.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C43",
       "title": "Grouped row cascade: status+updated same row; no obsolete areas",
-      "auditorStatus": "PASS_functional",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Полный computed-style diff per component — нет overlay PASS.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_functional",
-      "p8Evidence": "Computer V8 @ 140de0a8: obsolete max768 areas removed; status+updated same row (y shared); no dead named tracks at 320–1024. Prototype max1100 grouped + max760 flat only.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/observer.module.css",
         "audit/clients-parity-20261113/v7-pin-140de0a8/",
         "scripts/clients-parity-20261113/audit-v7-140de0a8-grouped-parity.mjs"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Computer V8 @ 140de0a8: obsolete max768 areas removed; status+updated same row (y shared); no dead named tracks at 320–1024. Prototype max1100 grouped + max760 flat only.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Computer V8 @ 140de0a8: obsolete max768 areas removed; status+updated same row (y shared); no dead named tracks at 320–1024. Prototype max1100 grouped + max760 flat only.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C44",
       "title": "Spacing/radius full visual pass thresholds",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "4/8/12/16/44px spot-check в CSS + vitest.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Token spot-checks OK; spacing/radius full visual pass thresholds not re-claimed. | V7/V8 isolated vitest PASS @9fa6cc42 does not lift section acceptance.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9280f9e7279da14964574a6d1585499134ac7f8c",
+      "evidencePaths": [
         "src/components/clients/observer/observer.module.css",
         "src/lib/clients-parity/observer-visual-tokens.test.ts"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Token spot-checks OK; spacing/radius full visual pass thresholds not re-claimed.",
+      "owner": "P7",
+      "p8Evidence": "Token spot-checks OK; spacing/radius full visual pass thresholds not re-claimed.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C45",
       "title": "Light/dark full pixel thresholds",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Light/dark screenshot pairs — QA bc-0a64ca5a.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "KPI cols OK both themes in Computer samples; full light/dark pixel thresholds not re-claimed PASS.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PARTIAL",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/components/clients/observer/observer.module.css"
-      ]
+      ],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "P7 computed 12 width×theme; full screenshot pairs NOT_STARTED.",
+      "owner": "P7",
+      "p8Evidence": "P7 computed 12 width×theme; full screenshot pairs NOT_STARTED.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C46",
       "title": "Viewport matrix real-click + geometry (isolated)",
-      "auditorStatus": "PASS_functional",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Viewport matrix screenshots — QA; Computer V6 used real clicks/child bounds, not full screenshot parity.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_functional",
-      "p8Evidence": "P8 independently re-ran isolated harness @9fa6cc42: 24 Playwright + component tests PASS (superset of Computer V8 8-test claim). Isolated only — not full section/screenshot parity.",
-      "feEvidence": [
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A_FIXTURE",
+      "evidenceSha": "140de0a83044f324bf455ac2dfb87b17432fb8d1",
+      "evidencePaths": [
         "Computer V8: 10 samples 320/360/375/768/1024 × light/dark",
         "2 observer component files / 8 tests PASS"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Isolated harness; root claims 12 width/theme synthetic browser — NOT verified by P8 this stage.",
+      "owner": "P7+V8",
+      "p8Evidence": "Isolated harness; root claims 12 width/theme synthetic browser — NOT verified by P8 this stage.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C47",
       "title": "Bounding-box overlay ≤1px vs prototype etalon",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "getBoundingClientRect ≤1px overlay — QA; V6 mobile open-button bounds measured separately (audit JSON).",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Same-row tops asserted; full bounding-box etalon overlay ≤1px vs prototype baseline not re-diffed to PASS.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "v7 same-row tops measured; full prototype overlay etalon not re-diffed"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Same-row tops asserted; full bounding-box etalon overlay ≤1px vs prototype baseline not re-diffed to PASS.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Same-row tops asserted; full bounding-box etalon overlay ≤1px vs prototype baseline not re-diffed to PASS.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C48",
       "title": "Screenshot overlay visualPass vs prototype baseline",
-      "auditorStatus": "FAIL",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Screenshot overlay PASS — QA audit; NOT claimed at auditSha.",
-      "blockerId": "VISUAL_ETALON_INCOMPLETE",
-      "p8AcceptanceStatus": "FAIL",
-      "p8Evidence": "Cascade screenshots exist; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted.",
       "gapKind": "VISUAL_ETALON_INCOMPLETE",
-      "feEvidence": [
+      "blockerId": null,
+      "p8AcceptanceStatus": "FAIL",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "v7-pin-140de0a8 screenshots = cascade proof only"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "Cascade screenshots exist; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Cascade screenshots exist; full overlay/pixel visualPass vs prototype baseline still not claimed. Section unaccepted.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C49",
       "title": "Overflow/regression sweep beyond observer fixture",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Overflow/regression sweep.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Full overflow/regression sweep outside observer fixture not run.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Full overflow/regression sweep outside observer fixture not run.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Full overflow/regression sweep outside observer fixture not run.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C50",
       "title": "Keyboard/a11y full inventory",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "IN_PROGRESS",
-      "authorNote": "focus-visible на disclosure/summary, tabs, checkbox aria-checked mixed.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Keyboard/a11y inventory not fully exercised (spot focus-visible exists; not full pass).",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "PRESENT",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+      "evidencePaths": [
+        "src/components/clients/direction/P6.ClientsDirectionTabs.test.tsx"
+      ],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Tab roving focus P6; observer focus-visible unchanged.",
+      "owner": "P6",
+      "p8Evidence": "Tab roving focus P6; observer focus-visible unchanged.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C51",
       "title": "Observer network loading/error paths",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "loading/error сетевые сценарии observer.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Observer network loading/error paths not proven beyond BLOCKED adapter return.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Observer network loading/error paths not proven beyond BLOCKED adapter return.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Observer network loading/error paths not proven beyond BLOCKED adapter return.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C53",
       "title": "Form rerender focus",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Rerender focus на формах.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Form rerender focus not tested.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Form rerender focus not tested.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Form rerender focus not tested.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C54",
       "title": "Cross-section regressions",
-      "auditorStatus": "NOT_STARTED",
-      "authorImplStatus": "NOT_STARTED",
-      "authorNote": "Регрессии других разделов не прогонялись.",
-      "blockerId": "NOT_EXERCISED",
-      "p8AcceptanceStatus": "NOT_STARTED",
-      "p8Evidence": "Cross-section regressions not run.",
       "gapKind": "NOT_EXERCISED",
-      "feEvidence": []
+      "blockerId": null,
+      "p8AcceptanceStatus": "NOT_STARTED",
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [],
+      "browserProductionCheck": "NOT_RUN",
+      "note": "Cross-section regressions not run.",
+      "owner": "V8-auditor",
+      "p8Evidence": "Cross-section regressions not run.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C52",
       "title": "Demo fixtures not wired into production path",
-      "auditorStatus": "PASS_safety",
-      "authorImplStatus": "PASS",
-      "authorNote": "Демо-датасет не подключён к production UI.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_safety",
-      "p8Evidence": "observer-demo-fixtures not imported by production workspace path.",
-      "feEvidence": [
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "src/lib/clients-parity/fixtures/observer-demo-fixtures.ts not imported by production ClientsListWorkspace path"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "observer-demo-fixtures not imported by production workspace path.",
+      "owner": "V8-auditor",
+      "p8Evidence": "observer-demo-fixtures not imported by production workspace path.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C55",
       "title": "No real financial ops in this work",
-      "auditorStatus": "PASS_safety",
-      "authorImplStatus": "PASS",
-      "authorNote": "Нет реальных финансовых операций в этой итерации.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_safety",
-      "p8Evidence": "No real financial ops in candidate Clients work / this audit.",
-      "feEvidence": [
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "Read-only audit; no store purchase mutations"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "No real financial ops in candidate Clients work / this audit.",
+      "owner": "V8-auditor",
+      "p8Evidence": "No real financial ops in candidate Clients work / this audit.",
+      "p8TestsRunByP8": false
     },
     {
       "id": "C56",
       "title": "No DB/backend/rights/finance/prod changes by auditor",
-      "auditorStatus": "PASS_safety",
-      "authorImplStatus": "PASS",
-      "authorNote": "БД/backend/права не менялись.",
+      "blockerId": null,
       "p8AcceptanceStatus": "PASS_safety",
-      "p8Evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod/deploy changes. Forbidden packaging deltas explicit.",
-      "feEvidence": [
+      "uiStatus": "N/A",
+      "dataPersistenceStatus": "N/A",
+      "evidenceSha": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+      "evidencePaths": [
         "Allowlist-only writes: audit/ + scripts/clients-parity-20261113/"
-      ]
+      ],
+      "browserProductionCheck": "BLOCKED",
+      "note": "C05 exclusion honored; no DB/backend/rights/finance/prod/deploy changes. Forbidden packaging deltas explicit.",
+      "owner": "V8-auditor",
+      "p8Evidence": "C05 exclusion honored; no DB/backend/rights/finance/prod/deploy changes. Forbidden packaging deltas explicit.",
+      "p8TestsRunByP8": false
     }
   ]
 }

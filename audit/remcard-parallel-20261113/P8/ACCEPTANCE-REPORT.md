@@ -1,5 +1,32 @@
 # П8 — Независимая приёмка C01–C56
 
+## Stage 2 — combined parallel tips (2026-11-13)
+
+| Agent | Tip SHA | Product delta (summary) |
+|-------|---------|-------------------------|
+| P1 | `c3d7c13d` | Manifest/shell compat tests; no observer CSS |
+| P2 | `e0063d15` | Contract audit only |
+| P3 | `8af6b6cb` | Observer list/chips/filter JSX |
+| P4 | `dd76accf` | Partner/client detail views + nav tests |
+| P5 | `c265ba69` | Personal tools/edit/confirm UI |
+| P6 | `3753b24c` | Direction tabs/receiving blocker/a11y |
+| P7 | `9280f9e7` | `observer.module.css` + P7 computed/accent tests |
+| P8 | `803b45e8` → stage-2 commit | Audit ledger only |
+
+**Evaluation model:** read-only `git show` at each tip on owned paths + owner vitest logs. Shared packaging/contracts measured at `9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0`.
+
+**Root synthetic (not P8-run):** 120 component + 22 P7 + 12 width×theme browser — may overlap isolated regressions; does **not** lift backend, persistence, or pixel acceptance.
+
+**P8 tests this stage:** `contracts.test.ts` only (3 PASS) — log `vitest-contracts-stage2.log`.
+
+**Ledger v2:** `requirement-ledger-c01-c56.json` — each row has `uiStatus`, `dataPersistenceStatus`, `evidenceSha`, `browserProductionCheck`, `owner`.
+
+**Totals (`TOTAL=56`):** `FAIL=10` · `PASS_functional=7` · `PASS_safety=4` · `BLOCKED_CONTRACT=21` · `BLOCKED_PERSISTENCE=4` · `NOT_STARTED=9` · `EXCLUDED=1`
+
+**Closed regressions (isolated, still not section):** V7 grouped-row/KPI/nav harness; P7 accent contrast on dark; P6 tab keyboard — **live API and packaging still block.**
+
+## Stage 1 archive (superseded details)
+
 ## Pins (read-only verification)
 
 | Role | SHA |

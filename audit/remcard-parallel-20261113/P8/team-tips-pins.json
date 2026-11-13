@@ -1,0 +1,21 @@
+{
+  "TIPS": {
+    "P1": "c3d7c13d16a065a2733a989a43fd3915fb0e5e63",
+    "P2": "e0063d15cb2887f61077cdfad066615845837bb0",
+    "P3": "8af6b6cbe5c3e70a0f79932b62d3f78f09ff5543",
+    "P4": "dd76accfe94343fb17c5a96797ee4d7b010eacb2",
+    "P5": "c265ba6978b01b2536df2f9889a039a2aaa0380e",
+    "P6": "3753b24c5273a8d83b68ab88a06f0ebe6c38547c",
+    "P7": "9280f9e7279da14964574a6d1585499134ac7f8c",
+    "P8": "803b45e81334f857e3cebc04794827c4ca03da62"
+  },
+  "SHARED_BASE": "9fa6cc4251780fbc20b887fcd66da1b7ecc32fa0",
+  "packagingAtSharedBase": {
+    "src/components/clients/OwnerClientsGate.tsx": 148,
+    "src/components/clients/OwnerClientsModeContext.tsx": 41,
+    "legacyClientsRoute": "absent",
+    "cabinetRoute": "present @9fa6cc42",
+    "src/lib/onboarding-step/history-link-eligibility.ts": 49,
+    "vitest.config.ts": 64
+  }
+}
