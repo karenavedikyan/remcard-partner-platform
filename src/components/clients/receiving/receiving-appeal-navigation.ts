@@ -9,39 +9,35 @@ export const RECEIVING_CLIENTS_RECEIVING_DIRECTION = "receiving" as const;
 
 export const RECEIVING_APPEAL_NAVIGATION_INVALID = "RECEIVING_APPEAL_NAVIGATION_INVALID" as const;
 
-export type ReceivingAppealNavigationError = {
-  code: typeof RECEIVING_APPEAL_NAVIGATION_INVALID;
-  message: string;
-};
+export class ReceivingAppealNavigationError extends Error {
+  readonly code = RECEIVING_APPEAL_NAVIGATION_INVALID;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ReceivingAppealNavigationError";
+  }
+}
+
+function throwReceivingAppealNavigationError(message: string): never {
+  throw new ReceivingAppealNavigationError(message);
+}
 
 const UNSAFE_ID = /[\s#?&/\\]|^(?:https?:|\/\/)/i;
 
 export function assertReceivingAppealId(appealId: string): string {
   const id = appealId.trim();
-  if (!id) {
-    throw Object.assign(new Error("appealId is required"), {
-      code: RECEIVING_APPEAL_NAVIGATION_INVALID,
-    } satisfies ReceivingAppealNavigationError);
-  }
+  if (!id) throwReceivingAppealNavigationError("appealId is required");
   if (UNSAFE_ID.test(id)) {
-    throw Object.assign(new Error("appealId contains unsafe characters"), {
-      code: RECEIVING_APPEAL_NAVIGATION_INVALID,
-    } satisfies ReceivingAppealNavigationError);
+    throwReceivingAppealNavigationError("appealId contains unsafe characters");
   }
   return id;
 }
 
 function assertPurchaseOrderId(purchaseOrderId: string): string {
   const id = purchaseOrderId.trim();
-  if (!id) {
-    throw Object.assign(new Error("purchaseOrderId is required"), {
-      code: RECEIVING_APPEAL_NAVIGATION_INVALID,
-    } satisfies ReceivingAppealNavigationError);
-  }
+  if (!id) throwReceivingAppealNavigationError("purchaseOrderId is required");
   if (UNSAFE_ID.test(id)) {
-    throw Object.assign(new Error("purchaseOrderId contains unsafe characters"), {
-      code: RECEIVING_APPEAL_NAVIGATION_INVALID,
-    } satisfies ReceivingAppealNavigationError);
+    throwReceivingAppealNavigationError("purchaseOrderId contains unsafe characters");
   }
   return id;
 }
