@@ -1229,6 +1229,73 @@ export async function patchReceivingAppealProfile(
   }
 }
 
+export type ReceivingAppealOrderLinkBody = {
+  orderId: string;
+  expectedRevision: number;
+};
+
+export type ReceivingAppealOrderLinkSuccess = {
+  appealId: string;
+  orderId: string;
+  revision: number;
+  alreadyLinked: boolean;
+};
+
+export type ReceivingAppealOrderLinkResult =
+  | { ok: true; data: ReceivingAppealOrderLinkSuccess }
+  | {
+      ok: false;
+      code: "BLOCKED_CONTRACT" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "ERROR";
+      message: string;
+      status?: number;
+    };
+
+export function isReceivingAppealOrderLinkProxyReady(id = "x"): boolean {
+  return isAllowedProxyRoute("POST", `/api/pro/client-appeals/${id}/order-link`);
+}
+
+/** POST …/:id/order-link — after store order success only; no store order retry here. */
+export async function postReceivingAppealOrderLink(
+  appealId: string,
+  body: ReceivingAppealOrderLinkBody,
+): Promise<ReceivingAppealOrderLinkResult> {
+  const path = `/api/pro/client-appeals/${encodeURIComponent(appealId)}/order-link`;
+  if (!isReceivingAppealOrderLinkProxyReady(appealId)) {
+    return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
+  }
+  try {
+    const data = await remcardFetch<ReceivingAppealOrderLinkSuccess>(path, {
+      method: "POST",
+      body,
+    });
+    return { ok: true, data };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError) {
+      const status = caught.status;
+      const codeFromBody = caught.body?.code?.trim();
+      const code =
+        status === 403
+          ? "FORBIDDEN"
+          : status === 404
+            ? "NOT_FOUND"
+            : status === 409
+              ? "CONFLICT"
+              : status === 400 || status === 401 || status === 422
+                ? "INVALID"
+                : codeFromBody === "CONFLICT"
+                  ? "CONFLICT"
+                  : "ERROR";
+      return {
+        ok: false,
+        code,
+        message: caught.message,
+        status,
+      };
+    }
+    return { ok: false, code: "ERROR", message: "Не удалось привязать заказ к обращению." };
+  }
+}
+
 export async function patchReceivingAppealStage(
   id: string,
   body: ReceivingAppealStagePatchBody,

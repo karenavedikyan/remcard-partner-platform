@@ -1,6 +1,8 @@
 /**
  * P4 → P6 mount contract (no fetch). P6 `ReceivingAppealDetailHost` wires these handlers.
- * Pins: P4 product tip, P6 host @ 86251070+, workspace @ 78fd46e7+.
+ *
+ * Order pipeline (Root glue contract): appeal-scoped scanner nav + clients return only.
+ * Never PATCH `sys_paid` from detail.
  */
 
 import type {
@@ -8,14 +10,20 @@ import type {
   ReceivingAppealDetailReady,
 } from "./ReceivingAppealDetailView";
 import type { ReceivingAppealDetailMapped } from "./detail-contract-alignment";
+import {
+  RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE,
+  RECEIVING_DETAIL_PURCHASE_UNAVAILABLE,
+  RECEIVING_DETAIL_SHIPPED_UNAVAILABLE,
+} from "./receiving-detail-user-copy";
 
 export const RECEIVING_DETAIL_INTEGRATION_PINS = {
-  p4Detail: "10c25fe6",
-  p6Host: "86251070",
-  p6Workspace: "78fd46e7",
+  p4Detail: "9d22694f",
+  p6Host: "2375944e",
+  p6Workspace: "2375944e",
   k1: "a71b8f37",
   k8: "8f4d336a",
-  p1: "2b2b32b8",
+  p1: "f43f9e22",
+  prototype: "3dc31836",
 } as const;
 
 export type ReceivingAppealProfilePatchInput = {
@@ -33,15 +41,37 @@ export type ReceivingAppealDetailMutationOutcome =
   | { ok: true; revision?: number }
   | { ok: false; conflict: boolean; message: string };
 
-/** Prototype `panel:pay` / pay category form — not profile PATCH finance fields. */
-export const RECEIVING_PAID_REVIEW_PARENT_CALLBACK = "onOpenPaidReview" as const;
+/** K1 `canTransitionAppealStage` — direct PATCH to paid is always rejected. */
+export const K1_STAGE_REQUIRES_ORDER_PIPELINE = "STAGE_REQUIRES_ORDER_PIPELINE" as const;
 
-export const RECEIVING_PAID_REVIEW_ABSENT_REASON =
-  "Категории и сумма оплаты — через K1 PATCH …/stage (этап «Оплачено») и существующие order flows. " +
-  `Отсутствует колбэк хоста «${RECEIVING_PAID_REVIEW_PARENT_CALLBACK}»; P6 не должен писать paidAmount в profile PATCH.`;
+export const STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH = new Set<string>(["sys_paid"]);
 
-export const RECEIVING_MARK_PAID_ABSENT_REASON =
-  "Отметить оплату — смена этапа на «Оплачено» (PATCH …/:id/stage), не правка суммы в карточке.";
+export function receivingAppealPurchaseDetailHref(purchaseOrderId: string): string {
+  return `/history/purchases/${encodeURIComponent(purchaseOrderId)}`;
+}
+
+/** @deprecated Prefer `buildReceivingAppealOrderPipelineHref(appealId)` — bare `/scanner` without appeal context. */
+export const RECEIVING_APPEAL_ORDER_PIPELINE_HREF = "/scanner" as const;
+
+export function buildReceivingAppealOrderPipelineHref(appealId: string): string {
+  const id = appealId.trim();
+  return `/scanner?appealId=${encodeURIComponent(id)}`;
+}
+
+export function receivingAppealReturnHref(appealId: string): string {
+  const id = appealId.trim();
+  return `/clients?direction=receiving&appealId=${encodeURIComponent(id)}`;
+}
+
+export const RECEIVING_PURCHASE_PANEL_CALLBACK = "onOpenPurchaseOrder" as const;
+export const RECEIVING_ORDER_PIPELINE_CALLBACK = "onOpenOrderPipeline" as const;
+
+export const RECEIVING_MARK_PAID_ABSENT_REASON = RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE;
+export const RECEIVING_PAID_REVIEW_ABSENT_REASON = RECEIVING_DETAIL_PURCHASE_UNAVAILABLE;
+
+export function filterStageOptionsForDirectPatch<T extends { id: string }>(options: T[]): T[] {
+  return options.filter((o) => !STAGE_KEYS_BLOCKED_FOR_DIRECT_PATCH.has(o.id));
+}
 
 export type ReceivingAppealDetailHostDeps = {
   appealId: string;
@@ -53,12 +83,11 @@ export type ReceivingAppealDetailHostDeps = {
   mutateStage: (body: ReceivingAppealStagePatchInput) => Promise<ReceivingAppealDetailMutationOutcome>;
   reloadDetail: () => Promise<void>;
   openPurchaseOrder?: () => void;
-  onOpenPaidReview?: () => void;
+  onOpenOrderPipeline?: () => void;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
 };
 
-/** Pure builder for P6 host state — pass fresh `busy`/`error` each render from React state. */
 export function buildReceivingAppealDetailReady(
   deps: ReceivingAppealDetailHostDeps,
 ): ReceivingAppealDetailReady {
@@ -87,14 +116,23 @@ export function buildReceivingAppealDetailReady(
           if (!result.ok && result.conflict) await deps.reloadDetail();
         },
         onOpenPurchaseOrder: deps.openPurchaseOrder,
-        markPaid: deps.onOpenPaidReview
-          ? { supported: true, onMarkPaid: deps.onOpenPaidReview }
-          : { supported: false, reason: RECEIVING_MARK_PAID_ABSENT_REASON },
-        paidReview: deps.onOpenPaidReview
-          ? { supported: true, onOpen: deps.onOpenPaidReview }
-          : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
+        markPaid:
+          deps.onOpenOrderPipeline || deps.openPurchaseOrder
+            ? {
+                supported: true,
+                onMarkPaid: deps.onOpenOrderPipeline ?? deps.openPurchaseOrder!,
+              }
+            : { supported: false, reason: RECEIVING_MARK_PAID_ABSENT_REASON },
+        paidReview:
+          deps.openPurchaseOrder || deps.onOpenOrderPipeline
+            ? {
+                supported: true,
+                onOpen: deps.openPurchaseOrder ?? deps.onOpenOrderPipeline!,
+              }
+            : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
         shippedConfirm:
-          mapped.appeal.stageId === "sys_paid"
+          mapped.appeal.stageId === "sys_paid" &&
+          Boolean(mapped.appeal.purchaseOrderId || mapped.appeal.paidAtDisplay)
             ? {
                 supported: true,
                 onMarkShipped: () =>
@@ -103,7 +141,10 @@ export function buildReceivingAppealDetailReady(
                     expectedRevision: revision,
                   }),
               }
-            : { supported: false, reason: "Доступно на этапе «Оплачено»." },
+            : {
+                supported: false,
+                reason: RECEIVING_DETAIL_SHIPPED_UNAVAILABLE,
+              },
       };
 
   return {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
-  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
+  buildReceivingAppealOrderPipelineHref,
   receivingAppealPurchaseDetailHref,
 } from "./receiving-detail-actions-contract";
 import { ReceivingAppealDetailHost, P4_RECEIVING_DETAIL_UI_SHA } from "./ReceivingAppealDetailHost";
@@ -48,7 +48,7 @@ describe("P6.receiving-detail-host navigation", () => {
   });
 
   it("documents P4 contract dependency SHA and purchase href", () => {
-    expect(P4_RECEIVING_DETAIL_UI_SHA).toBe("6b7c38d3");
+    expect(P4_RECEIVING_DETAIL_UI_SHA).toBe("9d22694f");
     expect(receivingAppealPurchaseDetailHref("ord-42")).toBe("/history/purchases/ord-42");
   });
 
@@ -64,7 +64,7 @@ describe("P6.receiving-detail-host navigation", () => {
     const markPaid = screen.getByTestId("ca-receiving-paid-review");
     expect(markPaid).toHaveTextContent(/Отметить оплату/i);
     await user.click(markPaid);
-    expect(push).toHaveBeenCalledWith(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
+    expect(push).toHaveBeenCalledWith(buildReceivingAppealOrderPipelineHref("ap_nav"));
 
     await user.click(screen.getByRole("button", { name: /к списку/i }));
     expect(onBack).toHaveBeenCalledTimes(1);
@@ -82,6 +82,6 @@ describe("P6.receiving-detail-host navigation", () => {
     expect(purchaseBtn).toHaveTextContent("Подробнее о покупке");
     await user.click(purchaseBtn);
     expect(push).toHaveBeenCalledWith("/history/purchases/ord-42");
-    expect(push).not.toHaveBeenCalledWith(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
+    expect(push).not.toHaveBeenCalledWith(buildReceivingAppealOrderPipelineHref("ap_nav"));
   });
 });

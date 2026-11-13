@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
 import type { ClientsParityDirection } from "@/lib/clients-parity/types";
@@ -19,9 +20,10 @@ function atPartnersTabEnabled(mode: OwnerClientsAccessMode): boolean {
 
 type TabbedProps = {
   accessMode: "specialist" | "business";
+  initialAppealId?: string | null;
 };
 
-function ClientsDirectionTabbedPane({ accessMode }: TabbedProps) {
+function ClientsDirectionTabbedPane({ accessMode, initialAppealId }: TabbedProps) {
   const [direction, setDirection] = useState<ClientsParityDirection>("incoming");
   const [atPartnersMounted, setAtPartnersMounted] = useState(false);
 
@@ -45,7 +47,7 @@ function ClientsDirectionTabbedPane({ accessMode }: TabbedProps) {
         hidden={direction !== "incoming"}
         data-testid="ca-clients-panel-incoming"
       >
-        <ReceivingAppealsWorkspace />
+        <ReceivingAppealsWorkspace initialAppealId={initialAppealId} />
       </div>
       {atPartnersMounted ? (
         <div
@@ -64,6 +66,10 @@ function ClientsDirectionTabbedPane({ accessMode }: TabbedProps) {
 
 /** Hook-free role router: agent observer-only; tabbed roles keyed to reset subtree. */
 export function ClientsDirectionWorkspace({ accessMode }: Props) {
+  const searchParams = useSearchParams();
+  const receivingReturn = searchParams.get("direction") === "receiving";
+  const initialAppealId = receivingReturn ? searchParams.get("appealId")?.trim() || null : null;
+
   if (accessMode === "agent") {
     return <ObserverPartnersWorkspace />;
   }
@@ -72,5 +78,11 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
     return <AgentClientsList accessMode={accessMode} />;
   }
 
-  return <ClientsDirectionTabbedPane key={accessMode} accessMode={accessMode} />;
+  return (
+    <ClientsDirectionTabbedPane
+      key={accessMode}
+      accessMode={accessMode}
+      initialAppealId={initialAppealId}
+    />
+  );
 }

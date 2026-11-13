@@ -4,6 +4,7 @@ import Link from "next/link";
 import { RewardConfirmationFields } from "./RewardConfirmationFields";
 import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { displayCategoryLabel, displayCategoryLabelFromStored } from "@/lib/category-display";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import { parseCertificateCode } from "@/lib/certificate-code";
@@ -58,6 +59,11 @@ import {
   type ScannerEmptyActivityProbe,
 } from "@/lib/scanner-empty/eligibility";
 import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity";
+import { useReceivingAppealScannerHandoff } from "./useReceivingAppealScannerHandoff";
+import {
+  ReceivingAppealScannerBanner,
+  ReceivingAppealScannerSuccessLinkPanel,
+} from "./ReceivingAppealScannerPanels";
 import styles from "./scanner.module.css";
 
 const SCANNER_WORKBENCH_ID = "scanner-workbench";
@@ -185,6 +191,10 @@ function RestoredAttemptBlock({
 }
 
 export function ScannerHub({ userId }: ScannerHubProps) {
+  const searchParams = useSearchParams();
+  const receivingHandoff = useReceivingAppealScannerHandoff(searchParams.get("appealId"));
+  const appealContextReady =
+    !receivingHandoff.appealId || receivingHandoff.context.status === "ready";
   const [mode, setMode] = useState<ScanMode>("manual");
   const [manualCode, setManualCode] = useState("");
   const [previewSession, setPreviewSession] = useState<PreviewSession | null>(null);
@@ -291,6 +301,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           setOrderUncertain(false);
           setOrderConflict(false);
           setActivityProbe((prev) => scannerEmptyProbeAfterSuccessfulOrder(prev));
+          if (receivingHandoff.appealId && receivingHandoff.context.status === "ready") {
+            receivingHandoff.beginOrderLinkAfterSuccess(data.order.id);
+          }
           break;
         }
         case "conflict": {
@@ -335,7 +348,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           break;
       }
     },
-    [userId],
+    [receivingHandoff, userId],
   );
 
   const executeOrderPost = useCallback(
@@ -439,6 +452,19 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           return;
         }
 
+        if ("allowed" in data && data.allowed) {
+          const certMismatch = receivingHandoff.assertPreviewAllowed(data);
+          if (certMismatch) {
+            if (!options?.optional) {
+              setPreviewError(certMismatch);
+              setPreviewSession(null);
+            } else {
+              setPreviewError(certMismatch);
+            }
+            return;
+          }
+        }
+
         const session: PreviewSession = { code: parsed.code, preview: data };
         setPreviewSession(session);
 
@@ -491,7 +517,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         }
       }
     },
-    [previewLoading],
+    [previewLoading, receivingHandoff],
   );
 
   useEffect(() => {
@@ -533,7 +559,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitting ||
       orderUncertain ||
       orderConflict ||
-      !isPreviewSessionAllowed(previewSession)
+      !isPreviewSessionAllowed(previewSession) ||
+      !appealContextReady
     ) {
       return;
     }
@@ -576,6 +603,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     await executeOrderPost(created.record, false);
   }, [
     amountDrafts,
+    appealContextReady,
     rewardDrafts,
     executeOrderPost,
     orderConflict,
@@ -594,9 +622,26 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
 
+  if (
+    receivingHandoff.appealId &&
+    (receivingHandoff.context.status === "forbidden" ||
+      receivingHandoff.context.status === "not_found" ||
+      receivingHandoff.context.status === "blocked" ||
+      receivingHandoff.context.status === "error")
+  ) {
+    return (
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
+    );
+  }
+
   if (mode === "success" && success) {
+    const appealId = receivingHandoff.appealId;
     return (
       <div>
+        <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
@@ -623,21 +668,31 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             </p>
           ) : null}
         </div>
-        <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
-          <Link
-            href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
-            className={styles.openHistoryLink}
-          >
-            Открыть покупку
-          </Link>
-          <Link
-            href={`/history?search=${encodeURIComponent(confirmedCode)}`}
-            className={styles.openHistoryLink}
-          >
-            Все операции по документу
-          </Link>
-          <Button onClick={resetAll}>Новая покупка</Button>
-        </div>
+        {appealId ? (
+          <ReceivingAppealScannerSuccessLinkPanel
+            appealId={appealId}
+            orderId={success.order.id}
+            linkPhase={receivingHandoff.linkPhase}
+            linkError={receivingHandoff.linkError}
+            onRetryLink={receivingHandoff.retryOrderLinkOnly}
+          />
+        ) : (
+          <div className={styles.actionsRow} style={{ marginTop: "var(--space-4)" }}>
+            <Link
+              href={`/history/purchases/${encodeURIComponent(success.order.id)}`}
+              className={styles.openHistoryLink}
+            >
+              Открыть покупку
+            </Link>
+            <Link
+              href={`/history?search=${encodeURIComponent(confirmedCode)}`}
+              className={styles.openHistoryLink}
+            >
+              Все операции по документу
+            </Link>
+            <Button onClick={resetAll}>Новая покупка</Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -647,6 +702,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     const preview = allowedPreview;
     return (
       <div>
+        <ReceivingAppealScannerBanner
+          context={receivingHandoff.context}
+          appealId={receivingHandoff.appealId}
+        />
         {showRestoredBlock ? (
           <RestoredAttemptBlock
             storedAttempt={storedAttempt}
@@ -806,6 +865,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   return (
     <>
+      <ReceivingAppealScannerBanner
+        context={receivingHandoff.context}
+        appealId={receivingHandoff.appealId}
+      />
       {showNewPartnerEmpty ? (
         <ScannerNewPartnerEmpty onOpenScanner={focusScannerWorkbench} />
       ) : null}

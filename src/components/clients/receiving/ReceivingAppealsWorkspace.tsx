@@ -51,9 +51,11 @@ type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail";
 type Props = {
   /** Root/tests only — never wire mock data in production paths. */
   previewData?: ReceivingAppealsListResponse;
+  /** `/clients?direction=receiving&appealId=` — reopen detail after scanner return. */
+  initialAppealId?: string | null;
 };
 
-export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
+export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Props = {}) {
   const [phase, setPhase] = useState<LoadPhase>(previewData ? "ready" : "loading");
   const [blocked, setBlocked] = useState<ReceivingAppealsLoadResult | null>(null);
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
@@ -120,6 +122,13 @@ export function ReceivingAppealsWorkspace({ previewData }: Props = {}) {
     void applyListPage(listFilters, null, false, undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only; filter changes use onListFiltersChange
   }, [previewData]);
+
+  useEffect(() => {
+    const id = initialAppealId?.trim();
+    if (!id) return;
+    setDetailId(id);
+    setView("detail");
+  }, [initialAppealId]);
 
   const onListFiltersChange = useCallback(
     (next: ReceivingListFilters) => {

@@ -9,8 +9,8 @@ import {
 } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingAppealDetailView, type ReceivingAppealDetailProps } from "./ReceivingAppealDetailView";
 import {
-  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
   buildReceivingAppealDetailReady,
+  buildReceivingAppealOrderPipelineHref,
   receivingAppealPurchaseDetailHref,
   type ReceivingAppealDetailMutationOutcome,
   type ReceivingAppealProfilePatchInput,
@@ -19,7 +19,7 @@ import {
 import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope-bridge";
 
 /** P4 read-only dependency: `receiving-detail-actions-contract.ts` @ `6b7c38d3` (Root packages; P6 does not commit P4). */
-export const P4_RECEIVING_DETAIL_UI_SHA = "6b7c38d3" as const;
+export const P4_RECEIVING_DETAIL_UI_SHA = "9d22694f" as const;
 
 type WithoutOnBack<T> = T extends unknown ? Omit<T, "onBack"> : never;
 
@@ -186,8 +186,8 @@ export function ReceivingAppealDetailHost({
   }, [onAppealMutated, refreshMappedDetail]);
 
   const onOpenOrderPipeline = useCallback(() => {
-    router.push(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
-  }, [router]);
+    router.push(buildReceivingAppealOrderPipelineHref(appealId));
+  }, [appealId, router]);
 
   const openPurchaseOrder = useCallback(() => {
     if (mapped?.status !== "ready") return;
