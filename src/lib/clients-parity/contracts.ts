@@ -336,7 +336,83 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
     "^/api/pro/client-appeals/working-stages$",
     "^/api/pro/client-appeals/certificate-entry$",
   ],
-  p6Owner: "receiving-appeals-api.ts maps wire → ReceivingClientAppeal UI models",
+  p6Owner: "receiving-appeals-api.ts @ 06f7e6bb — must import mappers from types.ts; no invented list envelope",
+  p6WireAuditTip: "06f7e6bb",
+  detailPatchGap: {
+    p6Current: "PATCH /api/pro/client-appeals/:id — not exported on K1 @ 83f279e8",
+    k1StageRoute: "PATCH /api/pro/client-appeals/:id/stage",
+    k1ScopedDetailPatch: "assigned — P1 allowlist only after K1 exports route",
+    gapId: "GAP-P6-DETAIL-PATCH-PATH",
+  },
+  pagination: {
+    k1DefaultLimit: 25,
+    k1MaxLimit: 50,
+    queryKeys: ["limit", "cursor", "archived", "q"],
+    targetQueryKeys: ["limit", "cursor", "bucket", "sourceFilter", "stageKey", "q"],
+    p6Requirement:
+      "Pass limit/cursor on GET; merge pages via nextCursor — no single-page local filter as full list",
+  },
+} as const;
+
+/** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
+export const CLIENTS_PARTNER_OWNER_TIPS = {
+  p1: "6eda0029",
+  p2: "9f7c3755",
+  p3: "b85efb54",
+  p4: "1850d088",
+  p5: "6a72f353",
+  p6: "06f7e6bb",
+} as const;
+
+/**
+ * K1 server field names → P6 UI row (prototype Appeal typedef).
+ * P6 `receiving-appeals-api.ts` MUST use `mapReceivingAppealWireToUiRow` — no ad-hoc renames.
+ */
+export const RECEIVING_APPEAL_K1_TO_UI_MAP = {
+  clientDisplayName: "clientName",
+  stageKey: "stageId",
+  referrerProUserId: "referrerPartnerId",
+  receivingPartnerUserId: "receivingPartnerId",
+  purchaseOrderId: "purchaseId",
+  paidAmountKopecks: "paidAmount",
+  manualSourceKey: "sourceKey",
+  originKindManual: "manualEntry=true when MANUAL",
+  originKindCert: "manualEntry=false; certificateId required",
+} as const;
+
+/** P6 form → K1 POST /api/pro/client-appeals body @ 83f279e8. */
+export const RECEIVING_MANUAL_POST_UI_TO_K1_MAP = {
+  clientName: "clientDisplayName",
+  manualChannel: "manualSourceKey",
+  p6WrongBody: "{ clientName, manualChannel } sent raw without map",
+  k1AcceptedAliases: ["displayName", "sourceKey"],
+} as const;
+
+/** P6 stage patch → K1 PATCH .../:id/stage (not PATCH .../:id). */
+export const RECEIVING_STAGE_PATCH_UI_TO_K1_MAP = {
+  uiStageId: "stageKey",
+  uiBodyWrongPath: "PATCH /api/pro/client-appeals/:id",
+  k1Path: "PATCH /api/pro/client-appeals/:id/stage",
+  expectedRevision: "expectedRevision on wire (appeal row updatedAt ms)",
+} as const;
+
+/**
+ * List/load split — actual K1 vs P6 @ 06f7e6bb mistaken merged envelope.
+ */
+export const RECEIVING_K1_P6_LIST_WIRE_CONTRACT = {
+  k1ListActual83f279e8: "{ appeals, nextCursor, tab, readOnly }",
+  k1ListTarget: "same + access/principal; bucket filters on query",
+  separateLoads: {
+    settings: "GET /api/pro/client-appeals/working-stages → { settings }",
+    kpis: "NOT on list wire @ 83f279e8 — P6 derives from loaded page only until K1 adds aggregation",
+  },
+  p6Mistake06f7e6bb:
+    "ReceivingAppealsListResponse expects kpis/settings/access/principal on single GET list — wrong",
+  p6Fix:
+    "coerce from K1ReceivingListHttpActual + parallel settings GET + mapK1AccessWireToP6Gates when access lands",
+  settingsWireUnwrap: "working-stages returns { settings } — not bare ReceivingPartnerSettings at root",
+  mapperModule: "types.ts mapReceivingAppealWireToUiRow, normalizeK1ReceivingListHttp, mapReceivingUiManualCreateToK1Post",
+  handoff: "audit/remcard-parallel-20261113/P2/P6-K1-wire-map-handoff.md",
 } as const;
 
 /** Navigator routes that exist in source @ 2026-11-13 — inventory authority over P5/P2 rename drafts. */
@@ -606,6 +682,28 @@ export const CLIENTS_K8_UNRESOLVED_GAPS = [
     topic: "Batch HTTP lacks delete(trash) + restore; partial failures not aligned with K8 applyReceivingBulkLifecycle",
     status: "UNRESOLVED",
     requiredFix: "POST batch actions archive|delete|unarchive|restore with per-id outcomes",
+  },
+  {
+    id: "GAP-P6-DETAIL-PATCH-PATH",
+    owner: "P6+P1+K1",
+    topic: "P6 @ 06f7e6bb PATCH /api/pro/client-appeals/:id — K1 exports GET on [id] only; stage via /stage",
+    status: "UNRESOLVED",
+    requiredFix:
+      "P6 stage via RECEIVING_STAGE_PATCH_UI_TO_K1_MAP; field PATCH only after K1 route + P1 allowlist",
+  },
+  {
+    id: "GAP-P6-LIST-PAGINATION",
+    owner: "P6",
+    topic: "Workspace loads first 25 rows then client-side filter/bulk-all — violates cursor pagination contract",
+    status: "UNRESOLVED",
+    requiredFix: "GET with limit/cursor; fetch next pages; server bucket/source when K1 query lands",
+  },
+  {
+    id: "GAP-P6-LIST-ENVELOPE",
+    owner: "P6",
+    topic: "coerceK1ClientAppealsListPayload expects kpis/settings/access on list JSON",
+    status: "UNRESOLVED",
+    requiredFix: "RECEIVING_K1_P6_LIST_WIRE_CONTRACT — split loads + mappers from types.ts",
   },
   {
     id: "GAP-K8-CROSS-WIRE-STALE",

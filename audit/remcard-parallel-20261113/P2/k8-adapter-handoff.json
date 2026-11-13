@@ -9,6 +9,15 @@
   },
   "k1ReceivingHandoff": "audit/remcard-parallel-20261113/P2/K1-83f279e8-receiving-envelope-handoff.md",
   "p4ObserverPrivacyHandoff": "audit/remcard-parallel-20261113/P2/P4-observer-privacy-timeline-handoff.md",
+  "p6K1WireMapHandoff": "audit/remcard-parallel-20261113/P2/P6-K1-wire-map-handoff.md",
+  "partnerOwnerTips": {
+    "p1": "6eda0029",
+    "p2": "9f7c3755",
+    "p3": "b85efb54",
+    "p4": "1850d088",
+    "p5": "6a72f353",
+    "p6": "06f7e6bb"
+  },
   "observerPublicTimeline": {
     "prototypeLines": "2299-2338",
     "p4Wire": ["at", "text"],
@@ -101,7 +110,10 @@
     "GAP-K1-HTTP-BATCH-LIFECYCLE",
     "GAP-K8-CROSS-WIRE-STALE",
     "GAP-K2-OBSERVER-DELETED-AT",
-    "GAP-K2-OBSERVER-TIMELINE-RAW"
+    "GAP-K2-OBSERVER-TIMELINE-RAW",
+    "GAP-P6-DETAIL-PATCH-PATH",
+    "GAP-P6-LIST-PAGINATION",
+    "GAP-P6-LIST-ENVELOPE"
   ],
   "sectionReady": false,
   "profilePublishedNotClientsReady": "89fb8e073c39c8dbd329996940b85c6a86751868"

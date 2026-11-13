@@ -386,3 +386,140 @@ export type ReceivingClientAppeal = ObserverReferredAppeal & {
   privateNotes?: string | null;
   clientContact?: string | null;
 };
+
+/** P6 list row contract (prototype `Appeal` incoming table). */
+export type ReceivingAppealUiListRow = {
+  id: string;
+  clientName: string;
+  certificateId: string;
+  receivingPartnerUserId: string;
+  receivingPartnerId: string;
+  receivingOrganizationId?: string | null;
+  receivingBranchId?: string | null;
+  referrerPartnerId: string;
+  interest: string;
+  clientCity?: string | null;
+  budgetHint?: string | null;
+  stageId: string;
+  refusedReason?: string | null;
+  shippedAt?: string | null;
+  paidAmount?: number | null;
+  paidAt?: string | null;
+  sourceKey?: string;
+  purchaseId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  manualEntry?: boolean;
+  bucket?: ClientAppealReceivingBucket;
+};
+
+/** P6 manual create form. */
+export type ReceivingUiManualCreateBody = {
+  clientName: string;
+  interest?: string;
+  clientCity?: string;
+  clientContact?: string;
+  manualChannel?: "phone" | "messenger" | "visit" | "ads" | "other";
+  privateNotes?: string;
+};
+
+/** K1 POST body after UI→wire map @ 83f279e8. */
+export type K1ManualCreatePostWire = {
+  clientDisplayName: string;
+  manualSourceKey: string;
+  interest?: string | null;
+  clientCity?: string | null;
+  clientContact?: string | null;
+};
+
+/** P6 gates — derived from K1 access wire + readOnly. */
+export type ReceivingUiPrincipalAccess = {
+  listAllowed: boolean;
+  mutationsAllowed: boolean;
+  denialCode?: string | null;
+};
+
+export const RECEIVING_LIST_DEFAULT_PAGE_SIZE = 25;
+
+export function mapReceivingAppealWireToUiRow(
+  wire: ReceivingClientAppealRecordWire,
+): ReceivingAppealUiListRow {
+  const ownerId = wire.receivingPartnerUserId;
+  return {
+    id: wire.id,
+    clientName: wire.clientDisplayName,
+    certificateId: wire.certificateId ?? "",
+    receivingPartnerUserId: ownerId,
+    receivingPartnerId: ownerId,
+    receivingOrganizationId: wire.receivingOrganizationId,
+    receivingBranchId: wire.receivingBranchId,
+    referrerPartnerId: wire.referrerProUserId ?? "",
+    interest: wire.interest ?? "",
+    clientCity: wire.clientCity,
+    budgetHint: wire.budgetHint,
+    stageId: wire.stageKey,
+    refusedReason: wire.refusedReason ?? undefined,
+    shippedAt: wire.shippedAt ?? undefined,
+    paidAmount: wire.paidAmountKopecks ?? undefined,
+    paidAt: wire.paidAt ?? undefined,
+    sourceKey: wire.manualSourceKey ?? undefined,
+    purchaseId: wire.purchaseOrderId ?? undefined,
+    createdAt: wire.createdAt,
+    updatedAt: wire.updatedAt,
+    manualEntry: wire.originKind === "MANUAL",
+  };
+}
+
+export function mapReceivingUiManualCreateToK1Post(
+  body: ReceivingUiManualCreateBody,
+): K1ManualCreatePostWire {
+  return {
+    clientDisplayName: body.clientName.trim(),
+    manualSourceKey: body.manualChannel ?? "other",
+    interest: body.interest?.trim() || null,
+    clientCity: body.clientCity?.trim() || null,
+    clientContact: body.clientContact?.trim() || null,
+  };
+}
+
+export function mapReceivingUiStageIdToK1StagePatch(stageId: string): ReceivingAppealStagePatchBody {
+  return { stageKey: stageId };
+}
+
+export function mapK1AccessWireToP6Gates(input: {
+  access?: Partial<ReceivingAppealsAccessWire> | null;
+  readOnly?: boolean;
+}): ReceivingUiPrincipalAccess {
+  const readOnly = input.readOnly === true || input.access?.readOnly === true;
+  const accessMode = input.access?.accessMode;
+  const orgListOnly = accessMode === "org_workplace_read";
+  return {
+    listAllowed: true,
+    mutationsAllowed: !readOnly && !orgListOnly,
+    denialCode: orgListOnly ? "OWNER_CLIENTS_LIST_CONTEXT_ONLY" : null,
+  };
+}
+
+export function normalizeK1ReceivingListHttp(
+  json: K1ReceivingListHttpActual & { access?: Partial<ReceivingAppealsAccessWire> },
+): {
+  appeals: ReceivingAppealUiListRow[];
+  nextCursor: string | null;
+  tab: "incoming";
+  readOnly: boolean;
+  access: ReceivingUiPrincipalAccess;
+} {
+  return {
+    appeals: (json.appeals ?? []).map(mapReceivingAppealWireToUiRow),
+    nextCursor: json.nextCursor ?? null,
+    tab: json.tab ?? "incoming",
+    readOnly: json.readOnly === true,
+    access: mapK1AccessWireToP6Gates({ access: json.access, readOnly: json.readOnly }),
+  };
+}
+
+export function unwrapK1WorkingStagesResponse(
+  payload: ReceivingPartnerSettingsWire | { settings: ReceivingPartnerSettingsWire },
+): ReceivingPartnerSettingsWire {
+  return "settings" in payload ? payload.settings : payload;
+}

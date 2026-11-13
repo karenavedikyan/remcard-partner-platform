@@ -15,6 +15,9 @@ import {
   CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT,
   CLIENTS_OBSERVER_PUBLIC_TIMELINE,
   CLIENTS_OBSERVER_REFERRER_LIST_SCOPE,
+  RECEIVING_APPEAL_K1_TO_UI_MAP,
+  RECEIVING_K1_P6_LIST_WIRE_CONTRACT,
+  RECEIVING_MANUAL_POST_UI_TO_K1_MAP,
   CLIENTS_NAVIGATOR_ACTUAL_HTTP,
   CLIENTS_PARTNER_SETTINGS_SCOPE,
   CLIENTS_SECTION_OWNERS,
@@ -25,7 +28,12 @@ import {
   routesForBlocker,
 } from "./contracts";
 import { fetchObserverReferredAppeals } from "./fetch-observer-appeals";
-import { CLIENTS_APPEAL_SYSTEM_STAGE } from "./types";
+import {
+  CLIENTS_APPEAL_SYSTEM_STAGE,
+  mapReceivingAppealWireToUiRow,
+  mapReceivingUiManualCreateToK1Post,
+  normalizeK1ReceivingListHttp,
+} from "./types";
 
 describe("clients parity contracts", () => {
   it("maps C07 to receiving blocker", () => {
@@ -69,6 +77,40 @@ describe("clients parity contracts", () => {
     expect(CLIENTS_OBSERVER_PUBLIC_TIMELINE.wireFields).toEqual(["at", "text"]);
     expect(CLIENTS_OBSERVER_DETAIL_HTTP_CONTRACT.route).toContain("referred-appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.observerDetail.response200).toContain("timeline");
+    expect(RECEIVING_APPEAL_K1_TO_UI_MAP.clientDisplayName).toBe("clientName");
+    expect(RECEIVING_MANUAL_POST_UI_TO_K1_MAP.clientName).toBe("clientDisplayName");
+    expect(RECEIVING_K1_P6_LIST_WIRE_CONTRACT.separateLoads.kpis).toContain("NOT on list");
+    const ui = mapReceivingAppealWireToUiRow({
+      id: "a1",
+      clientDisplayName: "Иван",
+      certificateId: "c1",
+      receivingPartnerUserId: "u1",
+      receivingOrganizationId: null,
+      receivingBranchId: null,
+      referrerProUserId: "r1",
+      originKind: "MANUAL",
+      manualSourceKey: "phone",
+      stageKey: "sys_new",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(ui.clientName).toBe("Иван");
+    expect(ui.stageId).toBe("sys_new");
+    expect(ui.manualEntry).toBe(true);
+    expect(mapReceivingUiManualCreateToK1Post({ clientName: "X", manualChannel: "phone" })).toEqual({
+      clientDisplayName: "X",
+      manualSourceKey: "phone",
+      interest: null,
+      clientCity: null,
+      clientContact: null,
+    });
+    const list = normalizeK1ReceivingListHttp({
+      appeals: [],
+      nextCursor: null,
+      tab: "incoming",
+      readOnly: true,
+    });
+    expect(list.access.mutationsAllowed).toBe(false);
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.k8LibReceiving.forbiddenAliases).toContain("appeals");
     expect(CLIENTS_LIST_RESPONSE_CONTRACT.partnerP3Normalized.shape).toContain("appeals");
     expect(CLIENTS_NAVIGATOR_ACTUAL_HTTP.personalMetaPatch.path).toContain("personal-meta");

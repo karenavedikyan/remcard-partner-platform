@@ -60,10 +60,11 @@ Read-only observer routes only; no `receiving-appeals-api`.
 
 ## P6 — receiving CRM only
 
-- `receiving-appeals-api.ts` + receiving UI — **never** observer list stats/filter/detail/personal-meta
-- Wire: **`/api/pro/client-appeals`** (no `/receiving` suffix); stage via **`PATCH …/:id/stage`**
-- Expect `ReceivingAppealsAccessWire` on list once **GAP-K1-HTTP-ACCESS** closes; until then only `readOnly` on JSON
-- List target: `bucket`, `sourceFilter`, `stageKey` per K8 `receivingList.ts` — not `archived=1` only
+- `receiving-appeals-api.ts` @ `06f7e6bb` — import **`types.ts` mappers** (`mapReceivingAppealWireToUiRow`, `normalizeK1ReceivingListHttp`, …)
+- Wire: **`/api/pro/client-appeals`**; stage **`PATCH …/:id/stage`** — not `PATCH …/:id` (**GAP-P6-DETAIL-PATCH-PATH**)
+- List: actual `{ appeals, nextCursor, tab, readOnly }` — settings via **`GET …/working-stages`**; no kpis on list wire
+- Pagination: `limit` + `cursor` (**GAP-P6-LIST-PAGINATION**)
+- Handoff: `P6-K1-wire-map-handoff.md`
 
 ## P2-only edits
 
