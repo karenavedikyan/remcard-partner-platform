@@ -404,7 +404,7 @@ export const CLIENTS_RECEIVING_HTTP_CONTRACT = {
 /** Root parallel tips (read-only); P2 inventory @ cursor/2-06bf. */
 export const CLIENTS_PARTNER_OWNER_TIPS = {
   p1: "f43f9e22",
-  p2: "885ccc5f",
+  p2: "0f5ede82",
   p3: "b1c1684e",
   p4: "9d22694f",
   p5: "164b8dbe",
