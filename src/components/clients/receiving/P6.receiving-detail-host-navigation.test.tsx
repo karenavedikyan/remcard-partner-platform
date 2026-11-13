@@ -79,7 +79,7 @@ describe("P6.receiving-detail-host navigation", () => {
     await waitFor(() => expect(screen.queryByTestId("ca-receiving-detail-loading")).toBeNull());
 
     const purchaseBtn = screen.getByTestId("ca-receiving-purchase-open");
-    expect(purchaseBtn).toHaveTextContent(/ord-42/);
+    expect(purchaseBtn).toHaveTextContent("Подробнее о покупке");
     await user.click(purchaseBtn);
     expect(push).toHaveBeenCalledWith("/history/purchases/ord-42");
     expect(push).not.toHaveBeenCalledWith(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
