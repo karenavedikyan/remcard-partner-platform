@@ -116,8 +116,9 @@ export function ObserverPartnerCard({
         open={expanded}
         onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
         data-observer-partner-details={partner.id}
+        aria-expanded={expanded}
       >
-        <summary aria-controls={panelId}>
+        <summary aria-controls={panelId} aria-expanded={expanded}>
           <span className={styles.meta}>
             <span>
               Конверсия в оплату <strong>{stats.conv}</strong>

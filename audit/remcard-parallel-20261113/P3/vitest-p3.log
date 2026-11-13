@@ -1,10 +1,12 @@
-RUN  v3.2.7 /agent/repos/remcard-partner-platform
+RUN  v3.2.7 — REM-PUBLISH-RESIDUAL-20261113-V2
 
- ✓ src/components/clients/observer/P3.ObserverPartnerCard.test.tsx (3 tests)
- ✓ src/components/clients/observer/P3.ObserverPartnersListView.roundtrip.test.tsx (3 tests)
- ✓ src/components/clients/observer/P3.ObserverPartnersListView.back-label.test.tsx (4 tests)
- ✓ src/components/clients/observer/P3.ObserverFilterChips.test.tsx (3 tests)
- ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests)
+ ✓ P3.ObserverFilterChips.test.tsx (3)
+ ✓ P3.ObserverPartnerCard.test.tsx (3)
+ ✓ P3.ObserverPartnersListView.roundtrip.test.tsx (3)
+ ✓ P3.ObserverPartnersListView.back-label.test.tsx (4)
+ ✓ P3.ObserverPartnersListView.states.test.tsx (3)
+ ↓ P3.observer-list-harness.computed.test.tsx (1 skipped — Playwright Chromium not installed)
+ ✓ ObserverPartnersListView.test.tsx (7)
 
- Test Files  5 passed (5)
-      Tests  20 passed (20)
+ Test Files  7 passed
+      Tests  23 passed | 1 skipped (24)
