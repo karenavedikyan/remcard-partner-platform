@@ -113,6 +113,16 @@
     if (img && payload?.qrDataUrl) img.src = payload.qrDataUrl;
   }
 
+  function tameEmbedGuestLinks(scope) {
+    if (params.get("cabinet_embed") !== "1") return;
+    scope.querySelectorAll(".cert-partner-actions a[href], .cert-guest a[href]").forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      if (!/partner=\d+/.test(href) && !/certificate\.html/i.test(href)) return;
+      a.removeAttribute("target");
+      a.removeAttribute("rel");
+    });
+  }
+
   function partnerIndexFromHref(href) {
     if (!href) return null;
     try {
@@ -154,6 +164,7 @@
     const root = document.getElementById("certificate-root");
     root.innerHTML = payload.publicHtml;
     hydrateQr(root, payload);
+    tameEmbedGuestLinks(root);
   }
 
   function guestMainRoot() {
@@ -175,11 +186,28 @@
 
     viewMode = "main";
     hydrateQr(root, payload);
+    tameEmbedGuestLinks(root);
   }
 
   window.__certificateEmbedGuestHydrate = function hydrateCertificateEmbedGuest(root, payload) {
     bindPayload(payload);
   };
+
+  document.addEventListener(
+    "click",
+    (ev) => {
+      if (params.get("cabinet_embed") !== "1") return;
+      const link = ev.target.closest('a[href*="partner="]');
+      if (!link || viewMode !== "main") return;
+      const partnerIdx = partnerIndexFromHref(link.getAttribute("href"));
+      if (partnerIdx === null) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      const focusContact = /contact=1/.test(link.getAttribute("href") || "");
+      showPartnerProfile(partnerIdx, currentPayload, { focusContact });
+    },
+    true,
+  );
 
   document.addEventListener("change", (ev) => {
     if (ev.target.matches("[data-client-consent]")) demo.offersConsent = ev.target.checked;

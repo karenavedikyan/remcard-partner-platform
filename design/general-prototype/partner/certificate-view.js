@@ -1,8 +1,8 @@
-import { a as makeQR } from "./chunk-3HBG25M4.js";
+import { qrcodeBundleApi } from "./qrcode-bundle-api.js";
 import { a as logo } from "./chunk-PG3I4FMB.js";
 import { j as publicCertificateUrl } from "./chunk-QXOSRGZH.js";
 import { demoRandomToken } from "./demo-random-id.js";
-const QR = makeQR();
+const QR = qrcodeBundleApi();
 const types = {
   agent: ["А", "Агент"],
   store: ["М", "Магазин"],

@@ -121,9 +121,24 @@
     try {
       var u = new URL(href, embedLinkBase());
       var name = u.pathname.split("/").pop() || "";
-      return FILE_TO_N[name] || null;
+      var pageN = FILE_TO_N[name] || null;
+      if (!pageN && /certificate\.html/i.test(u.pathname || href)) pageN = 139;
+      if (!pageN && /recommendation\.html/i.test(u.pathname || href)) pageN = 140;
+      return pageN;
     } catch (_) {
       return null;
+    }
+  }
+
+  function isSameCertificatePartnerLink(href) {
+    try {
+      var u = new URL(href, embedLinkBase());
+      var currentN = Number(params.get("proto_n") || 0) || 0;
+      if (currentN !== 139) return false;
+      if (u.searchParams.get("partner") === null) return false;
+      return /certificate\.html/i.test(u.pathname || href);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -135,6 +150,10 @@
       var href = a.getAttribute("href") || "";
       if (!href || href.startsWith("#")) return;
       if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (isSameCertificatePartnerLink(href)) {
+        e.preventDefault();
+        return;
+      }
       var pageN = resolvePageFromHref(href);
       if (pageN) {
         var currentN = Number(params.get("proto_n") || 0) || 0;

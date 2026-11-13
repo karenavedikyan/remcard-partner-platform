@@ -189,14 +189,24 @@ assert.match(
   "host pre-renders 139 guest HTML before opaque embed",
 );
 assert.match(
-  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
-  /qrRasterDataUrl|qrcodeLibrary/,
-  "139 embed QR uses bundled library interop, not bare module ref",
+  readFileSync(path.join(root, "partner/qrcode-bundle-api.js"), "utf8"),
+  /qrcodeModuleRef\(\)/,
+  "QR bundle invokes chunk factory before toDataURL",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/certificate-view.js"), "utf8"),
+  /qrcode-bundle-api/,
+  "certificate card QR uses initialized bundle API",
 );
 assert.match(
   readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8"),
-  /pageN === currentN/,
+  /isSameCertificatePartnerLink|pageN === currentN/,
   "same-page guest links do not re-navigate embed host",
+);
+assert.match(
+  readFileSync(path.join(root, "partner/roles.js"), "utf8"),
+  /ensureCabinetScreenForStandalone/,
+  "proto_standalone deep link shows cabinet before embed host",
 );
 assert.match(
   readFileSync(path.join(root, "partner/recommendation-cabinet-embed.js"), "utf8"),

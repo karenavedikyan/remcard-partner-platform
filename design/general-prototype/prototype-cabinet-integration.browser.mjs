@@ -980,7 +980,7 @@ try {
         frame?.dataset?.embedMount === "srcdoc" &&
         frame?.dataset?.embedContentReady === "1" &&
         doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 140 &&
-        /rec140-qr-ok/.test(marker)
+        /rec140-qr-raster-ok/.test(marker)
       );
     },
     null,
@@ -990,8 +990,13 @@ try {
   const rec140Frame = cabFrame140.frameLocator('[data-testid="cabinet-standalone-frame"]');
   await rec140Frame.getByText(/Дизайн-макет публичной рекомендации/i).waitFor({ timeout: 15000 });
   await rec140Frame.getByText(/DEMO-PROF-1/).waitFor({ timeout: 10000 });
-  const rec140Qr = await rec140Frame.locator("[data-recommendation-qr]").getAttribute("src");
-  assert.ok(rec140Qr && rec140Qr.startsWith("data:image"), "TOC 140 hydrates recommendation QR");
+  const rec140QrProbe = await rec140Frame.locator("[data-recommendation-qr]").evaluate((img) => ({
+    src: img.getAttribute("src") || "",
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+  }));
+  assert.match(rec140QrProbe.src, /^data:image\/(?:png|jpeg|jpg);/i, "TOC 140 hydrates recommendation QR raster");
+  assert.ok(rec140QrProbe.naturalWidth > 40 && rec140QrProbe.naturalHeight > 40, "TOC 140 QR decodes");
   await rec140Frame.locator('[data-rec-client-action="code"]').click();
   const toc140Src = await cabFrame140.locator("[data-testid='cabinet-standalone-frame']").evaluate(
     (el) => el?.dataset?.embedUrl || "",
@@ -1009,6 +1014,34 @@ try {
   const href140 = await hubToc.locator('a[data-page-n="140"]').getAttribute("href");
   assert.match(href140 || "", /proto_standalone=140/, "hub TOC 140 links into partner cabinet");
   assert.doesNotMatch(href140 || "", /recommendation\.html/, "hub TOC must not open orphan 140 HTML");
+  await hubToc.locator('a[data-page-n="140"]').click();
+  await hubToc.waitForURL(/partner\/index\.html.*proto_standalone=140/, { timeout: 15000 });
+  await hubToc.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 25000 });
+  await hubToc.waitForFunction(
+    () => window.__protoCabinetEmbeddedPage?.n === 140 && document.querySelector("[data-testid='cabinet-standalone-frame']")?.dataset?.embedContentReady === "1",
+    null,
+    { timeout: 30000 },
+  );
+  const hub140Frame = hubToc.frameLocator('[data-testid="cabinet-standalone-frame"]');
+  await hub140Frame.getByText(/Дизайн-макет публичной рекомендации/i).waitFor({ timeout: 15000 });
+  const hub140Qr = await hub140Frame.locator("[data-recommendation-qr]").evaluate((img) => ({
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+    srcLen: (img.getAttribute("src") || "").length,
+    mime: (img.getAttribute("src") || "").slice(0, 24),
+  }));
+  assert.ok(hub140Qr.naturalWidth > 40, `hub TOC 140 QR width ${hub140Qr.naturalWidth}`);
+  assert.match(hub140Qr.mime, /^data:image\/(?:png|jpeg)/i);
+  await hubToc.goto(`${base}/index.html`, { waitUntil: "load" });
+  await hubToc.locator(".proto-page-toc-btn").click();
+  await hubToc.locator('a[data-page-n="143"]').click();
+  await hubToc.waitForURL(/partner\/index\.html.*proto_standalone=143/, { timeout: 15000 });
+  await hubToc.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 25000 });
+  await hubToc.waitForFunction(
+    () => window.__protoCabinetEmbeddedPage?.n === 143,
+    null,
+    { timeout: 25000 },
+  );
   await hubToc.close();
 
   const previewNest = await browser.newPage();

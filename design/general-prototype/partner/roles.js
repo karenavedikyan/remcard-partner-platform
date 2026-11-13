@@ -82,8 +82,7 @@ import {
   hydrateCertificateCard,
 } from "./certificate-view.js";
 import { h as renderCertificateGuestMain, e as renderPartnerProfilePage, j as publicCertificateShareUrl } from "./chunk-QXOSRGZH.js";
-import { a as qrcodeModuleRef } from "./chunk-3HBG25M4.js";
-import { c as esmInterop } from "./chunk-5TBO732O.js";
+import { qrRasterDataUrl } from "./qrcode-bundle-api.js";
 import { demoRandomId } from "./demo-random-id.js";
 import {
   certificateGuestHash,
@@ -104,31 +103,6 @@ import {
   openWalletMasterLedger,
 } from "./cabinet-sections.js";
 import "./chunk-5TBO732O.js";
-
-function qrcodeLibrary() {
-  const mod =
-    typeof qrcodeModuleRef === "function" ? esmInterop(qrcodeModuleRef(), 1) : esmInterop(qrcodeModuleRef, 1);
-  return mod?.default || mod;
-}
-
-async function qrRasterDataUrl(text) {
-  const api = qrcodeLibrary();
-  if (typeof api?.toDataURL !== "function") return "";
-  const payload = String(text || "").trim();
-  if (!payload) return "";
-  try {
-    const dataUrl = await api.toDataURL(payload, {
-      width: 600,
-      margin: 3,
-      errorCorrectionLevel: "M",
-    });
-    if (!/^data:image\/(?:png|jpeg|jpg);/i.test(dataUrl || "")) return "";
-    if ((dataUrl || "").length < 512) return "";
-    return dataUrl;
-  } catch (_) {
-    return "";
-  }
-}
 
 async function buildCertificateGuestEmbedExtras(publicModel) {
   if (!publicModel) return {};
@@ -6119,6 +6093,7 @@ R();
       return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     })
     .then(() => {
+      ensureCabinetScreenForStandalone();
       if (R2_REPAIR_OBJECT_PAGES.has(pageN) && prototypeRelease() !== 2) {
         U("Страницы 141 и 142 открываются только в релизе R2 из раздела «Клиенты».", "info");
         return;
