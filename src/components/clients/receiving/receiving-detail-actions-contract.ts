@@ -1,6 +1,13 @@
 /**
  * P4 → P6 mount contract (no fetch). P6 `ReceivingAppealDetailHost` wires these handlers.
- * Pins: P4 product tip, P6 host @ 86251070+, workspace @ 78fd46e7+.
+ *
+ * Order pipeline (only approved paid handoff — not completed payment):
+ * - `onOpenOrderPipeline` → `RECEIVING_APPEAL_ORDER_PIPELINE_HREF` (`/scanner`, bare nav)
+ * - `openPurchaseOrder` → `receivingAppealPurchaseDetailHref(orderId)`
+ * Appeal/certificate/return context on scanner: **BLOCKED_CONTRACT** (see audit
+ * `prototype-next-step-inline-pay-gap.md`). Never PATCH `sys_paid` from detail.
+ *
+ * Root UI pins (prep): P4 `9d22694f`, P6 `2375944e`, prototype `3dc31836`.
  */
 
 import type {
@@ -15,12 +22,13 @@ import {
 } from "./receiving-detail-user-copy";
 
 export const RECEIVING_DETAIL_INTEGRATION_PINS = {
-  p4Detail: "10c25fe6",
-  p6Host: "d364a53c",
-  p6Workspace: "d364a53c",
+  p4Detail: "9d22694f",
+  p6Host: "2375944e",
+  p6Workspace: "2375944e",
   k1: "a71b8f37",
   k8: "8f4d336a",
-  p1: "2b2b32b8",
+  p1: "f43f9e22",
+  prototype: "3dc31836",
 } as const;
 
 export type ReceivingAppealProfilePatchInput = {

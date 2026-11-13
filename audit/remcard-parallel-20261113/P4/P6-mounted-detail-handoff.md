@@ -4,9 +4,9 @@
 
 | Owner | SHA | Role |
 |-------|-----|------|
-| **P4** | `10c25fe6`+ | `ReceivingAppealDetailView`, `detail-contract-alignment`, **`receiving-detail-actions-contract.ts`** |
-| **P6 host** | `86251070` | `ReceivingAppealDetailHost` + bridge `receiving-detail-envelope-bridge.ts` |
-| **P6 workspace** | `78fd46e7` | Mount host on `view=detail` (replaces placeholder @ `5092`) |
+| **P4** | `9d22694f` | `ReceivingAppealDetailView`, `detail-contract-alignment`, **`receiving-detail-actions-contract.ts`** |
+| **P6 host** | `2375944e` | `ReceivingAppealDetailHost` + bridge `receiving-detail-envelope-bridge.ts` |
+| **P6 workspace** | `2375944e` | Mount host on `view=detail` |
 | **K1** | `a71b8f37` | GET detail envelope, profile/stage PATCH |
 | **P1** | `2b2b32b8` | Proxy GET/PATCH allowlist |
 | **K8** | `8f4d336a` | `ClientAppealRecord` wire |
@@ -19,7 +19,7 @@ fetchReceivingAppealDetailWire(id)
   → ReceivingAppealDetailView props (status/history/appeal)
 ```
 
-**Gap @ `86251070`:** host does **not** pass `actions` (read-only display). Root assembly must use P4 `buildReceivingAppealDetailReady` in host after merge.
+**@ `2375944e`:** host passes `buildReceivingAppealDetailReady` + `router.push("/scanner")` for order pipeline. **Not** prototype inline pay — see `prototype-next-step-inline-pay-gap.md`.
 
 ## P6 host patch (owned path — **not** done in P4)
 
