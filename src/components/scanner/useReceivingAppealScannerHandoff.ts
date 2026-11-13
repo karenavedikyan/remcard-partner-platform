@@ -9,6 +9,7 @@ import {
   loadReceivingAppealScannerContext,
   parseScannerAppealParam,
   receivingCertificateMatchesPreview,
+  scannerAppealInputSignature,
   type ReceivingAppealScannerContext,
   type ScannerAppealParam,
 } from "@/lib/scanner/receiving-appeal-handoff";
@@ -45,7 +46,8 @@ const LINK_SCOPE_LOST_MESSAGE =
   "Покупка создана, но привязка к обращению недоступна: нет доверенного контекста исходной попытки (повтор проверки или смена обращения).";
 
 export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | string | null | undefined) {
-  const param = useMemo(() => resolveParam(input), [input]);
+  const paramSignature = scannerAppealInputSignature(input);
+  const param = useMemo(() => resolveParam(input), [paramSignature]);
   const scopedAppealId = param.mode === "scoped" ? param.appealId : null;
 
   const [context, setContext] = useState<ReceivingAppealScannerContext>(() => initialContext(param));
@@ -100,7 +102,7 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       loadGen.current += 1;
       linkGen.current += 1;
     };
-  }, [param, resetLinkState, scopedAppealId]);
+  }, [paramSignature, resetLinkState, scopedAppealId]);
 
   const freezeSubmitScopeOnce = useCallback((idempotencyKey: string) => {
     if (!scopeRef.current) {

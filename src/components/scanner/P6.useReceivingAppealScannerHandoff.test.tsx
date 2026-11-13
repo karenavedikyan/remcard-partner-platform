@@ -36,17 +36,37 @@ describe("P6 receiving scanner regressions", () => {
     vi.spyOn(proxy, "isAllowedProxyRoute").mockReturnValue(true);
   });
 
-  it("revision preflight rejects null, empty, and fractional wire values", async () => {
+  it("revision preflight rejects null, empty, fractional, and out-of-range epoch", async () => {
     expect(parseReceivingAppealRevision(null)).toBeNull();
     expect(parseReceivingAppealRevision("")).toBeNull();
     expect(parseReceivingAppealRevision(0.5)).toBeNull();
     expect(parseReceivingAppealRevision("0.5")).toBeNull();
+    expect(parseReceivingAppealRevision(8_640_000_000_000_001)).toBeNull();
+    expect(parseReceivingAppealRevision("8640000000000001")).toBeNull();
     expect(parseReceivingAppealRevision(0)).toBe(0);
     expect(parseReceivingAppealRevision("3")).toBe(3);
+    expect(parseReceivingAppealRevision(8_640_000_000_000_000)).toBe(8_640_000_000_000_000);
 
     const fetchSpy = vi.spyOn(api, "fetchReceivingAppealDetailWire").mockResolvedValue(readyWire("ap1", null));
     const ctx = await loadReceivingAppealScannerContext("ap1");
     expect(ctx.status).toBe("error");
+    fetchSpy.mockRestore();
+  });
+
+  it("equivalent fresh query objects do not double-fetch detail", async () => {
+    const fetchSpy = vi
+      .spyOn(api, "fetchReceivingAppealDetailWire")
+      .mockResolvedValue(readyWire("a", 1));
+    const freshQuery = () => parseScannerAppealQueryValues(["a"]);
+    const { result, rerender } = renderHook(
+      ({ query }) => useReceivingAppealScannerHandoff(query),
+      { initialProps: { query: freshQuery() } },
+    );
+    await waitFor(() => expect(result.current.context.status).toBe("ready"));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    rerender({ query: freshQuery() });
+    await waitFor(() => expect(result.current.context.status).toBe("ready"));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     fetchSpy.mockRestore();
   });
 

@@ -30,6 +30,28 @@ export type ReceivingAppealScannerContext =
 
 export type ScannerAppealParam = { mode: "none" } | { mode: "invalid" } | { mode: "scoped"; appealId: string };
 
+/** K1 `MAX_DATE_EPOCH_MS` — CAS revision must stay within representable Date bounds. */
+export const RECEIVING_APPEAL_REVISION_MAX_MS = 8_640_000_000_000_000;
+
+export function scannerAppealParamSignature(param: ScannerAppealParam): string {
+  if (param.mode === "scoped") {
+    return `scoped:${param.appealId}`;
+  }
+  return param.mode;
+}
+
+export function scannerAppealInputSignature(
+  input: ScannerAppealParam | string | null | undefined,
+): string {
+  if (input === null || input === undefined) {
+    return "none";
+  }
+  if (typeof input === "string") {
+    return scannerAppealParamSignature(parseScannerAppealParam(input));
+  }
+  return scannerAppealParamSignature(input);
+}
+
 /** P4 `725e7c47` `assertReceivingAppealId` — owned mirror for scanner query preflight. */
 const UNSAFE_APPEAL_ID = /[\s#?&/\\]|^(?:https?:|\/\/)/i;
 
@@ -41,20 +63,31 @@ export function assertReceivingAppealId(appealId: string): string | null {
   return id;
 }
 
+function revisionWithinDateBounds(n: number): boolean {
+  return Number.isSafeInteger(n) && n >= 0 && n <= RECEIVING_APPEAL_REVISION_MAX_MS;
+}
+
 export function parseReceivingAppealRevision(raw: string | number | null | undefined): number | null {
   if (typeof raw === "number") {
-    if (!Number.isSafeInteger(raw) || raw < 0) {
-      return null;
-    }
-    return raw;
+    return revisionWithinDateBounds(raw) ? raw : null;
   }
   if (typeof raw === "string") {
     const text = raw.trim();
     if (!text || !/^\d+$/.test(text)) {
       return null;
     }
-    const n = Number(text);
-    if (!Number.isSafeInteger(n) || n < 0) {
+    const maxBi = BigInt(RECEIVING_APPEAL_REVISION_MAX_MS);
+    let bi: bigint;
+    try {
+      bi = BigInt(text);
+    } catch {
+      return null;
+    }
+    if (bi < 0n || bi > maxBi) {
+      return null;
+    }
+    const n = Number(bi);
+    if (!revisionWithinDateBounds(n) || BigInt(n) !== bi) {
       return null;
     }
     return n;
