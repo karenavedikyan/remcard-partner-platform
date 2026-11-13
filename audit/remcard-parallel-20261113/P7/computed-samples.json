@@ -1,0 +1,21 @@
+{
+  "generatedBy": "P7.observer-prototype-layout.test.ts",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "cellLabelDisplay": {
+    "1440": "none",
+    "1100": "block",
+    "768": "block",
+    "375": "block",
+    "320": "block"
+  },
+  "compactTopSecondTrackMinPxAt1024": 465.125,
+  "expandedClients": {
+    "gap": "16px",
+    "paddingTop": "16px"
+  },
+  "v7Preserved": {
+    "groupedRowGridTemplateAreas": "none",
+    "kpiColumnsAt375": 4,
+    "kpiColumnsAt360": 2
+  }
+}

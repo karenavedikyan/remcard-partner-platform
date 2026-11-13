@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/ObserverPartnersListView.test.tsx (7 tests) 661ms
+ ✓ src/lib/clients-parity/observer-stats-grid.computed.test.ts (13 tests) 974ms
+ ✓ src/lib/clients-parity/observer-visual-tokens.test.ts (5 tests) 3ms
+ ✓ src/lib/clients-parity/observer-mobile-navigation.computed.test.ts (11 tests) 9249ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 1024px (|Δtop|≤1px)  938ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 768px (|Δtop|≤1px)  802ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 375px (|Δtop|≤1px)  781ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 360px (|Δtop|≤1px)  769ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > grouped status+updated same row @ 320px (|Δtop|≤1px)  764ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 768px (real click)  852ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 375px (real click)  831ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 360px (real click)  899ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > partner «Салон Бета» → client @ 320px (real click)  833ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > expanded grouped card client row is clickable @ 375px  822ms
+   ✓ observer mobile partner→client (Playwright harness, fixtures) > flat list client row is clickable @ 375px  848ms
+
+ Test Files  4 passed (4)
+      Tests  36 passed (36)
+   Start at  11:39:53
+   Duration  9.98s (transform 236ms, setup 497ms, collect 545ms, tests 10.89s, environment 983ms, prepare 195ms)
+

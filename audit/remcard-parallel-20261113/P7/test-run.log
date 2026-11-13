@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /agent/repos/remcard-partner-platform
+
+ ✓ src/components/clients/observer/P7.observer-prototype-layout.test.ts (17 tests) 662ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  11:39:44
+   Duration  1.24s (transform 41ms, setup 103ms, collect 123ms, tests 662ms, environment 205ms, prepare 39ms)
+

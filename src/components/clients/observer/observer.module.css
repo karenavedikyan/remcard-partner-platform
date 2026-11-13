@@ -82,7 +82,7 @@
 
 .compactTop {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 1fr);
   gap: 24px;
   align-items: center;
 }
@@ -225,6 +225,11 @@
     gap: 12px;
   }
 
+  .partnerCard {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
   .partnerCard .stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
@@ -232,6 +237,43 @@
 
   .partnerCard .stats dt {
     font-size: 11px;
+  }
+
+  .disclosure summary {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .meta {
+    gap: 4px 12px;
+    width: 100%;
+  }
+
+  .toggleLabel {
+    margin-left: auto;
+  }
+
+  .partnerGroupHead {
+    align-items: flex-start;
+  }
+
+  .partnerGroupHead > .personalCheck {
+    margin-top: 4px;
+  }
+
+  .personalToolbar {
+    padding: 12px;
+    gap: 8px 12px;
+  }
+
+  .personalToolbar .personalActions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .personalTop {
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 
@@ -386,8 +428,8 @@
 
 .expandedClients {
   display: grid;
-  gap: 12px;
-  padding-top: 8px;
+  gap: 16px;
+  padding-top: 16px;
 }
 
 .clientsHeading h2 {
@@ -422,10 +464,16 @@
   color: var(--muted, #64748b);
   font-size: 12px;
   padding: 0 0 10px;
+  margin-bottom: -16px;
   border-bottom: 1px solid var(--line, #e2e8f0);
 }
 
-.personalRows,
+.personalRows {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
 .personalRowsFlat {
   display: grid;
   gap: 8px;
@@ -446,6 +494,14 @@
   /* Prototype .ca-personal-row.ca-observer-card-client — desktop grouped */
   grid-template-columns: 24px minmax(0, 1fr) minmax(130px, 0.65fr) 145px 150px;
   align-items: start;
+}
+
+.personalRowGrouped > .ghostBtn {
+  font-size: 12px;
+  padding: 10px 12px;
+  min-height: 44px;
+  white-space: normal;
+  line-height: 1.5;
 }
 
 .personalOpen {
@@ -493,8 +549,11 @@
 }
 
 .cellLabel {
+  display: none;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--muted, #64748b);
+  font-weight: 500;
 }
 
 .clientUpdated {
@@ -508,10 +567,11 @@
 .chevron {
   font-size: 18px;
   line-height: 1;
+  transform: translateY(-2px);
 }
 
 .disclosure[open] .chevron {
-  transform: rotate(180deg);
+  transform: rotate(180deg) translateY(-2px);
 }
 
 .showLabel {
