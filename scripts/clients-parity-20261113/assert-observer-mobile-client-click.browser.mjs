@@ -201,6 +201,29 @@ async function main() {
         await page.locator('[data-testid="ca-observer-partner-page"]').waitFor({ state: "visible" });
 
         const geom = await measureOpenGeometry(page);
+        const groupedRowParity = await page.evaluate(() => {
+          const row = document.querySelector(
+            '[data-testid="ca-observer-partner-page"] [data-testid="ca-observer-client-row"]',
+          );
+          if (!row) return null;
+          const status = row.querySelector('[class*="personalStatus"]');
+          const updated = row.querySelector('[class*="clientUpdated"]');
+          const cs = getComputedStyle(row);
+          const sY = status?.getBoundingClientRect().top;
+          const uY = updated?.getBoundingClientRect().top;
+          return {
+            gridTemplateAreas: cs.gridTemplateAreas,
+            gridTemplateColumns: cs.gridTemplateColumns,
+            statusTop: sY,
+            updatedTop: uY,
+            topDelta: sY != null && uY != null ? Math.abs(sY - uY) : null,
+          };
+        });
+        const rowParityOk =
+          groupedRowParity &&
+          groupedRowParity.gridTemplateAreas === "none" &&
+          groupedRowParity.topDelta != null &&
+          groupedRowParity.topDelta <= 1;
         const openVisible = geom.openWidth >= 8 && geom.openHeight >= 8;
         const shotPartner = `v6-${theme}-${vp.name}-partner-row.png`;
         await page.screenshot({ path: path.join(OUT, shotPartner), fullPage: false });
@@ -281,10 +304,14 @@ async function main() {
         const flatGeom = await flatOpen.evaluate((el) => {
           const r = el.getBoundingClientRect();
           const row = el.closest('[data-testid="ca-observer-client-row"]');
+          const cs = row ? getComputedStyle(row) : null;
+          const cols = cs?.gridTemplateColumns?.trim().split(/\s+/).filter(Boolean) ?? [];
           return {
             openWidth: r.width,
             openHeight: r.height,
-            rowGrid: row ? getComputedStyle(row).gridTemplateColumns : null,
+            rowGrid: cs?.gridTemplateColumns ?? null,
+            gridTemplateAreas: cs?.gridTemplateAreas ?? null,
+            hasZeroTrack: cols.some((c) => c === "0px"),
           };
         });
         let flatClickOk = false;
@@ -324,6 +351,8 @@ async function main() {
           kpiOk: kpiCols === expectedKpi,
           partnerPage: {
             geom,
+            groupedRowParity,
+            rowParityOk,
             openVisible,
             clientNavOk,
             backOk,
@@ -335,13 +364,16 @@ async function main() {
           editCancelOk,
           saveDisabled,
         };
+        const flatGridOk = !flatGeom.hasZeroTrack && flatGeom.gridTemplateAreas === "none";
         const ok =
           row.kpiOk &&
+          rowParityOk &&
           openVisible &&
           clientNavOk &&
           backOk &&
           (expandedGeom ? expandedGeom.openWidth >= 8 && expandedClickOk : true) &&
           flatGeom.openWidth >= 8 &&
+          flatGridOk &&
           flatClickOk &&
           (editCancelOk === null || (editCancelOk && saveDisabled));
         row.ok = ok;
@@ -355,7 +387,7 @@ async function main() {
   }
 
   const report = {
-    task: "REMCLIENTS-V6-REAL-MOBILE-BLOCKER",
+    task: "REMCLIENTS-V7-GROUPED-ROW-PARITY",
     prototypeSha: "3dc31836cd18d9209c20097f18b906dd276f7af6",
     method: "Playwright real click + getBoundingClientRect/getComputedStyle (not fireEvent)",
     note: "document.scrollWidth alone is not a pass; open button must have nonzero geometry",

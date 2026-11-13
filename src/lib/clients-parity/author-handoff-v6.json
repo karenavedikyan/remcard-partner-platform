@@ -1,5 +1,7 @@
 {
-  "taskId": "REMCLIENTS-V6-COMPUTER-RESULTS",
+  "taskId": "REMCLIENTS-V7-CASCADE-EXACT-PARITY",
+  "supersedesProductFix": "0729c12f1e321b1aa458d95016eb4cc3f4428f6f",
+  "v7Note": "Removed obsolete max768 grid-template-areas; prototype max1100 grouped + max760 flat only. Grouped status+updated |Δtop|≤1px at 320–1024.",
   "authors": {
     "implementation": "bc-597b1474",
     "auditor": "bc-0a64ca5a"

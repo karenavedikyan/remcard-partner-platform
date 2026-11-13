@@ -3,6 +3,8 @@ import path from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  GROUPED_ROW_PARITY_WIDTHS,
+  GROUPED_STATUS_UPDATED_TOP_MAX_DELTA_PX,
   MIN_CLIENT_OPEN_BUTTON_HEIGHT_PX,
   MIN_CLIENT_OPEN_BUTTON_WIDTH_PX,
   PERSONAL_ROW_MOBILE_WIDTHS,
@@ -30,6 +32,23 @@ async function waitForHarness(url: string, timeoutMs = 60_000) {
   throw new Error(`Harness not ready at ${url}`);
 }
 
+async function measureGroupedRowParity(page: Page) {
+  return page.getByTestId("ca-observer-partner-page").getByTestId("ca-observer-client-row").first().evaluate((rowEl) => {
+    const status = rowEl.querySelector('[class*="personalStatus"]');
+    const updated = rowEl.querySelector('[class*="clientUpdated"]');
+    const cs = getComputedStyle(rowEl);
+    const sY = status?.getBoundingClientRect().top;
+    const uY = updated?.getBoundingClientRect().top;
+    return {
+      gridTemplateAreas: cs.gridTemplateAreas,
+      gridTemplateColumns: cs.gridTemplateColumns,
+      statusTop: sY ?? null,
+      updatedTop: uY ?? null,
+      topDelta: sY != null && uY != null ? Math.abs(sY - uY) : null,
+    };
+  });
+}
+
 async function assertPartnerPageClientClickable(page: Page, innerWidth: number) {
   await page.setViewportSize({ width: innerWidth, height: 812 });
   await page.goto(`${harnessUrl}/?theme=dark`, { waitUntil: "networkidle" });
@@ -46,6 +65,11 @@ async function assertPartnerPageClientClickable(page: Page, innerWidth: number) 
 
   const gridCols = await row.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
   expect(gridCols).not.toMatch(/^24px\s+0px/);
+
+  const parity = await measureGroupedRowParity(page);
+  expect(parity.gridTemplateAreas).toBe("none");
+  expect(parity.topDelta).not.toBeNull();
+  expect(parity.topDelta!).toBeLessThanOrEqual(GROUPED_STATUS_UPDATED_TOP_MAX_DELTA_PX);
 
   await openBtn.click();
   await page.getByTestId("ca-observer-client-page").waitFor({ state: "visible" });
@@ -72,6 +96,20 @@ describe("observer mobile partner→client (Playwright harness, fixtures)", () =
     viteProc?.kill("SIGTERM");
     viteProc = null;
   });
+
+  for (const innerWidth of GROUPED_ROW_PARITY_WIDTHS) {
+    it(`grouped status+updated same row @ ${innerWidth}px (|Δtop|≤1px)`, async () => {
+      const context = await browser.newContext({ viewport: { width: innerWidth, height: 900 } });
+      const page = await context.newPage();
+      await page.goto(`${harnessUrl}/?theme=dark`, { waitUntil: "networkidle" });
+      await page.getByLabel(/Открыть партнёра:.*Бета/).click();
+      await page.getByTestId("ca-observer-partner-page").waitFor({ state: "visible" });
+      const parity = await measureGroupedRowParity(page);
+      expect(parity.gridTemplateAreas).toBe("none");
+      expect(parity.topDelta!).toBeLessThanOrEqual(GROUPED_STATUS_UPDATED_TOP_MAX_DELTA_PX);
+      await context.close();
+    }, 60_000);
+  }
 
   for (const innerWidth of PERSONAL_ROW_MOBILE_WIDTHS) {
     it(`partner «Салон Бета» → client @ ${innerWidth}px (real click)`, async () => {
@@ -107,6 +145,16 @@ describe("observer mobile partner→client (Playwright harness, fixtures)", () =
       .getByRole("button", { name: /Анна|Игорь|Мария/ });
     const box = await openBtn.boundingBox();
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(MIN_CLIENT_OPEN_BUTTON_WIDTH_PX);
+    const parity = await page
+      .getByTestId("ca-observer-client-row")
+      .first()
+      .evaluate((rowEl) => {
+        const cs = getComputedStyle(rowEl);
+        const cols = cs.gridTemplateColumns.trim().split(/\s+/).filter(Boolean);
+        return { gridTemplateAreas: cs.gridTemplateAreas, hasZeroTrack: cols.some((c) => c === "0px") };
+      });
+    expect(parity.gridTemplateAreas).toBe("none");
+    expect(parity.hasZeroTrack).toBe(false);
     await openBtn.click();
     await page.getByTestId("ca-observer-client-page").waitFor({ state: "visible" });
     await context.close();

@@ -44,8 +44,27 @@ for (const innerWidth of WIDTHS) {
   const openBtn = row.locator("button").first();
   const box = await openBtn.boundingBox();
   const gridTemplateColumns = await row.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+  const rowParity = await row.evaluate((rowEl) => {
+    const status = rowEl.querySelector('[class*="personalStatus"]');
+    const updated = rowEl.querySelector('[class*="clientUpdated"]');
+    const cs = getComputedStyle(rowEl);
+    const sY = status?.getBoundingClientRect().top;
+    const uY = updated?.getBoundingClientRect().top;
+    return {
+      gridTemplateAreas: cs.gridTemplateAreas,
+      topDelta: sY != null && uY != null ? Math.abs(sY - uY) : null,
+    };
+  });
+  const parityPass =
+    rowParity.gridTemplateAreas === "none" &&
+    rowParity.topDelta != null &&
+    rowParity.topDelta <= 1;
   const geometryPass = Boolean(
-    box && box.width >= MIN_W && box.height >= MIN_H && !/^24px\s+0px/.test(gridTemplateColumns),
+    box &&
+      box.width >= MIN_W &&
+      box.height >= MIN_H &&
+      !/^24px\s+0px/.test(gridTemplateColumns) &&
+      parityPass,
   );
   if (!geometryPass) allPass = false;
   let navigationPass = false;
@@ -61,6 +80,8 @@ for (const innerWidth of WIDTHS) {
     theme: "dark",
     selector: "[data-testid=ca-observer-partner-page] [data-testid=ca-observer-client-row]",
     gridTemplateColumns,
+    rowParity,
+    parityPass,
     openButton: box
       ? { x: box.x, y: box.y, width: box.width, height: box.height }
       : null,
