@@ -46,6 +46,17 @@ type Panel =
   | { kind: "confirm"; action: "archived" | "trash" | "restore"; ids: string[] }
   | null;
 
+function buildObserverEditTargetKey(mode: "single" | "bulk", appealIds: readonly string[]): string {
+  return `${mode}:${[...appealIds].sort().join(",")}`;
+}
+
+function buildObserverConfirmTargetKey(
+  kind: "archived" | "trash" | "restore",
+  appealIds: readonly string[],
+): string {
+  return `${kind}:${[...appealIds].sort().join(",")}`;
+}
+
 export type ObserverPersonalPersistResult =
   | { ok: true; meta: Record<string, ObserverPersonalMeta>; failedIds?: string[] }
   | { ok: false; message: string; failedIds?: string[] };
@@ -119,6 +130,8 @@ export function ObserverPartnersListView({
   const [panel, setPanel] = useState<Panel>(null);
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
   const [persisting, setPersisting] = useState(false);
+  /** P5 draft binding: bump on cancel/reopen only — not on pending/error cycles. */
+  const [editDraftSeed, setEditDraftSeed] = useState(0);
 
   const personalMeta = displayPersonalMeta;
   const partnersById = useMemo(() => partnersMap(partners), [partners]);
@@ -141,12 +154,10 @@ export function ObserverPartnersListView({
     visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const someVisibleSelected = visibleIds.some((id) => selected.has(id));
 
-  const notifyPersistenceBlock = useCallback((action: string) => {
+  const showPersistenceBlock = useCallback((action: string) => {
     setPersistenceNotice(
       `BLOCKED_PERSISTENCE: «${action}» не выполняется без API personal-meta. Данные партнёра не изменены.`,
     );
-    setPanel(null);
-    setSelected(new Set());
   }, []);
 
   const finishPersist = useCallback(
@@ -180,7 +191,7 @@ export function ObserverPartnersListView({
       return;
     }
     if (!personalPersistence?.onBucketAction) {
-      notifyPersistenceBlock(action);
+      showPersistenceBlock(action);
       return;
     }
     setPersistenceNotice(null);
@@ -191,7 +202,7 @@ export function ObserverPartnersListView({
     } finally {
       setPersisting(false);
     }
-  }, [finishPersist, notifyPersistenceBlock, panel, personalPersistence, persisting]);
+  }, [finishPersist, showPersistenceBlock, panel, personalPersistence, persisting]);
 
   const handleAttemptSave = useCallback(
     async (draft: PersonalEditDraft) => {
@@ -202,7 +213,7 @@ export function ObserverPartnersListView({
         return;
       }
       if (!personalPersistence?.onSavePersonal) {
-        notifyPersistenceBlock("Сохранить личные поля");
+        showPersistenceBlock("Сохранить личные поля");
         return;
       }
       setPersistenceNotice(null);
@@ -214,7 +225,7 @@ export function ObserverPartnersListView({
         setPersisting(false);
       }
     },
-    [finishPersist, notifyPersistenceBlock, panel, personalPersistence, persisting],
+    [finishPersist, showPersistenceBlock, panel, personalPersistence, persisting],
   );
 
   const onPartnerToggle = useCallback((partnerId: string, open: boolean) => {
@@ -288,8 +299,6 @@ export function ObserverPartnersListView({
     setNav({ view: "partners" });
   };
 
-  const editSessionKey =
-    panel?.kind === "edit" ? `${panel.mode}:${[...panel.ids].sort().join(",")}` : "";
   const editInitial =
     panel?.kind === "edit" && panel.mode === "single" && panel.ids[0]
       ? {
@@ -465,16 +474,20 @@ export function ObserverPartnersListView({
 
       {panel?.kind === "edit" ? (
         <ObserverPersonalEditPanel
+          key={buildObserverEditTargetKey(panel.mode, panel.ids)}
+          editTargetKey={buildObserverEditTargetKey(panel.mode, panel.ids)}
           mode={panel.mode}
           count={panel.ids.length}
           initial={editInitial}
-          editSessionKey={editSessionKey}
+          draftSeed={editDraftSeed}
           persistenceStatus={editPersistenceStatus}
-          persistenceError={editPersistenceStatus === "error" ? persistenceNotice : null}
+          saveError={editPersistenceStatus === "error" ? persistenceNotice : null}
           onCancel={() => {
             setPersistenceNotice(null);
             setPanel(null);
+            setEditDraftSeed((n) => n + 1);
           }}
+          onAttemptSave={() => showPersistenceBlock("Сохранить личные поля")}
           onSave={(draft) => {
             void handleAttemptSave(draft);
           }}
@@ -483,10 +496,12 @@ export function ObserverPartnersListView({
 
       {panel?.kind === "confirm" ? (
         <ObserverPersonalConfirmPanel
+          key={buildObserverConfirmTargetKey(panel.action, panel.ids)}
+          confirmTargetKey={buildObserverConfirmTargetKey(panel.action, panel.ids)}
           kind={panel.action}
           count={panel.ids.length}
           persistenceStatus={confirmPersistenceStatus}
-          persistenceError={confirmPersistenceStatus === "error" ? persistenceNotice : null}
+          partialError={confirmPersistenceStatus === "error" ? persistenceNotice : null}
           onCancel={() => {
             setPersistenceNotice(null);
             setPanel(null);

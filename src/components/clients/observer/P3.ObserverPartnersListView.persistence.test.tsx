@@ -47,7 +47,7 @@ describe("P3 ObserverPartnersListView persistence callbacks", () => {
     expect(rowCheck).toBeChecked();
   });
 
-  it("falls back to BLOCKED notice without adapter", async () => {
+  it("shows P5 blocked confirm UX without adapter", async () => {
     render(
       <ObserverPartnersListView
         appeals={[appeal]}
@@ -59,7 +59,7 @@ describe("P3 ObserverPartnersListView persistence callbacks", () => {
     await userEvent.click(screen.getByLabelText("Выбрать: Клиент"));
     await userEvent.click(screen.getByRole("button", { name: "В архив" }));
     const confirm = screen.getByTestId("ca-observer-personal-confirm");
-    await userEvent.click(within(confirm).getByRole("button", { name: "В архив" }));
-    expect(screen.getByText(/BLOCKED_PERSISTENCE/i)).toBeTruthy();
+    expect(within(confirm).getByText(/personal-meta/i)).toBeTruthy();
+    expect(within(confirm).getByRole("button", { name: /недоступно/i })).toBeDisabled();
   });
 });
