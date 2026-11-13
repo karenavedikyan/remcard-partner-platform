@@ -1,30 +1,51 @@
 /**
- * K5 — observer personal overlay client (referred-appeals only).
- * BFF: /api/remcard → P1 proxy. Never calls AgentClient CRUD.
+ * Partner П5 client for K5 personal overlay (navigator `ClientAppealPersonalOverlay`).
+ * Canonical ref: remcard-navigator @ fc33b4fa — `src/lib/clientAppeals/contract.ts`.
+ * BFF `/api/remcard` → P1 proxy. Never AgentClient CRUD.
  */
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import type { ObserverPersonalBucket, ObserverPersonalMeta } from "@/lib/clients-parity/types";
 
-export const OBSERVER_PERSONAL_META_ROUTE =
+export const K8_NAVIGATOR_CONTRACT_REF = "fc33b4fae859fb692757807c3b27696b66d57558" as const;
+
+/** K5 mutation routes (candidate until navigator K5 + P1 allowlist ship). */
+export const OBSERVER_PERSONAL_OVERLAY_ROUTE =
+  "/api/pro/client-appeals/:appealId/personal-overlay" as const;
+export const OBSERVER_PERSONAL_BATCH_ROUTE = "/api/pro/client-appeals/personal-overlay/batch" as const;
+
+/** @deprecated P2 draft name — do not use in new wire-ups */
+export const LEGACY_REFERRED_PERSONAL_META_ROUTE =
   "/api/pro/referred-appeals/:appealId/personal-meta" as const;
-export const OBSERVER_PERSONAL_BATCH_ROUTE = "/api/pro/referred-appeals/personal-batch" as const;
+
+/** Wire shape for navigator `ClientAppealPersonalOverlay` (observer-safe subset). */
+export type ClientAppealPersonalOverlayDto = {
+  appealId: string;
+  alias: string | null;
+  tag: string | null;
+  note: string | null;
+  bucket: ObserverPersonalBucket;
+  beforeTrashBucket: ObserverPersonalBucket | null;
+  version: number;
+  updatedAt: string;
+};
 
 export type PersonalMetaPatch = {
-  alias?: string;
-  tag?: string;
-  note?: string;
+  alias?: string | null;
+  tag?: string | null;
+  note?: string | null;
   bucket?: ObserverPersonalBucket;
-  /** Server stores previous bucket before trash (prototype beforeTrash). */
   clearTag?: boolean;
+  /** Optimistic concurrency — required once server returns overlay.version (K5). */
+  expectedVersion?: number;
 };
 
 export type PersonalBatchOperation =
-  | { op: "set-tag"; ids: string[]; tag: string }
-  | { op: "set-bucket"; ids: string[]; bucket: ObserverPersonalBucket };
+  | { op: "set-tag"; ids: string[]; tag: string; expectedVersions?: Record<string, number> }
+  | { op: "set-bucket"; ids: string[]; bucket: ObserverPersonalBucket; expectedVersions?: Record<string, number> };
 
 export type PersonalMetaFailure = {
   appealId: string;
-  code: string;
+  code: "forbidden" | "not_found" | "version_conflict" | "validation" | string;
   message: string;
 };
 
@@ -33,6 +54,7 @@ export type PersonalMutationResult =
       ok: true;
       kind: "full";
       appliedIds: string[];
+      overlaysById?: Record<string, ClientAppealPersonalOverlayDto>;
       metaById?: Record<string, ObserverPersonalMeta>;
     }
   | {
@@ -40,6 +62,7 @@ export type PersonalMutationResult =
       kind: "partial";
       appliedIds: string[];
       failed: PersonalMetaFailure[];
+      overlaysById?: Record<string, ClientAppealPersonalOverlayDto>;
       metaById?: Record<string, ObserverPersonalMeta>;
     }
   | {
@@ -50,39 +73,65 @@ export type PersonalMutationResult =
     }
   | {
       ok: false;
+      kind: "conflict";
+      message: string;
+      serverVersion?: number;
+      preserveUi: true;
+    }
+  | {
+      ok: false;
       kind: "error";
       message: string;
       status?: number;
       failed?: PersonalMetaFailure[];
-      /** Preserve selection + draft; caller must not clear panel. */
       preserveUi: true;
     };
 
-type PersonalMetaResponse = {
-  ok?: boolean;
-  meta?: ObserverPersonalMeta;
-  appealId?: string;
+type PersonalOverlayResponse = {
+  overlay?: ClientAppealPersonalOverlayDto;
 };
 
 type PersonalBatchResponse = {
-  ok?: boolean;
   applied?: string[];
   failed?: PersonalMetaFailure[];
-  metaById?: Record<string, ObserverPersonalMeta>;
+  overlaysById?: Record<string, ClientAppealPersonalOverlayDto>;
 };
 
-function metaPath(appealId: string) {
-  return `/api/pro/referred-appeals/${encodeURIComponent(appealId)}/personal-meta`;
+export function overlayPath(appealId: string) {
+  return `/api/pro/client-appeals/${encodeURIComponent(appealId)}/personal-overlay`;
+}
+
+export function mapOverlayToPartnerMeta(overlay: ClientAppealPersonalOverlayDto): ObserverPersonalMeta {
+  return {
+    alias: overlay.alias ?? undefined,
+    tag: overlay.tag ?? undefined,
+    note: overlay.note ?? undefined,
+    bucket: overlay.bucket,
+  };
+}
+
+export function mapOverlaysToMetaMap(
+  overlays: Record<string, ClientAppealPersonalOverlayDto>,
+): Record<string, ObserverPersonalMeta> {
+  return Object.fromEntries(Object.entries(overlays).map(([id, o]) => [id, mapOverlayToPartnerMeta(o)]));
+}
+
+function withMetaMaps(
+  overlaysById?: Record<string, ClientAppealPersonalOverlayDto>,
+): { overlaysById?: Record<string, ClientAppealPersonalOverlayDto>; metaById?: Record<string, ObserverPersonalMeta> } {
+  if (!overlaysById) return {};
+  return { overlaysById, metaById: mapOverlaysToMetaMap(overlaysById) };
 }
 
 export function isPersonalPersistProxyBlocked(error: unknown): boolean {
   if (!(error instanceof RemcardApiError)) return false;
-  if (error.status === 404 || error.status === 403) return true;
+  if (error.status === 404 || error.status === 403 || error.status === 501) return true;
   const code = error.body?.code ?? "";
   return (
     code === "PROXY_ROUTE_NOT_ALLOWED" ||
     code === "BLOCKED_CONTRACT" ||
-    code === "NOT_IMPLEMENTED"
+    code === "NOT_IMPLEMENTED" ||
+    code === "client_appeals_schema_unavailable"
   );
 }
 
@@ -92,16 +141,45 @@ function blockedContract(): PersonalMutationResult {
     kind: "blocked_contract",
     blockerId: "BLK-OBSERVER-PERSONAL-PERSIST",
     message:
-      "Маршруты personal-meta ещё не доступны через proxy. Ожидаются navigator backend и allowlist P1.",
+      "Маршруты client-appeals personal-overlay ещё не доступны (K5 navigator + P1 proxy + approved migration).",
+  };
+}
+
+function mapHttpError(error: RemcardApiError): PersonalMutationResult {
+  const code = error.body?.code ?? "";
+  if (error.status === 409 || code === "version_conflict") {
+    const serverVersion =
+      typeof error.body?.fields?.version === "string"
+        ? Number(error.body.fields.version)
+        : undefined;
+    return {
+      ok: false,
+      kind: "conflict",
+      message: error.message || "Данные изменились на сервере. Обновите список и повторите.",
+      serverVersion: Number.isFinite(serverVersion) ? serverVersion : undefined,
+      preserveUi: true,
+    };
+  }
+  return {
+    ok: false,
+    kind: "error",
+    message: error.message,
+    status: error.status,
+    preserveUi: true,
   };
 }
 
 function normalizeBatch(raw: PersonalBatchResponse, fallbackIds: string[]): PersonalMutationResult {
   const applied = raw.applied ?? [];
   const failed = raw.failed ?? [];
-  const metaById = raw.metaById;
+  const maps = withMetaMaps(raw.overlaysById);
   if (failed.length === 0) {
-    return { ok: true, kind: "full", appliedIds: applied.length ? applied : fallbackIds, metaById };
+    return {
+      ok: true,
+      kind: "full",
+      appliedIds: applied.length ? applied : fallbackIds,
+      ...maps,
+    };
   }
   if (applied.length === 0) {
     return {
@@ -112,7 +190,7 @@ function normalizeBatch(raw: PersonalBatchResponse, fallbackIds: string[]): Pers
       preserveUi: true,
     };
   }
-  return { ok: true, kind: "partial", appliedIds: applied, failed, metaById };
+  return { ok: true, kind: "partial", appliedIds: applied, failed, ...maps };
 }
 
 export async function patchObserverPersonalMeta(
@@ -121,37 +199,26 @@ export async function patchObserverPersonalMeta(
   signal?: AbortSignal,
 ): Promise<PersonalMutationResult> {
   try {
-    const body = await remcardFetch<PersonalMetaResponse>(metaPath(appealId), {
+    const body = await remcardFetch<PersonalOverlayResponse>(overlayPath(appealId), {
       method: "PATCH",
       body: patch,
       requireCsrf: true,
       signal,
     });
-    if (!body?.meta) {
-      return {
-        ok: false,
-        kind: "error",
-        message: "Ответ сервера без meta.",
-        preserveUi: true,
-      };
+    if (!body?.overlay) {
+      return { ok: false, kind: "error", message: "Ответ сервера без overlay.", preserveUi: true };
     }
+    const meta = mapOverlayToPartnerMeta(body.overlay);
     return {
       ok: true,
       kind: "full",
       appliedIds: [appealId],
-      metaById: { [appealId]: body.meta },
+      overlaysById: { [appealId]: body.overlay },
+      metaById: { [appealId]: meta },
     };
   } catch (error) {
     if (isPersonalPersistProxyBlocked(error)) return blockedContract();
-    if (error instanceof RemcardApiError) {
-      return {
-        ok: false,
-        kind: "error",
-        message: error.message,
-        status: error.status,
-        preserveUi: true,
-      };
-    }
+    if (error instanceof RemcardApiError) return mapHttpError(error);
     throw error;
   }
 }
@@ -161,7 +228,7 @@ export async function postObserverPersonalBatch(
   signal?: AbortSignal,
 ): Promise<PersonalMutationResult> {
   try {
-    const body = await remcardFetch<PersonalBatchResponse>("/api/pro/referred-appeals/personal-batch", {
+    const body = await remcardFetch<PersonalBatchResponse>(OBSERVER_PERSONAL_BATCH_ROUTE, {
       method: "POST",
       body: operation,
       requireCsrf: true,
@@ -171,51 +238,49 @@ export async function postObserverPersonalBatch(
   } catch (error) {
     if (isPersonalPersistProxyBlocked(error)) return blockedContract();
     if (error instanceof RemcardApiError) {
-      return {
-        ok: false,
-        kind: "error",
-        message: error.message,
-        status: error.status,
-        preserveUi: true,
-      };
+      const mapped = mapHttpError(error);
+      if (mapped.kind === "conflict") return mapped;
+      return mapped;
     }
     throw error;
   }
 }
 
-/** Single-row save — maps edit panel draft (prototype single submit). */
 export async function saveObserverPersonalSingle(
   appealId: string,
   draft: { alias: string; tag: string; note: string },
+  expectedVersion?: number,
   signal?: AbortSignal,
 ): Promise<PersonalMutationResult> {
   return patchObserverPersonalMeta(
     appealId,
     {
-      alias: draft.alias || undefined,
+      alias: draft.alias || null,
       tag: draft.tag,
-      note: draft.note || undefined,
+      note: draft.note || null,
       clearTag: draft.tag.length === 0,
+      expectedVersion,
     },
     signal,
   );
 }
 
-/** Bulk tag only (prototype bulk edit). */
 export async function saveObserverPersonalBulkTag(
   ids: string[],
   tag: string,
+  expectedVersions?: Record<string, number>,
   signal?: AbortSignal,
 ): Promise<PersonalMutationResult> {
-  return postObserverPersonalBatch({ op: "set-tag", ids, tag }, signal);
+  return postObserverPersonalBatch({ op: "set-tag", ids, tag, expectedVersions }, signal);
 }
 
 export async function moveObserverPersonalBucket(
   ids: string[],
   bucket: ObserverPersonalBucket,
+  expectedVersions?: Record<string, number>,
   signal?: AbortSignal,
 ): Promise<PersonalMutationResult> {
-  return postObserverPersonalBatch({ op: "set-bucket", ids, bucket }, signal);
+  return postObserverPersonalBatch({ op: "set-bucket", ids, bucket, expectedVersions }, signal);
 }
 
 export function personalMutationErrorMessage(result: PersonalMutationResult): string | null {
@@ -226,6 +291,7 @@ export function personalMutationErrorMessage(result: PersonalMutationResult): st
     return null;
   }
   if (result.kind === "blocked_contract") return result.message;
+  if (result.kind === "conflict") return result.message;
   if (result.kind === "error") {
     if (result.failed?.length) {
       return `${result.message} (${result.failed.length} записей).`;
@@ -237,9 +303,16 @@ export function personalMutationErrorMessage(result: PersonalMutationResult): st
 
 export function personalMutationFailedIds(result: PersonalMutationResult): string[] {
   if (result.ok && result.kind === "partial") return result.failed.map((f) => f.appealId);
-  if (!result.ok && result.kind === "error") return result.failed?.map((f) => f.appealId) ?? [];
+  if (!result.ok && result.kind === "error" && result.failed?.length) {
+    return result.failed.map((f) => f.appealId);
+  }
   return [];
 }
 
-/** P3 refetch hook surface — GET map when list endpoint embeds meta or dedicated load arrives. */
+export function personalMutationPreserveSelection(result: PersonalMutationResult): boolean {
+  if (!result.ok) return result.preserveUi;
+  if (result.kind === "partial") return true;
+  return false;
+}
+
 export type ObserverPersonalMetaMap = Record<string, ObserverPersonalMeta>;

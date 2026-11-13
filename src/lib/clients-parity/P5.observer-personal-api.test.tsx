@@ -30,10 +30,24 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
       if (String(url).includes("/api/csrf")) {
         return new Response("", { status: 200 });
       }
-      expect(url).toContain("/api/remcard/api/pro/referred-appeals/a1/personal-meta");
+      expect(url).toContain("/api/remcard/api/pro/client-appeals/a1/personal-overlay");
       expect(init?.method).toBe("PATCH");
       expect(JSON.parse(String(init?.body))).toEqual({ tag: "urgent" });
-      return new Response(JSON.stringify({ ok: true, meta: { tag: "urgent" } }), { status: 200 });
+      return new Response(
+        JSON.stringify({
+          overlay: {
+            appealId: "a1",
+            alias: null,
+            tag: "urgent",
+            note: null,
+            bucket: "active",
+            beforeTrashBucket: null,
+            version: 2,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     const result = await patchObserverPersonalMeta("a1", { tag: "urgent" });
@@ -61,10 +75,35 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
     }
   });
 
+  it("maps version_conflict to conflict result", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
+      return new Response(JSON.stringify({ code: "version_conflict" }), { status: 409 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await patchObserverPersonalMeta("a1", { tag: "x", expectedVersion: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.kind).toBe("conflict");
+  });
+
   it("save single delegates to patch", async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
-      return new Response(JSON.stringify({ meta: { alias: "X", tag: "", note: "" } }), { status: 200 });
+      return new Response(
+        JSON.stringify({
+          overlay: {
+            appealId: "id-9",
+            alias: "X",
+            tag: "",
+            note: "",
+            bucket: "active",
+            beforeTrashBucket: null,
+            version: 1,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     await saveObserverPersonalSingle("id-9", { alias: "X", tag: "", note: "" });
@@ -74,7 +113,7 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
   it("bulk tag uses personal-batch", async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
-      expect(url).toContain("personal-batch");
+      expect(url).toContain("personal-overlay/batch");
       expect(JSON.parse(String(init?.body))).toEqual({ op: "set-tag", ids: ["1", "2"], tag: "fri" });
       return new Response(JSON.stringify({ ok: true, applied: ["1", "2"] }), { status: 200 });
     });

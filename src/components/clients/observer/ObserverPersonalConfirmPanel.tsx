@@ -61,8 +61,8 @@ export function ObserverPersonalConfirmPanel({
       </p>
       {persistenceStatus === "blocked" ? (
         <p className={styles.mutedSmall}>
-          Сохранение личного списка ожидает подтверждённого API personal-meta (P2). Данные партнёров и
-          глобальный CRM не меняются.
+          Сохранение личного списка ожидает K5 `client-appeals/personal-overlay` (navigator fc33b4fa).
+          Данные партнёров и глобальный CRM не меняются.
         </p>
       ) : null}
       {partialError ? (
