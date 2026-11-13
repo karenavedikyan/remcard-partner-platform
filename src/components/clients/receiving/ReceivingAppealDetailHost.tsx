@@ -1,22 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   fetchReceivingAppealDetailWire,
   patchReceivingAppealProfileCas,
   patchReceivingAppealStageCas,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingAppealDetailView, type ReceivingAppealDetailProps } from "./ReceivingAppealDetailView";
-import {
-  buildReceivingAppealDetailReady,
-  type ReceivingAppealDetailMutationOutcome,
-  type ReceivingAppealProfilePatchInput,
-  type ReceivingAppealStagePatchInput,
+import type {
+  ReceivingAppealDetailMutationOutcome,
+  ReceivingAppealProfilePatchInput,
+  ReceivingAppealStagePatchInput,
 } from "./receiving-detail-actions-contract";
 import { receivingAppealDetailWireToP4Mapped } from "./receiving-detail-envelope-bridge";
+import {
+  P4_RECEIVING_DETAIL_CONTRACT_REF,
+  RECEIVING_APPEAL_ORDER_PIPELINE_HREF,
+  buildReceivingAppealDetailReadyForHost,
+  receivingAppealPurchaseDetailHref,
+} from "./receiving-detail-host-wiring";
 
-/** P4 UI + contract — `git show 497f313d:src/components/clients/receiving/` (Root merges P4 owner tip). */
-export const P4_RECEIVING_DETAIL_UI_SHA = "497f313d" as const;
+/** P4 UI + finance contract — `git show 6b7c38d3:.../ReceivingAppealDetailView.tsx` (Root merges; P6 does not commit P4). */
+export const P4_RECEIVING_DETAIL_UI_SHA = P4_RECEIVING_DETAIL_CONTRACT_REF;
 
 export type ReceivingAppealDetailHostProps = {
   appealId: string;
@@ -50,6 +56,7 @@ export function ReceivingAppealDetailHost({
   onRevisionLoaded,
   onAppealMutated,
 }: ReceivingAppealDetailHostProps) {
+  const router = useRouter();
   const [phase, setPhase] = useState<LoadPhase>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapped, setMapped] = useState<ReturnType<typeof receivingAppealDetailWireToP4Mapped> | null>(
@@ -94,6 +101,17 @@ export function ReceivingAppealDetailHost({
   const reloadDetail = useCallback(async () => {
     setReloadToken((t) => t + 1);
   }, []);
+
+  const onOpenOrderPipeline = useCallback(() => {
+    router.push(RECEIVING_APPEAL_ORDER_PIPELINE_HREF);
+  }, [router]);
+
+  const openPurchaseOrder = useCallback(() => {
+    if (mapped?.status !== "ready") return;
+    const orderId = mapped.appeal.purchaseOrderId?.trim();
+    if (!orderId) return;
+    router.push(receivingAppealPurchaseDetailHref(orderId));
+  }, [mapped, router]);
 
   const mutateProfile = useCallback(
     async (body: ReceivingAppealProfilePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
@@ -146,8 +164,7 @@ export function ReceivingAppealDetailHost({
       };
     }
     if (phase === "ready" && mapped?.status === "ready") {
-      return buildReceivingAppealDetailReady({
-        appealId,
+      return buildReceivingAppealDetailReadyForHost({
         mapped,
         readOnly,
         busy,
@@ -155,6 +172,9 @@ export function ReceivingAppealDetailHost({
         mutateProfile,
         mutateStage,
         reloadDetail,
+        onOpenOrderPipeline: readOnly ? undefined : onOpenOrderPipeline,
+        openPurchaseOrder:
+          readOnly || !mapped.appeal.purchaseOrderId?.trim() ? undefined : openPurchaseOrder,
       });
     }
     return null;
@@ -166,6 +186,8 @@ export function ReceivingAppealDetailHost({
     mapped,
     mutateProfile,
     mutateStage,
+    onOpenOrderPipeline,
+    openPurchaseOrder,
     phase,
     readOnly,
     reloadDetail,
