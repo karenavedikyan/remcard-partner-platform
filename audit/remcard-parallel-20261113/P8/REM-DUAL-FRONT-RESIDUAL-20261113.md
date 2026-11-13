@@ -22,27 +22,40 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 
 | Owner | Tip | Notes |
 |-------|-----|--------|
-| P1 | `2b2b32b8beb62…` | `POST /api/pro/client-appeals/batch` on allowlist **@ this commit** |
+| P1 | **`0bb25b9b`** | List, `POST …/batch`, detail `PATCH`, `…/stage`, working-stages, certificate-entry **in source** |
 | P2 | (coordination) | Envelopes / `409` — not re-audited this pass |
 | P3 | — | Observer shell on **P8 branch** still proxy-blocked |
-| P4 | `10c25fe6` | **NOT_VERIFIED** on `origin` (SHA not fetched); handoff received per user |
-| P5 | `ca2855fb` | `ReceivingBulkActions` + `receiving-bulk-handoff.ts` **owned** |
-| P6 | **`78fd46e7`** (not stale `5092f756`) | Parent chain includes `5092f756` wire fix |
+| P4 | **`497f313d`** | `buildReceivingAppealDetailReady` in `receiving-detail-actions-contract.ts` |
+| P5 | **`1298491f`** (after `ca2855fb`) | `ReceivingBulkActions`, `ReceivingBulkEditPanel`, `ReceivingBulkConfirmPanel`, `receiving-bulk-handoff.ts` |
+| P6 | **`3d6c7637`** (current; not `78fd46e7`/`5092` alone) | Workspace/transport — **Root rejects duplicate P5 paths @ this tip** |
 | P7 | — | Nav/shell — not expanded this pass |
-| P8 | `0bb47714…` | Audit only |
+| P8 | audit tip | Audit only |
 
-### P6 vendored P5 files (ownership)
+### Root ownership correction @ `3d6c7637` (rejected workaround — selective handoff)
 
-@ `78fd46e7`, P6 workspace commit **adds/mounts** `ReceivingBulkActions.tsx` and `receiving-bulk-handoff.ts` (content from P5 @ `ca2855fb`). **Root** must select by **path owner** (P5 originals + P6 mount wiring), not whole P6 commit metadata (Cursor Agent author).
+| Path | Owner (take) | @ `3d6c7637` problem |
+|------|----------------|----------------------|
+| `receiving-bulk-handoff.ts` | **P5** `1298491f` | P6 vendored / duplicated → **do not take P6 copy** |
+| `ReceivingBulkActions.tsx` | **P5** `1298491f` | P6 renamed to `ReceivingBulkToolbar` + duplicated contract |
+| `receiving-bulk-contract.ts` | **P5** handoff (+ P2 types) | P6 copy under `clients-parity` — **reject**; use P5 `receiving-bulk-handoff.ts` |
+| `ReceivingBulkEditPanel.tsx` | **P5** `1298491f` only | **Same path** re-added by P6 — **Root rejects** P6 file; wire P5 panel |
+| `ReceivingBulkConfirmPanel.tsx` | **P5** `1298491f` | P6 uses inline confirm in workspace — prefer P5 panel on publish |
+| `receiving-bulk-apply.ts` | **P6** | OK — transport (`applyReceivingBulkEditsPerId`) |
+| `ReceivingAppealsWorkspace.tsx` | **P6** | OK — orchestration after corrective import |
+| `receiving-appeals-api.ts` | **P6** | batch POST client |
+
+**Not** whole-branch reject of P6 — only duplicate paths above until P6 decouples to P5 imports + P6 transport/host.
 
 ---
 
 ## Cleared (prior P8 claims — only after reading current source)
 
-| Was claimed / stale | Current @ `78fd46e7` + К pins |
+| Was claimed / stale | Current @ P6 `3d6c7637` + К pins |
 |---------------------|-------------------------------|
 | List query **`tab`** | **Cleared:** `buildReceivingAppealsListQuery` sets **`bucket`**; comment names K1 `bucket` + `stageKey` |
-| Bulk **BLOCKED_PERSISTENCE** stubs on archive/trash | **Cleared in source:** confirm panel + `postReceivingAppealsBatch`; `edit-open` still notice-only |
+| Bulk **BLOCKED_PERSISTENCE** stubs on archive/trash | **Cleared in source:** confirm panel + `postReceivingAppealsBatch` |
+| P1 “missing batch/detail proxy” | **Cleared @ `0bb25b9b`** — **57ca4680** integration still open |
+| P6 bulk edit “notice only” @ `78fd46e7` | **Superseded in source intent** @ `3d6c7637` — Root must take **P5** panel path, not P6 duplicate |
 | Backend reward-as-purchase | **Cleared** @ К lineage `0f4fe833`+ (frozen) |
 
 **Not cleared:** whole-section PASS; browser parity; prod `57ca4680` integration.
@@ -59,15 +72,15 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 | Direction **observer** | `ObserverPartnersWorkspace` + list | Loads; personal save → **BLOCKED_PERSISTENCE** without K5 proxy path on this branch |
 | Proxy / API | `contracts.test` **3/3** | Live fetch still **BLOCKED_CONTRACT** vs navigator |
 
-### On **owner source @ P6 `78fd46e7`** (synthetic review possible **without** G7 — **NOT_VERIFIED** browser)
+### On **owner source @ P6 `3d6c7637`** (synthetic review possible **without** G7 — **NOT_VERIFIED** browser)
 
 | Surface | State | Remaining |
 |---------|--------|-----------|
 | Incoming workspace | `ReceivingAppealsWorkspace` mounted in `ClientsDirectionWorkspace` | **Not on prod branch** until Root file publish |
 | List / filters | Server `bucket`, pagination, settings unwrap | **NOT_VERIFIED** mounted |
-| Bulk toolbar | P5 UI mounted; `contractState: blocked` when `!isReceivingBatchProxyReady()` | On **P8 branch** proxy lacks batch → actions disabled; on **P1 `2b2b32b8`** batch path exists — integration gap |
-| Bulk **edit-open** | Notice only | **OPEN:** multi PATCH panel — **P4/P5/P6** |
-| Detail | `ReceivingAppealDetailHost` → P4 envelope bridge | **NOT_VERIFIED** stage/notes/history vs `3dc31836` |
+| Bulk toolbar / batch | P5 @ `1298491f` + P6 mount | On **P8 prod branch** proxy still blocked; **P1 `0bb25b9b`** source has batch+PATCH — **integration** to `57ca4680`, not missing route |
+| Bulk **edit-open** | P6 @ `3d6c7637` local panel + transport | **Root:** use P5 `ReceivingBulkEditPanel` + P6 `receiving-bulk-apply.ts`, not P6 duplicate panel path |
+| Detail | `ReceivingAppealDetailHost` | **OPEN:** wire `buildReceivingAppealDetailReady` @ P4 `497f313d` (host lacked `actions`) — **NOT_VERIFIED** browser |
 | Settings | `WorkingStagesEditor` + manual channels | **NOT_VERIFIED** POST working-stages + K8 `manualChannels` |
 | Certificate scan | `ReceivingCertificateScan` + `promoCode` wire @ `5092` lineage | **NOT_VERIFIED** scan journey |
 | Observer personal | P5 adapter paths | **NOT_VERIFIED** on latest P3/P5 tips vs `57ca4680` |
@@ -79,11 +92,12 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 | Owner | Blocker | Next action |
 |-------|---------|-------------|
 | **Root** | Select files; no whole-branch merge; К2 commit metadata | Publish to `57ca4680` after independent accept + **G7** for DB |
-| **P1** | Prod branch behind `2b2b32b8` allowlist | Land proxy manifest on integration branch Root picks |
+| **P1** | `0bb25b9b` source ready; **57ca4680** not merged | Root selective publish of `remcard-proxy.ts` — **not** “missing endpoints” |
 | **P2** | Types/envelopes/revision | Align detail + list wire with frozen К contract |
 | **P3/P5** | Observer personal proxy + persist | K5 routes + no cross-adapter |
-| **P4** | Detail stage/notes controls @ `10c25fe6` | Mount + **NOT_VERIFIED** parity |
-| **P6** | `78fd46e7` ahead of prod; bulk edit; P5 file vendoring | Finish edit-panel; Root splits P5 vs P6 paths |
+| **P4** | `497f313d` action builder | P6 host wires `buildReceivingAppealDetailReady`; paid-review callback still absent by design |
+| **P5** | `1298491f` panels/handoff | Root must win on duplicate paths vs P6 `3d6c7637` |
+| **P6** | `3d6c7637` | Decouple duplicates → import P5; keep workspace/transport; detail host actions |
 | **P7** | Cabinet numbering 5–13 unchanged scope | Shell only when Root selects |
 | **P8** | Gate / residual docs | No product commits |
 | **User** | **G7** prod DB | Separate from offline UI review |
@@ -94,8 +108,9 @@ Prepared pins intact. **≠** mounted page acceptance. **≠** prod DB apply.
 
 | Check | Result |
 |-------|--------|
-| `git show 78fd46e7` receiving + bulk + `bucket` query | Read OK |
-| `git show 2b2b32b8` batch allowlist | Present |
+| `git show 3d6c7637` workspace + bulk transport | Read OK; **duplicate P5 paths flagged** |
+| `git show 0bb25b9b` client-appeals allowlist | batch + detail routes present |
+| `git show 1298491f` / `497f313d` | P5 panels + P4 detail actions |
 | P8 branch incoming panel | Still **`ReceivingAppealsBlocked`** |
 | `contracts.test.ts` | **3/3** (local scaffold only) |
 | Browser / live API / DB | **NOT_VERIFIED** |
