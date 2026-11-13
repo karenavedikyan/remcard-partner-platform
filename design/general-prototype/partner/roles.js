@@ -74,7 +74,7 @@ import {
   hydrateAccountSession,
 } from "./account-session.js";
 import { filterDirectory, directionLabel, stageLabel, directoryFacts, directoryFullDirections } from "./partner-directory.js";
-import { openSettlementPartner, settlementPartnerSummary } from "./settlement-demo.js";
+import { openSettlementPartner, settlementPartnerSummary } from "./settlement-demo.js?v=cabinet-parity1";
 import {
   certificateIdentity,
   certificateCard as renderCertificateCard,
@@ -101,7 +101,7 @@ import {
   showPartnerInvitations,
   showWalletSection,
   openWalletMasterLedger,
-} from "./cabinet-sections.js";
+} from "./cabinet-sections.js?v=cabinet-parity1";
 import "./chunk-5TBO732O.js";
 
 async function buildCertificateGuestEmbedExtras(publicModel) {
@@ -2595,7 +2595,7 @@ function pa(e) {
     "procurement",
     "care",
     "profile",
-  ].filter((key) => e.includes(key));
+  ].filter((key) => e.includes(key) && !(i.role === "agent" && key === "recommendations"));
   return items
     .map((key) => {
       const current =
@@ -2603,7 +2603,7 @@ function pa(e) {
         (key === "wallet" &&
           ["bonus", "settlements"].includes(i.page)) ||
         (key === "partners" && i.page === "links" && !qe());
-      const label = key === "links" ? "Приглашения сотрудников" : key === "history" && k() ? "Мои операции" : rt(key);
+      const label = key === "home" && i.role === "agent" ? "Сертификаты" : key === "links" ? "Приглашения сотрудников" : key === "history" && k() ? "Мои операции" : rt(key);
       const r2Mark =
         prototypeRelease() === 2 && R2_NAV_KEYS.has(key)
           ? ' <span class="pill" style="font-size:10px;padding:2px 6px;margin-left:4px">R2</span>'
@@ -4750,6 +4750,31 @@ var Ge = xt({
       return `<article class="link-card"><span class="pill">${r(s.status)}</span><button class="card-title" data-coll-key="${r(a)}" data-coll-open="${r(t.id)}">${r(s.name)}</button><p>${r(s.detail)}</p><small>${r(s.caption)}</small><div class="record-card-actions">${toolbar}</div></article>`;
     },
   });
+// Presentation copy from the accepted production routes. No access rules changed.
+function applyPublishedCabinetCopy() {
+  if (i.screen !== "cabinet") return;
+  const header = z.querySelector(".page-header");
+  const muted = header?.querySelector(".muted");
+  if (muted && i.page === "wallet") {
+    muted.textContent = ["store", "company"].includes(i.role)
+      ? "Взаиморасчёты с партнёрами в обоих направлениях, реквизиты для выплат и фиксация уже произведённых выплат."
+      : i.role === "agent"
+        ? "Входящие обязательства партнёров и реквизиты для получения оплаты."
+        : "Взаиморасчёты с партнёрами в обоих направлениях и реквизиты для выплат.";
+  }
+  if (muted && i.page === "scanner") {
+    muted.textContent = "Сканируйте QR или введите код, проверьте документ и подтвердите покупку.";
+  }
+  if (muted && i.role === "agent" && i.page === "home") {
+    muted.textContent = "Рекомендуйте. Делитесь ссылками.";
+  }
+  if (i.page === "clients") {
+    const pill = header?.querySelector(":scope > .pill");
+    if (pill) pill.textContent = "Прототип · Клиенты";
+  }
+  const footer = z.querySelector(".sidebar .bottom small");
+  if (footer) footer.innerHTML = "RemCard PROF<br>Партнёрство начинается с доверия";
+}
 function R() {
   if (
     ((document.documentElement.dataset.theme = i.theme),
@@ -4764,6 +4789,7 @@ function R() {
       "has-production-profile",
       i.screen === "cabinet" && i.page === "profile",
     ),
+    applyPublishedCabinetCopy(),
     ma(),
     ce.hydrate(),
     hydrateMobileNavigation({
@@ -4808,8 +4834,8 @@ function R() {
       (a.textContent = k()
         ? "Личные данные и работа в команде вашей организации."
         : i.role === "agent"
-          ? "Ваши данные для партнёрства, сертификатов и получения бонусов."
-          : "Рабочие данные для партнёрства и добровольная публикация в каталоге RemCard.");
+          ? "Рабочие данные для партнёрства и рекомендаций. Заполнение не публикует вас в каталоге RemCard."
+          : "Рабочие данные для партнёрства, филиалы, команда и добровольная публикация в каталоге RemCard.");
     let s = z.querySelector(".page-header .eyebrow");
     (s && (s.textContent = k() ? "Профиль сотрудника" : "Профиль партнёра"),
       z.querySelector('#main > .notice[role="status"]')?.remove());

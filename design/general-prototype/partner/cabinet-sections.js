@@ -1,7 +1,7 @@
 // Prototype-only navigation and bank details. No API, payments or browser storage.
 import { a as remcardLogo } from "./chunk-PG3I4FMB.js";
-import { renderSettlementDemo, hydrateSettlementDemo, settlementTotals } from "./settlement-demo.js";
-import { renderWalletAccruals, hydrateWalletAccruals } from "./wallet-accruals.js";
+import { renderSettlementDemo, hydrateSettlementDemo, settlementTotals } from "./settlement-demo.js?v=cabinet-parity1";
+import { renderWalletAccruals, hydrateWalletAccruals } from "./wallet-accruals.js?v=cabinet-parity1";
 import {
   renderAgentReceivablesRegistry,
   hydrateAgentReceivablesRegistry,

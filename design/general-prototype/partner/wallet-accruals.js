@@ -160,16 +160,9 @@ function workspaceOwnerRole(config) {
   return config.role === "employee" ? config.employerRole?.() : config.role;
 }
 
-/** Mirrors prototype roles.js workspace display ($e / ke) — demo labels only. */
+/** Production uses a role fallback until wallet ownership is provable. */
 export function workspaceRibbonName(config) {
-  const role = workspaceOwnerRole(config);
-  if (role === "store") return "Мой магазин";
-  if (role === "company") return "Моя компания";
-  if (typeof config.workspaceDisplayName === "function") {
-    const name = String(config.workspaceDisplayName() || "").trim();
-    if (name) return name;
-  }
-  return "Алексей";
+  return { store: "Магазин", company: "Компания", agent: "Агент" }[workspaceOwnerRole(config)] || "Кошелёк";
 }
 
 export function demoPartnerCardNumber(config) {
@@ -272,13 +265,13 @@ export function sumHistoryRowAmounts(rows) {
 function badgeMetaForKind(kind, row) {
   switch (kind) {
     case "waiting":
-      return { caption: "ожидает", extra: row.confirmDays != null ? `${row.confirmDays} дн` : "", tone: "graphite" };
+      return { caption: "ожидает", extra: "", tone: "graphite" };
     case "confirmed":
-      return { caption: "подтверждено", extra: "", tone: "teal-outline" };
+      return { caption: "подтверждено", extra: "", tone: "confirmed" };
     case "received":
-      return { caption: "получено", extra: formatShortDate(row.sortDate), tone: "teal-fill" };
+      return { caption: "получено", extra: "", tone: "paid-in" };
     case "paid-out":
-      return { caption: "выплачено", extra: formatShortDate(row.sortDate), tone: "red-fill" };
+      return { caption: "выплачено", extra: "", tone: "paid-out" };
     case "suspended":
       return {
         caption: "приостановлено",
@@ -286,7 +279,7 @@ function badgeMetaForKind(kind, row) {
         tone: "amber",
       };
     case "return":
-      return { caption: "возврат", extra: "", tone: "muted" };
+      return { caption: "возврат", extra: "", tone: "return" };
     case "schedule":
       return {
         caption: row.scheduleCaption || "ожидает",
@@ -302,9 +295,8 @@ function renderStatusBadge(kind, amount, row, { strikethrough = false } = {}) {
   const meta = badgeMetaForKind(kind, row);
   const amountClass = strikethrough ? " wallet-status-badge__amount--strike" : "";
   return `<span class="wallet-status-badge wallet-status-badge--${meta.tone}" aria-hidden="true">
-    <strong class="wallet-status-badge__amount${amountClass}">${formatRub(amount)}</strong>
-    <span class="wallet-status-badge__caption">${esc(meta.caption)}</span>
-    ${meta.extra ? `<span class="wallet-status-badge__extra">${esc(meta.extra)}</span>` : ""}
+    <span class="wallet-status-badge__caption">${esc(meta.caption)}${meta.extra ? ` · ${esc(meta.extra)}` : ""}</span>
+    ${kind === "return" ? "" : `<strong class="wallet-status-badge__amount${amountClass}">${formatRub(amount)}</strong>`}
   </span>`;
 }
 
@@ -342,12 +334,13 @@ function renderAccrualRow({
   </${tag}>${noteBelow ? `<p class="wallet-line-detail__note">${esc(noteBelow)}</p>` : ""}`;
 }
 
-function renderHistoryTotalMarkup(total) {
+function renderHistoryTotalMarkup(total, filter = "all") {
   const rub = formatRub(total);
   const suffix = "\u00a0₽";
   const amount = rub.endsWith(suffix) ? rub.slice(0, -suffix.length) : rub;
   const currency = rub.endsWith(suffix) ? suffix : "";
-  return `Всего <span class="wallet-accruals-history__total-value" data-testid="wallet-history-total-value">${esc(amount)}</span><span class="wallet-accruals-history__total-currency">${esc(currency)}</span>`;
+  const label = { all: "Сумма операций", waiting: "В ожидании", received: "Получено", paid: "Выплачено" }[filter] || "Всего";
+  return `${label} <span class="wallet-accruals-history__total-value" data-testid="wallet-history-total-value">${esc(amount)}</span><span class="wallet-accruals-history__total-currency">${esc(currency)}</span>`;
 }
 
 function renderHistoryPanel(config, incomingOnly, activeDirection, options = {}) {
@@ -430,7 +423,7 @@ function renderHistoryPanel(config, incomingOnly, activeDirection, options = {})
       <div class="wallet-accruals-history__header-text">
         ${historyHub}
         <span class="wallet-accruals-history__eyebrow">История · ${esc(DIRECTION_LABELS[direction])}</span>
-        <strong class="wallet-accruals-history__total" data-testid="wallet-history-total">${renderHistoryTotalMarkup(total)}</strong>
+        <strong class="wallet-accruals-history__total" data-testid="wallet-history-total">${renderHistoryTotalMarkup(total, filter)}</strong>
       </div>
       <div class="wallet-accruals-history__filters" role="group" aria-label="Фильтр истории">${filterChips}</div>
     </div>
@@ -454,8 +447,6 @@ function renderCompactCard(config, direction, title, summary, testPrefix, incomi
   const variant = direction === "in" ? "receivable" : "payable";
   const amountLabel = direction === "in" ? "к получению:" : "к оплате:";
   const ribbonName = workspaceRibbonName(config);
-  const demoNumber = demoPartnerCardNumber(config);
-  const showDemoPan = workspaceOwnerRole(config) !== "agent";
   const ariaDirection = direction === "in" ? "Мне должны" : "Я должен";
   return `<div class="wallet-accruals-card-column" data-testid="wallet-column-${variant}">
     <button type="button" class="wallet-rc-card wallet-rc-card--${edition}" data-accrual-action="detail:${direction}" data-testid="wallet-rc-${variant}-face" aria-label="${esc(ariaDirection)} · ${amountLabel.replace(":", "")} ${formatRub(summary.confirmedNow)} подтверждено, в ожидании ${formatRub(summary.waiting)}. Открыть детали">
@@ -475,11 +466,6 @@ function renderCompactCard(config, direction, title, summary, testPrefix, incomi
           <span class="wallet-rc-card__unit wallet-rc-card__unit--waiting" aria-hidden="true">₽</span>
         </div>
       </div>
-      ${
-        showDemoPan
-          ? `<span class="wallet-rc-card__pan" aria-label="номер карты партнёра (демо)" data-testid="wallet-${testPrefix}-demo-number">${esc(demoNumber)}</span>`
-          : ""
-      }
     </button>
     ${renderQuickActions(direction, incomingOnly)}
   </div>`;
@@ -1087,7 +1073,7 @@ export function renderWalletAccruals(config, options = {}) {
   const incomingOnly = options.incomingOnly ?? config.role === "agent";
   const st = getAccrualState(config);
   const agentProdShell = config.role === "agent" && incomingOnly;
-  const edition = agentProdShell ? "black" : getCardEdition();
+  const edition = "black";
   const activeDirection = incomingOnly ? "in" : getActiveDirection(config);
   const overview = overviewFor(config, incomingOnly);
   const scenarioOptions = Object.entries(ACCRUAL_SCENARIOS)
@@ -1126,25 +1112,20 @@ export function renderWalletAccruals(config, options = {}) {
     edition,
   );
   const cardsColumn = `<div class="wallet-accruals-cards ${incomingOnly ? "incoming-only" : ""}" data-testid="wallet-brand-card">
-        ${compactCard}
-        ${agentProdShell ? extensions : ""}
-      </div>`;
-  const leftRail = agentProdShell
-    ? cardsColumn
-    : `<div class="wallet-accruals-main">
-        ${scenarioDemoBar}
-        ${renderEditionSelector(edition)}
         ${renderDirectionToggle(incomingOnly, activeDirection)}
-        ${cardsColumn}
+        ${compactCard}
         ${extensions}
       </div>`;
+  const demoTools = agentProdShell
+    ? agentDemoNotice
+    : `<details class="wallet-prototype-tools"><summary>Сценарии демонстрации · не часть рабочего кабинета</summary>${scenarioDemoBar}</details>`;
 
   return `<section class="wallet-accruals" data-wallet-accruals data-testid="wallet-accruals" data-incoming-only="${incomingOnly}" data-card-edition="${edition}" data-active-direction="${activeDirection}"${agentProdShell ? ' data-agent-wallet="true"' : ""}>
-    ${agentDemoNotice}
     <div class="wallet-accruals-layout">
-      ${leftRail}
+      ${cardsColumn}
       ${renderHistoryPanel(config, incomingOnly, activeDirection, options)}
     </div>
+    ${demoTools}
     <dialog class="wallet-accrual-dialog" data-accrual-dialog aria-labelledby="accrual-panel-title">
       <form method="dialog" class="wallet-accrual-dialog__inner">
         <div data-accrual-panel-body>${st.panel ? panelContent(config, st.panel, overview, incomingOnly) : ""}</div>

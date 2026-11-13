@@ -6,7 +6,7 @@ import { reconciliationDefaults, renderReconciliation } from "./settlement-recon
 import { ledgerViews, renderLedgerView, ledgerPaginator } from "./settlement-layout.js";
 import { downloadSettlementExport } from "./settlement-export.js";
 import { partnerLegal, selectedLegal, legalCaption, legalBlock, legalKey } from "./partner-legal.js";
-import { hydrateWalletAccruals } from "./wallet-accruals.js";
+import { hydrateWalletAccruals } from "./wallet-accruals.js?v=cabinet-parity1";
 const states = new Map();
 const money = (v) => `${new Intl.NumberFormat("ru-RU").format(v)}\u00a0₽`;
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
