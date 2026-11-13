@@ -89,4 +89,4 @@ Mobile harness (shared V7): grouped status/updated same row @320–1024; open bu
 
 ## Git
 
-Commit tip recorded in `COMMIT.txt` after push.
+**Tip:** `671a8fcf37d0ace7250588441dd90557b13fd417`
