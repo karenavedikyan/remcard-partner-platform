@@ -11,6 +11,8 @@
 **P3 list imports (direct, no fallback):**
 
 - `ObserverClientDetailMissing`, `ObserverClientDetailView`, `ObserverClientBackFrom`
+
+**P5 panels (transient, do not commit on P3):** pin `86bd2ff5` — `ObserverPersonalEditPanel.tsx`, `ObserverPersonalConfirmPanel.tsx`. P3 `ObserverPartnersListView` passes `editTargetKey`, `confirmTargetKey`, `draftSeed`, `onSave(draft)`, `onAttemptSave`, `saveError` / `partialError`.
 - `ObserverPartnerDetailMissing`, `ObserverPartnerDetailView`
 - `export { observerClientBackFrom }` re-export from P4 detail module (no duplicate resolver)
 - `observerClientBackFrom({ partnerId }, layout)` → `backFrom` prop
