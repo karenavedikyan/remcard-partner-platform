@@ -17,7 +17,7 @@ describe("P5 ObserverPersonalConfirmPanel", () => {
     const confirm = screen.getByRole("button", { name: confirmLabel });
     expect(confirm).toHaveProperty("disabled", true);
     expect(confirm.getAttribute("title")).toBe("BLOCKED_PERSISTENCE");
-    expect(screen.getByText(/personal-overlay/)).toBeTruthy();
+    expect(screen.getByText(/referred-appeals\/personal-meta/)).toBeTruthy();
   });
 
   it("blocked confirm does not call onConfirm", async () => {

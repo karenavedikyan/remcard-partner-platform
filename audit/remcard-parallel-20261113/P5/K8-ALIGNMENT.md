@@ -3,14 +3,14 @@
 **Navigator:** `remcard-navigator` @ `fc33b4fae859fb692757807c3b27696b66d57558` (parent handoff `16253b84`).  
 **Partner tip (this branch):** updates `observer-personal-api.ts` only — **not** accepted backend.
 
-## Wired client paths (П5)
+## Wired client paths (П5) — K5 @ `86ac3e35`
 
-| Operation | HTTP | Body |
-| --- | --- | --- |
-| Single save | `PATCH /api/pro/client-appeals/:appealId/personal-overlay` | `PersonalMetaPatch` + `expectedVersion?` |
-| Batch tag/bucket | `POST /api/pro/client-appeals/personal-overlay/batch` | `PersonalBatchOperation` |
+| Operation | HTTP |
+| --- | --- |
+| Single save / move / restore | `PATCH /api/pro/referred-appeals/:id/personal-meta` → `{ meta }` |
+| Batch | `POST /api/pro/referred-appeals/personal-batch` → `processed` / `skipped` |
 
-Response overlay = `ClientAppealPersonalOverlayDto` → `mapOverlayToPartnerMeta` (no `privateNotes` / `clientContact`).
+See `K5-NAVIGATOR-WIRE.md`. Phantom `client-appeals/personal-overlay` removed.
 
 Outcomes: `full` | `partial` | `conflict` (409) | `blocked_contract` | `error`; `personalMutationPreserveSelection` true on partial/error/conflict.
 
@@ -34,4 +34,4 @@ Outcomes: `full` | `partial` | `conflict` (409) | `blocked_contract` | `error`; 
 
 ## Legacy
 
-`referred-appeals/*personal-meta` in early П5 draft — **deprecated**; use client-appeals overlay only.
+`client-appeals/personal-overlay` (518f6dd8 mistake) — **removed**; canonical = `referred-appeals` K5.

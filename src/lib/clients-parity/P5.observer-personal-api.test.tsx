@@ -5,43 +5,38 @@ import {
   moveObserverPersonalBucket,
   patchObserverPersonalMeta,
   postObserverPersonalBatch,
+  restoreObserverPersonal,
   saveObserverPersonalBulkTag,
   saveObserverPersonalSingle,
 } from "./observer-personal-api";
 
-describe("P5 observer-personal-api (mocked BFF)", () => {
+function stubFetch(handler: (url: string, init?: RequestInit) => Promise<Response>) {
+  const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
+    return handler(url, init);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+describe("P5 observer-personal-api (K5 @ 86ac3e35)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("maps proxy 403 to blocked_contract", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: "PROXY_ROUTE_NOT_ALLOWED" }), { status: 403 }));
-    vi.stubGlobal("fetch", fetchMock);
-    const result = await patchObserverPersonalMeta("a1", { tag: "t" });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.kind).toBe("blocked_contract");
-      expect(result.blockerId).toBe("BLK-OBSERVER-PERSONAL-PERSIST");
-    }
-  });
-
-  it("patch sends PATCH personal-meta path", async () => {
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes("/api/csrf")) {
-        return new Response("", { status: 200 });
-      }
-      expect(url).toContain("/api/remcard/api/pro/client-appeals/a1/personal-overlay");
+  it("patch uses referred-appeals personal-meta and returns meta", async () => {
+    stubFetch(async (url, init) => {
+      expect(url).toContain("/api/remcard/api/pro/referred-appeals/a1/personal-meta");
       expect(init?.method).toBe("PATCH");
-      expect(JSON.parse(String(init?.body))).toEqual({ tag: "urgent" });
+      expect(JSON.parse(String(init?.body))).toEqual({ tag: "urgent", alias: null, note: null });
       return new Response(
         JSON.stringify({
-          overlay: {
+          meta: {
             appealId: "a1",
             alias: null,
             tag: "urgent",
             note: null,
             bucket: "active",
-            beforeTrashBucket: null,
             version: 2,
             updatedAt: "2026-11-13T00:00:00Z",
           },
@@ -49,25 +44,37 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
         { status: 200 },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
-    const result = await patchObserverPersonalMeta("a1", { tag: "urgent" });
+    const result = await patchObserverPersonalMeta("a1", { tag: "urgent", alias: null, note: null });
     expect(result.ok).toBe(true);
   });
 
-  it("batch partial keeps failed ids", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
+  it("batch best_effort maps processed/skipped to partial", async () => {
+    stubFetch(async (url, init) => {
+      expect(url).toContain("personal-batch");
+      expect(JSON.parse(String(init?.body)).action).toBe("setTag");
       return new Response(
         JSON.stringify({
-          ok: true,
-          applied: ["a1"],
-          failed: [{ appealId: "a2", code: "FORBIDDEN", message: "nein" }],
+          action: "setTag",
+          mode: "best_effort",
+          processedCount: 1,
+          skippedCount: 1,
+          processed: [
+            {
+              appealId: "a1",
+              alias: null,
+              tag: "t",
+              note: null,
+              bucket: "active",
+              version: 1,
+              updatedAt: "2026-11-13T00:00:00Z",
+            },
+          ],
+          skipped: [{ appealId: "a2", reason: "version_conflict" }],
         }),
         { status: 200 },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
-    const result = await postObserverPersonalBatch({ op: "set-bucket", ids: ["a1", "a2"], bucket: "archived" });
+    const result = await postObserverPersonalBatch({ action: "setTag", ids: ["a1", "a2"], tag: "t" });
     expect(result.ok).toBe(true);
     if (result.ok && result.kind === "partial") {
       expect(result.appliedIds).toEqual(["a1"]);
@@ -75,29 +82,117 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
     }
   });
 
-  it("maps version_conflict to conflict result", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
-      return new Response(JSON.stringify({ code: "version_conflict" }), { status: 409 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
+  it("403 INELIGIBLE is explicit error not blocked_contract", async () => {
+    stubFetch(async () => new Response(JSON.stringify({ error: "INELIGIBLE", code: "INELIGIBLE" }), { status: 403 }));
+    const result = await patchObserverPersonalMeta("a1", { tag: "x" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.kind).toBe("error");
+      expect(result).toMatchObject({ status: 403 });
+    }
+  });
+
+  it("409 VERSION_CONFLICT maps to conflict", async () => {
+    stubFetch(async () =>
+      new Response(JSON.stringify({ code: "VERSION_CONFLICT", details: { currentVersion: 4 } }), { status: 409 }),
+    );
     const result = await patchObserverPersonalMeta("a1", { tag: "x", expectedVersion: 1 });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.kind).toBe("conflict");
   });
 
-  it("save single delegates to patch", async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
+  it("proxy missing route stays blocked_contract", async () => {
+    stubFetch(async () => new Response(JSON.stringify({ code: "PROXY_ROUTE_NOT_ALLOWED" }), { status: 404 }));
+    const result = await patchObserverPersonalMeta("a1", { tag: "t" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.kind).toBe("blocked_contract");
+  });
+
+  it("single move uses PATCH action move", async () => {
+    stubFetch(async (_url, init) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ action: "move", target: "archived", expectedVersion: 3 });
       return new Response(
         JSON.stringify({
-          overlay: {
+          meta: {
+            appealId: "x",
+            alias: null,
+            tag: null,
+            note: null,
+            bucket: "archived",
+            version: 4,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+    await moveObserverPersonalBucket(["x"], "archived", { expectedVersions: { x: 3 } });
+  });
+
+  it("restore single uses PATCH action restore", async () => {
+    stubFetch(async (_url, init) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ action: "restore" });
+      return new Response(
+        JSON.stringify({
+          meta: {
+            appealId: "x",
+            alias: null,
+            tag: null,
+            note: null,
+            bucket: "active",
+            version: 2,
+            updatedAt: "2026-11-13T00:00:00Z",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+    await restoreObserverPersonal(["x"]);
+  });
+
+  it("save helpers wire to K5 bodies", async () => {
+    const fetchMock = stubFetch(async (url, init) => {
+      if (String(url).includes("personal-batch")) {
+        return new Response(
+          JSON.stringify({
+            action: "setTag",
+            mode: "best_effort",
+            processedCount: 2,
+            skippedCount: 0,
+            processed: [
+              {
+                appealId: "1",
+                alias: null,
+                tag: "fri",
+                note: null,
+                bucket: "active",
+                version: 1,
+                updatedAt: "2026-11-13T00:00:00Z",
+              },
+              {
+                appealId: "2",
+                alias: null,
+                tag: "fri",
+                note: null,
+                bucket: "active",
+                version: 1,
+                updatedAt: "2026-11-13T00:00:00Z",
+              },
+            ],
+            skipped: [],
+          }),
+          { status: 200 },
+        );
+      }
+      expect(JSON.parse(String(init?.body))).toMatchObject({ alias: "X" });
+      return new Response(
+        JSON.stringify({
+          meta: {
             appealId: "id-9",
             alias: "X",
             tag: "",
             note: "",
             bucket: "active",
-            beforeTrashBucket: null,
             version: 1,
             updatedAt: "2026-11-13T00:00:00Z",
           },
@@ -105,35 +200,12 @@ describe("P5 observer-personal-api (mocked BFF)", () => {
         { status: 200 },
       );
     });
-    vi.stubGlobal("fetch", fetchMock);
     await saveObserverPersonalSingle("id-9", { alias: "X", tag: "", note: "" });
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it("bulk tag uses personal-batch", async () => {
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
-      expect(url).toContain("personal-overlay/batch");
-      expect(JSON.parse(String(init?.body))).toEqual({ op: "set-tag", ids: ["1", "2"], tag: "fri" });
-      return new Response(JSON.stringify({ ok: true, applied: ["1", "2"] }), { status: 200 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
     await saveObserverPersonalBulkTag(["1", "2"], "fri");
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(2);
   });
 
-  it("move bucket uses set-bucket op", async () => {
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes("/api/csrf")) return new Response("", { status: 200 });
-      expect(JSON.parse(String(init?.body)).op).toBe("set-bucket");
-      return new Response(JSON.stringify({ ok: true, applied: ["1"] }), { status: 200 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    await moveObserverPersonalBucket(["1"], "trash");
-  });
-
-  it("isPersonalPersistProxyBlocked detects RemcardApiError", () => {
-    expect(
-      isPersonalPersistProxyBlocked(new RemcardApiError(404, "x", { code: "NOT_IMPLEMENTED" })),
-    ).toBe(true);
+  it("isPersonalPersistProxyBlocked ignores ordinary 404", () => {
+    expect(isPersonalPersistProxyBlocked(new RemcardApiError(404, "x", { code: "NOT_FOUND" }))).toBe(false);
   });
 });

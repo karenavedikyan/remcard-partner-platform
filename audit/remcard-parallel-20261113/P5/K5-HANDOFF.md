@@ -6,18 +6,18 @@
 
 | Export | Contract |
 | --- | --- |
-| `patchObserverPersonalMeta(id, patch)` | `PATCH /api/pro/client-appeals/:id/personal-overlay` |
-| `postObserverPersonalBatch(op)` | `POST /api/pro/client-appeals/personal-overlay/batch` |
+| `patchObserverPersonalMeta(id, patch)` | `PATCH /api/pro/referred-appeals/:id/personal-meta` |
+| `postObserverPersonalBatch(op)` | `POST /api/pro/referred-appeals/personal-batch` |
 | `saveObserverPersonalSingle` / `saveObserverPersonalBulkTag` / `moveObserverPersonalBucket` | Prototype ops; **not** AgentClient |
 | `PersonalMutationResult` | `full` \| `partial` \| `blocked_contract` \| `error` + `preserveUi` |
 | `personalMutationFailedIds` | Partial: keep failed row selected |
 
 ## P1 dependency
 
-Add to `remcard-proxy.ts` allowlist (P1 only) — aligned K8 `fc33b4fa`:
+Add to `remcard-proxy.ts` allowlist (P1 only) — K5 `86ac3e35`:
 
-- `PATCH ^/api/pro/client-appeals/[\w-]+/personal-overlay$`
-- `POST ^/api/pro/client-appeals/personal-overlay/batch$`
+- `PATCH ^/api/pro/referred-appeals/[\w-]+/personal-meta$`
+- `POST ^/api/pro/referred-appeals/personal-batch$`
 
 Until then: client returns `blocked_contract` (403/404).
 

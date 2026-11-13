@@ -61,8 +61,8 @@ export function ObserverPersonalConfirmPanel({
       </p>
       {persistenceStatus === "blocked" ? (
         <p className={styles.mutedSmall}>
-          Сохранение личного списка ожидает K5 `client-appeals/personal-overlay` (navigator fc33b4fa).
-          Данные партнёров и глобальный CRM не меняются.
+          Сохранение личного списка идёт через K5 `referred-appeals/personal-meta` (navigator 86ac3e35)
+          после подключения P1 proxy. Данные партнёров и глобальный CRM не меняются.
         </p>
       ) : null}
       {partialError ? (
