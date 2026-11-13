@@ -1,6 +1,6 @@
 # P4 detail export contract (stable — reconcile P3 @ 9c3221ad)
 
-**P4 tip (detail):** TBD commit on `cursor/remcard-p4-acceptance-20261113` (post-`f7198e9d`, adds `observerClientBackFrom`)  
+**P4 tip (detail):** `eb4592fd64f33763f705bfda564b4988a8267c2b`  
 
 **No-mock stack evidence:** ephemeral `f7198e9d` + `9c3221ad` → `P3.ObserverPartnersListView.back-label.test.tsx` **5/5 PASS** (log: `p3-p4-stacked-vitest.log`). Not committed merge on P4 branch.
 
