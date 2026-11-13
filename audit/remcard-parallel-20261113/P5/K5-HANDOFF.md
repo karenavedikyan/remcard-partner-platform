@@ -48,9 +48,7 @@ Stale selection: prune or hint (prototype filter).
 
 ## Receiving bulk (owned)
 
-`src/components/clients/receiving/ReceivingBulkActions.tsx` — props `ReceivingBulkActionsProps` for P6/K1.
-
-Navigator: `POST /api/pro/client-appeals/batch` (no financial actions in this toolbar).
+`ReceivingBulkActions.tsx` + `receiving-bulk-handoff.ts` — P6 mounts toolbar; K1 adapter uses `normalizeReceivingBatchResponse` (`updatedIds`/`skippedIds`/`failures`). See `P6-K1-RECEIVING-BULK-HANDOFF.md`.
 
 ## NOT claimed
 
