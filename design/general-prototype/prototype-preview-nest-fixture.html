@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Preview nest fixture</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      #cabinet {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <p class="sr-only" id="fixture-label">Simulates Perplexity preview: top page embeds cabinet origin as child browsing context.</p>
+    <iframe
+      id="cabinet"
+      title="Cabinet preview child"
+      sandbox="allow-scripts allow-same-origin allow-forms"
+      src="./partner/index.html?role=store"
+    ></iframe>
+  </body>
+</html>

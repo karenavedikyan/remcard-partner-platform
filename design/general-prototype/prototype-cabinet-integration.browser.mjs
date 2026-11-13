@@ -19,7 +19,8 @@ function contentType(filePath) {
 }
 
 const server = createServer((req, res) => {
-  const raw = (req.url || "/").split("?")[0];
+  const reqUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+  const raw = reqUrl.pathname;
   let rel = raw === "/" ? "/index.html" : raw;
   const filePath = path.join(__dir, decodeURIComponent(rel.replace(/^\//, "")));
   if (!filePath.startsWith(__dir) || !existsSync(filePath)) {
@@ -28,6 +29,15 @@ const server = createServer((req, res) => {
     return;
   }
   res.setHeader("Content-Type", contentType(filePath));
+  if (
+    filePath.endsWith(".html") &&
+    reqUrl.searchParams.has("csp_frame_ancestors_pplx")
+  ) {
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://www.perplexity.ai https://perplexity.ai https://staging.perplexity.ai",
+    );
+  }
   res.end(readFileSync(filePath));
 });
 
@@ -163,7 +173,10 @@ try {
       hostCount: document.querySelectorAll("[data-testid='cabinet-standalone-host']").length,
       iframeCount: document.querySelectorAll("[data-testid='cabinet-standalone-frame']").length,
       hostHidden: host?.hidden,
-      hasSrc: !!iframe?.getAttribute("src"),
+      hasSrc:
+        !!iframe?.getAttribute("src") ||
+        !!iframe?.getAttribute("srcdoc") ||
+        !!iframe?.dataset?.embedUrl,
       attached: !!(rect && rect.width > 0 && rect.height > 0),
       badge: window.__protoCabinetEmbeddedPage?.n,
     };
@@ -191,7 +204,10 @@ try {
   await deepPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", { timeout: 15000 });
   const deepBoot = await deepPage.evaluate(() => ({
     hostCount: document.querySelectorAll("[data-testid='cabinet-standalone-host']").length,
-    iframeSrc: document.querySelector("[data-testid='cabinet-standalone-frame']")?.getAttribute("src") || "",
+    iframeSrc:
+      document.querySelector("[data-testid='cabinet-standalone-frame']")?.dataset?.embedUrl ||
+      document.querySelector("[data-testid='cabinet-standalone-frame']")?.getAttribute("src") ||
+      "",
     badge: window.__protoCabinetEmbeddedPage?.n,
     cabinet: document.querySelector('[data-testid="view-cabinet"]')?.getAttribute("aria-pressed"),
   }));
@@ -374,8 +390,10 @@ try {
   assert.equal(await frame147.locator("#filter-button").getAttribute("aria-expanded"), "true");
   await frame147.locator("#status").selectOption("active");
   await frame147.locator("#result-count").waitFor({ timeout: 3000 });
-  const src = await agentWallet.locator("[data-testid='cabinet-standalone-frame']").getAttribute("src");
-  assert.ok(src?.includes("embed_role=agent"), "147 iframe must carry embed_role");
+  const embedHref = await agentWallet
+    .locator("[data-testid='cabinet-standalone-frame']")
+    .evaluate((el) => el?.dataset?.embedUrl || el?.getAttribute("src") || "");
+  assert.ok(embedHref.includes("embed_role=agent"), "147 iframe must carry embed_role");
   await frame147.locator('.history-tabs [data-view="purchases"]').click();
   await frame147.locator("[data-purchase-embed='1']").waitFor({ timeout: 10000 });
   await frame147.locator("[data-purchase-embed='1']").click();
@@ -747,21 +765,21 @@ try {
   await tocPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", {
     timeout: 15000,
   });
-  const toc147Src = await tocPage
-    .locator("[data-testid='cabinet-standalone-frame']")
-    .getAttribute("src");
-  assert.ok(toc147Src?.includes("cabinet_embed=1"), "TOC 147 opens cabinet embed, not orphan HTML");
+  const toc147Src = await tocPage.locator("[data-testid='cabinet-standalone-frame']").evaluate(
+    (el) => el?.dataset?.embedUrl || el?.getAttribute("src") || "",
+  );
+  assert.ok(toc147Src.includes("cabinet_embed=1"), "TOC 147 opens cabinet embed, not orphan HTML");
   await tocPage.locator('[data-testid="proto-standalone-close"]').click();
   await tocPage.locator(".proto-page-toc-btn").click();
   await tocPage.locator('a[data-page-n="143"]').click();
   await tocPage.waitForSelector("[data-testid='cabinet-standalone-host']:not([hidden])", {
     timeout: 15000,
   });
-  const toc143Src = await tocPage
-    .locator("[data-testid='cabinet-standalone-frame']")
-    .getAttribute("src");
-  assert.ok(toc143Src?.includes("cabinet_embed=1"), "TOC 143 opens cabinet embed");
-  assert.ok(toc143Src?.includes("embed_role=agent"), "TOC 143 preserves agent embed role");
+  const toc143Src = await tocPage.locator("[data-testid='cabinet-standalone-frame']").evaluate(
+    (el) => el?.dataset?.embedUrl || el?.getAttribute("src") || "",
+  );
+  assert.ok(toc143Src.includes("cabinet_embed=1"), "TOC 143 opens cabinet embed");
+  assert.ok(toc143Src.includes("embed_role=agent"), "TOC 143 preserves agent embed role");
   await tocPage.close();
 
   const hubToc = await browser.newPage();
@@ -771,6 +789,111 @@ try {
   assert.match(href147 || "", /proto_standalone=147/, "hub TOC 147 links into partner cabinet");
   assert.doesNotMatch(href147 || "", /partner-wallet-history\.html/, "hub TOC must not open orphan 147 HTML");
   await hubToc.close();
+
+  const previewNest = await browser.newPage();
+  await previewNest.setViewportSize({ width: 1280, height: 900 });
+  await previewNest.goto(`${base}/prototype-preview-nest-fixture.html`, { waitUntil: "load" });
+  await previewNest.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector('[data-testid="view-cabinet"]'),
+    null,
+    { timeout: 25000 },
+  );
+  await previewNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="view-cabinet"]')?.click();
+  });
+  await previewNest.waitForFunction(
+    () => document.querySelector("#cabinet")?.contentDocument?.querySelector(".shell aside.sidebar"),
+    null,
+    { timeout: 25000 },
+  );
+  await previewNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const nav = doc?.querySelector('[data-action="nav:partners"], [data-action="nav:links"]');
+    nav?.click();
+    doc?.querySelector("[data-coll-open]")?.click();
+  });
+  await previewNest.waitForFunction(
+    () => {
+      const iframe = document.querySelector("#cabinet")?.contentDocument?.querySelector(
+        "[data-testid='cabinet-standalone-frame']",
+      );
+      return iframe?.dataset?.embedMount === "srcdoc";
+    },
+    null,
+    { timeout: 20000 },
+  );
+  const nest143 = await previewNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    return {
+      mount: frame?.dataset?.embedMount || "",
+      url: frame?.dataset?.embedUrl || "",
+      badge: doc?.defaultView?.__protoCabinetEmbeddedPage?.n,
+      hasSrcdoc: Boolean(frame?.getAttribute("srcdoc")),
+    };
+  });
+  assert.equal(nest143.badge, 143);
+  assert.equal(nest143.mount, "srcdoc");
+  assert.ok(nest143.hasSrcdoc, "nested preview must mount embed via fetched srcdoc");
+  assert.ok(nest143.url.includes("partner-cooperation-detail"), nest143.url);
+  await previewNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    doc?.querySelector('[data-testid="proto-standalone-close"]')?.click();
+    doc
+      ?.querySelector('[data-action="nav:settlements"], [data-action="nav:wallet"]')
+      ?.click();
+    doc?.querySelector("[data-testid='wallet-history-hub-link']")?.click();
+  });
+  await previewNest.waitForFunction(
+    () => {
+      const doc = document.querySelector("#cabinet")?.contentDocument;
+      const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+      const win = frame?.contentWindow;
+      return (
+        doc?.defaultView?.__protoCabinetEmbeddedPage?.n === 147 &&
+        frame?.dataset?.embedMount === "srcdoc" &&
+        typeof win?.__protoCabinetEmbedParams === "function" &&
+        win.__protoCabinetEmbedParams().get("cabinet_embed") === "1"
+      );
+    },
+    null,
+    { timeout: 25000 },
+  );
+  const nest147 = await previewNest.evaluate(() => {
+    const doc = document.querySelector("#cabinet")?.contentDocument;
+    const frame = doc?.querySelector("[data-testid='cabinet-standalone-frame']");
+    const win = frame?.contentWindow;
+  return {
+      mount: frame?.dataset?.embedMount || "",
+      url: frame?.dataset?.embedUrl || "",
+      embedDoc: Boolean(win?.document?.querySelector("#history-title")),
+      params:
+        typeof win?.__protoCabinetEmbedParams === "function"
+          ? win.__protoCabinetEmbedParams().get("cabinet_embed")
+          : null,
+    };
+  });
+  assert.equal(nest147.mount, "srcdoc");
+  assert.equal(nest147.params, "1");
+  assert.ok(nest147.embedDoc, "147 srcdoc child must boot with injected embed query");
+  await previewNest.close();
+
+  const cspFixture = await browser.newPage();
+  await cspFixture.goto(`${base}/prototype-preview-csp-src-blocked-fixture.html`, { waitUntil: "load" });
+  await cspFixture.waitForTimeout(500);
+  const cspBlocked = await cspFixture.evaluate(() => {
+    const blocked = document.querySelector("#csp-blocked");
+    let title = null;
+    try {
+      title = blocked?.contentDocument?.querySelector("#partner-title")?.textContent?.trim() || null;
+    } catch {
+      title = null;
+    }
+    return { hasTitle: Boolean(title) };
+  });
+  assert.equal(cspBlocked.hasTitle, false, "standalone iframe.src blocked when frame-ancestors omits preview parent");
+  await cspFixture.close();
 
   const opaqueCtx = await browser.newContext();
   await opaqueCtx.addInitScript(() => {

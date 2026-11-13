@@ -27,7 +27,10 @@
     });
   };
   const WALLET_CERT = "RC-X9Z0WZ";
-  const embedParams = new URLSearchParams(location.search);
+  const embedParams =
+    typeof window.__protoCabinetEmbedParams === "function"
+      ? window.__protoCabinetEmbedParams()
+      : new URLSearchParams(location.search);
   const isCabinetEmbed = embedParams.get("cabinet_embed") === "1";
   function accrualReceiptCtx(accrual) {
     if (!accrual) return null;

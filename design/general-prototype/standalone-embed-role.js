@@ -1,7 +1,10 @@
 (function protoStandaloneEmbedRole() {
   var params;
   try {
-    params = new URLSearchParams(window.location.search);
+    params =
+      typeof window.__protoCabinetEmbedParams === "function"
+        ? window.__protoCabinetEmbedParams()
+        : new URLSearchParams(window.location.search);
   } catch (_) {
     return;
   }

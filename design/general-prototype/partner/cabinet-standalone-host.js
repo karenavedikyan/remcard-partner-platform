@@ -1,3 +1,9 @@
+import {
+  buildStandaloneNavigationUrl,
+  loadStandaloneSrcdoc,
+  shouldUseSrcdocStandaloneLoad,
+} from "./cabinet-standalone-srcdoc.js?v=embed7";
+
 export const STANDALONE_BY_N = {
   139: { path: "certificate.html", title: "Гостевой сертификат", guest: true },
   140: { path: "recommendation.html", title: "Гостевая рекомендация", guest: true },
@@ -290,6 +296,9 @@ export function createCabinetStandaloneHost(config) {
     document.querySelector(".shell")?.classList.remove("cabinet-standalone-active");
     document.documentElement.classList.remove("proto-cabinet-embed-host-active");
     frame.removeAttribute("src");
+    frame.removeAttribute("srcdoc");
+    delete frame.dataset.embedMount;
+    delete frame.dataset.embedUrl;
     openPageN = null;
     openQuery = "";
     openCtx = null;
@@ -386,10 +395,27 @@ export function createCabinetStandaloneHost(config) {
     watchLayout();
     reposition();
     const guestHash = embedCtx?.guestHash;
+    const navUrl = buildStandaloneNavigationUrl(pageN, def.path, extraQuery, urlBridge) || url;
     frame.onload = () => {
       sendContextToFrame();
     };
-    frame.src = guestHash ? `${url}#${guestHash}` : url;
+    if (shouldUseSrcdocStandaloneLoad()) {
+      void loadStandaloneSrcdoc(frame, pageN, def.path, extraQuery, urlBridge, { guestHash })
+        .then(() => {
+          sendContextToFrame();
+        })
+        .catch(() => {
+          frame.removeAttribute("srcdoc");
+          frame.dataset.embedMount = "src-fallback";
+          frame.dataset.embedUrl = navUrl;
+          frame.src = guestHash ? `${navUrl}#${guestHash}` : navUrl;
+        });
+      return true;
+    }
+    frame.removeAttribute("srcdoc");
+    delete frame.dataset.embedMount;
+    frame.dataset.embedUrl = navUrl;
+    frame.src = guestHash ? `${navUrl}#${guestHash}` : navUrl;
     return true;
   }
 
@@ -467,6 +493,9 @@ export function createCabinetStandaloneHost(config) {
         openCtx = null;
         syncEmbeddedPageBadge(null);
         frame.removeAttribute("src");
+    frame.removeAttribute("srcdoc");
+    delete frame.dataset.embedMount;
+    delete frame.dataset.embedUrl;
         unwatchLayout();
         document.documentElement.classList.remove("proto-cabinet-embed-host-active");
       }

@@ -90,6 +90,17 @@ assert.match(
   /syncEmbedShellChrome/,
   "afterCabinetRender restores embed shell chrome",
 );
+assert.match(
+  readFileSync(path.join(root, "partner/cabinet-standalone-host.js"), "utf8"),
+  /shouldUseSrcdocStandaloneLoad/,
+  "embed host supports preview srcdoc mount",
+);
+const srcdocLoader = readFileSync(path.join(root, "partner/cabinet-standalone-srcdoc.js"), "utf8");
+assert.match(srcdocLoader, /import\.meta\.url/, "standalone asset base from module URL not location.href");
+assert.match(srcdocLoader, /__protoCabinetEmbedSearch/, "srcdoc boot injects embed query for opaque child");
+const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
+assert.match(embedChild, /__protoCabinetEmbedParams/, "embed child reads injected search in srcdoc");
+assert.match(embedChild, /replace:/, "embed child posts replace nav");
 const embedRole = readFileSync(path.join(root, "standalone-embed-role.js"), "utf8");
 assert.match(embedRole, /scanSaleRelockScheduled/, "146 sale guard coalesces relock rAF");
 assert.match(embedRole, /if \(el\.disabled !== true\)/, "146 sale lock writes are idempotent");
@@ -115,8 +126,6 @@ assert.match(
 const purchaseDetail = readFileSync(path.join(root, "partner/partner-purchase-detail.js"), "utf8");
 assert.match(purchaseDetail, /__protoCabinetEmbedBack/, "144 history uses embed back to 147");
 assert.match(purchaseDetail, /replace:\s*true/, "144 document ops replace-navigate to 147");
-const embedChild = readFileSync(path.join(root, "prototype-cabinet-embed.js"), "utf8");
-assert.match(embedChild, /replace:/, "embed child posts replace nav");
 assert.match(host, /replace:\s*!!data\.replace/, "host honors replace nav");
 const receiptEmbed = readFileSync(path.join(root, "partner/partner-reward-receipt-embed.js"), "utf8");
 assert.match(receiptEmbed, /__protoReceiptEmbedDismissBound/, "145 early embed dismiss before native defer");

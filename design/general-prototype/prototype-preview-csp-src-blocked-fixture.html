@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>CSP frame-ancestors blocked src fixture</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      #preview-child {
+        width: 100%;
+        height: 70%;
+        border: 0;
+      }
+      #csp-blocked {
+        width: 100%;
+        height: 28%;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="sr-only">
+      Simulates preview host embedding cabinet (allowed) while a native child standalone page sends Perplexity-only
+      frame-ancestors (no preview origin).
+    </p>
+    <iframe
+      id="preview-child"
+      title="Preview-like parent"
+      sandbox="allow-scripts allow-same-origin allow-forms"
+      src="./partner/index.html?role=store"
+    ></iframe>
+    <iframe
+      id="csp-blocked"
+      title="Blocked native child via src"
+      src="./partner/partner-cooperation-detail.html?csp_frame_ancestors_pplx=1&amp;cabinet_embed=1&amp;proto_n=143"
+    ></iframe>
+  </body>
+</html>

@@ -1,8 +1,24 @@
 (function protoCabinetEmbedChild() {
   if (typeof window === "undefined") return;
+  function embedSearchString() {
+    if (window.location.search && window.location.search.length > 1) {
+      return window.location.search;
+    }
+    if (typeof window.__protoCabinetEmbedSearch === "string" && window.__protoCabinetEmbedSearch) {
+      return "?" + window.__protoCabinetEmbedSearch;
+    }
+    return "";
+  }
+  window.__protoCabinetEmbedParams = function protoCabinetEmbedParams() {
+    try {
+      return new URLSearchParams(embedSearchString().replace(/^\?/, ""));
+    } catch (_) {
+      return new URLSearchParams();
+    }
+  };
   var params;
   try {
-    params = new URLSearchParams(window.location.search);
+    params = window.__protoCabinetEmbedParams();
   } catch (_) {
     return;
   }
