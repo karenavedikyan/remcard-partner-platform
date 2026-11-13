@@ -10,9 +10,18 @@
 
 ## Selected paths for Root assembly
 
+**Observer (frozen contract):**
+
 ```
 src/components/clients/observer/ObserverPartnerDetailView.tsx
 src/components/clients/observer/ObserverClientDetailView.tsx
+```
+
+**Receiving detail (API-pending UI + K2 projection):**
+
+```
+src/components/clients/receiving/ReceivingAppealDetailView.tsx
+src/components/clients/receiving/ReceivingAppealHistory.tsx
 ```
 
 Tests (evidence, not page acceptance):
