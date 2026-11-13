@@ -10,8 +10,10 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: [path.join(repoRoot, "vitest.setup.ts")],
     include: [
-      path.join(repoRoot, "src/components/clients/observer/P7.*.test.ts"),
-      path.join(repoRoot, "src/components/clients/receiving/P7.*.test.ts"),
+      path.join(repoRoot, "src/components/clients/observer/P7.observer-detail-views.test.ts"),
+      path.join(repoRoot, "src/components/clients/observer/P7.observer-paired-residual.test.ts"),
+      path.join(repoRoot, "src/components/clients/observer/P7.observer-prototype-source-fixes.test.ts"),
+      path.join(repoRoot, "src/components/clients/receiving/P7.receiving-prototype-layout.test.ts"),
     ],
   },
   resolve: {
