@@ -1,0 +1,27 @@
+{
+  "taskId": "REMCLIENTS-PARITY-20261113-V1",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "pages": [
+    { "page": 79, "role": "specialist", "view": "Список клиентов / направлений", "status": "BLOCKED", "blockerId": "BLK-RECEIVING-APPEALS" },
+    { "page": 88, "role": "store", "view": "Список клиентов / направлений", "status": "BLOCKED", "blockerId": "BLK-RECEIVING-APPEALS" },
+    { "page": 97, "role": "company", "view": "Список клиентов / направлений", "status": "BLOCKED", "blockerId": "BLK-RECEIVING-APPEALS" },
+    { "page": 106, "role": "agent", "view": "Мои клиенты у партнёров", "status": "IN_PROGRESS", "note": "UI shell; data BLK-OBSERVER-REFERRED" },
+    { "page": 115, "role": "employee", "view": "Список клиентов / направлений", "status": "EXCLUDED", "note": "OwnerClientsGate без employee mode" },
+    { "page": 107, "role": "agent", "view": "Принимающее обращение", "status": "EXCLUDED" },
+    { "page": 108, "role": "agent", "view": "Сканирование сертификата", "status": "EXCLUDED" },
+    { "page": 109, "role": "agent", "view": "Ручное добавление", "status": "EXCLUDED" },
+    { "page": 110, "role": "agent", "view": "Этапы и причины", "status": "EXCLUDED" },
+    { "page": 111, "role": "agent", "view": "Покупка в обращении", "status": "EXCLUDED" },
+    { "page": 112, "role": "agent", "view": "Аналитика принимающего", "status": "EXCLUDED" },
+    { "page": 86, "role": "specialist", "view": "Мои клиенты у выбранного партнёра", "status": "BLOCKED", "blockerId": "BLK-OBSERVER-REFERRED" },
+    { "page": 113, "role": "agent", "view": "Мои клиенты у выбранного партнёра", "status": "BLOCKED", "blockerId": "BLK-OBSERVER-REFERRED" },
+    { "page": 141, "role": "boundary", "view": "Поручение", "status": "EXCLUDED", "note": "R2" },
+    { "page": 142, "role": "boundary", "view": "Наблюдение", "status": "EXCLUDED", "note": "R2" },
+    { "page": 143, "role": "boundary", "view": "Сотрудничество", "status": "NOT_STARTED" },
+    { "page": 144, "role": "boundary", "view": "Деталь покупки", "status": "NOT_STARTED" },
+    { "page": 145, "role": "boundary", "view": "Квитанция", "status": "NOT_STARTED" },
+    { "page": 146, "role": "boundary", "view": "Сканер", "status": "NOT_STARTED" },
+    { "page": 147, "role": "boundary", "view": "История кошелька", "status": "NOT_STARTED" }
+  ],
+  "note": "Полная 45-страничная матрица 79–123 дополняется QA-автором; закрытые 107–112 агента EXCLUDED."
+}

@@ -1,0 +1,14 @@
+{
+  "generatedFrom": "src/lib/clients-parity/acceptance-matrix.ts",
+  "prototypeSha": "3dc31836cd18d9209c20097f18b906dd276f7af6",
+  "implementationBranch": "cursor/remcard-cabinet-nav-r5-final-20261103",
+  "counts": {
+    "NOT_STARTED": 13,
+    "IN_PROGRESS": 12,
+    "PASS": 4,
+    "FAIL": 0,
+    "BLOCKED": 26,
+    "EXCLUDED": 1
+  },
+  "note": "Full row list: import buildClientsAcceptanceMatrix() in acceptance-matrix.ts"
+}

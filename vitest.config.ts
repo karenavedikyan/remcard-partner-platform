@@ -63,6 +63,8 @@ export default defineConfig({
       "src/lib/business-partners/gate.test.ts",
       "src/lib/business-clients/gate.test.ts",
       "src/lib/business-clients/client-list-row.test.ts",
+      "src/lib/clients-parity/contracts.test.ts",
+      "src/lib/clients-parity/observer-stats.test.ts",
       "src/lib/business-owner-certificates/copy.test.ts",
       "src/lib/business-owner-certificates/api.test.ts",
       "src/lib/business-owner-certificates/issuer-api.test.ts",
