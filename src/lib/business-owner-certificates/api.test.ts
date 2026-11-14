@@ -28,6 +28,14 @@ describe("business-owner certificates API adapter", () => {
     expect(params.get("q")).toBe("x");
   });
 
+  it("passes branchId when owner branch scope is selected", async () => {
+    vi.mocked(remcardFetch).mockClear();
+    await fetchBusinessOwnerCertificates({ branchId: "branch-test-1", limit: 10 });
+    const url = vi.mocked(remcardFetch).mock.calls.at(-1)?.[0] as string;
+    const params = new URLSearchParams(url.split("?")[1] ?? "");
+    expect(params.get("branchId")).toBe("branch-test-1");
+  });
+
   it("fetches detail by encoded id", async () => {
     await fetchBusinessOwnerCertificate("cert/id");
     expect(remcardFetch).toHaveBeenCalledWith(

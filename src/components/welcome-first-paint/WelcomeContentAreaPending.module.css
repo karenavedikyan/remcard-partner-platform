@@ -1,0 +1,46 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-2) 0 var(--space-6);
+}
+
+.barWide,
+.barMedium,
+.block {
+  display: block;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+  min-height: 12px;
+}
+
+.barWide {
+  width: min(100%, 28rem);
+  height: 14px;
+}
+
+.barMedium {
+  width: min(100%, 18rem);
+  height: 12px;
+}
+
+.blockRow {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  margin-top: var(--space-2);
+}
+
+.block {
+  height: 5.5rem;
+  border-radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .barWide,
+  .barMedium,
+  .block {
+    background: color-mix(in srgb, var(--muted) 28%, transparent);
+  }
+}

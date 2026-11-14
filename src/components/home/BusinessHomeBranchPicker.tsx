@@ -15,6 +15,10 @@ type Props = {
   /** When true, show picker even for a single branch (e.g. invalid stale cookie). */
   branchSelectionRequired: boolean;
   onBranchSelected: (branchId: string) => void;
+  contextLabel?: string;
+  selectTestId?: string;
+  /** Caller-resolved GET /api/pro/context branches (skips duplicate fetch). */
+  branchesFromContext?: ProContextPayload["branches"];
 };
 
 /**
@@ -25,19 +29,24 @@ export function BusinessHomeBranchPicker({
   selectedBranchId,
   branchSelectionRequired,
   onBranchSelected,
+  contextLabel = "Текущий филиал для продаж",
+  selectTestId = "business-home-branch-select",
+  branchesFromContext,
 }: Props) {
-  const [branches, setBranches] = useState<ProContextPayload["branches"]>([]);
+  const [fetchedBranches, setFetchedBranches] = useState<ProContextPayload["branches"]>([]);
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const useExternalBranches = branchesFromContext !== undefined;
+  const branches = useExternalBranches ? branchesFromContext : fetchedBranches;
 
   const load = useCallback(async () => {
     try {
       const data = await remcardFetch<ProContextPayload>("/api/pro/context");
       if (data.role !== "ORG_OWNER") {
-        setBranches([]);
+        setFetchedBranches([]);
         return;
       }
-      setBranches(data.branches);
+      setFetchedBranches(data.branches);
       setError("");
     } catch (caught) {
       setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить филиалы");
@@ -45,8 +54,9 @@ export function BusinessHomeBranchPicker({
   }, []);
 
   useEffect(() => {
+    if (useExternalBranches) return;
     void load();
-  }, [load]);
+  }, [load, useExternalBranches]);
 
   if (branches.length === 0) return null;
   if (branches.length === 1 && !branchSelectionRequired) return null;
@@ -67,10 +77,10 @@ export function BusinessHomeBranchPicker({
   return (
     <div className={styles.branchContextCheckRow} style={{ marginBottom: "1rem" }}>
       <label className={styles.checkRow}>
-        <span className={styles.branchContextLabel}>Текущий филиал для продаж</span>
+        <span className={styles.branchContextLabel}>{contextLabel}</span>
         <select
           className={styles.branchContextSelect}
-          data-testid="business-home-branch-select"
+          data-testid={selectTestId}
           disabled={pendingId !== null}
           value={selectedBranchId ?? ""}
           onChange={(e) => void onChange(e.target.value)}

@@ -10,8 +10,11 @@ export function fetchBusinessOwnerCertificates(params?: {
   limit?: number;
   sort?: string;
   status?: string;
+  /** Required by authorizeBusinessCertificatesListRead when owner has branch scope. */
+  branchId?: string;
 }) {
   const q = new URLSearchParams();
+  if (params?.branchId) q.set("branchId", params.branchId);
   if (params?.archived) q.set("archived", "true");
   if (params?.q) q.set("q", params.q);
   if (params?.cursor) q.set("cursor", params.cursor);

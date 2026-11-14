@@ -10,7 +10,7 @@ import { SpecialistCertificateDetailDialog } from "@/components/specialist-certi
 import { certificateListDetail } from "@/lib/agent-r03/certificateOffers";
 import { readAgentR03ViewMode, writeAgentR03ViewMode } from "@/lib/agent-r03/viewModeStorage";
 import { AgentR03PageIntro } from "./AgentR03PageIntro";
-import { RemcardApiError } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   batchAgentCertificates,
   deleteAgentCertificate,
@@ -30,6 +30,11 @@ import {
   patchBusinessOwnerCertificate,
 } from "@/lib/business-owner-certificates/api";
 import { businessCertificatesPageCopy } from "@/lib/business-owner-certificates/copy";
+import {
+  fetchOrgOwnerContextBranches,
+  type ProContextBranch,
+} from "@/lib/business-owner-certificates/pro-context-branches";
+import { BusinessHomeBranchPicker } from "@/components/home/BusinessHomeBranchPicker";
 import { useOwnerIssuerModeValue } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
@@ -54,15 +59,17 @@ import { shouldShowCertificatesNewPartnerEmpty } from "@/components/certificates
 import { certificatesListKnownCountsFromApi } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
 import type { CertificatesListKnownCounts } from "@/components/certificates-new-partner-empty/certificatesListKnownCountsFromApi";
 import type { CertificatesNewPartnerRole } from "@/components/certificates-new-partner-empty/copy";
+import { WelcomeContentAreaPending } from "@/components/welcome-first-paint/WelcomeContentAreaPending";
+import { isCertificatesWelcomeDecisionPending } from "@/lib/welcome-first-paint/welcomeFirstPaintPending";
 import styles from "./agent-r03.module.css";
 
 const emptyMeta: AgentR03ListMeta = {
   page: 1,
   pageSize: 25,
-  totalCount: 0,
+  totalCount: null,
   totalPages: 1,
-  activeCount: 0,
-  archivedCount: 0,
+  activeCount: null,
+  archivedCount: null,
   hasNextPage: false,
   hasPrevPage: false,
 };
@@ -71,9 +78,14 @@ export type AgentCertificatesListAccessMode = "agent" | "specialist" | "business
 
 type AgentCertificatesListProps = {
   accessMode?: AgentCertificatesListAccessMode;
+  /** When true, store/company empty may link to `/history`. Omitted → STATIC. */
+  canLinkOnboardingHistory?: boolean;
 };
 
-export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificatesListProps = {}) {
+export function AgentCertificatesList({
+  accessMode = "agent",
+  canLinkOnboardingHistory,
+}: AgentCertificatesListProps = {}) {
   const isSpecialist = accessMode === "specialist";
   const isBusiness = accessMode === "business";
   const isIssuerShell = isSpecialist || isBusiness;
@@ -164,10 +176,79 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
   } | null>(null);
   const [editDiscountsCert, setEditDiscountsCert] = useState<AgentCertificateRow | null>(null);
   const listFetchGenerationRef = useRef(0);
+  /** Last accepted issuer list response had real rows (stable; not tied to load deps). */
+  const issuerListHadSuccessfulRowsRef = useRef(false);
+  const [businessListBranchId, setBusinessListBranchId] = useState<string | null>(null);
+  const [businessContextBranches, setBusinessContextBranches] = useState<ProContextBranch[]>([]);
+  const [businessBranchScope, setBusinessBranchScope] = useState<
+    "idle" | "loading" | "ready" | "blocked"
+  >("idle");
+  const [businessBranchScopeError, setBusinessBranchScopeError] = useState("");
+  const businessBranchScopeGenRef = useRef(0);
+
+  useEffect(() => {
+    if (!isBusiness) {
+      setBusinessBranchScope("idle");
+      setBusinessListBranchId(null);
+      setBusinessContextBranches([]);
+      setBusinessBranchScopeError("");
+      return;
+    }
+    const gen = ++businessBranchScopeGenRef.current;
+    setBusinessBranchScope("loading");
+    setBusinessBranchScopeError("");
+    void fetchOrgOwnerContextBranches().then((res) => {
+      if (gen !== businessBranchScopeGenRef.current) return;
+      if (!res.ok) {
+        setBusinessBranchScope("blocked");
+        setBusinessBranchScopeError(res.message);
+        setBusinessListBranchId(null);
+        setBusinessContextBranches([]);
+        return;
+      }
+      setBusinessBranchScope("ready");
+      setBusinessContextBranches(res.branches);
+      if (res.branches.length === 1) {
+        setBusinessListBranchId(res.branches[0]!.id);
+      } else {
+        setBusinessListBranchId(null);
+      }
+    });
+  }, [isBusiness]);
+
+  const onBusinessListBranchSelected = useCallback((branchId: string) => {
+    setBusinessListBranchId(branchId);
+    setPage(1);
+    setSelected(new Set());
+  }, []);
 
   const load = useCallback(async () => {
+    if (isBusiness) {
+      if (businessBranchScope === "loading" || businessBranchScope === "idle") {
+        return;
+      }
+      if (businessBranchScope === "blocked") {
+        const fetchId = ++listFetchGenerationRef.current;
+        if (fetchId !== listFetchGenerationRef.current) return;
+        setLoadState("error");
+        setError(businessBranchScopeError);
+        setKnownListCounts(null);
+        setItems([]);
+        return;
+      }
+      if (!businessListBranchId) {
+        const fetchId = ++listFetchGenerationRef.current;
+        if (fetchId !== listFetchGenerationRef.current) return;
+        setLoadState("loaded");
+        setError("");
+        setItems([]);
+        setKnownListCounts(null);
+        setMeta(emptyMeta);
+        return;
+      }
+    }
     const fetchId = ++listFetchGenerationRef.current;
-    const preserveItemsOnError = isIssuerShell;
+    const preserveItemsOnError = isIssuerShell && issuerListHadSuccessfulRowsRef.current;
     setLoadState("loading");
     setError("");
     try {
@@ -178,6 +259,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         limit: pageSize,
         sort,
         status: statusFilter || undefined,
+        ...(isBusiness && businessListBranchId ? { branchId: businessListBranchId } : {}),
       };
       const data = isBusiness
         ? await fetchBusinessOwnerCertificates(listParams)
@@ -187,15 +269,23 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
-      setItems(data.certificates ?? []);
-      setKnownListCounts(certificatesListKnownCountsFromApi(data));
+      const nextCertificates = data.certificates ?? [];
+      setItems(nextCertificates);
+      if (isIssuerShell) {
+        issuerListHadSuccessfulRowsRef.current = nextCertificates.length > 0;
+      }
+      const knownCounts = certificatesListKnownCountsFromApi(data);
+      setKnownListCounts(knownCounts);
       setMeta({
         page: data.page ?? page,
         pageSize: data.pageSize ?? pageSize,
-        totalCount: data.totalCount ?? 0,
+        totalCount:
+          typeof data.totalCount === "number" && Number.isFinite(data.totalCount)
+            ? data.totalCount
+            : 0,
         totalPages: data.totalPages ?? 1,
-        activeCount: data.activeCount ?? 0,
-        archivedCount: data.archivedCount ?? 0,
+        activeCount: knownCounts?.activeCount ?? null,
+        archivedCount: knownCounts?.archivedCount ?? null,
         hasNextPage: data.hasNextPage ?? false,
         hasPrevPage: data.hasPrevPage ?? false,
         sort: data.sort,
@@ -205,17 +295,43 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
-      setError(
-        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты",
-      );
+      const message =
+        caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты";
+      setError(message);
+      if (isBusiness && caught instanceof RemcardApiError && caught.status === 403) {
+        setLoadState("error");
+        setKnownListCounts(null);
+        setItems([]);
+        return;
+      }
       if (preserveItemsOnError) {
         setLoadState("loaded");
       } else {
         setLoadState("error");
         setKnownListCounts(null);
+        setMeta((prev) => ({
+          ...prev,
+          totalCount: null,
+          activeCount: null,
+          archivedCount: null,
+        }));
       }
     }
-  }, [appliedQ, archived, isBusiness, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
+  }, [
+    appliedQ,
+    archived,
+    businessBranchScope,
+    businessBranchScopeError,
+    businessListBranchId,
+    isBusiness,
+    isIssuerShell,
+    isSpecialist,
+    page,
+    pageSize,
+    sort,
+    statusFilter,
+    searchRevision,
+  ]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
@@ -272,6 +388,13 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     filtersActive,
   });
 
+  const welcomeDecisionPending = isCertificatesWelcomeDecisionPending({
+    loadState,
+    itemsLength: items.length,
+    archived,
+    filtersActive,
+  });
+
   const newPartnerRole: CertificatesNewPartnerRole = isBusiness
     ? ownerMode?.businessPartnerType === "COMPANY"
       ? "company"
@@ -279,6 +402,9 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
     : isSpecialist
       ? "specialist"
       : "agent";
+
+  const businessHistoryLink =
+    canLinkOnboardingHistory ?? ownerMode?.canLinkOnboardingHistory;
 
   async function runBatch(action: "archive" | "restore" | "delete") {
     let ids = [...selected];
@@ -481,8 +607,18 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             : undefined
       }
     >
-      {isBusiness && !showNewPartnerEmpty ? (
+      {isBusiness && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
+          {businessBranchScope === "ready" ? (
+            <BusinessHomeBranchPicker
+              selectedBranchId={businessListBranchId}
+              branchSelectionRequired={!businessListBranchId}
+              onBranchSelected={onBusinessListBranchSelected}
+              branchesFromContext={businessContextBranches}
+              contextLabel="Филиал для списка сертификатов"
+              selectTestId="business-certificates-branch-select"
+            />
+          ) : null}
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
           <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
             <Button
@@ -501,19 +637,25 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
             </Link>
           </details>
         </section>
-      ) : isIssuerShell && !showNewPartnerEmpty ? (
+      ) : isIssuerShell && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <section className={styles.pageIntroBlock}>
           <p className={styles.pageIntroMuted}>{issuerPageCopy.description}</p>
           <Button className={styles.heroCtaInline} onClick={openCreateDialog}>
             {issuerPageCopy.createCta}
           </Button>
         </section>
-      ) : !showNewPartnerEmpty ? (
-        <AgentR03PageIntro variant="certificates" certificateActiveCount={meta.activeCount} />
+      ) : !welcomeDecisionPending && !showNewPartnerEmpty ? (
+        <AgentR03PageIntro
+          variant="certificates"
+          certificateActiveCount={loadState === "loading" ? null : meta.activeCount}
+        />
       ) : null}
 
       <div data-testid="agent-r03-capture-body">
-      {!showNewPartnerEmpty ? (
+      {welcomeDecisionPending ? (
+        <WelcomeContentAreaPending testId="certificates-welcome-decision-pending" />
+      ) : null}
+      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
       <AgentR03ListToolbar
         searchPlaceholder={
           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
@@ -527,15 +669,15 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
           setArchived(v);
           resetFiltersAndPage();
         }}
-        activeCount={meta.activeCount}
-        archivedCount={meta.archivedCount}
+        activeCount={loadState === "loading" ? null : meta.activeCount}
+        archivedCount={loadState === "loading" ? null : meta.archivedCount}
         viewMode={viewMode}
         onViewModeChange={(mode) => {
           setViewMode(mode);
           writeAgentR03ViewMode("certificates", mode);
           setSelected(new Set());
         }}
-        foundCount={meta.totalCount}
+        foundCount={loadState === "loading" || loadState === "error" ? null : meta.totalCount}
         selectableIds={visibleIds}
         selectedIds={selected}
         onSelectPage={(checked) => {
@@ -563,18 +705,16 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
       />
       ) : null}
 
-      {showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && showNewPartnerEmpty ? (
         <CertificatesNewPartnerEmpty
           role={newPartnerRole}
           onCreateCertificate={isIssuerShell ? openCreateDialog : undefined}
           createHref={isIssuerShell ? undefined : "/certificates/new"}
+          canLinkOnboardingHistory={isBusiness ? businessHistoryLink : undefined}
         />
       ) : null}
 
-      {loadState === "loading" && items.length === 0 ? (
-        <p className={styles.loading}>Загрузка…</p>
-      ) : null}
-      {loadState === "error" ? (
+      {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
           <Button variant="secondary" onClick={() => void load()}>
@@ -583,7 +723,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </div>
       ) : null}
 
-      {!showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>
@@ -599,7 +739,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "cards" ? (
         <div className={styles.list} data-testid="agent-r03-cards-grid">
           {items.map((cert) => (
             <AgentCertificateCard
@@ -615,7 +755,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </div>
       ) : null}
 
-      {loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
+      {!welcomeDecisionPending && loadState === "loaded" && items.length > 0 && viewMode === "list" ? (
         <>
           <div className={`${styles.collectionPanel} ${styles.mobileOnly}`}>
             {items.map((cert) => (
@@ -686,7 +826,7 @@ export function AgentCertificatesList({ accessMode = "agent" }: AgentCertificate
         </>
       ) : null}
 
-      {items.length > 0 ? (
+      {!welcomeDecisionPending && items.length > 0 ? (
         <AgentR03Pagination
           page={currentPage}
           totalPages={totalPages}
