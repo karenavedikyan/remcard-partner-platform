@@ -1,3 +1,4 @@
+import { trimTrustedClientsDisplayString } from "@/lib/clients-parity/client-appeal-display";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import type { OrderPreviewAllowed } from "@/lib/order-types";
 import {
@@ -21,6 +22,8 @@ export type ReceivingAppealScannerContext =
       certificatePrefillCode: string | null;
       purchaseOrderId: string | null;
       clientLabel: string;
+      /** K1 `referrerDisplayName` when store preview omits issuer name. */
+      referrerDisplayName: string | null;
       orderAlreadyLinked: boolean;
     }
   | { status: "forbidden"; appealId: string; message: string }
@@ -242,6 +245,7 @@ export async function loadReceivingAppealScannerContext(
     certificatePrefillCode: extractAuthoritativeScanCode(appeal),
     purchaseOrderId,
     clientLabel: (appeal.clientDisplayName ?? appeal.clientName ?? trimmed).trim() || trimmed,
+    referrerDisplayName: trimTrustedClientsDisplayString(appeal.referrerDisplayName),
     orderAlreadyLinked: Boolean(purchaseOrderId),
   };
 }

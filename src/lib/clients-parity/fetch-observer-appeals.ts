@@ -1,4 +1,8 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import {
+  resolveClientAppealStageDisplayLabel,
+  trimTrustedClientsDisplayString,
+} from "./client-appeal-display";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import type {
   ObserverPartnerMeta,
@@ -220,6 +224,11 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
   }
 
   const scope = partnerScopeFromWire(row);
+  const stageLabel = resolveClientAppealStageDisplayLabel({
+    stageKey: stageId,
+    trustedStageLabel: trimTrustedClientsDisplayString(row.stageLabel),
+  });
+  const referrerDisplayName = trimTrustedClientsDisplayString(row.referrerDisplayName);
 
   return {
     id,
@@ -234,6 +243,8 @@ function parseK8AppealRow(row: Record<string, unknown>): ObserverReferredAppeal 
     updatedAt,
     referralAt,
     stageId,
+    stageLabel,
+    referrerDisplayName: referrerDisplayName ?? null,
   };
 }
 

@@ -1,4 +1,9 @@
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import {
+  resolveClientAppealStageDisplayLabel,
+  trimTrustedClientsDisplayString,
+} from "./client-appeal-display";
+import { formatAppealHistoryTimelineText } from "./appeal-history-stage-text";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import {
   mapK8AppealStageKey,
@@ -86,6 +91,11 @@ function parseAppealRow(row: Record<string, unknown>): ObserverReferredAppeal | 
         ? row.createdAt
         : null;
   const scope = partnerScopeFromWire(row);
+  const stageLabel = resolveClientAppealStageDisplayLabel({
+    stageKey: stageId,
+    trustedStageLabel: trimTrustedClientsDisplayString(row.stageLabel),
+  });
+  const referrerDisplayName = trimTrustedClientsDisplayString(row.referrerDisplayName);
 
   if (!id || !clientName || !receivingPartnerId || !updatedAt) return null;
 
@@ -101,6 +111,8 @@ function parseAppealRow(row: Record<string, unknown>): ObserverReferredAppeal | 
     updatedAt,
     referralAt,
     stageId,
+    stageLabel,
+    referrerDisplayName: referrerDisplayName ?? null,
   };
 }
 
@@ -143,7 +155,7 @@ function parseTimeline(rows: unknown): ObserverPublicTimelineEvent[] {
         /* strip — should not appear on public timeline */
       }
     }
-    out.push({ at, text });
+    out.push({ at, text: formatAppealHistoryTimelineText(text) });
   }
   return out;
 }

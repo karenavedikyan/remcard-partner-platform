@@ -85,8 +85,12 @@ export type ObserverAppealK2WireDto = {
   receivingOrganizationId: string | null;
   receivingBranchId: string | null;
   referrerProUserId: string | null;
+  /** K2 b0ffd197 optional — human referrer caption. */
+  referrerDisplayName?: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   stageKey: string;
+  /** K2 b0ffd197 optional — RECEIVING-scope caption. */
+  stageLabel?: string | null;
   interest: string | null;
   clientCity: string | null;
   budgetHint: string | null;
@@ -142,6 +146,10 @@ export type ObserverReferredAppeal = {
   clientCity?: string | null;
   budgetHint?: string | null;
   stageId: ObserverAppealStageId;
+  /** K2 optional wire `stageLabel` — display caption; `stageId` stays logic key. */
+  stageLabel?: string;
+  /** K2 optional wire `referrerDisplayName`. */
+  referrerDisplayName?: string | null;
   updatedAt: string;
   referralAt?: string | null;
   discountPercent?: number | null;

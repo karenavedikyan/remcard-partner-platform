@@ -1,6 +1,7 @@
 "use client";
 
 import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
+import { formatAppealHistoryTimelineText } from "@/lib/clients-parity/appeal-history-stage-text";
 import styles from "../observer/observer.module.css";
 
 /** K1 row — aligns with K8 `ClientAppealHistoryEvent` (server-sourced only). */
@@ -69,7 +70,7 @@ function projectK2ReferrerPublicHistory(
 ): { at: string; text: string }[] {
   return [...entries]
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .map((e) => ({ at: e.at, text: String(e.text || "").trim() }))
+    .map((e) => ({ at: e.at, text: formatAppealHistoryTimelineText(String(e.text || "").trim()) }))
     .filter(
       (e) =>
         e.text.length > 0 &&
@@ -88,7 +89,7 @@ export function projectReceivingHistory(
   if (projection === "receiving-full") {
     return sorted.map((e) => ({
       at: e.at,
-      text: [e.text, e.reason ? `— ${e.reason}` : ""].join("").trim(),
+      text: [formatAppealHistoryTimelineText(e.text), e.reason ? `— ${e.reason}` : ""].join("").trim(),
     }));
   }
   if (projection === "k2-referrer-public") {
@@ -96,7 +97,7 @@ export function projectReceivingHistory(
   }
   return sorted
     .filter((e) => isPublicReferrerHistoryEntry(e, refusedReason))
-    .map((e) => ({ at: e.at, text: publicHistoryLine(e, refusedReason) }))
+    .map((e) => ({ at: e.at, text: formatAppealHistoryTimelineText(publicHistoryLine(e, refusedReason)) }))
     .filter((e) => e.text);
 }
 

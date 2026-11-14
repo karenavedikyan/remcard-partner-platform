@@ -28,6 +28,8 @@ export function receivingAppealDetailWireToK1Envelope(
     receivingOrganizationId: a.receivingOrganizationId ?? null,
     receivingBranchId: a.receivingBranchId ?? null,
     referrerProUserId: a.referrerProUserId ?? a.referrerPartnerId ?? null,
+    referrerDisplayName: a.referrerDisplayName ?? null,
+    stageLabel: a.stageLabel ?? null,
     originKind: normalizeOriginKind(a.originKind),
     manualSourceKey: a.manualSourceKey?.trim() || null,
     discountPercent: a.discountPercent ?? null,

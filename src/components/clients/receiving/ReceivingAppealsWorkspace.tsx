@@ -570,7 +570,7 @@ export function ReceivingAppealsWorkspace({
       <ReceivingAppealDetailHost
         appealId={detailId}
         readOnly={readOnly}
-        referrerPartnerName={listRow?.referrerPartnerId ?? null}
+        referrerPartnerName={listRow?.referrerDisplayName ?? null}
         onBack={() => {
           setView("list");
           setDetailId(null);
@@ -643,7 +643,9 @@ export function ReceivingAppealsWorkspace({
       ) : null}
       <ReceivingAppealsList
         data={data}
-        stageLabelById={(row) => receivingStageDisplayLabel(row.stageId, data.settings)}
+        stageLabelById={(row) =>
+          receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel)
+        }
         filters={listFilters}
         onFiltersChange={onListFiltersChange}
         serverBackedFilters={serverBacked}

@@ -382,7 +382,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
             )}
             {props.appeal.paidDisplayLabel ? (
               <div data-testid="ca-receiving-purchase-paid">
-                <dt>Оплата клиентом</dt>
+                <dt>Сумма покупки до скидки</dt>
                 <dd>
                   {props.appeal.paidDisplayLabel}
                   {props.appeal.paidAtDisplay ? ` · ${props.appeal.paidAtDisplay}` : ""}

@@ -249,7 +249,7 @@ export function PartnerPartnershipDetailDialog({
                   </Button>
                 ) : null}
                 {compactCooperation && partnership.status === "ACTIVE" ? (
-                  <Link href="/certificates" className={styles.certificateLink}>
+                  <Link href="/recommendations" className={styles.certificateLink}>
                     Создать сертификат
                   </Link>
                 ) : null}
