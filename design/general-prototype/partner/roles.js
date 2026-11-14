@@ -53,7 +53,7 @@ import {
 import { hydrateMobileNavigation } from "./mobile-navigation.js";
 import { renderCareSection, careHomeTeaser, hydrateCareServices } from "./care-services.js?v=care2";
 import { renderProcurementSection, procurementHomeTeaser, hydrateProcurement } from "./procurement.js?v=proc5";
-import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca38-empty";
+import { renderClientAppeals, clientAppealsPageTitle, clientAppealsPageMuted, clientAppealsHeaderPill, clientAppealsSubpageBack, hydrateClientAppeals, openClientAppealFromLegacy, resetClientAppealsNav, primeClientAppealsView, primeClientAppealsScan, primeClientAppealsRepairObject, primeAgentObserverClientsFlow, refreshClientPurchaseLedgerForWallet, renderPayProfileReturnBanner, resumePayProfileCategoriesTrip, clearPayProfileReturnContext, getPayProfileReturnContext, clearAllPayProfileReturnContexts, buildClientAppealsStandaloneEmbedCtx, restoreClientAppealsRepairState, snapshotClientAppealsRepairState } from "./client-appeals.js?v=ca40-default-intro";
 import {
   assignmentHandoffModel,
   buildRepairEmbedCtx,
@@ -65,7 +65,7 @@ import {
 import { h as renderObserverGuestMain } from "./chunk-KTYMGLZA.js";
 import { d as renderAssignmentGuestSection } from "./chunk-UM77QSQJ.js";
 import { clientPurchaseLedgerRows } from "./client-purchase-ledger.js";
-import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill } from "./empty-states.js?v=clients-empty-20261114";
+import { createEmptyStates, renderEmptyState, emptyStateActive, renderDatasetControl, emptyHeaderPill, prepareClientsIntro } from "./empty-states.js?v=clients-intro-default-20261114";
 import { entryState, isEntryScreen, renderEntry, hydrateEntry, initializeEntry } from "./registration-entry.js";
 import {
   renderAccountMenu,
@@ -4776,6 +4776,11 @@ function applyPublishedCabinetCopy() {
   if (footer) footer.innerHTML = "RemCard PROF<br>Партнёрство начинается с доверия";
 }
 function R() {
+  const linkedPage = Number(new URLSearchParams(location.search).get("proto_standalone")) || null;
+  if (i.screen === "cabinet" && i.page === "clients" &&
+      (!linkedPage || [79, 88, 97, 106].includes(linkedPage))) {
+    prepareClientsIntro();
+  }
   if (
     ((document.documentElement.dataset.theme = i.theme),
     (z.innerHTML =

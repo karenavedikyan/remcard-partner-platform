@@ -383,6 +383,15 @@ export function emptyDatasetOn() {
   return datasetEmpty;
 }
 
+let clientsIntroPrepared = false;
+let datasetChosen = new URLSearchParams(window.location.search).has("dataset");
+
+export function prepareClientsIntro() {
+  if (clientsIntroPrepared) return;
+  clientsIntroPrepared = true;
+  if (!datasetChosen) setDataset("empty");
+}
+
 function setDataset(value) {
   datasetEmpty = value === "empty";
   try {
@@ -411,6 +420,7 @@ export function createEmptyStates({ refresh }) {
   return {
     change(e) {
       if (e.target?.dataset?.control !== "dataset") return false;
+      datasetChosen = true;
       setDataset(e.target.value);
       refresh();
       return true;
@@ -425,6 +435,7 @@ export function createEmptyStates({ refresh }) {
         return false;
       }
       if (s === "demo") {
+        datasetChosen = true;
         setDataset("demo");
         const sel = document.querySelector('[data-control="dataset"]');
         if (sel) sel.value = "demo";

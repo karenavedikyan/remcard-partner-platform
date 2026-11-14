@@ -377,3 +377,17 @@ button.ca-row{font:inherit;color:inherit}
 .ca-r2-object-card.is-selected{border-color:color-mix(in srgb,var(--brand,var(--accent)) 45%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--brand,var(--accent)) 18%,transparent)}
 .ca-r2-object-select{display:grid;gap:var(--s2,8px);width:100%;text-align:left;padding:var(--s4,16px);border:0;background:transparent;cursor:pointer;font:inherit;color:inherit}
 .ca-r2-object-detail{margin-top:var(--s4,16px)}
+/* A completely new workspace starts with one onboarding card, not a second
+   explanatory header and two empty direction tabs. Keep the page title
+   available to assistive technology and restore ordinary chrome with data. */
+.content:has(> [data-ca-root][data-ca-startup="minimal"]) > .page-header {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

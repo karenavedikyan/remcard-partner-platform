@@ -1,5 +1,5 @@
 /* Клиенты и обращения в кабинете партнёра. Демо, in-memory. Без диалогов — только страницы. */
-import { emptyDatasetOn, renderEmptyState } from "./empty-states.js?v=clients-empty-20261114";
+import { emptyDatasetOn, renderEmptyState } from "./empty-states.js?v=clients-intro-default-20261114";
 import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-purchase-ledger.js";
 import {
   observerPersonalState, observerPersonalMeta, observerPersonalBucket,
@@ -2832,13 +2832,15 @@ export function renderClientAppeals(config) {
         (!s.listStatus || s.listStatus === "Все статусы") &&
         (!s.listSource || s.listSource === "all") &&
         (!s.listBucket || s.listBucket === "active"));
+    const minimalStartup = startup && (agentClientsObserverOnly(config) ||
+      (!ownReferredAppeals().length && !appeals.some((a) => a.receivingPartnerId === RECEIVING.id)));
     const body = startup
-      ? `${renderClientsDirectionTabs(config)}${renderEmptyState({
+      ? `${minimalStartup ? "" : renderClientsDirectionTabs(config)}${renderEmptyState({
           page: "clients", role: config.role, readOnly: config.readOnly,
           clientsDirection: observer ? "at-partners" : "incoming",
         })}`
       : observer ? renderObserverPartnersList(config) : renderListPage(config);
-    return `<div class="${rootClass}" data-ca-root>${r2Entry}${body}</div>`;
+    return `<div class="${rootClass}" data-ca-root${minimalStartup ? ' data-ca-startup="minimal"' : ""}>${r2Entry}${body}</div>`;
   }
   if (
     s.view === "observer-partner" &&
