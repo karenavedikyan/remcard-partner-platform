@@ -44,6 +44,7 @@ describe("P6.partner certificate link routing", () => {
       <PartnerPartnershipDetailDialog
         partnership={basePartnership()}
         meId="store-1"
+        listSubjectUserId="store-1"
         open
         onClose={vi.fn()}
         onOpenTermChange={vi.fn()}

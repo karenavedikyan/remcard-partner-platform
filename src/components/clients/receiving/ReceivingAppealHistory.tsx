@@ -1,5 +1,6 @@
 "use client";
 
+import { formatAppealHistoryTimelineText } from "@/lib/clients-parity/appeal-history-stage-text";
 import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
 import styles from "../observer/observer.module.css";
 
@@ -47,7 +48,9 @@ export function publicHistoryLine(
     const label = t.replace(/^этап изменён:\s*/i, "").replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
     return label ? `Этап: ${label}` : "";
   }
-  if (/^статус:\s*/i.test(t)) return t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim();
+  if (/^статус:\s*/i.test(t)) {
+    return formatAppealHistoryTimelineText(t.replace(/\s*\(.*группов.*\)\s*$/i, "").trim());
+  }
   if (/создано обращение по сертификату/i.test(t)) return "Создано обращение по сертификату";
   if (entry.reason && /отказ/i.test(t)) return `Отказ: ${entry.reason}`;
   if (/^отказ$/i.test(t) && refusedReason) return `Отказ: ${refusedReason}`;
@@ -69,7 +72,7 @@ export function projectReceivingHistory(
   if (projection === "receiving-full") {
     return sorted.map((e) => ({
       at: e.at,
-      text: [e.text, e.reason ? `— ${e.reason}` : ""].join("").trim(),
+      text: [formatAppealHistoryTimelineText(e.text), e.reason ? `— ${e.reason}` : ""].join("").trim(),
     }));
   }
   return sorted

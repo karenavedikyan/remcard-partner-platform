@@ -5,7 +5,6 @@ import {
   resolveClientAppealStageDisplayLabel,
   resolveReferrerDisplayLabel,
 } from "./client-appeal-display";
-import { mapObserverReferredAppealFromWire } from "./observer-referred-appeal-map";
 import {
   mapReceivingAppealListRowFromWire,
   receivingStageDisplayLabel,
@@ -103,20 +102,19 @@ describe("P6.client-appeal-display referrerDisplayName", () => {
   });
 });
 
-describe("P6.observer-referred-appeal-map", () => {
-  it("maps K2 row with stageLabel for list/detail caption", () => {
-    const row = mapObserverReferredAppealFromWire({
-      id: "o1",
-      clientDisplayName: "Клиент",
-      receivingPartnerUserId: "recv",
-      referrerProUserId: "ref-internal",
-      referrerDisplayName: "Анна",
-      stageKey: "ws_draft_1794652553401",
-      stageLabel: "ТЕСТ: согласование",
-      updatedAt: "2026-01-02T00:00:00Z",
-    });
-    expect(row?.stageId).toBe("ws_draft_1794652553401");
-    expect(observerAppealStatusLabel(row!)).toBe("ТЕСТ: согласование");
-    expect(row?.referrerDisplayName).toBe("Анна");
+describe("P6.observer stageLabel display", () => {
+  it("observerAppealStatusLabel prefers wire stageLabel on view-model", () => {
+    expect(
+      observerAppealStatusLabel({
+        id: "o1",
+        clientName: "Клиент",
+        certificateId: "",
+        receivingPartnerId: "recv",
+        referrerPartnerId: "ref",
+        stageId: "ws_draft_1794652553401",
+        stageLabel: "ТЕСТ: согласование",
+        updatedAt: "2026-01-02T00:00:00Z",
+      }),
+    ).toBe("ТЕСТ: согласование");
   });
 });

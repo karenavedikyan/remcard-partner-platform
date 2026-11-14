@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { trimTrustedClientsDisplayString } from "@/lib/clients-parity/client-appeal-display";
 import {
   postReceivingAppealOrderLink,
   resolveReceivingScannerCertificateEntryGate,
@@ -123,7 +122,6 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   contextRef.current = context;
   const frozenSubmitByKeyRef = useRef<Map<string, FrozenSubmitScope>>(new Map());
   const activeSubmitScopeRef = useRef<FrozenSubmitScope | null>(null);
-  const certificateEntryReferrerNameRef = useRef<string | null>(null);
 
   const [linkPhase, setLinkPhase] = useState<ReceivingAppealLinkPhase>("idle");
   const [linkError, setLinkError] = useState("");
@@ -370,10 +368,6 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
         }
         return { ok: false, message: entry.message };
       }
-
-      certificateEntryReferrerNameRef.current = trimTrustedClientsDisplayString(
-        entry.appeal.referrerDisplayName,
-      );
 
       return adoptAppealContext(entry.appealId, args.promoCode, branchKey, { gen, isStale: args.isStale });
     },
@@ -689,10 +683,6 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       (ordinaryAppealIntegrationRequired &&
         (certEntryPending || !adoptedAppealId || context.status !== "ready")));
   const certificatePrefillCode = context.status === "ready" ? context.certificatePrefillCode : null;
-  const referrerDisplayNameFallback =
-    context.status === "ready"
-      ? context.referrerDisplayName ?? certificateEntryReferrerNameRef.current
-      : certificateEntryReferrerNameRef.current;
 
   return useMemo(
     () => ({
@@ -711,7 +701,6 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       crmReadOnlyNotice,
       crmGateRetryError,
       certificatePrefillCode,
-      referrerDisplayNameFallback,
       context,
       linkPhase,
       linkError,
@@ -735,7 +724,6 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       certEntryError,
       certEntryPending,
       certificatePrefillCode,
-      referrerDisplayNameFallback,
       context,
       crmGateRetryError,
       crmReadOnlyNotice,

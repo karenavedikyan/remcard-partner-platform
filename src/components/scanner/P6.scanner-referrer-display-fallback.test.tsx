@@ -14,6 +14,16 @@ describe("P6.scanner referrer display fallback", () => {
     expect(screen.getByText("Обойкин")).toBeTruthy();
   });
 
+  it("does not show appeal fallback while context is not ready (B loading)", () => {
+    render(
+      <ScannerReferringPartnerBlock
+        referringPartner={null}
+        appealReferrerDisplayName={null}
+      />,
+    );
+    expect(screen.getByTestId("scanner-referrer-unavailable")).toBeTruthy();
+  });
+
   it("prefers store preview referrer when both present", () => {
     render(
       <ScannerReferringPartnerBlock

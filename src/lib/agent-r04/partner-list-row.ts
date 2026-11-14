@@ -29,23 +29,39 @@ function labelSpecializationId(id: string): string {
   return fromCategory && fromCategory !== "Категория" ? fromCategory : "";
 }
 
-function partnerSpecializationLabels(user: PartnershipPartnerProfile): string[] {
-  const products = user.workingProductCategoryIds?.length
-    ? user.workingProductCategoryIds
-    : user.storeCategories;
-  const services = user.workingServiceSpecializationIds?.length
-    ? user.workingServiceSpecializationIds
-    : user.specializations;
+function partnerProductIds(user: PartnershipPartnerProfile): string[] {
+  if (user.workingProductCategoryIds?.length) return user.workingProductCategoryIds;
+  return user.storeCategories ?? [];
+}
+
+function partnerServiceIds(user: PartnershipPartnerProfile): string[] {
+  if (user.workingServiceSpecializationIds?.length) return user.workingServiceSpecializationIds;
+  return user.specializations ?? [];
+}
+
+function idsToLabels(ids: string[]): string[] {
   const labels: string[] = [];
-  for (const id of products ?? []) {
-    const label = labelSpecializationId(id);
-    if (label) labels.push(label);
-  }
-  for (const id of services ?? []) {
+  for (const id of ids) {
     const label = labelSpecializationId(id);
     if (label) labels.push(label);
   }
   return [...new Set(labels)];
+}
+
+export function partnerProductLabels(user: PartnershipPartnerProfile): string[] {
+  return idsToLabels(partnerProductIds(user));
+}
+
+export function partnerServiceLabels(user: PartnershipPartnerProfile): string[] {
+  return idsToLabels(partnerServiceIds(user));
+}
+
+export function partnerRenovationStageLabels(user: PartnershipPartnerProfile): string[] {
+  return idsToLabels(user.workingNavigatorStageIds ?? []);
+}
+
+function partnerSpecializationLabels(user: PartnershipPartnerProfile): string[] {
+  return [...new Set([...partnerProductLabels(user), ...partnerServiceLabels(user)])];
 }
 
 export function partnerSpecializationHint(user: PartnershipPartnerProfile): string {

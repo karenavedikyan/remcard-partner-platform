@@ -1056,7 +1056,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitInFlightRef.current = false;
       return;
     }
-    if (!handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey)) {
+    if (
+      handoff.ordinaryAppealIntegrationRequired &&
+      !handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey)
+    ) {
       setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
       submitInFlightRef.current = false;
       return;
@@ -1101,6 +1104,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const amountsLocked = orderUncertain || orderConflict || isStoreOrderAttemptLocked(storedAttempt);
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
+  const receivingEntryNotice = (
+    <ReceivingAppealCertEntryAlert
+      message={receivingHandoff.crmReadOnlyNotice ||
+        receivingHandoff.crmGateRetryError || receivingHandoff.certEntryError}
+    />
+  );
 
   if (receivingHandoff.appealInvalid) {
     return (
@@ -1145,6 +1154,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     return (
       <div>
         <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
+        {receivingEntryNotice}
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
@@ -1216,6 +1226,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           context={receivingHandoff.context}
           appealId={receivingHandoff.appealId}
         />
+        {receivingEntryNotice}
         {showRestoredBlock ? (
           <RestoredAttemptBlock
             storedAttempt={storedAttempt}
@@ -1245,7 +1256,11 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             ) : null}
             <ScannerReferringPartnerBlock
               referringPartner={preview.referringPartner}
-              appealReferrerDisplayName={receivingHandoff.referrerDisplayNameFallback}
+              appealReferrerDisplayName={
+                receivingHandoff.context.status === "ready"
+                  ? receivingHandoff.context.referrerDisplayName
+                  : null
+              }
             />
             <details className={styles.issuerDetails}>
               <summary>Эмитент и где принимается документ</summary>
@@ -1387,6 +1402,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   if (showRestoredBlock) {
     return (
       <>
+        {receivingEntryNotice}
         {showOperationBranchControl && !isStoreOrderAttemptLocked(storedAttempt) ? (
           <ScannerBranchOperationField
             options={branchResolution.kind === "ready" ? branchResolution.options : []}
@@ -1438,9 +1454,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         context={receivingHandoff.context}
         appealId={receivingHandoff.appealId}
       />
-      <ReceivingAppealCertEntryAlert
-        message={receivingHandoff.crmReadOnlyNotice || receivingHandoff.certEntryError}
-      />
+      {receivingEntryNotice}
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
       ) : null}
