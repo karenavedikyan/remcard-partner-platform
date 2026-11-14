@@ -81,6 +81,7 @@ import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity
 import { parseScannerAppealQueryValues } from "@/lib/scanner/receiving-appeal-handoff";
 import { useReceivingAppealScannerHandoff } from "./useReceivingAppealScannerHandoff";
 import {
+  ReceivingAppealCertEntryAlert,
   ReceivingAppealScannerBanner,
   ReceivingAppealScannerSuccessLinkPanel,
 } from "./ReceivingAppealScannerPanels";
@@ -464,6 +465,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     setStoredAttempt(null);
     setPurchaseReviewOpen(false);
     submitInFlightRef.current = false;
+    receivingRef.current.discardOrdinarySession();
   }, [invalidatePreviewRequest]);
 
   const startNewPurchase = useCallback(() => {
@@ -547,7 +549,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const executeOrderPost = useCallback(
     async (record: StoreOrderAttemptRecord, wasRetry: boolean) => {
-      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry);
+      const attemptBranch = (record as StoreOrderAttemptRecord & { branchId?: string }).branchId;
+      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry, {
+        userId,
+        certCode: record.body.certificateCode,
+        branchId: attemptBranch,
+      });
       markStoreOrderAttemptInFlight(userId);
       setStoredAttempt({ ...record, status: "in_flight" });
       setSubmitting(true);
@@ -679,6 +686,43 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       }
 
       try {
+        const isStale = () =>
+          !shouldApplyPreviewResponse(
+            requestId,
+            previewRequestIdRef.current,
+            abortController.signal,
+            previewBranchByRequestIdRef.current.get(requestId),
+            orderBranchIdForRequestRef.current,
+          );
+        if (options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
+          const restored = await receivingRef.current.restoreOrdinaryAppealForStoredAttempt({
+            userId,
+            record: options.restoreAttempt,
+            signal: abortController.signal,
+            isStale,
+          });
+          if (!restored.ok && !options?.optional) {
+            setPreviewError(restored.message);
+            setPreviewSession(null);
+            return;
+          }
+        } else if (!options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
+          const appealReady = await receivingRef.current.ensureOrdinaryAppealContext({
+            promoCode: parsed.code,
+            branchId: branchIdForPreview ?? undefined,
+            previewRequestId: requestId,
+            signal: abortController.signal,
+            isStale,
+          });
+          if (!appealReady.ok) {
+            if (!options?.optional) {
+              setPreviewError(appealReady.message);
+              setPreviewSession(null);
+            }
+            return;
+          }
+        }
+
         const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
           method: "POST",
           body: { certificateCode: parsed.code },
@@ -786,6 +830,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       branchResolution,
       orderBranchIdForRequest,
       presentation?.proContext,
+      userId,
     ],
   );
 
@@ -922,6 +967,16 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     }
 
     const handoff = receivingRef.current;
+    if (handoff.blocksOrdinaryCheckout) {
+      setSubmitError(
+        handoff.crmGateRetryError ||
+          handoff.certEntryError ||
+          (handoff.certEntryPending
+            ? "Проверяем сертификат и обращение…"
+            : "Сначала отсканируйте сертификат — без обращения покупку привязать нельзя."),
+      );
+      return;
+    }
     if (handoff.appealInvalid || (handoff.appealScoped && !handoff.allowsNewStoreOrder)) {
       setSubmitError(
         handoff.context.status === "ready" && handoff.context.orderAlreadyLinked
@@ -1001,6 +1056,14 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitInFlightRef.current = false;
       return;
     }
+    if (
+      handoff.ordinaryAppealIntegrationRequired &&
+      !handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey)
+    ) {
+      setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
+      submitInFlightRef.current = false;
+      return;
+    }
 
     await executeOrderPost(created.record, false);
   }, [
@@ -1041,6 +1104,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const amountsLocked = orderUncertain || orderConflict || isStoreOrderAttemptLocked(storedAttempt);
   const showRestoredBlock =
     storedAttempt && (isRestorableAttempt(storedAttempt) || isConflictAttempt(storedAttempt));
+  const receivingEntryNotice = (
+    <ReceivingAppealCertEntryAlert
+      message={receivingHandoff.crmReadOnlyNotice ||
+        receivingHandoff.crmGateRetryError || receivingHandoff.certEntryError}
+    />
+  );
 
   if (receivingHandoff.appealInvalid) {
     return (
@@ -1085,6 +1154,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     return (
       <div>
         <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
+        {receivingEntryNotice}
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>
           <p className={styles.meta}>Операция #{success.order.id}</p>
@@ -1156,6 +1226,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           context={receivingHandoff.context}
           appealId={receivingHandoff.appealId}
         />
+        {receivingEntryNotice}
         {showRestoredBlock ? (
           <RestoredAttemptBlock
             storedAttempt={storedAttempt}
@@ -1324,6 +1395,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   if (showRestoredBlock) {
     return (
       <>
+        {receivingEntryNotice}
         {showOperationBranchControl && !isStoreOrderAttemptLocked(storedAttempt) ? (
           <ScannerBranchOperationField
             options={branchResolution.kind === "ready" ? branchResolution.options : []}
@@ -1375,6 +1447,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         context={receivingHandoff.context}
         appealId={receivingHandoff.appealId}
       />
+      {receivingEntryNotice}
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
       ) : null}

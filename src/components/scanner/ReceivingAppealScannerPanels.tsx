@@ -13,6 +13,23 @@ type BannerProps = {
   appealId: string | null;
 };
 
+type CertEntryAlertProps = { message: string | null | undefined };
+
+export function ReceivingAppealCertEntryAlert({ message }: CertEntryAlertProps) {
+  const text = message?.trim();
+  if (!text) return null;
+  return (
+    <div
+      className={styles.card}
+      style={{ marginBottom: "var(--space-4)" }}
+      role="alert"
+      data-testid="ca-scanner-cert-entry-error"
+    >
+      <p className={styles.meta}>{text}</p>
+    </div>
+  );
+}
+
 export function ReceivingAppealScannerBanner({ context, appealId }: BannerProps) {
   if (context.status === "invalid_param") {
     return (
