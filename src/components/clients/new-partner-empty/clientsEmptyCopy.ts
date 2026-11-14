@@ -5,6 +5,7 @@ import {
   onboardingStepAccessibleName,
   resolveOnboardingHistoryLinkAction,
 } from "@/lib/onboarding-step/read-only-history";
+import type { ClientsParityDirection } from "@/lib/clients-parity/types";
 
 export type ClientsEmptyCopyOptions = {
   /** Pass `true` only when caller proved owner/PRO history access. Default: no `/history` link. */
@@ -28,6 +29,23 @@ export type ClientsEmptyContent = {
   steps: ClientsEmptyStep[];
   primaryCta: { label: string; action: "scan" | "recommend" };
   secondaryCta: { label: string; action: "client-add" };
+};
+
+export type ClientsDirectionEmptyStep = {
+  icon: ClientsEmptyIconName;
+  title: string;
+  note: string;
+};
+
+export type ClientsDirectionEmptyContent = {
+  icon: ClientsEmptyIconName;
+  kicker: string;
+  title: string;
+  lead: string;
+  steps: ClientsDirectionEmptyStep[];
+  foot: string;
+  primaryCta?: { label: string; action: "scan" | "recommend" };
+  secondaryCta?: { label: string; action: "client-add" };
 };
 
 export type ClientsEmptyIconName =
@@ -147,6 +165,58 @@ export function clientsEmptyContentForRole(
   };
 }
 
+const RECEIVING_WRITABLE: ClientsDirectionEmptyContent = {
+  icon: "users",
+  kicker: "Клиенты у меня",
+  title: "Здесь начнётся работа с вашими клиентами",
+  lead: "Примите сертификат клиента или добавьте обращение вручную. В одной карточке будут запрос, этапы работы и покупка.",
+  steps: [
+    { icon: "scan", title: "Зарегистрируйте обращение", note: "По сертификату или вручную" },
+    { icon: "users", title: "Работайте с клиентом", note: "Сохраняйте запрос и обновляйте этапы" },
+    { icon: "bag", title: "Оформите покупку", note: "В этом же обращении, с возвратом в карточку" },
+  ],
+  foot: "Обращение появляется до покупки. Покупка и начисления учитываются отдельно.",
+  primaryCta: { label: "Сканировать сертификат", action: "scan" },
+  secondaryCta: { label: "Добавить клиента", action: "client-add" },
+};
+
+const RECEIVING_READONLY: ClientsDirectionEmptyContent = {
+  ...RECEIVING_WRITABLE,
+  lead: "Здесь появятся обращения вашей команды. В режиме просмотра создание и изменение обращений недоступны.",
+  foot: "Доступные действия определяются назначенными правами.",
+  primaryCta: undefined,
+  secondaryCta: undefined,
+};
+
+const AT_PARTNERS_WRITABLE: ClientsDirectionEmptyContent = {
+  icon: "users",
+  kicker: "Мои клиенты у партнёров",
+  title: "Здесь появятся клиенты, которых вы направили",
+  lead: "Создайте сертификат и передайте его клиенту. Когда принимающий партнёр зарегистрирует обращение, здесь появятся его этапы и покупка.",
+  steps: [
+    { icon: "ticket", title: "Создайте сертификат", note: "Выберите партнёра и условия" },
+    { icon: "share", title: "Передайте его клиенту", note: "Клиент покажет QR или код партнёру" },
+    { icon: "bag", title: "Следите за обращением", note: "После регистрации у партнёра: этапы и покупка" },
+  ],
+  foot: "Сам по себе сертификат не создаёт обращение, покупку или начисление.",
+  primaryCta: { label: "Создать сертификат", action: "recommend" },
+};
+
+const AT_PARTNERS_READONLY: ClientsDirectionEmptyContent = {
+  ...AT_PARTNERS_WRITABLE,
+  primaryCta: undefined,
+};
+
+export function clientsEmptyContentForDirection(
+  direction: ClientsParityDirection,
+  readOnly: boolean,
+): ClientsDirectionEmptyContent {
+  if (direction === "at-partners") {
+    return readOnly ? AT_PARTNERS_READONLY : AT_PARTNERS_WRITABLE;
+  }
+  return readOnly ? RECEIVING_READONLY : RECEIVING_WRITABLE;
+}
+
 export function mapClientsAccessToEmptyRole(
   accessMode: "agent" | "specialist" | "business",
   businessPartnerType?: "STORE" | "COMPANY",
@@ -156,4 +226,10 @@ export function mapClientsAccessToEmptyRole(
   if (accessMode === "business" && businessPartnerType === "STORE") return "STORE";
   if (accessMode === "business" && businessPartnerType === "COMPANY") return "COMPANY";
   return null;
+}
+
+export function defaultClientsIntroDirection(
+  accessMode: "agent" | "specialist" | "business",
+): ClientsParityDirection {
+  return accessMode === "agent" ? "at-partners" : "incoming";
 }

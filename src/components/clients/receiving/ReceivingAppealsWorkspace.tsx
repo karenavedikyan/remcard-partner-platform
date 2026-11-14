@@ -46,6 +46,17 @@ import {
   type ReceivingBulkConfirmKind,
 } from "./receiving-bulk-handoff";
 import styles from "./receiving.module.css";
+import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import {
+  isReceivingDirectionIntroCandidate,
+  isReceivingDirectionIntroEligible,
+  type ReceivingAllBucketsProof,
+} from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsMode,
+} from "@/components/clients/OwnerClientsModeContext";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
 type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail";
@@ -55,9 +66,17 @@ type Props = {
   previewData?: ReceivingAppealsListResponse;
   /** `/clients?direction=receiving&appealId=` — reopen detail after scanner return. */
   initialAppealId?: string | null;
+  directionProbe?: "incoming";
 };
 
-export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Props = {}) {
+export function ReceivingAppealsWorkspace({
+  previewData,
+  initialAppealId,
+  directionProbe,
+}: Props = {}) {
+  const accessMode = useOwnerClientsMode() ?? "specialist";
+  const businessPartnerType = useOwnerClientsBusinessPartnerType();
+  const reportIncomingProbe = useReportClientsDirectionProbe("incoming");
   const [phase, setPhase] = useState<LoadPhase>(previewData ? "ready" : "loading");
   const [blocked, setBlocked] = useState<ReceivingAppealsLoadResult | null>(null);
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
@@ -79,6 +98,9 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
     ids: string[];
   } | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bucketsProof, setBucketsProof] = useState<ReceivingAllBucketsProof>(
+    previewData && previewData.appeals.length === 0 ? "all_empty" : "unknown",
+  );
 
   const proxyReady = isReceivingAppealsProxyReady();
   const batchProxyReady = isReceivingBatchProxyReady();
@@ -131,6 +153,124 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
     setDetailId(id);
     setView("detail");
   }, [initialAppealId]);
+
+  useEffect(() => {
+    if (!serverBacked || !data || phase !== "ready") {
+      if (!serverBacked && data && data.appeals.length === 0) {
+        setBucketsProof("all_empty");
+      } else if (data && data.appeals.length > 0) {
+        setBucketsProof("has_elsewhere");
+      }
+      return;
+    }
+
+    const candidate = isReceivingDirectionIntroCandidate({
+      phase,
+      listView: view,
+      filters: listFilters,
+      appealsLength: data.appeals.length,
+      serverBacked,
+      listHasMore: receivingListHasMore(data),
+    });
+
+    if (!candidate) {
+      setBucketsProof(data.appeals.length > 0 ? "has_elsewhere" : "unknown");
+      return;
+    }
+
+    let cancelled = false;
+    setBucketsProof("checking");
+    const probeFilters = {
+      q: "",
+      status: "Все статусы" as const,
+      source: "all" as const,
+    };
+    const settings = data.settings;
+
+    void (async () => {
+      const archive = await fetchReceivingAppealsWorkspace(
+        { ...probeFilters, bucket: "archive" },
+        null,
+        settings,
+      );
+      if (cancelled) return;
+      if (!archive.ok) {
+        setBucketsProof("unknown");
+        return;
+      }
+      if (archive.data.appeals.length > 0 || receivingListHasMore(archive.data)) {
+        setBucketsProof("has_elsewhere");
+        return;
+      }
+      const trash = await fetchReceivingAppealsWorkspace(
+        { ...probeFilters, bucket: "trash" },
+        null,
+        settings,
+      );
+      if (cancelled) return;
+      if (!trash.ok) {
+        setBucketsProof("unknown");
+        return;
+      }
+      if (trash.data.appeals.length > 0 || receivingListHasMore(trash.data)) {
+        setBucketsProof("has_elsewhere");
+        return;
+      }
+      setBucketsProof("all_empty");
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, listFilters, phase, serverBacked, view]);
+
+  useEffect(() => {
+    if (!directionProbe) return;
+    if (phase === "loading") {
+      reportIncomingProbe("loading");
+      return;
+    }
+    if (phase === "blocked") {
+      reportIncomingProbe("blocked");
+      return;
+    }
+    if (phase === "error" || !data) {
+      reportIncomingProbe("error");
+      return;
+    }
+    if (view !== "list") {
+      reportIncomingProbe("not_empty");
+      return;
+    }
+    if (
+      isReceivingDirectionIntroEligible({
+        phase,
+        listView: view,
+        filters: listFilters,
+        appealsLength: data.appeals.length,
+        serverBacked,
+        listHasMore: receivingListHasMore(data),
+        bucketsProof,
+      })
+    ) {
+      reportIncomingProbe("proven_empty");
+      return;
+    }
+    if (bucketsProof === "checking" || bucketsProof === "unknown") {
+      reportIncomingProbe("loading");
+      return;
+    }
+    reportIncomingProbe("not_empty");
+  }, [
+    bucketsProof,
+    data,
+    directionProbe,
+    listFilters,
+    phase,
+    reportIncomingProbe,
+    serverBacked,
+    view,
+  ]);
 
   const onListFiltersChange = useCallback(
     (next: ReceivingListFilters) => {
@@ -438,6 +578,29 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
         onAppealMutated={() => {
           void reload();
         }}
+      />
+    );
+  }
+
+  const showDirectionIntro = isReceivingDirectionIntroEligible({
+    phase,
+    listView: view,
+    filters: listFilters,
+    appealsLength: data.appeals.length,
+    serverBacked,
+    listHasMore: receivingListHasMore(data),
+    bucketsProof,
+  });
+
+  if (showDirectionIntro) {
+    return (
+      <ClientsNewPartnerEmptyState
+        accessMode={accessMode}
+        businessPartnerType={businessPartnerType}
+        direction="incoming"
+        readOnly={readOnly || !mutationsAllowed}
+        onAddClient={() => setView("manual")}
+        onScanCertificate={() => setView("scan")}
       />
     );
   }

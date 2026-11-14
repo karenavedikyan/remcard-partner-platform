@@ -31,6 +31,13 @@ import {
 } from "./ObserverPersonalEditPanel";
 import { ObserverPersonalTools } from "./ObserverPersonalTools";
 import styles from "./observer.module.css";
+import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import { isObserverDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsMode,
+} from "@/components/clients/OwnerClientsModeContext";
 
 export type ObserverDataContractState =
   | { status: "blocked"; blockerId: string; message: string; missingRoutes: string[] }
@@ -77,6 +84,7 @@ type Props = {
   personalPersistence?: ObserverPersonalPersistenceCallbacks;
   onPersonalMetaUpdated?: (meta: Record<string, ObserverPersonalMeta>) => void;
   onPersonalRefreshRequested?: () => Promise<void>;
+  directionProbe?: "at-partners";
 };
 
 function partnersMap(partners: ObserverPartnerMeta[]) {
@@ -110,7 +118,11 @@ export function ObserverPartnersListView({
   personalPersistence,
   onPersonalMetaUpdated,
   onPersonalRefreshRequested,
+  directionProbe,
 }: Props) {
+  const accessMode = useOwnerClientsMode() ?? "agent";
+  const businessPartnerType = useOwnerClientsBusinessPartnerType();
+  const reportAtPartnersProbe = useReportClientsDirectionProbe("at-partners");
   const [filters, setFilters] = useState<ObserverFilterState>({
     q: "",
     period: "all",
@@ -350,6 +362,43 @@ export function ObserverPartnersListView({
     return "ready";
   }, [panel, persisting, persistenceNotice, personalPersistence]);
 
+  const showDirectionIntro =
+    nav.view === "partners" &&
+    isObserverDirectionIntroEligible({
+      loadState: "ready",
+      dataContract,
+      appealsLength: appeals.length,
+      filters,
+    });
+
+  useEffect(() => {
+    if (!directionProbe) return;
+    if (dataContract.status === "blocked") {
+      reportAtPartnersProbe("blocked");
+      return;
+    }
+    if (nav.view !== "partners") {
+      reportAtPartnersProbe("not_empty");
+      return;
+    }
+    if (showDirectionIntro) {
+      reportAtPartnersProbe("proven_empty");
+    } else {
+      reportAtPartnersProbe("not_empty");
+    }
+  }, [dataContract, directionProbe, nav.view, reportAtPartnersProbe, showDirectionIntro]);
+
+  if (showDirectionIntro) {
+    return (
+      <ClientsNewPartnerEmptyState
+        accessMode={accessMode}
+        businessPartnerType={businessPartnerType}
+        direction="at-partners"
+        readOnly={false}
+      />
+    );
+  }
+
   if (nav.view === "partner") {
     const partner = partnersById.get(nav.partnerId);
     if (!partner) {
@@ -398,8 +447,6 @@ export function ObserverPartnersListView({
     dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && bucketEmpty;
   const showFilterEmpty =
     dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && !bucketEmpty;
-  const showDatasetEmpty = dataContract.status === "ready" && appeals.length === 0;
-
   const bucketEmptyHeading =
     filters.bucket === "archived"
       ? "В архиве пока нет записей"
@@ -558,16 +605,6 @@ export function ObserverPartnersListView({
         <section className={styles.empty} data-testid="ca-observer-empty">
           <h2>{bucketEmptyHeading}</h2>
           <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
-        </section>
-      ) : null}
-
-      {showDatasetEmpty ? (
-        <section className={styles.empty} data-testid="ca-observer-empty-dataset">
-          <h2>Пока нет направленных клиентов</h2>
-          <p className={styles.intro}>
-            Здесь появятся клиенты, которых вы направили партнёрам по сертификату. Личные архив и корзина не
-            меняют данные у принимающего партнёра.
-          </p>
         </section>
       ) : null}
 

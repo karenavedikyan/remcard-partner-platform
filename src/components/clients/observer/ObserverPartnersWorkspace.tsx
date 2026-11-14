@@ -27,9 +27,14 @@ type Props = {
   showHeading?: boolean;
   /** Wired by parent from П5 personal API adapter when available. */
   personalPersistence?: ObserverPersonalPersistenceCallbacks;
+  directionProbe?: "at-partners";
 };
 
-export function ObserverPartnersWorkspace({ showHeading = true, personalPersistence }: Props) {
+export function ObserverPartnersWorkspace({
+  showHeading = true,
+  personalPersistence,
+  directionProbe,
+}: Props) {
   const [loadPhase, setLoadPhase] = useState<LoadPhase>("loading");
   const [blocker, setBlocker] = useState<{
     id: string;
@@ -208,6 +213,7 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
         personalPersistence={persistence}
         onPersonalMetaUpdated={onPersonalMetaUpdated}
         onPersonalRefreshRequested={refreshPersonalData}
+        directionProbe={directionProbe}
       />
     );
   }
@@ -226,6 +232,7 @@ export function ObserverPartnersWorkspace({ showHeading = true, personalPersiste
       personalPersistence={persistence}
       onPersonalMetaUpdated={onPersonalMetaUpdated}
       onPersonalRefreshRequested={refreshPersonalData}
+      directionProbe={directionProbe}
     />
   </>);
 }
