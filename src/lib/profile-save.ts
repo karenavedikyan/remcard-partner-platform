@@ -59,11 +59,6 @@ export function validateProfileDraft(
     if (draft.organizationName.trim().length < 2) {
       return "Укажите название организации (минимум 2 символа).";
     }
-    const needsBranch =
-      !profile.organization || (profile.organization.branchCount ?? 0) === 0;
-    if (needsBranch && draft.branchAddress.trim().length < 3) {
-      return "Укажите адрес первого филиала (минимум 3 символа) для модерации организации.";
-    }
   }
   return null;
 }
@@ -147,7 +142,7 @@ async function syncStoreOrganization(
 
   const currentOrg = (await fetchOwnerOrganization()) ?? organization;
   const branchCount = currentOrg?.branchCount ?? 0;
-  if (branchCount === 0) {
+  if (branchCount === 0 && draft.branchAddress.trim().length >= 3) {
     await remcardFetch("/api/pro/organization/branches", {
       method: "POST",
       body: {

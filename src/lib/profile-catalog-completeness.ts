@@ -33,21 +33,6 @@ export function catalogMissingForSubmit(
         fieldId: "catalog-public-name",
       });
     }
-    const branches = profile.organization?.branchCount ?? 0;
-    if (branches === 0 && draft.branchAddress.trim().length < 3) {
-      missing.push({
-        id: "branch",
-        label: "Адрес первого филиала",
-        fieldId: "catalog-branch-address",
-      });
-    }
-    if (branches === 0 && !profile.organization) {
-      missing.push({
-        id: "branch",
-        label: "Добавьте филиал в разделе «Филиалы»",
-        fieldId: "catalog-branch-address",
-      });
-    }
     const hasProducts = draft.storeCategories.length > 0;
     const hasServices = draft.specializations.length > 0;
     if (!hasProducts && !hasServices) {

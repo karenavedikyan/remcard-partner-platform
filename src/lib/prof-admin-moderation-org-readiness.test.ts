@@ -61,14 +61,15 @@ describe("validateOrgCatalogForModeration parity", () => {
     expect(errors.some((e) => e.includes("этап"))).toBe(true);
   });
 
-  it("requires at least one branch", () => {
+  it("allows an organization without branches", () => {
     const items = moderationOrgServerReadiness(
       org({
         branches: [],
         submitted: { storeCategories: ["a"], specializations: [], navigatorStageIds: ["L1-7"] },
       }),
     );
-    expect(items.some((i) => i.level === "required" && i.text.includes("филиал"))).toBe(true);
+    expect(items.some((i) => i.level === "required")).toBe(false);
+    expect(items.some((i) => i.level === "ok")).toBe(true);
   });
 
   it("allows PENDING org with only DRAFT branch (submit parity)", () => {

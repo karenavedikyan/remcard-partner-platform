@@ -298,8 +298,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
   const stepMissing = (idx: number): string | null => {
     if (idx === 0) {
       if (!organizationName.trim()) return "Публичное название организации";
-      if (needsBranchFields && branchAddress.trim().length < 3) return "Адрес первого филиала";
-      if (needsBranchFields && !catalogCity.trim() && !draft.city.trim()) return "Город";
+      if (needsBranchFields && branchAddress.trim().length >= 3 && !catalogCity.trim() && !draft.city.trim()) return "Город";
     }
     if (idx === 1) {
       if (storeCategories.length === 0 && specializations.length === 0) {
@@ -407,7 +406,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
             {!hasBranches ? (
               <div className={catalogStyles.field}>
                 <label htmlFor="oc-city">
-                  Город <span className={catalogStyles.required}>*</span>
+                  Город
                 </label>
                 <input
                   id="oc-city"
@@ -420,7 +419,7 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                   }}
                 />
                 <small className={catalogStyles.fieldHint}>
-                  Город первого филиала; адрес укажите ниже, пока филиалов ещё нет.
+                  Используется, только если добавляете первый филиал. Город партнёра меняется в основных данных.
                 </small>
               </div>
             ) : null}
@@ -441,9 +440,8 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
                 label="Адрес первого филиала"
                 value={branchAddress}
                 disabled={!publicationEditable}
-                required
                 onChange={(e) => onBranchAddressChange(e.target.value)}
-                hint="Нужен, пока нет сохранённых филиалов."
+                hint="Необязательно. Можно работать и отправить карточку на проверку без филиалов."
               />
             ) : null}
           </div>

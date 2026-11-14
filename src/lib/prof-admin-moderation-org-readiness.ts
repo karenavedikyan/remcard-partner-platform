@@ -31,7 +31,6 @@ export function validateOrgCatalogForModeration(fields: {
 }): string[] {
   const errors: string[] = [];
   if (!fields.name?.trim()) errors.push("Укажите название организации");
-  if (fields.branchCount === 0) errors.push("Добавьте хотя бы один филиал");
   errors.push(
     ...validateCatalogDirectionsForModeration({
       storeCategories: fields.storeCategories,

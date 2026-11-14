@@ -436,14 +436,14 @@ export function ProfileCatalogSection(props: ProfileCatalogSectionProps) {
           </Panel>
 
           {needsBranchFields ? (
-            <Panel title="Филиал для модерации">
+            <Panel title="Филиал (необязательно)">
               <TextField
                 id="catalog-branch-address"
                 label="Адрес первого филиала"
                 value={branchAddress}
                 onChange={(e) => onBranchAddressChange(e.target.value)}
                 disabled={!publicationEditable}
-                hint="Нужен для отправки организации в каталог."
+                hint="Можно добавить позже. Для отправки организации в каталог филиал не требуется."
               />
             </Panel>
           ) : null}

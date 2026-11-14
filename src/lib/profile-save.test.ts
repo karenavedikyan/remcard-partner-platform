@@ -41,6 +41,8 @@ describe("validateProfileDraft", () => {
       {
         displayName: "Пользователь",
         city: "Москва",
+        catalogCity: "",
+        partnerActivities: ["MASTER"],
         description: "",
         partnerType: "MASTER",
         specializations: ["stage-1"],
@@ -70,11 +72,13 @@ describe("validateProfileDraft", () => {
     assert.match(err ?? "", /имя представителя/i);
   });
 
-  it("requires branch address for store without org", () => {
+  it("allows store without org to save without a branch address", () => {
     const err = validateProfileDraft(
       {
         displayName: "Магазин",
         city: "Москва",
+        catalogCity: "",
+        partnerActivities: ["STORE"],
         description: "",
         partnerType: "STORE",
         specializations: [],
@@ -101,6 +105,6 @@ describe("validateProfileDraft", () => {
       },
       baseProfile,
     );
-    assert.match(err ?? "", /филиала/i);
+    assert.equal(err, null);
   });
 });

@@ -20,7 +20,7 @@ vi.mock("@/lib/onboarding-save", () => ({
   saveDisplayNameViaAuthMe: vi.fn().mockResolvedValue("Rep"),
 }));
 
-import { submitProfileForModerationReview, type ProfileDraft } from "./profile-save";
+import { persistProfileDraft, submitProfileForModerationReview, validateProfileDraft, type ProfileDraft } from "./profile-save";
 
 const profile: ProProfileResponse = {
   organization: {
@@ -63,6 +63,8 @@ const profile: ProProfileResponse = {
 const draft: ProfileDraft = {
   displayName: "Rep",
   city: "Москва",
+  catalogCity: "",
+  partnerActivities: ["STORE"],
   description: "",
   partnerType: "STORE",
   specializations: [],
@@ -130,6 +132,28 @@ describe("submitProfileForModerationReview", () => {
     remcardFetch.mockReset();
   });
 
+  for (const partnerType of ["STORE", "COMPANY"] as const) {
+    it(`${partnerType}: zero branches and empty address submit without branch writes`, async () => {
+      mockHappyPath();
+      const branchless = { ...profile, user: { ...profile.user, partnerType },
+        organization: { ...profile.organization!, partnerType } };
+      const branchlessDraft = { ...draft, partnerType, branchAddress: "" };
+      const result = await submitProfileForModerationReview(branchless, branchlessDraft);
+      expect(result.submitAccepted).toBe(true);
+      expect(remcardFetch.mock.calls.some(([path]) => String(path).includes("/branches"))).toBe(false);
+      expect(remcardFetch).toHaveBeenCalledWith("/api/pro/organization/submit-for-moderation",
+        expect.objectContaining({ method: "POST" }));
+    });
+
+    it(`${partnerType}: legacy save accepts no branch and never creates an empty one`, async () => {
+      mockHappyPath();
+      const branchlessDraft = { ...draft, partnerType, branchAddress: "" };
+      expect(validateProfileDraft(branchlessDraft, profile)).toBeNull();
+      await persistProfileDraft(profile, branchlessDraft);
+      expect(remcardFetch.mock.calls.some(([path]) => String(path).includes("/branches"))).toBe(false);
+    });
+  }
+
   it("returns fresh GET profile with PENDING organization after submit", async () => {
     mockHappyPath();
     const result = await submitProfileForModerationReview(profile, draft);
@@ -167,7 +191,7 @@ describe("submitProfileForModerationReview", () => {
   });
 
   it("throws when submit POST fails", async () => {
-    remcardFetch.mockImplementation(async (path: string, opts?: { method?: string }) => {
+    remcardFetch.mockImplementation(async (path: string, opts?: { method?: string; body?: Record<string, unknown> }) => {
       if (path === "/api/pro/profile" && opts?.method === "PATCH" && !opts.body?.action) {
         return { user: profile.user };
       }
