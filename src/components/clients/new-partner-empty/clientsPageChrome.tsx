@@ -6,7 +6,9 @@ import {
   useContext,
   useMemo,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 
@@ -21,8 +23,8 @@ export type ClientsDirectionProbeState =
 type ChromeCtx = {
   incoming: ClientsDirectionProbeState;
   atPartners: ClientsDirectionProbeState;
-  setIncoming: (state: ClientsDirectionProbeState) => void;
-  setAtPartners: (state: ClientsDirectionProbeState) => void;
+  setIncoming: Dispatch<SetStateAction<ClientsDirectionProbeState>>;
+  setAtPartners: Dispatch<SetStateAction<ClientsDirectionProbeState>>;
   hideTopChrome: boolean;
   hideDirectionTabs: boolean;
 };
@@ -87,14 +89,22 @@ export function useClientsPageChrome(): ChromeCtx | null {
   return useContext(ClientsPageChromeContext);
 }
 
-export function useReportClientsDirectionProbe(direction: "incoming" | "at-partners") {
+/** Stable React state setter — safe in effect dependency arrays. */
+export function useClientsDirectionProbeSetter(
+  direction: "incoming" | "at-partners",
+): Dispatch<SetStateAction<ClientsDirectionProbeState>> | undefined {
   const chrome = useClientsPageChrome();
+  return direction === "incoming" ? chrome?.setIncoming : chrome?.setAtPartners;
+}
+
+export function useReportClientsDirectionProbe(direction: "incoming" | "at-partners") {
+  const setIncoming = useClientsPageChrome()?.setIncoming;
+  const setAtPartners = useClientsPageChrome()?.setAtPartners;
   return useCallback(
     (state: ClientsDirectionProbeState) => {
-      if (!chrome) return;
-      if (direction === "incoming") chrome.setIncoming(state);
-      else chrome.setAtPartners(state);
+      if (direction === "incoming") setIncoming?.(state);
+      else setAtPartners?.(state);
     },
-    [chrome, direction],
+    [direction, setAtPartners, setIncoming],
   );
 }

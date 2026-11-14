@@ -15,6 +15,7 @@ import {
   postReceivingAppealsBatch,
   receivingAppealsMutationsAllowed,
   receivingListHasMore,
+  receivingStageDisplayLabel,
   type ReceivingListFilters,
   type ReceivingPartnerSettings,
   type ReceivingAppealsListResponse,
@@ -46,7 +47,11 @@ import {
 } from "./receiving-bulk-handoff";
 import styles from "./receiving.module.css";
 import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
-import { isReceivingDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import {
+  isReceivingDirectionIntroCandidate,
+  isReceivingDirectionIntroEligible,
+  type ReceivingAllBucketsProof,
+} from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
 import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
 import {
   useOwnerClientsBusinessPartnerType,
@@ -71,7 +76,7 @@ export function ReceivingAppealsWorkspace({
 }: Props = {}) {
   const accessMode = useOwnerClientsMode() ?? "specialist";
   const businessPartnerType = useOwnerClientsBusinessPartnerType();
-  const reportDirectionProbe = useReportClientsDirectionProbe("incoming");
+  const reportIncomingProbe = useReportClientsDirectionProbe("incoming");
   const [phase, setPhase] = useState<LoadPhase>(previewData ? "ready" : "loading");
   const [blocked, setBlocked] = useState<ReceivingAppealsLoadResult | null>(null);
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
@@ -93,6 +98,9 @@ export function ReceivingAppealsWorkspace({
     ids: string[];
   } | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bucketsProof, setBucketsProof] = useState<ReceivingAllBucketsProof>(
+    previewData && previewData.appeals.length === 0 ? "all_empty" : "unknown",
+  );
 
   const proxyReady = isReceivingAppealsProxyReady();
   const batchProxyReady = isReceivingBatchProxyReady();
@@ -147,17 +155,91 @@ export function ReceivingAppealsWorkspace({
   }, [initialAppealId]);
 
   useEffect(() => {
+    if (!serverBacked || !data || phase !== "ready") {
+      if (!serverBacked && data && data.appeals.length === 0) {
+        setBucketsProof("all_empty");
+      } else if (data && data.appeals.length > 0) {
+        setBucketsProof("has_elsewhere");
+      }
+      return;
+    }
+
+    const candidate = isReceivingDirectionIntroCandidate({
+      phase,
+      listView: view,
+      filters: listFilters,
+      appealsLength: data.appeals.length,
+      serverBacked,
+      listHasMore: receivingListHasMore(data),
+    });
+
+    if (!candidate) {
+      setBucketsProof(data.appeals.length > 0 ? "has_elsewhere" : "unknown");
+      return;
+    }
+
+    let cancelled = false;
+    setBucketsProof("checking");
+    const probeFilters = {
+      q: "",
+      status: "Все статусы" as const,
+      source: "all" as const,
+    };
+    const settings = data.settings;
+
+    void (async () => {
+      const archive = await fetchReceivingAppealsWorkspace(
+        { ...probeFilters, bucket: "archive" },
+        null,
+        settings,
+      );
+      if (cancelled) return;
+      if (!archive.ok) {
+        setBucketsProof("unknown");
+        return;
+      }
+      if (archive.data.appeals.length > 0 || receivingListHasMore(archive.data)) {
+        setBucketsProof("has_elsewhere");
+        return;
+      }
+      const trash = await fetchReceivingAppealsWorkspace(
+        { ...probeFilters, bucket: "trash" },
+        null,
+        settings,
+      );
+      if (cancelled) return;
+      if (!trash.ok) {
+        setBucketsProof("unknown");
+        return;
+      }
+      if (trash.data.appeals.length > 0 || receivingListHasMore(trash.data)) {
+        setBucketsProof("has_elsewhere");
+        return;
+      }
+      setBucketsProof("all_empty");
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, listFilters, phase, serverBacked, view]);
+
+  useEffect(() => {
     if (!directionProbe) return;
     if (phase === "loading") {
-      reportDirectionProbe("loading");
+      reportIncomingProbe("loading");
       return;
     }
     if (phase === "blocked") {
-      reportDirectionProbe("blocked");
+      reportIncomingProbe("blocked");
       return;
     }
     if (phase === "error" || !data) {
-      reportDirectionProbe("error");
+      reportIncomingProbe("error");
+      return;
+    }
+    if (view !== "list") {
+      reportIncomingProbe("not_empty");
       return;
     }
     if (
@@ -168,18 +250,24 @@ export function ReceivingAppealsWorkspace({
         appealsLength: data.appeals.length,
         serverBacked,
         listHasMore: receivingListHasMore(data),
+        bucketsProof,
       })
     ) {
-      reportDirectionProbe("proven_empty");
-    } else {
-      reportDirectionProbe("not_empty");
+      reportIncomingProbe("proven_empty");
+      return;
     }
+    if (bucketsProof === "checking" || bucketsProof === "unknown") {
+      reportIncomingProbe("loading");
+      return;
+    }
+    reportIncomingProbe("not_empty");
   }, [
+    bucketsProof,
     data,
     directionProbe,
     listFilters,
     phase,
-    reportDirectionProbe,
+    reportIncomingProbe,
     serverBacked,
     view,
   ]);
@@ -501,6 +589,7 @@ export function ReceivingAppealsWorkspace({
     appealsLength: data.appeals.length,
     serverBacked,
     listHasMore: receivingListHasMore(data),
+    bucketsProof,
   });
 
   if (showDirectionIntro) {
@@ -554,6 +643,7 @@ export function ReceivingAppealsWorkspace({
       ) : null}
       <ReceivingAppealsList
         data={data}
+        stageLabelById={(row) => receivingStageDisplayLabel(row.stageId, data.settings)}
         filters={listFilters}
         onFiltersChange={onListFiltersChange}
         serverBackedFilters={serverBacked}

@@ -12,10 +12,16 @@ describe("receiving direction intro eligibility", () => {
     appealsLength: 0,
     serverBacked: true,
     listHasMore: false,
+    bucketsProof: "all_empty" as const,
   };
 
   it("allows only genuine active empty list", () => {
     expect(isReceivingDirectionIntroEligible(base)).toBe(true);
+  });
+
+  it("rejects when archive/trash proof is not complete", () => {
+    expect(isReceivingDirectionIntroEligible({ ...base, bucketsProof: "checking" })).toBe(false);
+    expect(isReceivingDirectionIntroEligible({ ...base, bucketsProof: "has_elsewhere" })).toBe(false);
   });
 
   it("rejects loading, filters, archive, and sub-views", () => {

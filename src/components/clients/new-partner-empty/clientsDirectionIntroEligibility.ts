@@ -3,7 +3,30 @@ import type { ReceivingListFilters } from "@/lib/clients-parity/receiving-appeal
 import type { ObserverFilterState } from "@/lib/clients-parity/filter-observer";
 import type { ObserverDataContractState } from "@/components/clients/observer/ObserverPartnersListView";
 
+export type ReceivingAllBucketsProof = "unknown" | "checking" | "all_empty" | "has_elsewhere";
+
 export function isReceivingDirectionIntroEligible(input: {
+  phase: "loading" | "blocked" | "ready" | "error";
+  listView: "list" | "manual" | "settings" | "scan" | "detail";
+  filters: ReceivingListFilters;
+  appealsLength: number;
+  serverBacked: boolean;
+  listHasMore: boolean;
+  bucketsProof: ReceivingAllBucketsProof;
+}): boolean {
+  if (input.phase !== "ready") return false;
+  if (input.listView !== "list") return false;
+  if (input.appealsLength !== 0) return false;
+  if (input.filters.bucket !== "active") return false;
+  if (input.filters.q.trim()) return false;
+  if (input.filters.status !== "Все статусы") return false;
+  if (input.filters.source !== "all") return false;
+  if (input.serverBacked && input.listHasMore) return false;
+  if (input.bucketsProof !== "all_empty") return false;
+  return true;
+}
+
+export function isReceivingDirectionIntroCandidate(input: {
   phase: "loading" | "blocked" | "ready" | "error";
   listView: "list" | "manual" | "settings" | "scan" | "detail";
   filters: ReceivingListFilters;

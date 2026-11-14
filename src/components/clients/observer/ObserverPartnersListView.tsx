@@ -1,13 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
-import { isObserverDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
-import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
-import {
-  useOwnerClientsBusinessPartnerType,
-  useOwnerClientsMode,
-} from "@/components/clients/OwnerClientsModeContext";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { filterObserverAppeals } from "@/lib/clients-parity/filter-observer";
 import { groupAppealsByPartner } from "@/lib/clients-parity/observer-stats";
 import type { ObserverFilterState } from "@/lib/clients-parity/filter-observer";
@@ -17,16 +10,34 @@ import type {
   ObserverPersonalMeta,
   ObserverReferredAppeal,
 } from "@/lib/clients-parity/types";
-import { ObserverClientDetailView } from "./ObserverClientDetailView";
+import { ObserverClientDetailHost } from "./ObserverClientDetailHost";
+import {
+  observerClientBackFrom,
+  type ObserverClientBackFrom,
+} from "./observer-client-back";
+
+export { observerClientBackFrom, type ObserverClientBackFrom };
 import { ObserverContractBlocked } from "./ObserverContractBlocked";
 import { ObserverFilterChips } from "./ObserverFilterChips";
 import { ObserverPartnerCard } from "./ObserverPartnerCard";
+import { ObserverPartnerDetailMissing } from "./ObserverPartnerDetailMissing";
 import { ObserverPartnerDetailView } from "./ObserverPartnerDetailView";
 import { ObserverPersonalClientRow } from "./ObserverPersonalClientRow";
 import { ObserverPersonalConfirmPanel } from "./ObserverPersonalConfirmPanel";
-import { ObserverPersonalEditPanel } from "./ObserverPersonalEditPanel";
+import {
+  ObserverPersonalEditPanel,
+  type ObserverPersonalPersistenceStatus,
+  type PersonalEditDraft,
+} from "./ObserverPersonalEditPanel";
 import { ObserverPersonalTools } from "./ObserverPersonalTools";
 import styles from "./observer.module.css";
+import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import { isObserverDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsMode,
+} from "@/components/clients/OwnerClientsModeContext";
 
 export type ObserverDataContractState =
   | { status: "blocked"; blockerId: string; message: string; missingRoutes: string[] }
@@ -42,15 +53,37 @@ type Panel =
   | { kind: "confirm"; action: "archived" | "trash" | "restore"; ids: string[] }
   | null;
 
+import { buildObserverEditTargetKey, buildObserverConfirmTargetKey } from "./observer-personal-edit-target";
+
+export type ObserverPersonalPersistResult =
+  | { ok: true; meta: Record<string, ObserverPersonalMeta>; failedIds?: string[]; refreshRequired?: boolean }
+  | { ok: false; message: string; failedIds?: string[]; refreshRequired?: boolean };
+
+export type ObserverPersonalPersistenceCallbacks = {
+  onSavePersonal?: (args: {
+    mode: "single" | "bulk";
+    ids: string[];
+    draft: PersonalEditDraft;
+  }) => Promise<ObserverPersonalPersistResult>;
+  onBucketAction?: (args: {
+    action: "archived" | "trash" | "restore";
+    ids: string[];
+  }) => Promise<ObserverPersonalPersistResult>;
+};
+
 type Props = {
   showHeading?: boolean;
   appeals: ObserverReferredAppeal[];
   partners: ObserverPartnerMeta[];
   dataContract: ObserverDataContractState;
   initialLayout?: "partners" | "list";
-  /** Read-only display seed (tests); never mutated on save. */
+  /** Synthetic QA only — seed sub-view without mutating production routes. */
+  initialNav?: Nav;
+  /** Overlay from GET / parent merge after persist. */
   displayPersonalMeta?: Record<string, ObserverPersonalMeta>;
-  loadState?: "loading" | "blocked" | "ready";
+  personalPersistence?: ObserverPersonalPersistenceCallbacks;
+  onPersonalMetaUpdated?: (meta: Record<string, ObserverPersonalMeta>) => void;
+  onPersonalRefreshRequested?: () => Promise<void>;
   directionProbe?: "at-partners";
 };
 
@@ -80,13 +113,16 @@ export function ObserverPartnersListView({
   partners,
   dataContract,
   initialLayout = "partners",
+  initialNav,
   displayPersonalMeta = {},
-  loadState = "ready",
+  personalPersistence,
+  onPersonalMetaUpdated,
+  onPersonalRefreshRequested,
   directionProbe,
 }: Props) {
   const accessMode = useOwnerClientsMode() ?? "agent";
   const businessPartnerType = useOwnerClientsBusinessPartnerType();
-  const reportDirectionProbe = useReportClientsDirectionProbe("at-partners");
+  const reportAtPartnersProbe = useReportClientsDirectionProbe("at-partners");
   const [filters, setFilters] = useState<ObserverFilterState>({
     q: "",
     period: "all",
@@ -95,9 +131,19 @@ export function ObserverPartnersListView({
   const [layout, setLayout] = useState<"partners" | "list">(initialLayout);
   const [openPartners, setOpenPartners] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [nav, setNav] = useState<Nav>({ view: "partners" });
+  const [nav, setNav] = useState<Nav>(initialNav ?? { view: "partners" });
   const [panel, setPanel] = useState<Panel>(null);
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
+  const [persisting, setPersisting] = useState(false);
+  const [submittedDraft, setSubmittedDraft] = useState<PersonalEditDraft | null>(null);
+  const mountedRef = useRef(true);
+  const mutationInFlight = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+  /** P5 draft binding: bump on cancel/reopen only — not on pending/error cycles. */
+  const [editDraftSeed, setEditDraftSeed] = useState(0);
 
   const personalMeta = displayPersonalMeta;
   const partnersById = useMemo(() => partnersMap(partners), [partners]);
@@ -120,13 +166,101 @@ export function ObserverPartnersListView({
     visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
   const someVisibleSelected = visibleIds.some((id) => selected.has(id));
 
-  const notifyPersistenceBlock = useCallback((action: string) => {
+  const showPersistenceBlock = useCallback((action: string) => {
     setPersistenceNotice(
       `BLOCKED_PERSISTENCE: «${action}» не выполняется без API personal-meta. Данные партнёра не изменены.`,
     );
-    setPanel(null);
-    setSelected(new Set());
   }, []);
+
+  const finishPersist = useCallback(
+    async (res: ObserverPersonalPersistResult, ids: string[]) => {
+      if (!mountedRef.current) return;
+      if (res.ok) {
+        onPersonalMetaUpdated?.(res.meta);
+        const failed = new Set(res.failedIds ?? []);
+        setSelected((previous) => {
+          const next = new Set(previous);
+          for (const id of ids) {
+            if (failed.has(id)) next.add(id);
+            else next.delete(id);
+          }
+          return next;
+        });
+        if (failed.size) {
+          setPersistenceNotice(
+            `Обновлено: ${ids.length - failed.size}, пропущено: ${failed.size}.`,
+          );
+          setPanel((current) => current ? {
+            ...current, ids: ids.filter((id) => failed.has(id)),
+          } : null);
+        } else {
+          setPersistenceNotice(null);
+          setPanel(null);
+          setSubmittedDraft(null);
+        }
+      } else {
+        const failed = new Set(res.failedIds ?? ids);
+        setSelected((previous) => new Set([...previous, ...ids.filter((id) => failed.has(id))]));
+        setPersistenceNotice(res.message);
+      }
+      if (res.refreshRequired) await onPersonalRefreshRequested?.();
+    },
+    [onPersonalMetaUpdated, onPersonalRefreshRequested],
+  );
+
+  const handleConfirmBucket = useCallback(async () => {
+    if (!panel || panel.kind !== "confirm" || mutationInFlight.current) return;
+    const { action, ids } = panel;
+    if (!ids.length) {
+      setPanel(null);
+      return;
+    }
+    if (!personalPersistence?.onBucketAction) {
+      showPersistenceBlock(action);
+      return;
+    }
+    setPersistenceNotice(null);
+    mutationInFlight.current = true;
+    setPersisting(true);
+    try {
+      const res = await personalPersistence.onBucketAction({ action, ids });
+      await finishPersist(res, ids);
+    } catch {
+      if (mountedRef.current) setPersistenceNotice("Не удалось выполнить действие. Можно повторить.");
+    } finally {
+      mutationInFlight.current = false;
+      if (mountedRef.current) setPersisting(false);
+    }
+  }, [finishPersist, showPersistenceBlock, panel, personalPersistence, persisting]);
+
+  const handleAttemptSave = useCallback(
+    async (draft: PersonalEditDraft) => {
+      if (!panel || panel.kind !== "edit" || mutationInFlight.current) return;
+      const { mode, ids } = panel;
+      if (!ids.length) {
+        setPanel(null);
+        return;
+      }
+      if (!personalPersistence?.onSavePersonal) {
+        showPersistenceBlock("Сохранить личные поля");
+        return;
+      }
+      setPersistenceNotice(null);
+      setSubmittedDraft(draft);
+      mutationInFlight.current = true;
+      setPersisting(true);
+      try {
+        const res = await personalPersistence.onSavePersonal({ mode, ids, draft });
+        await finishPersist(res, ids);
+      } catch {
+        if (mountedRef.current) setPersistenceNotice("Не удалось сохранить. Черновик сохранён в форме.");
+      } finally {
+        mutationInFlight.current = false;
+        if (mountedRef.current) setPersisting(false);
+      }
+    },
+    [finishPersist, showPersistenceBlock, panel, personalPersistence, persisting],
+  );
 
   const onPartnerToggle = useCallback((partnerId: string, open: boolean) => {
     setOpenPartners((prev) => ({ ...prev, [partnerId]: open }));
@@ -198,11 +332,40 @@ export function ObserverPartnersListView({
     }
     setNav({ view: "partners" });
   };
+  const openPersonalPanel = (next: Panel) => {
+    if (mutationInFlight.current) return;
+    setSubmittedDraft(null);
+    setPersistenceNotice(null);
+    setPanel(next);
+  };
+
+  const editInitial = submittedDraft ?? (
+    panel?.kind === "edit" && panel.mode === "single" && panel.ids[0]
+      ? {
+          alias: personalMeta[panel.ids[0]]?.alias ?? "",
+          tag: personalMeta[panel.ids[0]]?.tag ?? "",
+          note: personalMeta[panel.ids[0]]?.note ?? "",
+        }
+      : undefined);
+
+  const editPersistenceStatus = useMemo((): ObserverPersonalPersistenceStatus => {
+    if (persisting && panel?.kind === "edit") return "pending";
+    if (!personalPersistence?.onSavePersonal) return "blocked";
+    if (panel?.kind === "edit" && persistenceNotice) return "error";
+    return "ready";
+  }, [panel, persisting, persistenceNotice, personalPersistence]);
+
+  const confirmPersistenceStatus = useMemo((): ObserverPersonalPersistenceStatus => {
+    if (persisting && panel?.kind === "confirm") return "pending";
+    if (!personalPersistence?.onBucketAction) return "blocked";
+    if (panel?.kind === "confirm" && persistenceNotice) return "error";
+    return "ready";
+  }, [panel, persisting, persistenceNotice, personalPersistence]);
 
   const showDirectionIntro =
     nav.view === "partners" &&
     isObserverDirectionIntroEligible({
-      loadState,
+      loadState: "ready",
       dataContract,
       appealsLength: appeals.length,
       filters,
@@ -210,31 +373,20 @@ export function ObserverPartnersListView({
 
   useEffect(() => {
     if (!directionProbe) return;
-    if (loadState === "loading") {
-      reportDirectionProbe("loading");
-      return;
-    }
-    if (loadState === "blocked" || dataContract.status === "blocked") {
-      reportDirectionProbe("blocked");
+    if (dataContract.status === "blocked") {
+      reportAtPartnersProbe("blocked");
       return;
     }
     if (nav.view !== "partners") {
-      reportDirectionProbe("not_empty");
+      reportAtPartnersProbe("not_empty");
       return;
     }
     if (showDirectionIntro) {
-      reportDirectionProbe("proven_empty");
+      reportAtPartnersProbe("proven_empty");
     } else {
-      reportDirectionProbe("not_empty");
+      reportAtPartnersProbe("not_empty");
     }
-  }, [
-    dataContract.status,
-    directionProbe,
-    loadState,
-    nav.view,
-    reportDirectionProbe,
-    showDirectionIntro,
-  ]);
+  }, [dataContract, directionProbe, nav.view, reportAtPartnersProbe, showDirectionIntro]);
 
   if (showDirectionIntro) {
     return (
@@ -249,48 +401,60 @@ export function ObserverPartnersListView({
 
   if (nav.view === "partner") {
     const partner = partnersById.get(nav.partnerId);
-  if (partner) {
-      const list = appeals.filter(
-        (a) =>
-          a.receivingPartnerId === nav.partnerId &&
-          filterObserverAppeals(filters, [a], partnersById, personalMeta).length > 0,
-      );
+    if (!partner) {
       return (
-        <ObserverPartnerDetailView
-          partner={partner}
-          appeals={list}
-          selectedIds={selected}
+        <ObserverPartnerDetailMissing
+          partnerId={nav.partnerId}
           onBack={() => setNav({ view: "partners" })}
-          onClientOpen={(id) => openClientPage(id, nav.partnerId)}
-          onClientSelect={toggleSelected}
         />
       );
     }
+    const list = appeals.filter(
+      (a) =>
+        a.receivingPartnerId === nav.partnerId &&
+        filterObserverAppeals(filters, [a], partnersById, personalMeta).length > 0,
+    );
+    return (
+      <ObserverPartnerDetailView
+        partner={partner}
+        appeals={list}
+        selectedIds={selected}
+        onBack={() => setNav({ view: "partners" })}
+        onClientOpen={(id) => openClientPage(id, nav.partnerId)}
+        onClientSelect={toggleSelected}
+      />
+    );
   }
 
   if (nav.view === "client") {
+    const clientBackFrom = observerClientBackFrom({ partnerId: nav.partnerId }, layout);
     const appeal = appeals.find((a) => a.id === nav.clientId);
-    if (appeal) {
-      return (
-        <ObserverClientDetailView
-          appeal={appeal}
-          partner={partnersById.get(appeal.receivingPartnerId)}
-          onBack={backFromSubView}
-        />
-      );
-    }
+    return (
+      <ObserverClientDetailHost
+        clientId={nav.clientId}
+        listAppeal={appeal}
+        listPartner={appeal ? partnersById.get(appeal.receivingPartnerId) : undefined}
+        backFrom={clientBackFrom}
+        onBack={backFromSubView}
+      />
+    );
   }
 
-  const showFilterEmpty = filtered.length === 0 && appeals.length > 0;
+  const bucketEmpty =
+    appeals.length > 0 &&
+    !appeals.some((a) => (personalMeta[a.id]?.bucket ?? "active") === filters.bucket);
+  const showBucketEmpty =
+    dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && bucketEmpty;
+  const showFilterEmpty =
+    dataContract.status === "ready" && filtered.length === 0 && appeals.length > 0 && !bucketEmpty;
+  const bucketEmptyHeading =
+    filters.bucket === "archived"
+      ? "В архиве пока нет записей"
+      : filters.bucket === "trash"
+        ? "Корзина пуста"
+        : "В активном списке нет записей";
 
-  const editInitial =
-    panel?.kind === "edit" && panel.mode === "single" && panel.ids[0]
-      ? {
-          alias: personalMeta[panel.ids[0]]?.alias ?? "",
-          tag: personalMeta[panel.ids[0]]?.tag ?? "",
-          note: personalMeta[panel.ids[0]]?.note ?? "",
-        }
-      : undefined;
+  const listReady = dataContract.status === "ready";
 
   return (
     <div className={styles.section} data-testid="ca-observer-partners-list">
@@ -313,6 +477,8 @@ export function ObserverPartnersListView({
         />
       ) : null}
 
+      {listReady ? (
+        <>
       <div className={styles.filters} aria-label="Фильтры направлений">
         <label className={styles.searchField}>
           Поиск партнёра или клиента
@@ -339,7 +505,6 @@ export function ObserverPartnersListView({
             <option value="all">Всё время</option>
             <option value="30">30 дней</option>
             <option value="90">90 дней</option>
-            <option value="365">Год</option>
           </select>
         </label>
       </div>
@@ -370,34 +535,54 @@ export function ObserverPartnersListView({
         onEditSelected={() => {
           const ids = selectedInView;
           if (!ids.length) return;
-          setPanel({ kind: "edit", mode: ids.length === 1 ? "single" : "bulk", ids });
+          openPersonalPanel({ kind: "edit", mode: ids.length === 1 ? "single" : "bulk", ids });
         }}
         onRequestArchive={() =>
-          setPanel({ kind: "confirm", action: "archived", ids: selectedInView })
+          openPersonalPanel({ kind: "confirm", action: "archived", ids: selectedInView })
         }
-        onRequestTrash={() => setPanel({ kind: "confirm", action: "trash", ids: selectedInView })}
+        onRequestTrash={() => openPersonalPanel({ kind: "confirm", action: "trash", ids: selectedInView })}
         onRequestRestore={() =>
-          setPanel({ kind: "confirm", action: "restore", ids: selectedInView })
+          openPersonalPanel({ kind: "confirm", action: "restore", ids: selectedInView })
         }
         persistenceNotice={persistenceNotice}
       />
 
       {panel?.kind === "edit" ? (
         <ObserverPersonalEditPanel
+          key={buildObserverEditTargetKey(panel.mode, panel.ids)}
+          editTargetKey={buildObserverEditTargetKey(panel.mode, panel.ids)}
           mode={panel.mode}
           count={panel.ids.length}
           initial={editInitial}
-          onCancel={() => setPanel(null)}
-          onAttemptSave={() => notifyPersistenceBlock("Сохранить личные поля")}
+          draftSeed={editDraftSeed}
+          persistenceStatus={editPersistenceStatus}
+          saveError={editPersistenceStatus === "error" ? persistenceNotice : null}
+          onCancel={() => {
+            if (mutationInFlight.current) return;
+            openPersonalPanel(null);
+            setEditDraftSeed((n) => n + 1);
+          }}
+          onAttemptSave={() => showPersistenceBlock("Сохранить личные поля")}
+          onSave={(draft) => {
+            void handleAttemptSave(draft);
+          }}
         />
       ) : null}
 
       {panel?.kind === "confirm" ? (
         <ObserverPersonalConfirmPanel
+          key={buildObserverConfirmTargetKey(panel.action, panel.ids)}
+          confirmTargetKey={buildObserverConfirmTargetKey(panel.action, panel.ids)}
           kind={panel.action}
           count={panel.ids.length}
-          onCancel={() => setPanel(null)}
-          onConfirm={() => notifyPersistenceBlock(panel.action)}
+          persistenceStatus={confirmPersistenceStatus}
+          partialError={confirmPersistenceStatus === "error" ? persistenceNotice : null}
+          onCancel={() => {
+            openPersonalPanel(null);
+          }}
+          onConfirm={() => {
+            void handleConfirmBucket();
+          }}
         />
       ) : null}
 
@@ -416,6 +601,13 @@ export function ObserverPartnersListView({
         </section>
       ) : null}
 
+      {showBucketEmpty ? (
+        <section className={styles.empty} data-testid="ca-observer-empty">
+          <h2>{bucketEmptyHeading}</h2>
+          <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
+        </section>
+      ) : null}
+
       {filtered.length > 0 && layout === "list" ? (
         <div className={styles.personalRowsFlat}>
           {filtered.map((a) => (
@@ -426,7 +618,7 @@ export function ObserverPartnersListView({
               selected={selected.has(a.id)}
               onSelect={(c) => toggleSelected(a.id, c)}
               showEdit={filters.bucket !== "trash"}
-              onEdit={() => setPanel({ kind: "edit", mode: "single", ids: [a.id] })}
+              onEdit={() => openPersonalPanel({ kind: "edit", mode: "single", ids: [a.id] })}
               onOpen={() => openClientPage(a.id)}
             />
           ))}
@@ -439,8 +631,10 @@ export function ObserverPartnersListView({
             const partner = partnersById.get(partnerId) ?? {
               id: partnerId,
               name: "Партнёр",
-              city: "",
-              category: "",
+              city: null,
+              category: null,
+              receivingOrganizationId: null,
+              receivingBranchId: null,
             };
             const { selected: pSel, partial } = partnerSelectionState(partnerId);
             const expanded = openPartners[partnerId] ?? Boolean(filters.q.trim());
@@ -458,13 +652,15 @@ export function ObserverPartnersListView({
                 onClientSelect={toggleSelected}
                 personalMeta={personalMeta}
                 bucket={filters.bucket}
-                onEditClient={(id) => setPanel({ kind: "edit", mode: "single", ids: [id] })}
+                onEditClient={(id) => openPersonalPanel({ kind: "edit", mode: "single", ids: [id] })}
                 onPartnerOpen={() => openPartnerPage(partnerId)}
                 onClientOpen={(id) => openClientPage(id, partnerId)}
               />
             );
           })}
         </div>
+      ) : null}
+        </>
       ) : null}
     </div>
   );
