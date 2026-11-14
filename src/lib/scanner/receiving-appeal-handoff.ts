@@ -245,3 +245,71 @@ export async function loadReceivingAppealScannerContext(
     orderAlreadyLinked: Boolean(purchaseOrderId),
   };
 }
+
+const SCANNER_ORDINARY_BINDING_STORAGE_KEY = "remcard.scannerOrdinaryAppealBindings.v1";
+
+export type ScannerOrdinaryAppealBindingV1 = {
+  v: 1;
+  userId: string;
+  idempotencyKey: string;
+  appealId: string;
+  certCode: string;
+  branchId: string;
+};
+
+type ScannerBindingStore = Record<string, ScannerOrdinaryAppealBindingV1>;
+
+function bindingStoreKey(
+  userId: string,
+  idempotencyKey: string,
+  certCode: string,
+  branchId: string,
+): string {
+  return `${userId}\u0000${idempotencyKey}\u0000${certCode}\u0000${branchId}`;
+}
+
+function readBindingStore(): ScannerBindingStore {
+  if (typeof sessionStorage === "undefined") return {};
+  try {
+    const raw = sessionStorage.getItem(SCANNER_ORDINARY_BINDING_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as ScannerBindingStore;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBindingStore(store: ScannerBindingStore): void {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.setItem(SCANNER_ORDINARY_BINDING_STORAGE_KEY, JSON.stringify(store));
+}
+
+export function saveScannerOrdinaryAppealBinding(binding: ScannerOrdinaryAppealBindingV1): void {
+  const store = readBindingStore();
+  store[bindingStoreKey(binding.userId, binding.idempotencyKey, binding.certCode, binding.branchId)] =
+    binding;
+  writeBindingStore(store);
+}
+
+export function loadScannerOrdinaryAppealBinding(
+  userId: string,
+  idempotencyKey: string,
+  certCode: string,
+  branchId: string,
+): ScannerOrdinaryAppealBindingV1 | null {
+  const store = readBindingStore();
+  const hit = store[bindingStoreKey(userId, idempotencyKey, certCode, branchId)];
+  return hit?.v === 1 ? hit : null;
+}
+
+export function clearScannerOrdinaryAppealBinding(
+  userId: string,
+  idempotencyKey: string,
+  certCode: string,
+  branchId: string,
+): void {
+  const store = readBindingStore();
+  delete store[bindingStoreKey(userId, idempotencyKey, certCode, branchId)];
+  writeBindingStore(store);
+}

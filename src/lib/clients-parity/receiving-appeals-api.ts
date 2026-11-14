@@ -616,12 +616,22 @@ export type K1ClientAppealsListWire = {
 };
 
 const RECEIVING_SYSTEM_STAGE_LABELS: Record<string, string> = {
-  [RECEIVING_SYSTEM_STAGE.NEW]: "Новый",
+  [RECEIVING_SYSTEM_STAGE.NEW]: "Новое обращение",
   [RECEIVING_SYSTEM_STAGE.PAID]: "Оплачено",
   [RECEIVING_SYSTEM_STAGE.SHIPPED]: "Отгружено",
   [RECEIVING_SYSTEM_STAGE.RETURN]: "Возврат",
   [RECEIVING_SYSTEM_STAGE.REFUSED]: "Отказ",
 };
+
+/** Frozen prototype systemLabel/getStageLabel, including archived custom stages. */
+export function receivingStageDisplayLabel(
+  stageId: string,
+  settings?: ReceivingPartnerSettings | null,
+): string {
+  return RECEIVING_SYSTEM_STAGE_LABELS[stageId] ??
+    [...(settings?.workingStages ?? []), ...(settings?.archivedStages ?? [])]
+      .find((stage) => stage.id === stageId)?.label ?? stageId;
+}
 
 /** Map UI status filter label → `stageKey` for K1 list query (never send label). */
 export function receivingStageKeyForStatusFilter(
@@ -859,31 +869,92 @@ export function isReceivingCertificateEntryProxyReady(): boolean {
   return isAllowedProxyRoute("POST", RECEIVING_CERT_ENTRY_PATH);
 }
 
-/** Scanner capture — branch query + K1 `authorizeStoreScan` (no Clients list readOnly preflight). */
+/** Scanner POST capture — same `branchId` query as store preview (K1 `authorizeStoreScan`). */
 export type ReceivingCertificateEntryCapture = {
   branchId?: string | null;
-  scannerAuthorizeStoreScan?: boolean;
 };
+
+export const RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE =
+  "Создание обращения в CRM недоступно при текущих правах. Покупку через сканер можно оформить, но новое обращение по сертификату здесь не создаётся — откройте раздел «Клиенты» или обратитесь к администратору.";
+
+export type ReceivingScannerCertificateEntryGate =
+  | {
+      ok: true;
+      gate: Pick<ReceivingAppealsListResponse, "readOnly" | "access"> | ReceivingPrincipalAccess;
+    }
+  | {
+      ok: false;
+      code: "READ_ONLY" | "BLOCKED_CONTRACT" | "ERROR";
+      message: string;
+      retryable: boolean;
+    };
+
+function receivingListEnvelopeReadOnly(data: Pick<ReceivingAppealsListResponse, "readOnly" | "access">): boolean {
+  if (data.readOnly === true) return true;
+  if (data.access) {
+    return !normalizeReceivingAccess(data.access).mutationsAllowed;
+  }
+  return data.readOnly === true;
+}
+
+/** Read-only GET list envelope — authoritative CRM write scope for certificate-entry. */
+export async function resolveReceivingScannerCertificateEntryGate(
+  capture?: ReceivingCertificateEntryCapture,
+): Promise<ReceivingScannerCertificateEntryGate> {
+  if (!isReceivingAppealsProxyReady()) {
+    return {
+      ok: false,
+      code: "BLOCKED_CONTRACT",
+      message: RECEIVING_API_CONTRACT_NOTE,
+      retryable: false,
+    };
+  }
+  const branchId = capture?.branchId?.trim() || undefined;
+  const listPath = branchId
+    ? `/api/pro/client-appeals?${new URLSearchParams({ branchId }).toString()}`
+    : "/api/pro/client-appeals";
+  try {
+    const listWire = await remcardFetch<K1ClientAppealsListWire>(listPath);
+    const data = coerceK1ClientAppealsListPayload(listWire);
+    if (receivingListEnvelopeReadOnly(data)) {
+      return {
+        ok: false,
+        code: "READ_ONLY",
+        message: RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE,
+        retryable: false,
+      };
+    }
+    return { ok: true, gate: { readOnly: data.readOnly, access: data.access } };
+  } catch (caught) {
+    return {
+      ok: false,
+      code: "ERROR",
+      message:
+        caught instanceof RemcardApiError
+          ? caught.message
+          : "Не удалось проверить права CRM. Повторите позже.",
+      retryable: true,
+    };
+  }
+}
 
 export async function submitReceivingCertificateEntry(
   body: ReceivingCertificateEntryBody,
   gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
   capture?: ReceivingCertificateEntryCapture,
 ): Promise<ReceivingCertificateEntryResult> {
-  if (!capture?.scannerAuthorizeStoreScan) {
-    const readOnly =
-      gate && "readOnly" in gate
-        ? gate.readOnly === true
-        : gate
-          ? !normalizeReceivingAccess(gate).mutationsAllowed
-          : true;
-    if (readOnly) {
-      return {
-        ok: false,
-        code: "FORBIDDEN",
-        message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
-      };
-    }
+  const readOnly =
+    gate && "readOnly" in gate
+      ? gate.readOnly === true
+      : gate
+        ? !normalizeReceivingAccess(gate).mutationsAllowed
+        : true;
+  if (readOnly) {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+    };
   }
   if (!isReceivingCertificateEntryProxyReady()) {
     return {

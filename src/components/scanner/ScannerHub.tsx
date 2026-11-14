@@ -465,6 +465,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     setStoredAttempt(null);
     setPurchaseReviewOpen(false);
     submitInFlightRef.current = false;
+    receivingRef.current.discardOrdinarySession();
   }, [invalidatePreviewRequest]);
 
   const startNewPurchase = useCallback(() => {
@@ -680,19 +681,32 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       }
 
       try {
-        if (!options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
-          const isStale = () =>
-            !shouldApplyPreviewResponse(
-              requestId,
-              previewRequestIdRef.current,
-              abortController.signal,
-              previewBranchByRequestIdRef.current.get(requestId),
-              orderBranchIdForRequestRef.current,
-            );
+        const isStale = () =>
+          !shouldApplyPreviewResponse(
+            requestId,
+            previewRequestIdRef.current,
+            abortController.signal,
+            previewBranchByRequestIdRef.current.get(requestId),
+            orderBranchIdForRequestRef.current,
+          );
+        if (options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
+          const restored = await receivingRef.current.restoreOrdinaryAppealForStoredAttempt({
+            userId,
+            record: options.restoreAttempt,
+            signal: abortController.signal,
+            isStale,
+          });
+          if (!restored.ok && !options?.optional) {
+            setPreviewError(restored.message);
+            setPreviewSession(null);
+            return;
+          }
+        } else if (!options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
           const appealReady = await receivingRef.current.ensureOrdinaryAppealContext({
             promoCode: parsed.code,
             branchId: branchIdForPreview ?? undefined,
             previewRequestId: requestId,
+            signal: abortController.signal,
             isStale,
           });
           if (!appealReady.ok) {
@@ -811,6 +825,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       branchResolution,
       orderBranchIdForRequest,
       presentation?.proContext,
+      userId,
     ],
   );
 
@@ -949,7 +964,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     const handoff = receivingRef.current;
     if (handoff.blocksOrdinaryCheckout) {
       setSubmitError(
-        handoff.certEntryError ||
+        handoff.crmGateRetryError ||
+          handoff.certEntryError ||
           (handoff.certEntryPending
             ? "Проверяем сертификат и обращение…"
             : "Сначала отсканируйте сертификат — без обращения покупку привязать нельзя."),
@@ -1035,6 +1051,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitInFlightRef.current = false;
       return;
     }
+    handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey);
 
     await executeOrderPost(created.record, false);
   }, [
@@ -1409,7 +1426,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         context={receivingHandoff.context}
         appealId={receivingHandoff.appealId}
       />
-      <ReceivingAppealCertEntryAlert message={receivingHandoff.certEntryError} />
+      <ReceivingAppealCertEntryAlert
+        message={receivingHandoff.crmReadOnlyNotice || receivingHandoff.certEntryError}
+      />
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
       ) : null}

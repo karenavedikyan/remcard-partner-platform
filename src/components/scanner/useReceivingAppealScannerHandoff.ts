@@ -3,17 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   postReceivingAppealOrderLink,
+  resolveReceivingScannerCertificateEntryGate,
   submitReceivingCertificateEntry,
+  RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE,
   type ReceivingAppealOrderLinkResult,
+  type ReceivingAppealsListResponse,
+  type ReceivingPrincipalAccess,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import {
   loadReceivingAppealScannerContext,
+  loadScannerOrdinaryAppealBinding,
   parseScannerAppealParam,
   receivingCertificateMatchesPreview,
+  saveScannerOrdinaryAppealBinding,
   scannerAppealInputSignature,
   type ReceivingAppealScannerContext,
   type ScannerAppealParam,
 } from "@/lib/scanner/receiving-appeal-handoff";
+import type { StoreOrderAttemptRecord } from "@/lib/store-order-attempt";
 import type { OrderPreviewAllowed } from "@/lib/order-types";
 
 export type ReceivingAppealLinkPhase =
@@ -27,6 +34,10 @@ export type ReceivingAppealLinkPhase =
 type FrozenSubmitScope = { appealId: string; revision: number; loadGen: number; idempotencyKey: string };
 
 type AdoptedAppealBinding = { appealId: string; certCode: string; branchKey: string };
+
+type CertificateEntryGate =
+  | Pick<ReceivingAppealsListResponse, "readOnly" | "access">
+  | ReceivingPrincipalAccess;
 
 function resolveParam(input: ScannerAppealParam | string | null | undefined): ScannerAppealParam {
   if (input !== null && typeof input === "object" && "mode" in input) {
@@ -52,6 +63,14 @@ export type EnsureOrdinaryAppealArgs = {
   promoCode: string;
   branchId?: string;
   previewRequestId: number;
+  signal?: AbortSignal;
+  isStale: () => boolean;
+};
+
+export type RestoreOrdinaryAppealArgs = {
+  userId: string;
+  record: StoreOrderAttemptRecord;
+  signal?: AbortSignal;
   isStale: () => boolean;
 };
 
@@ -64,9 +83,16 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   const adoptedBindingRef = useRef<AdoptedAppealBinding | null>(null);
   const [certEntryError, setCertEntryError] = useState("");
   const [certEntryPending, setCertEntryPending] = useState(false);
+  const [crmReadOnlyNotice, setCrmReadOnlyNotice] = useState("");
+  const [crmGateRetryError, setCrmGateRetryError] = useState("");
+  const [crmWriteCapable, setCrmWriteCapable] = useState<boolean | null>(null);
+  const crmEntryGateRef = useRef<CertificateEntryGate | null>(null);
+  const [legacyUncertainRestore, setLegacyUncertainRestore] = useState(false);
 
   const effectiveAppealId = urlAppealId ?? adoptedAppealId;
   const ordinaryAppealRequired = param.mode === "none";
+  const ordinaryAppealIntegrationRequired =
+    ordinaryAppealRequired && crmWriteCapable === true && !legacyUncertainRestore;
 
   const [context, setContext] = useState<ReceivingAppealScannerContext>(() => initialContext(param));
   const loadGen = useRef(0);
@@ -89,6 +115,12 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     null,
   );
 
+  const finishCertEntryPending = useCallback((gen: number) => {
+    if (gen === certEntryGen.current) {
+      setCertEntryPending(false);
+    }
+  }, []);
+
   const resetLinkState = useCallback(() => {
     linkGen.current += 1;
     linkInFlight.current = false;
@@ -100,11 +132,97 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     setLinkedOrderId(null);
   }, []);
 
+  const adoptAppealContext = useCallback(
+    async (
+      appealId: string,
+      certCode: string,
+      branchKey: string,
+      opts: { gen: number; isStale: () => boolean },
+    ): Promise<{ ok: true } | { ok: false; message: string }> => {
+      adoptedBindingRef.current = { appealId, certCode, branchKey };
+      scopeRef.current = appealId;
+      setAdoptedAppealId(appealId);
+      setCertEntryError("");
+      const detailGen = ++loadGen.current;
+      setContext({ status: "loading", appealId });
+      const next = await loadReceivingAppealScannerContext(appealId);
+      if (opts.isStale() || opts.gen !== certEntryGen.current || detailGen !== loadGen.current) {
+        return { ok: false, message: "Контекст обращения устарел." };
+      }
+      if (adoptedBindingRef.current?.appealId !== appealId) {
+        return { ok: false, message: "Контекст обращения устарел." };
+      }
+      setContext(next);
+      if (next.status === "ready") {
+        revisionRef.current = next.revision;
+        setLegacyUncertainRestore(false);
+        return { ok: true };
+      }
+      const message =
+        next.status === "forbidden" ||
+        next.status === "not_found" ||
+        next.status === "blocked" ||
+        next.status === "error"
+          ? next.message
+          : "Не удалось подготовить обращение для покупки.";
+      setCertEntryError(message);
+      return { ok: false, message };
+    },
+    [],
+  );
+
+  const resolveCrmWriteForBranch = useCallback(
+    async (
+      branchId: string | undefined,
+      opts: { signal?: AbortSignal; isStale: () => boolean },
+    ): Promise<boolean | null> => {
+      if (crmWriteCapable !== null) {
+        return crmWriteCapable;
+      }
+      if (opts.signal?.aborted || opts.isStale()) {
+        return null;
+      }
+      const gate = await resolveReceivingScannerCertificateEntryGate({ branchId });
+      if (opts.signal?.aborted || opts.isStale()) {
+        return null;
+      }
+      if (!gate.ok) {
+        if (gate.code === "READ_ONLY") {
+          setCrmWriteCapable(false);
+          crmEntryGateRef.current = null;
+          setCrmReadOnlyNotice(gate.message || RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE);
+          setCrmGateRetryError("");
+          setLegacyUncertainRestore(true);
+          return false;
+        }
+        if (gate.retryable) {
+          setCrmGateRetryError(gate.message);
+          setCrmReadOnlyNotice("");
+          return null;
+        }
+        setCrmWriteCapable(false);
+        setCertEntryError(gate.message);
+        return false;
+      }
+      setCrmWriteCapable(true);
+      crmEntryGateRef.current = gate.gate;
+      setCrmReadOnlyNotice("");
+      setCrmGateRetryError("");
+      return true;
+    },
+    [crmWriteCapable],
+  );
+
   useEffect(() => {
     adoptedBindingRef.current = null;
     setAdoptedAppealId(null);
     setCertEntryError("");
     setCertEntryPending(false);
+    setCrmReadOnlyNotice("");
+    setCrmGateRetryError("");
+    setLegacyUncertainRestore(false);
+    setCrmWriteCapable(null);
+    crmEntryGateRef.current = null;
     resetLinkState();
     if (param.mode === "invalid") {
       frozenSubmitByKeyRef.current.clear();
@@ -127,8 +245,15 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     return () => {
       loadGen.current += 1;
       linkGen.current += 1;
+      certEntryGen.current += 1;
     };
   }, [paramSignature, param, resetLinkState]);
+
+  useEffect(() => {
+    return () => {
+      certEntryGen.current += 1;
+    };
+  }, []);
 
   const ensureOrdinaryAppealContext = useCallback(
     async (args: EnsureOrdinaryAppealArgs): Promise<{ ok: true } | { ok: false; message: string }> => {
@@ -137,6 +262,9 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       }
       if (param.mode === "invalid") {
         return { ok: false, message: "Некорректный идентификатор обращения в URL." };
+      }
+      if (args.signal?.aborted || args.isStale()) {
+        return { ok: false, message: "Проверка сертификата отменена." };
       }
 
       const branchKey = args.branchId?.trim() ?? "";
@@ -156,17 +284,34 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       setCertEntryPending(true);
       setCertEntryError("");
 
-      const entry = await submitReceivingCertificateEntry(
-        { promoCode: args.promoCode },
-        undefined,
-        { branchId: args.branchId, scannerAuthorizeStoreScan: true },
-      );
-
-      if (args.isStale() || gen !== certEntryGen.current) {
-        setCertEntryPending(false);
+      const crmWritable = await resolveCrmWriteForBranch(args.branchId, {
+        signal: args.signal,
+        isStale: args.isStale,
+      });
+      if (args.signal?.aborted || args.isStale() || gen !== certEntryGen.current) {
+        finishCertEntryPending(gen);
         return { ok: false, message: "Проверка сертификата отменена." };
       }
-      setCertEntryPending(false);
+      if (crmWritable === null) {
+        finishCertEntryPending(gen);
+        return { ok: false, message: crmGateRetryError || "Не удалось проверить права CRM." };
+      }
+      if (crmWritable === false) {
+        finishCertEntryPending(gen);
+        return { ok: true };
+      }
+
+      const entry = await submitReceivingCertificateEntry(
+        { promoCode: args.promoCode },
+        crmEntryGateRef.current ?? undefined,
+        { branchId: args.branchId },
+      );
+
+      if (args.signal?.aborted || args.isStale() || gen !== certEntryGen.current) {
+        finishCertEntryPending(gen);
+        return { ok: false, message: "Проверка сертификата отменена." };
+      }
+      finishCertEntryPending(gen);
 
       if (!entry.ok) {
         setCertEntryError(entry.message);
@@ -178,41 +323,91 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
         return { ok: false, message: entry.message };
       }
 
-      adoptedBindingRef.current = {
-        appealId: entry.appealId,
-        certCode: args.promoCode,
-        branchKey,
-      };
-      scopeRef.current = entry.appealId;
-      setAdoptedAppealId(entry.appealId);
-      setCertEntryError("");
+      return adoptAppealContext(entry.appealId, args.promoCode, branchKey, { gen, isStale: args.isStale });
+    },
+    [adoptAppealContext, crmGateRetryError, finishCertEntryPending, param.mode, resolveCrmWriteForBranch],
+  );
 
-      const detailGen = ++loadGen.current;
-      setContext({ status: "loading", appealId: entry.appealId });
-      const next = await loadReceivingAppealScannerContext(entry.appealId);
-      if (args.isStale() || gen !== certEntryGen.current || detailGen !== loadGen.current) {
-        return { ok: false, message: "Контекст обращения устарел." };
-      }
-      if (scopeRef.current !== entry.appealId && adoptedBindingRef.current?.appealId !== entry.appealId) {
-        return { ok: false, message: "Контекст обращения устарел." };
-      }
-      setContext(next);
-      if (next.status === "ready") {
-        revisionRef.current = next.revision;
+  const restoreOrdinaryAppealForStoredAttempt = useCallback(
+    async (args: RestoreOrdinaryAppealArgs): Promise<{ ok: true } | { ok: false; message: string }> => {
+      if (param.mode !== "none") {
         return { ok: true };
       }
-      const message =
-        next.status === "forbidden" ||
-        next.status === "not_found" ||
-        next.status === "blocked" ||
-        next.status === "error"
-          ? next.message
-          : "Не удалось подготовить обращение для покупки.";
-      setCertEntryError(message);
-      return { ok: false, message };
+      const branchKey = args.record.branchId?.trim() ?? "";
+      const crmWritable = await resolveCrmWriteForBranch(branchKey || undefined, {
+        signal: args.signal,
+        isStale: args.isStale,
+      });
+      if (args.signal?.aborted || args.isStale()) {
+        return { ok: false, message: "Восстановление отменено." };
+      }
+      if (crmWritable === null) {
+        return { ok: false, message: crmGateRetryError || "Не удалось проверить права CRM." };
+      }
+      if (crmWritable === false) {
+        setLegacyUncertainRestore(true);
+        return { ok: true };
+      }
+
+      const persisted = loadScannerOrdinaryAppealBinding(
+        args.userId,
+        args.record.idempotencyKey,
+        args.record.body.certificateCode,
+        branchKey,
+      );
+      if (!persisted) {
+        setLegacyUncertainRestore(true);
+        setAdoptedAppealId(null);
+        adoptedBindingRef.current = null;
+        scopeRef.current = null;
+        setContext({ status: "idle" });
+        return { ok: true };
+      }
+
+      const gen = certEntryGen.current;
+      return adoptAppealContext(persisted.appealId, persisted.certCode, persisted.branchId, {
+        gen,
+        isStale: args.isStale,
+      });
     },
-    [param.mode],
+    [adoptAppealContext, crmGateRetryError, param.mode, resolveCrmWriteForBranch],
   );
+
+  const persistOrdinaryAppealBinding = useCallback(
+    (userId: string, idempotencyKey: string) => {
+      const binding = adoptedBindingRef.current;
+      if (!binding || crmWriteCapable !== true) {
+        return;
+      }
+      saveScannerOrdinaryAppealBinding({
+        v: 1,
+        userId,
+        idempotencyKey,
+        appealId: binding.appealId,
+        certCode: binding.certCode,
+        branchId: binding.branchKey,
+      });
+    },
+    [crmWriteCapable],
+  );
+
+  const discardOrdinarySession = useCallback(() => {
+    certEntryGen.current += 1;
+    adoptedBindingRef.current = null;
+    setAdoptedAppealId(null);
+    setCertEntryError("");
+    setCertEntryPending(false);
+    setCrmReadOnlyNotice("");
+    setCrmGateRetryError("");
+    setLegacyUncertainRestore(false);
+    setCrmWriteCapable(null);
+    crmEntryGateRef.current = null;
+    resetLinkState();
+    if (param.mode === "none") {
+      setContext({ status: "idle" });
+      scopeRef.current = null;
+    }
+  }, [param.mode, resetLinkState]);
 
   const freezeSubmitScopeOnce = useCallback((idempotencyKey: string) => {
     if (!scopeRef.current) {
@@ -401,7 +596,9 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   const requiresAppealReady = appealScoped && context.status !== "ready";
   const blocksOrdinaryCheckout =
     ordinaryAppealRequired &&
-    (!adoptedAppealId || context.status !== "ready" || certEntryPending);
+    (Boolean(crmGateRetryError) ||
+      (ordinaryAppealIntegrationRequired &&
+        (certEntryPending || !adoptedAppealId || context.status !== "ready")));
   const certificatePrefillCode = context.status === "ready" ? context.certificatePrefillCode : null;
 
   return useMemo(
@@ -412,15 +609,22 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       appealInvalid,
       ordinaryAppealRequired,
       blocksOrdinaryCheckout,
+      ordinaryAppealIntegrationRequired,
+      crmWriteCapable,
       allowsNewStoreOrder,
       requiresAppealReady,
       certEntryError,
       certEntryPending,
+      crmReadOnlyNotice,
+      crmGateRetryError,
       certificatePrefillCode,
       context,
       linkPhase,
       linkError,
       ensureOrdinaryAppealContext,
+      restoreOrdinaryAppealForStoredAttempt,
+      persistOrdinaryAppealBinding,
+      discardOrdinarySession,
       freezeSubmitScopeOnce,
       prepareOrderAttemptScope,
       assertPreviewAllowed,
@@ -438,15 +642,22 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       certEntryPending,
       certificatePrefillCode,
       context,
+      crmGateRetryError,
+      crmReadOnlyNotice,
+      discardOrdinarySession,
       effectiveAppealId,
       ensureOrdinaryAppealContext,
       freezeSubmitScopeOnce,
       linkError,
       linkPhase,
+      crmWriteCapable,
+      ordinaryAppealIntegrationRequired,
       ordinaryAppealRequired,
       param,
+      persistOrdinaryAppealBinding,
       prepareOrderAttemptScope,
       requiresAppealReady,
+      restoreOrdinaryAppealForStoredAttempt,
       retryOrderLinkOnly,
     ],
   );
