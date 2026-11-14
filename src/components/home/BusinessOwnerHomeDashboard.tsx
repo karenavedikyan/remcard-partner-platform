@@ -353,7 +353,7 @@ export function BusinessOwnerHomeDashboard({
 
   const displaySlices = loadState === "loading" ? initialBusinessHomeMetricSlices : slices;
 
-  const hints = statHints(partnerType, displaySlices, activeBranchLabel);
+  const hints = statHints(partnerType, displaySlices, activeBranchLabel ?? (isStaffView ? null : "Весь партнёр"));
   const metricsFailed =
     !isStaffView &&
     loadState === "loaded" &&
