@@ -895,7 +895,7 @@ function receivingListEnvelopeReadOnly(data: Pick<ReceivingAppealsListResponse, 
   if (data.access) {
     return !normalizeReceivingAccess(data.access).mutationsAllowed;
   }
-  return data.readOnly === true;
+  return false;
 }
 
 function receivingScannerGateFromListWire(
