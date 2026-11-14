@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
   <script src="../preview-memory.js"></script>
-  <link rel="stylesheet" href="../prototype-numbering.css?v=book2">
-  <script src="../prototype-numbering.js?v=book3" defer></script>
+  
+  
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -26,6 +26,9 @@
   <link rel="stylesheet" href="./care-services.css?v=care6">
   <link rel="stylesheet" href="./client-appeals.css?v=observer-compact4">
   <link rel="stylesheet" href="./cabinet-standalone-host.css?v=embed5">
+
+  <link rel="stylesheet" href="../prototype-numbering.css?v=a6b1f01fb3ac0b15c826cece8ba06775924e4f8d">
+  <script src="../prototype-numbering.js?v=a6b1f01fb3ac0b15c826cece8ba06775924e4f8d" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">К содержанию</a>
@@ -33,7 +36,7 @@
   <dialog id="role-dialog" aria-labelledby="dialog-title"></dialog>
   <div id="live" class="sr-only" role="status" aria-live="polite"></div>
   <script type="module">
-    import("./roles.js?v=observer-compact-20261113-2").catch(() => {
+    import("./roles.js?v=clients-empty-20261114").catch(() => {
       const message = document.getElementById("load-message");
       if (message) message.textContent = "Не удалось загрузить прототип. Проверьте соединение и откройте его заново.";
     });

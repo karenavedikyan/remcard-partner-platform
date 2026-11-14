@@ -302,8 +302,48 @@ function cardArt(label) {
   return `<div class="es-card" aria-hidden="true"><div class="es-card-top"><span class="es-card-brand">Rem<em>Card</em></span><span class="es-card-chip"></span></div><div class="es-card-sum">0 ₽</div><div class="es-card-foot"><span>${esc(label)}</span><span class="es-card-num">•••• 0000</span></div></div>`;
 }
 
-export function renderEmptyState({ page, role, employerRole }) {
-  const c = resolve(page, role, employerRole);
+function clientsCopy(direction, readOnly) {
+  if (direction === "at-partners") {
+    return {
+      icon: "users",
+      kicker: "Мои клиенты у партнёров",
+      title: "Здесь появятся клиенты, которых вы направили",
+      lead: "Создайте сертификат и передайте его клиенту. Когда принимающий партнёр зарегистрирует обращение, здесь появятся его этапы и покупка.",
+      steps: [
+        step("ticket", "Создайте сертификат", "Выберите партнёра и условия"),
+        step("share", "Передайте его клиенту", "Клиент покажет QR или код партнёру"),
+        step("bag", "Следите за обращением", "После регистрации у партнёра: этапы и покупка"),
+      ],
+      cta: readOnly ? "" : btn("Создать сертификат", "action:recommend"),
+      foot: "Сам по себе сертификат не создаёт обращение, покупку или начисление.",
+    };
+  }
+  const action = (label, view, kind) =>
+    `<button type="button" class="btn ${kind}" data-ca-action="nav:${view}">${label}</button>`;
+  return {
+    icon: "users",
+    kicker: "Клиенты у меня",
+    title: "Здесь начнётся работа с вашими клиентами",
+    lead: readOnly
+      ? "Здесь появятся обращения вашей команды. В режиме просмотра создание и изменение обращений недоступны."
+      : "Примите сертификат клиента или добавьте обращение вручную. В одной карточке будут запрос, этапы работы и покупка.",
+    steps: [
+      step("scan", "Зарегистрируйте обращение", "По сертификату или вручную"),
+      step("users", "Работайте с клиентом", "Сохраняйте запрос и обновляйте этапы"),
+      step("bag", "Оформите покупку", "В этом же обращении, с возвратом в карточку"),
+    ],
+    cta: readOnly ? "" : action("Сканировать сертификат", "scan", "primary"),
+    alt: readOnly ? "" : action("Добавить клиента", "manual", "ghost"),
+    foot: readOnly
+      ? "Доступные действия определяются назначенными правами."
+      : "Обращение появляется до покупки. Покупка и начисления учитываются отдельно.",
+  };
+}
+
+export function renderEmptyState({ page, role, employerRole, clientsDirection, readOnly = false }) {
+  const c = page === "clients"
+    ? clientsCopy(clientsDirection || (role === "agent" ? "at-partners" : "incoming"), readOnly)
+    : resolve(page, role, employerRole);
   if (!c) return null;
   const art = c.art === "card" ? cardArt(SELLER(role) ? "начислений пока нет" : "к получению") : `<div class="es-art" aria-hidden="true">${svg(c.icon)}</div>`;
   return `<section class="es" data-testid="empty-state" data-es-page="${esc(page)}">
@@ -322,7 +362,7 @@ export function renderEmptyState({ page, role, employerRole }) {
         `<li class="es-step"><span class="es-num">${n + 1}</span><span class="es-step-ico">${svg(s.icon)}</span><div><strong>${esc(s.title)}</strong><small>${esc(s.note)}</small></div></li>`,
     )
     .join("")}</ol>
-  <div class="es-foot"><span>Раздел заполнится сам, когда появятся первые данные.</span><button type="button" class="linkbtn" data-action="empty:demo" data-testid="es-show-demo">Посмотреть на примере</button></div>
+  <div class="es-foot"><span>${esc(c.foot || "Раздел заполнится сам, когда появятся первые данные.")}</span><button type="button" class="linkbtn" data-action="empty:demo" data-testid="es-show-demo">Посмотреть на примере</button></div>
 </section>`;
 }
 
@@ -331,6 +371,8 @@ export function renderEmptyState({ page, role, employerRole }) {
 // (во встроенном фрейме доступ к хранилищу может быть запрещён, тогда работаем без него).
 let datasetEmpty = (() => {
   try {
+    const requested = new URLSearchParams(window.location.search).get("dataset");
+    if (requested === "empty" || requested === "demo") return requested === "empty";
     return window.rcDemoMemory.getItem(STORAGE_KEY) === "empty";
   } catch {
     return false;

@@ -1,5 +1,5 @@
 /* Клиенты и обращения в кабинете партнёра. Демо, in-memory. Без диалогов — только страницы. */
-import { emptyDatasetOn } from "./empty-states.js?v=es2";
+import { emptyDatasetOn, renderEmptyState } from "./empty-states.js?v=clients-empty-20261114";
 import { upsertPaidPurchaseLedger, clearClientPurchaseLedger } from "./client-purchase-ledger.js";
 import {
   observerPersonalState, observerPersonalMeta, observerPersonalBucket,
@@ -2026,6 +2026,9 @@ export function clientAppealsPageMuted(config) {
     s.view === "observer-client" ||
     (s.view === "list" && showsAtPartnersObserverList(config))
   ) {
+    if (s.view === "list" && ownReferredAppeals().length === 0) {
+      return "Направленные клиенты и этапы их обращений у принимающих партнёров.";
+    }
     return "Пример ваших направлений · демоданные";
   }
   if (s.view === "list") {
@@ -2815,7 +2818,26 @@ export function renderClientAppeals(config) {
   const rootClass = observerSectionClass(config, s);
   if (s.view === "list") {
     const r2Entry = renderRepairObjectsListEntry(config);
-    const body = showsAtPartnersObserverList(config) ? renderObserverPartnersList(config) : renderListPage(config);
+    const observer = showsAtPartnersObserverList(config);
+    // Onboarding belongs only to a genuinely empty direction, never an empty
+    // search result, archive or trash view.
+    const directionAppeals = observer
+      ? ownReferredAppeals()
+      : appeals.filter((a) => a.receivingPartnerId === RECEIVING.id);
+    const startup = directionAppeals.length === 0 && (observer
+      ? !(s.observerQ || "").trim() &&
+        (!s.observerPeriod || s.observerPeriod === "all") &&
+        observerPersonalState(s).bucket === "active"
+      : !(s.listQ || "").trim() &&
+        (!s.listStatus || s.listStatus === "Все статусы") &&
+        (!s.listSource || s.listSource === "all") &&
+        (!s.listBucket || s.listBucket === "active"));
+    const body = startup
+      ? `${renderClientsDirectionTabs(config)}${renderEmptyState({
+          page: "clients", role: config.role, readOnly: config.readOnly,
+          clientsDirection: observer ? "at-partners" : "incoming",
+        })}`
+      : observer ? renderObserverPartnersList(config) : renderListPage(config);
     return `<div class="${rootClass}" data-ca-root>${r2Entry}${body}</div>`;
   }
   if (
