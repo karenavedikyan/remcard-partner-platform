@@ -379,15 +379,16 @@ export function ReceivingAppealsWorkspace({
     setBatchPending(true);
     setBatchPartial(null);
     try {
+      const action = receivingConfirmToBatchAction(bulkConfirm.kind);
       const res = await postReceivingAppealsBatch({
-        action: receivingConfirmToBatchAction(bulkConfirm.kind),
+        action,
         ids,
       });
       if (!res.ok) {
         setBatchPartial(res.message);
         return;
       }
-      const result = normalizeReceivingBatchResponse(res.data);
+      const result = normalizeReceivingBatchResponse(res.data, { ids, action });
       const partialMsg = receivingBulkErrorMessage(result);
       if (partialMsg) setBatchPartial(partialMsg);
       const mergedSelection = new Set(

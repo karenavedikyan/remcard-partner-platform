@@ -1124,7 +1124,7 @@ export type ReceivingAppealsBatchBody = {
 
 /** K1 batch response — consumed by P5 `normalizeReceivingBatchResponse`. */
 export type ReceivingAppealsBatchResponseWire = {
-  action: "archive" | "unarchive" | "trash" | "restore";
+  action?: "archive" | "unarchive" | "trash" | "restore";
   updatedIds: string[];
   skippedIds: string[];
   failures: { id: string; code?: string; reason?: string; message?: string }[];
@@ -1141,33 +1141,19 @@ export function isReceivingBatchProxyReady(): boolean {
 }
 
 function coerceReceivingAppealsBatchWire(payload: unknown): ReceivingAppealsBatchResponseWire | null {
-  if (!payload || typeof payload !== "object") return null;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   const p = payload as Record<string, unknown>;
-  const updatedIds = Array.isArray(p.updatedIds)
-    ? p.updatedIds.filter((id): id is string => typeof id === "string")
-    : null;
-  if (!updatedIds) return null;
-  const action = p.action;
-  if (action !== "archive" && action !== "unarchive" && action !== "trash" && action !== "restore") {
-    return null;
-  }
-  const skippedIds = Array.isArray(p.skippedIds)
-    ? p.skippedIds.filter((id): id is string => typeof id === "string")
-    : [];
-  const failures = Array.isArray(p.failures)
-    ? p.failures.filter(
-        (f): f is { id: string; code?: string; reason?: string; message?: string } =>
-          Boolean(f) && typeof f === "object" && typeof (f as { id?: unknown }).id === "string",
-      )
-    : [];
-  return { action, updatedIds, skippedIds, failures };
+  if (!Array.isArray(p.updatedIds)) return null;
+  // Keep the original evidence, including malformed fields, for the request-bound
+  // normalizer. Filtering here could erase a contradiction and invent success.
+  return payload as ReceivingAppealsBatchResponseWire;
 }
 
 export async function postReceivingAppealsBatch(body: {
-  action: ReceivingAppealsBatchResponseWire["action"];
+  action: NonNullable<ReceivingAppealsBatchResponseWire["action"]>;
   ids: string[];
 }): Promise<PostReceivingAppealsBatchResult> {
-  const ids = body.ids.map((id) => id.trim()).filter(Boolean);
+  const ids = [...new Set(body.ids.filter((id) => id.trim().length > 0))];
   if (ids.length === 0) {
     return { ok: false, code: "ERROR", message: "Не выбрано ни одного обращения." };
   }
@@ -1185,7 +1171,7 @@ export async function postReceivingAppealsBatch(body: {
     });
     return { ok: true, data };
   } catch (caught) {
-    if (caught instanceof RemcardApiError && caught.body) {
+    if (caught instanceof RemcardApiError && caught.body && caught.status !== 401 && caught.status !== 403) {
       const partial = coerceReceivingAppealsBatchWire(caught.body);
       if (partial && (caught.status === 409 || partial.updatedIds.length > 0)) {
         return { ok: true, data: partial };

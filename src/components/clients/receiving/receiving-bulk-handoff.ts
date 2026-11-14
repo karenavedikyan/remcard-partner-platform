@@ -48,7 +48,8 @@ export type ReceivingBatchFailure = {
 
 /** K1 batch HTTP JSON (authoritative fields per integration audit). */
 export type ReceivingBatchResponse = {
-  action: ReceivingCrmBatchAction;
+  /** K1 need not echo the action; an explicit echo must match the request. */
+  action?: ReceivingCrmBatchAction;
   updatedIds: string[];
   skippedIds: string[];
   failures: ReceivingBatchFailure[];
@@ -132,7 +133,7 @@ export function aggregateReceivingPatchResults(
     updatedIds,
     skippedIds,
     failures,
-  });
+  }, { ids: outcomes.map((o) => o.appealId), action: "archive" });
 }
 
 export function receivingToolbarToBatchAction(
@@ -157,26 +158,86 @@ export function receivingToolbarToBatchAction(
   }
 }
 
-export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): ReceivingBulkMutationResult {
-  const updatedIds = Array.isArray(raw.updatedIds) ? raw.updatedIds : [];
-  const skippedIds = Array.isArray(raw.skippedIds) ? raw.skippedIds : [];
-  const failures = Array.isArray(raw.failures) ? raw.failures : [];
-  const failedIdSet = new Set([
-    ...skippedIds,
-    ...failures.map((f) => f.id).filter(Boolean),
-  ]);
+function isReceivingBatchId(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
 
-  if (updatedIds.length === 0 && failedIdSet.size > 0) {
+/** Bind evidence to this exact request. Never infer success from HTTP status or omission. */
+export function normalizeReceivingBatchResponse(
+  raw: unknown,
+  request: { ids: readonly string[]; action: ReceivingCrmBatchAction },
+): ReceivingBulkMutationResult {
+  const requested = [...new Set(request.ids.filter(isReceivingBatchId))];
+  const invalidResponse = (): ReceivingBulkMutationResult => ({
+    ok: false,
+    kind: "error",
+    message: "Не удалось подтвердить результат группового действия.",
+    failures: requested.map((id) => ({
+      id, reason: "invalid_response", message: "Некорректный ответ сервера.",
+    })),
+    preserveUi: true,
+  });
+  if (requested.length === 0) return invalidResponse();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return invalidResponse();
+  const payload = raw as Record<string, unknown>;
+  if (
+    !Array.isArray(payload.updatedIds) || !payload.updatedIds.every(isReceivingBatchId) ||
+    !Array.isArray(payload.skippedIds) || !payload.skippedIds.every(isReceivingBatchId) ||
+    !Array.isArray(payload.failures) ||
+    !payload.failures.every((f) =>
+      f !== null && typeof f === "object" && !Array.isArray(f) &&
+      isReceivingBatchId((f as Record<string, unknown>).id)) ||
+    (payload.action !== undefined && payload.action !== request.action)
+  ) return invalidResponse();
+
+  const requestedSet = new Set(requested);
+  const updatedSet = new Set(payload.updatedIds.filter((id) => requestedSet.has(id)));
+  const skippedSet = new Set(payload.skippedIds.filter((id) => requestedSet.has(id)));
+  const failureById = new Map<string, ReceivingBatchFailure>();
+  for (const entry of payload.failures) {
+    const f = entry as Record<string, unknown> & { id: string };
+    if (!requestedSet.has(f.id) || failureById.has(f.id)) continue;
+    failureById.set(f.id, {
+      id: f.id,
+      code: typeof f.code === "string" ? f.code : undefined,
+      reason: typeof f.reason === "string" ? f.reason : undefined,
+      message: typeof f.message === "string" ? f.message : undefined,
+    });
+  }
+
+  const updatedIds: string[] = [];
+  const failures: ReceivingBatchFailure[] = [];
+  for (const id of requested) {
+    const negative = skippedSet.has(id) || failureById.has(id);
+    if (updatedSet.has(id) && !negative) {
+      updatedIds.push(id);
+    } else if (updatedSet.has(id)) {
+      failures.push({
+        id, reason: "contradictory_result",
+        message: "Сервер вернул противоречивый результат для записи.",
+      });
+    } else {
+      failures.push(failureById.get(id) ?? {
+        id,
+        reason: skippedSet.has(id) ? "skipped" : "omitted",
+        message: skippedSet.has(id)
+          ? "Запись пропущена."
+          : "Сервер не подтвердил обновление записи.",
+      });
+    }
+  }
+
+  if (updatedIds.length === 0) {
     return {
       ok: false,
       kind: "error",
-      message: "Ни одна запись не обновлена.",
+      message: "Ни одна запись не подтверждена как обновлённая.",
       failures,
       preserveUi: true,
     };
   }
 
-  if (failedIdSet.size === 0) {
+  if (failures.length === 0) {
     return { ok: true, kind: "full", updatedIds };
   }
 
@@ -184,7 +245,7 @@ export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): Re
     ok: true,
     kind: "partial",
     updatedIds,
-    skippedIds,
+    skippedIds: failures.map((f) => f.id),
     failures,
   };
 }
@@ -192,13 +253,13 @@ export function normalizeReceivingBatchResponse(raw: ReceivingBatchResponse): Re
 export function receivingBulkErrorMessage(result: ReceivingBulkMutationResult): string | null {
   if (result.ok) {
     if (result.kind === "partial") {
-      const n = result.skippedIds.length + result.failures.length;
+      const n = receivingBulkFailedIds(result).length;
       return `Обновлено: ${result.updatedIds.length}, пропущено: ${n}.`;
     }
     return null;
   }
   if (result.failures?.length) {
-    return `${result.message} (${result.failures.length} записей).`;
+    return `${result.message} (${receivingBulkFailedIds(result).length} записей).`;
   }
   return result.message;
 }
@@ -214,7 +275,7 @@ export function receivingBulkFailedIds(result: ReceivingBulkMutationResult): str
     return [...new Set([...result.skippedIds, ...fromFailures])];
   }
   if (!result.ok && result.failures?.length) {
-    return result.failures.map((f) => f.id).filter(Boolean);
+    return [...new Set(result.failures.map((f) => f.id).filter(Boolean))];
   }
   return [];
 }
@@ -230,7 +291,7 @@ export function receivingBulkConfirmTargetIds(
   confirmIds: readonly string[],
   selected: ReadonlySet<string>,
 ): string[] {
-  return confirmIds.filter((id) => selected.has(id));
+  return [...new Set(confirmIds)].filter((id) => selected.has(id));
 }
 
 export function receivingBulkMergeSelection(
