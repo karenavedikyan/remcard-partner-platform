@@ -859,22 +859,31 @@ export function isReceivingCertificateEntryProxyReady(): boolean {
   return isAllowedProxyRoute("POST", RECEIVING_CERT_ENTRY_PATH);
 }
 
+/** Scanner capture — branch query + K1 `authorizeStoreScan` (no Clients list readOnly preflight). */
+export type ReceivingCertificateEntryCapture = {
+  branchId?: string | null;
+  scannerAuthorizeStoreScan?: boolean;
+};
+
 export async function submitReceivingCertificateEntry(
   body: ReceivingCertificateEntryBody,
   gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
+  capture?: ReceivingCertificateEntryCapture,
 ): Promise<ReceivingCertificateEntryResult> {
-  const readOnly =
-    gate && "readOnly" in gate
-      ? gate.readOnly === true
-      : gate
-        ? !normalizeReceivingAccess(gate).mutationsAllowed
-        : true;
-  if (readOnly) {
-    return {
-      ok: false,
-      code: "FORBIDDEN",
-      message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
-    };
+  if (!capture?.scannerAuthorizeStoreScan) {
+    const readOnly =
+      gate && "readOnly" in gate
+        ? gate.readOnly === true
+        : gate
+          ? !normalizeReceivingAccess(gate).mutationsAllowed
+          : true;
+    if (readOnly) {
+      return {
+        ok: false,
+        code: "FORBIDDEN",
+        message: RECEIVING_ACCESS_LIST_ONLY_DENIAL,
+      };
+    }
   }
   if (!isReceivingCertificateEntryProxyReady()) {
     return {
@@ -883,10 +892,12 @@ export async function submitReceivingCertificateEntry(
       message: RECEIVING_API_CONTRACT_NOTE,
     };
   }
+  const branchId = capture?.branchId?.trim() || undefined;
   try {
     const payload = await remcardFetch<ReceivingCertificateEntryWireResponse>(RECEIVING_CERT_ENTRY_PATH, {
       method: "POST",
       body: { promoCode: body.promoCode },
+      searchParams: branchId ? { branchId } : undefined,
     });
     if (payload.valid === false) {
       return {

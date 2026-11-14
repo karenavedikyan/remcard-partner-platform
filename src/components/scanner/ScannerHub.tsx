@@ -81,6 +81,7 @@ import { loadScannerEmptyActivityProbe } from "@/lib/scanner-empty/load-activity
 import { parseScannerAppealQueryValues } from "@/lib/scanner/receiving-appeal-handoff";
 import { useReceivingAppealScannerHandoff } from "./useReceivingAppealScannerHandoff";
 import {
+  ReceivingAppealCertEntryAlert,
   ReceivingAppealScannerBanner,
   ReceivingAppealScannerSuccessLinkPanel,
 } from "./ReceivingAppealScannerPanels";
@@ -679,6 +680,30 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       }
 
       try {
+        if (!options?.restoreAttempt && receivingRef.current.ordinaryAppealRequired) {
+          const isStale = () =>
+            !shouldApplyPreviewResponse(
+              requestId,
+              previewRequestIdRef.current,
+              abortController.signal,
+              previewBranchByRequestIdRef.current.get(requestId),
+              orderBranchIdForRequestRef.current,
+            );
+          const appealReady = await receivingRef.current.ensureOrdinaryAppealContext({
+            promoCode: parsed.code,
+            branchId: branchIdForPreview ?? undefined,
+            previewRequestId: requestId,
+            isStale,
+          });
+          if (!appealReady.ok) {
+            if (!options?.optional) {
+              setPreviewError(appealReady.message);
+              setPreviewSession(null);
+            }
+            return;
+          }
+        }
+
         const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
           method: "POST",
           body: { certificateCode: parsed.code },
@@ -922,6 +947,15 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     }
 
     const handoff = receivingRef.current;
+    if (handoff.blocksOrdinaryCheckout) {
+      setSubmitError(
+        handoff.certEntryError ||
+          (handoff.certEntryPending
+            ? "Проверяем сертификат и обращение…"
+            : "Сначала отсканируйте сертификат — без обращения покупку привязать нельзя."),
+      );
+      return;
+    }
     if (handoff.appealInvalid || (handoff.appealScoped && !handoff.allowsNewStoreOrder)) {
       setSubmitError(
         handoff.context.status === "ready" && handoff.context.orderAlreadyLinked
@@ -1375,6 +1409,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         context={receivingHandoff.context}
         appealId={receivingHandoff.appealId}
       />
+      <ReceivingAppealCertEntryAlert message={receivingHandoff.certEntryError} />
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="scanner-welcome-decision-pending" />
       ) : null}

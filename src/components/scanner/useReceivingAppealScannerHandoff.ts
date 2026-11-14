@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   postReceivingAppealOrderLink,
+  submitReceivingCertificateEntry,
   type ReceivingAppealOrderLinkResult,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import {
@@ -25,6 +26,8 @@ export type ReceivingAppealLinkPhase =
 
 type FrozenSubmitScope = { appealId: string; revision: number; loadGen: number; idempotencyKey: string };
 
+type AdoptedAppealBinding = { appealId: string; certCode: string; branchKey: string };
+
 function resolveParam(input: ScannerAppealParam | string | null | undefined): ScannerAppealParam {
   if (input !== null && typeof input === "object" && "mode" in input) {
     return input;
@@ -45,16 +48,33 @@ function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContex
 const LINK_SCOPE_LOST_MESSAGE =
   "Покупка создана, но привязка к обращению недоступна: нет доверенного контекста исходной попытки (повтор проверки или смена обращения).";
 
+export type EnsureOrdinaryAppealArgs = {
+  promoCode: string;
+  branchId?: string;
+  previewRequestId: number;
+  isStale: () => boolean;
+};
+
 export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | string | null | undefined) {
   const paramSignature = scannerAppealInputSignature(input);
   const param = useMemo(() => resolveParam(input), [paramSignature]);
-  const scopedAppealId = param.mode === "scoped" ? param.appealId : null;
+  const urlAppealId = param.mode === "scoped" ? param.appealId : null;
+
+  const [adoptedAppealId, setAdoptedAppealId] = useState<string | null>(null);
+  const adoptedBindingRef = useRef<AdoptedAppealBinding | null>(null);
+  const [certEntryError, setCertEntryError] = useState("");
+  const [certEntryPending, setCertEntryPending] = useState(false);
+
+  const effectiveAppealId = urlAppealId ?? adoptedAppealId;
+  const ordinaryAppealRequired = param.mode === "none";
 
   const [context, setContext] = useState<ReceivingAppealScannerContext>(() => initialContext(param));
   const loadGen = useRef(0);
   const linkGen = useRef(0);
+  const certEntryGen = useRef(0);
   const linkInFlight = useRef(false);
-  const scopeRef = useRef<string | null>(scopedAppealId);
+  const scopeRef = useRef<string | null>(effectiveAppealId);
+  scopeRef.current = effectiveAppealId;
   const revisionRef = useRef(0);
   const contextRef = useRef(context);
   contextRef.current = context;
@@ -81,8 +101,14 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   }, []);
 
   useEffect(() => {
-    scopeRef.current = scopedAppealId;
+    adoptedBindingRef.current = null;
+    setAdoptedAppealId(null);
+    setCertEntryError("");
+    setCertEntryPending(false);
     resetLinkState();
+    if (param.mode === "invalid") {
+      frozenSubmitByKeyRef.current.clear();
+    }
     setContext(initialContext(param));
     if (param.mode !== "scoped") {
       return;
@@ -102,7 +128,91 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       loadGen.current += 1;
       linkGen.current += 1;
     };
-  }, [paramSignature, resetLinkState, scopedAppealId]);
+  }, [paramSignature, param, resetLinkState]);
+
+  const ensureOrdinaryAppealContext = useCallback(
+    async (args: EnsureOrdinaryAppealArgs): Promise<{ ok: true } | { ok: false; message: string }> => {
+      if (param.mode === "scoped") {
+        return { ok: true };
+      }
+      if (param.mode === "invalid") {
+        return { ok: false, message: "Некорректный идентификатор обращения в URL." };
+      }
+
+      const branchKey = args.branchId?.trim() ?? "";
+      const binding = adoptedBindingRef.current;
+      if (
+        binding &&
+        binding.certCode === args.promoCode &&
+        binding.branchKey === branchKey &&
+        binding.appealId === scopeRef.current &&
+        contextRef.current.status === "ready" &&
+        contextRef.current.appealId === binding.appealId
+      ) {
+        return { ok: true };
+      }
+
+      const gen = ++certEntryGen.current;
+      setCertEntryPending(true);
+      setCertEntryError("");
+
+      const entry = await submitReceivingCertificateEntry(
+        { promoCode: args.promoCode },
+        undefined,
+        { branchId: args.branchId, scannerAuthorizeStoreScan: true },
+      );
+
+      if (args.isStale() || gen !== certEntryGen.current) {
+        setCertEntryPending(false);
+        return { ok: false, message: "Проверка сертификата отменена." };
+      }
+      setCertEntryPending(false);
+
+      if (!entry.ok) {
+        setCertEntryError(entry.message);
+        if (!binding || binding.certCode !== args.promoCode || binding.branchKey !== branchKey) {
+          adoptedBindingRef.current = null;
+          setAdoptedAppealId(null);
+          setContext({ status: "idle" });
+        }
+        return { ok: false, message: entry.message };
+      }
+
+      adoptedBindingRef.current = {
+        appealId: entry.appealId,
+        certCode: args.promoCode,
+        branchKey,
+      };
+      scopeRef.current = entry.appealId;
+      setAdoptedAppealId(entry.appealId);
+      setCertEntryError("");
+
+      const detailGen = ++loadGen.current;
+      setContext({ status: "loading", appealId: entry.appealId });
+      const next = await loadReceivingAppealScannerContext(entry.appealId);
+      if (args.isStale() || gen !== certEntryGen.current || detailGen !== loadGen.current) {
+        return { ok: false, message: "Контекст обращения устарел." };
+      }
+      if (scopeRef.current !== entry.appealId && adoptedBindingRef.current?.appealId !== entry.appealId) {
+        return { ok: false, message: "Контекст обращения устарел." };
+      }
+      setContext(next);
+      if (next.status === "ready") {
+        revisionRef.current = next.revision;
+        return { ok: true };
+      }
+      const message =
+        next.status === "forbidden" ||
+        next.status === "not_found" ||
+        next.status === "blocked" ||
+        next.status === "error"
+          ? next.message
+          : "Не удалось подготовить обращение для покупки.";
+      setCertEntryError(message);
+      return { ok: false, message };
+    },
+    [param.mode],
+  );
 
   const freezeSubmitScopeOnce = useCallback((idempotencyKey: string) => {
     if (!scopeRef.current) {
@@ -284,25 +394,33 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     setLinkPhase("pending");
   }, [linkedOrderId, pendingOrderId]);
 
-  const appealScoped = param.mode === "scoped";
+  const appealScoped = param.mode === "scoped" || Boolean(adoptedAppealId);
   const appealInvalid = param.mode === "invalid";
   const allowsNewStoreOrder =
     !appealScoped || (context.status === "ready" && !context.orderAlreadyLinked);
   const requiresAppealReady = appealScoped && context.status !== "ready";
+  const blocksOrdinaryCheckout =
+    ordinaryAppealRequired &&
+    (!adoptedAppealId || context.status !== "ready" || certEntryPending);
   const certificatePrefillCode = context.status === "ready" ? context.certificatePrefillCode : null;
 
   return useMemo(
     () => ({
       param,
-      appealId: scopedAppealId,
+      appealId: effectiveAppealId,
       appealScoped,
       appealInvalid,
+      ordinaryAppealRequired,
+      blocksOrdinaryCheckout,
       allowsNewStoreOrder,
       requiresAppealReady,
+      certEntryError,
+      certEntryPending,
       certificatePrefillCode,
       context,
       linkPhase,
       linkError,
+      ensureOrdinaryAppealContext,
       freezeSubmitScopeOnce,
       prepareOrderAttemptScope,
       assertPreviewAllowed,
@@ -315,16 +433,21 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       allowsNewStoreOrder,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
+      blocksOrdinaryCheckout,
+      certEntryError,
+      certEntryPending,
       certificatePrefillCode,
       context,
+      effectiveAppealId,
+      ensureOrdinaryAppealContext,
       freezeSubmitScopeOnce,
       linkError,
       linkPhase,
+      ordinaryAppealRequired,
       param,
       prepareOrderAttemptScope,
       requiresAppealReady,
       retryOrderLinkOnly,
-      scopedAppealId,
     ],
   );
 }
