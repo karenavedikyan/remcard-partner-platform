@@ -255,6 +255,8 @@ export type ScannerOrdinaryAppealBindingV1 = {
   appealId: string;
   certCode: string;
   branchId: string;
+  /** CAS revision frozen at first successful adopt — order-link uses this revision. */
+  revision: number;
 };
 
 type ScannerBindingStore = Record<string, ScannerOrdinaryAppealBindingV1>;
@@ -285,11 +287,17 @@ function writeBindingStore(store: ScannerBindingStore): void {
   sessionStorage.setItem(SCANNER_ORDINARY_BINDING_STORAGE_KEY, JSON.stringify(store));
 }
 
-export function saveScannerOrdinaryAppealBinding(binding: ScannerOrdinaryAppealBindingV1): void {
-  const store = readBindingStore();
-  store[bindingStoreKey(binding.userId, binding.idempotencyKey, binding.certCode, binding.branchId)] =
-    binding;
-  writeBindingStore(store);
+export function saveScannerOrdinaryAppealBinding(binding: ScannerOrdinaryAppealBindingV1): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    const store = readBindingStore();
+    store[bindingStoreKey(binding.userId, binding.idempotencyKey, binding.certCode, binding.branchId)] =
+      binding;
+    writeBindingStore(store);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function loadScannerOrdinaryAppealBinding(
@@ -300,7 +308,10 @@ export function loadScannerOrdinaryAppealBinding(
 ): ScannerOrdinaryAppealBindingV1 | null {
   const store = readBindingStore();
   const hit = store[bindingStoreKey(userId, idempotencyKey, certCode, branchId)];
-  return hit?.v === 1 ? hit : null;
+  if (hit?.v !== 1 || typeof hit.revision !== "number" || !Number.isSafeInteger(hit.revision)) {
+    return null;
+  }
+  return hit;
 }
 
 export function clearScannerOrdinaryAppealBinding(

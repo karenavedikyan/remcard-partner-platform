@@ -549,7 +549,12 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
   const executeOrderPost = useCallback(
     async (record: StoreOrderAttemptRecord, wasRetry: boolean) => {
-      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry);
+      const attemptBranch = (record as StoreOrderAttemptRecord & { branchId?: string }).branchId;
+      receivingRef.current.prepareOrderAttemptScope(record.idempotencyKey, wasRetry, {
+        userId,
+        certCode: record.body.certificateCode,
+        branchId: attemptBranch,
+      });
       markStoreOrderAttemptInFlight(userId);
       setStoredAttempt({ ...record, status: "in_flight" });
       setSubmitting(true);
@@ -1051,7 +1056,11 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       submitInFlightRef.current = false;
       return;
     }
-    handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey);
+    if (!handoff.persistOrdinaryAppealBinding(userId, created.record.idempotencyKey)) {
+      setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
+      submitInFlightRef.current = false;
+      return;
+    }
 
     await executeOrderPost(created.record, false);
   }, [

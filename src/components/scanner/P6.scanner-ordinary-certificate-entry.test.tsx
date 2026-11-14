@@ -129,6 +129,7 @@ describe("P6 scanner ordinary certificate-entry", () => {
       appealId: "ap_persist",
       certCode: "RC-OLD",
       branchId: "b1",
+      revision: 2,
     });
     const { result } = renderHook(() => useReceivingAppealScannerHandoff({ mode: "none" }));
     const restored = await result.current.restoreOrdinaryAppealForStoredAttempt({

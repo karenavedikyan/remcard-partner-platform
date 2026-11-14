@@ -869,9 +869,10 @@ export function isReceivingCertificateEntryProxyReady(): boolean {
   return isAllowedProxyRoute("POST", RECEIVING_CERT_ENTRY_PATH);
 }
 
-/** Scanner POST capture — same `branchId` query as store preview (K1 `authorizeStoreScan`). */
+/** Scanner capture — branch query + abort for preview lifecycle. */
 export type ReceivingCertificateEntryCapture = {
   branchId?: string | null;
+  signal?: AbortSignal;
 };
 
 export const RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE =
@@ -897,6 +898,41 @@ function receivingListEnvelopeReadOnly(data: Pick<ReceivingAppealsListResponse, 
   return data.readOnly === true;
 }
 
+function receivingScannerGateFromListWire(
+  wire: K1ClientAppealsListWire,
+):
+  | { ok: true; gate: Pick<ReceivingAppealsListResponse, "readOnly" | "access"> }
+  | { ok: false; code: "READ_ONLY"; message: string }
+  | { ok: false; code: "MALFORMED"; message: string } {
+  const list: K1ClientAppealsListWire =
+    wire && typeof wire === "object" && wire.data?.appeals != null ? wire.data : wire;
+  if (!list || typeof list !== "object") {
+    return { ok: false, code: "MALFORMED", message: "Некорректный ответ CRM (список обращений)." };
+  }
+  const hasReadOnly = typeof list.readOnly === "boolean";
+  const hasAccess =
+    list.access !== undefined &&
+    list.access !== null &&
+    typeof list.access === "object" &&
+    typeof list.access.mutationsAllowed === "boolean";
+  if (!hasReadOnly && !hasAccess) {
+    return {
+      ok: false,
+      code: "MALFORMED",
+      message: "Сервер не вернул явных прав CRM (readOnly/access).",
+    };
+  }
+  const data = coerceK1ClientAppealsListPayload(wire);
+  if (receivingListEnvelopeReadOnly(data)) {
+    return {
+      ok: false,
+      code: "READ_ONLY",
+      message: RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE,
+    };
+  }
+  return { ok: true, gate: { readOnly: data.readOnly, access: data.access } };
+}
+
 /** Read-only GET list envelope — authoritative CRM write scope for certificate-entry. */
 export async function resolveReceivingScannerCertificateEntryGate(
   capture?: ReceivingCertificateEntryCapture,
@@ -914,18 +950,36 @@ export async function resolveReceivingScannerCertificateEntryGate(
     ? `/api/pro/client-appeals?${new URLSearchParams({ branchId }).toString()}`
     : "/api/pro/client-appeals";
   try {
-    const listWire = await remcardFetch<K1ClientAppealsListWire>(listPath);
-    const data = coerceK1ClientAppealsListPayload(listWire);
-    if (receivingListEnvelopeReadOnly(data)) {
+    const listWire = await remcardFetch<K1ClientAppealsListWire>(listPath, {
+      signal: capture?.signal,
+    });
+    const parsed = receivingScannerGateFromListWire(listWire);
+    if (!parsed.ok) {
+      if (parsed.code === "READ_ONLY") {
+        return {
+          ok: false,
+          code: "READ_ONLY",
+          message: parsed.message,
+          retryable: false,
+        };
+      }
       return {
         ok: false,
-        code: "READ_ONLY",
-        message: RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE,
-        retryable: false,
+        code: "ERROR",
+        message: parsed.message,
+        retryable: true,
       };
     }
-    return { ok: true, gate: { readOnly: data.readOnly, access: data.access } };
+    return { ok: true, gate: parsed.gate };
   } catch (caught) {
+    if (caught instanceof DOMException && caught.name === "AbortError") {
+      return {
+        ok: false,
+        code: "ERROR",
+        message: "Проверка прав CRM отменена.",
+        retryable: true,
+      };
+    }
     return {
       ok: false,
       code: "ERROR",
@@ -969,6 +1023,7 @@ export async function submitReceivingCertificateEntry(
       method: "POST",
       body: { promoCode: body.promoCode },
       searchParams: branchId ? { branchId } : undefined,
+      signal: capture?.signal,
     });
     if (payload.valid === false) {
       return {

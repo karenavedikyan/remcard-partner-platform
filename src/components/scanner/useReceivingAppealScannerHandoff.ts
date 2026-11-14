@@ -19,6 +19,7 @@ import {
   scannerAppealInputSignature,
   type ReceivingAppealScannerContext,
   type ScannerAppealParam,
+  type ScannerOrdinaryAppealBindingV1,
 } from "@/lib/scanner/receiving-appeal-handoff";
 import type { StoreOrderAttemptRecord } from "@/lib/store-order-attempt";
 import type { OrderPreviewAllowed } from "@/lib/order-types";
@@ -59,6 +60,19 @@ function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContex
 const LINK_SCOPE_LOST_MESSAGE =
   "Покупка создана, но привязка к обращению недоступна: нет доверенного контекста исходной попытки (повтор проверки или смена обращения).";
 
+const SCANNER_BINDING_REVISION_CONFLICT =
+  "Версия обращения изменилась после сохранения привязки. Обновите карточку в CRM и повторите.";
+
+function branchCapabilityCacheKey(branchId?: string): string {
+  return branchId?.trim() || "__none__";
+}
+
+export type PrepareOrderAttemptScopeOpts = {
+  userId: string;
+  certCode: string;
+  branchId?: string;
+};
+
 export type EnsureOrdinaryAppealArgs = {
   promoCode: string;
   branchId?: string;
@@ -87,6 +101,8 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   const [crmGateRetryError, setCrmGateRetryError] = useState("");
   const [crmWriteCapable, setCrmWriteCapable] = useState<boolean | null>(null);
   const crmEntryGateRef = useRef<CertificateEntryGate | null>(null);
+  const crmCapableByBranchRef = useRef<Map<string, boolean>>(new Map());
+  const gateResolveGen = useRef(0);
   const [legacyUncertainRestore, setLegacyUncertainRestore] = useState(false);
 
   const effectiveAppealId = urlAppealId ?? adoptedAppealId;
@@ -132,12 +148,27 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     setLinkedOrderId(null);
   }, []);
 
+  const hydrateFrozenSubmitScope = useCallback(
+    (binding: ScannerOrdinaryAppealBindingV1) => {
+      const frozen: FrozenSubmitScope = {
+        appealId: binding.appealId,
+        revision: binding.revision,
+        loadGen: loadGen.current,
+        idempotencyKey: binding.idempotencyKey,
+      };
+      frozenSubmitByKeyRef.current.set(binding.idempotencyKey, frozen);
+      activeSubmitScopeRef.current = frozen;
+      revisionRef.current = binding.revision;
+    },
+    [],
+  );
+
   const adoptAppealContext = useCallback(
     async (
       appealId: string,
       certCode: string,
       branchKey: string,
-      opts: { gen: number; isStale: () => boolean },
+      opts: { gen: number; isStale: () => boolean; expectedRevision?: number },
     ): Promise<{ ok: true } | { ok: false; message: string }> => {
       adoptedBindingRef.current = { appealId, certCode, branchKey };
       scopeRef.current = appealId;
@@ -154,7 +185,15 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       }
       setContext(next);
       if (next.status === "ready") {
-        revisionRef.current = next.revision;
+        if (
+          opts.expectedRevision !== undefined &&
+          next.revision !== opts.expectedRevision
+        ) {
+          const message = SCANNER_BINDING_REVISION_CONFLICT;
+          setCertEntryError(message);
+          return { ok: false, message };
+        }
+        revisionRef.current = opts.expectedRevision ?? next.revision;
         setLegacyUncertainRestore(false);
         return { ok: true };
       }
@@ -176,18 +215,26 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       branchId: string | undefined,
       opts: { signal?: AbortSignal; isStale: () => boolean },
     ): Promise<boolean | null> => {
-      if (crmWriteCapable !== null) {
-        return crmWriteCapable;
+      const cacheKey = branchCapabilityCacheKey(branchId);
+      if (crmCapableByBranchRef.current.has(cacheKey)) {
+        const cached = crmCapableByBranchRef.current.get(cacheKey) === true;
+        setCrmWriteCapable(cached);
+        return cached;
       }
       if (opts.signal?.aborted || opts.isStale()) {
         return null;
       }
-      const gate = await resolveReceivingScannerCertificateEntryGate({ branchId });
-      if (opts.signal?.aborted || opts.isStale()) {
+      const gen = ++gateResolveGen.current;
+      const gate = await resolveReceivingScannerCertificateEntryGate({
+        branchId,
+        signal: opts.signal,
+      });
+      if (opts.signal?.aborted || opts.isStale() || gen !== gateResolveGen.current) {
         return null;
       }
       if (!gate.ok) {
         if (gate.code === "READ_ONLY") {
+          crmCapableByBranchRef.current.set(cacheKey, false);
           setCrmWriteCapable(false);
           crmEntryGateRef.current = null;
           setCrmReadOnlyNotice(gate.message || RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE);
@@ -195,22 +242,19 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
           setLegacyUncertainRestore(true);
           return false;
         }
-        if (gate.retryable) {
-          setCrmGateRetryError(gate.message);
-          setCrmReadOnlyNotice("");
-          return null;
-        }
-        setCrmWriteCapable(false);
-        setCertEntryError(gate.message);
-        return false;
+        setCrmGateRetryError(gate.message);
+        setCrmReadOnlyNotice("");
+        setCertEntryError(gate.retryable ? "" : gate.message);
+        return null;
       }
+      crmCapableByBranchRef.current.set(cacheKey, true);
       setCrmWriteCapable(true);
       crmEntryGateRef.current = gate.gate;
       setCrmReadOnlyNotice("");
       setCrmGateRetryError("");
       return true;
     },
-    [crmWriteCapable],
+    [],
   );
 
   useEffect(() => {
@@ -223,6 +267,8 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     setLegacyUncertainRestore(false);
     setCrmWriteCapable(null);
     crmEntryGateRef.current = null;
+    crmCapableByBranchRef.current.clear();
+    gateResolveGen.current += 1;
     resetLinkState();
     if (param.mode === "invalid") {
       frozenSubmitByKeyRef.current.clear();
@@ -304,7 +350,7 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       const entry = await submitReceivingCertificateEntry(
         { promoCode: args.promoCode },
         crmEntryGateRef.current ?? undefined,
-        { branchId: args.branchId },
+        { branchId: args.branchId, signal: args.signal },
       );
 
       if (args.signal?.aborted || args.isStale() || gen !== certEntryGen.current) {
@@ -365,30 +411,49 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       }
 
       const gen = certEntryGen.current;
-      return adoptAppealContext(persisted.appealId, persisted.certCode, persisted.branchId, {
+      const adopted = await adoptAppealContext(persisted.appealId, persisted.certCode, persisted.branchId, {
         gen,
         isStale: args.isStale,
+        expectedRevision: persisted.revision,
       });
+      if (adopted.ok) {
+        hydrateFrozenSubmitScope(persisted);
+      }
+      return adopted;
     },
-    [adoptAppealContext, crmGateRetryError, param.mode, resolveCrmWriteForBranch],
+    [adoptAppealContext, crmGateRetryError, hydrateFrozenSubmitScope, param.mode, resolveCrmWriteForBranch],
   );
 
   const persistOrdinaryAppealBinding = useCallback(
-    (userId: string, idempotencyKey: string) => {
+    (userId: string, idempotencyKey: string): boolean => {
       const binding = adoptedBindingRef.current;
-      if (!binding || crmWriteCapable !== true) {
-        return;
+      const ctx = contextRef.current;
+      if (!binding || crmWriteCapable !== true || ctx.status !== "ready") {
+        return false;
       }
-      saveScannerOrdinaryAppealBinding({
+      const saved = saveScannerOrdinaryAppealBinding({
         v: 1,
         userId,
         idempotencyKey,
         appealId: binding.appealId,
         certCode: binding.certCode,
         branchId: binding.branchKey,
+        revision: revisionRef.current,
       });
+      if (saved) {
+        hydrateFrozenSubmitScope({
+          v: 1,
+          userId,
+          idempotencyKey,
+          appealId: binding.appealId,
+          certCode: binding.certCode,
+          branchId: binding.branchKey,
+          revision: revisionRef.current,
+        });
+      }
+      return saved;
     },
-    [crmWriteCapable],
+    [crmWriteCapable, hydrateFrozenSubmitScope],
   );
 
   const discardOrdinarySession = useCallback(() => {
@@ -402,6 +467,8 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     setLegacyUncertainRestore(false);
     setCrmWriteCapable(null);
     crmEntryGateRef.current = null;
+    crmCapableByBranchRef.current.clear();
+    gateResolveGen.current += 1;
     resetLinkState();
     if (param.mode === "none") {
       setContext({ status: "idle" });
@@ -430,25 +497,41 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     activeSubmitScopeRef.current = frozen;
   }, []);
 
-  const prepareOrderAttemptScope = useCallback((idempotencyKey: string, wasRetry: boolean) => {
-    if (!scopeRef.current) {
-      return;
-    }
-    if (!wasRetry) {
-      freezeSubmitScopeOnce(idempotencyKey);
-      return;
-    }
-    const frozen = frozenSubmitByKeyRef.current.get(idempotencyKey);
-    if (!frozen) {
-      activeSubmitScopeRef.current = null;
-      return;
-    }
-    if (scopeRef.current !== frozen.appealId) {
-      activeSubmitScopeRef.current = null;
-      return;
-    }
-    activeSubmitScopeRef.current = frozen;
-  }, [freezeSubmitScopeOnce]);
+  const prepareOrderAttemptScope = useCallback(
+    (idempotencyKey: string, wasRetry: boolean, retryCtx?: PrepareOrderAttemptScopeOpts) => {
+      if (!scopeRef.current) {
+        return;
+      }
+      if (!wasRetry) {
+        freezeSubmitScopeOnce(idempotencyKey);
+        return;
+      }
+      let frozen = frozenSubmitByKeyRef.current.get(idempotencyKey);
+      if (!frozen && retryCtx) {
+        const branchKey = retryCtx.branchId?.trim() ?? "";
+        const persisted = loadScannerOrdinaryAppealBinding(
+          retryCtx.userId,
+          idempotencyKey,
+          retryCtx.certCode,
+          branchKey,
+        );
+        if (persisted) {
+          hydrateFrozenSubmitScope(persisted);
+          frozen = frozenSubmitByKeyRef.current.get(idempotencyKey);
+        }
+      }
+      if (!frozen) {
+        activeSubmitScopeRef.current = null;
+        return;
+      }
+      if (scopeRef.current !== frozen.appealId) {
+        activeSubmitScopeRef.current = null;
+        return;
+      }
+      activeSubmitScopeRef.current = frozen;
+    },
+    [freezeSubmitScopeOnce, hydrateFrozenSubmitScope],
+  );
 
   const assertPreviewAllowed = useCallback((preview: OrderPreviewAllowed): string | null => {
     if (!scopeRef.current) {
