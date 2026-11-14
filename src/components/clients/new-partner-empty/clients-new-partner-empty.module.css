@@ -129,6 +129,7 @@
 }
 
 .directionStep {
+  composes: step;
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
