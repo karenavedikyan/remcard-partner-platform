@@ -69,6 +69,14 @@ const emptyMeta: AgentR03ListMeta = {
   hasPrevPage: false,
 };
 
+/** Tab counters from API meta only; null when missing, non-finite, or negative (not display zero). */
+function certificatesListTabCountFromApi(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return value;
+}
+
 export type AgentCertificatesListAccessMode = "agent" | "specialist" | "business";
 
 type AgentCertificatesListProps = {
@@ -211,8 +219,8 @@ export function AgentCertificatesList({
             ? data.totalCount
             : 0,
         totalPages: data.totalPages ?? 1,
-        activeCount: knownCounts?.activeCount ?? null,
-        archivedCount: knownCounts?.archivedCount ?? null,
+        activeCount: certificatesListTabCountFromApi(data.activeCount),
+        archivedCount: certificatesListTabCountFromApi(data.archivedCount),
         hasNextPage: data.hasNextPage ?? false,
         hasPrevPage: data.hasPrevPage ?? false,
         sort: data.sort,
