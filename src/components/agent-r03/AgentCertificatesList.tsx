@@ -179,6 +179,7 @@ export function AgentCertificatesList({
   /** Last accepted issuer list response had real rows (stable; not tied to load deps). */
   const issuerListHadSuccessfulRowsRef = useRef(false);
   const [businessListBranchId, setBusinessListBranchId] = useState<string | null>(null);
+  const businessListBranchIdRef = useRef<string | null>(null);
   const [businessContextBranches, setBusinessContextBranches] = useState<ProContextBranch[]>([]);
   const [businessBranchScope, setBusinessBranchScope] = useState<
     "idle" | "loading" | "ready" | "blocked"
@@ -186,17 +187,25 @@ export function AgentCertificatesList({
   const [businessBranchScopeError, setBusinessBranchScopeError] = useState("");
   const businessBranchScopeGenRef = useRef(0);
 
-  useEffect(() => {
-    if (!isBusiness) {
-      setBusinessBranchScope("idle");
-      setBusinessListBranchId(null);
-      setBusinessContextBranches([]);
-      setBusinessBranchScopeError("");
-      return;
-    }
+  const invalidateBusinessCertificateList = useCallback(() => {
+    listFetchGenerationRef.current += 1;
+    issuerListHadSuccessfulRowsRef.current = false;
+    setItems([]);
+    setKnownListCounts(null);
+    setError("");
+  }, []);
+
+  const loadBusinessBranchContext = useCallback(() => {
     const gen = ++businessBranchScopeGenRef.current;
     setBusinessBranchScope("loading");
     setBusinessBranchScopeError("");
+    setBusinessListBranchId(null);
+    setBusinessContextBranches([]);
+    setPage(1);
+    setSelected(new Set());
+    invalidateBusinessCertificateList();
+    setMeta(emptyMeta);
+    setLoadState("loading");
     void fetchOrgOwnerContextBranches().then((res) => {
       if (gen !== businessBranchScopeGenRef.current) return;
       if (!res.ok) {
@@ -204,6 +213,10 @@ export function AgentCertificatesList({
         setBusinessBranchScopeError(res.message);
         setBusinessListBranchId(null);
         setBusinessContextBranches([]);
+        setLoadState("error");
+        setError(res.message);
+        setItems([]);
+        setKnownListCounts(null);
         return;
       }
       setBusinessBranchScope("ready");
@@ -214,13 +227,53 @@ export function AgentCertificatesList({
         setBusinessListBranchId(null);
       }
     });
-  }, [isBusiness]);
+  }, [invalidateBusinessCertificateList]);
 
-  const onBusinessListBranchSelected = useCallback((branchId: string) => {
-    setBusinessListBranchId(branchId);
-    setPage(1);
-    setSelected(new Set());
-  }, []);
+  useEffect(() => {
+    businessListBranchIdRef.current = businessListBranchId;
+  }, [businessListBranchId]);
+
+  useEffect(() => {
+    if (!isBusiness) {
+      businessBranchScopeGenRef.current += 1;
+      listFetchGenerationRef.current += 1;
+      issuerListHadSuccessfulRowsRef.current = false;
+      setBusinessBranchScope("idle");
+      setBusinessListBranchId(null);
+      setBusinessContextBranches([]);
+      setBusinessBranchScopeError("");
+      return () => {
+        businessBranchScopeGenRef.current += 1;
+      };
+    }
+    loadBusinessBranchContext();
+    return () => {
+      businessBranchScopeGenRef.current += 1;
+    };
+  }, [isBusiness, loadBusinessBranchContext]);
+
+  const onBusinessListBranchSelected = useCallback(
+    (branchId: string) => {
+      listFetchGenerationRef.current += 1;
+      issuerListHadSuccessfulRowsRef.current = false;
+      setItems([]);
+      setKnownListCounts(null);
+      setError("");
+      setLoadState("loading");
+      setBusinessListBranchId(branchId);
+      setPage(1);
+      setSelected(new Set());
+    },
+    [],
+  );
+
+  function retryCertificatesLoad() {
+    if (isBusiness && businessBranchScope === "blocked") {
+      loadBusinessBranchContext();
+      return;
+    }
+    void load();
+  }
 
   const load = useCallback(async () => {
     if (isBusiness) {
@@ -237,18 +290,22 @@ export function AgentCertificatesList({
         return;
       }
       if (!businessListBranchId) {
-        const fetchId = ++listFetchGenerationRef.current;
-        if (fetchId !== listFetchGenerationRef.current) return;
-        setLoadState("loaded");
-        setError("");
-        setItems([]);
-        setKnownListCounts(null);
-        setMeta(emptyMeta);
+        if (businessContextBranches.length > 1) {
+          listFetchGenerationRef.current += 1;
+          setLoadState("loading");
+          setError("");
+          setItems([]);
+          setKnownListCounts(null);
+          setMeta(emptyMeta);
+          return;
+        }
         return;
       }
     }
     const fetchId = ++listFetchGenerationRef.current;
-    const preserveItemsOnError = isIssuerShell && issuerListHadSuccessfulRowsRef.current;
+    const branchIdForFetch = isBusiness ? businessListBranchId : null;
+    const preserveItemsOnError =
+      isIssuerShell && !isBusiness && issuerListHadSuccessfulRowsRef.current;
     setLoadState("loading");
     setError("");
     try {
@@ -267,6 +324,9 @@ export function AgentCertificatesList({
           ? await fetchSpecialistIssuerCertificates(listParams)
           : await fetchAgentCertificates(listParams);
       if (fetchId !== listFetchGenerationRef.current) {
+        return;
+      }
+      if (isBusiness && branchIdForFetch !== businessListBranchIdRef.current) {
         return;
       }
       const nextCertificates = data.certificates ?? [];
@@ -295,13 +355,17 @@ export function AgentCertificatesList({
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
+      if (isBusiness && branchIdForFetch !== businessListBranchIdRef.current) {
+        return;
+      }
       const message =
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты";
       setError(message);
-      if (isBusiness && caught instanceof RemcardApiError && caught.status === 403) {
+      if (isBusiness) {
         setLoadState("error");
         setKnownListCounts(null);
         setItems([]);
+        issuerListHadSuccessfulRowsRef.current = false;
         return;
       }
       if (preserveItemsOnError) {
@@ -322,6 +386,7 @@ export function AgentCertificatesList({
     archived,
     businessBranchScope,
     businessBranchScopeError,
+    businessContextBranches.length,
     businessListBranchId,
     isBusiness,
     isIssuerShell,
@@ -379,21 +444,34 @@ export function AgentCertificatesList({
 
   const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
 
-  const showNewPartnerEmpty = shouldShowCertificatesNewPartnerEmpty({
-    loadState,
-    error,
-    itemsLength: items.length,
-    knownListCounts,
-    archived,
-    filtersActive,
-  });
+  const businessAwaitingBranchSelection =
+    isBusiness &&
+    businessBranchScope === "ready" &&
+    businessContextBranches.length > 1 &&
+    !businessListBranchId;
 
-  const welcomeDecisionPending = isCertificatesWelcomeDecisionPending({
-    loadState,
-    itemsLength: items.length,
-    archived,
-    filtersActive,
-  });
+  const showNewPartnerEmpty =
+    !businessAwaitingBranchSelection &&
+    shouldShowCertificatesNewPartnerEmpty({
+      loadState,
+      error,
+      itemsLength: items.length,
+      knownListCounts,
+      archived,
+      filtersActive,
+    });
+
+  const welcomeDecisionPending =
+    businessAwaitingBranchSelection ||
+    businessBranchScope === "blocked" ||
+    (isBusiness && businessContextBranches.length > 1)
+      ? false
+      : isCertificatesWelcomeDecisionPending({
+          loadState,
+          itemsLength: items.length,
+          archived,
+          filtersActive,
+        });
 
   const newPartnerRole: CertificatesNewPartnerRole = isBusiness
     ? ownerMode?.businessPartnerType === "COMPANY"
@@ -655,7 +733,7 @@ export function AgentCertificatesList({
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="certificates-welcome-decision-pending" />
       ) : null}
-      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty && !businessAwaitingBranchSelection ? (
       <AgentR03ListToolbar
         searchPlaceholder={
           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
@@ -717,13 +795,23 @@ export function AgentCertificatesList({
       {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
-          <Button variant="secondary" onClick={() => void load()}>
+          <Button variant="secondary" onClick={retryCertificatesLoad}>
             Повторить
           </Button>
         </div>
       ) : null}
 
-      {!welcomeDecisionPending && !showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
+      {!welcomeDecisionPending && businessAwaitingBranchSelection ? (
+        <p className={styles.muted} data-testid="business-certificates-branch-required">
+          Выберите филиал, чтобы загрузить список сертификатов.
+        </p>
+      ) : null}
+
+      {!welcomeDecisionPending &&
+      !showNewPartnerEmpty &&
+      !businessAwaitingBranchSelection &&
+      loadState === "loaded" &&
+      items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>

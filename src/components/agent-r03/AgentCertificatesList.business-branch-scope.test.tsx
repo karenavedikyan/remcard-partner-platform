@@ -109,6 +109,8 @@ describe("AgentCertificatesList business branch list scope", () => {
     await waitFor(() =>
       expect(screen.getByTestId("business-certificates-branch-select")).toBeInTheDocument(),
     );
+    expect(screen.getByTestId("business-certificates-branch-required")).toBeInTheDocument();
+    expect(screen.queryByTestId("business-certificates-empty")).not.toBeInTheDocument();
     expect(fetchBusinessOwnerCertificates).not.toHaveBeenCalled();
     await user.selectOptions(screen.getByTestId("business-certificates-branch-select"), "branch-b");
     await waitFor(() => expect(fetchBusinessOwnerCertificates).toHaveBeenCalled());
@@ -133,6 +135,108 @@ describe("AgentCertificatesList business branch list scope", () => {
       </OwnerIssuerModeProvider>,
     );
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Forbidden"));
+    expect(fetchBusinessOwnerCertificates).not.toHaveBeenCalled();
+  });
+
+  it("context error retry reloads context then list GET", async () => {
+    vi.mocked(fetchOrgOwnerContextBranches)
+      .mockResolvedValueOnce({
+        ok: false,
+        forbidden: true,
+        message: "Forbidden",
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        branches: [{ id: "branch-a", name: "TEST", city: "Краснодар" }],
+      });
+    const user = userEvent.setup();
+    render(
+      <OwnerIssuerModeProvider mode="business" businessPartnerType="STORE">
+        <AgentCertificatesList accessMode="business" />
+      </OwnerIssuerModeProvider>,
+    );
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Forbidden"));
+    expect(fetchOrgOwnerContextBranches).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: /Повторить/i }));
+    await waitFor(() => expect(fetchOrgOwnerContextBranches).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchBusinessOwnerCertificates).toHaveBeenCalled());
+    expect(vi.mocked(fetchBusinessOwnerCertificates).mock.calls.at(-1)?.[0]?.branchId).toBe(
+      "branch-a",
+    );
+  });
+
+  it("discards stale list response after branch switch A to B", async () => {
+    const certA = { ...certRow, id: "cert-a", title: "Branch A only", userAlias: "Branch A only" };
+    const certB = { ...certRow, id: "cert-b", title: "Branch B only", userAlias: "Branch B only" };
+    vi.mocked(fetchOrgOwnerContextBranches).mockResolvedValue({
+      ok: true,
+      branches: [
+        { id: "branch-a", name: "A", city: "X" },
+        { id: "branch-b", name: "B", city: "Y" },
+      ],
+    });
+    const pendingList: Partial<
+      Record<"branch-a" | "branch-b", (value: ReturnType<typeof listMeta> & { certificates: typeof certRow[] }) => void>
+    > = {};
+    vi.mocked(fetchBusinessOwnerCertificates).mockImplementation((params) => {
+      const branchId = params?.branchId;
+      if (branchId === "branch-a" || branchId === "branch-b") {
+        return new Promise((resolve) => {
+          pendingList[branchId] = (value) => resolve(value);
+        });
+      }
+      return Promise.resolve(listMeta(0));
+    });
+    const user = userEvent.setup();
+    render(
+      <OwnerIssuerModeProvider mode="business" businessPartnerType="STORE">
+        <AgentCertificatesList accessMode="business" />
+      </OwnerIssuerModeProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("business-certificates-branch-select")).toBeInTheDocument(),
+    );
+    await user.selectOptions(screen.getByTestId("business-certificates-branch-select"), "branch-a");
+    await waitFor(() =>
+      expect(fetchBusinessOwnerCertificates).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: "branch-a" }),
+      ),
+    );
+    await user.selectOptions(screen.getByTestId("business-certificates-branch-select"), "branch-b");
+    await waitFor(() =>
+      expect(fetchBusinessOwnerCertificates).toHaveBeenLastCalledWith(
+        expect.objectContaining({ branchId: "branch-b" }),
+      ),
+    );
+    await waitFor(() => expect(pendingList["branch-b"]).toBeDefined());
+    pendingList["branch-b"]!({ ...listMeta(1), certificates: [certB] });
+    await waitFor(() => expect(screen.getAllByText("Branch B only").length).toBeGreaterThan(0));
+    pendingList["branch-a"]?.({ ...listMeta(1), certificates: [certA] });
+    await waitFor(() => {
+      expect(screen.queryByText("Branch A only")).not.toBeInTheDocument();
+      expect(screen.getAllByText("Branch B only").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("ignores delayed business context after unmount", async () => {
+    let resolveContext!: (v: Awaited<ReturnType<typeof fetchOrgOwnerContextBranches>>) => void;
+    vi.mocked(fetchOrgOwnerContextBranches).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveContext = resolve;
+        }),
+    );
+    const { unmount } = render(
+      <OwnerIssuerModeProvider mode="business" businessPartnerType="STORE">
+        <AgentCertificatesList accessMode="business" />
+      </OwnerIssuerModeProvider>,
+    );
+    unmount();
+    resolveContext({
+      ok: true,
+      branches: [{ id: "branch-a", name: "A", city: "X" }],
+    });
+    await Promise.resolve();
     expect(fetchBusinessOwnerCertificates).not.toHaveBeenCalled();
   });
 });
