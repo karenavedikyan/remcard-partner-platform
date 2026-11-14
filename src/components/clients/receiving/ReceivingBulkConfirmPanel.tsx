@@ -48,7 +48,7 @@ export function ReceivingBulkConfirmPanel({
   onConfirm,
 }: Props) {
   const c = COPY[kind];
-  const confirmBlocked = contractState === "blocked" || contractState === "pending";
+  const confirmBlocked = contractState === "blocked" || contractState === "pending" || contractState === "refresh-required";
   const confirmLabel =
     contractState === "pending"
       ? "Выполняется…"

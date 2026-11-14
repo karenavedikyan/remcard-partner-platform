@@ -138,6 +138,7 @@ export function ReceivingAppealsList({
   );
 
   const bulkOn = !readOnly && Boolean(bulk);
+  const selectionDisabled = bulk?.contractState === "pending" || bulk?.contractState === "refresh-required";
   const selected = bulk?.selectedIds ?? new Set<string>();
   const visibleIds = filtered.map((a) => a.id);
   const selInView = bulkOn ? visibleIds.filter((id) => selected.has(id)) : [];
@@ -312,6 +313,7 @@ export function ReceivingAppealsList({
                 <input
                   type="checkbox"
                   aria-label="Выбрать все"
+                  disabled={selectionDisabled}
                   checked={allChecked}
                   onChange={(e) =>
                     bulk?.onToggleSelectAll(
@@ -340,6 +342,7 @@ export function ReceivingAppealsList({
                     <input
                       type="checkbox"
                       aria-label={`Выбрать ${row.clientName}`}
+                      disabled={selectionDisabled}
                       checked={checked}
                       onChange={(e) => bulk?.onToggleRow(row.id, e.target.checked)}
                     />

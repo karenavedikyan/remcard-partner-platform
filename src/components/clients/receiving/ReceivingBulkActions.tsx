@@ -13,7 +13,7 @@ export type ReceivingBulkAction =
   | "restore-ask"
   | "clear";
 
-export type ReceivingBulkContractState = "blocked" | "ready" | "pending";
+export type ReceivingBulkContractState = "blocked" | "ready" | "pending" | "refresh-required";
 
 export type ReceivingBulkActionsProps = {
   bucket: ReceivingAppealBucket;
@@ -57,7 +57,7 @@ export function ReceivingBulkActions({
     );
   };
 
-  const actionsDisabled = contractState === "blocked" || contractState === "pending";
+  const actionsDisabled = contractState === "blocked" || contractState === "pending" || contractState === "refresh-required";
 
   return (
     <section
@@ -73,7 +73,7 @@ export function ReceivingBulkActions({
           type="checkbox"
           data-ca-bulk-select-all
           checked={allVisibleSelected && visibleCount > 0}
-          disabled={visibleCount === 0 || contractState === "pending"}
+          disabled={visibleCount === 0 || contractState === "pending" || contractState === "refresh-required"}
           onChange={(e) => onSelectAll(e.target.checked)}
         />
         Все найденные ({visibleCount})
@@ -172,6 +172,7 @@ export function ReceivingBulkActions({
             type="button"
             className={styles.ghostBtn}
             data-ca-action="bulk:clear"
+            disabled={contractState === "pending" || contractState === "refresh-required"}
             onClick={() => onAction("clear")}
           >
             Сбросить выбор

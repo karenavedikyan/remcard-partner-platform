@@ -1205,6 +1205,9 @@ export type ReceivingAppealsLoadResult =
       blockerId?: string;
       message: string;
       missingRoutes?: string[];
+      /** Transport metadata for safe list refresh recovery, not a write permission. */
+      httpStatus?: number;
+      retryable?: boolean;
     };
 
 const RECEIVING_BLOCKER_ID = "BLK-RECEIVING-APPEALS";
@@ -1263,6 +1266,8 @@ export async function fetchReceivingAppealsWorkspace(
       ok: false,
       code: "ERROR",
       message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить обращения",
+      httpStatus: caught instanceof RemcardApiError ? caught.status : undefined,
+      retryable: !(caught instanceof RemcardApiError && (caught.status === 401 || caught.status === 403)),
     };
   }
 }

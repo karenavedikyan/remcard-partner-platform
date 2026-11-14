@@ -35,7 +35,7 @@ export function ReceivingBulkEditPanel({
     formRef.current?.querySelector<HTMLElement>("select,textarea")?.focus({ preventScroll: true });
   }, [count]);
 
-  const applyDisabled = contractState === "blocked" || contractState === "pending";
+  const applyDisabled = contractState === "blocked" || contractState === "pending" || contractState === "refresh-required";
 
   const draft = (): ReceivingBulkEditDraft => ({
     stageId: stageBlocked ? "" : stageId,

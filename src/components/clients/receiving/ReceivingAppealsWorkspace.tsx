@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createReceivingAppeal,
   fetchReceivingAppealsWorkspace,
@@ -61,6 +61,17 @@ import {
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
 type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail";
 
+const RECEIVING_LIST_REFRESH_NOTICE_DRAFT =
+  "Не удалось обновить список. Черновик и выбранные записи сохранены.";
+const RECEIVING_LIST_REFRESH_NOTICE = "Не удалось обновить список.";
+
+function receivingListFailureRecoverable(
+  res: Extract<ReceivingAppealsLoadResult, { ok: false }>,
+): boolean {
+  return res.code === "ERROR" && res.retryable !== false &&
+    res.httpStatus !== 401 && res.httpStatus !== 403;
+}
+
 type Props = {
   /** Root/tests only — never wire mock data in production paths. */
   previewData?: ReceivingAppealsListResponse;
@@ -92,6 +103,11 @@ export function ReceivingAppealsWorkspace({
   });
   const [loadingMore, setLoadingMore] = useState(false);
   const [batchPending, setBatchPending] = useState(false);
+  const bulkInFlightRef = useRef(false);
+  const listRefreshRetryRef = useRef(false);
+  const [listRefreshRequired, setListRefreshRequired] = useState(false);
+  const [listRefreshInFlight, setListRefreshInFlight] = useState(false);
+  const [listRefreshNotice, setListRefreshNotice] = useState<string | null>(null);
   const [batchPartial, setBatchPartial] = useState<string | null>(null);
   const [bulkConfirm, setBulkConfirm] = useState<{
     kind: ReceivingBulkConfirmKind;
@@ -107,19 +123,31 @@ export function ReceivingAppealsWorkspace({
   const certEntryReady = isReceivingCertificateEntryProxyReady();
   const serverBacked = proxyReady && !previewData;
 
+  const applyFatalListFailure = useCallback((res: Extract<ReceivingAppealsLoadResult, { ok: false }>) => {
+    setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
+    setBlocked(res);
+    setData(null);
+    setBulkConfirm(null);
+    setBulkEditOpen(false);
+    setSelected(new Set());
+    setBatchPartial(null);
+    setListRefreshRequired(false);
+    setListRefreshNotice(null);
+  }, []);
+
   const applyListPage = useCallback(
     async (
       filters: ReceivingListFilters,
       cursor?: string | null,
       append?: boolean,
       settingsForQuery?: ReceivingPartnerSettings | null,
+      preserveMountedList?: boolean,
     ) => {
       const res = await fetchReceivingAppealsWorkspace(filters, cursor, settingsForQuery);
       if (!res.ok) {
+        if (preserveMountedList && receivingListFailureRecoverable(res)) return res;
         if (!append) {
-          setPhase(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
-          setBlocked(res);
-          setData(null);
+          applyFatalListFailure(res);
         }
         return res;
       }
@@ -134,12 +162,40 @@ export function ReceivingAppealsWorkspace({
       });
       return res;
     },
-    [],
+    [applyFatalListFailure],
   );
 
-  const reload = useCallback(async () => {
-    return applyListPage(listFilters, null, false, data?.settings);
+  const reload = useCallback(async (opts?: { preserveMountedList?: boolean }) => {
+    return applyListPage(listFilters, null, false, data?.settings, opts?.preserveMountedList === true);
   }, [applyListPage, listFilters, data?.settings]);
+
+  const listRefreshFailureNotice = useCallback(
+    (afterFullMutation?: boolean) => {
+      const keepsDraftOrSelection =
+        !afterFullMutation && (bulkEditOpen || bulkConfirm !== null || selected.size > 0);
+      return keepsDraftOrSelection ? RECEIVING_LIST_REFRESH_NOTICE_DRAFT : RECEIVING_LIST_REFRESH_NOTICE;
+    },
+    [bulkConfirm, bulkEditOpen, selected.size],
+  );
+
+  const retryListRefresh = useCallback(() => {
+    if (bulkInFlightRef.current || listRefreshRetryRef.current || !listRefreshRequired) return;
+    listRefreshRetryRef.current = true;
+    setListRefreshInFlight(true);
+    void reload({ preserveMountedList: true })
+      .then((res) => {
+        if (res.ok) {
+          setListRefreshRequired(false);
+          setListRefreshNotice(null);
+        } else if (receivingListFailureRecoverable(res)) {
+          setListRefreshNotice(listRefreshFailureNotice());
+        }
+      })
+      .finally(() => {
+        listRefreshRetryRef.current = false;
+        setListRefreshInFlight(false);
+      });
+  }, [listRefreshFailureNotice, listRefreshRequired, reload]);
 
   useEffect(() => {
     if (previewData) return;
@@ -289,85 +345,115 @@ export function ReceivingAppealsWorkspace({
       .finally(() => setLoadingMore(false));
   }, [applyListPage, data?.nextCursor, data?.settings, listFilters, loadingMore]);
 
-  const bulkContractState: ReceivingBulkContractState = !batchProxyReady
+  const bulkWriteAllowed = data !== null && receivingAppealsMutationsAllowed(data);
+  const bulkContractState: ReceivingBulkContractState = !batchProxyReady || !bulkWriteAllowed
     ? "blocked"
     : batchPending
       ? "pending"
-      : "ready";
+      : listRefreshRequired
+        ? "refresh-required"
+        : "ready";
+
+  const bulkMutationBlocked =
+    batchPending || listRefreshRequired || listRefreshInFlight || !bulkWriteAllowed;
+
+  const refreshListAfterBulkMutation = useCallback(
+    async (afterFullMutation?: boolean) => {
+      const res = await reload({ preserveMountedList: true });
+      if (res.ok) {
+        setListRefreshRequired(false);
+        setListRefreshNotice(null);
+      } else if (receivingListFailureRecoverable(res)) {
+        setListRefreshRequired(true);
+        setListRefreshNotice(listRefreshFailureNotice(afterFullMutation));
+      }
+    },
+    [listRefreshFailureNotice, reload],
+  );
 
   const executeBulkConfirmed = useCallback(async () => {
-    if (!bulkConfirm) return;
+    if (!bulkConfirm || bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
     const ids = receivingBulkConfirmTargetIds(bulkConfirm.ids, selected);
     if (ids.length === 0) return;
+    bulkInFlightRef.current = true;
     setBatchPending(true);
     setBatchPartial(null);
-    const res = await postReceivingAppealsBatch({
-      action: receivingConfirmToBatchAction(bulkConfirm.kind),
-      ids,
-    });
-    setBatchPending(false);
-    if (!res.ok) {
-      setBatchPartial(res.message);
-      return;
+    try {
+      const res = await postReceivingAppealsBatch({
+        action: receivingConfirmToBatchAction(bulkConfirm.kind),
+        ids,
+      });
+      if (!res.ok) {
+        setBatchPartial(res.message);
+        return;
+      }
+      const result = normalizeReceivingBatchResponse(res.data);
+      const partialMsg = receivingBulkErrorMessage(result);
+      if (partialMsg) setBatchPartial(partialMsg);
+      const mergedSelection = new Set(
+        receivingBulkPreserveSelection(result) || result.ok
+          ? receivingBulkMergeSelection([...selected], result)
+          : [...selected],
+      );
+      setSelected(mergedSelection);
+      if (result.ok && result.kind === "partial") {
+        const remain = receivingBulkConfirmTargetIds(bulkConfirm.ids, mergedSelection);
+        setBulkConfirm((prev) => prev && remain.length > 0 ? { ...prev, ids: remain } : null);
+      } else if (result.ok && result.kind === "full") {
+        setBulkConfirm(null);
+      }
+      if (result.ok && result.updatedIds.length > 0) {
+        await refreshListAfterBulkMutation(result.kind === "full");
+      }
+    } finally {
+      bulkInFlightRef.current = false;
+      setBatchPending(false);
     }
-    const result = normalizeReceivingBatchResponse(res.data);
-    const partialMsg = receivingBulkErrorMessage(result);
-    if (partialMsg) setBatchPartial(partialMsg);
-    if (result.ok && result.updatedIds.length > 0) {
-      await reload();
-    }
-    const mergedSelection = new Set(
-      receivingBulkPreserveSelection(result) || result.ok
-        ? receivingBulkMergeSelection([...selected], result)
-        : [...selected],
-    );
-    setSelected(mergedSelection);
-    if (result.ok && result.kind === "partial") {
-      const remain = receivingBulkConfirmTargetIds(bulkConfirm.ids, mergedSelection);
-      setBulkConfirm((prev) => (prev && remain.length > 0 ? { ...prev, ids: remain } : prev));
-    }
-    if (result.ok && result.kind === "full") {
-      setBulkConfirm(null);
-    }
-  }, [bulkConfirm, reload, selected]);
+  }, [bulkConfirm, bulkMutationBlocked, refreshListAfterBulkMutation, selected]);
 
   const executeBulkEdit = useCallback(
     async (draft: Parameters<typeof applyReceivingBulkEditsPerId>[1]) => {
-      if (!data) return;
+      if (!data || bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
       const ids = [...selected];
       if (ids.length === 0) return;
+      bulkInFlightRef.current = true;
       setBatchPending(true);
       setBatchPartial(null);
-      const selectedRows = data.appeals.filter((a) => selected.has(a.id));
-      const stageBlocked = selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row));
-      const stageLockedIds = new Set(
-        selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
-      );
-      const { result, outcomes } = await applyReceivingBulkEditsPerId(ids, draft, {
-        appeals: data.appeals,
-        workingStages: data.settings?.workingStages ?? [],
-        stageBlocked,
-        stageLockedIds,
-      });
-      setBatchPending(false);
-      const partialMsg = receivingBulkErrorMessage(result);
-      if (partialMsg) setBatchPartial(partialMsg);
-      if (receivingBulkApplyNeedsListReload(outcomes)) {
-        await reload();
-      }
-      setSelected((prev) => new Set(receivingBulkMergeSelection([...prev], result)));
-      if (result.ok && result.kind === "full") {
-        setBulkEditOpen(false);
-        setSelected(new Set());
+      try {
+        const selectedRows = data.appeals.filter((a) => selected.has(a.id));
+        const stageBlocked = selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row));
+        const stageLockedIds = new Set(
+          selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
+        );
+        const { result, outcomes } = await applyReceivingBulkEditsPerId(ids, draft, {
+          appeals: data.appeals,
+          workingStages: data.settings?.workingStages ?? [],
+          stageBlocked,
+          stageLockedIds,
+        });
+        const partialMsg = receivingBulkErrorMessage(result);
+        if (partialMsg) setBatchPartial(partialMsg);
+        setSelected((prev) => new Set(receivingBulkMergeSelection([...prev], result)));
+        if (result.ok && result.kind === "full") {
+          setBulkEditOpen(false);
+          setSelected(new Set());
+        }
+        if (receivingBulkApplyNeedsListReload(outcomes)) {
+          await refreshListAfterBulkMutation(result.ok && result.kind === "full");
+        }
+      } finally {
+        bulkInFlightRef.current = false;
+        setBatchPending(false);
       }
     },
-    [data, reload, selected],
+    [bulkMutationBlocked, data, refreshListAfterBulkMutation, selected],
   );
 
   const bulkCallbacks = useMemo(
     () => ({
       selectedIds: selected,
       onToggleRow: (id: string, checked: boolean) => {
+        if (bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
         setSelected((prev) => {
           const next = new Set(prev);
           if (checked) next.add(id);
@@ -376,6 +462,7 @@ export function ReceivingAppealsWorkspace({
         });
       },
       onToggleSelectAll: (ids: string[], checked: boolean) => {
+        if (bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
         setSelected((prev) => {
           const next = new Set(prev);
           for (const id of ids) {
@@ -388,6 +475,7 @@ export function ReceivingAppealsWorkspace({
       contractState: bulkContractState,
       partialError: batchPartial,
       onBulkAction: (action: ReceivingBulkAction) => {
+        if (bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
         if (action === "clear") {
           setSelected(new Set());
           setBulkConfirm(null);
@@ -421,7 +509,7 @@ export function ReceivingAppealsWorkspace({
         setBulkConfirm({ kind: confirmKind, ids });
       },
     }),
-    [bulkContractState, batchPartial, listFilters.bucket, selected],
+    [bulkContractState, bulkMutationBlocked, batchPartial, listFilters.bucket, selected],
   );
 
   if (phase === "loading" && !previewData) {
@@ -615,7 +703,22 @@ export function ReceivingAppealsWorkspace({
           </button>
         </div>
       ) : null}
-      {bulkEditOpen && selected.size > 0 ? (
+      {listRefreshNotice ? (
+        <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-list-refresh-notice">
+          <strong>{listRefreshNotice}</strong>
+          <button
+            type="button"
+            className="btn ghost small-btn"
+            data-ca-action="receiving:list-refresh-retry"
+            disabled={listRefreshInFlight}
+            aria-disabled={listRefreshInFlight}
+            onClick={retryListRefresh}
+          >
+            <strong>Повторить обновление</strong>
+          </button>
+        </div>
+      ) : null}
+      {bulkEditOpen && selected.size > 0 && mutationsAllowed ? (
         <ReceivingBulkEditPanel
           count={selected.size}
           stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
@@ -631,7 +734,7 @@ export function ReceivingAppealsWorkspace({
           onApply={(draft) => void executeBulkEdit(draft)}
         />
       ) : null}
-      {bulkConfirm ? (
+      {bulkConfirm && mutationsAllowed ? (
         <ReceivingBulkConfirmPanel
           kind={bulkConfirm.kind}
           count={bulkConfirm.ids.length}
