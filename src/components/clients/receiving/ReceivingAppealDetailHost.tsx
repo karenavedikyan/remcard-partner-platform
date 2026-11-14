@@ -77,8 +77,8 @@ export function ReceivingAppealDetailHost({
   const [notesConflict, setNotesConflict] = useState(false);
   const [notesSaveBlocked, setNotesSaveBlocked] = useState(false);
   const notesSaveBlockedRef = useRef(false);
-  const notesInFlightRef = useRef(false);
-  const notesRefreshInFlightRef = useRef(false);
+  const notesInFlightRef = useRef<symbol | null>(null);
+  const notesRefreshInFlightRef = useRef<symbol | null>(null);
 
   const detailGenerationRef = useRef(0);
   const sessionKeyRef = useRef<DetailSessionKey>({
@@ -178,8 +178,8 @@ export function ReceivingAppealDetailHost({
   useEffect(() => {
     sessionKeyRef.current = { appealId, readOnly, referrerPartnerName };
     notesSaveBlockedRef.current = false;
-    notesInFlightRef.current = false;
-    notesRefreshInFlightRef.current = false;
+    notesInFlightRef.current = null;
+    notesRefreshInFlightRef.current = null;
     setNotesSaveBlocked(false);
     setNotesConflict(false);
     setBusy({});
@@ -197,35 +197,59 @@ export function ReceivingAppealDetailHost({
     if (notesRefreshInFlightRef.current) return;
     const session = sessionKeyRef.current;
     const generation = detailGenerationRef.current;
-    notesRefreshInFlightRef.current = true;
+    const operation = Symbol("notes-conflict-refresh");
+    notesRefreshInFlightRef.current = operation;
     notesSaveBlockedRef.current = true;
     setNotesSaveBlocked(true);
     setBusy((b) => ({ ...b, notes: true }));
-    const res = await fetchReceivingAppealDetailWire(session.appealId);
-    if (isStaleGeneration(generation, session)) return;
-    if (res.ok) {
-      // Keep the mounted view and its dirty draft. Only the server snapshot/revision changes.
-      applyDetailWire(session, res);
-      notesSaveBlockedRef.current = false;
-      setNotesSaveBlocked(false);
-      setActionError((e) => ({
-        ...e,
-        notes: "Карточка изменилась. Ваш черновик сохранён. Проверьте актуальную заметку и нажмите «Сохранить» для повторного сохранения.",
-      }));
-    } else {
-      setActionError((e) => ({
-        ...e,
-        notes: "Карточка изменилась. Ваш черновик сохранён, но актуальную версию загрузить не удалось. Повторите обновление карточки перед сохранением.",
-      }));
+    try {
+      const res = await fetchReceivingAppealDetailWire(session.appealId);
+      if (isStaleGeneration(generation, session)) return;
+      if (res.ok) {
+        // Keep the mounted view and its dirty draft. Only the server snapshot/revision changes.
+        applyDetailWire(session, res);
+        notesSaveBlockedRef.current = false;
+        setNotesSaveBlocked(false);
+        setActionError((e) => ({
+          ...e,
+          notes: "Карточка изменилась. Ваш черновик сохранён. Проверьте актуальную заметку и нажмите «Сохранить» для повторного сохранения.",
+        }));
+      } else {
+        setActionError((e) => ({
+          ...e,
+          notes: "Карточка изменилась. Ваш черновик сохранён, но актуальную версию загрузить не удалось. Повторите обновление карточки перед сохранением.",
+        }));
+      }
+    } finally {
+      // An old response may release only its own token, never the next session's operation.
+      if (notesRefreshInFlightRef.current === operation) {
+        notesRefreshInFlightRef.current = null;
+        if (!isStaleGeneration(generation, session)) {
+          setBusy((b) => ({ ...b, notes: false }));
+        }
+      }
     }
-    notesRefreshInFlightRef.current = false;
-    setBusy((b) => ({ ...b, notes: false }));
   }, [applyDetailWire, isStaleGeneration]);
 
   const afterSuccessfulMutation = useCallback(async () => {
-    await onAppealMutated?.();
-    await refreshMappedDetail();
-  }, [onAppealMutated, refreshMappedDetail]);
+    const session = sessionKeyRef.current;
+    const generation = detailGenerationRef.current;
+    let listRefreshFailed = false;
+    try {
+      await onAppealMutated?.();
+    } catch {
+      // The PATCH has already succeeded. A failed parent refresh must not lock the form
+      // or prevent the detail GET from obtaining the new revision.
+      listRefreshFailed = true;
+    }
+    if (isStaleGeneration(generation, session)) return;
+    const refreshed = await refreshMappedDetail();
+    if (listRefreshFailed && refreshed && !isStaleGeneration(generation, session)) {
+      setDetailRefreshNotice(
+        "Изменения сохранены, но список клиентов не удалось обновить. Вернитесь к списку и обновите его.",
+      );
+    }
+  }, [onAppealMutated, refreshMappedDetail, isStaleGeneration]);
 
   const onOpenOrderPipeline = useCallback(() => {
     router.push(buildReceivingAppealOrderPipelineHref(appealId));
@@ -245,33 +269,37 @@ export function ReceivingAppealDetailHost({
       }
       const session = sessionKeyRef.current;
       const generation = detailGenerationRef.current;
-      notesInFlightRef.current = true;
+      const operation = Symbol("notes-save");
+      notesInFlightRef.current = operation;
       setBusy((b) => ({ ...b, notes: true }));
       setActionError((e) => ({ ...e, notes: undefined }));
-      const result = await patchReceivingAppealProfileCas(appealId, {
-        privateNotes: body.privateNotes,
-        expectedRevision: body.expectedRevision,
-      });
-      const outcome = toMutationOutcome(result);
-      if (isStaleGeneration(generation, session)) return outcome;
-      if (!outcome.ok) {
-        if (outcome.conflict) {
-          setNotesConflict(true);
-          await refreshNotesAfterConflict();
-          if (isStaleGeneration(generation, session)) return outcome;
-        } else {
-          setActionError((e) => ({ ...e, notes: outcome.message }));
+      try {
+        const result = await patchReceivingAppealProfileCas(appealId, {
+          privateNotes: body.privateNotes,
+          expectedRevision: body.expectedRevision,
+        });
+        const outcome = toMutationOutcome(result);
+        if (isStaleGeneration(generation, session)) return outcome;
+        if (!outcome.ok) {
+          if (outcome.conflict) {
+            setNotesConflict(true);
+            await refreshNotesAfterConflict();
+          } else {
+            setActionError((e) => ({ ...e, notes: outcome.message }));
+          }
+          return outcome;
         }
-        notesInFlightRef.current = false;
-        setBusy((b) => ({ ...b, notes: false }));
-        return outcome;
+        setNotesConflict(false);
+        await afterSuccessfulMutation();
+        return { ok: true };
+      } finally {
+        if (notesInFlightRef.current === operation) {
+          notesInFlightRef.current = null;
+          if (!isStaleGeneration(generation, session)) {
+            setBusy((b) => ({ ...b, notes: false }));
+          }
+        }
       }
-      setNotesConflict(false);
-      await afterSuccessfulMutation();
-      if (isStaleGeneration(generation, session)) return { ok: true };
-      notesInFlightRef.current = false;
-      setBusy((b) => ({ ...b, notes: false }));
-      return { ok: true };
     },
     [afterSuccessfulMutation, appealId, isStaleGeneration, refreshNotesAfterConflict],
   );
