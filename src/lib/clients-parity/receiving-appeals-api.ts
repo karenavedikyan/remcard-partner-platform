@@ -124,12 +124,12 @@ export type ReceivingAppealListRowWire = {
   receivingOrganizationId?: string | null;
   receivingBranchId?: string | null;
   referrerProUserId?: string | null;
-  /** K1 certificate-entry / detail projection — trimmed human name only. */
+  /** K1 b0ffd197 — trusted human caption when present. */
   referrerDisplayName?: string | null;
   interest?: string | null;
   budgetHint?: string | null;
   stageKey?: string | null;
-  /** K1 RECEIVING read DTO — trusted caption when present (opaque keys hidden in UI). */
+  /** K1 b0ffd197 — RECEIVING-scope stage caption when present. */
   stageLabel?: string | null;
   refusedReason?: string | null;
   shippedAt?: string | null;
@@ -183,7 +183,6 @@ export type ReceivingAppealListRow = {
   interest: string;
   budgetHint?: string | null;
   stageId: string;
-  /** From wire `stageLabel` when server sends RECEIVING-scope caption. */
   stageLabel?: string | null;
   refusedReason?: string | null;
   shippedAt?: string | null;

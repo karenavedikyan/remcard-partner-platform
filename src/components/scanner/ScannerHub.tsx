@@ -1243,7 +1243,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                 presentation="scanner"
               />
             ) : null}
-            <ScannerReferringPartnerBlock referringPartner={preview.referringPartner} />
+            <ScannerReferringPartnerBlock
+              referringPartner={preview.referringPartner}
+              appealReferrerDisplayName={receivingHandoff.referrerDisplayNameFallback}
+            />
             <details className={styles.issuerDetails}>
               <summary>Эмитент и где принимается документ</summary>
               <div className={styles.issuerDetailsBody}>
