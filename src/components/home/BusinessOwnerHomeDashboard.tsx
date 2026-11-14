@@ -95,7 +95,9 @@ export function BusinessOwnerHomeDashboard({
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded">("loading");
   const [contextEpoch, setContextEpoch] = useState(0);
-  const [homeBranchId, setHomeBranchId] = useState<string | null>(() => readBusinessHomeBranchId());
+  const [homeBranchId, setHomeBranchId] = useState<string | null>(() =>
+    isStaffView ? readBusinessHomeBranchId() : null,
+  );
   const loadGenerationRef = useRef(0);
   const supplementalGenerationRef = useRef(0);
   const [storeProbe, setStoreProbe] = useState<StoreLifetimeActivityProbe>(() =>
@@ -115,7 +117,9 @@ export function BusinessOwnerHomeDashboard({
     setCompanyProbe(initialCompanyLifetimeProbe());
 
     try {
-      const branchQueryId = readBusinessHomeBranchId() ?? homeBranchId;
+      const branchQueryId = isStaffView
+        ? readBusinessHomeBranchId() ?? homeBranchId
+        : homeBranchId;
       const data = await remcardFetch<BusinessHomeMetricsResponse>(
         businessHomeMetricsPath(branchQueryId),
       );
@@ -123,7 +127,7 @@ export function BusinessOwnerHomeDashboard({
       setActiveBranchLabel(data.activeBranchLabel);
       const resolvedId = data.selectedBranchId ?? branchQueryId ?? null;
       setSelectedBranchId(resolvedId);
-      if (resolvedId && data.metrics.primary.state !== "invalid_branch") {
+      if (isStaffView && resolvedId && data.metrics.primary.state !== "invalid_branch") {
         writeBusinessHomeBranchId(resolvedId);
         setHomeBranchId(resolvedId);
       }
@@ -149,7 +153,7 @@ export function BusinessOwnerHomeDashboard({
       setSlices([err, { state: "error", message }, { state: "error", message }]);
       setLoadState("loaded");
     }
-  }, [contextEpoch, homeBranchId]);
+  }, [contextEpoch, homeBranchId, isStaffView]);
 
   const branchSelectionRequired =
     loadState === "loaded" &&
@@ -157,10 +161,10 @@ export function BusinessOwnerHomeDashboard({
     (slices[0]?.state === "needs_branch" || slices[0]?.state === "invalid_branch");
 
   const handleBranchSelected = useCallback((branchId: string) => {
-    writeBusinessHomeBranchId(branchId);
-    setHomeBranchId(branchId);
+    if (isStaffView) writeBusinessHomeBranchId(branchId);
+    setHomeBranchId(branchId || null);
     setContextEpoch((n) => n + 1);
-  }, []);
+  }, [isStaffView]);
 
   useEffect(() => {
     void loadMetrics();

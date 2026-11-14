@@ -52,7 +52,7 @@ export function BusinessHomeBranchPicker({
   if (branches.length === 1 && !branchSelectionRequired) return null;
 
   async function onChange(branchId: string) {
-    if (!branchId || branchId === selectedBranchId) return;
+    if (branchId === (selectedBranchId ?? "")) return;
     setPendingId(branchId);
     setError("");
     try {
@@ -67,7 +67,7 @@ export function BusinessHomeBranchPicker({
   return (
     <div className={styles.branchContextCheckRow} style={{ marginBottom: "1rem" }}>
       <label className={styles.checkRow}>
-        <span className={styles.branchContextLabel}>Текущий филиал для продаж</span>
+        <span className={styles.branchContextLabel}>Фильтр по филиалу</span>
         <select
           className={styles.branchContextSelect}
           data-testid="business-home-branch-select"
@@ -75,8 +75,8 @@ export function BusinessHomeBranchPicker({
           value={selectedBranchId ?? ""}
           onChange={(e) => void onChange(e.target.value)}
         >
-          <option value="" disabled>
-            Выберите филиал
+          <option value="">
+            Весь партнёр
           </option>
           {branches.map((b) => (
             <option key={b.id} value={b.id}>
