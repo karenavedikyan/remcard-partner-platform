@@ -17,7 +17,12 @@ export type ObserverReferredAppeal = {
   referrerPartnerId: string;
   updatedAt: string;
   referralAt?: string | null;
+  /** Canonical stage key for filters/stats — not shown when `stageLabel` is set. */
   stageId: ObserverAppealStageId;
+  /** Resolved display caption from wire `stageLabel` or safe fallback (never raw `ws_*`). */
+  stageLabel?: string;
+  /** K2 optional `referrerDisplayName` — never `referrerProUserId`. */
+  referrerDisplayName?: string | null;
 };
 
 export type ObserverPartnerMeta = {

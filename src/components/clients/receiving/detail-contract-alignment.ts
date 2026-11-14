@@ -4,6 +4,10 @@
  * K8 @ 0f4fe833 `ClientAppealRecord`; K1 @ 5a51d7b7 detail GET envelope (read-only mirror).
  */
 
+import {
+  resolveClientAppealStageDisplayLabel,
+  resolveReferrerDisplayLabel,
+} from "@/lib/clients-parity/client-appeal-display";
 import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
 import { formatMoneyRub } from "@/lib/history-format";
 import type {
@@ -21,6 +25,7 @@ export type ClientAppealRecordWire = {
   receivingOrganizationId: string | null;
   receivingBranchId: string | null;
   referrerProUserId: string | null;
+  referrerDisplayName?: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   manualSourceKey: string | null;
   discountPercent: number | null;
@@ -30,6 +35,7 @@ export type ClientAppealRecordWire = {
   budgetHint: string | null;
   clientContact: string | null;
   stageKey: string;
+  stageLabel?: string | null;
   refusedReason: string | null;
   shippedAt: string | null;
   purchaseOrderId: string | null;
@@ -69,14 +75,6 @@ export type ReceivingPartnerPrincipalWire = {
 
 /** Prototype `isActiveAppeal` — certificate slot uniqueness (K8 DB must match). */
 export const CLIENT_APPEAL_INACTIVE_STAGE_KEYS = ["sys_refused", "sys_return", "refused", "return"] as const;
-
-const CLIENT_APPEAL_SYSTEM_STAGE_LABELS: Record<string, string> = {
-  sys_new: "Новое",
-  sys_paid: "Оплачено",
-  sys_shipped: "Отгружено",
-  sys_return: "Возврат",
-  sys_refused: "Отказ",
-};
 
 const MANUAL_SOURCE_LABELS: Record<string, string> = {
   phone: "Звонок",
@@ -149,11 +147,13 @@ export type P6ReceivingAppealDetailWire = {
 export function resolveClientAppealStageLabel(
   stageKey: string,
   workingStages: ClientAppealWorkingStageWire[],
+  trustedStageLabel?: string | null,
 ): string {
-  const key = stageKey.trim();
-  const custom = workingStages.find((s) => s.id === key);
-  if (custom?.label?.trim()) return custom.label.trim();
-  return CLIENT_APPEAL_SYSTEM_STAGE_LABELS[key] ?? key;
+  return resolveClientAppealStageDisplayLabel({
+    stageKey,
+    trustedStageLabel,
+    workingStages,
+  });
 }
 
 export function resolveClientAppealSourceLabel(record: Pick<ClientAppealRecordWire, "originKind" | "manualSourceKey">): string {
@@ -198,15 +198,22 @@ export function k1ReceivingDetailEnvelopeToP4Mapped(
   envelope: K1ReceivingAppealDetailEnvelopeWire,
   options?: { referrerPartnerName?: string | null; readOnly?: boolean },
 ): ReceivingAppealDetailMapped {
-  const stageLabel = resolveClientAppealStageLabel(envelope.appeal.stageKey, envelope.workingStages);
+  const stageLabel = resolveClientAppealStageLabel(
+    envelope.appeal.stageKey,
+    envelope.workingStages,
+    envelope.appeal.stageLabel,
+  );
   const sourceLabel = resolveClientAppealSourceLabel(envelope.appeal);
+  const referrerPartnerName = resolveReferrerDisplayLabel({
+    trustedReferrerDisplayName: envelope.appeal.referrerDisplayName,
+  });
   const appeal: ReceivingAppealDetailDto = {
     ...receivingRecordToDetailDto(
       envelope.appeal,
       {
         stageLabel,
         sourceLabel,
-        referrerPartnerName: options?.referrerPartnerName ?? null,
+        referrerPartnerName,
       },
       { includePrivateFields: !options?.readOnly },
     ),

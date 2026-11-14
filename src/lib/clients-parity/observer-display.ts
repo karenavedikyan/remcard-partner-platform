@@ -1,15 +1,9 @@
+import { resolveClientAppealStageDisplayLabel } from "./client-appeal-display";
 import type { ObserverReferredAppeal } from "./types";
 
-const STAGE_LABELS: Record<string, string> = {
-  new: "Новое обращение",
-  paid: "Оплачено",
-  shipped: "Отгружено",
-  return: "Возврат",
-  refused: "Отказ",
-};
-
 export function observerAppealStatusLabel(appeal: ObserverReferredAppeal): string {
-  return STAGE_LABELS[appeal.stageId] ?? appeal.stageId;
+  if (appeal.stageLabel?.trim()) return appeal.stageLabel.trim();
+  return resolveClientAppealStageDisplayLabel({ stageKey: String(appeal.stageId) });
 }
 
 export function formatObserverDateTime(iso: string): string {

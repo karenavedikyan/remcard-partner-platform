@@ -15,6 +15,10 @@ export const RECEIVING_API_CONTRACT_NOTE =
   "K8_CANDIDATE_PENDING: partnerSettings persistence requires K8 additive storage, not API constants.";
 
 import { remcardFetch, RemcardApiError } from "@/lib/api-client";
+import {
+  resolveClientAppealStageDisplayLabel,
+  trimTrustedClientsDisplayString,
+} from "./client-appeal-display";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import { isAllowedProxyRoute } from "@/lib/remcard-proxy";
 
@@ -120,9 +124,13 @@ export type ReceivingAppealListRowWire = {
   receivingOrganizationId?: string | null;
   receivingBranchId?: string | null;
   referrerProUserId?: string | null;
+  /** K1 certificate-entry / detail projection — trimmed human name only. */
+  referrerDisplayName?: string | null;
   interest?: string | null;
   budgetHint?: string | null;
   stageKey?: string | null;
+  /** K1 RECEIVING read DTO — trusted caption when present (opaque keys hidden in UI). */
+  stageLabel?: string | null;
   refusedReason?: string | null;
   shippedAt?: string | null;
   paidAmountKopecks?: number | null;
@@ -171,9 +179,12 @@ export type ReceivingAppealListRow = {
   receivingBranchId?: string | null;
   /** UI alias — wire `referrerProUserId`. */
   referrerPartnerId: string;
+  referrerDisplayName?: string | null;
   interest: string;
   budgetHint?: string | null;
   stageId: string;
+  /** From wire `stageLabel` when server sends RECEIVING-scope caption. */
+  stageLabel?: string | null;
   refusedReason?: string | null;
   shippedAt?: string | null;
   /** Canonical kopecks from server. */
@@ -627,10 +638,13 @@ const RECEIVING_SYSTEM_STAGE_LABELS: Record<string, string> = {
 export function receivingStageDisplayLabel(
   stageId: string,
   settings?: ReceivingPartnerSettings | null,
+  trustedStageLabel?: string | null,
 ): string {
-  return RECEIVING_SYSTEM_STAGE_LABELS[stageId] ??
-    [...(settings?.workingStages ?? []), ...(settings?.archivedStages ?? [])]
-      .find((stage) => stage.id === stageId)?.label ?? stageId;
+  return resolveClientAppealStageDisplayLabel({
+    stageKey: stageId,
+    trustedStageLabel,
+    workingStages: [...(settings?.workingStages ?? []), ...(settings?.archivedStages ?? [])],
+  });
 }
 
 /** Map UI status filter label → `stageKey` for K1 list query (never send label). */
@@ -705,9 +719,11 @@ export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWi
     receivingOrganizationId: wire.receivingOrganizationId,
     receivingBranchId: wire.receivingBranchId,
     referrerPartnerId: (wire.referrerProUserId ?? wire.referrerPartnerId ?? "").trim(),
+    referrerDisplayName: trimTrustedClientsDisplayString(wire.referrerDisplayName),
     interest: wire.interest?.trim() ?? "—",
     budgetHint: wire.budgetHint,
     stageId: (wire.stageKey ?? wire.stageId ?? "").trim() || RECEIVING_SYSTEM_STAGE.NEW,
+    stageLabel: trimTrustedClientsDisplayString(wire.stageLabel),
     refusedReason: wire.refusedReason,
     shippedAt: wire.shippedAt,
     paidAmountKopecks,
