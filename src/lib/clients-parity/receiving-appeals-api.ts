@@ -206,6 +206,7 @@ export type ReceivingAppealListRow = {
 export type ReceivingAppealDetail = ReceivingAppealListRow & {
   privateNotes?: string;
   clientContact?: string | null;
+  clientCity?: string | null;
   discountPercent?: number;
   certValidUntil?: string | null;
 };
@@ -241,6 +242,7 @@ export function mapReceivingAppealDetailFieldsFromWire(
     ...base,
     privateNotes: wire.privateNotes?.trim() ? wire.privateNotes.trim() : undefined,
     clientContact: wire.clientContact ?? null,
+    clientCity: wire.clientCity?.trim() || null,
     discountPercent:
       typeof wire.discountPercent === "number" ? wire.discountPercent : undefined,
     certValidUntil: wire.certValidUntil ?? null,
@@ -1212,7 +1214,7 @@ export type ReceivingAppealsLoadResult =
 
 const RECEIVING_BLOCKER_ID = "BLK-RECEIVING-APPEALS";
 
-function receivingContractBlocked(): ReceivingAppealsLoadResult {
+function receivingContractBlocked(): Extract<ReceivingAppealsLoadResult, { ok: false }> {
   const blocker = CLIENTS_CONTRACT_BLOCKERS.find((b) => b.id === RECEIVING_BLOCKER_ID);
   return {
     ok: false,
@@ -1272,10 +1274,14 @@ export async function fetchReceivingAppealsWorkspace(
   }
 }
 
+export type ReceivingAppealCreateResult =
+  | { ok: true }
+  | Extract<ReceivingAppealsLoadResult, { ok: false }>;
+
 export async function createReceivingAppeal(
   body: ReceivingAppealCreateBody,
   gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
-): Promise<ReceivingAppealsLoadResult> {
+): Promise<ReceivingAppealCreateResult> {
   const readOnly =
     gate && "readOnly" in gate
       ? gate.readOnly === true
@@ -1297,7 +1303,9 @@ export async function createReceivingAppeal(
       method: "POST",
       body: toK1ReceivingAppealCreateBody(body),
     });
-    return fetchReceivingAppealsWorkspace();
+    // A committed POST must never become a retryable creation error because a
+    // subsequent list GET failed. The workspace owns read-only reconciliation.
+    return { ok: true };
   } catch (caught) {
     return {
       ok: false,

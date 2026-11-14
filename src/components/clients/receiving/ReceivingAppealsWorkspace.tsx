@@ -357,7 +357,7 @@ export function ReceivingAppealsWorkspace({
   const bulkMutationBlocked =
     batchPending || listRefreshRequired || listRefreshInFlight || !bulkWriteAllowed;
 
-  const refreshListAfterBulkMutation = useCallback(
+  const refreshListAfterMutation = useCallback(
     async (afterFullMutation?: boolean) => {
       const res = await reload({ preserveMountedList: true });
       if (res.ok) {
@@ -403,13 +403,13 @@ export function ReceivingAppealsWorkspace({
         setBulkConfirm(null);
       }
       if (result.ok && result.updatedIds.length > 0) {
-        await refreshListAfterBulkMutation(result.kind === "full");
+        await refreshListAfterMutation(result.kind === "full");
       }
     } finally {
       bulkInFlightRef.current = false;
       setBatchPending(false);
     }
-  }, [bulkConfirm, bulkMutationBlocked, refreshListAfterBulkMutation, selected]);
+  }, [bulkConfirm, bulkMutationBlocked, refreshListAfterMutation, selected]);
 
   const executeBulkEdit = useCallback(
     async (draft: Parameters<typeof applyReceivingBulkEditsPerId>[1]) => {
@@ -439,14 +439,14 @@ export function ReceivingAppealsWorkspace({
           setSelected(new Set());
         }
         if (receivingBulkApplyNeedsListReload(outcomes)) {
-          await refreshListAfterBulkMutation(result.ok && result.kind === "full");
+          await refreshListAfterMutation(result.ok && result.kind === "full");
         }
       } finally {
         bulkInFlightRef.current = false;
         setBatchPending(false);
       }
     },
-    [bulkMutationBlocked, data, refreshListAfterBulkMutation, selected],
+    [bulkMutationBlocked, data, refreshListAfterMutation, selected],
   );
 
   const bulkCallbacks = useMemo(
@@ -561,6 +561,31 @@ export function ReceivingAppealsWorkspace({
     return mutationDeniedShell;
   }
 
+  const listRefreshBanner = listRefreshNotice ? (
+    <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-list-refresh-notice">
+      <strong>{listRefreshNotice}</strong>
+      <button
+        type="button"
+        className="btn ghost small-btn"
+        data-ca-action="receiving:list-refresh-retry"
+        disabled={listRefreshInFlight}
+        aria-disabled={listRefreshInFlight}
+        onClick={retryListRefresh}
+      >
+        <strong>Повторить обновление</strong>
+      </button>
+    </div>
+  ) : null;
+
+  const persistBanner = persistNotice ? (
+    <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-persist-notice">
+      {persistNotice}
+      <button type="button" className="btn ghost small-btn" onClick={() => setPersistNotice(null)}>
+        Закрыть
+      </button>
+    </div>
+  ) : null;
+
   if (view === "manual") {
     return (
       <ReceivingAppealForm
@@ -587,7 +612,8 @@ export function ReceivingAppealsWorkspace({
             throw new Error(res.message);
           }
           setView("list");
-          await reload();
+          setPersistNotice("Обращение создано.");
+          await refreshListAfterMutation(true);
         }}
       />
     );
@@ -646,7 +672,7 @@ export function ReceivingAppealsWorkspace({
           }
           setDetailId(res.appealId);
           setView("detail");
-          await reload();
+          await refreshListAfterMutation(true);
         }}
       />
     );
@@ -655,19 +681,28 @@ export function ReceivingAppealsWorkspace({
   if (view === "detail" && detailId) {
     const listRow = data.appeals.find((row) => row.id === detailId);
     return (
-      <ReceivingAppealDetailHost
-        appealId={detailId}
-        readOnly={readOnly}
-        referrerPartnerName={listRow?.referrerDisplayName ?? null}
-        onBack={() => {
-          setView("list");
-          setDetailId(null);
-        }}
-        onAppealMutated={() => {
-          void reload();
-        }}
-      />
+      <>
+        {listRefreshBanner}
+        <ReceivingAppealDetailHost
+          appealId={detailId}
+          readOnly={readOnly}
+          referrerPartnerName={listRow?.referrerDisplayName ?? null}
+          onBack={() => {
+            setView("list");
+            setDetailId(null);
+          }}
+          onAppealMutated={() => {
+            void refreshListAfterMutation(true);
+          }}
+        />
+      </>
     );
+  }
+
+  // An empty stale snapshot after an accepted create is not proof that no
+  // appeals exist. Keep read-only recovery instead of inviting another create.
+  if (listRefreshRequired && data.appeals.length === 0) {
+    return <>{persistBanner}{listRefreshBanner}</>;
   }
 
   const showDirectionIntro = isReceivingDirectionIntroEligible({
@@ -680,7 +715,7 @@ export function ReceivingAppealsWorkspace({
     bucketsProof,
   });
 
-  if (showDirectionIntro) {
+  if (showDirectionIntro && !listRefreshRequired) {
     return (
       <ClientsNewPartnerEmptyState
         accessMode={accessMode}
@@ -695,29 +730,8 @@ export function ReceivingAppealsWorkspace({
 
   return (
     <>
-      {persistNotice ? (
-        <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-persist-notice">
-          {persistNotice}
-          <button type="button" className="btn ghost small-btn" onClick={() => setPersistNotice(null)}>
-            Закрыть
-          </button>
-        </div>
-      ) : null}
-      {listRefreshNotice ? (
-        <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-list-refresh-notice">
-          <strong>{listRefreshNotice}</strong>
-          <button
-            type="button"
-            className="btn ghost small-btn"
-            data-ca-action="receiving:list-refresh-retry"
-            disabled={listRefreshInFlight}
-            aria-disabled={listRefreshInFlight}
-            onClick={retryListRefresh}
-          >
-            <strong>Повторить обновление</strong>
-          </button>
-        </div>
-      ) : null}
+      {persistBanner}
+      {listRefreshBanner}
       {bulkEditOpen && selected.size > 0 && mutationsAllowed ? (
         <ReceivingBulkEditPanel
           count={selected.size}
