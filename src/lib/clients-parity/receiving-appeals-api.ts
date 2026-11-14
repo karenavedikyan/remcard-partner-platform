@@ -844,10 +844,34 @@ export type ReceivingCertificateEntryBody = {
 /** HTTP 200 with `valid: false` is a real invalid result — not an error throw. */
 export type ReceivingCertificateEntryWireResponse = {
   valid: boolean;
+  /** Human text when present (may duplicate or omit when `reason` carries detail). */
   message?: string | null;
+  /** K1 validation detail when `valid: false` (e.g. issuer/branch restriction). */
+  reason?: unknown;
   outcome?: "created" | "existing";
   appeal?: ReceivingAppealListRowWire;
 };
+
+export const RECEIVING_CERTIFICATE_ENTRY_INVALID_FALLBACK =
+  "Сертификат недействителен или срок истёк.";
+
+function trimReceivingCertificateEntryText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/** `message` wins over `reason`; malformed/missing fields use `fallback`. */
+export function resolveReceivingCertificateEntryUserMessage(
+  payload: Pick<ReceivingCertificateEntryWireResponse, "message" | "reason">,
+  fallback: string = RECEIVING_CERTIFICATE_ENTRY_INVALID_FALLBACK,
+): string {
+  return (
+    trimReceivingCertificateEntryText(payload.message) ??
+    trimReceivingCertificateEntryText(payload.reason) ??
+    fallback
+  );
+}
 
 export type ReceivingCertificateEntryResult =
   | {
@@ -860,6 +884,8 @@ export type ReceivingCertificateEntryResult =
       ok: false;
       code: "BLOCKED_CONTRACT" | "FORBIDDEN" | "INVALID" | "CONFLICT" | "ERROR";
       message: string;
+      /** Set when server sent only `reason` (trimmed) for invalid certificate entry. */
+      reason?: string;
     };
 
 const RECEIVING_CERT_ENTRY_PATH = "/api/pro/client-appeals/certificate-entry";
@@ -1026,10 +1052,15 @@ export async function submitReceivingCertificateEntry(
       signal: capture?.signal,
     });
     if (payload.valid === false) {
+      const detail = resolveReceivingCertificateEntryUserMessage(payload);
+      const reasonOnly =
+        !trimReceivingCertificateEntryText(payload.message) &&
+        trimReceivingCertificateEntryText(payload.reason);
       return {
         ok: false,
         code: "INVALID",
-        message: payload.message?.trim() || "Сертификат недействителен или срок истёк.",
+        message: detail,
+        ...(reasonOnly ? { reason: reasonOnly } : {}),
       };
     }
     if (!payload.appeal) {
