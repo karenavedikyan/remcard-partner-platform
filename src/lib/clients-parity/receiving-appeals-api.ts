@@ -856,14 +856,9 @@ export const RECEIVING_CERTIFICATE_ENTRY_INVALID_FALLBACK =
   "Сертификат недействителен или срок истёк.";
 
 function trimReceivingCertificateEntryText(value: unknown): string | null {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return String(value);
-  }
-  return null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /** `message` wins over `reason`; malformed/missing fields use `fallback`. */
@@ -926,7 +921,7 @@ function receivingListEnvelopeReadOnly(data: Pick<ReceivingAppealsListResponse, 
   if (data.access) {
     return !normalizeReceivingAccess(data.access).mutationsAllowed;
   }
-  return data.readOnly === true;
+  return false;
 }
 
 function receivingScannerGateFromListWire(

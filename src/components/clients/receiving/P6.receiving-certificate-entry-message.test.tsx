@@ -39,6 +39,9 @@ describe("resolveReceivingCertificateEntryUserMessage", () => {
     expect(resolveReceivingCertificateEntryUserMessage({ message: null, reason: {} })).toBe(
       RECEIVING_CERTIFICATE_ENTRY_INVALID_FALLBACK,
     );
+    expect(resolveReceivingCertificateEntryUserMessage({ reason: 403 })).toBe(
+      RECEIVING_CERTIFICATE_ENTRY_INVALID_FALLBACK,
+    );
     expect(resolveReceivingCertificateEntryUserMessage({}, "Custom fallback")).toBe("Custom fallback");
   });
 });
