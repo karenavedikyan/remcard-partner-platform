@@ -45,6 +45,13 @@ import {
   type ReceivingBulkConfirmKind,
 } from "./receiving-bulk-handoff";
 import styles from "./receiving.module.css";
+import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import { isReceivingDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
+import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useOwnerClientsBusinessPartnerType,
+  useOwnerClientsMode,
+} from "@/components/clients/OwnerClientsModeContext";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
 type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail";
@@ -54,9 +61,17 @@ type Props = {
   previewData?: ReceivingAppealsListResponse;
   /** `/clients?direction=receiving&appealId=` — reopen detail after scanner return. */
   initialAppealId?: string | null;
+  directionProbe?: "incoming";
 };
 
-export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Props = {}) {
+export function ReceivingAppealsWorkspace({
+  previewData,
+  initialAppealId,
+  directionProbe,
+}: Props = {}) {
+  const accessMode = useOwnerClientsMode() ?? "specialist";
+  const businessPartnerType = useOwnerClientsBusinessPartnerType();
+  const reportDirectionProbe = useReportClientsDirectionProbe("incoming");
   const [phase, setPhase] = useState<LoadPhase>(previewData ? "ready" : "loading");
   const [blocked, setBlocked] = useState<ReceivingAppealsLoadResult | null>(null);
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
@@ -130,6 +145,44 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
     setDetailId(id);
     setView("detail");
   }, [initialAppealId]);
+
+  useEffect(() => {
+    if (!directionProbe) return;
+    if (phase === "loading") {
+      reportDirectionProbe("loading");
+      return;
+    }
+    if (phase === "blocked") {
+      reportDirectionProbe("blocked");
+      return;
+    }
+    if (phase === "error" || !data) {
+      reportDirectionProbe("error");
+      return;
+    }
+    if (
+      isReceivingDirectionIntroEligible({
+        phase,
+        listView: view,
+        filters: listFilters,
+        appealsLength: data.appeals.length,
+        serverBacked,
+        listHasMore: receivingListHasMore(data),
+      })
+    ) {
+      reportDirectionProbe("proven_empty");
+    } else {
+      reportDirectionProbe("not_empty");
+    }
+  }, [
+    data,
+    directionProbe,
+    listFilters,
+    phase,
+    reportDirectionProbe,
+    serverBacked,
+    view,
+  ]);
 
   const onListFiltersChange = useCallback(
     (next: ReceivingListFilters) => {
@@ -437,6 +490,28 @@ export function ReceivingAppealsWorkspace({ previewData, initialAppealId }: Prop
         onAppealMutated={() => {
           void reload();
         }}
+      />
+    );
+  }
+
+  const showDirectionIntro = isReceivingDirectionIntroEligible({
+    phase,
+    listView: view,
+    filters: listFilters,
+    appealsLength: data.appeals.length,
+    serverBacked,
+    listHasMore: receivingListHasMore(data),
+  });
+
+  if (showDirectionIntro) {
+    return (
+      <ClientsNewPartnerEmptyState
+        accessMode={accessMode}
+        businessPartnerType={businessPartnerType}
+        direction="incoming"
+        readOnly={readOnly || !mutationsAllowed}
+        onAddClient={() => setView("manual")}
+        onScanCertificate={() => setView("scan")}
       />
     );
   }

@@ -9,10 +9,13 @@ import {
   useOwnerClientsMode,
 } from "@/components/clients/OwnerClientsModeContext";
 import { businessClientsPageCopy } from "@/lib/business-clients/copy";
+import { ClientsPageChromeProvider, useClientsPageChrome } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import styles from "@/components/clients/new-partner-empty/clients-list-chrome.module.css";
 
 function ClientsListBody() {
   const mode = useOwnerClientsMode();
   const businessPartnerType = useOwnerClientsBusinessPartnerType();
+  const chrome = useClientsPageChrome();
   if (!mode) return null;
   const heading =
     mode === "business" && businessPartnerType
@@ -28,16 +31,29 @@ function ClientsListBody() {
             title: "Клиенты",
             description: "Клиенты у вас и направления к партнёрам.",
           };
+
+  const hideTop = chrome?.hideTopChrome ?? false;
+
   return (
     <>
-      <PageHeading
-        eyebrow={heading.eyebrow}
-        title={heading.title}
-        description={heading.description}
-      />
+      {hideTop ? (
+        <h1 className={styles.visuallyHiddenPageTitle}>{heading.title}</h1>
+      ) : (
+        <PageHeading
+          eyebrow={heading.eyebrow}
+          title={heading.title}
+          description={heading.description}
+        />
+      )}
       <ClientsDirectionWorkspace accessMode={mode} />
     </>
   );
+}
+
+function ClientsListChromeShell({ children }: { children: ReactNode }) {
+  const mode = useOwnerClientsMode();
+  if (!mode) return <>{children}</>;
+  return <ClientsPageChromeProvider accessMode={mode}>{children}</ClientsPageChromeProvider>;
 }
 
 type Props = {
@@ -57,7 +73,9 @@ export function ClientsListWorkspace({ canLinkOnboardingHistory }: Props = {}) {
   const Gate = OwnerClientsGate as ProductionOwnerClientsGate;
   return (
     <Gate canLinkOnboardingHistory={canLinkOnboardingHistory}>
-      <ClientsListBody />
+      <ClientsListChromeShell>
+        <ClientsListBody />
+      </ClientsListChromeShell>
     </Gate>
   );
 }

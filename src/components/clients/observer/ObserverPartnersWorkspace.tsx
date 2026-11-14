@@ -8,7 +8,13 @@ import {
   type ObserverDataContractState,
 } from "./ObserverPartnersListView";
 
-export function ObserverPartnersWorkspace({ showHeading = true }: { showHeading?: boolean }) {
+export function ObserverPartnersWorkspace({
+  showHeading = true,
+  directionProbe,
+}: {
+  showHeading?: boolean;
+  directionProbe?: "at-partners";
+}) {
   const [loadState, setLoadState] = useState<"loading" | "blocked" | "ready">("loading");
   const [blocker, setBlocker] = useState<{
     id: string;
@@ -62,6 +68,8 @@ export function ObserverPartnersWorkspace({ showHeading = true }: { showHeading?
       appeals={appeals}
       partners={partners}
       dataContract={dataContract}
+      loadState={loadState}
+      directionProbe={directionProbe}
     />
   );
 }
