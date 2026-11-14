@@ -193,8 +193,8 @@ export function ReceivingAppealDetailHost({
     if (mapped?.status !== "ready") return;
     const orderId = mapped.appeal.purchaseOrderId?.trim();
     if (!orderId) return;
-    router.push(receivingAppealPurchaseDetailHref(orderId));
-  }, [mapped, router]);
+    router.push(receivingAppealPurchaseDetailHref(orderId, appealId));
+  }, [appealId, mapped, router]);
 
   const mutateProfile = useCallback(
     async (body: ReceivingAppealProfilePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
