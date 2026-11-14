@@ -56,7 +56,7 @@ async function openBulk() {
   const user = userEvent.setup();
   render(<ObserverPartnersWorkspace />);
   await user.click(await screen.findByRole("checkbox", { name: "Все найденные (3)" }));
-  await user.click(screen.getByRole("button", { name: "Редактировать", exact: true }));
+  await user.click(screen.getByRole("button", { name: "Редактировать" }));
   await user.clear(screen.getByRole("textbox", { name: "Общая метка" }));
   await user.type(screen.getByRole("textbox", { name: "Общая метка" }), "Новая метка");
   return user;
@@ -100,9 +100,9 @@ describe("Observer workspace: независимая приёмка partial/retr
       .mockResolvedValueOnce(list({ [ids[0]]: 8 }, { [ids[0]]: "Сохранить черновик" }));
     const user = userEvent.setup();
     render(<ObserverPartnersWorkspace />);
-    await user.click(await screen.findByRole("button", { name: "Списком", exact: true }));
+    await user.click(await screen.findByRole("button", { name: "Списком" }));
     const firstRow = screen.getAllByTestId("ca-observer-client-row")[0];
-    await user.click(within(firstRow).getByRole("button", { name: "Изменить", exact: true }));
+    await user.click(within(firstRow).getByRole("button", { name: "Изменить" }));
     const note = screen.getByRole("textbox", { name: "Личная заметка" });
     await user.clear(note);
     await user.type(note, "Не потерять при конфликте");
@@ -144,9 +144,9 @@ describe("Observer workspace: независимая приёмка partial/retr
     const user = userEvent.setup();
     render(<ObserverPartnersWorkspace />);
     await user.click(await screen.findByRole("checkbox", { name: "Все найденные (3)" }));
-    await user.click(screen.getByRole("button", { name: "В архив", exact: true }));
+    await user.click(screen.getByRole("button", { name: "В архив" }));
     const confirmation = screen.getByRole("region", { name: "Подтверждение действия" });
-    await user.click(within(confirmation).getByRole("button", { name: "В архив", exact: true }));
+    await user.click(within(confirmation).getByRole("button", { name: "В архив" }));
     const retry = await screen.findByRole("button", { name: "Повторить: В архив" });
     expect(screen.getByText("Выбрано: 1")).toBeInTheDocument();
     await user.click(retry);
