@@ -110,6 +110,7 @@
   box-sizing: border-box;
   max-width: 100%;
   text-decoration: none;
+  min-height: 48px;
 }
 
 .steps {

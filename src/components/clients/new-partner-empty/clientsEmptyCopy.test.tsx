@@ -41,8 +41,18 @@ describe("clients empty copy", () => {
   it("legacy seller role copy keeps scan primary", () => {
     for (const role of ["STORE", "COMPANY"] as const) {
       const copy = clientsEmptyContentForRole(role);
-      expect(copy.primaryCta?.action).toBe("scan");
+      expect(copy.primaryCta.action).toBe("scan");
+      expect(copy.steps.every((s) => s.action)).toBe(true);
     }
+  });
+
+  it("legacy history link is off unless canLinkReadOnlyHistory", () => {
+    const gated = clientsEmptyContentForRole("AGENT", { canLinkReadOnlyHistory: false });
+    const bagStep = gated.steps.find((s) => s.title.includes("покупк"));
+    expect(bagStep?.action.kind).toBe("none");
+    const linked = clientsEmptyContentForRole("AGENT", { canLinkReadOnlyHistory: true });
+    const bagLinked = linked.steps.find((s) => s.title.includes("покупк"));
+    expect(bagLinked?.action.kind).toBe("link");
   });
 
   it("legacy recommender role copy", () => {
