@@ -238,13 +238,55 @@ function mapHttpError(error: RemcardApiError): PersonalMutationResult {
   };
 }
 
+function isNonemptyOpaqueId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function uniqueRequestedIds(ids: string[]): string[] {
+  const requested: string[] = [];
+  const seen = new Set<string>();
+  for (const rawId of ids) {
+    if (!isNonemptyOpaqueId(rawId) || seen.has(rawId)) continue;
+    seen.add(rawId);
+    requested.push(rawId);
+  }
+  return requested;
+}
+
 function normalizeBatchResponse(raw: PersonalBatchResponse, ids: string[]): PersonalMutationResult {
-  const processed = Array.isArray(raw.processed) ? raw.processed : [];
-  const skipped = Array.isArray(raw.skipped) ? raw.skipped : [];
-  const appliedIds = processed.map((p) => p.appealId);
-  const maps = metaMapFromProjections(processed);
-  const failed = skipped.map((s) => mapSkippedReason(s.reason, s.appealId));
-  if (processed.length === 0 && skipped.length === 0 && ids.length > 0) {
+  const requested = uniqueRequestedIds(ids);
+  const processedAll = Array.isArray(raw.processed) ? raw.processed : [];
+  const skippedAll = Array.isArray(raw.skipped) ? raw.skipped : [];
+  const requestedSet = new Set(requested);
+
+  const processedById = new Map<string, K5PersonalMetaProjection>();
+  for (const row of processedAll) {
+    const id = row.appealId;
+    if (!isNonemptyOpaqueId(id) || !requestedSet.has(id)) continue;
+    if (!processedById.has(id)) {
+      processedById.set(id, row);
+    }
+  }
+
+  const skippedById = new Map<string, PersonalMetaFailure>();
+  for (const row of skippedAll) {
+    const id = row.appealId;
+    if (!isNonemptyOpaqueId(id) || !requestedSet.has(id)) continue;
+    if (!skippedById.has(id)) {
+      skippedById.set(id, mapSkippedReason(row.reason, id));
+    }
+  }
+
+  if (requested.length === 0) {
+    return {
+      ok: false,
+      kind: "error",
+      message: "Не выбраны записи для пакетного действия.",
+      preserveUi: true,
+    };
+  }
+
+  if (processedById.size === 0 && skippedById.size === 0) {
     return {
       ok: false,
       kind: "error",
@@ -252,13 +294,30 @@ function normalizeBatchResponse(raw: PersonalBatchResponse, ids: string[]): Pers
       preserveUi: true,
     };
   }
+  const appliedIds: string[] = [];
+  const failed: PersonalMetaFailure[] = [];
+
+  for (const id of requested) {
+    const skip = skippedById.get(id);
+    if (skip) {
+      failed.push(skip);
+      continue;
+    }
+    if (processedById.has(id)) {
+      appliedIds.push(id);
+      continue;
+    }
+    failed.push({
+      appealId: id,
+      code: "omitted",
+      message: "Результат не получен — повторите действие.",
+    });
+  }
+
+  const maps = metaMapFromProjections(appliedIds.map((id) => processedById.get(id)!));
+
   if (failed.length === 0) {
-    return {
-      ok: true,
-      kind: "full",
-      appliedIds: appliedIds.length ? appliedIds : ids,
-      ...maps,
-    };
+    return { ok: true, kind: "full", appliedIds, ...maps };
   }
   if (appliedIds.length === 0) {
     return {
