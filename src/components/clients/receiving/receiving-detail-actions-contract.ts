@@ -100,6 +100,9 @@ export type ReceivingAppealDetailHostDeps = {
   onOpenOrderPipeline?: () => void;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
+  notesConflict?: boolean;
+  notesSaveBlocked?: boolean;
+  onNotesConflictRefresh?: () => void;
 };
 
 function resolveOnOpenOrderPipeline(deps: ReceivingAppealDetailHostDeps): (() => void) | undefined {
@@ -136,9 +139,12 @@ export function buildReceivingAppealDetailReady(
         refusalReasons: mapped.refusalReasons,
         busy,
         error,
+        notesConflict: deps.notesConflict,
+        notesSaveBlocked: deps.notesSaveBlocked,
+        onConflict: deps.onNotesConflictRefresh,
         onSavePrivateNotes: async (privateNotes) => {
-          const result = await deps.mutateProfile({ privateNotes, expectedRevision: revision });
-          if (!result.ok && result.conflict) await deps.reloadDetail();
+          // The host reconciles notes conflicts without unmounting the dirty form.
+          await deps.mutateProfile({ privateNotes, expectedRevision: revision });
         },
         onApplyStage: async (payload) => {
           const result = await deps.mutateStage({

@@ -74,6 +74,11 @@ export function ReceivingAppealDetailHost({
   const [actionError, setActionError] = useState<{ notes?: string; stage?: string }>({});
   const [detailRefreshNotice, setDetailRefreshNotice] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [notesConflict, setNotesConflict] = useState(false);
+  const [notesSaveBlocked, setNotesSaveBlocked] = useState(false);
+  const notesSaveBlockedRef = useRef(false);
+  const notesInFlightRef = useRef(false);
+  const notesRefreshInFlightRef = useRef(false);
 
   const detailGenerationRef = useRef(0);
   const sessionKeyRef = useRef<DetailSessionKey>({
@@ -172,6 +177,14 @@ export function ReceivingAppealDetailHost({
 
   useEffect(() => {
     sessionKeyRef.current = { appealId, readOnly, referrerPartnerName };
+    notesSaveBlockedRef.current = false;
+    notesInFlightRef.current = false;
+    notesRefreshInFlightRef.current = false;
+    setNotesSaveBlocked(false);
+    setNotesConflict(false);
+    setBusy({});
+    setActionError({});
+    setDetailRefreshNotice(null);
     const generation = bumpDetailGeneration();
     void fetchDetailForSession(sessionKeyRef.current, generation, true);
   }, [appealId, readOnly, referrerPartnerName, reloadToken, bumpDetailGeneration, fetchDetailForSession]);
@@ -179,6 +192,35 @@ export function ReceivingAppealDetailHost({
   const reloadDetail = useCallback(async () => {
     setReloadToken((t) => t + 1);
   }, []);
+
+  const refreshNotesAfterConflict = useCallback(async () => {
+    if (notesRefreshInFlightRef.current) return;
+    const session = sessionKeyRef.current;
+    const generation = detailGenerationRef.current;
+    notesRefreshInFlightRef.current = true;
+    notesSaveBlockedRef.current = true;
+    setNotesSaveBlocked(true);
+    setBusy((b) => ({ ...b, notes: true }));
+    const res = await fetchReceivingAppealDetailWire(session.appealId);
+    if (isStaleGeneration(generation, session)) return;
+    if (res.ok) {
+      // Keep the mounted view and its dirty draft. Only the server snapshot/revision changes.
+      applyDetailWire(session, res);
+      notesSaveBlockedRef.current = false;
+      setNotesSaveBlocked(false);
+      setActionError((e) => ({
+        ...e,
+        notes: "Карточка изменилась. Ваш черновик сохранён. Проверьте актуальную заметку и нажмите «Сохранить» для повторного сохранения.",
+      }));
+    } else {
+      setActionError((e) => ({
+        ...e,
+        notes: "Карточка изменилась. Ваш черновик сохранён, но актуальную версию загрузить не удалось. Повторите обновление карточки перед сохранением.",
+      }));
+    }
+    notesRefreshInFlightRef.current = false;
+    setBusy((b) => ({ ...b, notes: false }));
+  }, [applyDetailWire, isStaleGeneration]);
 
   const afterSuccessfulMutation = useCallback(async () => {
     await onAppealMutated?.();
@@ -198,26 +240,47 @@ export function ReceivingAppealDetailHost({
 
   const mutateProfile = useCallback(
     async (body: ReceivingAppealProfilePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      if (notesInFlightRef.current || notesSaveBlockedRef.current) {
+        return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
+      }
+      const session = sessionKeyRef.current;
+      const generation = detailGenerationRef.current;
+      notesInFlightRef.current = true;
       setBusy((b) => ({ ...b, notes: true }));
       setActionError((e) => ({ ...e, notes: undefined }));
       const result = await patchReceivingAppealProfileCas(appealId, {
         privateNotes: body.privateNotes,
         expectedRevision: body.expectedRevision,
       });
-      setBusy((b) => ({ ...b, notes: false }));
       const outcome = toMutationOutcome(result);
+      if (isStaleGeneration(generation, session)) return outcome;
       if (!outcome.ok) {
-        setActionError((e) => ({ ...e, notes: outcome.message }));
+        if (outcome.conflict) {
+          setNotesConflict(true);
+          await refreshNotesAfterConflict();
+          if (isStaleGeneration(generation, session)) return outcome;
+        } else {
+          setActionError((e) => ({ ...e, notes: outcome.message }));
+        }
+        notesInFlightRef.current = false;
+        setBusy((b) => ({ ...b, notes: false }));
         return outcome;
       }
+      setNotesConflict(false);
       await afterSuccessfulMutation();
+      if (isStaleGeneration(generation, session)) return { ok: true };
+      notesInFlightRef.current = false;
+      setBusy((b) => ({ ...b, notes: false }));
       return { ok: true };
     },
-    [afterSuccessfulMutation, appealId],
+    [afterSuccessfulMutation, appealId, isStaleGeneration, refreshNotesAfterConflict],
   );
 
   const mutateStage = useCallback(
     async (body: ReceivingAppealStagePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      if (notesSaveBlockedRef.current || notesInFlightRef.current) {
+        return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
+      }
       setBusy((b) => ({ ...b, stage: true }));
       setActionError((e) => ({ ...e, stage: undefined }));
       const result = await patchReceivingAppealStageCas(appealId, {
@@ -253,6 +316,10 @@ export function ReceivingAppealDetailHost({
         readOnly,
         busy,
         error: actionError,
+        notesConflict,
+        notesSaveBlocked,
+        onNotesConflictRefresh:
+          notesConflict && notesSaveBlocked ? () => void refreshNotesAfterConflict() : undefined,
         mutateProfile,
         mutateStage,
         reloadDetail,
@@ -268,6 +335,9 @@ export function ReceivingAppealDetailHost({
     busy,
     loadError,
     mapped,
+    notesConflict,
+    notesSaveBlocked,
+    refreshNotesAfterConflict,
     mutateProfile,
     mutateStage,
     onOpenOrderPipeline,

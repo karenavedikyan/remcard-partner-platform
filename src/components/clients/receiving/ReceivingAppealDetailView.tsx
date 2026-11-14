@@ -79,6 +79,8 @@ export type ReceivingAppealDetailActions = {
     | { supported: false; reason: string };
   /** P6 reload after K1 409 stale `expectedRevision`. */
   onConflict?: () => void;
+  notesConflict?: boolean;
+  notesSaveBlocked?: boolean;
   busy?: { notes?: boolean; stage?: boolean };
   error?: { notes?: string; stage?: string };
 };
@@ -163,7 +165,7 @@ function ReceivingAppealStageControls({
           className={styles.ghostBtn}
           data-ca-action="receiving:stage:shipped"
           data-testid="ca-receiving-mark-shipped"
-          disabled={actions.busy?.stage}
+          disabled={actions.busy?.stage || actions.busy?.notes || actions.notesSaveBlocked}
           onClick={shipped.onMarkShipped}
         >
           {RECEIVING_DETAIL_STAGE_SHIPPED_LABEL}
@@ -174,7 +176,7 @@ function ReceivingAppealStageControls({
         <select
           value={stagePick}
           onChange={(e) => onStagePick(e.target.value)}
-          disabled={!actions.onApplyStage || actions.busy?.stage}
+          disabled={!actions.onApplyStage || actions.busy?.stage || actions.busy?.notes || actions.notesSaveBlocked}
           data-testid="ca-receiving-stage-select"
         >
           <option value="">— выберите —</option>
@@ -205,7 +207,7 @@ function ReceivingAppealStageControls({
       <button
         type="button"
         className={styles.ghostBtn}
-        disabled={!stagePick || !actions.onApplyStage || actions.busy?.stage}
+        disabled={!stagePick || !actions.onApplyStage || actions.busy?.stage || actions.busy?.notes || actions.notesSaveBlocked}
         data-ca-action="receiving:stage:apply"
         data-testid="ca-receiving-stage-apply"
         onClick={() => {
@@ -250,21 +252,38 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
   const writableActions =
     ready && !ready.readOnly && ready.actions ? ready.actions : undefined;
 
-  const [notesDraft, setNotesDraft] = useState("");
+  const notesAppealId = ready?.appeal.id ?? "";
+  const serverNotes = ready?.appeal.privateNotes ?? "";
+  const [notesState, setNotesState] = useState(() => ({
+    appealId: notesAppealId,
+    base: serverNotes,
+    draft: serverNotes,
+  }));
+  const notesDraft = notesState.draft;
   const [stagePick, setStagePick] = useState("");
   const [refusalPick, setRefusalPick] = useState("");
 
   useEffect(() => {
-    if (props.status !== "ready") return;
-    setNotesDraft(props.appeal.privateNotes ?? "");
+    if (!notesAppealId) return;
+    setNotesState((current) => ({
+      appealId: notesAppealId,
+      base: serverNotes,
+      // A fresh revision must not discard local edits, including an intentional empty note.
+      draft:
+        current.appealId === notesAppealId && current.draft !== current.base
+          ? current.draft
+          : serverNotes,
+    }));
     setStagePick("");
     setRefusalPick("");
-  }, [props.status, props.status === "ready" ? props.appeal.id : "", props.status === "ready" ? props.appeal.privateNotes : ""]);
+  }, [notesAppealId, serverNotes]);
 
+  const currentStageId = ready?.appeal.stageId;
+  const workingStages = writableActions?.workingStages;
   const stageChoices = useMemo(() => {
-    if (!writableActions) return [];
-    return stageOptionsForPicker(ready!.appeal.stageId, writableActions.workingStages);
-  }, [writableActions, ready?.appeal.stageId]);
+    if (!workingStages || !currentStageId) return [];
+    return stageOptionsForPicker(currentStageId, workingStages);
+  }, [workingStages, currentStageId]);
 
   return (
     <div className={styles.section} data-testid="ca-receiving-appeal-detail">
@@ -482,7 +501,10 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 <textarea
                   rows={3}
                   value={notesDraft}
-                  onChange={(e) => setNotesDraft(e.target.value)}
+                  onChange={(e) => {
+                    const draft = e.target.value;
+                    setNotesState((current) => ({ ...current, draft }));
+                  }}
                   disabled={!writableActions?.onSavePrivateNotes || writableActions.busy?.notes}
                   data-ca-input="detail-notes"
                   data-testid="ca-receiving-notes-input"
@@ -494,7 +516,7 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                 className={styles.ghostBtn}
                 data-ca-action="receiving:notes:save"
                 data-testid="ca-receiving-notes-save"
-                disabled={!writableActions?.onSavePrivateNotes || writableActions.busy?.notes}
+                disabled={!writableActions?.onSavePrivateNotes || writableActions.busy?.notes || writableActions.notesSaveBlocked}
                 onClick={() => writableActions?.onSavePrivateNotes?.(notesDraft)}
               >
                 {writableActions?.busy?.notes ? "Сохраняем…" : RECEIVING_DETAIL_NOTES_SAVE_LABEL}
@@ -515,6 +537,12 @@ export function ReceivingAppealDetailView(props: ReceivingAppealDetailProps) {
                       </button>
                     </>
                   ) : null}
+                </p>
+              ) : null}
+              {writableActions?.notesConflict && !writableActions.notesSaveBlocked ? (
+                <p className={styles.mutedSmall} data-testid="ca-receiving-notes-server-value" style={{ whiteSpace: "pre-wrap" }}>
+                  Заметка в актуальной карточке:{"\n"}
+                  {props.appeal.privateNotes || "Заметка отсутствует."}
                 </p>
               ) : null}
             </section>
