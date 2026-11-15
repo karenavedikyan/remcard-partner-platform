@@ -38,6 +38,7 @@ import type { EmployeesOverviewResponse } from "@/lib/employees-overview-types";
 import { DEV_FIXTURE_EMPLOYEES_OVERVIEW } from "@/lib/dev-profile-fixture-overview";
 import { devFixtureOrganizationBranches } from "@/lib/dev-profile-fixture-branches";
 import { ProfileBranchesSection } from "./ProfileBranchesSection";
+import { additionalAddressesSummary } from "@/lib/profile-primary-point";
 import { ProfileCatalogSection } from "./ProfileCatalogSection";
 import { ProfileTeamSection } from "./ProfileTeamSection";
 import type { ProProfileResponse } from "@/lib/types";
@@ -1414,6 +1415,10 @@ function ProfileEditorInner({
             hasOrganization={Boolean(profile.organization)}
             partnerType={partnerType}
             initialBranchId={focusBranchId}
+            primaryName={profile.organization?.name || displayName}
+            primaryPublished={
+              profile.organization ? Boolean(profile.organization.catalogPublished) : undefined
+            }
           />
           )
         ) : null}
@@ -1565,7 +1570,9 @@ function ProfileEditorInner({
                       : "Организация не опубликована для посетителей."}
                     {profile.organization.catalogDraft ? " Есть черновик правок." : ""}
                   </p>
-                  <p>Филиалов: {profile.organization.branchCount ?? 0}</p>
+                  <p data-testid="aside-additional-addresses">
+                    {additionalAddressesSummary(profile.organization.branchCount ?? 0)}
+                  </p>
                 </Panel>
               ) : null}
             </>

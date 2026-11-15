@@ -10,7 +10,7 @@ export const PROFILE_SECTION_NAV: { id: ProfileSectionId; label: string }[] = [
   { id: "overview", label: "Обзор" },
   { id: "basics", label: "Основные данные" },
   { id: "catalog", label: "Каталог RemCard" },
-  { id: "branches", label: "Филиалы" },
+  { id: "branches", label: "Точки" },
   { id: "team", label: "Сотрудники" },
   { id: "notifications", label: "Уведомления" },
 ];

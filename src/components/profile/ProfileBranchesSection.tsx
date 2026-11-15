@@ -42,13 +42,43 @@ type ProfileBranchesSectionProps = {
   hasOrganization: boolean;
   partnerType: string;
   initialBranchId?: string;
+  primaryName?: string;
+  primaryPublished?: boolean;
 };
+
+function PrimaryPointCard({
+  name,
+  city,
+  published,
+}: {
+  name: string;
+  city: string;
+  published?: boolean;
+}) {
+  return (
+    <div className={styles.primaryPoint} data-testid="primary-point-card">
+      <p className={styles.primaryPointLabel}>Основная точка</p>
+      <p className={styles.orgName}>{name.trim() || "Ваш профиль"}</p>
+      {city.trim() ? <p className={styles.hint}>{city.trim()}</p> : null}
+      {published === undefined ? null : (
+        <div className={styles.statusRow}>
+          <StatusBadge
+            label={published ? "В каталоге" : "Не опубликована"}
+            tone={published ? "active" : "pending"}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ProfileBranchesSection({
   defaultCity = "",
   hasOrganization,
   partnerType,
   initialBranchId,
+  primaryName = "",
+  primaryPublished,
 }: ProfileBranchesSectionProps) {
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +101,7 @@ export function ProfileBranchesSection({
       const data = await remcardFetch<OrgPayload>("/api/pro/organization", { method: "GET" });
       setBranches(data.organization?.branches ?? []);
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить филиалы");
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить адреса");
     } finally {
       setLoading(false);
     }
@@ -98,10 +128,10 @@ export function ProfileBranchesSection({
       });
       setAddress("");
       setName("");
-      setMessage("Филиал добавлен. Настройте адрес, направления и публикацию в карточке.");
+      setMessage("Адрес добавлен. Настройте направления и публикацию в карточке.");
       await load();
     } catch (caught) {
-      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать филиал");
+      setError(caught instanceof RemcardApiError ? caught.message : "Не удалось создать адрес");
     } finally {
       setSaving(false);
     }
@@ -109,18 +139,19 @@ export function ProfileBranchesSection({
 
   if (partnerType === "MASTER") {
     return (
-      <Panel title="Филиалы" hint="Для самостоятельного специалиста филиалы не требуются.">
-        <p className={styles.hint}>Раздел доступен владельцам магазинов и компаний.</p>
+      <Panel title="Точки" hint="Для специалиста дополнительные адреса не требуются.">
+        <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />
       </Panel>
     );
   }
 
   if (!hasOrganization) {
     return (
-      <Panel title="Филиалы">
+      <Panel title="Точки">
+        <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />
         <p className={styles.hint}>
-          Сначала сохраните основные данные и название организации в разделе «Основные данные» — затем
-          здесь можно добавить точки для клиентов remcard.ru.
+          Сохраните название организации в разделе «Основные данные» — затем здесь можно добавить
+          дополнительные адреса.
         </p>
       </Panel>
     );
@@ -132,9 +163,11 @@ export function ProfileBranchesSection({
 
   return (
     <Panel
-      title="Филиалы"
-      hint="Точки на карте remcard.ru: адрес, направления, контакты и расписание каждого филиала."
+      title="Точки"
+      hint="Основная точка — это вы. Дополнительные адреса необязательны: без них вы работаете и публикуетесь."
     >
+      <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />
+      <h3 className={styles.sectionLabel}>Дополнительные адреса · необязательно</h3>
       {loading ? <p className={styles.hint}>Загружаем…</p> : null}
       {error ? (
         <p className={styles.error} role="alert">
@@ -183,19 +216,19 @@ export function ProfileBranchesSection({
           ))}
         </ul>
       ) : (
-        <p className={styles.hint}>
-          Пока нет филиалов. Добавьте первую точку — клиенты увидят её на remcard.ru после публикации.
+        <p className={styles.hint} data-testid="branches-empty">
+          Дополнительных адресов нет — это нормально.
         </p>
       )}
 
       <form onSubmit={(e) => void addBranch(e)} className={styles.fields}>
-        <h3 className={styles.hint}>Добавить филиал</h3>
+        <h3 className={styles.hint}>Добавить адрес</h3>
         <TextField
           label="Название (необязательно)"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <TextField label="Город филиала" value={city} onChange={(e) => setCity(e.target.value)} required />
+        <TextField label="Город адреса" value={city} onChange={(e) => setCity(e.target.value)} required />
         <TextField
           label="Адрес"
           value={address}
@@ -204,7 +237,7 @@ export function ProfileBranchesSection({
           hint="Укажите город и адрес точки. Подтверждение на карте понадобится только для публикации в каталоге."
         />
         <Button type="submit" disabled={saving} data-testid="branch-add-submit">
-          {saving ? "Сохранение…" : "Добавить филиал"}
+          {saving ? "Сохранение…" : "Добавить адрес"}
         </Button>
       </form>
     </Panel>
