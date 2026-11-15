@@ -6,6 +6,7 @@ describe("isAgentCooperationInviter", () => {
   it("allows legacy AGENT on technical STORE partnerType", () => {
     assert.equal(
       isAgentCooperationInviter({
+        role: "PRO",
         partnerType: "STORE",
         partnerActivities: ["AGENT"],
       }),
@@ -16,6 +17,7 @@ describe("isAgentCooperationInviter", () => {
   it("blocks business STORE owner with STORE activity", () => {
     assert.equal(
       isAgentCooperationInviter({
+        role: "PRO",
         partnerType: "STORE",
         partnerActivities: ["STORE"],
       }),
@@ -26,6 +28,7 @@ describe("isAgentCooperationInviter", () => {
   it("allows COMPANY agent activity when not business store wallet", () => {
     assert.equal(
       isAgentCooperationInviter({
+        role: "PRO",
         partnerType: "COMPANY",
         partnerActivities: ["AGENT"],
       }),

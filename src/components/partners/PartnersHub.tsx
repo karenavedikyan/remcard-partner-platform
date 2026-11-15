@@ -95,6 +95,11 @@ import {
 } from "@/components/partners/partnerSearchPublicSummaryHandoff";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { TermChangeModal } from "@/components/partners/TermChangeModal";
+import { CertificatePolicyProfileEntry } from "@/components/certificate-policy/CertificatePolicyProfileEntry";
+import {
+  proContextSnapshotForPartnersHubGate,
+  resolveCertificateReceivingPolicyUiGate,
+} from "@/lib/certificate-receiving-policy/access";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
 import {
   cooperationActionLabel,
@@ -2584,6 +2589,23 @@ export function PartnersHub({
         />
       ) : tab === "list" ? (
         <>
+          {(() => {
+            const certPolicyGate = resolveCertificateReceivingPolicyUiGate({
+              profile: meProfile,
+              proContext: proContextSnapshotForPartnersHubGate({
+                meProfile,
+                organizationReadContext,
+              }),
+              isOrgStaffWorkplaceUi: Boolean(organizationReadContext?.readOnlyActor),
+            });
+            if (!certPolicyGate.showEntry) return null;
+            return (
+              <CertificatePolicyProfileEntry
+                viewerUserId={meProfile.user.id}
+                canEditSettings={certPolicyGate.canEditSettings}
+              />
+            );
+          })()}
           {isAgentR04 && agentSegment === "invitations" ? (
             <p className={styles.partnerMeta} data-testid="agent-invitations-lead">
               {partnersSharedUiCopy(partnersAudience).invitationsLead}

@@ -1,24 +1,15 @@
-/** Mirrors navigator isAgentCooperationInviter / businessWalletAdmission. */
+import { isBusinessStoreCompanyWalletOwner } from "@/lib/business-wallet-admission";
+import { userHasAgentActivity } from "@/lib/principal-agent-eligibility";
 
-export function isPureAgentActivities(activities: string[] | null | undefined): boolean {
-  const list = activities ?? [];
-  return list.includes("AGENT") && !list.includes("STORE") && !list.includes("SERVICE");
-}
-
-export function isBusinessStoreCompanyPartner(user: {
-  partnerType: string | null;
-  partnerActivities?: string[];
-}): boolean {
-  if (isPureAgentActivities(user.partnerActivities)) return false;
-  return user.partnerType === "STORE" || user.partnerType === "COMPANY";
-}
-
+/** Agent cooperation invite: AGENT activity, excluding business STORE/COMPANY owners (legacy technical STORE agents allowed). */
 export function isAgentCooperationInviter(user: {
   partnerType: string | null;
-  partnerActivities?: string[];
+  partnerActivities?: string[] | null;
+  role?: string | null;
+  isBlocked?: boolean;
   isStoreOwner?: boolean;
 }): boolean {
-  if (!(user.partnerActivities ?? []).includes("AGENT")) return false;
-  if (isBusinessStoreCompanyPartner(user)) return false;
+  if (!userHasAgentActivity(user)) return false;
+  if (isBusinessStoreCompanyWalletOwner(user)) return false;
   return true;
 }
