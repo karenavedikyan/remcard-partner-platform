@@ -6,9 +6,23 @@ export type PartnerCertProgramItem = {
   poolPercent: number;
 };
 
+/** Public general certificate policy numbers (catalog only — never individual/pending). */
+export type PartnerCertProgramPolicy = {
+  validityDays: number;
+  purchaseLimit: number;
+  minimumPurchaseAmount: number | null;
+  promotionsCompatible: boolean;
+  exclusionsText: string | null;
+};
+
 export type PartnerCertProgramState =
   | { status: "loading" }
-  | { status: "loaded"; items: PartnerCertProgramItem[]; truncated?: boolean }
+  | {
+      status: "loaded";
+      items: PartnerCertProgramItem[];
+      truncated?: boolean;
+      policy?: PartnerCertProgramPolicy | null;
+    }
   | { status: "empty" }
   | { status: "error"; message: string };
 
@@ -20,12 +34,19 @@ export async function fetchPartnerCertificateProgram(
       items?: PartnerCertProgramItem[];
       truncated?: boolean;
       totalPublished?: number;
+      policy?: PartnerCertProgramPolicy | null;
     }>(`/api/partner/${encodeURIComponent(partnerUserId)}/certificate-program-summary`);
     const items = data.items ?? [];
-    if (!items.length) {
+    const policy = data.policy ?? null;
+    if (!items.length && !policy) {
       return { status: "empty" };
     }
-    return { status: "loaded", items, truncated: data.truncated };
+    return {
+      status: "loaded",
+      items,
+      truncated: data.truncated,
+      policy,
+    };
   } catch (caught) {
     return {
       status: "error",

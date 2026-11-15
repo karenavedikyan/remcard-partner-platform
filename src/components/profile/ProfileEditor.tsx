@@ -96,6 +96,8 @@ import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibil
 import { ProfileSectionAccessGate } from "./ProfileSectionAccessGate";
 import styles from "./ProfileEditor.module.css";
 import { resolveFocusableElement } from "@/lib/recommendation-profile-focus";
+import { CertificatePolicyProfileEntry } from "@/components/certificate-policy/CertificatePolicyProfileEntry";
+import { resolveCertificateReceivingPolicyUiGate } from "@/lib/certificate-receiving-policy/access";
 
 export type { ProfileSectionId };
 
@@ -385,6 +387,13 @@ function ProfileEditorInner({
     pureAgentActivities &&
     (initialPureAgentCompact ||
       Boolean(agentR02Gate?.featureEnabled && agentR02Gate?.eligible));
+  const certificatePolicyGate = resolveCertificateReceivingPolicyUiGate({
+    profile,
+    proContext: cabinetAccess.proContext,
+    isOrgStaffWorkplaceUi,
+  });
+  const certificatePolicyReceiverUi = certificatePolicyGate.showEntry;
+  const certificatePolicyCanEdit = certificatePolicyGate.canEditSettings;
   const agentNavPending =
     !isOrgStaffWorkplaceUi &&
     pureAgentActivities &&
@@ -1500,6 +1509,14 @@ function ProfileEditorInner({
             onRequestRefresh={() => router.refresh()}
             autoOpenSetupRecovery={focusField === "partnerType"}
             inviteAcceptedContext={inviteAcceptedContext}
+          />
+        ) : null}
+
+        {certificatePolicyReceiverUi &&
+        (activeSection === "overview" || activeSection === "basics") ? (
+          <CertificatePolicyProfileEntry
+            viewerUserId={profile.user.id}
+            canEditSettings={certificatePolicyCanEdit}
           />
         ) : null}
 

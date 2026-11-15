@@ -50,6 +50,7 @@ export default async function PartnersPage(props: {
   ]);
 
   const proContext = proContextResult.ok ? proContextResult.data : null;
+  const proContextReady = proContextResult.ok;
   const businessPartners = resolveBusinessOwnerPartnersEligibility({
     user,
     proContextRole: proContext?.role ?? null,
@@ -95,6 +96,8 @@ export default async function PartnersPage(props: {
           partnershipSubjectUserId={partnershipSubjectUserId}
           organizationReadContext={organizationReadContext}
           initialProfile={profileResult.data}
+          proContext={proContext}
+          proContextReady={proContextReady}
         />
       )}
     </CabinetShell>

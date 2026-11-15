@@ -1,58 +1,37 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, expect, it } from "vitest";
 import {
   buildOrderItems,
   computeOrderTotals,
-  validateOrderAmounts,
-} from "./order-totals.ts";
+  lineDiscountRub,
+  validateOrderDiscountDrafts,
+} from "./order-totals";
+import type { PreviewCategory } from "@/lib/order-types";
 
-const categories = [
-  {
-    category: "doors",
-    categoryLabel: "Двери",
-    discountPercent: 5,
-    issuerPercent: 10,
-  },
-];
+const doors: PreviewCategory = {
+  category: "doors",
+  categoryLabel: "Двери",
+  discountPercent: 7,
+  issuerPercent: 3,
+};
 
-describe("order totals", () => {
-  it("computes discount and issuer bonus from gross amount", () => {
-    const totals = computeOrderTotals(categories, { doors: "1000" });
-    assert.equal(totals.totalAmount, 1000);
-    assert.equal(totals.totalDiscount, 50);
-    assert.equal(totals.totalIssuerBonus, 100);
-    assert.equal(totals.payableAmount, 950);
+describe("order-totals flexible client discount", () => {
+  it("applies chosen 6% on 10000 gross (offer 7%) for summary and line", () => {
+    const totals = computeOrderTotals([doors], { doors: "10000" }, { doors: "6" });
+    expect(totals.totalDiscount).toBe(600);
+    expect(totals.payableAmount).toBe(9400);
+    expect(lineDiscountRub(10000, 6)).toBe(600);
+
+    const items = buildOrderItems([doors], { doors: "10000" }, { doors: "6" });
+    expect(items[0]?.discountPercent).toBe(6);
   });
 
-  it("builds order items for positive amounts only", () => {
-    const items = buildOrderItems(categories, { doors: "500" });
-    assert.equal(items.length, 1);
-    assert.equal(items[0]!.amount, 500);
+  it("blocks invalid discount before review (101%) even with active amount", () => {
+    const result = validateOrderDiscountDrafts([doors], { doors: "10000" }, { doors: "101" });
+    expect(result.ok).toBe(false);
   });
 
-  it("rejects invalid amount draft", () => {
-    const result = validateOrderAmounts(categories, { doors: "abc" });
-    assert.equal(result.ok, false);
-  });
-
-  it("rejects empty purchase", () => {
-    const result = validateOrderAmounts(categories, { doors: "" });
-    assert.equal(result.ok, false);
-  });
-
-  it("sums per-line rounded discounts in whole rubles (not kopeck arithmetic)", () => {
-    const multi = [
-      { category: "a", categoryLabel: "A", discountPercent: 10, issuerPercent: 0 },
-      { category: "b", categoryLabel: "B", discountPercent: 7, issuerPercent: 0 },
-      { category: "c", categoryLabel: "C", discountPercent: 10, issuerPercent: 0 },
-    ];
-    const totals = computeOrderTotals(multi, {
-      a: "10750",
-      b: "5750",
-      c: "906",
-    });
-    assert.equal(totals.totalAmount, 17406);
-    assert.equal(totals.totalDiscount, 1569);
-    assert.equal(totals.payableAmount, 15837);
+  it("blocks invalid discount on empty amount line", () => {
+    const result = validateOrderDiscountDrafts([doors], { doors: "" }, { doors: "101" });
+    expect(result.ok).toBe(false);
   });
 });

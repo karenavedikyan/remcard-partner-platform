@@ -13,26 +13,20 @@ type Props = {
   open: boolean;
   title: string;
   onClose: () => void;
-  /** Panel mutation in flight — Escape / backdrop / close must not dismiss. */
   busy?: boolean;
-  /**
-   * When an overlying confirm owns focus (dirty discard),
-   * suspend Escape + focus trap so only the top workflow is active.
-   */
   suspendFocusTrap?: boolean;
+  /** Optional extra class on the sheet (e.g. certificate-policy modal sizing). */
+  sheetClassName?: string;
   children: ReactNode;
 };
 
-/**
- * Centered C1 term-change shell (frozen R1 cooperation modal geometry).
- * Presentation / focus routing only — mutations stay in TermChangePanel.
- */
 export function TermChangeModal({
   open,
   title,
   onClose,
   busy = false,
   suspendFocusTrap = false,
+  sheetClassName,
   children,
 }: Props) {
   const titleId = useId();
@@ -98,7 +92,7 @@ export function TermChangeModal({
     >
       <div
         ref={sheetRef}
-        className={styles.sheet}
+        className={[styles.sheet, sheetClassName].filter(Boolean).join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -132,7 +126,6 @@ export function TermChangeModal({
               onCloseRef.current();
             }}
           >
-            {/* Frozen R1 Lucide `x` (roles.css sizes svg to 20×20, stroke-width 1.7). */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"

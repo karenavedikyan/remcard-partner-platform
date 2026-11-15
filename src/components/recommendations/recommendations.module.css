@@ -821,3 +821,51 @@
   margin: var(--space-2) 0 0;
   padding-left: 1.25rem;
 }
+
+.specialistCertRecipientPolicies {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid color-mix(in srgb, var(--on-dark) 18%, transparent);
+}
+
+.specialistCertRecipientList {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.specialistCertRecipientHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.specialistCertLegacyTag,
+.specialistCertFrozenTag {
+  font-size: var(--text-xs);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--on-dark) 25%, transparent);
+  color: color-mix(in srgb, var(--on-dark) 85%, transparent);
+}
+
+.specialistCertLegacyTag {
+  border-style: dashed;
+}
+
+@media (max-width: 640px) {
+  .specialistCertRecipientPolicies {
+    margin-top: var(--space-4);
+  }
+
+  .specialistCertRecipientHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

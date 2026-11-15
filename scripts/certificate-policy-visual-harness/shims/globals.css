@@ -1,0 +1,224 @@
+/*
+ * Design tokens aligned with the approved partner cabinet prototype
+ * (karenavedikyan-remcard-navigator-1351.twc1.net, ОПТОВИК demo).
+ */
+:root {
+  color-scheme: light;
+  --bg: #f6f5f3;
+  --surface: #ffffff;
+  --offset: #f2f1ee;
+  --ink: #252923;
+  --muted: #6c706a;
+  --line: #e5e5df;
+  --primary: #c12b2f;
+  --primary-hover: #a72226;
+  --primary-fg: #ffffff;
+  --primary-fill: #c12b2f;
+  --primary-fill-hover: #a72226;
+  --tab-active-bg: var(--ink);
+  --tab-active-fg: #ffffff;
+  --accent-emphasis: #9f1239;
+  --accent-fill: var(--primary-fill);
+  --accent-fill-hover: var(--primary-fill-hover);
+  --accent-on-fill: var(--primary-fg);
+  --red: var(--primary-fill);
+  --red-hover: var(--primary-fill-hover);
+  --soft: #fcf0ed;
+  --green: #35684b;
+  --green-soft: #eef5ef;
+  --amber: #865c20;
+  --amber-soft: #fbf3e3;
+  --dark: #253e35;
+  --on-dark: #f8fcf8;
+  --shadow: 0 24px 80px rgba(39, 43, 36, 0.15);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sidebar-width: 14.875rem;
+  --content-max: 81.875rem;
+  --topbar-height: 4.75rem;
+
+  --font-body: "Manrope", sans-serif;
+  --text-xs: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
+  --text-sm: clamp(0.875rem, 0.85rem + 0.1vw, 0.925rem);
+  --text-base: 1rem;
+  --text-lg: clamp(1.125rem, 1rem + 0.35vw, 1.35rem);
+  --text-xl: clamp(1.625rem, 1.25rem + 1vw, 2.125rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171a17;
+  --surface: #202520;
+  --offset: #2b312b;
+  --ink: #f0f1ec;
+  --muted: #a6aea4;
+  --line: #394038;
+  --primary: #fda4af;
+  --primary-hover: #fecdd3;
+  --primary-fg: #ffffff;
+  --primary-fill: #b54844;
+  --primary-fill-hover: #9a3834;
+  --tab-active-bg: #343a34;
+  --tab-active-fg: #f0f1ec;
+  --accent-emphasis: #fda4af;
+  --accent-fill: var(--primary-fill);
+  --accent-fill-hover: var(--primary-fill-hover);
+  --accent-on-fill: var(--primary-fg);
+  --red: var(--primary-fill);
+  --red-hover: var(--primary-fill-hover);
+  --soft: #3c2928;
+  --green: #acd5b8;
+  --green-soft: #293d30;
+  --amber: #e5c18a;
+  --amber-soft: #3c3424;
+  --dark: #293f36;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / 1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  font-size: var(--text-lg);
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+p {
+  color: var(--muted);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+select option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stateBlock {
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: center;
+}
+
+.stateBlock p {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.stateEmpty {
+  border-style: dashed;
+}
+
+.stateError {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  background: var(--soft);
+}
+
+.stateError p {
+  color: var(--primary);
+}
+
+.stateLoading {
+  color: var(--muted);
+}

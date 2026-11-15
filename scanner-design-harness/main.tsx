@@ -21,7 +21,12 @@ const preview: OrderPreviewAllowed = {
     userAlias: null,
     issuer: { label: "PROF", name: "Организация-эмитент" },
   },
-  partner: { id: "store-1", storeName: "Магазин приёма", isSelfScan: false },
+  partner: {
+    id: "store-1",
+    storeUserId: "store-1",
+    storeName: "Магазин приёма",
+    isSelfScan: false,
+  },
   availableCategories: [
     { category: "doors", categoryLabel: "Двери", discountPercent: 10, issuerPercent: 4 },
     { category: "floor", categoryLabel: "Пол", discountPercent: 7, issuerPercent: 2 },
@@ -74,6 +79,7 @@ function HarnessApp() {
           open
           preview={preview}
           amountDrafts={amounts}
+          discountDrafts={{}}
           rewardDrafts={{ doors: defaultRewardDraft, floor: { ...defaultRewardDraft, days: "30" } }}
           totals={totals}
           branchLabel="Центральный филиал"

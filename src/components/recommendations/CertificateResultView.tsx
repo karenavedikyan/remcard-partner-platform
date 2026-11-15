@@ -10,19 +10,18 @@ import {
   resolveCertificatePageUrl,
 } from "@/lib/certificate-url";
 import type { StoreCertificate } from "@/lib/certificate-types";
-import { buildStoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
+import { buildIssuedCertificatePreview } from "@/lib/certificate-issued-preview";
 import { Button } from "@/components/ui/Button";
 import { PartnerClientCertificateCard } from "./PartnerClientCertificateCard";
+import { CertificateResultIssuedDarkCard } from "./CertificateResultIssuedDarkCard";
+import { CertificateResultIssuedRecipientPolicies } from "./CertificateResultIssuedRecipientPolicies";
 import styles from "./recommendations.module.css";
 
 type CertificateResultViewProps = {
   certificate: StoreCertificate;
-  /** Public-facing code (e.g. А-RC-…); never includes private alias. */
   displayCode?: string | null;
-  /** Shown only immediately after create, not on ordinary detail view. */
   showCreateSuccessBanner?: boolean;
   presentation?: "default" | "specialist";
-  /** Owner-only label; never shown in QR/share/PDF payloads. */
   privateAlias?: string | null;
 };
 
@@ -54,8 +53,8 @@ export function CertificateResultView({
   const testOnlyLink = isTestCertificateUrl(pageUrl);
   const offerLines = useMemo(() => collectOfferLines(certificate), [certificate]);
 
-  const cardModel = useMemo(
-    () => buildStoreCertificateClientCardModel(certificate, shownCode, pageUrl),
+  const issuedPreview = useMemo(
+    () => buildIssuedCertificatePreview(certificate, shownCode, pageUrl),
     [certificate, shownCode, pageUrl],
   );
 
@@ -93,9 +92,7 @@ export function CertificateResultView({
         url: pageUrl,
       });
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
-      }
+      if (error instanceof DOMException && error.name === "AbortError") return;
       await copyLink();
     }
   }
@@ -105,9 +102,7 @@ export function CertificateResultView({
     setPdfLoading(true);
     try {
       const code = getCertificateCodeForApi(certificate);
-      if (!code) {
-        throw new Error("Не удалось определить код документа");
-      }
+      if (!code) throw new Error("Не удалось определить код документа");
       const { blob, filename } = await remcardFetchBlob(
         `/api/certificate/${encodeURIComponent(code)}/pdf`,
       );
@@ -135,7 +130,17 @@ export function CertificateResultView({
           <div className={styles.successBanner}>Готово — документ создан</div>
         ) : null}
 
-        <PartnerClientCertificateCard model={cardModel} />
+        {issuedPreview.kind === "policy-dark" ? (
+          <CertificateResultIssuedDarkCard
+            model={issuedPreview.model}
+            rows={issuedPreview.rows}
+          />
+        ) : (
+          <>
+            <PartnerClientCertificateCard model={issuedPreview.model} />
+            <CertificateResultIssuedRecipientPolicies certificate={certificate} />
+          </>
+        )}
 
         {privateAlias?.trim() ? (
           <div className={styles.specialistCertManagement}>
@@ -174,14 +179,15 @@ export function CertificateResultView({
         {testOnlyLink ? (
           <p className={styles.notice}>
             Клиентская ссылка относится к тестовому контуру и не предназначена для отправки
-            реальным клиентам. Для production задайте `NEXT_PUBLIC_CERTIFICATE_BASE_URL` на
-            рабочий публичный домен RemCard.
+            реальным клиентам.
           </p>
         ) : null}
       </div>
 
       <div className={styles.specialistCertActionRow}>
-        <Button onClick={() => void copyCode()}>{codeCopyState === "ok" ? "Код скопирован" : "Скопировать код"}</Button>
+        <Button onClick={() => void copyCode()}>
+          {codeCopyState === "ok" ? "Код скопирован" : "Скопировать код"}
+        </Button>
         <Button onClick={() => void copyLink()} disabled={!pageUrl}>
           Скопировать ссылку
         </Button>

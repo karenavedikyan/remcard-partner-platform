@@ -7,6 +7,8 @@ import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
+import { CertificatePolicyPublicDetails } from "@/components/certificate-policy/CertificatePolicyPublicDetails";
+import { certificatePolicyPublicSummaryFromProgram } from "@/lib/certificate-policy/public-summary";
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
 import type { PartnerSearchResult } from "@/lib/types";
 import {
@@ -35,8 +37,10 @@ export type PartnerFindDirectoryDetailShellProps = {
   onInvite: () => void;
   inviteDisabled?: boolean;
   inviteBusy?: boolean;
-  /** Frozen qt() block — AGENT-only; default false (no fetch/render). */
+  /** Frozen qt() block — AGENT-only published pool %; default false (no fetch/render). */
   showAgentTerms?: boolean;
+  /** Public certificate receiving-policy (STORE/COMPANY/MASTER owners); not agent financial rows. */
+  showPublicCertificatePolicy?: boolean;
   /** Optional parent snapshot (same certificate-program-summary contract as search card). */
   agentTermsSnapshot?: PartnerCertProgramState;
 };
@@ -49,6 +53,90 @@ function agentTermsCategoryCount(state: PartnerCertProgramState): number | null 
   if (state.status === "loaded") return state.items.length;
   if (state.status === "empty") return 0;
   return null;
+}
+
+export function FindDirectoryDetailPublicCertificatePolicy({
+  partnerUserId,
+  snapshot,
+}: {
+  partnerUserId: string;
+  snapshot?: PartnerCertProgramState;
+}) {
+  const [state, setState] = useState<PartnerCertProgramState>(snapshot ?? { status: "loading" });
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (snapshot) {
+      setState(snapshot);
+      return;
+    }
+    let cancelled = false;
+    const partnerAtRequest = partnerUserId;
+    const epochAtRequest = getPartnerSearchInlineTermsViewerEpoch();
+    setState({ status: "loading" });
+    void readPartnerCertificateProgramForSearchCard(partnerAtRequest, {
+      force: reloadKey > 0,
+      viewerEpoch: epochAtRequest,
+    }).then((next) => {
+      if (cancelled || partnerAtRequest !== partnerUserId) return;
+      setState(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [partnerUserId, reloadKey, snapshot]);
+
+  const retry = () => {
+    if (snapshot) return;
+    resetPartnerSearchInlineTermsCache(partnerUserId);
+    setReloadKey((key) => key + 1);
+  };
+
+  return (
+    <section
+      className={styles.generalTermsFold}
+      data-testid="partner-find-directory-public-certificate-policy"
+    >
+      <h3 className={styles.profileDirectionsTitle}>Условия приёма сертификата</h3>
+      {state.status === "loading" ? (
+        <p className={styles.muted} data-testid="partner-find-directory-public-certificate-policy-loading">
+          Загрузка…
+        </p>
+      ) : null}
+      {state.status === "error" ? (
+        <p className={styles.generalTermsError} role="alert">
+          <span data-testid="partner-find-directory-public-certificate-policy-error">{state.message}</span>{" "}
+          {!snapshot ? (
+            <button type="button" className={styles.generalTermsRetry} onClick={retry}>
+              Повторить
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+      {state.status === "empty" ? (
+        <p className={styles.muted} data-testid="partner-find-directory-public-certificate-policy-empty">
+          Партнёр ещё не опубликовал условия приёма сертификата.
+        </p>
+      ) : null}
+      {state.status === "loaded" ? (
+        state.policy ? (
+          <CertificatePolicyPublicDetails
+            policy={{
+              ...certificatePolicyPublicSummaryFromProgram(state.policy),
+              items: state.items,
+            }}
+            items={state.items}
+            truncated={state.truncated}
+            testId="partner-find-directory-public-certificate-policy-details"
+          />
+        ) : (
+          <p className={styles.muted} data-testid="partner-find-directory-public-certificate-policy-no-policy">
+            Срок и лимит покупок не опубликованы.
+          </p>
+        )
+      ) : null}
+    </section>
+  );
 }
 
 export function FindDirectoryDetailAgentTermsAccordion({
@@ -129,6 +217,17 @@ export function FindDirectoryDetailAgentTermsAccordion({
         ) : null}
         {state.status === "loaded" ? (
           <>
+            {state.policy ? (
+              <CertificatePolicyPublicDetails
+                policy={{
+                  ...certificatePolicyPublicSummaryFromProgram(state.policy),
+                  items: state.items,
+                }}
+                items={state.items}
+                truncated={state.truncated}
+                testId="partner-find-directory-general-policy"
+              />
+            ) : null}
             {state.items.map((item) => {
               const line = formatPartnerSearchInlineTermLine(item);
               return (
@@ -171,6 +270,7 @@ export function PartnerFindDirectoryDetailShell({
   inviteDisabled = false,
   inviteBusy = false,
   showAgentTerms = false,
+  showPublicCertificatePolicy = false,
   agentTermsSnapshot,
 }: PartnerFindDirectoryDetailShellProps) {
   const title = findDirectoryDetailDisplayTitle(partner);
@@ -249,6 +349,12 @@ export function PartnerFindDirectoryDetailShell({
           Партнёр уже зарегистрирован в RemCard. Повторная регистрация для сотрудничества не нужна.
         </p>
 
+        {showPublicCertificatePolicy ? (
+          <FindDirectoryDetailPublicCertificatePolicy
+            partnerUserId={partner.id}
+            snapshot={agentTermsSnapshot}
+          />
+        ) : null}
         {showAgentTerms ? (
           <FindDirectoryDetailAgentTermsAccordion
             partnerUserId={partner.id}

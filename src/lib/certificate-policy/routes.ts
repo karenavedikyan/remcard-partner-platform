@@ -1,0 +1,1 @@
+export const CERTIFICATE_POLICY_API_PATH = "/api/pro/certificate-policy";

@@ -4,10 +4,7 @@ import Link from "next/link";
 import { RewardConfirmationFields } from "./RewardConfirmationFields";
 import { PurchaseReviewModal } from "./PurchaseReviewModal";
 import { ScannerReferringPartnerBlock } from "./ScannerReferringPartnerBlock";
-import { PartnerClientCertificateCard } from "@/components/recommendations/PartnerClientCertificateCard";
-import { buildStoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
-import { resolveCertificatePageUrl } from "@/lib/certificate-url";
-import { orderPreviewToStoreCertificate } from "@/lib/order-preview-certificate";
+import { ScannerHubOrderPreviewCard } from "./ScannerHubOrderPreviewCard";
 import { defaultRewardDraft, rewardDraftToTerms, rewardTermsToDraft, type RewardConfirmationDraft } from "@/lib/reward-confirmation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -30,6 +27,7 @@ import {
   buildOrderItems,
   computeOrderTotals,
   validateOrderAmounts,
+  validateOrderDiscountDrafts,
 } from "@/lib/order-totals";
 import type {
   OrderCreateResponse,
@@ -112,6 +110,16 @@ function amountDraftsFromAttempt(record: StoreOrderAttemptRecord): Record<string
   const drafts: Record<string, string> = {};
   for (const item of record.body.items) {
     drafts[item.category] = String(item.amount);
+  }
+  return drafts;
+}
+
+function discountDraftsFromAttempt(record: StoreOrderAttemptRecord): Record<string, string> {
+  const drafts: Record<string, string> = {};
+  for (const item of record.body.items) {
+    if (item.discountPercent !== undefined && Number.isFinite(item.discountPercent)) {
+      drafts[item.category] = String(item.discountPercent);
+    }
   }
   return drafts;
 }
@@ -251,6 +259,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const [previewError, setPreviewError] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [amountDrafts, setAmountDrafts] = useState<Record<string, string>>({});
+  const [discountDrafts, setDiscountDrafts] = useState<Record<string, string>>({});
   const [rewardDrafts, setRewardDrafts] = useState<Record<string, RewardConfirmationDraft>>({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -455,6 +464,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     setPreviewError("");
     setPreviewLoading(false);
     setAmountDrafts({});
+    setDiscountDrafts({});
     setSubmitError("");
     setSubmitting(false);
     setOrderUncertain(false);
@@ -770,6 +780,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
         if ("allowed" in data && data.allowed) {
           if (options?.restoreAttempt) {
             setAmountDrafts(amountDraftsFromAttempt(options.restoreAttempt));
+            setDiscountDrafts(discountDraftsFromAttempt(options.restoreAttempt));
             setRewardDrafts(Object.fromEntries(options.restoreAttempt.body.items.map(item =>
               [item.category, rewardTermsToDraft(item.rewardConfirmation)])));
           } else {
@@ -778,6 +789,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
               drafts[cat.category] = "";
             }
             setAmountDrafts(drafts);
+            setDiscountDrafts({});
             setRewardDrafts({});
           }
         } else {
@@ -930,10 +942,19 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       setSubmitError(validation.message);
       return;
     }
+    const discountValidation = validateOrderDiscountDrafts(
+      previewSession.preview.availableCategories,
+      amountDrafts,
+      discountDrafts,
+    );
+    if (!discountValidation.ok) {
+      setSubmitError(discountValidation.message);
+      return;
+    }
 
     if (!previewSession.preview.partner.isSelfScan) {
       try {
-        buildOrderItems(previewSession.preview.availableCategories, amountDrafts).forEach((item) => {
+        buildOrderItems(previewSession.preview.availableCategories, amountDrafts, discountDrafts).forEach((item) => {
           rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft);
         });
       } catch (error) {
@@ -949,6 +970,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   }, [
     amountDrafts,
     branchContextBlocked,
+    discountDrafts,
     orderConflict,
     previewSession,
     rewardDrafts,
@@ -1029,10 +1051,19 @@ export function ScannerHub({ userId }: ScannerHubProps) {
       setSubmitError(validation.message);
       return;
     }
+    const discountValidation = validateOrderDiscountDrafts(
+      previewSession.preview.availableCategories,
+      amountDrafts,
+      discountDrafts,
+    );
+    if (!discountValidation.ok) {
+      setSubmitError(discountValidation.message);
+      return;
+    }
 
     let items;
     try {
-      items = buildOrderItems(previewSession.preview.availableCategories, amountDrafts)
+      items = buildOrderItems(previewSession.preview.availableCategories, amountDrafts, discountDrafts)
         .map(item => previewSession.preview.partner.isSelfScan ? item : ({ ...item,
           rewardConfirmation: rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft),
         }));
@@ -1068,6 +1099,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     await executeOrderPost(created.record, false);
   }, [
     amountDrafts,
+    discountDrafts,
     rewardDrafts,
     executeOrderPost,
     orderConflict,
@@ -1085,15 +1117,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
   const allowedPreview = isPreviewSessionAllowed(previewSession) ? previewSession.preview : null;
   const totals =
     allowedPreview && previewSession
-      ? computeOrderTotals(allowedPreview.availableCategories, amountDrafts)
+      ? computeOrderTotals(allowedPreview.availableCategories, amountDrafts, discountDrafts)
       : null;
-
-  const clientCertificateModel = useMemo(() => {
-    if (!allowedPreview || !previewSession) return null;
-    const cert = orderPreviewToStoreCertificate(allowedPreview, previewSession.code);
-    const pageUrl = resolveCertificatePageUrl(cert);
-    return buildStoreCertificateClientCardModel(cert, cert.promoCode, pageUrl);
-  }, [allowedPreview, previewSession]);
 
   useEffect(() => {
     if (!purchaseReviewOpen) return;
@@ -1248,10 +1273,10 @@ export function ScannerHub({ userId }: ScannerHubProps) {
 
         <div className={styles.confirmationLayout}>
           <div className={styles.certColumn}>
-            {clientCertificateModel ? (
-              <PartnerClientCertificateCard
-                model={clientCertificateModel}
-                presentation="scanner"
+            {allowedPreview && previewSession ? (
+              <ScannerHubOrderPreviewCard
+                preview={allowedPreview}
+                operationCode={previewSession.code}
               />
             ) : null}
             <ScannerReferringPartnerBlock
@@ -1280,7 +1305,8 @@ export function ScannerHub({ userId }: ScannerHubProps) {
           <div className={styles.card} style={{ marginBottom: 0 }}>
           <h2 className={styles.formLead}>Введите суммы покупки</h2>
           <p className={styles.formHint}>
-            Суммы до скидки, в рублях. Окончательный расчёт выполняет сервер при подтверждении.
+            Суммы до скидки, в рублях. Процент скидки по умолчанию — как в сертификате; при согласии с клиентом
+            можно указать другой. Окончательный расчёт выполняет сервер.
           </p>
           <p className={styles.meta}>
             Партнёр: {preview.partner.storeName}
@@ -1304,6 +1330,23 @@ export function ScannerHub({ userId }: ScannerHubProps) {
                   disabled={submitting || amountsLocked}
                   onChange={(event) =>
                     setAmountDrafts((prev) => ({
+                      ...prev,
+                      [category.category]: event.target.value,
+                    }))
+                  }
+                />
+                <TextField
+                  id={`scanner-discount-${category.category}`}
+                  label="Скидка клиенту, %"
+                  type="number"
+                  min={0}
+                  max={100}
+                  inputMode="decimal"
+                  placeholder={String(category.discountPercent)}
+                  value={discountDrafts[category.category] ?? ""}
+                  disabled={submitting || amountsLocked}
+                  onChange={(event) =>
+                    setDiscountDrafts((prev) => ({
                       ...prev,
                       [category.category]: event.target.value,
                     }))
@@ -1384,6 +1427,7 @@ export function ScannerHub({ userId }: ScannerHubProps) {
             open={purchaseReviewOpen}
             preview={preview}
             amountDrafts={amountDrafts}
+            discountDrafts={discountDrafts}
             rewardDrafts={rewardDrafts}
             totals={totals}
             branchLabel={confirmationBranchLabel}

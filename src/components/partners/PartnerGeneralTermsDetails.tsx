@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CertificatePolicyPublicDetails } from "@/components/certificate-policy/CertificatePolicyPublicDetails";
+import { certificatePolicyPublicSummaryFromProgram } from "@/lib/certificate-policy/public-summary";
 import {
   fetchPartnerCertificateProgram,
   type PartnerCertProgramState,
@@ -55,6 +57,17 @@ export function PartnerGeneralTermsDetails({
       ) : null}
       {state.status === "loaded" ? (
         <>
+          {state.policy ? (
+            <CertificatePolicyPublicDetails
+              policy={{
+                ...certificatePolicyPublicSummaryFromProgram(state.policy),
+                items: state.items,
+              }}
+              items={state.items}
+              truncated={state.truncated}
+              testId="partner-general-terms-policy"
+            />
+          ) : null}
           <ul className={styles.list}>
             {state.items.map((item) => (
               <li key={item.category}>

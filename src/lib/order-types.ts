@@ -1,8 +1,11 @@
+import type { CertificatePartnerRecipientPolicy } from "@/lib/certificate-types";
+
 export type PreviewCategory = {
   category: string;
   categoryLabel: string;
   discountPercent: number;
   issuerPercent: number;
+  proBonusPercent?: number;
 };
 
 /** Creator/recommender (certificate proUser), not issuer org or redeeming store. */
@@ -23,10 +26,13 @@ export type OrderPreviewReferringPartner = {
 
 export type OrderPreviewAllowed = {
   allowed: true;
+  /** Totals from `availableCategories` are provisional until order confirm. */
+  previewProvisional?: boolean;
   certificate: {
     id: string;
     promoCode: string;
     status: string;
+    createdAt?: string;
     validUntil: string | null;
     usageCount: number;
     maxUsages: number;
@@ -37,14 +43,16 @@ export type OrderPreviewAllowed = {
       city?: string | null;
       categories?: Array<{ categoryLabel: string; discountPercent: number }>;
     }>;
+    recipientPolicy?: CertificatePartnerRecipientPolicy | null;
   };
   partner: {
     id: string;
+    storeUserId: string;
     storeName: string;
     isSelfScan: boolean;
+    recipientPolicy?: CertificatePartnerRecipientPolicy | null;
   };
   availableCategories: PreviewCategory[];
-  /** Present on newer backend; absent on older deployments. */
   referringPartner?: OrderPreviewReferringPartner | null;
 };
 

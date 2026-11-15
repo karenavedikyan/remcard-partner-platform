@@ -53,6 +53,7 @@ import {
 } from "@/lib/specialist-certificate-create-ui";
 import agentStyles from "@/components/agent-r03/agent-r03.module.css";
 import { CertificateResultView } from "./CertificateResultView";
+import { CertificatePolicyRecipientTerms } from "@/components/certificate-policy/CertificatePolicyRecipientTerms";
 import styles from "./recommendations.module.css";
 
 type ValidityPreset = "1" | "3" | "6" | "12" | "unlimited";
@@ -302,6 +303,11 @@ export function CertificateCreateForm({
     [selectablePartners, selectedKeys],
   );
 
+  const issuerLimitsControlledByRecipient = useMemo(() => {
+    if (!selectedPartners.length) return false;
+    return selectedPartners.every((partner) => partner.recipientPolicy != null);
+  }, [selectedPartners]);
+
   const filteredSelectablePartners = useMemo(
     () => selectablePartners.filter((p) => partnerMatchesSearch(p, partnerSearchQuery)),
     [partnerSearchQuery, selectablePartners],
@@ -414,8 +420,10 @@ export function CertificateCreateForm({
       discountDrafts,
       selectedCategoryKeys: specialistWizard ? selectedCategoryKeys : undefined,
       requireTenthStep: specialistWizard,
-      validUntil: validityToIso(validityPreset),
-      maxUsages: 0,
+      validUntil: issuerLimitsControlledByRecipient
+        ? undefined
+        : validityToIso(validityPreset),
+      maxUsages: issuerLimitsControlledByRecipient ? undefined : 0,
     });
 
     if (!payloadResult.ok) {
@@ -756,6 +764,12 @@ export function CertificateCreateForm({
                     {selectedPartners.map((partner) => (
                       <div key={partnerSelectionKey(partner)} className={styles.categoryGroupPanel}>
                         <h4 className={styles.categoryGroupTitle}>{partner.storeName}</h4>
+                        {partner.recipientPolicy ? (
+                          <CertificatePolicyRecipientTerms
+                            partnerUserId={partner.storeUserId}
+                            policy={partner.recipientPolicy}
+                          />
+                        ) : null}
                         <div className={styles.categoryRows}>
                         {partner.categories.map((cat) => {
                           const key = categoryFieldKey(partner.storeUserId, cat.category);
@@ -880,28 +894,34 @@ export function CertificateCreateForm({
                       />
                     </div>
                   </details>
-                  <details className={styles.optionalBlock}>
-                    <summary>Срок действия</summary>
-                    <div className={styles.optionalBlockBody}>
-                      <label className={styles.meta}>
-                        Срок
-                        <select
-                          value={validityPreset}
-                          disabled={submitting}
-                          data-testid="recommendation-validity-preset"
-                          onChange={(event) =>
-                            setValidityPreset(event.target.value as ValidityPreset)
-                          }
-                        >
-                          {VALIDITY_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </details>
+                  {!issuerLimitsControlledByRecipient ? (
+                    <details className={styles.optionalBlock}>
+                      <summary>Срок действия</summary>
+                      <div className={styles.optionalBlockBody}>
+                        <label className={styles.meta}>
+                          Срок
+                          <select
+                            value={validityPreset}
+                            disabled={submitting}
+                            data-testid="recommendation-validity-preset"
+                            onChange={(event) =>
+                              setValidityPreset(event.target.value as ValidityPreset)
+                            }
+                          >
+                            {VALIDITY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </details>
+                  ) : (
+                    <p className={styles.meta} data-testid="recommendation-recipient-policy-limits">
+                      Срок и число покупок задаёт принимающий партнёр и фиксируется при выпуске.
+                    </p>
+                  )}
                   <p className={styles.notice}>
                     Акционные модели не участвуют. Чтобы увеличить общий процент, сначала
                     согласуйте новые условия с партнёром.
@@ -1062,24 +1082,32 @@ export function CertificateCreateForm({
                 </section>
               ) : null}
 
-              <section className={styles.formSection}>
-                <h3>Срок действия</h3>
-                <label className={styles.meta}>
-                  Срок
-                  <select
-                    value={validityPreset}
-                    disabled={submitting}
-                    data-testid="recommendation-validity-preset"
-                    onChange={(event) => setValidityPreset(event.target.value as ValidityPreset)}
-                  >
-                    {VALIDITY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </section>
+              {!issuerLimitsControlledByRecipient ? (
+                <section className={styles.formSection}>
+                  <h3>Срок действия</h3>
+                  <label className={styles.meta}>
+                    Срок
+                    <select
+                      value={validityPreset}
+                      disabled={submitting}
+                      data-testid="recommendation-validity-preset"
+                      onChange={(event) =>
+                        setValidityPreset(event.target.value as ValidityPreset)
+                      }
+                    >
+                      {VALIDITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </section>
+              ) : (
+                <p className={styles.meta} data-testid="recommendation-recipient-policy-limits">
+                  Срок и число покупок задаёт принимающий партнёр и фиксируется при выпуске.
+                </p>
+              )}
 
               {submitError ? (
                 <p className={styles.errorText} role="alert">

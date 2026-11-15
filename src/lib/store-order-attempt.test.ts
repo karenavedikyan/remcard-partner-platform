@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildOrderItems } from "@/lib/order-totals";
 import {
   classifyStoreOrderPostResponse,
   clearStoreOrderAttempt,
@@ -7,10 +8,12 @@ import {
   loadStoreOrderAttempt,
   markStoreOrderAttemptConflict,
   markStoreOrderAttemptUnknown,
+  normalizeStoreOrderAttemptBody,
   prepareStoreOrderRetry,
   releaseStoreOrderAttemptForEdit,
+  storeOrderAttemptBodiesEqual,
   STORE_ORDER_ATTEMPT_STORAGE_KEY,
-} from "./store-order-attempt.ts";
+} from "@/lib/store-order-attempt";
 
 const storage = new Map<string, string>();
 
@@ -34,33 +37,47 @@ function installSessionStorage() {
 beforeEach(() => {
   storage.clear();
   installSessionStorage();
-  Object.defineProperty(globalThis, "crypto", {
-    configurable: true,
-    value: {
-      randomUUID: () => "550e8400-e29b-41d4-a716-446655440000",
-    },
+  vi.stubGlobal("crypto", {
+    randomUUID: () => "550e8400-e29b-41d4-a716-446655440000",
   });
 });
 
 afterEach(() => {
   storage.clear();
+  vi.unstubAllGlobals();
 });
 
 describe("store-order-attempt", () => {
   it("preserves individual terms verbatim through storage and unknown-result retry", () => {
-    const body = { certificateCode: "RC-TEST", items: [
-      { category: "doors", amount: 120000, rewardConfirmation: { days: 14, kind: "GOODS" as const, fulfilledAt: null } },
-      { category: "flooring", amount: 57000, rewardConfirmation: { days: 0, kind: "SERVICE" as const, fulfilledAt: "ON_OPERATION" } },
-    ] };
+    const body = {
+      certificateCode: "RC-TEST",
+      items: [
+        {
+          category: "doors",
+          amount: 120000,
+          rewardConfirmation: { days: 14, kind: "GOODS" as const, fulfilledAt: null },
+        },
+        {
+          category: "flooring",
+          amount: 57000,
+          rewardConfirmation: { days: 0, kind: "SERVICE" as const, fulfilledAt: "ON_OPERATION" },
+        },
+      ],
+    };
     const created = createStoreOrderAttempt({ userId: "user-1", body });
     assert.equal(created.ok, true);
     markStoreOrderAttemptUnknown("user-1");
     const retry = prepareStoreOrderRetry("user-1");
     assert.equal(retry.ok, true);
     if (!retry.ok) return;
-    for (const item of body.items) assert.deepEqual(
-      retry.record.body.items.find(i => i.category === item.category)?.rewardConfirmation, item.rewardConfirmation);
+    for (const item of body.items) {
+      assert.deepEqual(
+        retry.record.body.items.find((i) => i.category === item.category)?.rewardConfirmation,
+        item.rewardConfirmation,
+      );
+    }
   });
+
   it("createStoreOrderAttempt persists before POST", () => {
     const body = {
       certificateCode: "RC-TEST",
@@ -187,5 +204,61 @@ describe("store-order-attempt", () => {
     });
     clearStoreOrderAttempt();
     assert.equal(loadStoreOrderAttempt("user-1"), null);
+  });
+});
+
+describe("store-order-attempt discount transport", () => {
+  it("normalize preserves explicit 0/6/12 discountPercent", () => {
+    const normalized = normalizeStoreOrderAttemptBody({
+      certificateCode: " RC ",
+      items: [
+        { category: "doors", amount: 1000, discountPercent: 0 },
+        { category: "floor", amount: 2000, discountPercent: 6 },
+        { category: "hvac", amount: 3000, discountPercent: 12 },
+      ],
+    });
+    assert.deepEqual(normalized.items.map((i) => i.discountPercent), [0, 6, 12]);
+  });
+
+  it("bodiesEqual distinguishes 6% vs 8% on the same line", () => {
+    const a = {
+      certificateCode: "X",
+      items: [{ category: "doors", amount: 1000, discountPercent: 6 }],
+    };
+    const b = {
+      certificateCode: "X",
+      items: [{ category: "doors", amount: 1000, discountPercent: 8 }],
+    };
+    expect(storeOrderAttemptBodiesEqual(a, b)).toBe(false);
+  });
+
+  it("buildOrderItems → createStoreOrderAttempt keeps discount on first POST body", () => {
+    const categories = [
+      { category: "doors", categoryLabel: "Двери", discountPercent: 7, issuerPercent: 3 },
+    ];
+    const items = buildOrderItems(categories, { doors: "10000" }, { doors: "6" });
+    assert.equal(items[0]?.discountPercent, 6);
+    const created = createStoreOrderAttempt({
+      userId: "u1",
+      body: { certificateCode: "PROMO", items },
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    assert.equal(created.record.body.items[0]?.discountPercent, 6);
+    const stored = JSON.parse(storage.get(STORE_ORDER_ATTEMPT_STORAGE_KEY) ?? "");
+    assert.equal(stored.body.items[0].discountPercent, 6);
+  });
+
+  it("retry reuses stored body with unchanged discount", () => {
+    const body = {
+      certificateCode: "PROMO",
+      items: [{ category: "doors", amount: 1000, discountPercent: 12 }],
+    };
+    createStoreOrderAttempt({ userId: "u1", body });
+    markStoreOrderAttemptUnknown("u1");
+    const retry = prepareStoreOrderRetry("u1");
+    assert.equal(retry.ok, true);
+    if (!retry.ok) return;
+    assert.equal(retry.record.body.items[0]?.discountPercent, 12);
   });
 });

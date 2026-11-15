@@ -3,9 +3,11 @@
 import { useId } from "react";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
+  appliedClientDiscountPercent,
   buildOrderItems,
   lineDiscountRub,
   type CategoryAmountDraft,
+  type CategoryDiscountDraft,
   type OrderTotals,
 } from "@/lib/order-totals";
 import type { OrderPreviewAllowed } from "@/lib/order-types";
@@ -28,6 +30,7 @@ export type PurchaseReviewModalProps = {
   open: boolean;
   preview: OrderPreviewAllowed;
   amountDrafts: CategoryAmountDraft;
+  discountDrafts: CategoryDiscountDraft;
   rewardDrafts: Record<string, RewardConfirmationDraft>;
   totals: OrderTotals;
   branchLabel: string | null;
@@ -40,6 +43,7 @@ export function PurchaseReviewModal({
   open,
   preview,
   amountDrafts,
+  discountDrafts,
   rewardDrafts,
   totals,
   branchLabel,
@@ -54,7 +58,7 @@ export function PurchaseReviewModal({
     return null;
   }
 
-  const items = buildOrderItems(preview.availableCategories, amountDrafts);
+  const items = buildOrderItems(preview.availableCategories, amountDrafts, discountDrafts);
   const isSelfScan = preview.partner.isSelfScan;
 
   return (
@@ -108,9 +112,11 @@ export function PurchaseReviewModal({
             <ul className={styles.categoryList}>
               {items.map((item) => {
                 const category = preview.availableCategories.find((c) => c.category === item.category);
-                const discount = category
-                  ? lineDiscountRub(item.amount, category.discountPercent)
-                  : 0;
+                const offeredPercent = category?.discountPercent ?? 0;
+                const appliedPercent =
+                  item.discountPercent ??
+                  (category ? appliedClientDiscountPercent(category, discountDrafts) : offeredPercent);
+                const discount = lineDiscountRub(item.amount, appliedPercent);
                 const draft = rewardDrafts[item.category] ?? defaultRewardDraft;
                 const kindLabel = draft.kind === "SERVICE" ? "услуга" : "товар";
                 const handoff =
@@ -121,14 +127,21 @@ export function PurchaseReviewModal({
                     <p className={styles.categoryTitle}>
                       {displayCategoryLabel(item.category, item.categoryLabel)}
                     </p>
+                    {category && Math.abs(offeredPercent - appliedPercent) > 1e-6 ? (
+                      <p className={styles.categoryMeta} data-testid={`purchase-review-offer-${item.category}`}>
+                        По сертификату −{offeredPercent}%
+                      </p>
+                    ) : null}
                     <dl className={styles.categoryNums}>
                       <div className={styles.rollupRow}>
                         <dt>До скидки</dt>
                         <dd>{formatRub(item.amount)}</dd>
                       </div>
                       <div className={styles.rollupRow}>
-                        <dt>Скидка</dt>
-                        <dd>{formatRub(discount)}</dd>
+                        <dt>Скидка ({appliedPercent}%)</dt>
+                        <dd data-testid={`purchase-review-line-discount-${item.category}`}>
+                          {formatRub(discount)}
+                        </dd>
                       </div>
                     </dl>
                     {!isSelfScan ? (

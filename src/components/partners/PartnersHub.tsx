@@ -95,6 +95,13 @@ import {
 } from "@/components/partners/partnerSearchPublicSummaryHandoff";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { TermChangeModal } from "@/components/partners/TermChangeModal";
+import { CertificatePolicyProfileEntry } from "@/components/certificate-policy/CertificatePolicyProfileEntry";
+import { partnersHubCertificatePolicyEntry } from "@/lib/certificate-receiving-policy/partners-hub-entry";
+import {
+  shouldRenderPartnerSearchInlineTermsPanel,
+  shouldShowPublicCertificatePolicyInPartnerSearch,
+} from "@/lib/certificate-receiving-policy/catalog-search-policy";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
 import {
   cooperationActionLabel,
@@ -167,6 +174,9 @@ export type PartnersHubProps = {
   forcedTab?: TabId;
   defaultSearchRole?: SearchRole;
   partnersAudience?: PartnersHubAudience;
+  /** Trusted GET /api/pro/context — required for certificate-policy entry gate. */
+  proContext?: ProContextSnapshot | null;
+  proContextReady?: boolean;
 };
 
 type TabId = "list" | "find" | "link";
@@ -211,6 +221,8 @@ export function PartnersHub({
   forcedTab,
   defaultSearchRole: defaultSearchRoleProp,
   partnersAudience,
+  proContext = null,
+  proContextReady = false,
 }: PartnersHubProps) {
   const subjectUserId = partnershipSubjectUserId?.trim() || meId;
   const canMutatePartnerships = orgStaffCanMutatePartnerships(organizationReadContext);
@@ -285,6 +297,14 @@ export function PartnersHub({
     meProfile.user,
     searchRole,
   );
+  const showPublicCertificatePolicy = shouldShowPublicCertificatePolicyInPartnerSearch(
+    meProfile.user,
+    searchRole,
+  );
+  const showPartnerSearchInlineTerms = shouldRenderPartnerSearchInlineTermsPanel({
+    showAgentPublishedTerms,
+    showPublicCertificatePolicy,
+  });
 
   const rememberFindDetailTrigger = useCallback((partnerId: string, el?: HTMLElement | null) => {
     if (!el) return;
@@ -2088,11 +2108,12 @@ export function PartnersHub({
                 partner={partner}
                 title={partnerTitle(partner)}
                 showPublishedTerms={showAgentPublishedTerms}
+                showPublicCertificatePolicy={showPublicCertificatePolicy}
                 inviteDisabled={Boolean(inviteTarget) || loadingSearch}
                 onInvite={() => beginInviteFromPartner(partner)}
                 onDetail={() => openFindDirectoryDetail(partner)}
                 onPublicSummaryStateChange={
-                  showAgentPublishedTerms ? handlePublicSummaryStateChange : undefined
+                  showPartnerSearchInlineTerms ? handlePublicSummaryStateChange : undefined
                 }
               />
             ))}
@@ -2221,8 +2242,10 @@ export function PartnersHub({
                   beginInviteFromPartner(target, { fromFindDetail: true });
                 }}
                 inviteDisabled={Boolean(inviteTarget) || Boolean(busyId) || loadingSearch}
-                /* P23n/P23q: AGENT-only via parent gate helper; non-AGENT never fetches/renders. */
                 showAgentTerms={showAgentTermsForFindDetailHandoff(showAgentPublishedTerms)}
+                showPublicCertificatePolicy={
+                  showPublicCertificatePolicy && !showAgentPublishedTerms
+                }
                 agentTermsSnapshot={findDetailAgentTermsSnapshot}
               />
             ) : null}
@@ -2584,6 +2607,21 @@ export function PartnersHub({
         />
       ) : tab === "list" ? (
         <>
+          {(() => {
+            const certPolicyGate = partnersHubCertificatePolicyEntry({
+              proContextReady: proContextReady === true,
+              proContext: proContext ?? null,
+              profile: meProfile,
+              organizationReadContext,
+            });
+            if (!certPolicyGate?.showEntry) return null;
+            return (
+              <CertificatePolicyProfileEntry
+                viewerUserId={meProfile.user.id}
+                canEditSettings={certPolicyGate.canEditSettings}
+              />
+            );
+          })()}
           {isAgentR04 && agentSegment === "invitations" ? (
             <p className={styles.partnerMeta} data-testid="agent-invitations-lead">
               {partnersSharedUiCopy(partnersAudience).invitationsLead}

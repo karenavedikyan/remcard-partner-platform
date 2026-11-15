@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PartnerSearchResultInlineTerms } from "@/components/partners/PartnerSearchResultInlineTerms";
 import {
+  partnerSearchInlineTermsVariant,
+  shouldRenderPartnerSearchInlineTermsPanel,
+} from "@/lib/certificate-receiving-policy/catalog-search-policy";
+import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
 } from "@/lib/partnership-labels";
@@ -18,7 +22,10 @@ import styles from "./PartnerSearchResultCard.module.css";
 export type PartnerSearchResultCardProps = {
   partner: PartnerSearchResult;
   title: string;
+  /** AGENT-only published cooperation pool % (unchanged product gate). */
   showPublishedTerms: boolean;
+  /** Public certificate receiving-policy chips for STORE/COMPANY/MASTER owners (and agents). */
+  showPublicCertificatePolicy?: boolean;
   inviteDisabled: boolean;
   inviteBusy?: boolean;
   onInvite: () => void;
@@ -315,6 +322,7 @@ export function PartnerSearchResultCard({
   partner,
   title,
   showPublishedTerms,
+  showPublicCertificatePolicy = false,
   inviteDisabled,
   inviteBusy = false,
   onInvite,
@@ -426,11 +434,15 @@ export function PartnerSearchResultCard({
           {stagesLine}
         </p>
 
-        {showPublishedTerms ? (
+        {shouldRenderPartnerSearchInlineTermsPanel({
+          showAgentPublishedTerms: showPublishedTerms,
+          showPublicCertificatePolicy,
+        }) ? (
           <div className={styles.modalResultTerms} data-testid="agent-partner-search-result-terms">
             <PartnerSearchResultInlineTerms
               key={partner.id}
               partnerUserId={partner.id}
+              variant={partnerSearchInlineTermsVariant(showPublishedTerms)}
               onPublicSummaryStateChange={onPublicSummaryStateChange}
             />
           </div>

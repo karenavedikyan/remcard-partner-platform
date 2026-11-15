@@ -16,6 +16,19 @@ export type CertificateCategory = {
   issuerPercent?: number;
 };
 
+export type CertificatePartnerRecipientPolicy = {
+  validityDays: number;
+  purchaseLimit: number;
+  minimumPurchaseAmount: number | null;
+  promotionsCompatible: boolean;
+  exclusionsText: string | null;
+  policySource: "general" | "individual";
+  /** Frozen at issuance — never recomputed client-side. */
+  validUntil: string | null;
+  consumedUses?: number;
+  remainingPurchases?: number;
+};
+
 export type CertificatePartner = {
   id: string;
   storeUserId: string;
@@ -23,6 +36,8 @@ export type CertificatePartner = {
   partnershipId: string | null;
   isSelfScan: boolean;
   categories: CertificateCategory[];
+  /** Present on issued certificates with receiving-policy v2 snapshot. */
+  recipientPolicy?: CertificatePartnerRecipientPolicy | null;
 };
 
 export type StoreCertificate = {
@@ -85,6 +100,16 @@ export type AvailablePartner = {
   categories: AvailablePartnerCategory[];
   programReady?: boolean;
   programMissing?: string[];
+  /** Effective receiving policy — issuer cannot override duration/count. */
+  recipientPolicy?: {
+    validityDays: number;
+    purchaseLimit: number;
+    minimumPurchaseAmount: number | null;
+    promotionsCompatible: boolean;
+    exclusionsText: string | null;
+    policySource: "general" | "individual";
+    validUntil: string | null;
+  } | null;
 };
 
 export type CertificateRecommendationIssuerMissingField = {

@@ -10,6 +10,8 @@ export type StoreOrderAttemptItem = {
   category: string;
   categoryLabel?: string;
   amount: number;
+  /** Applied client discount % when explicitly chosen (including 0). */
+  discountPercent?: number;
 };
 
 export type StoreOrderAttemptBody = {
@@ -45,6 +47,17 @@ export function generateStoreOrderIdempotencyKey(): string {
   throw new Error("crypto.randomUUID is unavailable");
 }
 
+function normalizeDiscountPercent(value: unknown): number | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    return undefined;
+  }
+  return n;
+}
+
 export function normalizeStoreOrderAttemptBody(body: StoreOrderAttemptBody): StoreOrderAttemptBody {
   return {
     certificateCode: String(body.certificateCode || "").trim(),
@@ -53,15 +66,26 @@ export function normalizeStoreOrderAttemptBody(body: StoreOrderAttemptBody): Sto
         category: String(item.category || "").trim(),
         categoryLabel: item.categoryLabel ? String(item.categoryLabel).trim() : undefined,
         amount: Number(item.amount),
-        ...(item.rewardConfirmation === undefined ? {} : {
-          rewardConfirmation: {
-            days: item.rewardConfirmation.days, kind: item.rewardConfirmation.kind,
-            fulfilledAt: item.rewardConfirmation.fulfilledAt,
-          },
-        }),
+        ...(normalizeDiscountPercent(item.discountPercent) !== undefined
+          ? { discountPercent: normalizeDiscountPercent(item.discountPercent) }
+          : {}),
+        ...(item.rewardConfirmation === undefined
+          ? {}
+          : {
+              rewardConfirmation: {
+                days: item.rewardConfirmation.days,
+                kind: item.rewardConfirmation.kind,
+                fulfilledAt: item.rewardConfirmation.fulfilledAt,
+              },
+            }),
       }))
       .filter((item) => item.category && Number.isFinite(item.amount) && item.amount > 0)
-      .sort((a, b) => a.category.localeCompare(b.category) || a.amount - b.amount),
+      .sort(
+        (a, b) =>
+          a.category.localeCompare(b.category) ||
+          a.amount - b.amount ||
+          (a.discountPercent ?? -1) - (b.discountPercent ?? -1),
+      ),
   };
 }
 
@@ -262,9 +286,11 @@ export function isStoreOrderAttemptLocked(record: StoreOrderAttemptRecord | null
 
 export function formatAttemptItemsSummary(body: StoreOrderAttemptBody): string {
   return normalizeStoreOrderAttemptBody(body)
-    .items.map(
-      (item) => `${displayCategoryLabel(item.category, item.categoryLabel)}: ${item.amount} ₽`,
-    )
+    .items.map((item) => {
+      const discount =
+        item.discountPercent !== undefined ? `, −${item.discountPercent}%` : "";
+      return `${displayCategoryLabel(item.category, item.categoryLabel)}: ${item.amount} ₽${discount}`;
+    })
     .join("; ");
 }
 

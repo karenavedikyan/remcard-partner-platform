@@ -290,6 +290,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       methods: new Set(["GET"]),
       pattern: /^\/api\/partner\/[\w-]+\/certificate-program-summary$/,
     },
+    { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/certificate-policy$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/organization\/submit-for-moderation$/ },
     { methods: new Set(["POST"]), pattern: branchSubPath("/submit-for-moderation") },
     { methods: new Set(["GET", "PATCH"]), pattern: branchSubPath("/public-contacts") },

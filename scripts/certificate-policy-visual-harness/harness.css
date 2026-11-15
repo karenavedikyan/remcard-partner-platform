@@ -1,0 +1,35 @@
+body {
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.cp-harness-muted {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.cp-harness-header {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  background: var(--soft, #f5f6f8);
+  border-bottom: 1px solid #e2e5ea;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.cp-harness-scenes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+
+.cp-harness-panel {
+  padding: var(--space-4, 16px);
+  min-height: 70vh;
+}
+
+.rc-cert-dark-shell {
+  background: #0f141a;
+  padding: var(--space-4, 16px);
+  border-radius: var(--radius-lg, 12px);
+}
