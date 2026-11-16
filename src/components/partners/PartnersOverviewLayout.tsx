@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import type { PartnerOverviewZone } from "@/lib/partners-prototype-v1/overview-groups";
@@ -56,8 +57,12 @@ export type PartnersOverviewLayoutProps = {
   legacyBulkOutcomeVisible: boolean;
   /** General certificate terms entry (validity, purchases) for roles that author or review them. */
   policySlot?: ReactNode;
+  /** Direction switch rendered above all direction content (heading, policy entry, tabs, then the panel). */
+  directionTabsSlot?: ReactNode;
   /** Hint under «Действующие партнёры»; defaults to the two-direction wording. */
   activeHint?: string;
+  /** Existing certificate-creation entry shown beside «Найти партнёра» (outgoing direction). */
+  showCreateCertificate?: boolean;
 };
 
 const ACTIVE_HINT_DEFAULT =
@@ -93,7 +98,9 @@ export function PartnersOverviewLayout({
   legacyChromePinned,
   legacyBulkOutcomeVisible,
   policySlot = null,
+  directionTabsSlot = null,
   activeHint = ACTIVE_HINT_DEFAULT,
+  showCreateCertificate = false,
 }: PartnersOverviewLayoutProps) {
   const showGreetingBase = shouldShowApprovedPartnersGreeting({
     loading,
@@ -130,7 +137,7 @@ export function PartnersOverviewLayout({
     showGreetingHero && (collectionIsEmpty || !effectiveDisclosureOpen);
 
   const legacyOverviewPanel = (
-    <>
+    <div className={styles.panelStack}>
       <div className={styles.tiles} data-testid="partners-overview-tiles">
         <button
           type="button"
@@ -260,27 +267,41 @@ export function PartnersOverviewLayout({
           {waitingSlot}
         </div>
       </details>
-    </>
+    </div>
   );
 
   return (
     <div className={styles.root} data-testid="partners-overview">
-      {!presentationPending && !hideOverviewHead ? (
-        <div className={styles.head}>
-          <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
-          <button
-            type="button"
-            className={styles.primaryCta}
-            onClick={onOpenFind}
-            data-testid="partners-overview-cta-find"
-          >
-            Найти партнёра
-          </button>
+      {!presentationPending && !error && listReady && (policySlot || (directionTabsSlot && legacyPanelVisible)) ? (
+        <div className={styles.directionHeader} data-testid="partners-overview-direction-header">
+          {policySlot ? <div data-testid="partners-overview-policy">{policySlot}</div> : null}
+          {directionTabsSlot && legacyPanelVisible ? directionTabsSlot : null}
         </div>
       ) : null}
 
-      {!presentationPending && !error && listReady && policySlot ? (
-        <div data-testid="partners-overview-policy">{policySlot}</div>
+      {!presentationPending && !hideOverviewHead ? (
+        <div className={styles.head}>
+          <p className={styles.lead}>{lead || LEAD_DEFAULT}</p>
+          <div className={styles.headActions}>
+            {showCreateCertificate ? (
+              <Link
+                href="/certificates"
+                className={styles.secondaryCta}
+                data-testid="partners-overview-cta-certificate"
+              >
+                Создать сертификат
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              className={styles.primaryCta}
+              onClick={onOpenFind}
+              data-testid="partners-overview-cta-find"
+            >
+              Найти партнёра
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {presentationPending ? (

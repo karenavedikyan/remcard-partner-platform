@@ -298,9 +298,24 @@ export function formatPurchaseLimit(limit: number): string {
 }
 
 /** Clients link for one directed row: observer view scoped to the exact receiving partner. */
-export function directionClientsHref(partnership: Partnership, meId: string): string | null {
+export function directionReceiverId(partnership: Partnership, meId: string): string | null {
   if (rowDirection(partnership, meId) !== "outgoing") return null;
-  const receiverId = partnership.directionInfo?.receiverUserId ?? counterpartyUserId(partnership, meId);
+  return partnership.directionInfo?.receiverUserId ?? counterpartyUserId(partnership, meId) ?? null;
+}
+
+export function directionClientsHref(partnership: Partnership, meId: string): string | null {
+  const receiverId = directionReceiverId(partnership, meId);
   if (!receiverId) return null;
   return `/clients?direction=at-partners&partnerId=${encodeURIComponent(receiverId)}`;
+}
+
+/**
+ * Existing authorized clients destination for a directed partnership row:
+ * outgoing -> observer view scoped to the receiving partner; incoming -> receiving view.
+ */
+export function partnershipClientsHref(partnership: Partnership, meId: string): string | null {
+  if (!partnership.directionInfo) return null;
+  return rowDirection(partnership, meId) === "outgoing"
+    ? directionClientsHref(partnership, meId)
+    : "/clients?direction=receiving";
 }

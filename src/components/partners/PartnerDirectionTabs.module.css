@@ -1,43 +1,38 @@
+/* Underline direction tabs, matched to the frozen prototype `.dp-tabs`. */
 .root {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  gap: 24px;
   min-width: 0;
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--pp-line, var(--line));
 }
 
 .tab {
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
   min-height: 44px;
   max-width: 100%;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--pp-muted, var(--muted));
   font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.6;
   cursor: pointer;
 }
 
-.tab[data-active="true"] {
-  background: var(--offset, var(--surface-muted, #f3f4f6));
-  border-color: var(--ink);
-  color: var(--ink);
-  font-weight: 650;
-}
-
-.tab:hover {
-  color: var(--ink);
+.tab[aria-selected="true"] {
+  color: var(--pp-ink, var(--ink));
+  border-bottom-color: #cf382f;
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--accent, var(--primary));
-  outline-offset: 2px;
+  outline: 2px solid #cf382f;
+  outline-offset: 3px;
 }
 
 .label {
@@ -46,17 +41,13 @@
   text-align: left;
 }
 
-.count {
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 420px) {
+@media (max-width: 650px) {
   .root {
-    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
   }
 
   .tab {
-    width: 100%;
-    justify-content: flex-start;
+    font-size: 0.875rem;
   }
 }

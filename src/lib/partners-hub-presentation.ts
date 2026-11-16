@@ -33,8 +33,7 @@ export type BusinessPartnersPresentationGate = {
   partnerType: "STORE" | "COMPANY";
 };
 
-const BUSINESS_HEADING_DESCRIPTION =
-  "Действующие партнёры, поиск в RemCard и согласование условий.";
+const BUSINESS_HEADING_DESCRIPTION = "Начните с того, что нужно вам сегодня.";
 
 export function resolvePartnersHubPresentation(input: {
   r04: R04Gate | null;
@@ -51,7 +50,7 @@ export function resolvePartnersHubPresentation(input: {
       heading: {
         eyebrow: "АГЕНТ",
         title: "Партнёры",
-        description: "Действующие партнёры, поиск в RemCard и согласование условий.",
+        description: BUSINESS_HEADING_DESCRIPTION,
       },
     };
   }

@@ -23,7 +23,10 @@ describe("CertificatePolicyProfileEntry summary", () => {
       workspace: { general: { effective: { validityDays: 14, purchaseLimit: 5 } } },
     } as never);
     render(<CertificatePolicyProfileEntry viewerUserId="v" canEditSettings showSummary />);
-    expect(await screen.findByTestId("cp-entry-summary")).toHaveTextContent("14 дней · 5 покупок");
+    expect(await screen.findByTestId("cp-entry-summary")).toHaveTextContent("Срок скидки14 днейПокупок5");
+    expect(screen.getByTestId("cp-entry-summary-days")).toHaveTextContent("14 дней");
+    expect(screen.getByTestId("cp-entry-summary-purchases")).toHaveTextContent("5");
+    expect(screen.getByRole("button", { name: "Настроить" })).toBeInTheDocument();
   });
 
   it("stays quiet when the summary cannot be loaded", async () => {

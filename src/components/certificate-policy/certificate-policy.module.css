@@ -854,3 +854,118 @@
     flex: 1 1 100%;
   }
 }
+/* Partners overview entry, matched to the frozen prototype `.dp-policy-entry`. */
+.dpPolicyEntry {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  margin: 0 0 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--pp-line, var(--line));
+  border-radius: 16px;
+  background: var(--pp-surface, var(--surface));
+  color: var(--pp-ink, var(--ink));
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.dpPolicyHeading {
+  flex: 1;
+  min-width: 0;
+}
+
+.dpPolicyHeading h2 {
+  margin: 0 0 6px;
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+.dpPolicyHeading p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 0.875rem;
+  color: var(--pp-muted, var(--muted));
+}
+
+.dpPolicySummary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 0;
+}
+
+.dpPolicySummary > div {
+  display: grid;
+  gap: 5px;
+}
+
+.dpPolicySummary dt {
+  font-size: 0.75rem;
+  color: var(--pp-muted, var(--muted));
+}
+
+.dpPolicySummary dd {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 1.125rem;
+  font-weight: 750;
+}
+
+.dpPolicyButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 1px solid var(--pp-line, var(--line));
+  border-radius: 10px;
+  background: var(--pp-surface, var(--surface));
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.dpPolicyButton:hover {
+  background: var(--pp-offset, var(--offset));
+}
+
+.dpPolicyButton:focus-visible {
+  outline: 2px solid #cf382f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .dpPolicyEntry {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  .dpPolicyHeading {
+    flex-basis: 100%;
+  }
+
+  .dpPolicySummary {
+    flex: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  .dpPolicyButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 340px) {
+  .dpPolicyHeading p {
+    line-height: 1.45;
+  }
+}

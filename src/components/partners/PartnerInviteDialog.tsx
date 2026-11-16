@@ -55,6 +55,11 @@ import { PartnerCooperationConfirmDialog } from "./PartnerCooperationConfirmDial
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import styles from "./PartnerInviteDialog.module.css";
 
+const DIRECTION_SUMMARY: Record<InviteDirection, string> = {
+  INVITER_RECEIVES: "Клиенты партнёра → к вам",
+  INVITER_ISSUES: "Ваши клиенты → партнёру",
+};
+
 type PartnerInviteDialogProps = {
   target: PartnerSearchResult;
   meProfile: ProProfileResponse;
@@ -506,7 +511,8 @@ export function PartnerInviteDialog({
                   />
                   <span>
                     <strong>{option.label}</strong>
-                    <small className={styles.hint}> {option.description}</small>
+                    <small className={styles.hint}>{DIRECTION_SUMMARY[option.value]}</small>
+                    <span className={styles.srOnly}>{option.description}</span>
                   </span>
                 </label>
               ))

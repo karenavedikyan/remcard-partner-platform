@@ -68,14 +68,12 @@ beforeEach(() => {
 });
 
 describe("PartnersHub direction tabs", () => {
-  it("splits rows by direction, counts rows per tab and shows a direction badge on each row", async () => {
+  it("splits rows by direction, labels the tabs without counts and shows a direction badge on each row", async () => {
     mockList([row("in-1", "A", "incoming"), row("in-2", "B", "incoming"), row("out-1", "A", "outgoing")]);
     mount("business-company-r04");
     const tabs = await screen.findByTestId("partner-direction-tabs");
-    expect(within(tabs).getByTestId("partner-direction-tab-incoming")).toHaveTextContent("Нас рекомендуют");
-    expect(within(tabs).getByTestId("partner-direction-tab-incoming")).toHaveTextContent("2");
-    expect(within(tabs).getByTestId("partner-direction-tab-outgoing")).toHaveTextContent("Мы рекомендуем");
-    expect(within(tabs).getByTestId("partner-direction-tab-outgoing")).toHaveTextContent("1");
+    expect(within(tabs).getByTestId("partner-direction-tab-incoming").textContent).toBe("Нас рекомендуют");
+    expect(within(tabs).getByTestId("partner-direction-tab-outgoing").textContent).toBe("Мы рекомендуем");
     await waitFor(() => expect(screen.getAllByTestId("partner-row-direction").length).toBeGreaterThan(0));
     const incomingBadges = screen.getAllByTestId("partner-row-direction");
     expect(incomingBadges.every((badge) => badge.getAttribute("data-direction-glyph") === "↓")).toBe(true);

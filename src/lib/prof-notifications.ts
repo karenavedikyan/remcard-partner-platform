@@ -52,3 +52,10 @@ export async function markAllProfNotificationsRead(snapshotBefore: string): Prom
     body: { all: true, snapshotBefore },
   });
 }
+
+export async function fetchProfNotification(id: string): Promise<ProfNotificationItem> {
+  const data = await remcardFetch<{ item: ProfNotificationItem }>(
+    `/api/pro/notifications/${encodeURIComponent(id)}`,
+  );
+  return data.item;
+}

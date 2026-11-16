@@ -6,8 +6,17 @@ import { SessionGate } from "@/components/auth/SessionGate";
 
 export const dynamic = "force-dynamic";
 
-export default async function NotificationsPage() {
-  const returnPath = "/notifications";
+const FOCUS_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ focus?: string | string[] }>;
+}) {
+  const rawFocus = (await searchParams)?.focus;
+  const focusCandidate = Array.isArray(rawFocus) ? rawFocus[0] : rawFocus;
+  const focusId = focusCandidate && FOCUS_ID_PATTERN.test(focusCandidate) ? focusCandidate : null;
+  const returnPath = focusId ? `/notifications?focus=${focusId}` : "/notifications";
   const user = await requireProPageUser(returnPath);
   if (!user) {
     return <SessionGate reason="session" returnTo={returnPath} />;
@@ -16,7 +25,7 @@ export default async function NotificationsPage() {
   return (
     <CabinetShell returnTo={returnPath}>
       <PageHeading eyebrow="RemCard PROF" title="Уведомления" />
-      <ProfNotificationCenter />
+      <ProfNotificationCenter focusId={focusId} />
     </CabinetShell>
   );
 }

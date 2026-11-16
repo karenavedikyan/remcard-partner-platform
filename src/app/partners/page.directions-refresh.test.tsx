@@ -166,6 +166,14 @@ async function renderPage(): Promise<void> {
   render(element);
 }
 
+function ratesOf(list: HTMLElement): string {
+  return within(list)
+    .getAllByTestId("partner-row-category-rate")
+    .filter((row) => row.getAttribute("data-excluded") !== "true")
+    .map((row) => `${row.querySelector("dt")?.textContent} ${row.querySelector("dd")?.textContent}`)
+    .join(" · ");
+}
+
 async function outgoingBlock() {
   const preview = (await screen.findAllByTestId("partner-row-terms-preview"))[0]!;
   return preview.closest('[data-testid="partner-row-terms-block"]') as HTMLElement;
@@ -187,7 +195,7 @@ describe("partners list refreshes visible terms after policy consent", () => {
     await screen.findByTestId("agent-r04-partners");
     await userEvent.click(await screen.findByTestId("partner-direction-tab-outgoing"));
     let block = await outgoingBlock();
-    expect(within(block).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 7%");
+    expect(ratesOf(within(block).getByTestId("partner-row-terms-preview"))).toBe("Краски 7%");
     await waitFor(() => expect(within(block).getByTestId("partner-row-restrictions").textContent).toContain("14 дней · 1 покупка"));
     const listCallsBeforeDialog = world.listCalls;
 
@@ -195,7 +203,7 @@ describe("partners list refreshes visible terms after policy consent", () => {
     expect(await screen.findByTestId("cp-incoming-prop-1")).toBeTruthy();
     expect(world.listCalls).toBe(listCallsBeforeDialog);
     block = await outgoingBlock();
-    expect(within(block).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 7%");
+    expect(ratesOf(within(block).getByTestId("partner-row-terms-preview"))).toBe("Краски 7%");
 
     await userEvent.click(screen.getByTestId("cp-approve-prop-1"));
     await waitFor(() => expect(screen.getByTestId("cp-status").textContent).toContain("Согласовано"));
@@ -203,7 +211,7 @@ describe("partners list refreshes visible terms after policy consent", () => {
 
     await waitFor(async () => {
       const fresh = await outgoingBlock();
-      expect(within(fresh).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 8%");
+      expect(ratesOf(within(fresh).getByTestId("partner-row-terms-preview"))).toBe("Краски 8%");
       expect(within(fresh).getByTestId("partner-row-restrictions").textContent).toContain("21 день · 2 покупки");
     });
     expect(world.patches.map((p) => p.action)).toEqual(["approve_proposal"]);
@@ -230,7 +238,7 @@ describe("partners list refreshes visible terms after policy consent", () => {
     await userEvent.click(screen.getByTestId("term-change-close"));
 
     const block = await outgoingBlock();
-    expect(within(block).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 7%");
+    expect(ratesOf(within(block).getByTestId("partner-row-terms-preview"))).toBe("Краски 7%");
     await waitFor(() => expect(within(block).getByTestId("partner-row-restrictions").textContent).toContain("14 дней · 1 покупка"));
     expect(world.listCalls).toBe(baseline);
     expect(world.outgoing).toEqual({ rate: 7, days: 14, purchases: 1 });
@@ -252,13 +260,13 @@ describe("partners list refreshes visible terms after policy consent", () => {
     const notice = await screen.findByTestId("partners-terms-refresh-failed");
     expect(notice.getAttribute("role")).toBe("status");
     const stale = await outgoingBlock();
-    expect(within(stale).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 7%");
+    expect(ratesOf(within(stale).getByTestId("partner-row-terms-preview"))).toBe("Краски 7%");
     expect(screen.getByTestId("partner-direction-tab-outgoing").getAttribute("aria-selected")).toBe("true");
 
     await userEvent.click(screen.getByTestId("partners-terms-refresh-retry"));
     await waitFor(async () => {
       const fresh = await outgoingBlock();
-      expect(within(fresh).getByTestId("partner-row-terms-preview").textContent).toBe("Краски 8%");
+      expect(ratesOf(within(fresh).getByTestId("partner-row-terms-preview"))).toBe("Краски 8%");
     });
     expect(screen.queryByTestId("partners-terms-refresh-failed")).toBeNull();
   });

@@ -80,6 +80,7 @@ export default async function PartnersPage(props: {
         eyebrow={presentation.heading.eyebrow}
         title={presentation.heading.title}
         description={presentation.heading.description}
+        compact
       />
       {presentation.shell === "shared-r04" ? (
         <AgentPartnersHub

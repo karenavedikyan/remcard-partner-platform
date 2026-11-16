@@ -9,7 +9,6 @@ type Props = {
   value: PartnershipDirection;
   onChange: (direction: PartnershipDirection) => void;
   copy: DirectionTabCopy;
-  counts: Record<PartnershipDirection, number>;
   panelId: string;
 };
 
@@ -19,7 +18,7 @@ export function partnerDirectionTabId(direction: PartnershipDirection): string {
   return `partner-direction-tab-${direction}`;
 }
 
-export function PartnerDirectionTabs({ value, onChange, copy, counts, panelId }: Props) {
+export function PartnerDirectionTabs({ value, onChange, copy, panelId }: Props) {
   const refs = useRef<Record<PartnershipDirection, HTMLButtonElement | null>>({
     incoming: null,
     outgoing: null,
@@ -55,19 +54,12 @@ export function PartnerDirectionTabs({ value, onChange, copy, counts, panelId }:
             aria-controls={panelId}
             tabIndex={selected ? 0 : -1}
             className={styles.tab}
-            data-active={selected}
             data-testid={`partner-direction-tab-${direction}`}
             title={direction === "incoming" ? copy.incomingHint : copy.outgoingHint}
             onClick={() => onChange(direction)}
             onKeyDown={(event) => onKeyDown(event, direction)}
           >
-            <span className={styles.glyph} aria-hidden="true">
-              {direction === "incoming" ? "↓" : "↑"}
-            </span>
             <span className={styles.label}>{direction === "incoming" ? copy.incoming : copy.outgoing}</span>
-            <span className={styles.count} aria-label={`${counts[direction]}`}>
-              {counts[direction]}
-            </span>
           </button>
         );
       })}

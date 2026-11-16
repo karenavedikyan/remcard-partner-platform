@@ -20,7 +20,9 @@ import type { CertificatePolicyCounterparty } from "@/lib/certificate-policy/typ
 import {
   counterpartyUserId,
   directionBadgeModel,
+  partnershipClientsHref,
   directionClientsHref,
+  directionReceiverId,
   formatPurchaseLimit,
   formatValidityDays,
   rowDirection,
@@ -41,6 +43,10 @@ import {
 } from "@/components/partners/partner-cooperation-c1";
 import sheetStyles from "./PartnerPersonalAliasDialog.module.css";
 import styles from "./PartnerPartnershipDetailDialog.module.css";
+import outgoingSheetStyles from "./PartnerOutgoingSheet.module.css";
+import { PartnerOutgoingClientsTab } from "./PartnerOutgoingClientsTab";
+import { PartnerRowTerms } from "./PartnerRowTerms";
+import { useOutgoingPartnerClients } from "./useOutgoingPartnerClients";
 
 type Props = {
   partnership: Partnership | null;
@@ -63,6 +69,8 @@ type Props = {
   /** Opens the shared term-change host for this partnership. */
   onOpenTermChange?: () => void;
   compactCooperation?: boolean;
+  /** Which tab the outgoing partner sheet opens on. */
+  initialSheetTab?: "terms" | "clients";
   /** Overview with directions: header, per-row terms and links. */
   directionAudience?: PartnersHubAudience;
   /** Gate from the hub: who may open the existing certificate-policy editor. */
@@ -119,6 +127,7 @@ export function PartnerPartnershipDetailDialog({
   onRunAction,
   onOpenTermChange,
   compactCooperation = false,
+  initialSheetTab = "terms",
   directionAudience,
   certificatePolicyEntry = null,
 }: Props) {
@@ -222,6 +231,25 @@ export function PartnerPartnershipDetailDialog({
     };
   }, [open, trapSuspended]);
 
+  const listPrincipalIdEarly = listSubjectUserId?.trim() || meId;
+  const sheetMode = Boolean(
+    open &&
+      partnership &&
+      directionAudience &&
+      partnership.directionInfo &&
+      rowDirection(partnership, listPrincipalIdEarly) === "outgoing" &&
+      (partnership.status === "ACTIVE" || partnership.status === "PAUSED"),
+  );
+  const outgoingPartnerId =
+    sheetMode && partnership ? directionReceiverId(partnership, listPrincipalIdEarly) : null;
+  const outgoingClients = useOutgoingPartnerClients(outgoingPartnerId, sheetMode);
+  const [sheetTab, setSheetTab] = useState<"terms" | "clients">("terms");
+  const termsTabRef = useRef<HTMLButtonElement>(null);
+  const clientsTabRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    setSheetTab(initialSheetTab);
+  }, [partnershipId, open, initialSheetTab]);
+
   if (!open || !partnership) return null;
 
   const listPrincipalId = listSubjectUserId?.trim() || meId;
@@ -235,59 +263,15 @@ export function PartnerPartnershipDetailDialog({
   const direction = rowDirection(partnership, listPrincipalId);
   const badge = directional ? directionBadgeModel(partnership, listPrincipalId, directionAudience) : null;
   const excludedTerms = partnership.terms.filter((term) => term.isExcluded);
-  const clientsHref = directional
-    ? direction === "outgoing"
-      ? directionClientsHref(partnership, listPrincipalId)
-      : "/clients?direction=receiving"
-    : null;
+  const clientsHref = directional ? partnershipClientsHref(partnership, listPrincipalId) : null;
   const counterpartyId = counterpartyUserId(partnership, listPrincipalId);
   const offer = partnership.pendingOffer ?? null;
   const policyRow = rowPolicy.status === "loaded" ? rowPolicy.row : null;
   const canOpenPolicy = directional && certificatePolicyEntry != null &&
     (partnership.status === "ACTIVE" || partnership.status === "PAUSED");
 
-  return (
+  const existingBody = (
     <>
-    <div
-      className={`${sheetStyles.backdrop} ${styles.backdropAlign}`}
-      role="presentation"
-      onClick={() => onCloseRef.current()}
-    >
-      <div
-        ref={sheetRef}
-        className={`${sheetStyles.sheet} ${styles.sheetLayout} ${compactCooperation ? styles.cooperationSheet : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        data-testid="partner-partnership-detail-dialog"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span
-          ref={focusStartRef}
-          tabIndex={0}
-          aria-hidden="true"
-          className={styles.focusSentinel}
-          data-testid="partner-detail-focus-start"
-          onFocus={() => {
-            const focusable = sheetRef.current ? getFocusableElements(sheetRef.current) : [];
-            focusable[focusable.length - 1]?.focus();
-          }}
-        />
-        <div className={styles.headerRow}>
-          <h2 id={titleId}>{partnerRowTitle(partnership, listPrincipalId)}</h2>
-          <Button
-            ref={closeRef}
-            type="button"
-            variant="secondary"
-            className={styles.closeTop}
-            onClick={() => onCloseRef.current()}
-            data-testid="partner-detail-close"
-          >
-            Закрыть
-          </Button>
-        </div>
-
-        <div className={styles.body}>
           <CounterpartyProfile partnership={partnership} listPrincipalId={listPrincipalId} />
 
           {directional && badge ? (
@@ -476,7 +460,7 @@ export function PartnerPartnershipDetailDialog({
                   </Button>
                 ) : null}
                 {compactCooperation && partnership.status === "ACTIVE" ? (
-                  <Link href="/recommendations" className={styles.certificateLink}>
+                  <Link href="/certificates" className={styles.certificateLink}>
                     Создать сертификат
                   </Link>
                 ) : null}
@@ -505,6 +489,250 @@ export function PartnerPartnershipDetailDialog({
               <p className={styles.metaBlock}>{partnership.note}</p>
             </>
           ) : null}
+    </>
+  );
+
+  const partnerTitle = partnerRowTitle(partnership, listPrincipalId);
+  const receiverClientsHref = sheetMode ? directionClientsHref(partnership, listPrincipalId) : null;
+  const clientsCountLabel =
+    outgoingClients.state.phase === "ready" ? ` ${outgoingClients.state.appeals.length}` : "";
+  const restrictionsForRates =
+    policyRow
+      ? { validityDays: policyRow.effective.validityDays, purchaseLimit: policyRow.effective.purchaseLimit }
+      : null;
+  const sheetBody = (
+    <>
+      <div
+        className={outgoingSheetStyles.tabs}
+        role="tablist"
+        aria-label="Разделы партнёра"
+        data-testid="partner-sheet-tabs"
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+          event.preventDefault();
+          const next = sheetTab === "terms" ? "clients" : "terms";
+          setSheetTab(next);
+          (next === "terms" ? termsTabRef : clientsTabRef).current?.focus();
+        }}
+      >
+        <button
+          type="button"
+          role="tab"
+          ref={termsTabRef}
+          id={`${titleId}-tab-terms`}
+          aria-selected={sheetTab === "terms"}
+          aria-controls={`${titleId}-panel-terms`}
+          tabIndex={sheetTab === "terms" ? 0 : -1}
+          className={outgoingSheetStyles.tab}
+          data-testid="partner-sheet-tab-terms"
+          onClick={() => setSheetTab("terms")}
+        >
+          Условия
+        </button>
+        <button
+          type="button"
+          role="tab"
+          ref={clientsTabRef}
+          id={`${titleId}-tab-clients`}
+          aria-selected={sheetTab === "clients"}
+          aria-controls={`${titleId}-panel-clients`}
+          tabIndex={sheetTab === "clients" ? 0 : -1}
+          className={outgoingSheetStyles.tab}
+          data-testid="partner-sheet-tab-clients"
+          onClick={() => setSheetTab("clients")}
+        >
+          Клиенты{clientsCountLabel}
+        </button>
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`${titleId}-panel-terms`}
+        aria-labelledby={`${titleId}-tab-terms`}
+        hidden={sheetTab !== "terms"}
+        data-testid="partner-sheet-panel-terms"
+      >
+        <p className={outgoingSheetStyles.context}>Условия, которые {partnerTitle} дал вам</p>
+        <p
+          className={outgoingSheetStyles.statusBadge}
+          data-state={partnership.status === "ACTIVE" ? "active" : "paused"}
+          data-testid="partner-sheet-status"
+        >
+          {partnership.status === "ACTIVE" ? "Условия согласованы" : "Сотрудничество приостановлено"}
+        </p>
+        {partnership.terms.length ? (
+          <dl
+            className={outgoingSheetStyles.rates}
+            aria-label="Согласованные проценты по категориям"
+            data-testid="partner-sheet-rates"
+          >
+            {partnership.terms.map((term) => (
+              <div
+                key={term.id}
+                data-testid="partner-sheet-rate"
+                data-excluded={term.isExcluded ? "true" : undefined}
+              >
+                <dt>{displayCategoryLabel(term.category, term.categoryLabel)}</dt>
+                <dd>
+                  {term.isExcluded ? (
+                    <span className={outgoingSheetStyles.excluded} data-testid="partner-sheet-excluded">
+                      Не участвует
+                    </span>
+                  ) : (
+                    `${term.storePercent}%`
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className={styles.metaBlock}>Персональные условия пока не согласованы.</p>
+        )}
+        {policyViewerId ? (
+          <div data-testid="partner-sheet-restrictions">
+            {rowPolicy.status === "loading" ? (
+              <p className={outgoingSheetStyles.muted} role="status">Загрузка…</p>
+            ) : null}
+            {rowPolicy.status === "error" ? (
+              <p className={outgoingSheetStyles.muted} role="alert">
+                Не удалось загрузить срок и число покупок.{" "}
+                <button type="button" className={outgoingSheetStyles.linkButton} onClick={() => loadRowPolicy()}>
+                  Повторить
+                </button>
+              </p>
+            ) : null}
+            {rowPolicy.status === "missing" ? (
+              <p className={outgoingSheetStyles.muted}>Ограничения для этой договорённости пока недоступны.</p>
+            ) : null}
+            {policyRow ? (
+              <>
+                <dl className={outgoingSheetStyles.limitTiles} data-testid="partner-sheet-limits">
+                  <div data-testid="partner-sheet-limit-validity">
+                    <dt>Срок скидки</dt>
+                    <dd>
+                      <strong>{policyRow.effective.validityDays}</strong>
+                      <span>{formatValidityDays(policyRow.effective.validityDays).replace(/^\d+\s*/, "")}</span>
+                    </dd>
+                  </div>
+                  <div data-testid="partner-sheet-limit-purchases">
+                    <dt>Покупок</dt>
+                    <dd>
+                      <strong>{policyRow.effective.purchaseLimit}</strong>
+                    </dd>
+                  </div>
+                </dl>
+                <details className={outgoingSheetStyles.restrictionsDisclosure} data-testid="partner-sheet-restrictions-details">
+                  <summary>Ограничения</summary>
+                  <ul>
+                    {policyRow.effective.minimumPurchaseAmount != null ? (
+                      <li>Минимальная покупка: от {policyRow.effective.minimumPurchaseAmount} ₽</li>
+                    ) : null}
+                    <li>
+                      {policyRow.effective.promotionsCompatible
+                        ? "Суммируется с акциями"
+                        : "Не суммируется с акциями"}
+                    </li>
+                    {policyRow.effective.exclusionsText ? <li>{policyRow.effective.exclusionsText}</li> : null}
+                  </ul>
+                </details>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+        <div className={outgoingSheetStyles.sheetActions}>
+          {partnership.status === "ACTIVE" ? (
+            <Link href="/certificates" className={outgoingSheetStyles.createLink} data-testid="partner-sheet-create-certificate">
+              Создать сертификат
+            </Link>
+          ) : null}
+          <Button type="button" variant="secondary" onClick={() => onCloseRef.current()} data-testid="partner-sheet-close">
+            Закрыть
+          </Button>
+        </div>
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`${titleId}-panel-clients`}
+        aria-labelledby={`${titleId}-tab-clients`}
+        hidden={sheetTab !== "clients"}
+        data-testid="partner-sheet-panel-clients"
+      >
+        {sheetTab === "clients" && receiverClientsHref ? (
+          <PartnerOutgoingClientsTab
+            partnerName={partnerTitle}
+            clientsHref={receiverClientsHref}
+            state={outgoingClients.state}
+            onRetry={outgoingClients.reload}
+          />
+        ) : null}
+      </div>
+
+      <details className={outgoingSheetStyles.profile} data-testid="partner-sheet-profile">
+        <summary>Профиль партнёра, условия и действия</summary>
+        <div className={outgoingSheetStyles.profileBody}>{existingBody}</div>
+      </details>
+    </>
+  );
+
+  return (
+    <>
+    <div
+      className={`${sheetStyles.backdrop} ${styles.backdropAlign}`}
+      role="presentation"
+      onClick={() => onCloseRef.current()}
+    >
+      <div
+        ref={sheetRef}
+        className={`${sheetStyles.sheet} ${styles.sheetLayout} ${compactCooperation ? styles.cooperationSheet : ""}${sheetMode ? ` ${outgoingSheetStyles.sheetRoot} ${outgoingSheetStyles.sheet}` : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        data-testid="partner-partnership-detail-dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span
+          ref={focusStartRef}
+          tabIndex={0}
+          aria-hidden="true"
+          className={styles.focusSentinel}
+          data-testid="partner-detail-focus-start"
+          onFocus={() => {
+            const focusable = sheetRef.current ? getFocusableElements(sheetRef.current) : [];
+            focusable[focusable.length - 1]?.focus();
+          }}
+        />
+        <div className={`${styles.headerRow}${sheetMode ? ` ${outgoingSheetStyles.header}` : ""}`}>
+          <h2 id={titleId}>{partnerTitle}</h2>
+          {sheetMode ? (
+            <button
+              ref={closeRef}
+              type="button"
+              className={outgoingSheetStyles.closeIcon}
+              aria-label="Закрыть"
+              onClick={() => onCloseRef.current()}
+              data-testid="partner-detail-close"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : (
+            <Button
+            ref={closeRef}
+            type="button"
+            variant="secondary"
+            className={styles.closeTop}
+            onClick={() => onCloseRef.current()}
+            data-testid="partner-detail-close"
+          >
+            Закрыть
+            </Button>
+          )}
+        </div>
+
+        <div className={styles.body} data-testid="partner-detail-body">
+          {sheetMode ? sheetBody : existingBody}
         </div>
         <span
           ref={focusEndRef}

@@ -10,44 +10,70 @@
   min-width: 0;
 }
 
+.root :global([data-testid="partner-row-name-button"]) {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pp-ink, var(--ink));
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  min-height: 24px;
+  cursor: pointer;
+}
+
+.root :global([data-testid="partner-row-name-button"]):hover {
+  color: var(--pp-accent, var(--accent, var(--primary)));
+  text-decoration: underline;
+}
+
 .root :global([data-testid="partner-row-name-button"]),
 .root :global([data-testid="partner-row-inline-workflow"]) :global(button),
 .root :global(button[data-testid^="partner-action-"]) {
   box-sizing: border-box;
-  min-height: 44px;
   min-width: 44px;
+}
+
+.root :global([data-testid="partner-row-inline-workflow"]) :global(button),
+.root :global(button[data-testid^="partner-action-"]) {
+  min-height: 44px;
 }
 
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: 16px;
   min-width: 0;
-  align-items: stretch;
+  align-items: start;
 }
 
 .partnerCard {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg, 12px);
-  background: var(--surface);
+  border: 1px solid var(--pp-line, var(--line));
+  border-radius: 16px;
+  background: var(--pp-surface, var(--surface));
   overflow: hidden;
 }
 
 .partnerCardSelected {
-  border-color: var(--accent, var(--primary));
+  border-color: var(--pp-accent, var(--accent, var(--primary)));
   background: var(--soft, color-mix(in srgb, var(--accent, var(--primary)) 10%, var(--surface)));
 }
 
 .cardSelectRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--line);
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--pp-line, var(--line));
 }
 
 .typeCityLine {
@@ -63,20 +89,21 @@
 }
 
 .termsBlock {
-  margin: var(--space-1) 0 0;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line);
+  margin: 2px 0 0;
   display: grid;
-  gap: var(--space-2);
+  gap: 2px;
 }
 
 .termsTitle {
-  margin: 0;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--muted);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .termsPreview {
@@ -105,22 +132,21 @@
 }
 
 .cardBody {
-  padding: var(--space-4) var(--space-5);
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   flex: 1 1 auto;
 }
 
-.cardTitle {
+.root .cardTitle {
   margin: 0;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  letter-spacing: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: normal;
   max-width: 100%;
   min-width: 0;
 }
@@ -136,25 +162,94 @@
 
 .cardFooter {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5) var(--space-5);
-  border-top: 1px solid var(--line);
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--pp-line, var(--line));
   margin-top: auto;
+}
+
+.cardFooterTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cardFooterActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cardFooterActions :global([data-testid="partner-row-inline-workflow"]) {
+  width: auto;
+  gap: 6px;
+}
+
+.cardClientsLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  box-sizing: border-box;
+  padding: 6px 14px;
+  border: 1px solid var(--pp-line, var(--line));
+  border-radius: 10px;
+  background: var(--pp-surface, var(--surface));
+  color: var(--pp-ink, var(--ink));
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cardClientsLink:hover,
+.cardClientsLink:focus-visible {
+  border-color: var(--pp-accent, var(--accent, var(--primary)));
 }
 
 .tableWrap {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg, 12px);
-  background: var(--surface);
+  border: 1px solid var(--pp-line, var(--line));
+  border-radius: 12px;
+  background: var(--pp-surface, var(--surface));
 }
 
 .dataTable {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dataTable th {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--pp-muted, var(--muted));
+  background: var(--pp-offset, var(--offset));
+  border: 0;
+  border-bottom: 1px solid var(--pp-line, var(--line));
+}
+
+.dataTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dataTable tbody tr:hover td {
+  background: var(--pp-offset, var(--offset));
 }
 
 .titleCell,
@@ -162,13 +257,34 @@
 .statusCell,
 .actionCell,
 .workflowCell {
-  padding: var(--space-3) var(--space-4);
-  vertical-align: top;
+  padding: 10px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--pp-line, var(--line));
+  overflow-wrap: anywhere;
+}
+
+.detailCell {
+  color: var(--pp-muted, var(--muted));
+  line-height: 1.5;
 }
 
 .caption {
-  font-size: var(--text-xs);
-  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--pp-muted, var(--muted));
+}
+
+.statusCell :global([data-testid="partner-row-status"]) > span:first-child,
+.cardFooter :global([data-testid="partner-row-status"]) > span:first-child,
+.cardSelectRow :global([data-testid="partner-row-status"]) > span:first-child {
+  padding: 2px 8px;
+  border: 1px solid var(--pp-line, var(--line));
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 
 .mobileStack :global(.mobileRecord) {
@@ -177,7 +293,7 @@
   background: var(--surface);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1050px) {
   .cardGrid {
     grid-template-columns: 1fr;
   }
@@ -193,14 +309,100 @@
   min-width: 820px;
 }
 
-.compactTable col:nth-child(1) { width: 4%; }
-.compactTable col:nth-child(2) { width: 20%; }
-.compactTable col:nth-child(3) { width: 30%; }
-.compactTable col:nth-child(4) { width: 14%; }
-.compactTable col:nth-child(5) { width: 32%; }
+.compactTable col:nth-child(1) { width: 46px; }
+.compactTable col:nth-child(2) { width: 25%; }
+.compactTable col:nth-child(3) { width: auto; }
+.compactTable col:nth-child(4) { width: 17%; }
+.compactTable col:nth-child(5) { width: 264px; }
+
+.compactTableOutgoing col:nth-child(2) { width: 24%; }
+.compactTableOutgoing col:nth-child(4) { width: 14%; }
 
 .compactTable td {
   vertical-align: middle;
+}
+
+.compactTableOutgoing .titleCell :global([data-testid="partner-row-name-button"]) {
+  font-size: 15px;
+  overflow-wrap: break-word;
+}
+
+.compactTableOutgoing .titleCell,
+.compactTableOutgoing .detailCell,
+.compactTableOutgoing .statusCell,
+.compactTableOutgoing .actionCell {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.rateDetails {
+  min-width: 0;
+}
+
+.categoryRates {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  color: var(--pp-ink, var(--ink));
+}
+
+.categoryRates > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.categoryRates > div + div {
+  border-top: 1px solid var(--pp-line, var(--line));
+}
+
+.categoryRates dt {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.categoryRates dd {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0;
+  color: var(--pp-accent, var(--accent, var(--primary)));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.categoryRates dd strong {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.categoryRates dd span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.categoryRates > div[data-excluded="true"] dd {
+  color: var(--pp-muted, var(--muted));
+}
+
+.moreRates > summary {
+  min-height: 24px;
+  font-size: 13px;
+  color: var(--pp-muted, var(--muted));
+  cursor: pointer;
+}
+
+.rateMeta {
+  margin: 10px 0 0;
+  color: var(--pp-muted, var(--muted));
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .compactTable .compactActions {
@@ -231,4 +433,14 @@
 
 .openCardButton:hover {
   background: var(--offset);
+}
+
+.partnerCard .rateDetails {
+  padding-top: 10px;
+  border-top: 1px solid var(--pp-line, var(--line));
+}
+
+.dataTable th input[type="checkbox"] {
+  display: block;
+  margin: 0 auto;
 }

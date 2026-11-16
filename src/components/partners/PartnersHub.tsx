@@ -120,6 +120,7 @@ import {
   termChangeActionLabel,
 } from "@/components/partners/partner-cooperation-c1";
 import { AgentPartnerCollection } from "@/components/partners/AgentPartnerCollection";
+import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPartnershipDetailDialog";
 import { AgentInvitationViewSwitch } from "@/components/partners/AgentInvitationViewSwitch";
 import {
   applySearchPageIfCurrent,
@@ -214,6 +215,8 @@ export const FIND_MAIN_RESULTS_TWO_COL_MIN_PX = 640;
 export function findMainResultsWideEnough(mainWidthPx: number): boolean {
   return mainWidthPx > FIND_MAIN_RESULTS_TWO_COL_MIN_PX;
 }
+
+const OUTGOING_OVERVIEW_LEAD = "Условия партнёров, которым вы рекомендуете клиентов.";
 
 export function PartnersHub({
   meId,
@@ -759,6 +762,8 @@ export function PartnersHub({
   /** terms= id already paged into its overview zone (refresh/page-size must not re-page). */
   const overviewDeepLinkAppliedRef = useRef<string | null>(null);
   const [termsDeepLinkPending, setTermsDeepLinkPending] = useState(false);
+  const termsDeepLinkRequestsRef = useRef<string | null>(null);
+  const [deepLinkDetailConsumedId, setDeepLinkDetailConsumedId] = useState<string | null>(null);
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
@@ -1916,8 +1921,42 @@ export function PartnersHub({
     }
     setTermsDeepLinkPending(true);
     setTab("list");
-    void loadTermRequests(termsPartnershipId);
   }, [termsPartnershipId]);
+
+  const deepLinkPartnership = termsPartnershipId
+    ? partnerships.find((p) => p.id === termsPartnershipId) ?? null
+    : null;
+  const deepLinkTermEditable =
+    deepLinkPartnership != null &&
+    (deepLinkPartnership.status === "ACTIVE" || deepLinkPartnership.status === "PAUSED");
+  const deepLinkOutsideCollections =
+    deepLinkPartnership != null &&
+    !deepLinkTermEditable &&
+    overviewZoneForPartnership(deepLinkPartnership, subjectUserId) === null;
+  const deepLinkDetailId =
+    deepLinkPartnership != null &&
+    !deepLinkTermEditable &&
+    !deepLinkOutsideCollections &&
+    deepLinkDetailConsumedId !== deepLinkPartnership.id
+      ? deepLinkPartnership.id
+      : null;
+  const deepLinkReadOnlyPartnership =
+    deepLinkOutsideCollections && deepLinkDetailConsumedId !== deepLinkPartnership?.id
+      ? deepLinkPartnership
+      : null;
+
+  useEffect(() => {
+    if (!termsPartnershipId) {
+      termsDeepLinkRequestsRef.current = null;
+      return;
+    }
+    if (termsDeepLinkRequestsRef.current === termsPartnershipId) return;
+    if (!partnershipListReady || loadingList) return;
+    termsDeepLinkRequestsRef.current = termsPartnershipId;
+    if (deepLinkTermEditable) {
+      void loadTermRequests(termsPartnershipId);
+    }
+  }, [termsPartnershipId, partnershipListReady, loadingList, deepLinkTermEditable]);
 
   useEffect(() => {
     if (!termsPartnershipId) {
@@ -1936,6 +1975,10 @@ export function PartnersHub({
       return;
     }
     const zone = overviewZoneForPartnership(match, subjectUserId);
+    if (zone === null && match.status !== "ACTIVE" && match.status !== "PAUSED") {
+      setTermsDeepLinkPending(false);
+      return;
+    }
     if (zone === "active") {
       const idx = overviewActiveRows.findIndex((p) => p.id === termsPartnershipId);
       if (idx < 0) return;
@@ -2508,11 +2551,19 @@ export function PartnersHub({
 
       {tab === "list" && isOverview && overviewGroups ? (
         <PartnersOverviewLayout
-          lead={partnersSharedUiCopy(partnersAudience).overviewLead}
+          lead={
+            hasDirectionTabs && directionTab === "outgoing"
+              ? OUTGOING_OVERVIEW_LEAD
+              : partnersSharedUiCopy(partnersAudience).overviewLead
+          }
+          showCreateCertificate={hasDirectionTabs && directionTab === "outgoing"}
           activeHint={partnersSharedUiCopy(partnersAudience).activeZoneHint}
           counts={{
             ...overviewGroups.counts,
-            activeCounterparties: countDistinctCounterparties(overviewGroups.active, subjectUserId),
+            activeCounterparties: countDistinctCounterparties(
+              hasDirectionTabs ? activeVisibilityRows : overviewGroups.active,
+              subjectUserId,
+            ),
           }}
           listReady={partnershipListReady}
           collectionIsEmpty={partnersEmptyPresentation.collectionIsEmpty}
@@ -2570,6 +2621,8 @@ export function PartnersHub({
                 onViewModeChange={setDecideInvitationViewMode}
               />
               <AgentPartnerCollection
+                focusPartnershipId={deepLinkDetailId}
+                onFocusPartnershipConsumed={setDeepLinkDetailConsumedId}
                 partnerships={pagedOverviewDecisions}
                 meId={meId}
                 listSubjectUserId={subjectUserId}
@@ -2607,20 +2660,21 @@ export function PartnersHub({
               />
             </>
           }
+          directionTabsSlot={
+            hasDirectionTabs ? (
+              <PartnerDirectionTabs
+                value={directionTab}
+                onChange={(next) => {
+                  directionTabTouched.current = true;
+                  setDirectionTab(next);
+                }}
+                copy={directionTabCopy(partnersAudience)}
+                panelId="partner-direction-panel"
+              />
+            ) : null
+          }
           activeSlot={
             <>
-              {hasDirectionTabs ? (
-                <PartnerDirectionTabs
-                  value={directionTab}
-                  onChange={(next) => {
-                    directionTabTouched.current = true;
-                    setDirectionTab(next);
-                  }}
-                  copy={directionTabCopy(partnersAudience)}
-                  counts={directionCounts}
-                  panelId="partner-direction-panel"
-                />
-              ) : null}
               <div
                 id="partner-direction-panel"
                 role={hasDirectionTabs ? "tabpanel" : undefined}
@@ -2701,6 +2755,8 @@ export function PartnersHub({
                 />
               ) : (
                 <AgentPartnerCollection
+                  focusPartnershipId={deepLinkDetailId}
+                  onFocusPartnershipConsumed={setDeepLinkDetailConsumedId}
                   partnerships={pagedPartnerships}
                   meId={meId}
                   listSubjectUserId={subjectUserId}
@@ -2755,6 +2811,8 @@ export function PartnersHub({
                   onViewModeChange={setWaitingInvitationViewMode}
                 />
                 <AgentPartnerCollection
+                  focusPartnershipId={deepLinkDetailId}
+                  onFocusPartnershipConsumed={setDeepLinkDetailConsumedId}
                   partnerships={pagedOverviewWaiting}
                   meId={meId}
                   listSubjectUserId={subjectUserId}
@@ -2909,6 +2967,8 @@ export function PartnersHub({
           ) : isAgentR04 ? (
             <>
             <AgentPartnerCollection
+              focusPartnershipId={deepLinkDetailId}
+              onFocusPartnershipConsumed={setDeepLinkDetailConsumedId}
               partnerships={pagedPartnerships}
               meId={meId}
               listSubjectUserId={subjectUserId}
@@ -3370,6 +3430,18 @@ export function PartnersHub({
       ) : null}
 
       {isAgentR04 ? renderAgentTermChangeHost() : null}
+
+      {deepLinkReadOnlyPartnership ? (
+        <PartnerPartnershipDetailDialog
+          partnership={deepLinkReadOnlyPartnership}
+          meId={meId}
+          listSubjectUserId={subjectUserId}
+          directionAudience={directionBadgeAudience ?? detailDirectionAudience}
+          certificatePolicyEntry={directionPolicyEntry}
+          open
+          onClose={() => setDeepLinkDetailConsumedId(deepLinkReadOnlyPartnership.id)}
+        />
+      ) : null}
 
       {lifecycleConfirm
         ? (() => {

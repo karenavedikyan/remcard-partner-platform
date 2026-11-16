@@ -17,19 +17,18 @@ function Harness({ onChange }: { onChange?: (d: PartnershipDirection) => void })
         onChange?.(d);
       }}
       copy={directionTabCopy("specialist-r04")}
-      counts={{ incoming: 3, outgoing: 0 }}
       panelId="panel"
     />
   );
 }
 
 describe("PartnerDirectionTabs", () => {
-  it("renders labelled tabs with counts and roving tabindex", () => {
+  it("renders labelled underline tabs without glyphs or counts and with roving tabindex", () => {
     render(<Harness />);
     const incoming = screen.getByRole("tab", { name: /Меня рекомендуют/ });
     const outgoing = screen.getByRole("tab", { name: /Я рекомендую/ });
-    expect(incoming).toHaveTextContent("3");
-    expect(outgoing).toHaveTextContent("0");
+    expect(incoming.textContent).toBe("Меня рекомендуют");
+    expect(outgoing.textContent).toBe("Я рекомендую");
     expect(incoming).toHaveAttribute("aria-selected", "true");
     expect(incoming).toHaveAttribute("tabindex", "0");
     expect(outgoing).toHaveAttribute("tabindex", "-1");

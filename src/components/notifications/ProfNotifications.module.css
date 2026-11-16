@@ -116,6 +116,13 @@
   background: color-mix(in srgb, var(--primary) 4%, var(--surface));
 }
 
+.cardFocused {
+  border-color: var(--primary);
+  border-width: 2px;
+  background: var(--surface);
+  padding: var(--space-4);
+}
+
 .cardTitle {
   font-weight: 700;
   font-size: var(--text-sm);
@@ -126,6 +133,7 @@
 .cardBody {
   font-size: var(--text-sm);
   color: var(--muted);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }

@@ -8,6 +8,7 @@ const SAFE_RETURN_PREFIXES = [
   "/history",
   "/settlements",
   "/partners",
+  "/notifications",
   "/profile",
   "/recommendations",
   "/invite",

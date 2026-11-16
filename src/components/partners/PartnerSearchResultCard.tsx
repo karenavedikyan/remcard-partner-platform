@@ -54,7 +54,15 @@ export type PartnerSearchResultCardProps = {
   };
 };
 
-export type SearchResultReciprocal = { direction: InviteDirection; label: string };
+export type SearchResultReciprocal = {
+  direction: InviteDirection;
+  /** Full wording (detail view). */
+  label: string;
+  /** Compact visible text for the narrow result-card footer. */
+  shortLabel: string;
+  /** Accessible name: contains the visible text and the unambiguous direction. */
+  accessibleLabel: string;
+};
 
 /**
  * The other direction can be proposed only when one direction is already agreed (ACTIVE or
@@ -73,6 +81,9 @@ export function searchResultReciprocal(
     return {
       direction: "INVITER_RECEIVES",
       label: audience === "specialist-r04" ? "Предложить: пусть рекомендуют меня" : "Предложить: пусть рекомендуют нас",
+      shortLabel: "Предложить условия",
+      accessibleLabel:
+        audience === "specialist-r04" ? "Предложить условия: пусть рекомендуют меня" : "Предложить условия: пусть рекомендуют нас",
     };
   }
   if (
@@ -83,6 +94,9 @@ export function searchResultReciprocal(
     return {
       direction: "INVITER_ISSUES",
       label: audience === "specialist-r04" ? "Запросить условия: я буду рекомендовать" : "Запросить условия: мы будем рекомендовать",
+      shortLabel: "Запросить условия",
+      accessibleLabel:
+        audience === "specialist-r04" ? "Запросить условия: я буду рекомендовать" : "Запросить условия: мы будем рекомендовать",
     };
   }
   return null;
@@ -545,25 +559,29 @@ export function PartnerSearchResultCard({
             className={styles.modalResultFootStatus}
             data-testid="agent-partner-search-result-status"
           >
-            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
-            {directionBadge ? (
-              <PartnerDirectionBadge
-                glyph={directionBadge.glyph}
-                label={directionBadge.label}
-                description={directionBadge.description}
-                pending={directionBadge.pending}
-                testId="agent-partner-search-result-direction"
-              />
-            ) : null}
+            <span className={styles.modalResultFootStatusRow}>
+              <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+              {directionBadge ? (
+                <PartnerDirectionBadge
+                  glyph={directionBadge.glyph}
+                  label={directionBadge.label}
+                  description={directionBadge.description}
+                  pending={directionBadge.pending}
+                  testId="agent-partner-search-result-direction"
+                />
+              ) : null}
+            </span>
             {reciprocal && directionContext ? (
               <Button
                 type="button"
                 variant="secondary"
+                className={styles.reciprocalAction}
                 disabled={inviteDisabled}
+                aria-label={reciprocal.accessibleLabel}
                 onClick={() => directionContext.onReciprocalInvite(reciprocal.direction)}
                 data-testid="agent-partner-search-result-reciprocal"
               >
-                {reciprocal.label}
+                {reciprocal.shortLabel}
               </Button>
             ) : null}
           </span>

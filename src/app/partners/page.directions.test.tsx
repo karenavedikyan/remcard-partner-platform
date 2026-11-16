@@ -168,6 +168,14 @@ function arrange(role: Role, contextOk = true) {
   });
 }
 
+function ratesOf(list: HTMLElement): string {
+  return within(list)
+    .getAllByTestId("partner-row-category-rate")
+    .filter((row) => row.getAttribute("data-excluded") !== "true")
+    .map((row) => `${row.querySelector("dt")?.textContent} ${row.querySelector("dd")?.textContent}`)
+    .join(" · ");
+}
+
 async function renderPage(): Promise<void> {
   const element = (await PartnersPage({ searchParams: Promise.resolve({}) })) as ReactElement;
   render(element);
@@ -199,10 +207,12 @@ describe("/partners page wires the trusted pro context into the shared hub", () 
       await screen.findByTestId("agent-r04-partners");
       await userEvent.click(await screen.findByTestId("partner-direction-tab-outgoing"));
       const preview = (await screen.findAllByTestId("partner-row-terms-preview"))[0]!;
-      expect(preview.textContent).toBe("Краски 7% · Инструмент 0%");
+      expect(ratesOf(preview)).toBe("Краски 7% · Инструмент 0%");
       const block = preview.closest('[data-testid="partner-row-terms-block"]') as HTMLElement;
       await waitFor(() => expect(within(block).getByTestId("partner-row-restrictions").textContent).toContain("14 дней · 1 покупка"));
-      expect(within(block).getByTestId("partner-row-excluded").textContent).toBe("Не участвуют: Ручки");
+      const excluded = within(block).getByTestId("partner-row-excluded-category");
+      expect(excluded.textContent).toBe("Не участвует");
+      expect(excluded.closest("[data-testid=partner-row-category-rate]")?.querySelector("dt")?.textContent).toBe("Ручки");
 
       const detailTrigger = screen.getAllByRole("button", { name: /Компания Краски/ })[0]!;
       await userEvent.click(detailTrigger);
@@ -213,6 +223,30 @@ describe("/partners page wires the trusted pro context into the shared hub", () 
       expect(action.textContent).toBe("Посмотреть условия");
     },
   );
+
+  it("the active tile counts only the selected direction, not the union of both", async () => {
+    arrange("company");
+    const rows = [
+      directedRow("in-1", "incoming", "cp-a", "Магазин А", [["doors", "Двери", 10]]),
+      directedRow("in-2", "incoming", "cp-b", "Магазин Б", [["doors", "Двери", 10]]),
+      directedRow("in-3", "incoming", "cp-c", "Магазин В", [["doors", "Двери", 10]]),
+      directedRow("out-1", "outgoing", "cp-a", "Магазин А", [["paint", "Краски", 7]]),
+    ];
+    const base = vi.mocked(remcardFetch).getMockImplementation()!;
+    vi.mocked(remcardFetch).mockImplementation(async (path: string, init?: unknown) => {
+      if (String(path).includes("/api/partnership/list")) {
+        return { partnerships: rows, listCounts: { active: rows.length, archive: 0, hidden: 0 } };
+      }
+      return base(path, init as never);
+    });
+    await renderPage();
+    await screen.findByTestId("agent-r04-partners");
+    await waitFor(() => expect(screen.getByTestId("partners-tile-active").textContent).toContain("3"));
+    expect(screen.getByTestId("partners-tile-active").textContent).not.toContain("4");
+    await userEvent.click(await screen.findByTestId("partner-direction-tab-outgoing"));
+    await waitFor(() => expect(screen.getByTestId("partners-tile-active").textContent).toContain("1"));
+    expect(screen.getByTestId("partners-tile-active").textContent).not.toContain("3");
+  });
 
   it("an incoming row keeps the editable terms action", async () => {
     arrange("company");

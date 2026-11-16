@@ -95,7 +95,7 @@ describe("resolveActivePartnerPresentation", () => {
 describe("AgentPartnerCollection P28a active presentation", () => {
   it("uses frozen R1 two-column active card grid", () => {
     expect(css).toMatch(/\.cardGrid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-    expect(css).toMatch(/@media \(max-width: 720px\)[\s\S]*grid-template-columns:\s*1fr/s);
+    expect(css).toMatch(/@media \(max-width: 1050px\)[\s\S]*grid-template-columns:\s*1fr/s);
   });
 
   it("renders agent-active-collection and cards for active-only default variant", () => {

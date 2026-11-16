@@ -24,7 +24,7 @@ import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPar
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PartnerRowTerms, type RowRestrictions } from "@/components/partners/PartnerRowTerms";
 import { PartnerDirectionBadge } from "@/components/partners/PartnerDirectionBadge";
-import { directionBadgeModel } from "@/lib/partner-directions/direction";
+import { directionBadgeModel, partnershipClientsHref } from "@/lib/partner-directions/direction";
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import { Button } from "@/components/ui/Button";
 import {
@@ -331,19 +331,28 @@ export function AgentPartnerCollection(props: Props) {
   const isInvitations = presentationVariant === "invitations";
   const isActiveSkin = resolveActivePartnerPresentation(presentationVariant, partnerships);
   const isCompact = compactCooperation && isActiveSkin;
+  const termsVariant = (partnership: Partnership) =>
+    partnership.directionInfo?.direction === "outgoing" ? "rates" : "inline";
+  const outgoingOnly =
+    isActiveSkin && partnerships.length > 0 && partnerships.every((p) => termsVariant(p) === "rates");
 
   const [detailPartnershipId, setDetailPartnershipId] = useState<string | null>(null);
-  const detailNameButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [detailInitialTab, setDetailInitialTab] = useState<"terms" | "clients">("terms");
+  const detailNameButtonRef = useRef<HTMLElement | null>(null);
   const consumedFocusIdRef = useRef<string | null>(null);
   const detailPartnership = useMemo(
     () => partnerships.find((p) => p.id === detailPartnershipId) ?? null,
     [partnerships, detailPartnershipId],
   );
 
-  const openDetails = useCallback((partnershipId: string, trigger: HTMLButtonElement) => {
-    detailNameButtonRef.current = trigger;
-    setDetailPartnershipId(partnershipId);
-  }, []);
+  const openDetails = useCallback(
+    (partnershipId: string, trigger: HTMLElement, tab: "terms" | "clients" = "terms") => {
+      detailNameButtonRef.current = trigger;
+      setDetailInitialTab(tab);
+      setDetailPartnershipId(partnershipId);
+    },
+    [],
+  );
   const closeDetails = useCallback(() => setDetailPartnershipId(null), []);
 
   // One-shot deep-link open: apply once per focus id, then acknowledge so page-size/refresh
@@ -423,6 +432,7 @@ export function AgentPartnerCollection(props: Props) {
       meId={meId}
       listSubjectUserId={listPrincipalId}
       open={detailPartnershipId !== null}
+      initialSheetTab={detailInitialTab}
       onClose={closeDetails}
       returnFocusRef={detailNameButtonRef}
       busy={Boolean(detailPartnership && busyId === detailPartnership.id)}
@@ -570,20 +580,32 @@ export function AgentPartnerCollection(props: Props) {
                       : undefined
                 }
               >
-                <div className={cardSelectClass}>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggleSelect(partnership.id)}
-                    aria-label="Выбрать карточку"
-                  />
-                  <PartnerCollectionStatusBadge
-                    status={partnership.status}
-                    partnership={partnership}
-                    meId={listPrincipalId}
-                    directionAudience={directionAudience}
-                  />
-                </div>
+                {isActiveSkin ? (
+                  <label className={cardSelectClass} data-testid="agent-card-select">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(partnership.id)}
+                      aria-label="Выбрать карточку"
+                    />
+                    <span>Выбрать</span>
+                  </label>
+                ) : (
+                  <div className={cardSelectClass}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(partnership.id)}
+                      aria-label="Выбрать карточку"
+                    />
+                    <PartnerCollectionStatusBadge
+                      status={partnership.status}
+                      partnership={partnership}
+                      meId={listPrincipalId}
+                      directionAudience={directionAudience}
+                    />
+                  </div>
+                )}
                 <div className={cardBodyClass}>
                   {avatarUrl ? (
                     <img
@@ -620,20 +642,22 @@ export function AgentPartnerCollection(props: Props) {
                   >
                     {typeCaption}
                   </p>
-                  <p
-                    className={
-                      isActiveSkin
-                        ? `${cardMetaClass} ${activeStyles.specLine}`
-                        : cardMetaClass
-                    }
-                    data-testid="partner-row-detail"
-                  >
-                    {detail}
-                  </p>
+                  {isActiveSkin && termsVariant(partnership) === "rates" ? null : (
+                    <p
+                      className={
+                        isActiveSkin
+                          ? `${cardMetaClass} ${activeStyles.specLine}`
+                          : cardMetaClass
+                      }
+                      data-testid="partner-row-detail"
+                    >
+                      {detail}
+                    </p>
+                  )}
                   {isActiveSkin ? (
-                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
+                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} variant={termsVariant(partnership)} />
                   ) : null}
-                  {isCompact ? (
+                  {isActiveSkin ? null : isCompact ? (
                     <CompactCooperationActions partnership={partnership} busyId={busyId}
                       onOpen={(el) => openDetails(partnership.id, el)}
                       onLoadTermRequests={onLoadTermRequests} />
@@ -646,15 +670,66 @@ export function AgentPartnerCollection(props: Props) {
                     termExpanded={expandedTermPartnershipId === partnership.id}
                   />}
                 </div>
-                <div className={cardFooterClass}>
-                  <AgentPartnerWorkspaceActions
-                    partnership={partnership}
-                    meId={meId}
-                    onUpdated={onUpdated}
-                    variant="cardToolbar"
-                    ariaLabel="Действия с партнёром"
-                  />
-                </div>
+                {isActiveSkin ? (
+                  <div className={cardFooterClass} data-testid="agent-active-card-footer">
+                    <div className={activeStyles.cardFooterTop}>
+                      <PartnerCollectionStatusBadge
+                        status={partnership.status}
+                        partnership={partnership}
+                        meId={listPrincipalId}
+                        directionAudience={directionAudience}
+                      />
+                      <AgentPartnerWorkspaceActions
+                        partnership={partnership}
+                        meId={meId}
+                        onUpdated={onUpdated}
+                        variant="cardToolbar"
+                        ariaLabel="Действия с партнёром"
+                      />
+                    </div>
+                    <div className={activeStyles.cardFooterActions}>
+                      {isCompact ? (
+                        <CompactCooperationActions partnership={partnership} busyId={busyId}
+                          onOpen={(el) => openDetails(partnership.id, el)}
+                          onLoadTermRequests={onLoadTermRequests} />
+                      ) : (
+                        <PartnerRowInlineWorkflow
+                          partnership={partnership}
+                          listPrincipalId={listPrincipalId}
+                          busyId={busyId}
+                          onRunAction={onRunAction}
+                          onLoadTermRequests={onLoadTermRequests}
+                          termExpanded={expandedTermPartnershipId === partnership.id}
+                        />
+                      )}
+                      {(partnership.status === "ACTIVE" || partnership.status === "PAUSED") &&
+                      partnershipClientsHref(partnership, listPrincipalId) ? (
+                        <Link
+                          href={partnershipClientsHref(partnership, listPrincipalId) as string}
+                          className={activeStyles.cardClientsLink}
+                          data-testid="partner-card-clients-link"
+                          onClick={(event) => {
+                            if (!(directionAudience ?? detailDirectionAudience)) return;
+                            event.preventDefault();
+                            openDetails(partnership.id, event.currentTarget, "clients");
+                          }}
+                        >
+                          Клиенты
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={cardFooterClass}>
+                    <AgentPartnerWorkspaceActions
+                      partnership={partnership}
+                      meId={meId}
+                      onUpdated={onUpdated}
+                      variant="cardToolbar"
+                      ariaLabel="Действия с партнёром"
+                    />
+                  </div>
+                )}
               </article>
             );
           })}
@@ -713,7 +788,7 @@ export function AgentPartnerCollection(props: Props) {
                       {detail}
                     </p>
                     {isActiveSkin ? (
-                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
+                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} variant={termsVariant(partnership)} />
                   ) : null}
                     {needsResponse && !isActiveSkin ? (
                       <p className={r03.meta}>Ожидает вашего решения</p>
@@ -753,7 +828,7 @@ export function AgentPartnerCollection(props: Props) {
         </div>
         {selectPageRow}
         <div className={tableWrapClass} data-partner-surface="desktop">
-          <table className={`${dataTableClass} ${isCompact ? activeStyles.compactTable : ""}`} data-testid="agent-r04-partners-table">
+          <table className={`${dataTableClass} ${isCompact ? activeStyles.compactTable : ""} ${isCompact && outgoingOnly ? activeStyles.compactTableOutgoing : ""}`} data-testid="agent-r04-partners-table">
             <colgroup>
               <col className={styles.colSelect} />
               <col className={styles.colName} />
@@ -820,7 +895,7 @@ export function AgentPartnerCollection(props: Props) {
                       <td className={detailCellClass}>
                         <span data-testid="partner-row-detail">{detail}</span>
                         {isActiveSkin ? (
-                          <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
+                          <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} variant={termsVariant(partnership)} />
                         ) : null}
                       </td>
                       <td className={statusCellClass}>

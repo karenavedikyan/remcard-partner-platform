@@ -153,7 +153,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/moderation-notes$/ },
     { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/notifications$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/notifications\/unread-count$/ },
-    { methods: new Set(["PATCH"]), pattern: /^\/api\/pro\/notifications\/[\w-]+$/ },
+    { methods: new Set(["GET", "PATCH"]), pattern: /^\/api\/pro\/notifications\/[\w-]+$/ },
     {
       methods: new Set(["GET", "PATCH"]),
       pattern: /^\/api\/pro\/notification-settings$/,

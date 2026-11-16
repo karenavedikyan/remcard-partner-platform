@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchCertificatePolicyWorkspace } from "@/lib/certificate-policy/api";
-import { formatPurchaseLimit, formatValidityDays } from "@/lib/partner-directions/direction";
+import { formatValidityDays } from "@/lib/partner-directions/direction";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { CertificatePolicyDialog } from "./CertificatePolicyDialog";
@@ -27,7 +27,7 @@ export function CertificatePolicyProfileEntry({
   onEffectiveTermsChanged,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{ days: string; purchases: string } | null>(null);
 
   useEffect(() => {
     if (!showSummary || hidden || open) return;
@@ -35,7 +35,7 @@ export function CertificatePolicyProfileEntry({
     void fetchCertificatePolicyWorkspace(viewerUserId).then((res) => {
       if (cancelled || !res.ok) return;
       const { validityDays, purchaseLimit } = res.workspace.general.effective;
-      setSummary(`${formatValidityDays(validityDays)} · ${formatPurchaseLimit(purchaseLimit)}`);
+      setSummary({ days: formatValidityDays(validityDays), purchases: String(purchaseLimit) });
     });
     return () => {
       cancelled = true;
@@ -43,6 +43,51 @@ export function CertificatePolicyProfileEntry({
   }, [hidden, open, showSummary, viewerUserId]);
 
   if (hidden) return null;
+
+  const dialog = (
+    <CertificatePolicyDialog
+      open={open}
+      onClose={() => setOpen(false)}
+      canEditSettings={canEditSettings}
+      viewerUserId={viewerUserId}
+      onEffectiveTermsChanged={onEffectiveTermsChanged}
+      initialTab={canEditSettings ? "settings" : "incoming"}
+    />
+  );
+
+  if (showSummary) {
+    return (
+      <div data-testid="cp-profile-entry">
+        <section className={styles.dpPolicyEntry} aria-labelledby="dp-policy-title">
+          <div className={styles.dpPolicyHeading}>
+            <h2 id="dp-policy-title">Общие условия сертификатов</h2>
+            <p>Для клиентов, которых направляют к вам партнёры.</p>
+          </div>
+          {summary ? (
+            <dl className={styles.dpPolicySummary} data-testid="cp-entry-summary">
+              <div>
+                <dt>Срок скидки</dt>
+                <dd data-testid="cp-entry-summary-days">{summary.days}</dd>
+              </div>
+              <div>
+                <dt>Покупок</dt>
+                <dd data-testid="cp-entry-summary-purchases">{summary.purchases}</dd>
+              </div>
+            </dl>
+          ) : null}
+          <button
+            type="button"
+            className={styles.dpPolicyButton}
+            data-testid="cp-open-settings"
+            onClick={() => setOpen(true)}
+          >
+            {canEditSettings ? "Настроить" : "Посмотреть"}
+          </button>
+        </section>
+        {dialog}
+      </div>
+    );
+  }
 
   return (
   <div data-testid="cp-profile-entry">
@@ -58,11 +103,6 @@ export function CertificatePolicyProfileEntry({
                 ? "Срок скидки и число покупок для ваших партнёров."
                 : "Срок скидки и число покупок у партнёров."}
             </p>
-            {summary ? (
-              <p className="small" data-testid="cp-entry-summary">
-                Сейчас для всех: {summary}
-              </p>
-            ) : null}
           </div>
           <Button
             type="button"
@@ -73,14 +113,7 @@ export function CertificatePolicyProfileEntry({
           </Button>
         </div>
       </Panel>
-      <CertificatePolicyDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        canEditSettings={canEditSettings}
-        viewerUserId={viewerUserId}
-        onEffectiveTermsChanged={onEffectiveTermsChanged}
-        initialTab={canEditSettings ? "settings" : "incoming"}
-      />
+      {dialog}
   </div>
   );
 }

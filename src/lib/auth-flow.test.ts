@@ -43,6 +43,14 @@ const needsConsents: CabinetReadiness = {
 describe("sanitizeReturnTo", () => {
   it("allows safe internal paths", () => {
     assert.equal(sanitizeReturnTo("/scanner"), "/scanner");
+    assert.equal(
+      sanitizeReturnTo("/partners?terms=0b5d7a1e-3c2f-4f4e-9a88-1f2e3d4c5b6a"),
+      "/partners?terms=0b5d7a1e-3c2f-4f4e-9a88-1f2e3d4c5b6a",
+    );
+    assert.equal(
+      sanitizeReturnTo("/notifications?focus=0b5d7a1e-3c2f-4f4e-9a88-1f2e3d4c5b6a"),
+      "/notifications?focus=0b5d7a1e-3c2f-4f4e-9a88-1f2e3d4c5b6a",
+    );
     assert.equal(sanitizeReturnTo("/history/purchases/abc"), "/history/purchases/abc");
     assert.equal(sanitizeReturnTo("/invite/abc123token"), "/invite/abc123token");
   });

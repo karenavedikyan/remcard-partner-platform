@@ -325,6 +325,7 @@
 
 .modalResultFoot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
@@ -370,11 +371,22 @@
 
 .modalResultFootStatus {
   display: inline-flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
   justify-content: flex-end;
   margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.modalResultFootStatusRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
   min-width: 0;
   max-width: 100%;
 }
@@ -585,4 +597,31 @@
 .modalResultCity,
 .modalResultCityMuted {
   font-size: 12px;
+}
+
+/* Reciprocal-direction action, matched to the frozen prototype `.dp-cooperation-action > .btn`. */
+.modalResultFootStatus .reciprocalAction {
+  flex: 1 1 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+  min-height: 38px;
+  padding: 7px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--line));
+  background: var(--surface);
+}
+
+.modalResultFootStatus .reciprocalAction:hover:not(:disabled) {
+  background: var(--soft, var(--offset));
+}
+
+@media (max-width: 760px) {
+  .modalResultFootStatus .reciprocalAction {
+    min-height: 44px;
+  }
 }

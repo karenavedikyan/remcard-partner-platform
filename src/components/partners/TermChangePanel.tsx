@@ -6,9 +6,11 @@ import { categoryLabel } from "@/lib/partnership-labels";
 import { describePendingTermChange } from "@/lib/term-change-labels";
 import type { Partnership, PartnershipTerm, TermChangeRequest } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/FormField";
+import { TextAreaField, TextField } from "@/components/ui/FormField";
 import { isPartnershipParticipant } from "@/components/partners/partner-cooperation-c1";
 import styles from "./TermChangePanel.module.css";
+
+export const TERM_REJECTION_REASON_MAX_LENGTH = 1000;
 
 type TermChangePanelProps = {
   partnership: Partnership;
@@ -116,6 +118,7 @@ export function TermChangePanel({
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [reasonByRequest, setReasonByRequest] = useState<Record<string, string>>({});
   const submitLockRef = useRef(false);
   const respondLockRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -328,6 +331,12 @@ export function TermChangePanel({
       return;
     }
 
+    const reason = action === "reject" ? (reasonByRequest[requestId] ?? "").trim() : "";
+    if (reason.length > TERM_REJECTION_REASON_MAX_LENGTH) {
+      setSubmitError(`Причина отклонения не длиннее ${TERM_REJECTION_REASON_MAX_LENGTH} символов`);
+      return;
+    }
+
     const submittedId = partnershipRef.current.id;
     const submittedKey = contextKeyRef.current;
     const gen = ++mutationGenRef.current;
@@ -337,7 +346,7 @@ export function TermChangePanel({
     try {
       await remcardFetch(
         `/api/partnerships/${submittedId}/term-change/${requestId}/respond`,
-        { method: "POST", body: { action } },
+        { method: "POST", body: reason ? { action, rejectionReason: reason } : { action } },
       );
       if (!isMutationCurrent(gen, submittedKey)) {
         return;
@@ -468,6 +477,25 @@ export function TermChangePanel({
                   })}
                 </ul>
                 {request.status === "PENDING" && pendingCopy?.canRespond ? (
+                  <TextAreaField
+                    label="Причина отклонения (необязательно)"
+                    id={`term-change-reason-${request.id}`}
+                    data-testid={`term-change-reason-${request.id}`}
+                    rows={3}
+                    value={reasonByRequest[request.id] ?? ""}
+                    disabled={busy || !isParticipant}
+                    onChange={(event) =>
+                      setReasonByRequest((current) => ({ ...current, [request.id]: event.target.value }))
+                    }
+                    hint={`${(reasonByRequest[request.id] ?? "").trim().length} / ${TERM_REJECTION_REASON_MAX_LENGTH}`}
+                    error={
+                      (reasonByRequest[request.id] ?? "").trim().length > TERM_REJECTION_REASON_MAX_LENGTH
+                        ? `Сократите причину: не больше ${TERM_REJECTION_REASON_MAX_LENGTH} символов. Текст не будет обрезан автоматически.`
+                        : undefined
+                    }
+                  />
+                ) : null}
+                {request.status === "PENDING" && pendingCopy?.canRespond ? (
                   <div className={styles.actions}>
                     <Button
                       disabled={busy || !isParticipant}
@@ -478,7 +506,11 @@ export function TermChangePanel({
                     </Button>
                     <Button
                       variant="secondary"
-                      disabled={busy || !isParticipant}
+                      disabled={
+                        busy ||
+                        !isParticipant ||
+                        (reasonByRequest[request.id] ?? "").trim().length > TERM_REJECTION_REASON_MAX_LENGTH
+                      }
                       data-testid={`term-change-reject-${request.id}`}
                       onClick={() => void respond(request.id, "reject")}
                     >
