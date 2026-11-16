@@ -127,6 +127,10 @@
   word-break: break-word;
 }
 
+.termsList li {
+  font-weight: 600;
+}
+
 .list li {
   display: grid;
   gap: 4px;
@@ -240,4 +244,20 @@
   color: var(--primary-fg);
   font-weight: 600;
   text-decoration: none;
+}
+
+.directionBlock {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 8px);
+  min-width: 0;
+}
+
+.directionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }

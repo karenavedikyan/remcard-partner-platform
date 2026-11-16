@@ -6,6 +6,7 @@ import {
   partnerListSubtitle,
   partnerRowOfficialLine,
   partnerSpecializationHint,
+  partnerTermsPreview,
   partnerTypeLabel,
 } from "./partner-list-row";
 import type { Partnership } from "@/lib/types";
@@ -162,5 +163,22 @@ describe("partner-list-row labels", () => {
         partnerActivities: ["STORE", "AGENT"],
       } as never),
     ).toBe("Компания");
+  });
+
+  it("terms preview keeps rates (including 0%) apart from excluded categories and counts the rest", () => {
+    const row = {
+      terms: [
+        { category: "paint", categoryLabel: "Краски", storePercent: 7, isExcluded: false },
+        { category: "tools", categoryLabel: "Инструмент", storePercent: 0, isExcluded: false },
+        { category: "doors", categoryLabel: "Двери", storePercent: 3, isExcluded: false },
+        { category: "lights", categoryLabel: "Свет", storePercent: 2, isExcluded: false },
+        { category: "handles", categoryLabel: "Ручки", storePercent: 0, isExcluded: true },
+      ],
+    } as unknown as Partnership;
+    expect(partnerTermsPreview(row)).toEqual({
+      rates: "Краски 7% · Инструмент 0% · Двери 3%",
+      moreCount: 1,
+      excluded: "Ручки",
+    });
   });
 });

@@ -61,7 +61,7 @@ describe("PartnerFindDirectoryDetailShell P25p", () => {
     );
   });
 
-  it("renders DTO directions and transparent empty description without fabricated contacts", () => {
+  it("omits empty-description and empty-directions filler and fabricated contacts", () => {
     render(
       <PartnerFindDirectoryDetailShell
         partner={partner({
@@ -73,8 +73,9 @@ describe("PartnerFindDirectoryDetailShell P25p", () => {
         onInvite={() => {}}
       />,
     );
-    expect(screen.getByTestId("partner-find-directory-detail-topics-empty")).toBeInTheDocument();
-    expect(screen.getByTestId("partner-find-directory-detail-description-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("partner-find-directory-detail-topics-empty")).toBeNull();
+    expect(screen.queryByTestId("partner-find-directory-detail-description-empty")).toBeNull();
+    expect(screen.queryByText("Описание в каталоге не указано")).toBeNull();
     expect(screen.queryByRole("link")).toBeNull();
   });
 

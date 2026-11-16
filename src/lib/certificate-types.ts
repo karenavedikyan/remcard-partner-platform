@@ -88,9 +88,41 @@ export type AvailablePartnerCategory = {
   discountPercent: number;
   issuerPercent: number;
   isSelfScan?: boolean;
+  /** Additive: false when the agreed pool is 0% (visible, but nothing can be issued for it). */
+  issuable?: boolean;
+};
+
+export type BlockedPartnerReason =
+  | "DIRECTION_NOT_AGREED"
+  | "DIRECTION_PAUSED"
+  | "DIRECTION_PENDING"
+  | "DIRECTION_ENDED"
+  | "RECEIVER_CANNOT_RECEIVE"
+  | "NO_ISSUABLE_CATEGORIES";
+
+export type BlockedPartnerNextStep =
+  | "invite_reciprocal"
+  | "review_pending"
+  | "resume_partnership"
+  | "reinvite"
+  | "review_terms"
+  | "none";
+
+/** Additive: partners you cannot issue to yet, with the reason and what to do next. */
+export type BlockedPartner = {
+  partnerUserId: string;
+  partnershipId: string | null;
+  reversePartnershipId: string | null;
+  storeName: string;
+  partnerType?: string | null;
+  reason: BlockedPartnerReason;
+  nextStep: BlockedPartnerNextStep;
+  message: string;
+  status: string | null;
 };
 
 export type AvailablePartner = {
+  direction?: "outgoing";
   partnershipId: string | null;
   storeUserId: string;
   storeName: string;
@@ -119,6 +151,7 @@ export type CertificateRecommendationIssuerMissingField = {
 
 export type AvailablePartnersResponse = {
   partners: AvailablePartner[];
+  blockedPartners?: BlockedPartner[];
   selfScanPartner?: AvailablePartner | null;
   certificateProgramSelfReady?: boolean;
   certificateProgramSelfMissing?: string[];

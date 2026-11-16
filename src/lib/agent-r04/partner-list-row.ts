@@ -118,6 +118,28 @@ export function partnerTermsDetail(partnership: Partnership): string {
     .join(" · ");
 }
 
+const TERMS_PREVIEW_LIMIT = 3;
+
+/** Row preview parts: agreed rates (including an explicit 0%), how many more, and categories that do not take part. */
+export function partnerTermsPreview(partnership: Partnership): {
+  rates: string;
+  moreCount: number;
+  excluded: string;
+} {
+  const active = partnerActiveTerms(partnership);
+  return {
+    rates: active
+      .slice(0, TERMS_PREVIEW_LIMIT)
+      .map((t) => `${displayCategoryLabel(t.category, t.categoryLabel)} ${t.storePercent}%`)
+      .join(" · "),
+    moreCount: Math.max(0, active.length - TERMS_PREVIEW_LIMIT),
+    excluded: partnership.terms
+      .filter((t) => t.isExcluded)
+      .map((t) => displayCategoryLabel(t.category, t.categoryLabel))
+      .join(", "),
+  };
+}
+
 export function partnerTermsFullDetail(partnership: Partnership): string[] {
   return partnerActiveTerms(partnership).map(
     (t) => `${displayCategoryLabel(t.category, t.categoryLabel)} — ${t.storePercent}%`,

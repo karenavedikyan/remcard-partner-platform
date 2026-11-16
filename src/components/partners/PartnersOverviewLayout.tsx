@@ -17,7 +17,13 @@ import { isPartnersOverviewPresentationPending } from "@/lib/welcome-first-paint
 
 export type PartnersOverviewLayoutProps = {
   lead: string;
-  counts: { active: number; decisions: number; outgoing: number };
+  counts: {
+    active: number;
+    decisions: number;
+    outgoing: number;
+    /** Distinct counterparties among active rows (one person with two directions counts once). */
+    activeCounterparties?: number;
+  };
   loading: boolean;
   error: string;
   listReady: boolean;
@@ -48,7 +54,14 @@ export type PartnersOverviewLayoutProps = {
   legacyChromePinned: boolean;
   /** Hide hero while pinned bulk outcome is visible. */
   legacyBulkOutcomeVisible: boolean;
+  /** General certificate terms entry (validity, purchases) for roles that author or review them. */
+  policySlot?: ReactNode;
+  /** Hint under «Действующие партнёры»; defaults to the two-direction wording. */
+  activeHint?: string;
 };
+
+const ACTIVE_HINT_DEFAULT =
+  "Кому вы можете рекомендовать клиентов и кто рекомендует вас. Архив скрывает запись только из списка, не отменяя условия.";
 
 const LEAD_DEFAULT =
   "Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке.";
@@ -79,6 +92,8 @@ export function PartnersOverviewLayout({
   onLegacyDisclosureOpenChange,
   legacyChromePinned,
   legacyBulkOutcomeVisible,
+  policySlot = null,
+  activeHint = ACTIVE_HINT_DEFAULT,
 }: PartnersOverviewLayoutProps) {
   const showGreetingBase = shouldShowApprovedPartnersGreeting({
     loading,
@@ -90,6 +105,7 @@ export function PartnersOverviewLayout({
     listReady && !error && !isOverviewCurrentEmpty(counts);
   const inGreetingZeroOverview = showGreetingBase && !showFullLegacyOverview;
 
+  const activePartnersShown = counts.activeCounterparties ?? counts.active;
   const effectiveDisclosureOpen = legacyDisclosureOpen || legacyChromePinned;
 
   const showGreetingHero =
@@ -120,10 +136,10 @@ export function PartnersOverviewLayout({
           type="button"
           className={styles.tile}
           onClick={() => onTileNavigate("active")}
-          aria-label={`Действующие: ${counts.active}`}
+          aria-label={`Действующие: ${activePartnersShown}`}
           data-testid="partners-tile-active"
         >
-          <strong>{counts.active}</strong>
+          <strong>{activePartnersShown}</strong>
           <span className={styles.tileBody}>
             <span className={styles.tileTitle}>Действующие</span>
             <small className={styles.tileNote}>Можно рекомендовать клиентам</small>
@@ -203,12 +219,9 @@ export function PartnersOverviewLayout({
         <div className={styles.zoneHead}>
           <div>
             <h2>
-              Действующие партнёры <span className={styles.badge}>{counts.active}</span>
+              Действующие партнёры <span className={styles.badge}>{activePartnersShown}</span>
             </h2>
-            <p className={styles.zoneHint}>
-              Кому вы можете рекомендовать клиентов и кто рекомендует вас. Архив скрывает запись
-              только из списка, не отменяя условия.
-            </p>
+            <p className={styles.zoneHint}>{activeHint}</p>
           </div>
         </div>
         <div className={styles.zoneBody}>{activeSlot}</div>
@@ -264,6 +277,10 @@ export function PartnersOverviewLayout({
             Найти партнёра
           </button>
         </div>
+      ) : null}
+
+      {!presentationPending && !error && listReady && policySlot ? (
+        <div data-testid="partners-overview-policy">{policySlot}</div>
       ) : null}
 
       {presentationPending ? (

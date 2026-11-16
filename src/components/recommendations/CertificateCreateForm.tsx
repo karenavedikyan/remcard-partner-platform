@@ -15,6 +15,7 @@ import type { CategoryValidationFailureReason } from "@/lib/certificate-percent"
 import type {
   AvailablePartner,
   AvailablePartnersResponse,
+  BlockedPartner,
   CertificateRecommendationIssuerMissingField,
   StoreCertificate,
 } from "@/lib/certificate-types";
@@ -53,7 +54,9 @@ import {
 } from "@/lib/specialist-certificate-create-ui";
 import agentStyles from "@/components/agent-r03/agent-r03.module.css";
 import { CertificateResultView } from "./CertificateResultView";
+import { formatPurchaseLimit, formatValidityDays } from "@/lib/partner-directions/direction";
 import { CertificatePolicyRecipientTerms } from "@/components/certificate-policy/CertificatePolicyRecipientTerms";
+import { BlockedPartnersNotice } from "./BlockedPartnersNotice";
 import styles from "./recommendations.module.css";
 
 type ValidityPreset = "1" | "3" | "6" | "12" | "unlimited";
@@ -188,6 +191,8 @@ export function CertificateCreateForm({
     }
   }, []);
 
+  const [blockedPartners, setBlockedPartners] = useState<BlockedPartner[]>([]);
+
   const loadPartners = useCallback(async () => {
     setLoadState("loading");
     setLoadError("");
@@ -202,9 +207,11 @@ export function CertificateCreateForm({
         rows.push(data.selfScanPartner);
       }
       setPartners(rows);
+      setBlockedPartners(data.blockedPartners ?? []);
       setLoadState("loaded");
     } catch (caught) {
       setPartners([]);
+      setBlockedPartners([]);
       setLoadState("error");
       setLoadError(
         caught instanceof RemcardApiError
@@ -229,9 +236,22 @@ export function CertificateCreateForm({
     : null;
 
   const selectablePartners = useMemo(
-    () => partners.filter((p) => p.programReady !== false && p.categories.length > 0),
+    () =>
+      partners.filter(
+        (p) =>
+          p.programReady !== false &&
+          p.categories.length > 0 &&
+          !p.categories.every((c) => c.issuable === false),
+      ),
     [partners],
   );
+
+  // Stays false until the draft scope is resolved and its saved draft applied (or the scope
+  // cannot be resolved), so a late hydration can never overwrite a selection made meanwhile.
+  const draftSettled =
+    scopeResolution.status === "ready"
+      ? hydratedScopeKey === activeScopeKey
+      : scopeResolution.status !== "pending";
 
   const partnerKeySet = useMemo(
     () => new Set(selectablePartners.map((p) => partnerSelectionKey(p))),
@@ -601,7 +621,9 @@ export function CertificateCreateForm({
 
   const formBody = (
     <>
-      {loadState === "loading" ? <p className={styles.loading}>Загрузка партнёров…</p> : null}
+      {loadState === "loading" || (loadState === "loaded" && !draftSettled) ? (
+        <p className={styles.loading}>Загрузка партнёров…</p>
+      ) : null}
       {loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{loadError}</p>
@@ -624,7 +646,7 @@ export function CertificateCreateForm({
         </div>
       ) : null}
 
-      {loadState === "loaded" ? (
+      {loadState === "loaded" && draftSettled ? (
         <>
           {stalePartnerKeys.length > 0 ? (
             <p className={styles.meta} role="status" data-testid="recommendation-draft-stale">
@@ -727,6 +749,7 @@ export function CertificateCreateForm({
                       })}
                     </div>
                   )}
+                  <BlockedPartnersNotice partners={blockedPartners} inviteHref={partnersInviteHref} />
                   <div className={styles.inviteInline}>
                     <div>
                       <strong>Нужен новый партнёр?</strong>
@@ -815,7 +838,12 @@ export function CertificateCreateForm({
                               <div className={styles.categoryAllocationFields}>
                                 <div className={styles.allocationLimit}>
                                   <small>Согласовано</small>
-                                  <strong>{pool != null ? `${pool}%` : "—"}</strong>
+                                  <strong>{pool != null ? `${pool}%` : cat.poolPercent === 0 ? "0%" : "—"}</strong>
+                                  {pool === null && cat.poolPercent === 0 && !partner.isSelfScan ? (
+                                    <small data-testid={`cert-zero-category-${key}`}>
+                                      Согласовано 0%: по этой категории сертификат не выдаётся. Остальные категории не затронуты.
+                                    </small>
+                                  ) : null}
                                 </div>
                                 <TextField
                                   label="Скидка клиенту, %"
@@ -978,6 +1006,7 @@ export function CertificateCreateForm({
                     })}
                   </div>
                 )}
+                <BlockedPartnersNotice partners={blockedPartners} inviteHref={partnersInviteHref} />
               </section>
 
               {selectedPartners.length > 0 ? (
@@ -1027,7 +1056,9 @@ export function CertificateCreateForm({
                               </p>
                             ) : (
                               <p className={styles.errorText} role="alert">
-                                Нет согласованного процента для этой категории
+                                {cat.poolPercent === 0 && !partner.isSelfScan
+                                  ? "Согласовано 0%: по этой категории сертификат не выдаётся. Остальные категории не затронуты."
+                                  : "Нет согласованного процента для этой категории"}
                               </p>
                             )}
                             <TextField
@@ -1104,9 +1135,27 @@ export function CertificateCreateForm({
                   </label>
                 </section>
               ) : (
-                <p className={styles.meta} data-testid="recommendation-recipient-policy-limits">
-                  Срок и число покупок задаёт принимающий партнёр и фиксируется при выпуске.
-                </p>
+                <div data-testid="recommendation-recipient-policy-limits">
+                  <p className={styles.meta}>
+                    Срок и число покупок задаёт принимающий партнёр и фиксируется при выпуске.
+                  </p>
+                  <ul className={styles.meta} data-testid="recommendation-recipient-policy-list">
+                    {selectedPartners.map((partner) =>
+                      partner.recipientPolicy ? (
+                        <li
+                          key={partnerSelectionKey(partner)}
+                          data-testid={`recommendation-recipient-policy-${partner.storeUserId}`}
+                        >
+                          <strong>{partner.storeName}</strong>
+                          {": срок скидки "}
+                          {formatValidityDays(partner.recipientPolicy.validityDays)}
+                          {" · "}
+                          {formatPurchaseLimit(partner.recipientPolicy.purchaseLimit)}
+                        </li>
+                      ) : null,
+                    )}
+                  </ul>
+                </div>
               )}
 
               {submitError ? (

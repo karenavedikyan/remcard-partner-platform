@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { getPartnershipUiActions, partnershipInviteTermsEmpty } from "@/lib/partnership-rules";
 import {
   partnerRowTitle,
@@ -11,6 +11,23 @@ import {
 import { CounterpartyProfile } from "@/components/partners/CounterpartyProfile";
 import { resolvePublicPartnerType } from "@/lib/agent-r04/partner-filters";
 import type { Partnership } from "@/lib/types";
+import {
+  CertificatePolicyDialog,
+  type PartnerCertificatePolicyEntry,
+} from "@/components/certificate-policy/CertificatePolicyDialog";
+import { fetchCertificatePolicyWorkspace } from "@/lib/certificate-policy/api";
+import type { CertificatePolicyCounterparty } from "@/lib/certificate-policy/types";
+import {
+  counterpartyUserId,
+  directionBadgeModel,
+  directionClientsHref,
+  formatPurchaseLimit,
+  formatValidityDays,
+  rowDirection,
+} from "@/lib/partner-directions/direction";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import { PartnerDirectionBadge } from "@/components/partners/PartnerDirectionBadge";
+import { displayCategoryLabel } from "@/lib/category-display";
 import {
   getFocusableElements,
   handleDialogTabKey,
@@ -46,7 +63,39 @@ type Props = {
   /** Opens the shared term-change host for this partnership. */
   onOpenTermChange?: () => void;
   compactCooperation?: boolean;
+  /** Overview with directions: header, per-row terms and links. */
+  directionAudience?: PartnersHubAudience;
+  /** Gate from the hub: who may open the existing certificate-policy editor. */
+  certificatePolicyEntry?: PartnerCertificatePolicyEntry | null;
 };
+
+type RowPolicyState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "loaded"; row: CertificatePolicyCounterparty }
+  | { status: "missing" }
+  | { status: "error" };
+
+function directionSentence(partnership: Partnership, meId: string): string {
+  const direction = rowDirection(partnership, meId);
+  const base =
+    direction === "incoming"
+      ? "Партнёр выдаёт сертификаты вашей организации на ваших условиях получения."
+      : "Вы выдаёте сертификаты этому партнёру. Условия получения задаёт он, вы их не меняете.";
+  switch (partnership.status) {
+    case "ACTIVE":
+      return base;
+    case "PAUSED":
+      return `${base} Сейчас приостановлено: выдача сертификатов недоступна.`;
+    case "INVITED":
+    case "PENDING":
+      return "Договорённость ещё не действует: ждёт ответа. Сертификаты по ней выдать нельзя.";
+    case "ENDED":
+      return "Договорённость завершена. Ранее выданные сертификаты не меняются.";
+    default:
+      return base;
+  }
+}
 
 function isEmptyAgentInviteRequest(partnership: Partnership, meId: string): boolean {
   if (partnership.status !== "INVITED" || !partnershipInviteTermsEmpty(partnership)) {
@@ -70,8 +119,44 @@ export function PartnerPartnershipDetailDialog({
   onRunAction,
   onOpenTermChange,
   compactCooperation = false,
+  directionAudience,
+  certificatePolicyEntry = null,
 }: Props) {
   const titleId = useId();
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [policyTab, setPolicyTab] = useState<"settings" | "incoming">("incoming");
+  const [rowPolicy, setRowPolicy] = useState<RowPolicyState>({ status: "idle" });
+  const partnershipId = partnership?.id ?? null;
+  const partnershipStatus = partnership?.status ?? null;
+  const policyViewerId = certificatePolicyEntry?.viewerUserId ?? null;
+  const trapSuspended = suspendFocusTrap || policyOpen;
+
+  const loadRowPolicy = useCallback(() => {
+    if (!open || !partnershipId || !policyViewerId) {
+      setRowPolicy({ status: "idle" });
+      return () => undefined;
+    }
+    if (partnershipStatus !== "ACTIVE" && partnershipStatus !== "PAUSED") {
+      setRowPolicy({ status: "idle" });
+      return () => undefined;
+    }
+    let cancelled = false;
+    setRowPolicy({ status: "loading" });
+    void fetchCertificatePolicyWorkspace(policyViewerId).then((res) => {
+      if (cancelled) return;
+      if (!res.ok) {
+        setRowPolicy({ status: "error" });
+        return;
+      }
+      const row = res.workspace.counterparties.find((item) => item.partnershipId === partnershipId);
+      setRowPolicy(row ? { status: "loaded", row } : { status: "missing" });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, partnershipId, partnershipStatus, policyViewerId]);
+
+  useEffect(() => loadRowPolicy(), [loadRowPolicy]);
   const closeRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const focusStartRef = useRef<HTMLSpanElement>(null);
@@ -94,7 +179,7 @@ export function PartnerPartnershipDetailDialog({
     lockBodyScroll();
 
     // Overlying confirm owns Escape/focus — do not steal or close detail underneath.
-    if (suspendFocusTrap) {
+    if (trapSuspended) {
       return () => {
         unlockBodyScroll();
       };
@@ -135,7 +220,7 @@ export function PartnerPartnershipDetailDialog({
       window.removeEventListener("focusin", onFocusIn, true);
       unlockBodyScroll();
     };
-  }, [open, suspendFocusTrap]);
+  }, [open, trapSuspended]);
 
   if (!open || !partnership) return null;
 
@@ -146,8 +231,23 @@ export function PartnerPartnershipDetailDialog({
   const hasActionCallbacks = Boolean(onRunAction || onOpenTermChange);
   const termsLines = partnerTermsFullDetail(partnership);
   const showAgentEmptyExplain = isEmptyAgentInviteRequest(partnership, meId);
+  const directional = Boolean(directionAudience && partnership.directionInfo);
+  const direction = rowDirection(partnership, listPrincipalId);
+  const badge = directional ? directionBadgeModel(partnership, listPrincipalId, directionAudience) : null;
+  const excludedTerms = partnership.terms.filter((term) => term.isExcluded);
+  const clientsHref = directional
+    ? direction === "outgoing"
+      ? directionClientsHref(partnership, listPrincipalId)
+      : "/clients?direction=receiving"
+    : null;
+  const counterpartyId = counterpartyUserId(partnership, listPrincipalId);
+  const offer = partnership.pendingOffer ?? null;
+  const policyRow = rowPolicy.status === "loaded" ? rowPolicy.row : null;
+  const canOpenPolicy = directional && certificatePolicyEntry != null &&
+    (partnership.status === "ACTIVE" || partnership.status === "PAUSED");
 
   return (
+    <>
     <div
       className={`${sheetStyles.backdrop} ${styles.backdropAlign}`}
       role="presentation"
@@ -190,6 +290,36 @@ export function PartnerPartnershipDetailDialog({
         <div className={styles.body}>
           <CounterpartyProfile partnership={partnership} listPrincipalId={listPrincipalId} />
 
+          {directional && badge ? (
+            <section className={styles.directionBlock} data-testid="partner-detail-direction" data-direction={direction}>
+              <div className={styles.directionHead}>
+                <PartnerDirectionBadge
+                  glyph={badge.glyph}
+                  label={badge.label}
+                  description={badge.description}
+                  pending={partnership.status !== "ACTIVE" && partnership.status !== "PAUSED"}
+                  testId="partner-detail-direction-badge"
+                />
+                <strong>{badge.label}</strong>
+              </div>
+              <p className={styles.metaBlock}>{directionSentence(partnership, listPrincipalId)}</p>
+              {partnership.directionInfo?.legacyInverted ? (
+                <p className={styles.metaBlock} data-testid="partner-detail-legacy-inverted">
+                  Партнёрство создано по прежней схеме агента: условия получения задаёт бизнес, агент выдаёт сертификаты.
+                </p>
+              ) : null}
+              {partnership.directionInfo?.reverseStatus ? (
+                <p className={styles.metaBlock} data-testid="partner-detail-reverse">
+                  Встречное направление:{" "}
+                  {{ ACTIVE: "действует", PAUSED: "приостановлено", INVITED: "ждёт ответа", PENDING: "ждёт ответа", ENDED: "завершено" }[
+                    partnership.directionInfo.reverseStatus
+                  ] ?? partnership.directionInfo.reverseStatus}
+                  . У него свои условия, лимиты и клиенты.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {showAgentEmptyExplain ? (
             <p className={styles.explain} data-testid="partner-detail-agent-empty-hint">
               Агент хочет рекомендовать ваши товары и услуги клиентам. Вы можете подготовить
@@ -197,9 +327,17 @@ export function PartnerPartnershipDetailDialog({
             </p>
           ) : null}
 
-          <p className={styles.sectionTitle}>{compactCooperation ? "Ваши условия по категориям" : "Персональные условия"}</p>
+          <p className={styles.sectionTitle}>
+            {directional
+              ? direction === "incoming"
+                ? "Ваши условия получения"
+                : "Условия партнёра для ваших рекомендаций"
+              : compactCooperation
+                ? "Ваши условия по категориям"
+                : "Персональные условия"}
+          </p>
           {termsLines.length ? (
-            <ul className={styles.list} data-testid="partner-detail-terms-list">
+            <ul className={`${styles.list} ${styles.termsList}`} data-testid="partner-detail-terms-list">
               {termsLines.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -207,6 +345,95 @@ export function PartnerPartnershipDetailDialog({
           ) : (
             <p className={styles.metaBlock}>Персональные условия пока не согласованы.</p>
           )}
+          {directional && partnership.terms.some((term) => !term.isExcluded && term.storePercent === 0) ? (
+            <p className={styles.metaBlock} data-testid="partner-detail-zero-note">
+              0% — категория согласована без скидки. Это не исключение: остальные категории выдаются как обычно.
+            </p>
+          ) : null}
+          {directional && excludedTerms.length ? (
+            <p className={styles.metaBlock} data-testid="partner-detail-excluded">
+              Не участвуют: {excludedTerms.map((term) => displayCategoryLabel(term.category, term.categoryLabel)).join(", ")}
+            </p>
+          ) : null}
+
+          {directional && offer ? (
+            <div data-testid="partner-detail-offer">
+              <p className={styles.sectionTitle}>Условия сертификата в приглашении</p>
+              <p className={styles.metaBlock}>
+                Срок скидки: {formatValidityDays(offer.restrictions.validityDays)} · {formatPurchaseLimit(offer.restrictions.purchaseLimit)}
+                {offer.restrictions.minimumPurchaseAmount != null
+                  ? ` · от ${offer.restrictions.minimumPurchaseAmount} ₽`
+                  : ""}
+                {offer.restrictions.promotionsCompatible ? " · суммируется с акциями" : " · без суммирования с акциями"}
+              </p>
+              {offer.restrictions.exclusionsText ? (
+                <p className={styles.metaBlock}>{offer.restrictions.exclusionsText}</p>
+              ) : null}
+              <p className={styles.metaBlock}>Применятся только после принятия приглашения. Общие условия при этом не меняются.</p>
+            </div>
+          ) : null}
+
+          {directional && (partnership.status === "ACTIVE" || partnership.status === "PAUSED") && policyViewerId ? (
+            <div data-testid="partner-detail-restrictions">
+              <p className={styles.sectionTitle}>Срок и число покупок</p>
+              {rowPolicy.status === "loading" ? <p className={styles.metaBlock}>Загрузка…</p> : null}
+              {rowPolicy.status === "error" ? (
+                <p className={styles.metaBlock} role="alert">
+                  Не удалось загрузить срок и число покупок.{" "}
+                  <button type="button" onClick={() => loadRowPolicy()}>Повторить</button>
+                </p>
+              ) : null}
+              {rowPolicy.status === "missing" ? (
+                <p className={styles.metaBlock}>Ограничения для этой договорённости пока недоступны.</p>
+              ) : null}
+              {policyRow ? (
+                <p className={styles.metaBlock} data-testid="partner-detail-restrictions-line">
+                  Срок скидки: {formatValidityDays(policyRow.effective.validityDays)} · {formatPurchaseLimit(policyRow.effective.purchaseLimit)}
+                  {policyRow.effective.minimumPurchaseAmount != null
+                    ? ` · от ${policyRow.effective.minimumPurchaseAmount} ₽`
+                    : ""}
+                  {policyRow.effective.promotionsCompatible ? " · суммируется с акциями" : " · без суммирования с акциями"}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {directional && (canOpenPolicy || clientsHref) ? (
+            <div className={styles.actionRow} data-testid="partner-detail-links">
+              {canOpenPolicy && direction === "incoming" && certificatePolicyEntry?.canEditSettings &&
+              partnership.status === "ACTIVE" ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  data-testid="partner-detail-individual-terms"
+                  onClick={() => {
+                    setPolicyTab("settings");
+                    setPolicyOpen(true);
+                  }}
+                >
+                  Индивидуальные условия
+                </Button>
+              ) : null}
+              {canOpenPolicy && direction === "outgoing" ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  data-testid="partner-detail-receiver-terms"
+                  onClick={() => {
+                    setPolicyTab("incoming");
+                    setPolicyOpen(true);
+                  }}
+                >
+                  Условия сертификатов партнёра
+                </Button>
+              ) : null}
+              {clientsHref ? (
+                <Link href={clientsHref} className={styles.certificateLink} data-testid="partner-detail-clients-link">
+                  {direction === "outgoing" ? "Клиенты у этого партнёра" : "Клиенты по рекомендациям"}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
 
           {waiting.map((item) => (
             <p key={item.message} className={styles.waiting}>
@@ -245,7 +472,7 @@ export function PartnerPartnershipDetailDialog({
                     data-partnership-id={partnership.id}
                     onClick={onOpenTermChange}
                   >
-                    {termChangeActionLabel()}
+                    {termChangeActionLabel(partnership)}
                   </Button>
                 ) : null}
                 {compactCooperation && partnership.status === "ACTIVE" ? (
@@ -289,5 +516,22 @@ export function PartnerPartnershipDetailDialog({
         />
       </div>
     </div>
+    {certificatePolicyEntry && directional ? (
+      <CertificatePolicyDialog
+        open={policyOpen}
+        onClose={() => {
+          setPolicyOpen(false);
+          loadRowPolicy();
+        }}
+        canEditSettings={certificatePolicyEntry.canEditSettings}
+        viewerUserId={certificatePolicyEntry.viewerUserId}
+        onEffectiveTermsChanged={certificatePolicyEntry.onEffectiveTermsChanged}
+        initialTab={certificatePolicyEntry.canEditSettings ? policyTab : "incoming"}
+        initialScope={policyTab === "settings" ? "individual" : undefined}
+        initialPartnershipId={policyTab === "settings" ? partnership.id : null}
+        initialPartnerUserId={policyTab === "settings" ? counterpartyId : null}
+      />
+    ) : null}
+    </>
   );
 }

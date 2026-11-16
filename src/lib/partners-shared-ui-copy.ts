@@ -1,6 +1,15 @@
 import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 
+const SHARED_OVERVIEW_LEAD =
+  "Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке.";
+
+const SHARED_ACTIVE_ZONE_HINT =
+  "Кому вы можете рекомендовать клиентов и кто рекомендует вас. Архив скрывает запись только из списка, не отменяя условия.";
+
 export type PartnersSharedUiCopy = {
+  activeZoneHint: string;
+  /** Lead of the overview head. An agent only recommends, so its copy is outgoing-only. */
+  overviewLead: string;
   activeLead: string;
   invitationsLead: string;
   footnote: string;
@@ -9,6 +18,10 @@ export type PartnersSharedUiCopy = {
 };
 
 const AGENT_COPY: PartnersSharedUiCopy = {
+  activeZoneHint:
+    "Партнёры, которым вы можете рекомендовать клиентов. Архив скрывает запись только из списка, не отменяя условия.",
+  overviewLead:
+    "Партнёры, которым вы рекомендуете клиентов. Условия по каждому партнёру открываются в его строке.",
   activeLead:
     "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас.",
   invitationsLead: "Приглашения, которые ждут решения или отправлены вами.",
@@ -19,6 +32,8 @@ const AGENT_COPY: PartnersSharedUiCopy = {
 };
 
 const BUSINESS_COPY: PartnersSharedUiCopy = {
+  activeZoneHint: SHARED_ACTIVE_ZONE_HINT,
+  overviewLead: SHARED_OVERVIEW_LEAD,
   activeLead:
     "Ваши действующие партнёры. Ожидающие приглашения — во вкладке «Приглашения». Фильтры работают вместе; архив скрывает запись только у вас.",
   invitationsLead:
@@ -30,6 +45,8 @@ const BUSINESS_COPY: PartnersSharedUiCopy = {
 };
 
 const SPECIALIST_COPY: PartnersSharedUiCopy = {
+  activeZoneHint: SHARED_ACTIVE_ZONE_HINT,
+  overviewLead: SHARED_OVERVIEW_LEAD,
   activeLead:
     "Ваши действующие партнёры. Ожидающие приглашения находятся в соседней вкладке. Фильтры применяются вместе. Архив скрывает запись только из списка, не отменяя условия.",
   invitationsLead:

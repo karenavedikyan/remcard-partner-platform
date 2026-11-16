@@ -12,8 +12,9 @@ export function cooperationActionLabel(kind: PartnershipActionKind | string): st
   return null;
 }
 
-export function termChangeActionLabel(): string {
-  return "Изменить условия";
+/** The receiver authors receiving terms; the issuer only views them and answers requests. */
+export function termChangeActionLabel(partnership?: Pick<Partnership, "directionInfo"> | null): string {
+  return partnership?.directionInfo?.direction === "outgoing" ? "Посмотреть условия" : "Изменить условия";
 }
 
 export function isPartnershipParticipant(partnership: Partnership, meId: string): boolean {

@@ -32,6 +32,12 @@ export type CertificatePolicyCounterparty = {
   initials: string;
   status: CertificatePolicyCounterpartyStatus;
   partnershipId: string | null;
+  /**
+   * One entry per directed agreement. `incoming`: the viewer receives and authors these terms;
+   * `outgoing`: the counterparty receives and authors them (read-only here).
+   */
+  direction?: "incoming" | "outgoing";
+  readOnly?: boolean;
   /** Effective terms for this counterparty (general or approved individual). */
   effective: CertificatePolicyTerms;
   /** OCC for approved individual terms document (absent while on general only). */
@@ -96,6 +102,8 @@ export type CertificatePolicyPatchBody = {
   counterpartyCategoryRatesRevision?: string | null;
   terms?: CertificatePolicyTerms;
   counterpartyUserId?: string;
+  /** Exact directed agreement for propose_individual. */
+  partnershipId?: string;
   proposalId?: string;
 };
 

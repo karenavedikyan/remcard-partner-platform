@@ -138,8 +138,10 @@ export function TermChangePanel({
   const requestsReady = loadState === "loaded";
   const busy = submitting || respondingId !== null;
   const isParticipant = isPartnershipParticipant(partnership, meId);
+  const issuerOnly = partnership.directionInfo?.direction === "outgoing";
   const canPropose =
     isParticipant &&
+    !issuerOnly &&
     partnership.status === "ACTIVE" &&
     requestsReady &&
     !pendingRequest &&
@@ -385,7 +387,7 @@ export function TermChangePanel({
       ) : (
         <div className={styles.headerRow}>
           <div>
-            <h4 className={styles.title}>Изменить условия</h4>
+            <h4 className={styles.title}>{issuerOnly ? "Условия партнёра" : "Изменить условия"}</h4>
             <p className={styles.partnerName} data-testid="term-change-partner-name">
               Партнёр: <strong>{partnerTitle}</strong>
             </p>
@@ -496,7 +498,13 @@ export function TermChangePanel({
         </p>
       ) : null}
 
-      {partnership.status === "ACTIVE" ? (
+      {partnership.status === "ACTIVE" && issuerOnly ? (
+        <p className={styles.meta} data-testid="term-change-issuer-note">
+          Условия получения сертификатов задаёт получатель. Вы можете принять или отклонить его
+          предложение, но не менять его условия.
+        </p>
+      ) : null}
+      {partnership.status === "ACTIVE" && !issuerOnly ? (
         <div className={styles.proposal}>
           {isModal ? null : (
             <h5 className={styles.subheading}>Предложить новое изменение</h5>

@@ -63,6 +63,7 @@ import type {
   PartnerSearchResult,
   PartnerTaxonomyResponse,
   Partnership,
+  PartnershipDirection,
   ProProfileResponse,
   TermChangeRequest,
 } from "@/lib/types";
@@ -77,7 +78,7 @@ import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterO
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
-import { PartnerSearchResultCard } from "@/components/partners/PartnerSearchResultCard";
+import { PartnerSearchResultCard, searchResultTypeLabel } from "@/components/partners/PartnerSearchResultCard";
 import { PartnerDiscoveryNavigator } from "@/components/partners/PartnerDiscoveryNavigator";
 import {
   countOpenToCooperatePartners,
@@ -95,6 +96,8 @@ import {
 } from "@/components/partners/partnerSearchPublicSummaryHandoff";
 import { TermChangePanel } from "@/components/partners/TermChangePanel";
 import { TermChangeModal } from "@/components/partners/TermChangeModal";
+import { fetchCertificatePolicyWorkspace } from "@/lib/certificate-policy/api";
+import type { RowRestrictions } from "@/components/partners/PartnerRowTerms";
 import { CertificatePolicyProfileEntry } from "@/components/certificate-policy/CertificatePolicyProfileEntry";
 import { partnersHubCertificatePolicyEntry } from "@/lib/certificate-receiving-policy/partners-hub-entry";
 import {
@@ -130,6 +133,18 @@ import {
   type PartnerOverviewZone,
 } from "@/lib/partners-prototype-v1/overview-groups";
 import { PartnersOverviewLayout } from "@/components/partners/PartnersOverviewLayout";
+import {
+  PartnerDirectionTabs,
+  partnerDirectionTabId,
+} from "@/components/partners/PartnerDirectionTabs";
+import {
+  audienceHasDirectionTabs,
+  countByDirection,
+  countDistinctCounterparties,
+  directionTabCopy,
+  filterRowsByDirection,
+  type InviteDirection,
+} from "@/lib/partner-directions/direction";
 import {
   parsePartnershipListPayload,
   resolvePartnersEmptyPresentation,
@@ -229,6 +244,12 @@ export function PartnersHub({
   const isAgentR04 = variant === "agent-r04";
   const isModalSurface = Boolean(isAgentR04 && agentModalSurface);
   const isOverview = isAgentR04 && agentPresentation === "overview" && !agentModalSurface;
+  const hasDirectionTabs = isOverview && audienceHasDirectionTabs(partnersAudience);
+  const [directionTab, setDirectionTab] = useState<PartnershipDirection>("incoming");
+  /** Rows of the agent overview are all outgoing: the badge is only shown where both directions exist. */
+  const directionBadgeAudience = hasDirectionTabs ? partnersAudience : undefined;
+  const detailDirectionAudience = isOverview ? partnersAudience : undefined;
+  const directionTabTouched = useRef(false);
   const searchParams = useSearchParams();
   const termsPartnershipId = searchParams.get("terms")?.trim() || null;
   const discussionInviteId = searchParams.get("discussion")?.trim() || null;
@@ -238,7 +259,16 @@ export function PartnersHub({
   const [bulkHidePendingIds, setBulkHidePendingIds] = useState<string[]>([]);
   const [tab, setTab] = useState<TabId>(forcedTab ?? "list");
   const [meProfile, setMeProfile] = useState(initialProfile);
+  const directionPolicyGate = partnersHubCertificatePolicyEntry({
+    proContextReady: proContextReady === true,
+    proContext: proContext ?? null,
+    profile: meProfile,
+    organizationReadContext,
+  });
+  const [restrictionsNonce, setRestrictionsNonce] = useState(0);
+  const [termsRefreshFailed, setTermsRefreshFailed] = useState(false);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
+  const [rowRestrictions, setRowRestrictions] = useState<Record<string, RowRestrictions> | null>(null);
   const [searchResults, setSearchResults] = useState<PartnerSearchResult[]>([]);
   const [searchFacets, setSearchFacets] = useState<PartnerSearchFacets | null>(null);
   const [searchNextCursor, setSearchNextCursor] = useState<string | null>(null);
@@ -271,6 +301,10 @@ export function PartnersHub({
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<PartnerSearchResult | null>(null);
+  const [inviteDirection, setInviteDirection] = useState<InviteDirection | null>(null);
+  useEffect(() => {
+    if (!inviteTarget) setInviteDirection(null);
+  }, [inviteTarget]);
   /** P23m: in-Hub find directory detail — same modal; keep find mounted underneath for scroll/query. */
   const [findDirectoryDetailPartner, setFindDirectoryDetailPartner] =
     useState<PartnerSearchResult | null>(null);
@@ -403,11 +437,12 @@ export function PartnersHub({
   );
 
   const beginInviteFromPartner = useCallback(
-    (partner: PartnerSearchResult, opts?: { fromFindDetail?: boolean }) => {
+    (partner: PartnerSearchResult, opts?: { fromFindDetail?: boolean; direction?: InviteDirection }) => {
       captureInviteReturnFocus(partner.id);
       if (opts?.fromFindDetail || agentModalSurface === "find") {
         inviteFromFindDetailPartnerIdRef.current = partner.id;
       }
+      setInviteDirection(opts?.direction ?? null);
       setInviteTarget(partner);
     },
     [agentModalSurface, captureInviteReturnFocus],
@@ -841,9 +876,12 @@ export function PartnersHub({
   const listVisibilityParam =
     isAgentR04 && !isOverview && agentSegment === "active" ? listArchiveView : null;
 
-  const loadList = useCallback(async () => {
-    setLoadingList(true);
-    setListError("");
+  const loadList = useCallback(async (opts?: { silent?: boolean }): Promise<boolean> => {
+    const silent = opts?.silent === true;
+    if (!silent) {
+      setLoadingList(true);
+      setListError("");
+    }
     try {
       const params = new URLSearchParams();
       // Overview: one full authorized collection; archive/hidden are client filters.
@@ -856,21 +894,63 @@ export function PartnersHub({
       );
       const parsed = parsePartnershipListPayload(data);
       if (!parsed.ok) {
+        if (silent) return false;
         setPartnerships([]);
         setPartnershipListReady(false);
         setListError("Не удалось загрузить список");
-        return;
+        return false;
       }
       setPartnerships(parsed.partnerships as Partnership[]);
       setPartnershipListReady(true);
+      return true;
     } catch (caught) {
+      if (silent) return false;
       setPartnerships([]);
       setPartnershipListReady(false);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
+      return false;
     } finally {
-      setLoadingList(false);
+      if (!silent) setLoadingList(false);
     }
   }, [listVisibilityParam]);
+
+  const refreshAfterPolicyTermsChange = useCallback(async () => {
+    setRestrictionsNonce((n) => n + 1);
+    const ok = await loadList({ silent: true });
+    setTermsRefreshFailed(!ok);
+  }, [loadList]);
+
+  const directionPolicyEntry = directionPolicyGate?.showEntry
+    ? {
+        viewerUserId: meProfile.user.id,
+        canEditSettings: directionPolicyGate.canEditSettings,
+        onEffectiveTermsChanged: () => void refreshAfterPolicyTermsChange(),
+      }
+    : null;
+
+  const restrictionsViewerId = isOverview && partnershipListReady ? directionPolicyEntry?.viewerUserId ?? null : null;
+  useEffect(() => {
+    if (!restrictionsViewerId) {
+      setRowRestrictions(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchCertificatePolicyWorkspace(restrictionsViewerId).then((res) => {
+      if (cancelled || !res.ok) return;
+      const next: Record<string, RowRestrictions> = {};
+      for (const row of res.workspace.counterparties) {
+        if (!row.partnershipId) continue;
+        next[row.partnershipId] = {
+          validityDays: row.effective.validityDays,
+          purchaseLimit: row.effective.purchaseLimit,
+        };
+      }
+      setRowRestrictions(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [restrictionsViewerId, partnerships, restrictionsNonce]);
 
   const loadDiscussionContext = useCallback(async (inviteId: string) => {
     setDiscussionContextError("");
@@ -1004,8 +1084,8 @@ export function PartnersHub({
     ],
   );
 
-  /** Full available active collection for the current visibility bucket, before any list filter. */
-  const activeVisibilityRows = useMemo(() => {
+  /** Full available active collection for the current visibility bucket, before direction or list filters. */
+  const activeBaseRows = useMemo(() => {
     if (!isAgentR04) return [];
     if (listArchiveView === "archive") {
       return partnerships.filter(
@@ -1024,6 +1104,27 @@ export function PartnersHub({
         !p.listPreference?.hiddenAt,
     );
   }, [isAgentR04, listArchiveView, overviewGroups, partnerships]);
+
+  const directionCounts = useMemo(
+    () => countByDirection(activeBaseRows, subjectUserId),
+    [activeBaseRows, subjectUserId],
+  );
+
+  useEffect(() => {
+    if (!hasDirectionTabs || directionTabTouched.current || !partnershipListReady) return;
+    if (directionCounts.incoming === 0 && directionCounts.outgoing > 0) {
+      setDirectionTab("outgoing");
+    }
+  }, [directionCounts, hasDirectionTabs, partnershipListReady]);
+
+  /** Same collection after the direction tab (agents have no tabs: they only issue). */
+  const activeVisibilityRows = useMemo(
+    () =>
+      hasDirectionTabs
+        ? filterRowsByDirection(activeBaseRows, subjectUserId, directionTab)
+        : activeBaseRows,
+    [activeBaseRows, directionTab, hasDirectionTabs, subjectUserId],
+  );
 
   const activeListCityOptions = useMemo(
     () => collectActiveListCityOptions(activeVisibilityRows, subjectUserId),
@@ -1070,6 +1171,7 @@ export function PartnersHub({
   }, [
     agentInvitationFlow,
     agentSegment,
+    directionTab,
     listArchiveView,
     listCity,
     listPartnerType,
@@ -1402,7 +1504,7 @@ export function PartnersHub({
     }
     try {
       const body: Record<string, unknown> = { action };
-      if (action === "accept_pending") {
+      if (action === "accept" || action === "accept_pending") {
         body.expectedUpdatedAt = partnership.updatedAt;
       }
       await remcardFetch(`/api/partnership/${partnership.id}`, {
@@ -2111,6 +2213,15 @@ export function PartnersHub({
                 showPublicCertificatePolicy={showPublicCertificatePolicy}
                 inviteDisabled={Boolean(inviteTarget) || loadingSearch}
                 onInvite={() => beginInviteFromPartner(partner)}
+                directionContext={
+                  audienceHasDirectionTabs(partnersAudience)
+                    ? {
+                        audience: partnersAudience,
+                        viewerSide: inviterSide,
+                        onReciprocalInvite: (direction) => beginInviteFromPartner(partner, { direction }),
+                      }
+                    : undefined
+                }
                 onDetail={() => openFindDirectoryDetail(partner)}
                 onPublicSummaryStateChange={
                   showPartnerSearchInlineTerms ? handlePublicSummaryStateChange : undefined
@@ -2242,6 +2353,21 @@ export function PartnersHub({
                   beginInviteFromPartner(target, { fromFindDetail: true });
                 }}
                 inviteDisabled={Boolean(inviteTarget) || Boolean(busyId) || loadingSearch}
+                directionContext={
+                  audienceHasDirectionTabs(partnersAudience)
+                    ? {
+                        audience: partnersAudience,
+                        viewerSide: inviterSide,
+                        onReciprocalInvite: (direction) => {
+                          const target = findDirectoryDetailPartner;
+                          if (!target) return;
+                          findDetailLifecycleGenRef.current += 1;
+                          setFindDirectoryDetailPartner(null);
+                          beginInviteFromPartner(target, { fromFindDetail: true, direction });
+                        },
+                      }
+                    : undefined
+                }
                 showAgentTerms={showAgentTermsForFindDetailHandoff(showAgentPublishedTerms)}
                 showPublicCertificatePolicy={
                   showPublicCertificatePolicy && !showAgentPublishedTerms
@@ -2255,6 +2381,8 @@ export function PartnersHub({
                 target={inviteTarget}
                 meProfile={meProfile}
                 inviterSide={inviterSide}
+                initialDirection={inviteDirection}
+                audience={partnersAudience}
                 busy={Boolean(busyId)}
                 showSentState
                 showPublishedTerms={showAgentPublishedTerms}
@@ -2380,8 +2508,12 @@ export function PartnersHub({
 
       {tab === "list" && isOverview && overviewGroups ? (
         <PartnersOverviewLayout
-          lead="Магазины, мастера и компании, с которыми вы обмениваетесь клиентами. Условия по каждому партнёру открываются в его строке."
-          counts={overviewGroups.counts}
+          lead={partnersSharedUiCopy(partnersAudience).overviewLead}
+          activeHint={partnersSharedUiCopy(partnersAudience).activeZoneHint}
+          counts={{
+            ...overviewGroups.counts,
+            activeCounterparties: countDistinctCounterparties(overviewGroups.active, subjectUserId),
+          }}
           listReady={partnershipListReady}
           collectionIsEmpty={partnersEmptyPresentation.collectionIsEmpty}
           greetingVariant={partnersEmptyPresentation.greetingVariant}
@@ -2390,6 +2522,30 @@ export function PartnersHub({
           legacyDisclosureOpen={overviewLegacyDisclosureOpen}
           legacyChromePinned={overviewLegacyChromePinned}
           legacyBulkOutcomeVisible={bulkOutcome != null}
+          policySlot={
+            directionPolicyEntry ? (
+              <>
+                <CertificatePolicyProfileEntry
+                  viewerUserId={directionPolicyEntry.viewerUserId}
+                  canEditSettings={directionPolicyEntry.canEditSettings}
+                  showSummary={directionPolicyEntry.canEditSettings}
+                  onEffectiveTermsChanged={directionPolicyEntry.onEffectiveTermsChanged}
+                />
+                {termsRefreshFailed ? (
+                  <div role="status" data-testid="partners-terms-refresh-failed">
+                    <p className="small">Условия сохранены, но список партнёров не обновился.</p>
+                    <Button
+                      type="button"
+                      data-testid="partners-terms-refresh-retry"
+                      onClick={() => void refreshAfterPolicyTermsChange()}
+                    >
+                      Обновить список
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            ) : null
+          }
           onLegacyDisclosureOpenChange={setOverviewLegacyDisclosureOpen}
           loading={loadingList}
           error={listError}
@@ -2445,11 +2601,32 @@ export function PartnersHub({
                 }}
                 presentationVariant="invitations"
                 invitationFlowHint="incoming"
+                directionAudience={directionBadgeAudience}
+                  detailDirectionAudience={detailDirectionAudience}
+                  certificatePolicyEntry={directionPolicyEntry}
               />
             </>
           }
           activeSlot={
             <>
+              {hasDirectionTabs ? (
+                <PartnerDirectionTabs
+                  value={directionTab}
+                  onChange={(next) => {
+                    directionTabTouched.current = true;
+                    setDirectionTab(next);
+                  }}
+                  copy={directionTabCopy(partnersAudience)}
+                  counts={directionCounts}
+                  panelId="partner-direction-panel"
+                />
+              ) : null}
+              <div
+                id="partner-direction-panel"
+                role={hasDirectionTabs ? "tabpanel" : undefined}
+                aria-labelledby={hasDirectionTabs ? partnerDirectionTabId(directionTab) : undefined}
+                data-direction={hasDirectionTabs ? directionTab : undefined}
+              >
               <div className={styles.agentToolbarShell}>
                 <AgentR04ListToolbar
                   listMode="active"
@@ -2515,7 +2692,11 @@ export function PartnersHub({
                         ? "Скрытых записей пока нет"
                         : listFilterChips.length || listSearch.trim()
                           ? "Записей не найдено"
-                          : "Действующих партнёров пока нет"
+                          : hasDirectionTabs
+                            ? directionTab === "incoming"
+                              ? `${directionTabCopy(partnersAudience).incoming}: действующих партнёров пока нет`
+                              : `${directionTabCopy(partnersAudience).outgoing}: действующих партнёров пока нет`
+                            : "Действующих партнёров пока нет"
                   }
                 />
               ) : (
@@ -2551,8 +2732,13 @@ export function PartnersHub({
                     setListPage(0);
                   }}
                   presentationVariant="active"
+                  directionAudience={directionBadgeAudience}
+                  detailDirectionAudience={detailDirectionAudience}
+                  certificatePolicyEntry={directionPolicyEntry}
+                  rowRestrictions={rowRestrictions}
                 />
               )}
+              </div>
             </>
           }
           waitingSlot={
@@ -2600,6 +2786,9 @@ export function PartnersHub({
                   }}
                   presentationVariant="invitations"
                   invitationFlowHint="outgoing"
+                  directionAudience={directionBadgeAudience}
+                  detailDirectionAudience={detailDirectionAudience}
+                  certificatePolicyEntry={directionPolicyEntry}
                 />
               </>
             )
@@ -2619,6 +2808,7 @@ export function PartnersHub({
               <CertificatePolicyProfileEntry
                 viewerUserId={meProfile.user.id}
                 canEditSettings={certPolicyGate.canEditSettings}
+                onEffectiveTermsChanged={() => void refreshAfterPolicyTermsChange()}
               />
             );
           })()}
@@ -2899,7 +3089,7 @@ export function PartnersHub({
                             requestOpenTermChange(partnership.id, event.currentTarget)
                           }
                         >
-                          {termChangeActionLabel()}
+                          {termChangeActionLabel(partnership)}
                         </Button>
                         {isAgentR04 ? (
                           <Link href="/certificates" className={styles.certLink}>
@@ -3060,8 +3250,8 @@ export function PartnersHub({
                         <h3>{partnerTitle(partner)}</h3>
                         <p className={styles.partnerMeta}>
                           {partner.city ?? "Город не указан"}
-                          {partner.partnerTypeLabel
-                            ? ` · ${partner.partnerTypeLabel}`
+                          {searchResultTypeLabel(partner)
+                            ? ` · ${searchResultTypeLabel(partner)}`
                             : partner.partnerType
                               ? ` · ${partner.partnerType}`
                               : ""}
@@ -3155,6 +3345,8 @@ export function PartnersHub({
           target={inviteTarget}
           meProfile={meProfile}
           inviterSide={inviterSide}
+          initialDirection={inviteDirection}
+          audience={partnersAudience}
           busy={busyId === inviteTarget.id}
           onClose={() => setInviteTarget(null)}
           onSent={() => {

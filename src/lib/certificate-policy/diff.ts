@@ -1,3 +1,4 @@
+import { displayCategoryLabel } from "@/lib/category-display";
 import type { CertificatePolicyTerms } from "./types";
 import {
   certificatePolicyDaysWord,
@@ -25,15 +26,10 @@ export function certificatePolicyTermsEqual(
     return false;
   }
   if (a.categoryRates.length !== b.categoryRates.length) return false;
-  for (let i = 0; i < a.categoryRates.length; i += 1) {
-    const left = a.categoryRates[i];
-    const right = b.categoryRates[i];
-    if (
-      left.category !== right.category ||
-      left.poolPercent !== right.poolPercent
-    ) {
-      return false;
-    }
+  const right = new Map(b.categoryRates.map((rate) => [rate.category, rate.poolPercent]));
+  if (right.size !== b.categoryRates.length) return false;
+  for (const left of a.categoryRates) {
+    if (!right.has(left.category) || right.get(left.category) !== left.poolPercent) return false;
   }
   return true;
 }
@@ -54,16 +50,19 @@ export function buildCertificatePolicyDiffRows(
   );
   push("Покупок", String(current.purchaseLimit), String(next.purchaseLimit));
 
-  const len = Math.max(current.categoryRates.length, next.categoryRates.length);
-  for (let i = 0; i < len; i += 1) {
-    const cur = current.categoryRates[i];
-    const nxt = next.categoryRates[i];
-    const label = nxt?.categoryLabel ?? cur?.categoryLabel ?? "Категория";
+  const nextByKey = new Map(next.categoryRates.map((rate) => [rate.category, rate]));
+  const currentKeys = new Set(current.categoryRates.map((rate) => rate.category));
+  for (const cur of current.categoryRates) {
+    const nxt = nextByKey.get(cur.category);
     push(
-      label,
-      cur ? `${cur.poolPercent}%` : "—",
+      displayCategoryLabel(cur.category, nxt?.categoryLabel ?? cur.categoryLabel),
+      `${cur.poolPercent}%`,
       nxt ? `${nxt.poolPercent}%` : "—",
     );
+  }
+  for (const nxt of next.categoryRates) {
+    if (currentKeys.has(nxt.category)) continue;
+    push(displayCategoryLabel(nxt.category, nxt.categoryLabel), "—", `${nxt.poolPercent}%`);
   }
 
   push(

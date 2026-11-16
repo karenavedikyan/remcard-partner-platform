@@ -26,10 +26,42 @@ import { CertificatePolicyStaleSessionError } from "@/lib/certificate-policy/sta
 import { CertificatePolicyDiscardGuard } from "./CertificatePolicyDiscardGuard";
 import { CertificatePolicySettingsForm } from "./CertificatePolicySettingsForm";
 import { CertificatePolicyStats } from "./CertificatePolicyStats";
+import { CertificatePolicyIssuingTerms } from "./CertificatePolicyIssuingTerms";
 import { certificatePolicyIncomingProposalTitle } from "@/lib/certificate-policy/incoming-proposer";
 import styles from "./certificate-policy.module.css";
 
 export type CertificatePolicyDialogTab = "settings" | "incoming";
+
+function counterpartyKey(partner: Pick<CertificatePolicyCounterparty, "partnershipId" | "userId">): string {
+  return partner.partnershipId ?? partner.userId;
+}
+
+function editableCounterparties(workspace: CertificatePolicyWorkspace): CertificatePolicyCounterparty[] {
+  return workspace.counterparties.filter((partner) => !partner.readOnly);
+}
+
+function resolveInitialPartnerKey(
+  workspace: CertificatePolicyWorkspace,
+  partnershipId: string | null,
+  userId: string | null,
+): string | null {
+  const editable = editableCounterparties(workspace);
+  if (partnershipId) {
+    const exact = editable.find((partner) => partner.partnershipId === partnershipId);
+    if (exact) return counterpartyKey(exact);
+  }
+  if (userId) {
+    const byUser = editable.find((partner) => partner.userId === userId);
+    if (byUser) return counterpartyKey(byUser);
+  }
+  return null;
+}
+
+export type PartnerCertificatePolicyEntry = {
+  viewerUserId: string;
+  canEditSettings: boolean;
+  onEffectiveTermsChanged?: () => void;
+};
 
 type Props = {
   open: boolean;
@@ -37,9 +69,13 @@ type Props = {
   /** Harness / deep-link: open individual scope with partner selected after load. */
   initialScope?: CertificatePolicyScope;
   initialPartnerUserId?: string | null;
+  /** Exact directed agreement to open (wins over initialPartnerUserId). */
+  initialPartnershipId?: string | null;
   onClose: () => void;
   canEditSettings: boolean;
   viewerUserId: string;
+  /** Fired after a successful change of effective terms (general save or approved proposal). */
+  onEffectiveTermsChanged?: () => void;
 };
 
 export function CertificatePolicyDialog({
@@ -47,10 +83,14 @@ export function CertificatePolicyDialog({
   initialTab = "settings",
   initialScope,
   initialPartnerUserId = null,
+  initialPartnershipId = null,
   onClose,
   canEditSettings,
   viewerUserId,
+  onEffectiveTermsChanged,
 }: Props) {
+  const onEffectiveTermsChangedRef = useRef(onEffectiveTermsChanged);
+  onEffectiveTermsChangedRef.current = onEffectiveTermsChanged;
   const [tab, setTab] = useState<CertificatePolicyDialogTab>(initialTab);
   const [scope, setScope] = useState<CertificatePolicyScope>("general");
   const [partnerId, setPartnerId] = useState<string | null>(null);
@@ -63,6 +103,7 @@ export function CertificatePolicyDialog({
   const [occRecoverActive, setOccRecoverActive] = useState(false);
   const pendingGuardRef = useRef<(() => void) | null>(null);
   const loadSeqRef = useRef(0);
+  const loadedWorkspaceRef = useRef<CertificatePolicyWorkspace | null>(null);
   const openGenRef = useRef(0);
   const wasOpenRef = useRef(false);
   const activeViewerRef = useRef("");
@@ -89,10 +130,12 @@ export function CertificatePolicyDialog({
         return false;
       }
       setWorkspace(res.workspace);
+      loadedWorkspaceRef.current = res.workspace;
       if (opts?.pickDefaultPartner) {
         setPartnerId((prev) => {
-          if (prev && res.workspace.counterparties.some((c) => c.userId === prev)) return prev;
-          return res.workspace.counterparties[0]?.userId ?? null;
+          const editable = editableCounterparties(res.workspace);
+          if (prev && editable.some((c) => counterpartyKey(c) === prev)) return prev;
+          return editable[0] ? counterpartyKey(editable[0]) : null;
         });
       }
       return true;
@@ -110,6 +153,7 @@ export function CertificatePolicyDialog({
     setStatus("");
     setLoadError("");
     setWorkspace(null);
+    loadedWorkspaceRef.current = null;
     setPartnerId(null);
     setScope("general");
     setTab(canEditSettings ? initialTab : "incoming");
@@ -139,7 +183,11 @@ export function CertificatePolicyDialog({
       await reload({ pickDefaultPartner: true });
       if (openGenRef.current !== session || activeViewerRef.current !== viewer) return;
       if (initialScope) setScope(initialScope);
-      if (initialPartnerUserId) setPartnerId(initialPartnerUserId);
+      const wanted = loadedWorkspaceRef.current
+        ? resolveInitialPartnerKey(loadedWorkspaceRef.current, initialPartnershipId, initialPartnerUserId)
+        : null;
+      if (wanted) setPartnerId(wanted);
+      else if (initialPartnerUserId && !initialPartnershipId) setPartnerId(initialPartnerUserId);
     })();
   }, [
     open,
@@ -148,12 +196,13 @@ export function CertificatePolicyDialog({
     initialTab,
     initialScope,
     initialPartnerUserId,
+    initialPartnershipId,
     reload,
     resetSessionState,
   ]);
 
   const selectedPartner: CertificatePolicyCounterparty | null =
-    workspace?.counterparties.find((p) => p.userId === partnerId) ?? null;
+    workspace?.counterparties.find((p) => counterpartyKey(p) === partnerId && !p.readOnly) ?? null;
 
   const individualPending =
     scope === "individual" && selectedPartner?.status === "pending_outgoing";
@@ -224,6 +273,7 @@ export function CertificatePolicyDialog({
     setWorkspace(res.workspace);
     setDirty(false);
     setStatus("Сохранено · условия действуют для новых сертификатов");
+    onEffectiveTermsChangedRef.current?.();
   }
 
   async function proposeIndividual(terms: CertificatePolicyTerms) {
@@ -241,7 +291,8 @@ export function CertificatePolicyDialog({
     const res = await patchCertificatePolicy({
       action: "propose_individual",
       ...occ,
-      counterpartyUserId: partnerId,
+      counterpartyUserId: selectedPartner.userId,
+      ...(selectedPartner.partnershipId ? { partnershipId: selectedPartner.partnershipId } : {}),
       terms,
     });
     setBusy(false);
@@ -310,9 +361,11 @@ export function CertificatePolicyDialog({
         ? "Согласовано · действует для новых сертификатов"
         : "Отклонено · условия прежние",
     );
+    if (decision === "approve_proposal") onEffectiveTermsChangedRef.current?.();
   }
 
   const incoming = workspace?.incomingProposals ?? [];
+  const issuingRows = (workspace?.counterparties ?? []).filter((row) => row.readOnly);
 
   return (
     <>
@@ -435,7 +488,7 @@ export function CertificatePolicyDialog({
 
               {scope === "individual" ? (
                 <CertificatePolicyPartnerPicker
-                  partners={workspace.counterparties}
+                  partners={editableCounterparties(workspace)}
                   selected={partnerId}
                   disabled={busy}
                   onSelect={(id: string) =>
@@ -483,7 +536,7 @@ export function CertificatePolicyDialog({
                     key={settingsFormKey}
                     scope="individual"
                     effective={partnerEffective}
-                    baselineForRates={workspace.general.effective}
+                    baselineForRates={partnerEffective}
                     disabled={busy}
                     saveLabel="Предложить снова"
                     freezeDraftReset={occRecoverActive}
@@ -496,7 +549,7 @@ export function CertificatePolicyDialog({
                   key={settingsFormKey}
                   scope="individual"
                   effective={partnerEffective}
-                  baselineForRates={workspace.general.effective}
+                  baselineForRates={partnerEffective}
                   disabled={busy || individualPending}
                   saveLabel="Предложить партнёру"
                   freezeDraftReset={occRecoverActive}
@@ -507,6 +560,10 @@ export function CertificatePolicyDialog({
                 <p className={styles.cpFine}>Выберите партнёра для индивидуальных условий.</p>
               )}
             </>
+          ) : null}
+
+          {tab === "settings" && workspace && canEditSettings && scope === "individual" ? (
+            <CertificatePolicyIssuingTerms rows={issuingRows} />
           ) : null}
 
           {tab === "incoming" && workspace ? (
@@ -554,6 +611,8 @@ export function CertificatePolicyDialog({
               )}
             </div>
           ) : null}
+
+          {tab === "incoming" && workspace ? <CertificatePolicyIssuingTerms rows={issuingRows} /> : null}
         </div>
       </TermChangeModal>
     </>
@@ -576,6 +635,7 @@ function CertificatePolicyPartnerPicker({
       <span className={styles.cpEyebrow}>Партнёр</span>
       <div className={styles.cpWho} role="group" aria-label="Партнёр" data-testid="cp-partner">
         {partners.map((partner) => {
+          const key = counterpartyKey(partner);
           const note =
             partner.status === "pending_outgoing"
               ? "Ждёт ответа"
@@ -586,11 +646,11 @@ function CertificatePolicyPartnerPicker({
                   : "Общие условия";
           return (
             <button
-              key={partner.userId}
+              key={key}
               type="button"
-              aria-pressed={selected === partner.userId}
+              aria-pressed={selected === key}
               disabled={disabled}
-              onClick={() => onSelect(partner.userId)}
+              onClick={() => onSelect(key)}
             >
               <span className={styles.cpAva} aria-hidden="true">
                 {partner.initials}

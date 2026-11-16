@@ -7,6 +7,7 @@ import {
   fetchPartnerCertificateProgram,
   type PartnerCertProgramState,
 } from "@/lib/partner-certificate-program";
+import { displayCategoryLabel } from "@/lib/category-display";
 import styles from "./PartnerGeneralTermsDetails.module.css";
 
 type PartnerGeneralTermsDetailsProps = {
@@ -71,7 +72,7 @@ export function PartnerGeneralTermsDetails({
           <ul className={styles.list}>
             {state.items.map((item) => (
               <li key={item.category}>
-                {item.categoryLabel}: общий процент {item.poolPercent}%
+                {displayCategoryLabel(item.category, item.categoryLabel)}: общий процент {item.poolPercent}%
                 {item.poolPercent === 0 ? " (участие без вознаграждения)" : null}
               </li>
             ))}

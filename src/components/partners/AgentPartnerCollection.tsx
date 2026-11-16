@@ -14,7 +14,6 @@ import {
   partnerListSubtitle,
   partnerRowTitle,
   partnerSpecializationHint,
-  partnerTermsDetail,
   partnerTypeLabel,
   partnershipPartnerProfile,
 } from "@/lib/agent-r04/partner-list-row";
@@ -23,12 +22,17 @@ import type { Partnership } from "@/lib/types";
 import { AgentPartnerWorkspaceActions } from "@/components/partners/AgentPartnerWorkspaceActions";
 import { PartnerPartnershipDetailDialog } from "@/components/partners/PartnerPartnershipDetailDialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PartnerRowTerms, type RowRestrictions } from "@/components/partners/PartnerRowTerms";
+import { PartnerDirectionBadge } from "@/components/partners/PartnerDirectionBadge";
+import { directionBadgeModel } from "@/lib/partner-directions/direction";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
 import { Button } from "@/components/ui/Button";
 import {
   cooperationActionLabel,
   termChangeActionLabel,
 } from "@/components/partners/partner-cooperation-c1";
 import r03 from "@/components/agent-r03/agent-r03.module.css";
+import type { PartnerCertificatePolicyEntry } from "@/components/certificate-policy/CertificatePolicyDialog";
 import styles from "./AgentPartnerCollection.module.css";
 import inviteStyles from "./AgentInvitationCollection.module.css";
 import activeStyles from "./AgentActiveCollection.module.css";
@@ -106,6 +110,14 @@ type Props = {
    * `invitations` applies scoped invitation CSS — no filter/action/state changes.
    */
   presentationVariant?: AgentPartnerCollectionPresentation;
+  /** Shows the ↑/↓/↑↓ direction badge in rows and cards. Omitted for agents (outgoing only). */
+  directionAudience?: PartnersHubAudience;
+  /** Detail dialog direction presentation (also for agents, whose list has no badge or tabs). */
+  detailDirectionAudience?: PartnersHubAudience;
+  /** Who may open the existing certificate-policy dialog from a partner detail. */
+  certificatePolicyEntry?: PartnerCertificatePolicyEntry | null;
+  /** Validity / purchase limit per partnership id from the viewer's certificate-policy workspace. */
+  rowRestrictions?: Record<string, RowRestrictions> | null;
   /** General cabinet prototype: compact rows, full lifecycle actions in detail. */
   compactCooperation?: boolean;
   /** Presentation hint for invitations surfaces (incoming/outgoing). Does not filter. */
@@ -138,7 +150,7 @@ function CompactCooperationActions({
           data-testid={`partner-term-change-${partnership.id}`}
           data-partnership-id={partnership.id}
           onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}>
-          {termChangeActionLabel()}
+          {termChangeActionLabel(partnership)}
         </Button>
       ) : null}
     </div>
@@ -172,9 +184,23 @@ function PartnerRowNameButton({
 }
 
 /** Collection-local host so muted/paused badge FG can meet WCAG without changing StatusBadge. */
-function PartnerCollectionStatusBadge({ status }: { status: string }) {
+function PartnerCollectionStatusBadge({
+  status,
+  partnership,
+  meId,
+  directionAudience,
+}: {
+  status: string;
+  partnership?: Partnership;
+  meId?: string;
+  directionAudience?: PartnersHubAudience;
+}) {
   const tone = partnershipStatusTone(status);
   const label = PARTNERSHIP_STATUS_LABELS[status] ?? status;
+  const direction =
+    partnership && meId && directionAudience
+      ? directionBadgeModel(partnership, meId, directionAudience)
+      : null;
   return (
     <span
       className={tone === "neutral" ? styles.statusNeutral : undefined}
@@ -182,6 +208,15 @@ function PartnerCollectionStatusBadge({ status }: { status: string }) {
       data-status-tone={tone}
     >
       <StatusBadge label={label} tone={tone} />
+      {direction ? (
+        <PartnerDirectionBadge
+          glyph={direction.glyph}
+          label={direction.label}
+          description={direction.description}
+          pending={status !== "ACTIVE" && status !== "PAUSED"}
+          testId="partner-row-direction"
+        />
+      ) : null}
     </span>
   );
 }
@@ -243,7 +278,7 @@ function PartnerRowInlineWorkflow({
             data-partnership-id={partnership.id}
             onClick={(event) => onLoadTermRequests(partnership.id, event.currentTarget)}
           >
-            {termChangeActionLabel()}
+            {termChangeActionLabel(partnership)}
           </Button>
           <Link href="/certificates" className={styles.certLink}>
             Создать сертификат
@@ -285,6 +320,10 @@ export function AgentPartnerCollection(props: Props) {
     presentationVariant = "default",
     invitationFlowHint = null,
     compactCooperation = false,
+    directionAudience,
+    detailDirectionAudience,
+    certificatePolicyEntry = null,
+    rowRestrictions = null,
   } = props;
 
   const listPrincipalId = listSubjectUserId?.trim() || meId;
@@ -379,6 +418,8 @@ export function AgentPartnerCollection(props: Props) {
     <PartnerPartnershipDetailDialog
       partnership={detailPartnership}
       compactCooperation={isCompact}
+      directionAudience={directionAudience ?? detailDirectionAudience}
+      certificatePolicyEntry={certificatePolicyEntry}
       meId={meId}
       listSubjectUserId={listPrincipalId}
       open={detailPartnershipId !== null}
@@ -536,7 +577,12 @@ export function AgentPartnerCollection(props: Props) {
                     onChange={() => onToggleSelect(partnership.id)}
                     aria-label="Выбрать карточку"
                   />
-                  <PartnerCollectionStatusBadge status={partnership.status} />
+                  <PartnerCollectionStatusBadge
+                    status={partnership.status}
+                    partnership={partnership}
+                    meId={listPrincipalId}
+                    directionAudience={directionAudience}
+                  />
                 </div>
                 <div className={cardBodyClass}>
                   {avatarUrl ? (
@@ -584,13 +630,8 @@ export function AgentPartnerCollection(props: Props) {
                   >
                     {detail}
                   </p>
-                  {isActiveSkin && partnerTermsDetail(partnership) ? (
-                    <div className={activeStyles.termsBlock} data-testid="partner-row-terms-block">
-                      <p className={activeStyles.termsTitle}>Условия</p>
-                      <p className={activeStyles.termsPreview} data-testid="partner-row-terms-preview">
-                        {partnerTermsDetail(partnership)}
-                      </p>
-                    </div>
+                  {isActiveSkin ? (
+                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
                   ) : null}
                   {isCompact ? (
                     <CompactCooperationActions partnership={partnership} busyId={busyId}
@@ -671,14 +712,9 @@ export function AgentPartnerCollection(props: Props) {
                     >
                       {detail}
                     </p>
-                    {isActiveSkin && partnerTermsDetail(partnership) ? (
-                      <div className={activeStyles.termsBlock} data-testid="partner-row-terms-block">
-                        <p className={activeStyles.termsTitle}>Условия</p>
-                        <p className={activeStyles.termsPreview} data-testid="partner-row-terms-preview">
-                          {partnerTermsDetail(partnership)}
-                        </p>
-                      </div>
-                    ) : null}
+                    {isActiveSkin ? (
+                    <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
+                  ) : null}
                     {needsResponse && !isActiveSkin ? (
                       <p className={r03.meta}>Ожидает вашего решения</p>
                     ) : null}
@@ -697,7 +733,12 @@ export function AgentPartnerCollection(props: Props) {
                   termExpanded={expandedTermPartnershipId === partnership.id}
                 />}
                 <div className={r03.mobileRecordFooter}>
-                  <PartnerCollectionStatusBadge status={partnership.status} />
+                  <PartnerCollectionStatusBadge
+                    status={partnership.status}
+                    partnership={partnership}
+                    meId={listPrincipalId}
+                    directionAudience={directionAudience}
+                  />
                   <AgentPartnerWorkspaceActions
                     partnership={partnership}
                     meId={meId}
@@ -778,23 +819,17 @@ export function AgentPartnerCollection(props: Props) {
                       </td>
                       <td className={detailCellClass}>
                         <span data-testid="partner-row-detail">{detail}</span>
-                        {isActiveSkin && !isCompact && partnerTermsDetail(partnership) ? (
-                          <div
-                            className={activeStyles.termsBlock}
-                            data-testid="partner-row-terms-block"
-                          >
-                            <p className={activeStyles.termsTitle}>Условия</p>
-                            <p
-                              className={activeStyles.termsPreview}
-                              data-testid="partner-row-terms-preview"
-                            >
-                              {partnerTermsDetail(partnership)}
-                            </p>
-                          </div>
+                        {isActiveSkin ? (
+                          <PartnerRowTerms partnership={partnership} restrictions={rowRestrictions?.[partnership.id]} />
                         ) : null}
                       </td>
                       <td className={statusCellClass}>
-                        <PartnerCollectionStatusBadge status={partnership.status} />
+                        <PartnerCollectionStatusBadge
+                    status={partnership.status}
+                    partnership={partnership}
+                    meId={listPrincipalId}
+                    directionAudience={directionAudience}
+                  />
                       </td>
                       <td className={actionCellClass}>
                         {isCompact ? (

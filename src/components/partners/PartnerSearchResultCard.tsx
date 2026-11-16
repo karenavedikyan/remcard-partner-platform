@@ -13,10 +13,23 @@ import {
 } from "@/lib/partnership-labels";
 import { masterDirectionLabel } from "@/lib/master-direction-label";
 import { partnerSpecializationHint } from "@/lib/agent-r04/partner-list-row";
+import { searchResultPublicKind } from "@/lib/agent-r04/partner-search-meta";
+import { PARTNER_KIND_UI_LABELS } from "@/lib/partner-kind-ui";
 import type { PartnershipPartnerProfile } from "@/lib/agent-r04/partner-filters";
 import type { PartnerCertProgramState } from "@/lib/partner-certificate-program";
 import { getLegalSiteUrl } from "@/lib/auth-config";
 import type { PartnerSearchResult } from "@/lib/types";
+import { PartnerDirectionBadge } from "@/components/partners/PartnerDirectionBadge";
+import {
+  canReceiveRecommendations,
+  searchResultReceivingSide,
+  searchDirectionBadge,
+  searchDirectionState,
+  type InviteDirection,
+} from "@/lib/partner-directions/direction";
+import type { PartnersHubAudience } from "@/lib/partners-hub-presentation";
+import type { PartnerSideProfile } from "@/lib/partnership-rules";
+import { searchResultToPartnerSide } from "@/lib/partnership-rules";
 import styles from "./PartnerSearchResultCard.module.css";
 
 export type PartnerSearchResultCardProps = {
@@ -33,7 +46,47 @@ export type PartnerSearchResultCardProps = {
   onDetail?: () => void;
   /** Parent P25t: card public summary state for find→detail snapshot handoff. */
   onPublicSummaryStateChange?: (partnerUserId: string, state: PartnerCertProgramState) => void;
+  /** Directional agreements: per-direction state and a reciprocal invitation for the missing one. */
+  directionContext?: {
+    audience?: PartnersHubAudience;
+    viewerSide: PartnerSideProfile;
+    onReciprocalInvite: (direction: InviteDirection) => void;
+  };
 };
+
+export type SearchResultReciprocal = { direction: InviteDirection; label: string };
+
+/**
+ * The other direction can be proposed only when one direction is already agreed (ACTIVE or
+ * PAUSED) and the opposite one has no live agreement. Pending rows are never treated as agreed.
+ */
+export function searchResultReciprocal(
+  partner: PartnerSearchResult,
+  viewerSide: PartnerSideProfile,
+  audience?: PartnersHubAudience,
+): SearchResultReciprocal | null {
+  const state = searchDirectionState(partner);
+  const agreed = (slot: { status: string } | null) => slot?.status === "ACTIVE" || slot?.status === "PAUSED";
+  // An ENDED row is never revived server-side, so a direction that already has any row is not offered again.
+  const open = (slot: { status: string } | null) => slot != null;
+  if (agreed(state.outgoing) && !open(state.incoming) && canReceiveRecommendations(viewerSide)) {
+    return {
+      direction: "INVITER_RECEIVES",
+      label: audience === "specialist-r04" ? "Предложить: пусть рекомендуют меня" : "Предложить: пусть рекомендуют нас",
+    };
+  }
+  if (
+    agreed(state.incoming) &&
+    !open(state.outgoing) &&
+    canReceiveRecommendations(searchResultReceivingSide(partner, searchResultToPartnerSide(partner)))
+  ) {
+    return {
+      direction: "INVITER_ISSUES",
+      label: audience === "specialist-r04" ? "Запросить условия: я буду рекомендовать" : "Запросить условия: мы будем рекомендовать",
+    };
+  }
+  return null;
+}
 
 export type SearchResultInviteFoot = {
   label: string;
@@ -132,6 +185,8 @@ export type SearchResultCoverTone = "store" | "company" | "specialist" | "agent"
 
 /** Canonical type caption already returned by search contract / meta mapping. */
 export function searchResultTypeLabel(partner: PartnerSearchResult): string {
+  const kind = searchResultPublicKind(partner);
+  if (kind) return PARTNER_KIND_UI_LABELS[kind];
   const labeled = partner.partnerTypeLabel?.trim();
   if (labeled) return labeled;
   if (partner.partnerType === "STORE") return "Магазин";
@@ -143,6 +198,8 @@ export function searchResultTypeLabel(partner: PartnerSearchResult): string {
 
 /** Cover tone from contract partnerType — presentation only. */
 export function searchResultCoverTone(partner: PartnerSearchResult): SearchResultCoverTone {
+  const kind = searchResultPublicKind(partner);
+  if (kind) return kind;
   const raw = (partner.partnerType ?? partner.organizationPartnerType ?? "").toUpperCase();
   if (raw === "STORE") return "store";
   if (raw === "COMPANY") return "company";
@@ -328,6 +385,7 @@ export function PartnerSearchResultCard({
   onInvite,
   onDetail,
   onPublicSummaryStateChange,
+  directionContext,
 }: PartnerSearchResultCardProps) {
   const typeLabel = searchResultTypeLabel(partner);
   const coverTone = searchResultCoverTone(partner);
@@ -343,6 +401,12 @@ export function PartnerSearchResultCard({
   const showOpenHint = searchResultShowOpenHint(partner) && !inviteFoot.disabled;
   const showStatusInFoot = Boolean(status && status !== "ENDED");
   const detailFoot = searchResultDetailFootTarget(partner, { onDetail });
+  const directionBadge = directionContext
+    ? searchDirectionBadge(partner, directionContext.audience)
+    : null;
+  const reciprocal = directionContext
+    ? searchResultReciprocal(partner, directionContext.viewerSide, directionContext.audience)
+    : null;
   const showDetailControl = detailFoot.mode !== "none";
 
   const coverToneClass =
@@ -482,6 +546,26 @@ export function PartnerSearchResultCard({
             data-testid="agent-partner-search-result-status"
           >
             <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+            {directionBadge ? (
+              <PartnerDirectionBadge
+                glyph={directionBadge.glyph}
+                label={directionBadge.label}
+                description={directionBadge.description}
+                pending={directionBadge.pending}
+                testId="agent-partner-search-result-direction"
+              />
+            ) : null}
+            {reciprocal && directionContext ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={inviteDisabled}
+                onClick={() => directionContext.onReciprocalInvite(reciprocal.direction)}
+                data-testid="agent-partner-search-result-reciprocal"
+              >
+                {reciprocal.label}
+              </Button>
+            ) : null}
           </span>
         ) : (
           <div

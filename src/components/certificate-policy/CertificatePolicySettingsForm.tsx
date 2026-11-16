@@ -1,5 +1,6 @@
 "use client";
 
+import { displayCategoryLabel } from "@/lib/category-display";
 import { useEffect, useState } from "react";
 import { CERTIFICATE_POLICY_MOSCOW_EXPIRY_NOTE } from "@/lib/certificate-policy/defaults";
 import {
@@ -39,6 +40,9 @@ export function CertificatePolicySettingsForm({
   freezeDraftReset = false,
   onSubmit,
 }: Props) {
+  // Individual terms re-price only the categories already agreed on the selected partnership;
+  // only the general editor works against the owner's full published list.
+  const rateBaseline = scope === "individual" ? effective : baselineForRates;
   const [draft, setDraft] = useState(effective);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -59,9 +63,9 @@ export function CertificatePolicySettingsForm({
   }
 
   function patchRate(category: string, poolPercent: number) {
-    const base = baselineForRates.categoryRates.find((r) => r.category === category);
+    const base = rateBaseline.categoryRates.find((r) => r.category === category);
     if (!base) return;
-    const nextRates = baselineForRates.categoryRates.map((r) => ({
+    const nextRates = rateBaseline.categoryRates.map((r) => ({
       ...r,
       poolPercent: r.category === category ? poolPercent : poolByCategory.get(r.category) ?? r.poolPercent,
     }));
@@ -82,7 +86,7 @@ export function CertificatePolicySettingsForm({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (disabled || pending) return;
-    const validated = parseCertificatePolicyTermsInput(draft, baselineForRates);
+    const validated = parseCertificatePolicyTermsInput(draft, rateBaseline);
     if (!validated.ok) {
       setError(validated.message);
       return;
@@ -196,10 +200,15 @@ export function CertificatePolicySettingsForm({
 
       <section className={styles.cpBlock}>
         <span className={styles.cpEyebrow}>Процент по категориям</span>
+        {scope === "individual" ? (
+          <small className={styles.cpFine} data-testid="cp-individual-categories-note">
+            Редактируются только уже согласованные категории.
+          </small>
+        ) : null}
         <div className={styles.cpRates}>
-          {baselineForRates.categoryRates.map((rate) => (
+          {rateBaseline.categoryRates.map((rate) => (
             <div className={styles.cpRate} key={rate.category}>
-              <label htmlFor={`cp-rate-${rate.category}`}>{rate.categoryLabel}</label>
+              <label htmlFor={`cp-rate-${rate.category}`}>{displayCategoryLabel(rate.category, rate.categoryLabel)}</label>
               <div className={styles.cpPct}>
                 <input
                   id={`cp-rate-${rate.category}`}

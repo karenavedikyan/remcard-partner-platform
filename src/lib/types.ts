@@ -187,6 +187,32 @@ export type PartnershipUser = {
   areas?: string[] | null;
 };
 
+export type PartnershipDirection = "incoming" | "outgoing";
+
+/** Additive GET /api/partnership/list: this row seen from the viewer. */
+export type PartnershipDirectionInfo = {
+  direction: PartnershipDirection;
+  issuerUserId: string;
+  receiverUserId: string;
+  legacyInverted: boolean;
+  counterpartyUserId: string;
+  reversePartnershipId: string | null;
+  reverseStatus: string | null;
+};
+
+export type PartnershipPendingOffer = {
+  proposalId: string;
+  proposerUserId: string;
+  restrictions: {
+    validityDays: number;
+    purchaseLimit: number;
+    minimumPurchaseAmount: number | null;
+    promotionsCompatible: boolean;
+    exclusionsText: string | null;
+  };
+  categoryRates: Array<{ category: string; categoryLabel?: string; poolPercent: number }>;
+};
+
 export type Partnership = {
   id: string;
   status: string;
@@ -205,6 +231,8 @@ export type Partnership = {
     archivedAt: string | null;
     hiddenAt?: string | null;
   } | null;
+  directionInfo?: PartnershipDirectionInfo | null;
+  pendingOffer?: PartnershipPendingOffer | null;
 };
 
 export type PartnershipListResponse = {
@@ -227,6 +255,8 @@ export type PartnerSearchResult = {
   badges: string[];
   storeCategories: string[];
   partnerType?: string | null;
+  /** Additive: canonical activities (AGENT / STORE / SERVICE); with partnerType they define the public role. */
+  partnerActivities?: string[];
   partnerTypeLabel?: string | null;
   /** Подтверждённый partnerType организации владельца (если API поиска когда‑либо вернёт). */
   organizationPartnerType?: string | null;
@@ -236,6 +266,13 @@ export type PartnerSearchResult = {
   rating: number | null;
   ratingCount: number;
   partnershipStatus: string | null;
+  /** Additive: false when this profile is a pure agent and cannot receive certificate terms. */
+  canReceiveCertificates?: boolean;
+  /** Additive: one slot per directed agreement with this profile. */
+  partnershipDirections?: {
+    outgoing: { partnershipId: string; status: string } | null;
+    incoming: { partnershipId: string; status: string } | null;
+  };
   isPublic?: boolean | null;
   productCategoryIds?: string[];
   serviceSpecializationIds?: string[];

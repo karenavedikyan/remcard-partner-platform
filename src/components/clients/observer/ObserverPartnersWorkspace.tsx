@@ -28,12 +28,15 @@ type Props = {
   /** Wired by parent from П5 personal API adapter when available. */
   personalPersistence?: ObserverPersonalPersistenceCallbacks;
   directionProbe?: "at-partners";
+  /** Deep link from Partners: open the exact receiving partner (User.id) of one directed agreement. */
+  initialPartnerId?: string | null;
 };
 
 export function ObserverPartnersWorkspace({
   showHeading = true,
   personalPersistence,
   directionProbe,
+  initialPartnerId = null,
 }: Props) {
   const [loadPhase, setLoadPhase] = useState<LoadPhase>("loading");
   const [blocker, setBlocker] = useState<{
@@ -122,6 +125,8 @@ export function ObserverPartnersWorkspace({
     void fetchObserverReferredAppeals({ signal: controller.signal }).then((res) => {
       if (cancelled) return;
       applyResult(res);
+    }).catch(() => {
+      // The fetcher rethrows only a deliberate AbortError (unmount / re-run); other failures are results.
     });
 
     return () => {
@@ -225,6 +230,7 @@ export function ObserverPartnersWorkspace({
     </p> : null}
     <ObserverPartnersListView
       showHeading={showHeading}
+      initialNav={initialPartnerId ? { view: "partner", partnerId: initialPartnerId } : undefined}
       appeals={appeals}
       partners={partners}
       dataContract={dataContract}

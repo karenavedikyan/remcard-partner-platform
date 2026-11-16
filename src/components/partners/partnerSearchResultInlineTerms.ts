@@ -1,4 +1,5 @@
 import type { PartnerCertProgramItem, PartnerCertProgramState } from "@/lib/partner-certificate-program";
+import { displayCategoryLabel } from "@/lib/category-display";
 import { fetchPartnerCertificateProgram } from "@/lib/partner-certificate-program";
 
 type InflightEntry = {
@@ -95,7 +96,8 @@ export function formatPartnerSearchInlineTermLine(item: PartnerCertProgramItem):
   percentText: string | null;
   percentUnavailable: boolean;
 } {
-  const label = item.categoryLabel?.trim() || item.category?.trim() || "";
+  const hasCategory = Boolean(item.categoryLabel?.trim() || item.category?.trim());
+  const label = hasCategory ? displayCategoryLabel(item.category ?? "", item.categoryLabel) : "";
   if (typeof item.poolPercent === "number" && Number.isFinite(item.poolPercent)) {
     return { label, percentText: `${item.poolPercent}%`, percentUnavailable: false };
   }

@@ -51,6 +51,8 @@ describe("partner-cooperation-c1 guards/labels", () => {
     expect(cooperationActionLabel("resume")).toBe("Возобновить сотрудничество");
     expect(cooperationActionLabel("accept")).toBeNull();
     expect(termChangeActionLabel()).toBe("Изменить условия");
+    expect(termChangeActionLabel({ directionInfo: { direction: "incoming" } } as never)).toBe("Изменить условия");
+    expect(termChangeActionLabel({ directionInfo: { direction: "outgoing" } } as never)).toBe("Посмотреть условия");
   });
 
   it("gates participant and ACTIVE term-change / pause-resume UI actions", () => {

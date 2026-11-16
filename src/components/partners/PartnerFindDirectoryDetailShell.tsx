@@ -3,6 +3,8 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PartnerDirectionBadge } from "@/components/partners/PartnerDirectionBadge";
+import { searchDirectionBadge } from "@/lib/partner-directions/direction";
 import {
   PARTNERSHIP_STATUS_LABELS,
   partnershipStatusTone,
@@ -15,8 +17,9 @@ import {
   findDirectoryDetailInviteLabel,
   searchResultDetailCatalogLine,
   searchResultDetailStagesLine,
-  searchResultDetailTopicsLine,
   searchResultInviteFoot,
+  searchResultReciprocal,
+  type PartnerSearchResultCardProps,
   searchResultTypeLabel,
 } from "@/components/partners/PartnerSearchResultCard";
 import {
@@ -43,6 +46,8 @@ export type PartnerFindDirectoryDetailShellProps = {
   showPublicCertificatePolicy?: boolean;
   /** Optional parent snapshot (same certificate-program-summary contract as search card). */
   agentTermsSnapshot?: PartnerCertProgramState;
+  /** Same per-direction context the search result card uses; omitted when the audience has no direction tabs. */
+  directionContext?: PartnerSearchResultCardProps["directionContext"];
 };
 
 export function findDirectoryDetailDisplayTitle(partner: PartnerSearchResult): string {
@@ -142,9 +147,11 @@ export function FindDirectoryDetailPublicCertificatePolicy({
 export function FindDirectoryDetailAgentTermsAccordion({
   partnerUserId,
   snapshot,
+  title = "Общие условия для агентов",
 }: {
   partnerUserId: string;
   snapshot?: PartnerCertProgramState;
+  title?: string;
 }) {
   const panelId = useId();
   const [state, setState] = useState<PartnerCertProgramState>(
@@ -187,7 +194,7 @@ export function FindDirectoryDetailAgentTermsAccordion({
       data-testid="partner-find-directory-detail-general-terms"
     >
       <summary className={styles.generalTermsSummary}>
-        Общие условия для агентов
+        {title}
         {count !== null ? (
           <span className={styles.generalTermsBadge} data-testid="partner-find-directory-detail-general-terms-count">
             {count}
@@ -272,6 +279,7 @@ export function PartnerFindDirectoryDetailShell({
   showAgentTerms = false,
   showPublicCertificatePolicy = false,
   agentTermsSnapshot,
+  directionContext,
 }: PartnerFindDirectoryDetailShellProps) {
   const title = findDirectoryDetailDisplayTitle(partner);
   const typeLabel = searchResultTypeLabel(partner);
@@ -284,7 +292,11 @@ export function PartnerFindDirectoryDetailShell({
   const inviteFoot = searchResultInviteFoot(partner, { inviteDisabled, inviteBusy });
   const inviteLabel = findDirectoryDetailInviteLabel(partner, { inviteDisabled, inviteBusy });
 
-  const topicsLine = searchResultDetailTopicsLine(partner);
+  const directionBadge = directionContext ? searchDirectionBadge(partner, directionContext.audience) : null;
+  const reciprocal = directionContext
+    ? searchResultReciprocal(partner, directionContext.viewerSide, directionContext.audience)
+    : null;
+  const hasProfileDirections = Boolean(catalogLine) || detailStagesLine !== "не указаны";
 
   return (
     <section
@@ -309,46 +321,6 @@ export function PartnerFindDirectoryDetailShell({
       </header>
 
       <div className={styles.body}>
-        {topicsLine ? (
-          <p className={styles.lead} data-testid="partner-find-directory-detail-topics">
-            {topicsLine}
-          </p>
-        ) : (
-          <p className={styles.muted} data-testid="partner-find-directory-detail-topics-empty">
-            Направления не указаны
-          </p>
-        )}
-
-        <section
-          className={styles.profileDirections}
-          aria-labelledby="partner-find-directory-detail-directions-title"
-          data-testid="partner-find-directory-detail-profile-directions"
-        >
-          <h3 id="partner-find-directory-detail-directions-title" className={styles.profileDirectionsTitle}>
-            Специализация и этапы
-          </h3>
-          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-catalog">
-            {catalogLine || "Специализация не указана"}
-          </p>
-          <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-stages">
-            Этапы: {detailStagesLine}
-          </p>
-        </section>
-
-        {description ? (
-          <p className={styles.description} data-testid="partner-find-directory-detail-description">
-            {description}
-          </p>
-        ) : (
-          <p className={styles.muted} data-testid="partner-find-directory-detail-description-empty">
-            Описание в каталоге не указано
-          </p>
-        )}
-
-        <p className={styles.notice}>
-          Партнёр уже зарегистрирован в RemCard. Повторная регистрация для сотрудничества не нужна.
-        </p>
-
         {showPublicCertificatePolicy ? (
           <FindDirectoryDetailPublicCertificatePolicy
             partnerUserId={partner.id}
@@ -362,13 +334,51 @@ export function PartnerFindDirectoryDetailShell({
           />
         ) : null}
 
-        {status && status !== "ENDED" ? (
-          <p className={styles.statusRow} data-testid="partner-find-directory-detail-status">
-            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+        {description ? (
+          <p className={styles.description} data-testid="partner-find-directory-detail-description">
+            {description}
           </p>
         ) : null}
 
-        {inviteFoot.blockedReason ? (
+        {hasProfileDirections ? (
+          <details
+            className={styles.generalTermsFold}
+            data-testid="partner-find-directory-detail-profile-directions"
+          >
+            <summary className={styles.generalTermsSummary}>Специализация и этапы</summary>
+            <div className={styles.profileDirections}>
+              {catalogLine ? (
+                <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-catalog">
+                  {catalogLine}
+                </p>
+              ) : null}
+              <p className={styles.profileDirectionsLine} data-testid="partner-find-directory-detail-stages">
+                Этапы: {detailStagesLine}
+              </p>
+            </div>
+          </details>
+        ) : null}
+
+        <p className={styles.notice} data-testid="partner-find-directory-detail-registered-note">
+          Партнёр уже зарегистрирован в RemCard. Повторная регистрация для сотрудничества не нужна.
+        </p>
+
+        {status && status !== "ENDED" ? (
+          <p className={styles.statusRow} data-testid="partner-find-directory-detail-status">
+            <StatusBadge label={statusLabel} tone={partnershipStatusTone(status)} />
+            {directionBadge ? (
+              <PartnerDirectionBadge
+                glyph={directionBadge.glyph}
+                label={directionBadge.label}
+                description={directionBadge.description}
+                pending={directionBadge.pending}
+                testId="partner-find-directory-detail-direction"
+              />
+            ) : null}
+          </p>
+        ) : null}
+
+        {inviteFoot.blockedReason && inviteFoot.blockedReason !== statusLabel ? (
           <p className={styles.notice} data-testid="partner-find-directory-detail-invite-blocked">
             {inviteFoot.blockedReason}
           </p>
@@ -376,17 +386,30 @@ export function PartnerFindDirectoryDetailShell({
       </div>
 
       <footer className={styles.foot}>
-        <Button
-          type="button"
-          variant="primary"
-          className={styles.footInvite}
-          disabled={inviteFoot.disabled}
-          onClick={onInvite}
-          data-testid="partner-find-directory-detail-invite"
-          aria-busy={inviteBusy || undefined}
-        >
-          {inviteLabel}
-        </Button>
+        {reciprocal && directionContext ? (
+          <Button
+            type="button"
+            variant="primary"
+            className={styles.footInvite}
+            disabled={inviteDisabled}
+            onClick={() => directionContext.onReciprocalInvite(reciprocal.direction)}
+            data-testid="partner-find-directory-detail-reciprocal"
+          >
+            {reciprocal.label}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="primary"
+            className={styles.footInvite}
+            disabled={inviteFoot.disabled}
+            onClick={onInvite}
+            data-testid="partner-find-directory-detail-invite"
+            aria-busy={inviteBusy || undefined}
+          >
+            {inviteLabel}
+          </Button>
+        )}
         <button
           type="button"
           className={`${styles.backButton} ${styles.footBack}`}

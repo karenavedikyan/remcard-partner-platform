@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { displayCategoryLabel } from "@/lib/category-display";
 import { categoryLabel } from "@/lib/partnership-labels";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import { parsePoolPercentInput } from "@/lib/parse-pool-percent";
@@ -209,7 +210,7 @@ export function PartnerAgentGeneralTermsEditor({
             <tbody>
               {limits.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.categoryLabel || categoryLabel(row.category)}</td>
+                  <td>{displayCategoryLabel(row.category, row.categoryLabel)}</td>
                   <td>
                     {canEdit ? (
                       <TextField

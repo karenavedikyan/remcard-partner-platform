@@ -356,6 +356,20 @@
   }
 }
 
+@media (max-width: 480px) {
+  .tiles {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .tile {
+    padding: var(--space-4) var(--space-2);
+  }
+
+  .tileTitle {
+    overflow-wrap: break-word;
+  }
+}
+
 @media (max-width: 640px) {
   .head {
     flex-direction: column;

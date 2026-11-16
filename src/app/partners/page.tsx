@@ -89,6 +89,8 @@ export default async function PartnersPage(props: {
           initialProfile={profileResult.data}
           defaultSearchRole={presentation.defaultSearchRole}
           presentationAudience={presentation.audience}
+          proContext={proContext}
+          proContextReady={proContextReady}
         />
       ) : (
         <PartnersHub

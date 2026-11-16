@@ -29,11 +29,15 @@ function atPartnersTabEnabled(mode: OwnerClientsAccessMode): boolean {
 type TabbedProps = {
   accessMode: "specialist" | "business";
   initialAppealId?: string | null;
+  /** `?direction=at-partners&partnerId=<receiver User.id>` from a partner row. */
+  initialPartnerId?: string | null;
 };
 
-function ClientsDirectionTabbedPane({ accessMode, initialAppealId }: TabbedProps) {
-  const [direction, setDirection] = useState<ClientsParityDirection>("incoming");
-  const [atPartnersMounted, setAtPartnersMounted] = useState(false);
+function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartnerId = null }: TabbedProps) {
+  const [direction, setDirection] = useState<ClientsParityDirection>(
+    initialPartnerId ? "at-partners" : "incoming",
+  );
+  const [atPartnersMounted, setAtPartnersMounted] = useState(Boolean(initialPartnerId));
   const chrome = useClientsPageChrome();
   const setAtPartnersProbe = useClientsDirectionProbeSetter("at-partners");
   const hideTabs = chrome?.hideDirectionTabs ?? false;
@@ -63,6 +67,8 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId }: TabbedProps
         filters: { q: "", period: "all", bucket: "active" },
       });
       setAtPartnersProbe(eligible ? "proven_empty" : "not_empty");
+    }).catch(() => {
+      // The fetcher rethrows only a deliberate AbortError (unmount / re-run); other failures are results.
     });
     return () => {
       cancelled = true;
@@ -97,7 +103,11 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId }: TabbedProps
           hidden={hideTabs ? true : direction !== "at-partners"}
           data-testid="ca-clients-panel-at-partners"
         >
-          <ObserverPartnersWorkspace showHeading={false} directionProbe="at-partners" />
+          <ObserverPartnersWorkspace
+            showHeading={false}
+            directionProbe="at-partners"
+            initialPartnerId={initialPartnerId}
+          />
         </div>
       ) : null}
     </div>
@@ -110,6 +120,8 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   const presentation = useCabinetPresentation();
   const receivingReturn = searchParams?.get("direction") === "receiving";
   const initialAppealId = receivingReturn ? searchParams?.get("appealId")?.trim() || null : null;
+  const initialPartnerId =
+    searchParams?.get("direction") === "at-partners" ? searchParams?.get("partnerId")?.trim() || null : null;
 
   // Org staff are not observer referrers. Mirror the existing workplace dispatch;
   // do not offer a tab whose backend gate correctly denies this actor.
@@ -126,7 +138,7 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   }
 
   if (accessMode === "agent") {
-    return <ObserverPartnersWorkspace directionProbe="at-partners" />;
+    return <ObserverPartnersWorkspace directionProbe="at-partners" initialPartnerId={initialPartnerId} />;
   }
 
   if (!atPartnersTabEnabled(accessMode)) {
@@ -138,6 +150,7 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
       key={accessMode}
       accessMode={accessMode}
       initialAppealId={initialAppealId}
+      initialPartnerId={initialPartnerId}
     />
   );
 }
