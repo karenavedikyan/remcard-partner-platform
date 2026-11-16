@@ -762,3 +762,15 @@
   .clientsScope :global(.ca-row .ca-row-status){width:auto;max-width:100%;min-width:0;justify-self:start}
   .clientsScope :global(.ca-row .ca-row-status .pill){width:auto;max-width:100%}
 }
+.clientsScope :global(.ca-settings-footer .btn){transition:background-color .18s ease,color .18s ease,border-color .18s ease,opacity .18s ease}
+.clientsScope :global(.ca-settings-footer .btn:disabled){opacity:.55;cursor:not-allowed;filter:none}
+.clientsScope :global(.ca-settings-footer .btn.ca-save-btn){min-width:160px}
+.clientsScope :global(.ca-settings-footer .btn.ca-save-btn.is-saved),
+.clientsScope :global(.ca-settings-footer .btn.ca-save-btn.is-saved:hover){background:var(--good);border-color:var(--good);color:#fff;opacity:1;filter:none}
+:global([data-theme=dark]) .clientsScope :global(.ca-settings-footer .btn.ca-save-btn.is-saved),
+:global([data-theme=dark]) .clientsScope :global(.ca-settings-footer .btn.ca-save-btn.is-saved:hover){color:#14231a}
+@media (prefers-reduced-motion:reduce){.clientsScope :global(.ca-settings-footer .btn){transition:none}}
+.clientsScope :global(.ca-settings-footer .btn.ca-save-btn){white-space:nowrap}
+@media(max-width:680px){
+  .clientsScope :global(.ca-settings-footer .btn.ca-save-btn){min-width:0;padding-inline:var(--s2,8px)}
+}

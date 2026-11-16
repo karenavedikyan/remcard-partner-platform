@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   findDuplicateRefusalReasonLabel,
   findDuplicateWorkingStageLabel,
@@ -32,6 +32,8 @@ const LOCKED_STAGES = [
   { id: "sys_return", label: "Возврат" },
 ];
 
+const SAVED_FEEDBACK_MS = 2000;
+
 export const WORKING_STAGES_SUBTITLE = "Настройте путь клиента под свой бизнес. Изменения видны только вам.";
 
 function cloneSettings(settings: ReceivingPartnerSettings): ReceivingPartnerSettings {
@@ -42,6 +44,17 @@ function cloneSettings(settings: ReceivingPartnerSettings): ReceivingPartnerSett
     archivedStages: settings.archivedStages.map((s) => ({ ...s })),
     manualChannels: settings.manualChannels ? [...settings.manualChannels] : [],
   };
+}
+
+function sameSettings(a: ReceivingPartnerSettings, b: ReceivingPartnerSettings): boolean {
+  const sameStages = (x: ReceivingWorkingStage[], y: ReceivingWorkingStage[]) =>
+    x.length === y.length && x.every((s, i) => s.id === y[i]!.id && s.label === y[i]!.label);
+  return (
+    sameStages(a.workingStages, b.workingStages) &&
+    sameStages(a.archivedStages, b.archivedStages) &&
+    a.refusalReasons.length === b.refusalReasons.length &&
+    a.refusalReasons.every((r, i) => r === b.refusalReasons[i])
+  );
 }
 
 export function WorkingStagesEditor({
@@ -56,18 +69,42 @@ export function WorkingStagesEditor({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(settingsVersion);
+  const [baseline, setBaseline] = useState(() => cloneSettings(settings));
+  const [justSaved, setJustSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const proxyReady = isReceivingWorkingStagesPostReady();
   const mutationsDisabled = disabled || !proxyReady || pending;
 
+  const dirty = useMemo(() => !sameSettings(draft, baseline), [draft, baseline]);
+
+  const clearSavedFeedback = useCallback(() => {
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = null;
+    setJustSaved(false);
+  }, []);
+
   useEffect(() => {
     setDraft(cloneSettings(settings));
+    setBaseline(cloneSettings(settings));
     setVersion(settingsVersion);
   }, [settings, settingsVersion]);
+
+  useEffect(() => {
+    if (dirty) clearSavedFeedback();
+  }, [dirty, clearSavedFeedback]);
+
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
 
   const applySnapshot = useCallback(
     (snapshot: ReceivingPartnerSettingsSnapshot) => {
       setDraft(cloneSettings(snapshot.settings));
+      setBaseline(cloneSettings(snapshot.settings));
       setVersion(snapshot.version);
       onSettingsUpdated?.(snapshot);
     },
@@ -80,6 +117,7 @@ export function WorkingStagesEditor({
       onSuccess?: () => void,
     ) => {
       setError(null);
+      clearSavedFeedback();
       if (mutationsDisabled) {
         setError("Сохранение настроек ждёт P1 allowlist и K1 POST working-stages.");
         return;
@@ -102,7 +140,7 @@ export function WorkingStagesEditor({
       applySnapshot(res.snapshot);
       onSuccess?.();
     },
-    [applySnapshot, mutationsDisabled, onRefetchSettings, version],
+    [applySnapshot, clearSavedFeedback, mutationsDisabled, onRefetchSettings, version],
   );
 
   const stageRows = useMemo(() => draft.workingStages, [draft.workingStages]);
@@ -123,12 +161,18 @@ export function WorkingStagesEditor({
       }
       seen.add(key);
     }
-    await runMutation({
-      kind: "saveSettings",
-      workingStages: stageRows.map((s, i) => ({ ...s, label: labels[i]! })),
-      refusalReasons: reasons,
-      archivedStages: draft.archivedStages,
-    });
+    await runMutation(
+      {
+        kind: "saveSettings",
+        workingStages: stageRows.map((s, i) => ({ ...s, label: labels[i]! })),
+        refusalReasons: reasons,
+        archivedStages: draft.archivedStages,
+      },
+      () => {
+        setJustSaved(true);
+        savedTimer.current = setTimeout(clearSavedFeedback, SAVED_FEEDBACK_MS);
+      },
+    );
   };
 
   return (
@@ -256,46 +300,60 @@ export function WorkingStagesEditor({
           {draft.refusalReasons.length === 0 ? (
             <p className="muted small">Список пуст — добавьте причину.</p>
           ) : (
-            draft.refusalReasons.map((reason, index) => (
-              <div className="ca-stage-row" key={`${index}-${reason}`}>
-                <input
-                  type="text"
-                  className="reason-label"
-                  value={reason}
-                  disabled={mutationsDisabled}
-                  onChange={(e) => {
-                    const next = cloneSettings(draft);
-                    next.refusalReasons[index] = e.target.value;
-                    setDraft(next);
-                  }}
-                  onBlur={(e) => {
-                    const trimmed = e.target.value.trim();
-                    if (!trimmed || trimmed === reason.trim()) return;
-                    const dupe = findDuplicateRefusalReasonLabel(trimmed, draft.refusalReasons);
-                    if (dupe && dupe.toLowerCase() !== reason.trim().toLowerCase()) {
-                      setError("Такая причина уже есть.");
-                      return;
-                    }
-                    void runMutation({
-                      kind: "renameRefusalReason",
-                      previousLabel: reason,
-                      label: trimmed,
-                    });
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn ghost icon-btn"
-                  aria-label={`Убрать причину: ${reason || index + 1}`}
-                  disabled={mutationsDisabled}
-                  onClick={() =>
-                    void runMutation({ kind: "removeRefusalReason", label: reason })
-                  }
-                >
-                  <ReceivingIcon name="archive" />
-                </button>
-              </div>
-            ))
+            draft.refusalReasons.map((reason, index) => {
+              const savedLabel = settings.refusalReasons[index];
+              return (
+                <div className="ca-stage-row" key={index}>
+                  <input
+                    type="text"
+                    className="reason-label"
+                    value={reason}
+                    disabled={mutationsDisabled}
+                    onChange={(e) => {
+                      const next = cloneSettings(draft);
+                      next.refusalReasons[index] = e.target.value;
+                      setDraft(next);
+                    }}
+                    onBlur={(e) => {
+                      if (savedLabel === undefined) return;
+                      const trimmed = e.target.value.trim();
+                      if (!trimmed || trimmed === savedLabel.trim()) return;
+                      const dupe = findDuplicateRefusalReasonLabel(
+                        trimmed,
+                        draft.refusalReasons.filter((_, i) => i !== index),
+                      );
+                      if (dupe) {
+                        setError("Такая причина уже есть.");
+                        return;
+                      }
+                      void runMutation({
+                        kind: "renameRefusalReason",
+                        previousLabel: savedLabel,
+                        label: trimmed,
+                      });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn ghost icon-btn"
+                    aria-label={`Убрать причину: ${reason || index + 1}`}
+                    disabled={mutationsDisabled}
+                    onClick={() => {
+                      if (savedLabel === undefined) {
+                        setDraft((prev) => ({
+                          ...prev,
+                          refusalReasons: prev.refusalReasons.filter((_, i) => i !== index),
+                        }));
+                        return;
+                      }
+                      void runMutation({ kind: "removeRefusalReason", label: savedLabel });
+                    }}
+                  >
+                    <ReceivingIcon name="archive" />
+                  </button>
+                </div>
+              );
+            })
           )}
           <button
             type="button"
@@ -350,7 +408,7 @@ export function WorkingStagesEditor({
         <button
           type="button"
           className="btn ghost"
-          disabled={mutationsDisabled}
+          disabled={mutationsDisabled || !dirty}
           onClick={() => {
             setDraft(cloneSettings(settings));
             setError(null);
@@ -360,13 +418,39 @@ export function WorkingStagesEditor({
         </button>
         <button
           type="button"
-          className="btn primary"
-          disabled={mutationsDisabled}
+          className={`btn primary ca-save-btn${justSaved ? " is-saved" : ""}`}
+          disabled={mutationsDisabled || !dirty}
           data-testid="ca-settings-save"
           onClick={() => void saveDraft()}
         >
-          {pending ? "Сохранение…" : "Сохранить"}
+          {pending ? (
+            "Сохранение…"
+          ) : justSaved ? (
+            <>
+              <svg
+                data-testid="ca-settings-saved-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              Сохранено
+            </>
+          ) : (
+            "Сохранить"
+          )}
         </button>
+        <span className="sr-only" aria-live="polite" data-testid="ca-settings-save-status">
+          {justSaved ? "Настройки сохранены" : ""}
+        </span>
       </div>
     </section>
   );
