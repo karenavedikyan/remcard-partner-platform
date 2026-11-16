@@ -3,17 +3,32 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import type { StoreCertificateClientCardModel } from "@/lib/storeCertificateClientCardModel";
+import {
+  formatIssuedPolicyRowFact,
+  formatIssuedPolicyRowRestrictions,
+  type IssuedCertificatePreviewRow,
+} from "@/lib/certificate-issued-preview";
 import styles from "./PartnerClientCertificateCard.module.css";
 
 type Props = {
   model: StoreCertificateClientCardModel;
   /** Scanner confirmation uses prototype title pill / wordmark dot on red gradient. */
   presentation?: "default" | "scanner";
+  /** Frozen per-recipient terms rendered inside the same red card (issued policy certificates). */
+  policyRows?: IssuedCertificatePreviewRow[];
 };
 
 type QrSlot = { url: string; dataUrl: string | null; failed: boolean };
 
-export function PartnerClientCertificateCard({ model, presentation = "default" }: Props) {
+const ROW_TAG: Record<IssuedCertificatePreviewRow["rowState"], string> = {
+  active: "Активен",
+  expired: "Истёк",
+  depleted: "Использован",
+  cancelled: "Отозван",
+  unavailable: "Недоступен",
+};
+
+export function PartnerClientCertificateCard({ model, presentation = "default", policyRows }: Props) {
   const [qrSlot, setQrSlot] = useState<QrSlot | null>(null);
 
   useEffect(() => {
@@ -52,6 +67,7 @@ export function PartnerClientCertificateCard({ model, presentation = "default" }
     <article
       className={`${styles.card} ${presentation === "scanner" ? styles.cardScanner : ""}`}
       data-testid="client-certificate-card"
+      data-policy-card={policyRows ? "true" : undefined}
       aria-label="Сертификат как видит клиент"
     >
       <CardDecor />
@@ -91,8 +107,14 @@ export function PartnerClientCertificateCard({ model, presentation = "default" }
       </div>
       <footer className={styles.footer}>
         <span className={styles.termText}>{model.termTextValue}</span>
-        <span className={styles.statusText}>{model.statusLabelText}</span>
+        <span
+          className={styles.statusText}
+          data-testid={policyRows ? "issued-policy-status-summary" : undefined}
+        >
+          {model.statusLabelText}
+        </span>
       </footer>
+      {policyRows ? <PolicyRows rows={policyRows} /> : null}
     </article>
   );
 }
@@ -103,5 +125,51 @@ function CardDecor() {
       <div className={styles.cardGlowA} aria-hidden />
       <div className={styles.cardGlowB} aria-hidden />
     </>
+  );
+}
+
+function PolicyRows({ rows }: { rows: IssuedCertificatePreviewRow[] }) {
+  return (
+    <ul className={styles.policyRows} data-testid="cp-cert-rows">
+      {rows.map((row) => {
+        const restrictions = formatIssuedPolicyRowRestrictions(row.policy);
+        const tag =
+          row.rowState === "active" && row.policy.policySource === "individual"
+            ? "Активен · индивид."
+            : ROW_TAG[row.rowState];
+        return (
+          <li
+            key={row.partnerUserId}
+            className={styles.policyRow}
+            data-testid={`issued-policy-row-${row.partnerUserId}`}
+            data-row-state={row.rowState}
+          >
+            <div className={styles.policyRowHead}>
+              <strong className={styles.policyRowName}>{row.partnerName}</strong>
+              <span className={styles.policyRowTag} data-testid={`issued-row-tag-${row.rowState}`}>
+                {tag}
+              </span>
+            </div>
+            <p className={styles.policyRowFact}>{formatIssuedPolicyRowFact(row.policy)}</p>
+            {restrictions ? (
+              <p
+                className={styles.policyRowFine}
+                data-testid={`issued-policy-restrictions-${row.partnerUserId}`}
+              >
+                {restrictions}
+              </p>
+            ) : null}
+            {row.policy.remainingPurchases != null ? (
+              <p className={styles.policyRowFine}>
+                осталось {row.policy.remainingPurchases}
+                {row.policy.consumedUses != null ? ` · использовано ${row.policy.consumedUses}` : ""}
+              </p>
+            ) : row.policy.purchaseLimit == null ? (
+              <p className={styles.policyRowFine}>без лимита покупок</p>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

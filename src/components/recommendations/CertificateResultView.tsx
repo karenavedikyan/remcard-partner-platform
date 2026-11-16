@@ -13,7 +13,6 @@ import type { StoreCertificate } from "@/lib/certificate-types";
 import { buildIssuedCertificatePreview } from "@/lib/certificate-issued-preview";
 import { Button } from "@/components/ui/Button";
 import { PartnerClientCertificateCard } from "./PartnerClientCertificateCard";
-import { CertificateResultIssuedDarkCard } from "./CertificateResultIssuedDarkCard";
 import { CertificateResultIssuedRecipientPolicies } from "./CertificateResultIssuedRecipientPolicies";
 import styles from "./recommendations.module.css";
 
@@ -131,9 +130,9 @@ export function CertificateResultView({
         ) : null}
 
         {issuedPreview.kind === "policy-dark" ? (
-          <CertificateResultIssuedDarkCard
+          <PartnerClientCertificateCard
             model={issuedPreview.model}
-            rows={issuedPreview.rows}
+            policyRows={issuedPreview.rows}
           />
         ) : (
           <>

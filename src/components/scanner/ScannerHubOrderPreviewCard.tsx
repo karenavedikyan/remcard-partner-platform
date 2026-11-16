@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { PartnerClientCertificateCard } from "@/components/recommendations/PartnerClientCertificateCard";
-import { CertificateResultIssuedDarkCard } from "@/components/recommendations/CertificateResultIssuedDarkCard";
 import { resolveCertificatePageUrl } from "@/lib/certificate-url";
 import { buildIssuedCertificatePreview } from "@/lib/certificate-issued-preview";
 import { orderPreviewToStoreCertificate } from "@/lib/order-preview-certificate";
@@ -13,7 +12,7 @@ type Props = {
   operationCode: string;
 };
 
-/** Certificate column card during scanner order preview (policy dark card vs legacy partner card). */
+/** Certificate column card during scanner order preview (branded red card; policy snapshots add per-recipient rows). */
 export function ScannerHubOrderPreviewCard({ preview, operationCode }: Props) {
   const issuedPreview = useMemo(() => {
     const cert = orderPreviewToStoreCertificate(preview, operationCode);
@@ -23,9 +22,10 @@ export function ScannerHubOrderPreviewCard({ preview, operationCode }: Props) {
 
   if (issuedPreview.kind === "policy-dark") {
     return (
-      <CertificateResultIssuedDarkCard
+      <PartnerClientCertificateCard
         model={issuedPreview.model}
-        rows={issuedPreview.rows}
+        presentation="scanner"
+        policyRows={issuedPreview.rows}
       />
     );
   }

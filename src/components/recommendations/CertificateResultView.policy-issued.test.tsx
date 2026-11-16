@@ -16,7 +16,7 @@ describe("CertificateResultView policy-issued preview", () => {
     vi.useRealTimers();
   });
 
-  it("renders dark integrated card with per-partner rows (A expired, B valid)", () => {
+  it("renders the red card with integrated per-partner rows (A expired, B valid)", () => {
     const certificate: StoreCertificate = {
       id: "1",
       promoCode: "P",
@@ -70,8 +70,11 @@ describe("CertificateResultView policy-issued preview", () => {
     };
 
     render(<CertificateResultView certificate={certificate} displayCode="P" />);
-    expect(screen.getByTestId("issued-policy-dark-card")).toBeInTheDocument();
-    expect(screen.getByTestId("cp-cert-rows")).toBeInTheDocument();
+    const card = screen.getByTestId("client-certificate-card");
+    expect(card).toHaveAttribute("data-policy-card", "true");
+    expect(card.className).not.toMatch(/dark/i);
+    expect(screen.queryByTestId("issued-policy-dark-card")).not.toBeInTheDocument();
+    expect(card).toContainElement(screen.getByTestId("cp-cert-rows"));
     expect(screen.queryByTestId("certificate-issued-recipient-policies")).not.toBeInTheDocument();
     expect(screen.getByTestId("issued-policy-row-store-a")).toHaveAttribute("data-row-state", "expired");
     expect(screen.getByTestId("issued-policy-row-store-b")).toHaveAttribute("data-row-state", "active");
@@ -107,6 +110,7 @@ describe("CertificateResultView policy-issued preview", () => {
     };
     render(<CertificateResultView certificate={certificate} />);
     expect(screen.getByTestId("client-certificate-card")).toBeInTheDocument();
-    expect(screen.queryByTestId("issued-policy-dark-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("client-certificate-card")).not.toHaveAttribute("data-policy-card");
+    expect(screen.queryByTestId("cp-cert-rows")).not.toBeInTheDocument();
   });
 });

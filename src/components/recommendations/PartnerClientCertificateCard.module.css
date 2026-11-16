@@ -100,6 +100,8 @@
   position: relative;
   margin-top: 20px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
   padding: 12px;
   border-radius: 16px;
@@ -139,7 +141,7 @@
 
 .codeCol {
   display: flex;
-  min-width: 0;
+  min-width: min-content;
   flex: 1;
   flex-direction: column;
   justify-content: center;
@@ -163,7 +165,9 @@
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.25;
-  word-break: break-all;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
   color: #1b1f1a;
 }
 
@@ -200,6 +204,67 @@
 
 .statusText {
   text-align: right;
+}
+
+/* Frozen per-recipient terms: translucent dark inset on the red gradient (>=4.5:1 for white 12-14px text across the whole gradient and glow circles). */
+.policyRows {
+  position: relative;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.policyRow {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  background: rgb(38 14 16 / 25%);
+  color: #fff;
+}
+
+.policyRowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+
+.policyRowName {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.policyRowTag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(38 14 16 / 55%);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.policyRowFact,
+.policyRowFine {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.policyRowFine {
+  font-size: 12px;
+  color: rgb(255 255 255 / 92%);
 }
 
 @media (max-width: 390px) {

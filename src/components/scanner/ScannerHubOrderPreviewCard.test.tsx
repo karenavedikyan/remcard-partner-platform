@@ -71,11 +71,12 @@ describe("ScannerHubOrderPreviewCard", () => {
     vi.useRealTimers();
   });
 
-  it("renders policy dark card when recipientPolicy snapshot is present", () => {
+  it("renders the red certificate card with per-recipient rows when recipientPolicy snapshot is present", () => {
     render(<ScannerHubOrderPreviewCard preview={policyPreview()} operationCode="QR-OP" />);
-    expect(screen.getByTestId("issued-policy-dark-card")).toBeInTheDocument();
-    expect(screen.getByTestId("cp-cert-rows")).toBeInTheDocument();
-    expect(screen.queryByTestId("client-certificate-card")).not.toBeInTheDocument();
+    const card = screen.getByTestId("client-certificate-card");
+    expect(card).toHaveAttribute("data-policy-card", "true");
+    expect(screen.queryByTestId("issued-policy-dark-card")).not.toBeInTheDocument();
+    expect(card).toContainElement(screen.getByTestId("cp-cert-rows"));
   });
 
   it("renders legacy partner card when no recipientPolicy on partner", () => {
@@ -83,7 +84,7 @@ describe("ScannerHubOrderPreviewCard", () => {
     preview.partner = { ...preview.partner, recipientPolicy: undefined };
     preview.certificate = { ...preview.certificate, recipientPolicy: undefined };
     render(<ScannerHubOrderPreviewCard preview={preview} operationCode="QR-OP" />);
-    expect(screen.queryByTestId("issued-policy-dark-card")).not.toBeInTheDocument();
-    expect(screen.getByTestId("client-certificate-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("cp-cert-rows")).not.toBeInTheDocument();
+    expect(screen.getByTestId("client-certificate-card")).not.toHaveAttribute("data-policy-card");
   });
 });
