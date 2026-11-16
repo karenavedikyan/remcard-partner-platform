@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import styles from "../observer/observer.module.css";
 import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
 import type { ReceivingBulkEditDraft, ReceivingWorkingStageOption } from "./receiving-bulk-handoff";
 
@@ -52,7 +51,7 @@ export function ReceivingBulkEditPanel({
   return (
     <form
       ref={formRef}
-      className={styles.editPanel}
+      className="panel stack ca-bulk-edit"
       data-ca-bulk-edit
       data-bulk-stage-blocked={stageBlocked ? "1" : "0"}
       data-contract-state={contractState}
@@ -61,14 +60,14 @@ export function ReceivingBulkEditPanel({
     >
       <h3 id={titleId}>Групповое изменение · {count}</h3>
       {stageBlocked ? (
-        <p className={styles.persistenceNotice} role="status">
+        <p className="notice" role="status">
           В выборке есть оплаченные, отгруженные, с возвратом или закрытые обращения — рабочий этап
           для всей группы изменить нельзя. Можно добавить служебную заметку.
         </p>
       ) : (
-        <p className={styles.mutedSmall}>Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат».</p>
+        <p className="small muted">Нельзя массово ставить «Оплачено», «Отгружено» или «Возврат».</p>
       )}
-      <label className={styles.field}>
+      <label className="field">
         Этап работ
         <select
           name="bulk-stage"
@@ -83,13 +82,13 @@ export function ReceivingBulkEditPanel({
             </option>
           ))}
         </select>
-        <span className={styles.mutedSmall}>
+        <span className="small muted">
           {stageBlocked
             ? "Снимите из выборки закрытые обращения, чтобы менять этап."
             : "Только рабочие этапы, без оплаты и отгрузки."}
         </span>
       </label>
-      <label className={styles.field}>
+      <label className="field">
         Служебная заметка
         <textarea
           name="bulk-note"
@@ -100,7 +99,7 @@ export function ReceivingBulkEditPanel({
           onChange={(e) => setServiceNote(e.target.value)}
         />
       </label>
-      <label className={styles.personalCheck}>
+      <label className="ca-check-line">
         <input
           type="checkbox"
           name="bulk-note-append"
@@ -110,17 +109,17 @@ export function ReceivingBulkEditPanel({
         Добавить к существующей заметке
       </label>
       {saveError ? (
-        <p className={styles.persistenceNotice} role="alert">
+        <p className="notice" role="alert">
           {saveError}
         </p>
       ) : null}
-      <div className={styles.personalActions}>
-        <button type="button" className={styles.ghostBtn} data-ca-action="bulk:edit-cancel" onClick={onCancel}>
+      <div className="ca-form-actions">
+        <button type="button" className="btn ghost" data-ca-action="bulk:edit-cancel" onClick={onCancel}>
           Отмена
         </button>
         <button
           type="submit"
-          className={styles.primaryBtn}
+          className="btn primary"
           data-ca-action="bulk:edit-apply"
           disabled={applyDisabled}
           aria-disabled={applyDisabled}

@@ -1,6 +1,5 @@
 "use client";
 
-import styles from "../observer/observer.module.css";
 import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
 import type { ReceivingBulkConfirmKind } from "./receiving-bulk-handoff";
 
@@ -57,8 +56,8 @@ export function ReceivingBulkConfirmPanel({
         : c.confirm;
 
   return (
-    <section
-      className={styles.confirmPanel}
+    <aside
+      className="panel stack ca-bulk-confirm"
       role="region"
       aria-label="Подтверждение группового действия"
       data-testid="ca-receiving-bulk-confirm"
@@ -70,27 +69,23 @@ export function ReceivingBulkConfirmPanel({
         Выбрано обращений: {count}. {c.body}
       </p>
       {contractState === "blocked" ? (
-        <p className={styles.mutedSmall}>
-          Массовые действия — <code>POST /api/pro/client-appeals/batch</code> (K1). Без финансовых
-          операций.
-        </p>
+        <p className="small muted">Групповые действия сейчас недоступны. Финансовых операций здесь нет.</p>
       ) : null}
       {partialError ? (
-        <p className={styles.persistenceNotice} role="alert">
+        <p className="notice" role="alert">
           {partialError}
         </p>
       ) : null}
-      <div className={styles.personalActions}>
-        <button type="button" className={styles.ghostBtn} data-ca-action="bulk:confirm-no" onClick={onCancel}>
+      <div className="ca-form-actions">
+        <button type="button" className="btn ghost" data-ca-action="bulk:confirm-no" onClick={onCancel}>
           Отмена
         </button>
         <button
           type="button"
-          className={styles.primaryBtn}
+          className="btn primary"
           data-ca-action="bulk:confirm-yes"
           disabled={confirmBlocked}
           aria-disabled={confirmBlocked}
-          title={contractState === "blocked" ? "BLK-RECEIVING-APPEALS" : undefined}
           onClick={() => {
             if (!confirmBlocked) onConfirm();
           }}
@@ -98,6 +93,6 @@ export function ReceivingBulkConfirmPanel({
           {confirmLabel}
         </button>
       </div>
-    </section>
+    </aside>
   );
 }

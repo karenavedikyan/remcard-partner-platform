@@ -89,7 +89,7 @@ describe("Observer workspace: независимая приёмка partial/retr
     expect(mutationCalls()[1][1]?.body).not.toHaveProperty("alias");
     expect(mutationCalls()[1][1]?.body).not.toHaveProperty("note");
     await waitFor(() => expect(screen.queryByRole("textbox", { name: "Общая метка" })).not.toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 0")).toBeInTheDocument();
+    expect(screen.queryByText(/Выбрано:/)).not.toBeInTheDocument();
   });
 
   it("409 не теряет одиночный черновик; повтор берёт обновлённую expectedVersion", async () => {
@@ -102,7 +102,7 @@ describe("Observer workspace: независимая приёмка partial/retr
     render(<ObserverPartnersWorkspace />);
     await user.click(await screen.findByRole("button", { name: "Списком" }));
     const firstRow = screen.getAllByTestId("ca-observer-client-row")[0];
-    await user.click(within(firstRow).getByRole("button", { name: "Изменить" }));
+    await user.click(within(firstRow).getByRole("button", { name: /^Изменить/ }));
     const note = screen.getByRole("textbox", { name: "Личная заметка" });
     await user.clear(note);
     await user.type(note, "Не потерять при конфликте");

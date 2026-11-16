@@ -11,7 +11,9 @@
 import type {
   ReceivingAppealDetailActions,
   ReceivingAppealDetailReady,
+  ReceivingSettingsAddResult,
 } from "./ReceivingAppealDetailView";
+import type { StageLike } from "./receiving-detail-stage-model";
 import type { ReceivingAppealDetailMapped } from "./detail-contract-alignment";
 import {
   RECEIVING_DETAIL_MARK_PAID_UNAVAILABLE,
@@ -49,6 +51,8 @@ export type ReceivingAppealProfilePatchInput = {
 export type ReceivingAppealStagePatchInput = {
   stageKey: string;
   refusedReason?: string | null;
+  /** ISO instant; sent only with `sys_shipped` (K1 `resolveShippedAtForShippedTransition`). */
+  shippedAt?: string | null;
   expectedRevision: number;
 };
 
@@ -92,6 +96,8 @@ export type ReceivingAppealDetailHostDeps = {
     body: ReceivingAppealProfilePatchInput,
   ) => Promise<ReceivingAppealDetailMutationOutcome>;
   mutateStage: (body: ReceivingAppealStagePatchInput) => Promise<ReceivingAppealDetailMutationOutcome>;
+  addRefusalReason?: (label: string) => Promise<ReceivingSettingsAddResult<string>>;
+  addWorkingStage?: (label: string) => Promise<ReceivingSettingsAddResult<StageLike>>;
   reloadDetail: () => Promise<void>;
   /** When set, P4 builds appeal-scoped purchase/scanner hrefs unless callbacks override. */
   navigateTo?: (href: string) => void;
@@ -150,10 +156,14 @@ export function buildReceivingAppealDetailReady(
           const result = await deps.mutateStage({
             stageKey: payload.stageKey,
             refusedReason: payload.refusedReason,
+            shippedAt: payload.shippedAt ?? null,
             expectedRevision: revision,
           });
           if (!result.ok && result.conflict) await deps.reloadDetail();
+          return result.ok;
         },
+        onAddRefusalReason: deps.addRefusalReason,
+        onAddWorkingStage: deps.addWorkingStage,
         onOpenPurchaseOrder: openPurchaseOrder,
         markPaid:
           onOpenOrderPipeline || openPurchaseOrder
@@ -171,14 +181,18 @@ export function buildReceivingAppealDetailReady(
             : { supported: false, reason: RECEIVING_PAID_REVIEW_ABSENT_REASON },
         shippedConfirm:
           mapped.appeal.stageId === "sys_paid" &&
-          Boolean(mapped.appeal.purchaseOrderId || mapped.appeal.paidAtDisplay)
+          Boolean(mapped.appeal.purchaseOrderId || mapped.appeal.paidAt || mapped.appeal.paidAtDisplay)
             ? {
                 supported: true,
-                onMarkShipped: () =>
-                  void deps.mutateStage({
+                onMarkShipped: async (shippedAtIso) => {
+                  const result = await deps.mutateStage({
                     stageKey: "sys_shipped",
+                    shippedAt: shippedAtIso ?? null,
                     expectedRevision: revision,
-                  }),
+                  });
+                  if (!result.ok && result.conflict) await deps.reloadDetail();
+                  return result.ok;
+                },
               }
             : {
                 supported: false,
@@ -190,6 +204,7 @@ export function buildReceivingAppealDetailReady(
     status: "ready",
     appeal: mapped.appeal,
     history: mapped.history,
+    workingStages: mapped.workingStages,
     readOnly,
     actions,
   };

@@ -3,6 +3,7 @@
 import {
   createContext,
   useCallback,
+  useEffect,
   useContext,
   useMemo,
   useState,
@@ -20,6 +21,10 @@ export type ClientsDirectionProbeState =
   | "not_empty"
   | "proven_empty";
 
+export type ClientsChromeDirection = "incoming" | "at-partners";
+
+type SubviewState = { incoming: boolean; "at-partners": boolean };
+
 type ChromeCtx = {
   incoming: ClientsDirectionProbeState;
   atPartners: ClientsDirectionProbeState;
@@ -27,6 +32,12 @@ type ChromeCtx = {
   setAtPartners: Dispatch<SetStateAction<ClientsDirectionProbeState>>;
   hideTopChrome: boolean;
   hideDirectionTabs: boolean;
+  /** Direction whose list the page shows (drives the page subtitle). */
+  activeDirection: ClientsChromeDirection;
+  setActiveDirection: Dispatch<SetStateAction<ClientsChromeDirection>>;
+  /** A full-screen sub-view (card, analytics, stages…) of the active direction is open: no page header, no switcher. */
+  subviewOpen: boolean;
+  setSubviewFor: (direction: ClientsChromeDirection, open: boolean) => void;
 };
 
 const ClientsPageChromeContext = createContext<ChromeCtx | null>(null);
@@ -58,6 +69,14 @@ export function ClientsPageChromeProvider({
 }) {
   const [incoming, setIncoming] = useState<ClientsDirectionProbeState>("idle");
   const [atPartners, setAtPartners] = useState<ClientsDirectionProbeState>("idle");
+  const [activeDirection, setActiveDirection] = useState<ClientsChromeDirection>(
+    accessMode === "agent" ? "at-partners" : "incoming",
+  );
+  const [subviews, setSubviews] = useState<SubviewState>({ incoming: false, "at-partners": false });
+  const setSubviewFor = useCallback((direction: ClientsChromeDirection, open: boolean) => {
+    setSubviews((cur) => (cur[direction] === open ? cur : { ...cur, [direction]: open }));
+  }, []);
+  const subviewOpen = subviews[activeDirection];
 
   const hideTopChrome = useMemo(
     () => bothDirectionsProvenEmpty(accessMode, incoming, atPartners),
@@ -78,8 +97,12 @@ export function ClientsPageChromeProvider({
       setAtPartners,
       hideTopChrome,
       hideDirectionTabs,
+      activeDirection,
+      setActiveDirection,
+      subviewOpen,
+      setSubviewFor,
     }),
-    [atPartners, hideDirectionTabs, hideTopChrome, incoming],
+    [activeDirection, atPartners, hideDirectionTabs, hideTopChrome, incoming, setSubviewFor, subviewOpen],
   );
 
   return <ClientsPageChromeContext.Provider value={value}>{children}</ClientsPageChromeContext.Provider>;
@@ -107,4 +130,14 @@ export function useReportClientsDirectionProbe(direction: "incoming" | "at-partn
     },
     [direction, setAtPartners, setIncoming],
   );
+}
+
+/** Reports that a full-screen sub-view is (not) open so the page header and the direction switcher step aside. */
+export function useReportClientsSubview(direction: ClientsChromeDirection, open: boolean) {
+  const setSubviewFor = useClientsPageChrome()?.setSubviewFor;
+  useEffect(() => {
+    if (!setSubviewFor) return;
+    setSubviewFor(direction, open);
+    return () => setSubviewFor(direction, false);
+  }, [direction, open, setSubviewFor]);
 }

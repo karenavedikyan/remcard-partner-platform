@@ -30,6 +30,7 @@ import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
 import type { ReceivingBulkAction, ReceivingBulkContractState } from "./ReceivingBulkActions";
 import { ReceivingBulkConfirmPanel } from "./ReceivingBulkConfirmPanel";
 import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
+import { ReceivingFunnelPage } from "./ReceivingFunnelPage";
 import {
   applyReceivingBulkEditsPerId,
   isReceivingAppealLockedForBulkStage,
@@ -52,14 +53,17 @@ import {
   isReceivingDirectionIntroEligible,
   type ReceivingAllBucketsProof,
 } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
-import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useReportClientsDirectionProbe,
+  useReportClientsSubview,
+} from "@/components/clients/new-partner-empty/clientsPageChrome";
 import {
   useOwnerClientsBusinessPartnerType,
   useOwnerClientsMode,
 } from "@/components/clients/OwnerClientsModeContext";
 
 type LoadPhase = "loading" | "blocked" | "ready" | "error";
-type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail";
+type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail" | "analytics";
 
 const RECEIVING_LIST_REFRESH_NOTICE_DRAFT =
   "Не удалось обновить список. Черновик и выбранные записи сохранены.";
@@ -93,6 +97,7 @@ export function ReceivingAppealsWorkspace({
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
   const [view, setView] = useState<ReceivingView>("list");
   const [detailId, setDetailId] = useState<string | null>(null);
+  useReportClientsSubview("incoming", view !== "list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [persistNotice, setPersistNotice] = useState<string | null>(null);
   const [listFilters, setListFilters] = useState<ReceivingListFilters>({
@@ -157,6 +162,8 @@ export function ReceivingAppealsWorkspace({
         if (!append || !prev) return res.data;
         return {
           ...res.data,
+          // KPI is computed for the whole filtered set on the first page only; later pages keep it.
+          kpis: res.data.kpis ?? prev.kpis,
           appeals: mergeReceivingAppealPages(prev.appeals, res.data.appeals),
         };
       });
@@ -679,6 +686,10 @@ export function ReceivingAppealsWorkspace({
     );
   }
 
+  if (view === "analytics") {
+    return <ReceivingFunnelPage onBack={() => setView("list")} />;
+  }
+
   if (view === "detail" && detailId) {
     const listRow = data.appeals.find((row) => row.id === detailId);
     return (
@@ -729,37 +740,42 @@ export function ReceivingAppealsWorkspace({
     );
   }
 
+  const bulkEditNode =
+    bulkEditOpen && selected.size > 0 && mutationsAllowed ? (
+      <ReceivingBulkEditPanel
+        count={selected.size}
+        stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
+          id: s.id,
+          label: s.label,
+        }))}
+        stageBlocked={data.appeals
+          .filter((a) => selected.has(a.id))
+          .some((row) => isReceivingAppealLockedForBulkStage(row))}
+        contractState={bulkContractState}
+        saveError={batchPartial}
+        onCancel={() => setBulkEditOpen(false)}
+        onApply={(draft) => void executeBulkEdit(draft)}
+      />
+    ) : null;
+  const bulkConfirmNode =
+    bulkConfirm && mutationsAllowed ? (
+      <ReceivingBulkConfirmPanel
+        kind={bulkConfirm.kind}
+        count={bulkConfirm.ids.length}
+        contractState={bulkContractState}
+        partialError={batchPartial}
+        onCancel={() => setBulkConfirm(null)}
+        onConfirm={() => void executeBulkConfirmed()}
+      />
+    ) : null;
+
   return (
     <>
       {persistBanner}
       {listRefreshBanner}
-      {bulkEditOpen && selected.size > 0 && mutationsAllowed ? (
-        <ReceivingBulkEditPanel
-          count={selected.size}
-          stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
-            id: s.id,
-            label: s.label,
-          }))}
-          stageBlocked={data.appeals
-            .filter((a) => selected.has(a.id))
-            .some((row) => isReceivingAppealLockedForBulkStage(row))}
-          contractState={bulkContractState}
-          saveError={batchPartial}
-          onCancel={() => setBulkEditOpen(false)}
-          onApply={(draft) => void executeBulkEdit(draft)}
-        />
-      ) : null}
-      {bulkConfirm && mutationsAllowed ? (
-        <ReceivingBulkConfirmPanel
-          kind={bulkConfirm.kind}
-          count={bulkConfirm.ids.length}
-          contractState={bulkContractState}
-          partialError={batchPartial}
-          onCancel={() => setBulkConfirm(null)}
-          onConfirm={() => void executeBulkConfirmed()}
-        />
-      ) : null}
       <ReceivingAppealsList
+        bulkEditSlot={bulkEditNode}
+        bulkConfirmSlot={bulkConfirmNode}
         data={data}
         stageLabelById={(row) =>
           receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel)
@@ -792,9 +808,7 @@ export function ReceivingAppealsWorkspace({
             ? () => setView("scan")
             : () => setPersistNotice(denialMessage)
         }
-        onNavigateAnalytics={() =>
-          setPersistNotice("Аналитика воронки — страница п.85 после receiving list API.")
-        }
+        onNavigateAnalytics={() => setView("analytics")}
       />
     </>
   );

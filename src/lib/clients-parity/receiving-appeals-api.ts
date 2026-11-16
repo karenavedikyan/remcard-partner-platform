@@ -217,6 +217,12 @@ export type ReceivingAppealDetail = ReceivingAppealListRow & {
  */
 export type ReceivingAppealDetailWire = {
   appeal: ReceivingAppealDetailRowWire;
+  certificateTerm?: {
+    validUntil: string;
+    purchaseLimit: number | null;
+    consumedUses: number;
+    remainingPurchases: number | null;
+  } | null;
   revision: string | number;
   history: ReceivingAppealHistoryWire[];
   workingStages?: ReceivingWorkingStage[];
@@ -391,6 +397,9 @@ export function receivingStatusFilterOptions(
 
 /** KPI strip — values from K1/K8 server aggregation only (UI does not recompute). */
 export type ReceivingListKpis = {
+  /** Size of the filtered cohort (denominator of `conv`); absent on older servers. */
+  total?: number;
+  returned?: number;
   inWork: number;
   /** Count in paid stage — client purchase funnel, not bonus payout. */
   paid: number;
@@ -677,7 +686,7 @@ export function receivingStageLabelsFromSettings(
 
 export function formatReceivingPaidRubFromKopecks(kopecks: number | null | undefined): string | null {
   if (kopecks == null || !Number.isFinite(kopecks)) return null;
-  const rub = Math.trunc(kopecks / 100);
+  const rub = Math.trunc(kopecks / 100).toLocaleString("ru-RU");
   const frac = Math.abs(kopecks % 100);
   return frac === 0 ? `${rub} ₽` : `${rub},${String(frac).padStart(2, "0")} ₽`;
 }
@@ -831,6 +840,8 @@ export type ReceivingAppealProfilePatchWire = {
 export type ReceivingAppealStagePatchBody = {
   stageKey: string;
   refusedReason?: string | null;
+  /** ISO instant, only with `sys_shipped`; omitted/null lets the server use the current time. */
+  shippedAt?: string | null;
   expectedRevision: string | number;
 };
 
@@ -1534,6 +1545,73 @@ export async function patchReceivingAppealStage(
       ok: false,
       code: "ERROR",
       message: caught instanceof RemcardApiError ? caught.message : "Не удалось сменить этап",
+    };
+  }
+}
+
+
+/** `GET /api/pro/client-appeals/funnel` — read-only aggregation of the receiving owner's cohort. */
+export type ReceivingFunnelCohort = { total: number; paid: number; conv: string };
+
+export type ReceivingFunnel = {
+  total: number;
+  inWork: number;
+  paid: number;
+  shipped: number;
+  returned: number;
+  conv: string;
+  period: { from: string | null; to: string | null };
+  /** Mean client purchase amount in kopecks; null when the cohort has no counted purchases. */
+  avgCheckKopecks: number | null;
+  avgCheckPurchases: number;
+  certificate: ReceivingFunnelCohort;
+  manual: ReceivingFunnelCohort;
+};
+
+export type ReceivingFunnelQuery = {
+  /** `YYYY-MM-DD` (UTC day start). Omit for no lower bound. */
+  from?: string;
+  /** `YYYY-MM-DD` (UTC day end). Omit for no upper bound. */
+  to?: string;
+  source?: "all" | "cert" | "manual";
+};
+
+export type ReceivingFunnelLoadResult =
+  | { ok: true; funnel: ReceivingFunnel }
+  | { ok: false; code: "BLOCKED_CONTRACT" | "VALIDATION" | "ERROR"; message: string };
+
+const RECEIVING_FUNNEL_PATH = "/api/pro/client-appeals/funnel";
+
+export async function fetchReceivingFunnel(
+  query: ReceivingFunnelQuery = {},
+  signal?: AbortSignal,
+): Promise<ReceivingFunnelLoadResult> {
+  if (!isAllowedProxyRoute("GET", RECEIVING_FUNNEL_PATH)) {
+    return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
+  }
+  const params = new URLSearchParams();
+  if (query.from) params.set("from", query.from);
+  if (query.to) params.set("to", query.to);
+  if (query.source && query.source !== "all") params.set("source", query.source);
+  const qs = params.toString();
+  try {
+    const payload = await remcardFetch<{ funnel?: ReceivingFunnel }>(
+      qs ? `${RECEIVING_FUNNEL_PATH}?${qs}` : RECEIVING_FUNNEL_PATH,
+      { signal },
+    );
+    if (!payload?.funnel || typeof payload.funnel.total !== "number") {
+      return { ok: false, code: "ERROR", message: "Пустой ответ аналитики." };
+    }
+    return { ok: true, funnel: payload.funnel };
+  } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 400) {
+      return { ok: false, code: "VALIDATION", message: caught.message };
+    }
+    if (caught instanceof DOMException && caught.name === "AbortError") throw caught;
+    return {
+      ok: false,
+      code: "ERROR",
+      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить аналитику",
     };
   }
 }

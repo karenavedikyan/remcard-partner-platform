@@ -15,6 +15,7 @@ import type {
   ReceivingAppealDetailReady,
 } from "./ReceivingAppealDetailView";
 import type { ReceivingAppealHistoryEntry } from "./ReceivingAppealHistory";
+import type { ReceivingCertificateTerm } from "./receiving-certificate-term";
 
 /** K8 `ClientAppealRecord` wire (receiving CRM — includes private + purchase projection). */
 export type ClientAppealRecordWire = {
@@ -49,6 +50,8 @@ export type ClientAppealRecordWire = {
 /** K1 GET `/api/pro/client-appeals/:id` — history and revision are top-level (not on `appeal`). */
 export type K1ReceivingAppealDetailEnvelopeWire = {
   appeal: ClientAppealRecordWire;
+  /** Frozen per-recipient certificate term; absent/null for legacy certificates and manual appeals. */
+  certificateTerm?: ReceivingCertificateTerm | null;
   revision: number;
   history: ClientAppealHistoryEventWire[];
   workingStages: ClientAppealWorkingStageWire[];
@@ -159,8 +162,8 @@ export function resolveClientAppealStageLabel(
 export function resolveClientAppealSourceLabel(record: Pick<ClientAppealRecordWire, "originKind" | "manualSourceKey">): string {
   if (record.originKind === "CERTIFICATE") return "По сертификату";
   const manual = record.manualSourceKey?.trim();
-  if (manual && MANUAL_SOURCE_LABELS[manual]) return MANUAL_SOURCE_LABELS[manual]!;
-  return manual ? `Вручную: ${manual}` : "Вручную";
+  if (manual && MANUAL_SOURCE_LABELS[manual]) return `Добавлен вручную · ${MANUAL_SOURCE_LABELS[manual]}`;
+  return "Добавлен вручную";
 }
 
 export function clientPurchaseDisplayFromRecord(
@@ -218,6 +221,7 @@ export function k1ReceivingDetailEnvelopeToP4Mapped(
       { includePrivateFields: !options?.readOnly },
     ),
     ...clientPurchaseDisplayFromRecord(envelope.appeal),
+    certTerm: envelope.certificateTerm ?? null,
   };
   const history = envelope.history.map(historyEventWireToUi);
   return {
@@ -290,5 +294,9 @@ export function receivingRecordToDetailDto(
     receivingPartnerUserId: record.receivingPartnerUserId,
     receivingOrganizationId: record.receivingOrganizationId,
     receivingBranchId: record.receivingBranchId,
+    refusedReason: record.refusedReason,
+    shippedAt: record.shippedAt,
+    paidAt: record.paidAt,
+    createdAt: record.createdAt,
   };
 }

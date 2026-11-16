@@ -2,7 +2,6 @@
 
 import { formatObserverDateTime } from "@/lib/clients-parity/observer-display";
 import { formatAppealHistoryTimelineText } from "@/lib/clients-parity/appeal-history-stage-text";
-import styles from "../observer/observer.module.css";
 
 /** K1 row — aligns with K8 `ClientAppealHistoryEvent` (server-sourced only). */
 export type ReceivingAppealHistoryEntry = {
@@ -115,22 +114,23 @@ export function ReceivingAppealHistory({
   refusedReason,
 }: Props) {
   const rows = projectReceivingHistory(entries, projection, refusedReason);
+  const referrer = projection === "referrer-public" || projection === "k2-referrer-public";
   return (
-    <section className={styles.blocked} data-testid="ca-receiving-appeal-history">
-      <h3>История</h3>
-      {projection === "referrer-public" || projection === "k2-referrer-public" ? (
-        <p className={styles.mutedSmall}>Без внутренних заметок принимающего партнёра.</p>
-      ) : null}
+    <section className="panel stack" data-testid="ca-receiving-appeal-history">
+      <h3>{referrer ? "Хронология (без внутренних заметок партнёра)" : "История"}</h3>
       {rows.length === 0 ? (
-        <p className={styles.mutedSmall}>{emptyLabel}</p>
+        <p className="small muted">{emptyLabel}</p>
       ) : (
-        <ol className={styles.detailGrid} role="list">
+        <ol className="ca-timeline">
           {rows.map((row) => (
-            <li key={`${row.at}:${row.text}`}>
-              <time className={styles.mutedSmall} dateTime={row.at}>
-                {formatObserverDateTime(row.at)}
-              </time>
-              <p>{row.text}</p>
+            <li key={`${row.at}:${row.text}`} className="ca-tl-item">
+              <span className="ca-tl-dot" aria-hidden="true" />
+              <div>
+                <time className="small muted" dateTime={row.at}>
+                  {formatObserverDateTime(row.at)}
+                </time>
+                <p>{row.text}</p>
+              </div>
             </li>
           ))}
         </ol>

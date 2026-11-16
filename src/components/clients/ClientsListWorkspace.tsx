@@ -8,35 +8,27 @@ import {
   useOwnerClientsBusinessPartnerType,
   useOwnerClientsMode,
 } from "@/components/clients/OwnerClientsModeContext";
-import { businessClientsPageCopy } from "@/lib/business-clients/copy";
+import { clientsListPageCopy } from "@/lib/business-clients/copy";
 import { ClientsPageChromeProvider, useClientsPageChrome } from "@/components/clients/new-partner-empty/clientsPageChrome";
 import styles from "@/components/clients/new-partner-empty/clients-list-chrome.module.css";
 
-function ClientsListBody() {
+export function ClientsListBody() {
   const mode = useOwnerClientsMode();
   const businessPartnerType = useOwnerClientsBusinessPartnerType();
   const chrome = useClientsPageChrome();
   if (!mode) return null;
-  const heading =
-    mode === "business" && businessPartnerType
-      ? businessClientsPageCopy(businessPartnerType)
-      : mode === "agent"
-        ? {
-            eyebrow: "АГЕНТ",
-            title: "Мои клиенты у партнёров",
-            description: "Направленные клиенты и статусы у принимающих партнёров.",
-          }
-        : {
-            eyebrow: "Специалист",
-            title: "Клиенты",
-            description: "Клиенты у вас и направления к партнёрам.",
-          };
+  const heading = clientsListPageCopy({
+    mode,
+    partnerType: businessPartnerType,
+    direction: chrome?.activeDirection ?? "incoming",
+  });
 
   const hideTop = chrome?.hideTopChrome ?? false;
+  const subviewOpen = chrome?.subviewOpen ?? false;
 
   return (
     <>
-      {hideTop ? (
+      {subviewOpen ? null : hideTop ? (
         <h1 className={styles.visuallyHiddenPageTitle}>{heading.title}</h1>
       ) : (
         <PageHeading
@@ -50,7 +42,7 @@ function ClientsListBody() {
   );
 }
 
-function ClientsListChromeShell({ children }: { children: ReactNode }) {
+export function ClientsListChromeShell({ children }: { children: ReactNode }) {
   const mode = useOwnerClientsMode();
   if (!mode) return <>{children}</>;
   return <ClientsPageChromeProvider accessMode={mode}>{children}</ClientsPageChromeProvider>;

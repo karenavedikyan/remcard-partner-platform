@@ -1,6 +1,5 @@
 "use client";
 
-import styles from "./observer.module.css";
 import type { ObserverPersonalPersistenceStatus } from "./ObserverPersonalEditPanel";
 
 type Props = {
@@ -53,7 +52,7 @@ export function ObserverPersonalConfirmPanel({
 
   return (
     <section
-      className={styles.confirmPanel}
+      className="panel ca-personal-confirm"
       role="region"
       aria-label="Подтверждение действия"
       data-testid="ca-observer-personal-confirm"
@@ -65,27 +64,23 @@ export function ObserverPersonalConfirmPanel({
         Выбрано записей: {count}. {c.body}
       </p>
       {persistenceStatus === "blocked" ? (
-        <p className={styles.mutedSmall}>
-          Сохранение личного списка идёт через K5 `referred-appeals/personal-meta` (navigator 86ac3e35)
-          после подключения P1 proxy. Данные партнёров и глобальный CRM не меняются.
-        </p>
+        <p className="small muted">Сохранение личного списка сейчас недоступно. Данные партнёров не меняются.</p>
       ) : null}
       {partialError ? (
-        <p className={styles.persistenceNotice} role="alert">
+        <p className="ca-personal-notice" role="alert">
           {partialError}
         </p>
       ) : null}
-      <div className={styles.personalActions}>
-        <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
+      <div className="ca-personal-actions">
+        <button type="button" className="btn ghost" data-observer-action="cancel" onClick={onCancel}>
           Отмена
         </button>
         <button
           type="button"
-          className={styles.primaryBtn}
+          className="btn primary"
           data-observer-action="confirm"
           disabled={confirmBlocked}
           aria-disabled={confirmBlocked}
-          title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
           onClick={() => {
             if (persistenceStatus === "pending") return;
             if (!confirmBlocked) onConfirm();

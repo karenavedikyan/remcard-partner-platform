@@ -1,7 +1,5 @@
 "use client";
 
-import styles from "../observer/observer.module.css";
-
 /** Prototype client-appeals.js bucket naming (receiving CRM, not observer trash overlay). */
 export type ReceivingAppealBucket = "active" | "archive" | "trash";
 
@@ -18,97 +16,71 @@ export type ReceivingBulkContractState = "blocked" | "ready" | "pending" | "refr
 export type ReceivingBulkActionsProps = {
   bucket: ReceivingAppealBucket;
   selectedCount: number;
-  visibleCount: number;
-  allVisibleSelected: boolean;
-  someVisibleSelected: boolean;
   contractState?: ReceivingBulkContractState;
-  blockerId?: string;
   batchNotice?: string | null;
   partialError?: string | null;
   selectionOutsideView?: number;
-  onSelectAll: (checked: boolean) => void;
   onAction: (action: ReceivingBulkAction) => void;
 };
 
 /**
- * Receiving incoming list bulk toolbar (C11/C12). P6 wires list selection; K1 wires
- * client-appeals batch API. No wallet / purchase / payout actions.
+ * Prototype `ca-bulk-bar`: shown only while rows are selected («Выбрано: N», edit/archive/delete or
+ * unarchive/trash or restore, «Сбросить выбор»). Results of a finished batch (success note, partial
+ * failure) stay visible after the selection is cleared. No wallet / purchase / payout actions.
  */
 export function ReceivingBulkActions({
   bucket,
   selectedCount,
-  visibleCount,
-  allVisibleSelected,
-  someVisibleSelected,
   contractState = "blocked",
-  blockerId = "BLK-RECEIVING-APPEALS",
   batchNotice,
   partialError,
   selectionOutsideView = 0,
-  onSelectAll,
   onAction,
 }: ReceivingBulkActionsProps) {
-  const selectRef = (input: HTMLInputElement | null) => {
-    if (!input) return;
-    input.indeterminate = someVisibleSelected && !allVisibleSelected;
-    input.setAttribute(
-      "aria-checked",
-      someVisibleSelected && !allVisibleSelected ? "mixed" : allVisibleSelected ? "true" : "false",
-    );
-  };
+  const actionsDisabled =
+    contractState === "blocked" || contractState === "pending" || contractState === "refresh-required";
+  const clearDisabled = contractState === "pending" || contractState === "refresh-required";
 
-  const actionsDisabled = contractState === "blocked" || contractState === "pending" || contractState === "refresh-required";
-
-  return (
-    <section
-      className={styles.personalToolbar}
-      data-testid="ca-receiving-bulk-actions"
-      role="toolbar"
-      aria-label="Групповые действия"
-      data-contract-state={contractState}
-    >
-      <label className={styles.personalCheck}>
-        <input
-          ref={selectRef}
-          type="checkbox"
-          data-ca-bulk-select-all
-          checked={allVisibleSelected && visibleCount > 0}
-          disabled={visibleCount === 0 || contractState === "pending" || contractState === "refresh-required"}
-          onChange={(e) => onSelectAll(e.target.checked)}
-        />
-        Все найденные ({visibleCount})
-      </label>
-      <strong className={styles.selectedCount} role="status">
-        Выбрано: {selectedCount}
-      </strong>
-      {selectionOutsideView > 0 ? (
-        <span className={styles.mutedSmall} role="status">
-          Ещё {selectionOutsideView} скрыто фильтром
-        </span>
-      ) : null}
-      {contractState === "blocked" ? (
-        <p className={styles.mutedSmall}>
-          Массовые действия принимающего требуют <strong>{blockerId}</strong> (
-          <code>POST /api/pro/client-appeals/batch</code>). Финансовые операции здесь не выполняются.
-        </p>
-      ) : null}
+  const notices = (
+    <>
       {batchNotice ? (
-        <p className={styles.persistenceNotice} role="status">
+        <p className="notice" role="status" data-testid="ca-receiving-bulk-notice">
           {batchNotice}
         </p>
       ) : null}
       {partialError ? (
-        <p className={styles.persistenceNotice} role="alert">
+        <p className="notice" role="alert" data-testid="ca-receiving-bulk-error">
           {partialError}
         </p>
       ) : null}
-      {selectedCount > 0 ? (
-        <div className={styles.personalActions}>
+    </>
+  );
+
+  if (selectedCount <= 0) return batchNotice || partialError ? notices : null;
+
+  return (
+    <>
+      {notices}
+      <div
+        className="ca-bulk-bar panel"
+        data-testid="ca-receiving-bulk-actions"
+        role="toolbar"
+        aria-label="Групповые действия"
+        data-contract-state={contractState}
+      >
+        <span className="ca-bulk-count" role="status">
+          Выбрано: <strong>{selectedCount}</strong>
+          {selectionOutsideView > 0 ? ` · ещё ${selectionOutsideView} скрыто фильтром` : ""}
+        </span>
+        <div className="ca-bulk-actions">
+          {actionsDisabled && contractState === "blocked" ? (
+            <span className="small muted">Групповые действия сейчас недоступны.</span>
+          ) : null}
           {bucket === "active" ? (
             <>
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-ca-action="bulk:edit-open"
                 disabled={actionsDisabled}
                 onClick={() => onAction("edit-open")}
@@ -117,7 +89,7 @@ export function ReceivingBulkActions({
               </button>
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-ca-action="bulk:archive-ask"
                 disabled={actionsDisabled}
                 onClick={() => onAction("archive-ask")}
@@ -126,7 +98,7 @@ export function ReceivingBulkActions({
               </button>
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-ca-action="bulk:delete-ask"
                 disabled={actionsDisabled}
                 onClick={() => onAction("delete-ask")}
@@ -139,7 +111,7 @@ export function ReceivingBulkActions({
             <>
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-ca-action="bulk:unarchive-ask"
                 disabled={actionsDisabled}
                 onClick={() => onAction("unarchive-ask")}
@@ -148,7 +120,7 @@ export function ReceivingBulkActions({
               </button>
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-ca-action="bulk:delete-ask"
                 disabled={actionsDisabled}
                 onClick={() => onAction("delete-ask")}
@@ -160,27 +132,25 @@ export function ReceivingBulkActions({
           {bucket === "trash" ? (
             <button
               type="button"
-              className={styles.primaryBtn}
+              className="btn primary small-btn"
               data-ca-action="bulk:restore-ask"
               disabled={actionsDisabled}
               onClick={() => onAction("restore-ask")}
             >
-              {actionsDisabled ? "Восстановить (недоступно)" : "Восстановить"}
+              Восстановить
             </button>
           ) : null}
           <button
             type="button"
-            className={styles.ghostBtn}
+            className="btn ghost small-btn"
             data-ca-action="bulk:clear"
-            disabled={contractState === "pending" || contractState === "refresh-required"}
+            disabled={clearDisabled}
             onClick={() => onAction("clear")}
           >
             Сбросить выбор
           </button>
         </div>
-      ) : (
-        <span className={styles.mutedSmall}>Выберите строки для групповых действий.</span>
-      )}
-    </section>
+      </div>
+    </>
   );
 }

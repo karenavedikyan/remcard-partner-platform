@@ -147,7 +147,8 @@ describe("Receiving detail: preserve notes draft across CAS conflict", () => {
     expect(screen.getByTestId("ca-receiving-notes-input")).toHaveValue(draft);
     expect(screen.getByTestId("ca-receiving-notes-input")).toBeEnabled();
     expect(screen.getByTestId("ca-receiving-notes-save")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Перевести" })).toBeDisabled();
+    expect(screen.getByTestId("ca-receiving-next-primary")).toBeDisabled();
+    expect(screen.getByTestId("ca-receiving-pick-toggle")).toBeDisabled();
     expect(screen.queryByTestId("ca-receiving-notes-server-value")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("ca-receiving-notes-retry"));
     await waitFor(() => expect(reads()).toHaveLength(3));
@@ -209,6 +210,7 @@ describe("Receiving detail: preserve notes draft across CAS conflict", () => {
     const { user } = await open();
     await user.clear(screen.getByTestId("ca-receiving-notes-input"));
     await user.type(screen.getByTestId("ca-receiving-notes-input"), draft);
+    await user.click(screen.getByTestId("ca-receiving-pick-toggle"));
     await user.selectOptions(screen.getByTestId("ca-receiving-stage-select"), "work_contact");
     await user.click(screen.getByRole("button", { name: "Перевести" }));
     await waitFor(() => expect(reads()).toHaveLength(2));

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ObserverPersonalBucket } from "@/lib/clients-parity/types";
-import styles from "./observer.module.css";
 
 const BUCKETS: Record<ObserverPersonalBucket, string> = {
   active: "Активные",
@@ -60,85 +59,89 @@ export function ObserverPersonalTools({
     );
   };
 
+  const hasSelection = selectedCount > 0;
+  const selectAll = (
+    <label className="ca-personal-check">
+      <input
+        ref={selectRef}
+        type="checkbox"
+        data-observer-select-all
+        checked={allVisibleSelected && visibleCount > 0}
+        disabled={visibleCount === 0}
+        onChange={(e) => onSelectAll(e.target.checked)}
+      />
+      Все найденные ({visibleCount})
+    </label>
+  );
+
   return (
-    <section
-      className={styles.personalTools}
-      data-testid="ca-observer-personal-tools"
-      aria-label="Управление своим списком"
-    >
-      <div className={styles.personalTop}>
-        <div className={styles.personalBuckets} role="group" aria-label="Ваш список">
-          {(Object.keys(BUCKETS) as ObserverPersonalBucket[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={styles.bucketBtn}
-              data-observer-action={`bucket:${key}`}
-              aria-pressed={bucket === key}
-              onClick={() => onBucket(key)}
-            >
-              {BUCKETS[key]} <span>{counts[key]}</span>
-            </button>
-          ))}
-        </div>
-        {showLayoutToggle ? (
-          <div className={styles.personalLayout} role="group" aria-label="Вид списка">
-            <button
-              type="button"
-              className={styles.bucketBtn}
-              data-observer-action="layout:partners"
-              aria-pressed={layout === "partners"}
-              onClick={() => onLayout("partners")}
-            >
-              По партнёрам
-            </button>
-            <button
-              type="button"
-              className={styles.bucketBtn}
-              data-observer-action="layout:list"
-              aria-pressed={layout === "list"}
-              onClick={() => onLayout("list")}
-            >
-              Списком
-            </button>
+    <>
+      <section
+        className="ca-observer-tools"
+        data-testid="ca-observer-personal-tools"
+        aria-label="Управление своим списком"
+      >
+        <div className="ca-personal-top">
+          <div className="ca-personal-buckets" role="group" aria-label="Ваш список">
+            {(Object.keys(BUCKETS) as ObserverPersonalBucket[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className="btn ghost small-btn"
+                data-observer-action={`bucket:${key}`}
+                aria-pressed={bucket === key}
+                onClick={() => onBucket(key)}
+              >
+                {BUCKETS[key]} <span>{counts[key]}</span>
+              </button>
+            ))}
           </div>
-        ) : null}
-      </div>
-      <p className={styles.personalScope}>
-        Личные списки и заметки не меняют данные партнёров. Сохранение личных полей — только через
-        подтверждённый серверный контракт.
-      </p>
+          {showLayoutToggle ? (
+            <div className="ca-personal-layout" role="group" aria-label="Вид списка">
+              <button
+                type="button"
+                className="btn ghost small-btn"
+                data-observer-action="layout:partners"
+                aria-pressed={layout === "partners"}
+                onClick={() => onLayout("partners")}
+              >
+                По партнёрам
+              </button>
+              <button
+                type="button"
+                className="btn ghost small-btn"
+                data-observer-action="layout:list"
+                aria-pressed={layout === "list"}
+                onClick={() => onLayout("list")}
+              >
+                Списком
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <p className="small muted ca-personal-scope">Личные списки и заметки не меняют данные партнёров.</p>
+      </section>
       {persistenceNotice ? (
-        <p className={styles.persistenceNotice} role="status">
-          {persistenceNotice}
-        </p>
+        <div className="ca-personal-notice" role="status">
+          <span>{persistenceNotice}</span>
+        </div>
       ) : null}
-      <div className={styles.personalToolbar}>
-        <label className={styles.personalCheck}>
-          <input
-            ref={selectRef}
-            type="checkbox"
-            data-observer-select-all
-            checked={allVisibleSelected && visibleCount > 0}
-            disabled={visibleCount === 0}
-            onChange={(e) => onSelectAll(e.target.checked)}
-          />
-          Все найденные ({visibleCount})
-        </label>
-        <strong className={styles.selectedCount} role="status">
-          Выбрано: {selectedCount}
-        </strong>
-        {selectionOutsideView > 0 ? (
-          <span className={styles.mutedSmall} role="status">
-            Ещё {selectionOutsideView} скрыто фильтром
-          </span>
-        ) : null}
-        {selectedCount > 0 ? (
-          <div className={styles.personalActions}>
+      {hasSelection ? (
+        <div className="ca-personal-toolbar" data-testid="ca-observer-selection-bar">
+          {selectAll}
+          <strong className="small" role="status">
+            Выбрано: {selectedCount}
+          </strong>
+          {selectionOutsideView > 0 ? (
+            <span className="small muted" role="status">
+              Ещё {selectionOutsideView} скрыто фильтром
+            </span>
+          ) : null}
+          <div className="ca-personal-actions">
             {bucket !== "trash" ? (
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-observer-action="edit"
                 onClick={() => onEditSelected?.()}
               >
@@ -148,7 +151,7 @@ export function ObserverPersonalTools({
             {bucket === "active" ? (
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-observer-action="move:archived"
                 onClick={() => onRequestArchive?.()}
               >
@@ -157,7 +160,7 @@ export function ObserverPersonalTools({
             ) : (
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-observer-action="restore"
                 onClick={() => onRequestRestore?.()}
               >
@@ -167,7 +170,7 @@ export function ObserverPersonalTools({
             {bucket !== "trash" ? (
               <button
                 type="button"
-                className={styles.ghostBtn}
+                className="btn ghost small-btn"
                 data-observer-action="move:trash"
                 onClick={() => onRequestTrash?.()}
               >
@@ -176,19 +179,17 @@ export function ObserverPersonalTools({
             ) : null}
             <button
               type="button"
-              className={styles.ghostBtn}
+              className="btn ghost small-btn"
               data-observer-action="clear"
               onClick={onClearSelection}
             >
               Снять выбор
             </button>
           </div>
-        ) : (
-          <span className={styles.mutedSmall}>
-            Выберите клиента, группу партнёра или все найденные записи.
-          </span>
-        )}
-      </div>
-    </section>
+        </div>
+      ) : visibleCount > 0 ? (
+        <div className="ca-personal-selectall">{selectAll}</div>
+      ) : null}
+    </>
   );
 }

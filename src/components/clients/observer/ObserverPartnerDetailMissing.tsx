@@ -1,7 +1,5 @@
 "use client";
 
-import styles from "./observer.module.css";
-
 type Props = {
   partnerId: string;
   onBack: () => void;
@@ -9,15 +7,17 @@ type Props = {
 
 export function ObserverPartnerDetailMissing({ partnerId, onBack }: Props) {
   return (
-    <div className={styles.section} data-testid="ca-observer-partner-page" data-ca-state="missing">
-      <button type="button" className={styles.backBtn} data-ca-action="observer:back" onClick={onBack}>
-        ← К партнёрам
+    <div
+      className="stack ca-section ca-section--observer"
+      data-testid="ca-observer-partner-page"
+      data-ca-state="missing"
+    >
+      <button type="button" className="ca-back" data-ca-action="observer:back" onClick={onBack}>
+        <span aria-hidden="true">←</span> К партнёрам
       </button>
-      <section className={styles.blocked} data-testid="ca-observer-partner-missing">
+      <section className="panel empty ca-empty" data-testid="ca-observer-partner-missing">
         <h2>Партнёр не найден</h2>
-        <p className={styles.mutedSmall}>
-          Запись «{partnerId}» отсутствует в доступном списке или скрыта фильтрами.
-        </p>
+        <p className="muted">Запись «{partnerId}» отсутствует в доступном списке или скрыта фильтрами.</p>
       </section>
     </div>
   );

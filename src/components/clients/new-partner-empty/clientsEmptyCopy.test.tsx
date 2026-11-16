@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  clientsEmptyContentForDirection,
   clientsEmptyContentForRole,
   mapClientsAccessToEmptyRole,
 } from "./clientsEmptyCopy";
 
 describe("clients empty copy", () => {
+  it("receiving empty screen matches the prototype copy and buttons", () => {
+    const c = clientsEmptyContentForDirection("incoming", false);
+    expect(c.kicker).toBe("Клиенты у меня");
+    expect(c.title).toBe("Здесь начнётся работа с вашими клиентами");
+    expect(c.steps.map((s) => s.title)).toEqual(["Зарегистрируйте обращение", "Работайте с клиентом", "Оформите покупку"]);
+    expect(c.foot).toBe("Обращение появляется до покупки. Покупка и начисления учитываются отдельно.");
+    expect(c.primaryCta?.label).toBe("Сканировать сертификат");
+    expect(c.secondaryCta?.label).toBe("Добавить клиента");
+  });
+
   it("maps supported cabinet modes to four roles", () => {
     expect(mapClientsAccessToEmptyRole("agent")).toBe("AGENT");
     expect(mapClientsAccessToEmptyRole("specialist")).toBe("SPECIALIST");

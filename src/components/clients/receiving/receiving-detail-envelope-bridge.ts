@@ -60,6 +60,7 @@ export function receivingAppealDetailWireToK1Envelope(
 
   return {
     appeal,
+    certificateTerm: wire.certificateTerm ?? null,
     revision: typeof wire.revision === "number" ? wire.revision : Number(wire.revision) || 0,
     history,
     workingStages: wire.workingStages ?? [],

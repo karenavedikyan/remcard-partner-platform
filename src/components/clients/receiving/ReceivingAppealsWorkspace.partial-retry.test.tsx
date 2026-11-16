@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { ReceivingAppealsWorkspace } from "./ReceivingAppealsWorkspace";
 
+/** Prototype bar markup: `Выбрано: <strong>N</strong>` — match the whole counter text. */
+const selectedCount = (n: number) =>
+  screen.getByText((_, el) => el?.classList.contains("ca-bulk-count") === true && el.textContent === `Выбрано: ${n}`);
+
 vi.mock("@/lib/api-client", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/api-client")>(),
   remcardFetch: vi.fn(),
@@ -125,7 +129,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     const user = await openBulk();
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.getByText(/Выбрано обращений: 1/)).toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 1")).toBeInTheDocument();
+    expect(selectedCount(1)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument());
     expect(writes()).toHaveLength(2);
@@ -137,7 +141,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     const user = await openBulk();
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.getByText(/Выбрано обращений: 1/)).toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 1")).toBeInTheDocument();
+    expect(selectedCount(1)).toBeInTheDocument();
     expect(writes()).toHaveLength(1);
     for (const checkbox of within(screen.getByTestId("ca-receiving-appeals-list")).getAllByRole("checkbox")) {
       expect(checkbox).toBeDisabled();
@@ -178,7 +182,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     await user.click(screen.getByRole("checkbox", { name: "Добавить к существующей заметке" }));
     await user.click(screen.getByRole("button", { name: "Применить" }));
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Служебная заметка" })).toHaveValue("Новый текст"));
-    await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+    await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
     expect(screen.getByRole("checkbox", { name: "Добавить к существующей заметке" })).not.toBeChecked();
     expect(writes()).toHaveLength(2);
     transport.recover();
@@ -220,7 +224,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     const retry = await screen.findByRole("button", { name: /Повторить обновление/ });
     expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument();
-    expect(screen.getByText("Выбрано: 0")).toBeInTheDocument();
+    expect(screen.queryByTestId("ca-receiving-bulk-actions")).not.toBeInTheDocument();
     transport.recover();
     await user.click(retry);
     await waitFor(() => expect(screen.queryByRole("button", { name: /Повторить обновление/ })).not.toBeInTheDocument());
@@ -234,7 +238,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.getAllByRole("alert").length).toBeGreaterThan(0));
     expect(screen.getByText(/Выбрано обращений: 2/)).toBeInTheDocument();
-    expect(screen.getByText("Выбрано: 2")).toBeInTheDocument();
+    expect(selectedCount(2)).toBeInTheDocument();
     expect(listReads()).toHaveLength(before);
     expect(writes()).toHaveLength(1);
   });
@@ -255,7 +259,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     } finally {
       release(list());
     }
-    await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+    await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
   });
 
   it("ошибка initial GET остаётся fail-closed без старых данных", async () => {
@@ -342,7 +346,7 @@ describe("Receiving workspace: независимая приёмка partial/ret
     await user.click(within(screen.getByTestId("ca-receiving-bulk-confirm")).getByRole("button", { name: "Отмена" }));
     expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument();
     release();
-    await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+    await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
     expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument();
     expect(writes()).toHaveLength(1);
   });

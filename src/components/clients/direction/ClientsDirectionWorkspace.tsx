@@ -41,13 +41,23 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartne
   const chrome = useClientsPageChrome();
   const setAtPartnersProbe = useClientsDirectionProbeSetter("at-partners");
   const hideTabs = chrome?.hideDirectionTabs ?? false;
+  const subviewOpen = chrome?.subviewOpen ?? false;
+  const setActiveDirection = chrome?.setActiveDirection;
 
-  const onDirectionChange = useCallback((next: ClientsParityDirection) => {
-    setDirection(next);
-    if (next === "at-partners") {
-      setAtPartnersMounted(true);
-    }
-  }, []);
+  const onDirectionChange = useCallback(
+    (next: ClientsParityDirection) => {
+      setDirection(next);
+      setActiveDirection?.(next);
+      if (next === "at-partners") {
+        setAtPartnersMounted(true);
+      }
+    },
+    [setActiveDirection],
+  );
+
+  useEffect(() => {
+    if (initialPartnerId) setActiveDirection?.("at-partners");
+  }, [initialPartnerId, setActiveDirection]);
 
   useEffect(() => {
     if (!setAtPartnersProbe) return;
@@ -83,7 +93,7 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartne
       data-ca-clients-direction-mode={accessMode}
       data-clients-chrome-tabs-hidden={hideTabs ? "true" : undefined}
     >
-      {hideTabs ? null : (
+      {hideTabs || subviewOpen ? null : (
         <ClientsDirectionTabs direction={direction} onDirectionChange={onDirectionChange} />
       )}
       <div
@@ -138,7 +148,15 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   }
 
   if (accessMode === "agent") {
-    return <ObserverPartnersWorkspace directionProbe="at-partners" initialPartnerId={initialPartnerId} />;
+    return (
+      <div className={styles.clientsScope} data-testid="clients-agent-observer">
+        <ObserverPartnersWorkspace
+          showHeading={false}
+          directionProbe="at-partners"
+          initialPartnerId={initialPartnerId}
+        />
+      </div>
+    );
   }
 
   if (!atPartnersTabEnabled(accessMode)) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   filterReceivingAppeals,
   formatReceivingPaidRubFromKopecks,
@@ -13,6 +13,8 @@ import {
   type ReceivingListFilters,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingBulkActions, type ReceivingBulkAction, type ReceivingBulkContractState } from "./ReceivingBulkActions";
+import { stageBadgeClassName } from "./receiving-display";
+import { ReceivingIcon } from "./ReceivingIcons";
 import styles from "./receiving.module.css";
 
 /** P5 toolbar wired by P6 workspace — K1 batch via `postReceivingAppealsBatch`. */
@@ -43,6 +45,9 @@ export type ReceivingAppealsListProps = {
   readOnly?: boolean;
   bulk?: ReceivingBulkCallbacks;
   stageLabelById?: (row: ReceivingAppealListRow) => string;
+  /** Prototype order: confirm panel sits under the toolbar, edit panel under the selection bar. */
+  bulkConfirmSlot?: ReactNode;
+  bulkEditSlot?: ReactNode;
 };
 
 const EMPTY_BUCKET_COPY: Record<
@@ -71,10 +76,11 @@ function formatAgeSince(iso: string): string {
   return `${days} дн.`;
 }
 
+/** Prototype `rowMetaSource`: who referred the client, never an internal certificate id. */
 function rowSourceMeta(row: ReceivingAppealListRow): string {
   if (row.manualEntry) return "Добавлен вручную";
-  if (row.certificateId) return row.certificateId;
-  return "—";
+  const referrer = row.referrerDisplayName?.trim();
+  return referrer ? `Направил: ${referrer}` : "По сертификату";
 }
 
 function paidLabel(row: ReceivingAppealListRow): string | null {
@@ -82,14 +88,6 @@ function paidLabel(row: ReceivingAppealListRow): string | null {
   if (rub) return rub;
   if (row.paidAt) return "Оплачено";
   return null;
-}
-
-/** Exact stagePillClass mapping in the frozen client-appeals prototype. */
-function stagePillClass(stageId: string): string {
-  if (stageId === "sys_refused") return "ca-pill--danger";
-  if (stageId === "sys_return") return "ca-pill--warn";
-  if (stageId === "sys_paid" || stageId === "sys_shipped") return "ca-pill--good";
-  return stageId === "sys_new" ? "" : "ca-pill--info";
 }
 
 export function ReceivingAppealsList({
@@ -108,6 +106,8 @@ export function ReceivingAppealsList({
   listHasMore = false,
   loadingMore = false,
   onLoadMore,
+  bulkConfirmSlot,
+  bulkEditSlot,
 }: ReceivingAppealsListProps) {
   const [localFilters, setLocalFilters] = useState<ReceivingListFilters>({
     q: "",
@@ -149,27 +149,32 @@ export function ReceivingAppealsList({
   const selectionOutsideView = bulkOn ? Math.max(0, selected.size - selCount) : 0;
 
   const emptyCopy = EMPTY_BUCKET_COPY[filters.bucket];
+  const headCheckRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (headCheckRef.current) headCheckRef.current.indeterminate = someChecked;
+  }, [someChecked, allChecked]);
+
+  const selectAll = (checked: boolean) =>
+    bulk?.onToggleSelectAll(
+      filtered.map((a) => a.id),
+      checked,
+    );
+
+  const kpiItems = data.kpis
+    ? ([
+        ["В работе", data.kpis.inWork, "Обращения без отказа и возврата"],
+        ["Оплачено", data.kpis.paid, "Обращения с оплаченной покупкой"],
+        ["Отгружено", data.kpis.shipped, "Обращения с отметкой об отгрузке"],
+        [
+          "Конверсия в оплату",
+          data.kpis.conv,
+          "Доля оплаченных среди всех обращений выбранного списка (без корзины); пусто, если обращений нет",
+        ],
+      ] as const)
+    : null;
 
   return (
     <div className={`${styles.receivingShell} ca-section`} data-testid="ca-receiving-appeals-list">
-      {data.kpis ? (
-        <div className={styles.kpiStrip} role="list" data-testid="ca-receiving-kpi-strip">
-          {(
-            [
-              ["В работе", data.kpis.inWork],
-              ["Оплачено", data.kpis.paid],
-              ["Отгружено", data.kpis.shipped],
-              ["Конверсия в оплату", data.kpis.conv],
-            ] as const
-          ).map(([label, val]) => (
-            <div key={label} className={`panel ${styles.kpi}`} role="listitem">
-              <span className="small muted">{label}</span>
-              <strong className={styles.kpiVal}>{String(val)}</strong>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
       <div
         className="ca-bucket-tabs ca-seg"
         role="tablist"
@@ -196,6 +201,17 @@ export function ReceivingAppealsList({
         ))}
       </div>
 
+      {kpiItems ? (
+        <div className={styles.kpiStrip} role="list" data-testid="ca-receiving-kpi-strip">
+          {kpiItems.map(([label, val, hint]) => (
+            <div key={label} className={`panel ${styles.kpi}`} role="listitem" title={hint}>
+              <span className="small muted">{label}</span>
+              <strong className={styles.kpiVal}>{String(val)}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {!readOnly ? (
         <div className={styles.toolbar} data-testid="ca-receiving-toolbar">
           <div className={styles.toolbarPrimary}>
@@ -207,11 +223,23 @@ export function ReceivingAppealsList({
             </button>
           </div>
           <div className="ca-quiet-links">
-            <button type="button" className="btn ghost small-btn" onClick={onNavigateAnalytics}>
-              Аналитика
+            <button
+              type="button"
+              className="btn ghost ca-quiet-btn"
+              data-ca-action="nav:analytics"
+              data-testid="ca-receiving-nav-analytics"
+              onClick={onNavigateAnalytics}
+            >
+              <ReceivingIcon name="bar-chart" /> Аналитика
             </button>
-            <button type="button" className="btn ghost small-btn" onClick={onNavigateSettings}>
-              Этапы и причины
+            <button
+              type="button"
+              className="btn ghost ca-quiet-btn"
+              data-ca-action="nav:settings"
+              data-testid="ca-receiving-nav-settings"
+              onClick={onNavigateSettings}
+            >
+              <ReceivingIcon name="settings" /> Этапы и причины
             </button>
           </div>
         </div>
@@ -219,26 +247,21 @@ export function ReceivingAppealsList({
         <p className="notice">Только просмотр: изменять статусы и заметки нельзя.</p>
       )}
 
+      {bulkOn ? bulkConfirmSlot : null}
+
       {bulkOn ? (
         <ReceivingBulkActions
           bucket={filters.bucket}
           selectedCount={selected.size}
-          visibleCount={filtered.length}
-          allVisibleSelected={allChecked}
-          someVisibleSelected={someChecked || selCount > 0}
           contractState={bulk?.contractState ?? "blocked"}
           partialError={bulk?.partialError ?? null}
           batchNotice={bulk?.batchNotice ?? null}
           selectionOutsideView={selectionOutsideView}
-          onSelectAll={(checked) =>
-            bulk?.onToggleSelectAll(
-              filtered.map((a) => a.id),
-              checked,
-            )
-          }
           onAction={(action) => bulk?.onBulkAction(action)}
         />
       ) : null}
+
+      {bulkOn ? bulkEditSlot : null}
 
       <div className="ca-filters panel" data-testid="ca-receiving-filters">
         <label className="field ca-search">
@@ -286,6 +309,19 @@ export function ReceivingAppealsList({
         </label>
       </div>
 
+      {bulkOn && filtered.length > 0 ? (
+        <label className="ca-bulk-select-all-mobile">
+          <input
+            type="checkbox"
+            aria-label="Выбрать все"
+            disabled={selectionDisabled}
+            checked={allChecked}
+            onChange={(e) => selectAll(e.target.checked)}
+          />{" "}
+          Выбрать все
+        </label>
+      ) : null}
+
       {filtered.length === 0 ? (
         <section className="panel empty ca-empty" data-testid="ca-receiving-appeals-empty">
           <h2>{emptyCopy.title}</h2>
@@ -311,16 +347,12 @@ export function ReceivingAppealsList({
             {bulkOn ? (
               <label className="ca-row-check ca-row-check--head ca-bulk-select-all-desktop">
                 <input
+                  ref={headCheckRef}
                   type="checkbox"
-                  aria-label="Выбрать все"
+                  aria-label={`Все найденные (${filtered.length})`}
                   disabled={selectionDisabled}
                   checked={allChecked}
-                  onChange={(e) =>
-                    bulk?.onToggleSelectAll(
-                      filtered.map((a) => a.id),
-                      e.target.checked,
-                    )
-                  }
+                  onChange={(e) => selectAll(e.target.checked)}
                 />
               </label>
             ) : null}
@@ -357,10 +389,10 @@ export function ReceivingAppealsList({
                   <span className="ca-row-name">
                     <strong>{row.clientName}</strong>
                   </span>
-                  <span className="ca-row-request muted small">{row.interest || row.id}</span>
+                  <span className="ca-row-request muted small">{row.interest?.trim() || "—"}</span>
                   <span className="ca-row-meta muted small">{rowSourceMeta(row)}</span>
                   <span className="ca-row-status">
-                    <span className={`pill ${stagePillClass(row.stageId)}`}>{stageLabelById(row)}</span>
+                    <span className={stageBadgeClassName(row.stageId, stageLabelById(row))}>{stageLabelById(row)}</span>
                   </span>
                   <span className={`ca-row-amount${paid ? "" : " ca-amount--empty"}`}>{paid ?? "—"}</span>
                   <span className="ca-row-age muted small">{formatAgeSince(row.createdAt)}</span>

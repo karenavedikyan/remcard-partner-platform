@@ -197,19 +197,23 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/client-appeals\/certificate-entry$/,
     },
     {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/pro\/client-appeals\/funnel$/,
+    },
+    {
       methods: new Set(["GET", "PATCH"]),
       pattern:
-        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+$/,
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$|funnel$)[\w-]+$/,
     },
     {
       methods: new Set(["PATCH"]),
       pattern:
-        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$)[\w-]+\/stage$/,
+        /^\/api\/pro\/client-appeals\/(?!batch$|working-stages$|certificate-entry$|funnel$)[\w-]+\/stage$/,
     },
     {
       methods: new Set(["POST"]),
       pattern:
-        /^\/api\/pro\/client-appeals\/(?!batch(?:\/|$)|working-stages(?:\/|$)|certificate-entry(?:\/|$))[\w-]+\/order-link$/,
+        /^\/api\/pro\/client-appeals\/(?!batch(?:\/|$)|working-stages(?:\/|$)|certificate-entry(?:\/|$)|funnel(?:\/|$))[\w-]+\/order-link$/,
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/referred-appeals$/ },
     {

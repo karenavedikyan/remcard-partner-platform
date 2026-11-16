@@ -13,7 +13,6 @@ import {
   type ObserverDataContractState,
   type ObserverPersonalPersistenceCallbacks,
 } from "./ObserverPartnersListView";
-import styles from "./observer.module.css";
 
 type LoadPhase = "loading" | "blocked" | "error" | "ready";
 
@@ -188,15 +187,13 @@ export function ObserverPartnersWorkspace({
 
   if (loadPhase === "error" && loadError) {
     return (
-      <section className={styles.blocked} data-testid="ca-observer-load-error" aria-live="polite">
+      <section className="panel stack" data-testid="ca-observer-load-error" aria-live="polite">
         <h2>Не удалось загрузить направления</h2>
-        <p>
-          <strong>{loadError.code}</strong> — {loadError.message}
-        </p>
+        <p className="muted">{loadError.message}</p>
         {loadError.retryable ? (
           <button
             type="button"
-            className={styles.primaryBtn}
+            className="btn primary"
             data-ca-action="observer:retry-load"
             onClick={retryLoad}
           >
@@ -224,10 +221,10 @@ export function ObserverPartnersWorkspace({
   }
 
   return (<>
-    {refreshNotice ? <p role="status" className={styles.persistenceNotice}>
-      {refreshNotice}{" "}
-      <button type="button" onClick={() => void refreshPersonalData()}>Повторить обновление</button>
-    </p> : null}
+    {refreshNotice ? <div role="status" className="ca-personal-notice">
+      <span>{refreshNotice}</span>
+      <button type="button" className="btn ghost small-btn" onClick={() => void refreshPersonalData()}>Повторить обновление</button>
+    </div> : null}
     <ObserverPartnersListView
       showHeading={showHeading}
       initialNav={initialPartnerId ? { view: "partner", partnerId: initialPartnerId } : undefined}

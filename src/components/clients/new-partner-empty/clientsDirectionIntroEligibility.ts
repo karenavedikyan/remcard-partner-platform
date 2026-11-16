@@ -7,7 +7,7 @@ export type ReceivingAllBucketsProof = "unknown" | "checking" | "all_empty" | "h
 
 export function isReceivingDirectionIntroEligible(input: {
   phase: "loading" | "blocked" | "ready" | "error";
-  listView: "list" | "manual" | "settings" | "scan" | "detail";
+  listView: "list" | "manual" | "settings" | "scan" | "detail" | "analytics";
   filters: ReceivingListFilters;
   appealsLength: number;
   serverBacked: boolean;
@@ -28,7 +28,7 @@ export function isReceivingDirectionIntroEligible(input: {
 
 export function isReceivingDirectionIntroCandidate(input: {
   phase: "loading" | "blocked" | "ready" | "error";
-  listView: "list" | "manual" | "settings" | "scan" | "detail";
+  listView: "list" | "manual" | "settings" | "scan" | "detail" | "analytics";
   filters: ReceivingListFilters;
   appealsLength: number;
   serverBacked: boolean;

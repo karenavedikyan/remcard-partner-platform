@@ -9,6 +9,7 @@ import {
   type ReceivingPartnerSettings,
   type ReceivingPartnerSettingsSnapshot,
 } from "@/lib/clients-parity/receiving-appeals-api";
+import { ReceivingSubpageHead } from "./ReceivingSubpageHead";
 import styles from "./receiving.module.css";
 
 const ADD_CHANNEL_KEY = "__add_channel__";
@@ -84,8 +85,14 @@ export function ReceivingAppealForm({
   };
 
   return (
+    <div className={`stack ca-section ${styles.receivingShell}`} data-testid="ca-receiving-appeal-form-screen">
+    <ReceivingSubpageHead
+      onBack={onCancel ?? (() => undefined)}
+      title="Добавить клиента"
+      subtitle="Без сертификата: направившего, скидки и вознаграждения не будет."
+    />
     <section
-      className={`panel stack ca-manual-form ca-section ${styles.receivingShell}`}
+      className="panel stack ca-manual-form"
       data-testid="ca-receiving-appeal-form"
     >
       <form
@@ -247,5 +254,6 @@ export function ReceivingAppealForm({
         </div>
       </form>
     </section>
+    </div>
   );
 }

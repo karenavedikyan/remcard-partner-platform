@@ -9,7 +9,6 @@ import type {
   ObserverReferredAppeal,
 } from "@/lib/clients-parity/types";
 import { ObserverPersonalClientRow } from "./ObserverPersonalClientRow";
-import styles from "./observer.module.css";
 
 type Props = {
   partner: ObserverPartnerMeta;
@@ -59,13 +58,13 @@ export function ObserverPartnerCard({
 
   return (
     <article
-      className={styles.partnerCard}
+      className="panel ca-observer-partner-card"
       data-testid="ca-observer-partner-card"
       data-observer-bucket={bucket}
     >
-      <div className={styles.compactTop}>
-        <div className={styles.partnerGroupHead}>
-          <label className={styles.personalCheck}>
+      <div className="ca-observer-compact-top">
+        <div className="ca-personal-group-head">
+          <label className="ca-personal-check">
             <input
               ref={groupCheckRef}
               type="checkbox"
@@ -77,22 +76,20 @@ export function ObserverPartnerCard({
           </label>
           <button
             type="button"
-            className={styles.partnerOpenBtn}
+            className="ca-personal-partner-open"
             data-ca-action={`observer:partner:${partner.id}`}
             aria-label={`Открыть партнёра: ${partner.name}`}
             onClick={onPartnerOpen}
           >
-            <div className={styles.partnerCardHead}>
-              <strong>
-                {partner.name} <span className={styles.partnerArrow} aria-hidden="true">→</span>
-              </strong>
-              <span className={styles.partnerCategory}>
+            <div className="ca-observer-partner-card__head">
+              <strong>{partner.name}</strong>
+              <span className="ca-observer-partner-category">
                 {[partner.category, partner.city].filter(Boolean).join(" · ")}
               </span>
             </div>
           </button>
         </div>
-        <dl className={styles.stats} aria-label="Показатели видимых клиентов">
+        <dl className="ca-observer-stats" aria-label="Показатели видимых клиентов">
           <div>
             <dt>Направлено</dt>
             <dd>{stats.total}</dd>
@@ -112,14 +109,14 @@ export function ObserverPartnerCard({
         </dl>
       </div>
       <details
-        className={styles.disclosure}
+        className="ca-observer-disclosure"
         open={expanded}
         onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
         data-observer-partner-details={partner.id}
         aria-expanded={expanded}
       >
         <summary aria-controls={panelId} aria-expanded={expanded}>
-          <span className={styles.meta}>
+          <span className="ca-observer-compact-meta">
             <span>
               Конверсия в оплату <strong>{stats.conv}</strong>
             </span>
@@ -130,18 +127,17 @@ export function ObserverPartnerCard({
               Обновлено <time dateTime={stats.lastUpdate}>{last}</time>
             </span>
           </span>
-          <span className={styles.toggleLabel}>
+          <span className="ca-observer-toggle-label">
             Клиенты <b>{appeals.length}</b>
-            <span className={expanded ? styles.hideLabel : styles.showLabel}>
-              {expanded ? "Скрыть" : "Показать"}
-            </span>
-            <span className={styles.chevron} aria-hidden="true">
+            <span className="ca-observer-show">Показать</span>
+            <span className="ca-observer-hide">Скрыть</span>
+            <span className="ca-observer-chevron" aria-hidden="true">
               ⌄
             </span>
           </span>
         </summary>
-        <div id={panelId} className={styles.expandedClients}>
-          <div className={styles.clientsHeading}>
+        <div id={panelId} className="ca-observer-expanded-clients">
+          <div className="ca-observer-clients-heading">
             <h2>
               Клиенты у партнёра <span>{appeals.length}</span>
             </h2>
@@ -152,14 +148,14 @@ export function ObserverPartnerCard({
                 : ""}
             </p>
           </div>
-          <div className={styles.clientColumns} aria-hidden="true">
+          <div className="ca-observer-client-columns" aria-hidden="true">
             <span />
             <span>Клиент и интерес</span>
             <span>Статус у партнёра</span>
             <span>Обновлено</span>
             {bucket !== "trash" ? <span>Личная запись</span> : null}
           </div>
-          <div className={styles.personalRows}>
+          <div className="ca-personal-rows">
             {appeals.map((a) => (
               <ObserverPersonalClientRow
                 key={a.id}

@@ -10,6 +10,9 @@ import {
   type ReceivingPartnerSettingsSnapshot,
   type ReceivingWorkingStage,
 } from "@/lib/clients-parity/receiving-appeals-api";
+import { ReceivingIcon } from "./ReceivingIcons";
+import { ReceivingSubpageHead } from "./ReceivingSubpageHead";
+import { stageBadgeClassName } from "./receiving-display";
 import styles from "./receiving.module.css";
 
 /** Prototype `renderSettingsInline` — persisted via POST working-stages. */
@@ -22,12 +25,14 @@ export type WorkingStagesEditorProps = {
   onRefetchSettings?: () => Promise<void>;
 };
 
-const LOCKED_STAGE_LABELS = [
-  "Новое обращение",
-  "Оплачено",
-  "Отгружено",
-  "Возврат",
+const LOCKED_STAGES = [
+  { id: "sys_new", label: "Новое обращение" },
+  { id: "sys_paid", label: "Оплачено" },
+  { id: "sys_shipped", label: "Отгружено" },
+  { id: "sys_return", label: "Возврат" },
 ];
+
+export const WORKING_STAGES_SUBTITLE = "Настройте путь клиента под свой бизнес. Изменения видны только вам.";
 
 function cloneSettings(settings: ReceivingPartnerSettings): ReceivingPartnerSettings {
   return {
@@ -132,14 +137,20 @@ export function WorkingStagesEditor({
       data-testid="ca-receiving-working-stages-editor"
       aria-label="Этапы и причины"
     >
+      <ReceivingSubpageHead
+        onBack={onCancel ?? (() => undefined)}
+        title="Этапы и причины"
+        subtitle={WORKING_STAGES_SUBTITLE}
+        subtitleTestId="ca-receiving-settings-subtitle"
+      />
       <div className="ca-settings-grid">
         <section className="panel stack">
           <h3>Этапы работы</h3>
           <div className="ca-locked-chips" data-testid="ca-locked-system-stages">
-            {LOCKED_STAGE_LABELS.map((label, index) => (
-              <span key={label}>
+            {LOCKED_STAGES.map((stage, index) => (
+              <span key={stage.id}>
                 {index > 0 ? <span aria-hidden="true">{index === 1 ? "…" : "→"}</span> : null}
-                <span className={`pill ${["", "good", "ca-pill--shipped", "ca-pill--warn"][index]}`}>{label}</span>
+                <span className={stageBadgeClassName(stage.id, stage.label)}>{stage.label}</span>
               </span>
             ))}
           </div>
@@ -162,7 +173,7 @@ export function WorkingStagesEditor({
                       })
                     }
                   >
-                    ↑
+                    <ReceivingIcon name="chevron-up" />
                   </button>
                   <button
                     type="button"
@@ -177,7 +188,7 @@ export function WorkingStagesEditor({
                       })
                     }
                   >
-                    ↓
+                    <ReceivingIcon name="chevron-down" />
                   </button>
                   <input
                     type="text"
@@ -214,7 +225,7 @@ export function WorkingStagesEditor({
                       void runMutation({ kind: "archiveWorkingStage", stageId: stage.id })
                     }
                   >
-                    ⤓
+                    <ReceivingIcon name="archive" />
                   </button>
                 </div>
               ))
@@ -222,7 +233,7 @@ export function WorkingStagesEditor({
           </div>
           <button
             type="button"
-            className="btn ghost small-btn"
+            className="btn ghost small-btn ca-settings-add"
             data-testid="ca-settings-add-stage"
             disabled={mutationsDisabled}
             onClick={() => {
@@ -236,7 +247,7 @@ export function WorkingStagesEditor({
               }));
             }}
           >
-            + Добавить этап
+            <ReceivingIcon name="plus" /> Добавить этап
           </button>
         </section>
 
@@ -275,26 +286,27 @@ export function WorkingStagesEditor({
                 <button
                   type="button"
                   className="btn ghost icon-btn"
+                  aria-label={`Убрать причину: ${reason || index + 1}`}
                   disabled={mutationsDisabled}
                   onClick={() =>
                     void runMutation({ kind: "removeRefusalReason", label: reason })
                   }
                 >
-                  ⤓
+                  <ReceivingIcon name="archive" />
                 </button>
               </div>
             ))
           )}
           <button
             type="button"
-            className="btn ghost small-btn"
+            className="btn ghost small-btn ca-settings-add"
             data-testid="ca-settings-add-reason"
             disabled={mutationsDisabled}
             onClick={() =>
               setDraft((prev) => ({ ...prev, refusalReasons: [...prev.refusalReasons, ""] }))
             }
           >
-            + Добавить причину
+            <ReceivingIcon name="plus" /> Добавить причину
           </button>
 
           {draft.archivedStages.length > 0 ? (
@@ -335,11 +347,6 @@ export function WorkingStagesEditor({
       ) : null}
 
       <div className="ca-settings-footer panel ca-form-actions">
-        {onCancel ? (
-          <button type="button" className="btn ghost" data-ca-action="nav:list" onClick={onCancel}>
-            К списку
-          </button>
-        ) : null}
         <button
           type="button"
           className="btn ghost"

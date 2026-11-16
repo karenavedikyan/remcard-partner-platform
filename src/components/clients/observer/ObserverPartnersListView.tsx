@@ -33,7 +33,10 @@ import { ObserverPersonalTools } from "./ObserverPersonalTools";
 import styles from "./observer.module.css";
 import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
 import { isObserverDirectionIntroEligible } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
-import { useReportClientsDirectionProbe } from "@/components/clients/new-partner-empty/clientsPageChrome";
+import {
+  useReportClientsDirectionProbe,
+  useReportClientsSubview,
+} from "@/components/clients/new-partner-empty/clientsPageChrome";
 import {
   useOwnerClientsBusinessPartnerType,
   useOwnerClientsMode,
@@ -132,6 +135,7 @@ export function ObserverPartnersListView({
   const [openPartners, setOpenPartners] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [nav, setNav] = useState<Nav>(initialNav ?? { view: "partners" });
+  useReportClientsSubview("at-partners", nav.view !== "partners");
   const [panel, setPanel] = useState<Panel>(null);
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
   const [persisting, setPersisting] = useState(false);
@@ -457,7 +461,7 @@ export function ObserverPartnersListView({
   const listReady = dataContract.status === "ready";
 
   return (
-    <div className={styles.section} data-testid="ca-observer-partners-list">
+    <div className="stack ca-section ca-section--observer" data-testid="ca-observer-partners-list">
       {showHeading ? (
         <>
           <h2 className={styles.heading}>Мои клиенты у партнёров</h2>
@@ -479,8 +483,8 @@ export function ObserverPartnersListView({
 
       {listReady ? (
         <>
-      <div className={styles.filters} aria-label="Фильтры направлений">
-        <label className={styles.searchField}>
+      <div className="ca-filters panel ca-observer-filters" role="group" aria-label="Фильтры направлений">
+        <label className="field ca-search">
           Поиск партнёра или клиента
           <input
             type="search"
@@ -490,7 +494,7 @@ export function ObserverPartnersListView({
             data-ca-input="observer-q"
           />
         </label>
-        <label className={styles.selectField}>
+        <label className="field ca-filter">
           Период направления
           <select
             value={filters.period}
@@ -587,29 +591,31 @@ export function ObserverPartnersListView({
       ) : null}
 
       {showFilterEmpty ? (
-        <section className={styles.empty} data-testid="ca-observer-filter-empty">
+        <section className="panel empty ca-empty" data-testid="ca-observer-filter-empty">
           <h2>По выбранным фильтрам ничего не найдено</h2>
-          <p className={styles.intro}>Измените поиск или период направления.</p>
+          <p className="muted">Измените поиск или период направления.</p>
+          <div className="ca-actions-row">
           <button
             type="button"
-            className={styles.ghostBtn}
+            className="btn ghost"
             data-ca-action="observer:reset-filters"
             onClick={() => setFilters({ q: "", period: "all", bucket: filters.bucket })}
           >
             Сбросить фильтры
           </button>
+          </div>
         </section>
       ) : null}
 
       {showBucketEmpty ? (
-        <section className={styles.empty} data-testid="ca-observer-empty">
+        <section className="panel empty ca-empty" data-testid="ca-observer-empty">
           <h2>{bucketEmptyHeading}</h2>
-          <p className={styles.intro}>Переключите вкладку списка. Данные у партнёров не удаляются.</p>
+          <p className="muted">Переключите вкладку списка. Данные у партнёров не удаляются.</p>
         </section>
       ) : null}
 
       {filtered.length > 0 && layout === "list" ? (
-        <div className={styles.personalRowsFlat}>
+        <div className="ca-personal-rows ca-personal-flat">
           {filtered.map((a) => (
             <ObserverPersonalClientRow
               key={a.id}
@@ -617,6 +623,7 @@ export function ObserverPartnersListView({
               meta={personalMeta[a.id]}
               selected={selected.has(a.id)}
               onSelect={(c) => toggleSelected(a.id, c)}
+              partnerName={partnersById.get(a.receivingPartnerId)?.name ?? "Партнёр"}
               showEdit={filters.bucket !== "trash"}
               onEdit={() => openPersonalPanel({ kind: "edit", mode: "single", ids: [a.id] })}
               onOpen={() => openClientPage(a.id)}
@@ -626,7 +633,7 @@ export function ObserverPartnersListView({
       ) : null}
 
       {filtered.length > 0 && layout === "partners" ? (
-        <div className={`${styles.partnerGrid} ${styles.partnerGridGrouped}`}>
+        <div className="ca-observer-partner-grid ca-personal-partners">
           {[...grouped.entries()].map(([partnerId, list]) => {
             const partner = partnersById.get(partnerId) ?? {
               id: partnerId,

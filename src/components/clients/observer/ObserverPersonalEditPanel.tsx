@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import styles from "./observer.module.css";
 
 export type PersonalEditDraft = {
   alias: string;
@@ -96,7 +95,7 @@ export function ObserverPersonalEditPanel({
   return (
     <form
       ref={formRef}
-      className={styles.editPanel}
+      className="panel ca-personal-edit"
       data-observer-personal-edit
       data-edit-target-key={editTargetKey}
       data-persistence-status={persistenceStatus}
@@ -106,13 +105,13 @@ export function ObserverPersonalEditPanel({
       <h3 id={titleId}>
         {mode === "single" ? "Личная запись о клиенте" : `Метка для ${count} записей`}
       </h3>
-      <p className={styles.mutedSmall}>
+      <p className="small muted">
         {mode === "single"
           ? "Исходное имя, контакты и статус у партнёра не меняются."
           : "Метка заменится у выбранных записей. Имена и заметки останутся прежними."}
       </p>
       {mode === "single" ? (
-        <label className={styles.field}>
+        <label className="field">
           Имя для себя
           <input
             name="alias"
@@ -122,7 +121,7 @@ export function ObserverPersonalEditPanel({
           />
         </label>
       ) : null}
-      <label className={styles.field}>
+      <label className="field">
         {mode === "single" ? "Метка" : "Общая метка"}
         <input
           name="tag"
@@ -133,28 +132,27 @@ export function ObserverPersonalEditPanel({
         />
       </label>
       {mode === "single" ? (
-        <label className={styles.field}>
+        <label className="field">
           Личная заметка
           <textarea name="note" rows={3} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
       ) : (
-        <p className={styles.mutedSmall}>Пустое поле удалит метку у выбранных записей.</p>
+        <p className="small muted">Пустое поле удалит метку у выбранных записей.</p>
       )}
       {saveError ? (
-        <p className={styles.persistenceNotice} role="alert">
+        <p className="ca-personal-notice" role="alert">
           {saveError}
         </p>
       ) : null}
-      <div className={styles.personalActions}>
-        <button type="button" className={styles.ghostBtn} data-observer-action="cancel" onClick={onCancel}>
+      <div className="ca-personal-actions">
+        <button type="button" className="btn ghost" data-observer-action="cancel" onClick={onCancel}>
           Отмена
         </button>
         <button
           type="submit"
-          className={styles.primaryBtn}
+          className="btn primary"
           disabled={saveDisabled}
           aria-disabled={saveDisabled}
-          title={persistenceStatus === "blocked" ? "BLOCKED_PERSISTENCE" : undefined}
           data-observer-action="save"
         >
           {saveLabel}

@@ -5,6 +5,10 @@ import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { postReceivingAppealsBatch } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingAppealsWorkspace } from "./ReceivingAppealsWorkspace";
 
+/** Prototype bar markup: `Выбрано: <strong>N</strong>` — match the whole counter text. */
+const selectedCount = (n: number) =>
+  screen.getByText((_, el) => el?.classList.contains("ca-bulk-count") === true && el.textContent === `Выбрано: ${n}`);
+
 vi.mock("@/lib/api-client", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/api-client")>(),
   remcardFetch: vi.fn(),
@@ -76,7 +80,7 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     async (action) => {
       install(payload([ids[0]]));
       await open(action);
-      await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+      await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
       expect(screen.getByText(/Выбрано обращений: 1/)).toBeInTheDocument();
       expect(screen.getAllByText("Обновлено: 1, пропущено: 1.")).toHaveLength(2);
       expect(writes()).toHaveLength(1);
@@ -91,7 +95,7 @@ describe("Receiving workspace: request-bound batch evidence", () => {
   ])("%s never changes the selection or count outside the request", async (_, response) => {
     install(response);
     const user = await open();
-    await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+    await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
     expect(screen.getAllByText("Обновлено: 1, пропущено: 1.")).toHaveLength(2);
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument());
@@ -111,7 +115,7 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     await open();
     const confirmation = screen.getByTestId("ca-receiving-bulk-confirm");
     await waitFor(() => expect(within(confirmation).getByRole("alert")).toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 2")).toBeInTheDocument();
+    expect(selectedCount(2)).toBeInTheDocument();
     expect(screen.getByText(/Выбрано обращений: 2/)).toBeInTheDocument();
     expect(writes()).toHaveLength(1);
     expect(listReads()).toHaveLength(1);
@@ -121,14 +125,14 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     install(payload(ids));
     await open();
     await waitFor(() => expect(screen.queryByTestId("ca-receiving-bulk-confirm")).not.toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 0")).toBeInTheDocument();
+    expect(screen.queryByTestId("ca-receiving-bulk-actions")).not.toBeInTheDocument();
     expect(writes()).toHaveLength(1);
   });
 
   it("recovers 409 partial without action and counts each failed record once", async () => {
     install(payload([ids[0]], [ids[1]], [{ id: ids[1], code: "CONFLICT" }]), 409);
     await open();
-    await waitFor(() => expect(screen.getByText("Выбрано: 1")).toBeInTheDocument());
+    await waitFor(() => expect(selectedCount(1)).toBeInTheDocument());
     expect(screen.getAllByText("Обновлено: 1, пропущено: 1.")).toHaveLength(2);
   });
 
@@ -137,7 +141,7 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     await open();
     await waitFor(() => expect(within(screen.getByTestId("ca-receiving-bulk-confirm"))
       .getByRole("alert")).toBeInTheDocument());
-    expect(screen.getByText("Выбрано: 2")).toBeInTheDocument();
+    expect(selectedCount(2)).toBeInTheDocument();
     expect(listReads()).toHaveLength(1);
   });
 
@@ -146,7 +150,7 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     await open();
     await waitFor(() => expect(within(screen.getByTestId("ca-receiving-bulk-confirm"))
       .getByRole("alert")).toHaveTextContent("Синтетический отказ"));
-    expect(screen.getByText("Выбрано: 2")).toBeInTheDocument();
+    expect(selectedCount(2)).toBeInTheDocument();
     expect(listReads()).toHaveLength(1);
   });
 
@@ -154,13 +158,13 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     const transport = install(payload([ids[0]]), 200, true);
     const user = await open();
     await screen.findByRole("button", { name: /Повторить обновление/ });
-    expect(screen.getByText("Выбрано: 1")).toBeInTheDocument();
+    expect(selectedCount(1)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Подтвердить" })).toBeDisabled();
     transport.recover();
     await user.click(screen.getByRole("button", { name: /Повторить обновление/ }));
     await waitFor(() => expect(screen.queryByRole("button", { name: /Повторить обновление/ })).not.toBeInTheDocument());
     expect(writes()).toHaveLength(1);
-    expect(screen.getByText("Выбрано: 1")).toBeInTheDocument();
+    expect(selectedCount(1)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Подтвердить" }));
     await waitFor(() => expect(writes()).toHaveLength(2));
     expect(writes()[1][1]?.body).toEqual({ action: "archive", ids: [ids[1]] });

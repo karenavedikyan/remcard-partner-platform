@@ -1,7 +1,5 @@
 "use client";
 
-import styles from "./observer.module.css";
-
 type Props = {
   q: string;
   period: string;
@@ -27,12 +25,12 @@ export function ObserverFilterChips({ q, period, onClearQ, onClearPeriod }: Prop
   }
   if (!chips.length) return null;
   return (
-    <div className={styles.chips} data-testid="ca-observer-filter-chips">
+    <div className="ca-observer-chips" data-testid="ca-observer-filter-chips">
       {chips.map((chip) => (
         <button
           key={chip.key}
           type="button"
-          className={styles.chip}
+          className="ca-chip"
           data-ca-action={`observer:clear-${chip.key === "q" ? "q" : "period"}`}
           aria-label={chip.key === "q" ? "Сбросить поиск" : "Сбросить период направления"}
           onClick={chip.onClear}

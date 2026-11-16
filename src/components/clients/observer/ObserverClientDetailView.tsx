@@ -7,12 +7,13 @@ import {
 } from "@/lib/clients-parity/observer-display";
 import type { ObserverPartnerMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
 import { ReceivingAppealHistory } from "../receiving/ReceivingAppealHistory";
+import { ReceivingSubpageHead } from "../receiving/ReceivingSubpageHead";
+import { stageBadgeClassName } from "../receiving/receiving-display";
 import {
   formatObserverPublicPurchaseKopecks,
   type K2ObserverPublicPurchase,
   type ObserverPublicTimelineEntry,
 } from "./observer-client-detail-contract";
-import styles from "./observer.module.css";
 
 export type { ObserverPublicTimelineEntry } from "./observer-client-detail-contract";
 
@@ -99,7 +100,7 @@ function ObserverClientDetailBackButton({
   return (
     <button
       type="button"
-      className={styles.backBtn}
+      className="ca-back"
       data-ca-action="observer:back"
       data-testid="ca-clients-back"
       onClick={onBack}
@@ -116,6 +117,7 @@ function ObserverClientDetailReadyBody({
   purchase,
   purchaseKnown,
   refusedReason,
+  chrome,
 }: {
   appeal: ObserverReferredAppeal;
   partner?: ObserverPartnerMeta;
@@ -124,82 +126,75 @@ function ObserverClientDetailReadyBody({
   /** When true, `purchase` came from K2 (including explicit null). */
   purchaseKnown: boolean;
   refusedReason?: string | null;
+  chrome: ObserverClientDetailChromeProps;
 }) {
   const clientName = displayClientName(appeal);
   const interest = appeal.interest?.trim();
   const certificate = appeal.certificateId?.trim();
+  const status = observerAppealStatusLabel(appeal);
 
   return (
     <>
-      <header className={styles.partnerPageHead}>
-        {interest ? <p className={styles.mutedSmall}>{interest}</p> : null}
-        <h2 id="ca-observer-client-title">{clientName}</h2>
-      </header>
-      <dl className={styles.detailGrid} aria-labelledby="ca-observer-client-title">
-        <div>
-          <dt>ID направления</dt>
-          <dd>
-            <code data-testid="ca-observer-appeal-id">{appeal.id}</code>
-          </dd>
-        </div>
-        <div>
-          <dt>Партнёр</dt>
-          <dd>
-            {partner?.name ?? (
-              <span data-testid="ca-observer-partner-unavailable">
-                Партнёр недоступен (id: {appeal.receivingPartnerId})
-              </span>
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt>Статус у партнёра</dt>
-          <dd>{observerAppealStatusLabel(appeal)}</dd>
-        </div>
-        <div>
-          <dt>Интерес</dt>
-          <dd>{interest || "—"}</dd>
-        </div>
-        <div>
-          <dt>Сертификат</dt>
-          <dd>{certificate || "—"}</dd>
-        </div>
-        <div>
-          <dt>Направлено</dt>
-          <dd>
-            {appeal.referralAt ? (
-              <time dateTime={appeal.referralAt}>{formatObserverDateTime(appeal.referralAt)}</time>
-            ) : (
-              "—"
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt>Обновлено</dt>
-          <dd>
-            <time dateTime={appeal.updatedAt}>{formatObserverDateTime(appeal.updatedAt)}</time>
-          </dd>
-        </div>
-        {purchaseKnown ? (
-          <div data-testid="ca-observer-client-purchase">
-            <dt>Покупка</dt>
+      <ReceivingSubpageHead
+        onBack={chrome.onBack}
+        backLabel={resolveObserverClientBackLabel(chrome.backFrom, chrome.backLabel).replace(/^←\s*/, "")}
+        title={clientName}
+        titleId="ca-observer-client-title"
+        badge={<span className={stageBadgeClassName(String(appeal.stageId), status)}>{status}</span>}
+      />
+      <section className="panel stack ca-observer-client">
+        <p className="muted">{interest || "—"}</p>
+        <p className="small muted">
+          Партнёр:{" "}
+          {partner?.name ?? <span data-testid="ca-observer-partner-unavailable">Партнёр недоступен</span>}
+        </p>
+      </section>
+      <section className="panel stack" aria-labelledby="ca-observer-client-brief">
+        <h3 id="ca-observer-client-brief">Кратко</h3>
+        <dl className="ca-dl">
+          <div>
+            <dt>Сертификат</dt>
+            <dd data-testid="ca-observer-certificate">{certificate ? "Выдан вами" : "—"}</dd>
+          </div>
+          <div>
+            <dt>Статус у партнёра</dt>
+            <dd>{status}</dd>
+          </div>
+          <div>
+            <dt>Направлено</dt>
             <dd>
-              {purchase ? (
-                <>
-                  {formatObserverPublicPurchaseKopecks(purchase.amountKopecks)}
-                  {purchase.note?.trim() ? (
-                    <span className={styles.mutedSmall}> · {purchase.note.trim()}</span>
-                  ) : null}
-                </>
+              {appeal.referralAt ? (
+                <time dateTime={appeal.referralAt}>{formatObserverDateTime(appeal.referralAt)}</time>
               ) : (
-                <span className={styles.mutedSmall} data-testid="ca-observer-client-purchase-empty">
-                  Покупка у партнёра пока не зафиксирована.
-                </span>
+                "—"
               )}
             </dd>
           </div>
+          <div>
+            <dt>Обновлено</dt>
+            <dd>
+              <time dateTime={appeal.updatedAt}>{formatObserverDateTime(appeal.updatedAt)}</time>
+            </dd>
+          </div>
+          {purchaseKnown ? (
+            <div data-testid="ca-observer-client-purchase">
+              <dt>Покупка</dt>
+              <dd>
+                {purchase ? (
+                  formatObserverPublicPurchaseKopecks(purchase.amountKopecks)
+                ) : (
+                  <span className="small muted" data-testid="ca-observer-client-purchase-empty">
+                    Покупка у партнёра пока не зафиксирована.
+                  </span>
+                )}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+        {purchaseKnown && purchase?.note?.trim() ? (
+          <p className="small muted">{purchase.note.trim()}</p>
         ) : null}
-      </dl>
+      </section>
       {publicTimeline !== undefined ? (
         <ReceivingAppealHistory
           entries={publicTimeline.map((row) => ({ at: row.at, text: row.text }))}
@@ -209,12 +204,11 @@ function ObserverClientDetailReadyBody({
         />
       ) : (
         <section
-          className={styles.mutedSmall}
+          className="panel small muted"
           data-testid="ca-observer-client-timeline-na"
           aria-label="Хронология направления"
         >
-          Публичная хронология и данные покупки недоступны без подтверждённого контракта направлений
-          (BLK-OBSERVER-REFERRED).
+          Публичная хронология и данные покупки сейчас недоступны.
         </section>
       )}
     </>
@@ -227,34 +221,28 @@ export function ObserverClientDetailView(props: ObserverClientDetailProps) {
     backFrom: props.backFrom,
     backLabel: props.backLabel,
   };
+  const root = "stack ca-section ca-section--observer";
 
   if (props.status === "loading") {
     return (
-      <div
-        className={styles.section}
-        data-testid="ca-observer-client-page"
-        data-ca-state="loading"
-        aria-busy="true"
-      >
+      <div className={root} data-testid="ca-observer-client-page" data-ca-state="loading" aria-busy="true">
         <ObserverClientDetailBackButton {...chrome} />
-        <p data-testid="ca-observer-client-loading">Загрузка направления…</p>
+        <p className="muted" data-testid="ca-observer-client-loading">
+          Загрузка направления…
+        </p>
       </div>
     );
   }
 
   if (props.status === "error") {
     return (
-      <div
-        className={styles.section}
-        data-testid="ca-observer-client-page"
-        data-ca-state="error"
-      >
+      <div className={root} data-testid="ca-observer-client-page" data-ca-state="error">
         <ObserverClientDetailBackButton {...chrome} />
-        <section className={styles.blocked} data-testid="ca-observer-client-error">
+        <section className="panel empty ca-empty" data-testid="ca-observer-client-error">
           <h2>Данные направления недоступны</h2>
-          <p className={styles.mutedSmall}>{props.message}</p>
+          <p className="muted">{props.message}</p>
           {props.onRetry ? (
-            <button type="button" className={styles.ghostBtn} onClick={props.onRetry}>
+            <button type="button" className="btn ghost small-btn" onClick={props.onRetry}>
               Повторить
             </button>
           ) : null}
@@ -276,8 +264,7 @@ export function ObserverClientDetailView(props: ObserverClientDetailProps) {
 
   if (props.status === "ready") {
     return (
-      <div className={styles.section} data-testid="ca-observer-client-page" data-ca-state="ready">
-        <ObserverClientDetailBackButton {...chrome} />
+      <div className={root} data-testid="ca-observer-client-page" data-ca-state="ready">
         <ObserverClientDetailReadyBody
           appeal={props.appeal}
           partner={props.partner}
@@ -285,14 +272,14 @@ export function ObserverClientDetailView(props: ObserverClientDetailProps) {
           purchase={props.purchase}
           purchaseKnown
           refusedReason={props.refusedReason}
+          chrome={chrome}
         />
       </div>
     );
   }
 
   return (
-    <div className={styles.section} data-testid="ca-observer-client-page">
-      <ObserverClientDetailBackButton {...chrome} />
+    <div className={root} data-testid="ca-observer-client-page">
       <ObserverClientDetailReadyBody
         appeal={props.appeal}
         partner={props.partner}
@@ -300,6 +287,7 @@ export function ObserverClientDetailView(props: ObserverClientDetailProps) {
         purchase={props.purchase}
         purchaseKnown={props.purchase !== undefined}
         refusedReason={props.refusedReason}
+        chrome={chrome}
       />
     </div>
   );
@@ -322,22 +310,22 @@ export function ObserverClientDetailMissing({
   const resolvedBackLabel = resolveObserverClientBackLabel(backFrom, backLabel);
   return (
     <div
-      className={styles.section}
+      className="stack ca-section ca-section--observer"
       data-testid="ca-observer-client-page"
       data-ca-state="missing"
     >
       <button
         type="button"
-        className={styles.backBtn}
+        className="ca-back"
         data-ca-action="observer:back"
         data-testid="ca-clients-back"
         onClick={onBack}
       >
         {resolvedBackLabel}
       </button>
-      <section className={styles.blocked} data-testid="ca-observer-client-missing">
+      <section className="panel empty ca-empty" data-testid="ca-observer-client-missing">
         <h2>Направление не найдено</h2>
-        <p className={styles.mutedSmall}>
+        <p className="muted">
           {clientId
             ? `Запись «${clientId}» отсутствует в доступном списке или скрыта фильтрами.`
             : "Запись отсутствует в доступном списке или скрыта фильтрами."}

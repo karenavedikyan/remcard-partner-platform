@@ -6,7 +6,7 @@ import {
   observerAppealStatusLabel,
 } from "@/lib/clients-parity/observer-display";
 import type { ObserverPersonalMeta, ObserverReferredAppeal } from "@/lib/clients-parity/types";
-import styles from "./observer.module.css";
+import { stageBadgeClassName } from "@/components/clients/receiving/receiving-display";
 
 type Props = {
   appeal: ObserverReferredAppeal;
@@ -14,6 +14,8 @@ type Props = {
   selected: boolean;
   onSelect: (checked: boolean) => void;
   grouped?: boolean;
+  /** Receiving partner name shown in the flat list (the grouped layout already sits under the partner). */
+  partnerName?: string;
   showEdit?: boolean;
   onEdit?: () => void;
   onOpen?: () => void;
@@ -25,6 +27,7 @@ export function ObserverPersonalClientRow({
   selected,
   onSelect,
   grouped = false,
+  partnerName,
   showEdit = true,
   onEdit,
   onOpen,
@@ -32,15 +35,16 @@ export function ObserverPersonalClientRow({
   const name = displayClientName(appeal, meta?.alias);
   const status = observerAppealStatusLabel(appeal);
   const date = formatObserverDateTime(appeal.updatedAt);
+  const interest = appeal.interest?.trim() || "Интерес не указан";
 
   return (
     <div
-      className={`${styles.personalRow}${grouped ? ` ${styles.personalRowGrouped}` : ""}`}
+      className={`ca-personal-row${grouped ? " ca-observer-card-client" : ""}`}
       data-personal-row={appeal.id}
       data-selected={selected ? "true" : "false"}
       data-testid="ca-observer-client-row"
     >
-      <label className={styles.personalCheck}>
+      <label className="ca-personal-check">
         <input
           type="checkbox"
           checked={selected}
@@ -51,47 +55,46 @@ export function ObserverPersonalClientRow({
       </label>
       <button
         type="button"
-        className={styles.personalOpen}
+        className="ca-personal-open"
         data-ca-action={`observer:client:${appeal.id}`}
         onClick={() => onOpen?.()}
       >
         <strong>{name}</strong>
         {meta?.alias && meta.alias !== appeal.clientName ? (
-          <span className={styles.mutedSmall}>У партнёра: {appeal.clientName}</span>
+          <span className="small muted">У партнёра: {appeal.clientName}</span>
         ) : null}
-        <span className={styles.mutedSmall}>
-          {appeal.interest || appeal.certificateId || "Интерес не указан"}
+        <span className="small muted">
+          {grouped || !partnerName ? "" : `${partnerName} · `}
+          {interest}
         </span>
         {meta?.tag ? (
-          <span className={styles.personalTag}>
-            {grouped ? `Моя метка: ${meta.tag}` : meta.tag}
-          </span>
+          <span className="ca-personal-tag">{grouped ? `Моя метка: ${meta.tag}` : meta.tag}</span>
         ) : null}
         {meta?.note ? (
-          <span className={styles.personalNote}>
-            {grouped ? `Моя заметка: ${meta.note}` : meta.note}
-          </span>
+          <span className="small ca-personal-note">{grouped ? `Моя заметка: ${meta.note}` : meta.note}</span>
         ) : null}
       </button>
-      <div className={styles.personalStatus}>
-        {grouped ? <span className={styles.cellLabel}>Статус у партнёра</span> : null}
-        <span className={styles.statusPill}>{status}</span>
+      <div className="ca-personal-status">
+        {grouped ? <span className="ca-observer-cell-label">Статус у партнёра</span> : null}
+        <span className={stageBadgeClassName(String(appeal.stageId), status)}>{status}</span>
+        {grouped ? null : (
+          <time className="small muted" dateTime={appeal.updatedAt}>
+            {date}
+          </time>
+        )}
       </div>
       {grouped ? (
-        <div className={styles.clientUpdated}>
-          <span className={styles.cellLabel}>Обновлено</span>
+        <div className="ca-observer-client-updated">
+          <span className="ca-observer-cell-label">Обновлено</span>
           <time dateTime={appeal.updatedAt}>{date}</time>
         </div>
-      ) : (
-        <time className={styles.mutedSmall} dateTime={appeal.updatedAt}>
-          {date}
-        </time>
-      )}
+      ) : null}
       {showEdit && onEdit ? (
         <button
           type="button"
-          className={styles.ghostBtn}
+          className="btn ghost small-btn"
           data-observer-action={`edit:${appeal.id}`}
+          aria-label={`Изменить личную запись: ${name}`}
           onClick={onEdit}
         >
           {grouped ? "Изменить для себя" : "Изменить"}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { extractCertificateCode } from "@/lib/certificate-code";
 import type { ReceivingCertificateEntryBody } from "@/lib/clients-parity/receiving-appeals-api";
+import { ReceivingSubpageHead } from "./ReceivingSubpageHead";
 import styles from "./receiving.module.css";
 
 /** Prototype `renderScanInline` affordance — production uses server validation, no demo outcome radios. */
@@ -24,14 +25,13 @@ export function ReceivingCertificateScan({
   const [submitting, setSubmitting] = useState(false);
 
   return (
-    <section
-      className={`panel stack ca-scan ca-section ${styles.receivingShell}`}
-      data-testid="ca-receiving-scan-shell"
-    >
-      <h2>Сканировать сертификат</h2>
-      <p className="small muted">
-        Сканер создаст обращение или откроет уже существующее.
-      </p>
+    <div className={`stack ca-section ${styles.receivingShell}`} data-testid="ca-receiving-scan-screen">
+    <ReceivingSubpageHead
+      onBack={onCancel ?? (() => undefined)}
+      title="Сканировать сертификат"
+      subtitle="Сканер создаст обращение или откроет уже существующее."
+    />
+    <section className="panel stack ca-scan" data-testid="ca-receiving-scan-shell">
 
       <form
         className="stack"
@@ -97,5 +97,6 @@ export function ReceivingCertificateScan({
         </div>
       </form>
     </section>
+    </div>
   );
 }

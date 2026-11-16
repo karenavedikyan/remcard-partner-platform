@@ -6,8 +6,14 @@ import {
   fetchReceivingAppealDetailWire,
   patchReceivingAppealProfileCas,
   patchReceivingAppealStageCas,
+  postReceivingWorkingStagesMutation,
 } from "@/lib/clients-parity/receiving-appeals-api";
-import { ReceivingAppealDetailView, type ReceivingAppealDetailProps } from "./ReceivingAppealDetailView";
+import {
+  ReceivingAppealDetailView,
+  type ReceivingAppealDetailProps,
+  type ReceivingSettingsAddResult,
+} from "./ReceivingAppealDetailView";
+import type { StageLike } from "./receiving-detail-stage-model";
 import {
   buildReceivingAppealDetailReady,
   buildReceivingAppealOrderPipelineHref,
@@ -73,7 +79,6 @@ export function ReceivingAppealDetailHost({
   const [busy, setBusy] = useState<{ notes?: boolean; stage?: boolean }>({});
   const [actionError, setActionError] = useState<{ notes?: string; stage?: string }>({});
   const [detailRefreshNotice, setDetailRefreshNotice] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
   const [notesConflict, setNotesConflict] = useState(false);
   const [notesSaveBlocked, setNotesSaveBlocked] = useState(false);
   const notesSaveBlockedRef = useRef(false);
@@ -81,6 +86,7 @@ export function ReceivingAppealDetailHost({
   const notesRefreshInFlightRef = useRef<symbol | null>(null);
 
   const detailGenerationRef = useRef(0);
+  const [reloadToken, setReloadToken] = useState(0);
   const sessionKeyRef = useRef<DetailSessionKey>({
     appealId,
     readOnly,
@@ -190,8 +196,22 @@ export function ReceivingAppealDetailHost({
   }, [appealId, readOnly, referrerPartnerName, reloadToken, bumpDetailGeneration, fetchDetailForSession]);
 
   const reloadDetail = useCallback(async () => {
-    setReloadToken((t) => t + 1);
-  }, []);
+    const session = sessionKeyRef.current;
+    const generation = detailGenerationRef.current;
+    const res = await fetchReceivingAppealDetailWire(session.appealId);
+    if (isStaleGeneration(generation, session)) return;
+    if (res.ok) {
+      applyDetailWire(session, res);
+      setActionError({
+        stage: "Карточка изменилась — данные обновлены. Проверьте этап и повторите действие.",
+      });
+    } else {
+      setActionError((e) => ({
+        ...e,
+        stage: "Карточка изменилась, но обновить её не удалось. Обновите страницу и повторите действие.",
+      }));
+    }
+  }, [applyDetailWire, isStaleGeneration]);
 
   const refreshNotesAfterConflict = useCallback(async () => {
     if (notesRefreshInFlightRef.current) return;
@@ -314,6 +334,7 @@ export function ReceivingAppealDetailHost({
       const result = await patchReceivingAppealStageCas(appealId, {
         stageKey: body.stageKey,
         refusedReason: body.refusedReason ?? null,
+        ...(body.shippedAt ? { shippedAt: body.shippedAt } : {}),
         expectedRevision: body.expectedRevision,
       });
       setBusy((b) => ({ ...b, stage: false }));
@@ -326,6 +347,31 @@ export function ReceivingAppealDetailHost({
       return { ok: true };
     },
     [afterSuccessfulMutation, appealId],
+  );
+
+  const addRefusalReason = useCallback(
+    async (label: string): Promise<ReceivingSettingsAddResult<string>> => {
+      const res = await postReceivingWorkingStagesMutation({ kind: "addRefusalReason", label });
+      if (!res.ok) return { ok: false, message: res.message };
+      const saved =
+        res.snapshot.settings.refusalReasons.find((r) => r.trim().toLowerCase() === label.trim().toLowerCase()) ??
+        label.trim();
+      return { ok: true, value: saved };
+    },
+    [],
+  );
+
+  const addWorkingStage = useCallback(
+    async (label: string): Promise<ReceivingSettingsAddResult<StageLike>> => {
+      const res = await postReceivingWorkingStagesMutation({ kind: "addWorkingStage", label });
+      if (!res.ok) return { ok: false, message: res.message };
+      const saved = res.snapshot.settings.workingStages.find(
+        (s) => s.label.trim().toLowerCase() === label.trim().toLowerCase(),
+      );
+      if (!saved) return { ok: false, message: "Сервер не вернул сохранённый этап." };
+      return { ok: true, value: { id: saved.id, label: saved.label } };
+    },
+    [],
   );
 
   const viewProps = useMemo((): ReceivingAppealDetailViewModel | null => {
@@ -350,6 +396,8 @@ export function ReceivingAppealDetailHost({
           notesConflict && notesSaveBlocked ? () => void refreshNotesAfterConflict() : undefined,
         mutateProfile,
         mutateStage,
+        addRefusalReason,
+        addWorkingStage,
         reloadDetail,
         onOpenOrderPipeline: readOnly ? undefined : onOpenOrderPipeline,
         openPurchaseOrder:
@@ -368,6 +416,8 @@ export function ReceivingAppealDetailHost({
     refreshNotesAfterConflict,
     mutateProfile,
     mutateStage,
+    addRefusalReason,
+    addWorkingStage,
     onOpenOrderPipeline,
     openPurchaseOrder,
     phase,
@@ -377,7 +427,7 @@ export function ReceivingAppealDetailHost({
 
   if (phase === "loading") {
     return (
-      <section className="panel stack" data-testid="ca-receiving-detail-loading" aria-busy="true">
+      <section className="panel stack" data-testid="ca-receiving-detail-loading" aria-busy="true" role="status">
         <p>Загрузка обращения…</p>
       </section>
     );
