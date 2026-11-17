@@ -10,6 +10,7 @@ import {
   shouldRenderBusinessOwnerHome,
 } from "@/lib/business-home/gate";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
+import type { EmployeeIssuerStatus } from "@/lib/employee-issuer/types";
 import type { AuthUser } from "@/lib/types";
 
 export type BusinessSectionDispatchDecision =
@@ -17,6 +18,13 @@ export type BusinessSectionDispatchDecision =
   | { kind: "specialist-r06" }
   | { kind: "business"; partnerType: "STORE" | "COMPANY" }
   | { kind: "legacy-issuer" }
+  | {
+      /** Employee without a Branch (solo-partner employee / main-organization member) of a specialist or business. */
+      kind: "employee-issuer";
+      canIssue: boolean;
+      employerLabel: string | null;
+      partnerType?: "STORE" | "COMPANY";
+    }
   | { kind: "clients-unavailable" };
 
 export function resolveBusinessSectionDispatch(input: {
@@ -26,7 +34,40 @@ export function resolveBusinessSectionDispatch(input: {
   r03Eligible: boolean;
   r06Eligible: boolean;
   surface: "clients" | "issuer";
+  /** Server-resolved issuer workspace of an employee without a Branch (persisted rights). */
+  employeeIssuer?: EmployeeIssuerStatus | null;
 }): BusinessSectionDispatchDecision {
+  const employee = input.employeeIssuer;
+  if (input.surface === "issuer" && employee?.applicable) {
+    // The EMPLOYER decides the workspace, never the employee's own CLIENT profile.
+    if (employee.workspace === "agent") return { kind: "agent-r03" };
+    if (employee.workspace === "specialist" || employee.workspace === "business") {
+      const partnerType = input.proContext?.organization?.partnerType;
+      return {
+        kind: "employee-issuer",
+        canIssue: employee.canIssue,
+        employerLabel: employee.employerDisplayName?.trim() || null,
+        ...(employee.workspace === "business" && (partnerType === "STORE" || partnerType === "COMPANY")
+          ? { partnerType }
+          : {}),
+      };
+    }
+  }
+
+  if (
+    input.surface === "clients" &&
+    employee?.applicable &&
+    employee.workspace === "agent" &&
+    input.contextReady &&
+    isPartnerAssistantContext(input.proContext)
+  ) {
+    // Employee of an AGENT (employer resolved by the server): only the observer screen exists, never the
+    // receiving CRM. Observer rights are `canManageLeads` / `canManageCertificates`, not "can issue" alone.
+    const observerRead =
+      employee.role !== "VIEWER" && Boolean(employee.canIssue || employee.canManageClients);
+    return observerRead ? { kind: "agent-r03" } : { kind: "clients-unavailable" };
+  }
+
   const workplace = resolveWorkplacePartnerTypeResolution({
     user: input.user,
     proContext: input.proContext,

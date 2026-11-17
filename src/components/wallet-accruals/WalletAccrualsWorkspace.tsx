@@ -324,7 +324,7 @@ export function WalletAccrualsWorkspace({
 
   const staffMergedBranchLedger = Boolean(walletLedgerBranchIds?.length);
   // Company-wide staff unscoped GET: keep empty shell + coverage, not owner onboarding.
-  const staffCompanyWideLedger = response.walletReadScope === "org-staff-company";
+  const staffCompanyWideLedger = response.walletReadScope === "org-staff-company" || response.walletReadScope === "solo-staff";
 
   if (
     !agentRegistry &&

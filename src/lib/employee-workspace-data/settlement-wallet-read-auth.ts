@@ -25,7 +25,9 @@ export type SettlementWalletReadAuthResult =
         | "pro-owner"
         | "pro-solo"
         | "org-member-with-ledger"
-        | "org-member-company-ledger";
+        | "org-member-company-ledger"
+        | "org-staff-persisted-ledger"
+        | "solo-staff-persisted-ledger";
       branchIds?: string[];
     }
   | { allowed: false; reason: SettlementWalletReadDenyReason };
@@ -33,6 +35,11 @@ export type SettlementWalletReadAuthResult =
 export type SettlementWalletPaymentAuthResult =
   | { allowed: true; branchIds: string[] }
   | { allowed: false; reason: SettlementWalletReadDenyReason };
+
+/** Read-only: VIEWER keeps its read flags, so this never implies any write or payment capability. */
+function persistedWalletRead(proContext: ProContextSnapshot | null): boolean {
+  return proContext?.rights?.flags?.canViewWallet === true;
+}
 
 /**
  * Mirror of navigator authorizeSettlementWalletRead — no upfront user.role !== PRO gate;
@@ -65,6 +72,12 @@ export function authorizeSettlementWalletRead(input: {
 
     const grants = activeBranchPermissionGrants(proContext);
     if (grants.length === 0) {
+      // Organization member without a Branch: only an explicitly persisted read right opens the owner's ledger.
+      if (role === "ORG_TEAM_MEMBER" || role === "ORG_EMPLOYEE") {
+        return persistedWalletRead(proContext)
+          ? { allowed: true, mode: "org-staff-persisted-ledger" }
+          : { allowed: false, reason: "missing_wallet_permission" };
+      }
       return { allowed: false, reason: "no_active_branch_grant" };
     }
 
@@ -97,6 +110,12 @@ export function authorizeSettlementWalletRead(input: {
       mode: "org-member-with-ledger",
       branchIds: walletBranchIds,
     };
+  }
+
+  if (role === "PARTNER_MANAGER" || role === "PARTNER_EMPLOYEE") {
+    return persistedWalletRead(proContext)
+      ? { allowed: true, mode: "solo-staff-persisted-ledger" }
+      : { allowed: false, reason: "missing_wallet_permission" };
   }
 
   if (input.user.role !== "PRO") {

@@ -735,6 +735,7 @@
 .clientsScope :global(.ca-next-panel){display:grid;gap:var(--s3,12px);padding:var(--s4,16px);border:1px solid var(--line);border-radius:12px;background:var(--bg);margin-top:var(--s3,12px)}
 .clientsScope :global(.ca-next-panel h4){margin:0;font-size:var(--text-base)}
 .clientsScope :global(.ca-next-panel .field input),.clientsScope :global(.ca-next-panel .field select),.clientsScope :global(.ca-next-panel .field textarea){min-height:44px;max-width:100%}
+.clientsScope :global(.btn.ca-notes-saved){background:var(--tint);border-color:var(--good);color:var(--good);font-weight:700}
 .clientsScope :global(.ca-next-error){color:var(--brand,#c12b2f);font-size:var(--text-sm);margin:0}
 .clientsScope :global(.ca-next-hint){margin:0;font-size:var(--text-sm);color:var(--muted)}
 .clientsScope :global(.ca-chip:focus-visible),.clientsScope :global(.ca-back:focus-visible){outline:2px solid var(--accent);outline-offset:2px}

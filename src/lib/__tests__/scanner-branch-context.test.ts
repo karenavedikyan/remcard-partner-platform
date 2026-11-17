@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import {
   appendStoreOrderBranchQuery,
+  isHeadOfficeNullContourOperator,
+  isStorePurchaseBranchScoped,
   resolveScannerBranchContext,
   scannerAccessibleOperationBranches,
 } from "@/lib/scanner-branch-context";
@@ -97,5 +99,61 @@ describe("scanner-branch-context", () => {
     const options = scannerAccessibleOperationBranches(sixBranchEmployeeContext());
     expect(options.map((o) => o.id)).not.toContain("br_krd_rossiyskaya");
     expect(options).toHaveLength(5);
+  });
+});
+
+describe("AB-12: head-office / direct employee NULL contour (saved rights only)", () => {
+  const org = { id: "o", name: "S", ownerId: "ow", partnerType: "STORE" as const };
+  const ctx = (over: Record<string, unknown>) =>
+    ({ organization: org, branches: [], activeBranch: null, ...over }) as unknown as ProContextSnapshot;
+  const activate = { role: "MANAGER", flags: { canActivateCertificates: true } };
+
+  it("ORG_EMPLOYEE with saved canActivateCertificates and HEAD_OFFICE member without assignments: not_required, not branch-scoped", () => {
+    for (const proContext of [
+      ctx({ role: "ORG_EMPLOYEE", rights: activate }),
+      ctx({ role: "ORG_TEAM_MEMBER", membershipKind: "HEAD_OFFICE", branchAssignments: [], rights: activate }),
+    ]) {
+      expect(resolveScannerBranchContext({ contextReady: true, proContext })).toEqual({ kind: "not_required" });
+      expect(isStorePurchaseBranchScoped(proContext)).toBe(false);
+      expect(isHeadOfficeNullContourOperator(proContext)).toBe(true);
+    }
+  });
+
+  it("no saved right / flag off / VIEWER / unknown flag: blocked as before, role alone never grants", () => {
+    for (const rights of [
+      undefined,
+      { role: "MANAGER", flags: { canActivateCertificates: false } },
+      { role: "MANAGER", flags: {} },
+      { role: "VIEWER", flags: { canActivateCertificates: true } },
+    ]) {
+      for (const role of ["ORG_EMPLOYEE", "ORG_TEAM_MEMBER"]) {
+        const r = resolveScannerBranchContext({ contextReady: true, proContext: ctx({ role, rights }) });
+        expect(r.kind).toBe("blocked");
+      }
+    }
+  });
+
+  it("a head-office member WITH branch assignments keeps the branch flow: only permitted active branches, no NULL shortcut", () => {
+    const proContext = ctx({
+      role: "ORG_TEAM_MEMBER",
+      membershipKind: "HEAD_OFFICE",
+      branches: [{ id: "b1", name: "A", city: "C" }, { id: "b2", name: "B", city: "C" }],
+      activeBranch: { id: "b1", name: "A", city: "C" },
+      branchAssignments: [
+        { branchId: "b1", status: "ACTIVE", effectivePermissions: { canActivateCertificates: true } },
+        { branchId: "b2", status: "ACTIVE", effectivePermissions: { canActivateCertificates: false } },
+      ],
+      rights: activate,
+    });
+    expect(isStorePurchaseBranchScoped(proContext)).toBe(true);
+    const r = resolveScannerBranchContext({ contextReady: true, proContext });
+    expect(r).toMatchObject({ kind: "ready", branchId: "b1" });
+    if (r.kind === "ready") expect(r.options.map((o) => o.id)).toEqual(["b1"]);
+  });
+
+  it("branch employees, owners and solo employees are unchanged", () => {
+    expect(isHeadOfficeNullContourOperator(ctx({ role: "BRANCH_EMPLOYEE", rights: activate }))).toBe(false);
+    expect(resolveScannerBranchContext({ contextReady: true, proContext: ctx({ role: "ORG_OWNER" }) }).kind).toBe("not_required");
+    expect(resolveScannerBranchContext({ contextReady: true, proContext: ctx({ role: "PARTNER_MANAGER" }) }).kind).toBe("not_required");
   });
 });

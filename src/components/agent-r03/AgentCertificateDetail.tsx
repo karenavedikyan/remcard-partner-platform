@@ -24,6 +24,7 @@ import { SharePreviewDialog } from "./SharePreviewDialog";
 import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import styles from "./agent-r03.module.css";
 import { CertificatePurchases } from "./CertificatePurchases";
+import { useOwnerIssuerModeValue } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 
 export type AgentCertificateDetailAccessMode = "agent" | "specialist";
 
@@ -41,6 +42,8 @@ export function AgentCertificateDetail({
   createHref = "/certificates/new",
 }: AgentCertificateDetailProps) {
   const isSpecialist = accessMode === "specialist";
+  /** Agent's employee: issuer/observer only — sharing and reading, never archive/rename/disable/delete. */
+  const employeeReadOnly = useOwnerIssuerModeValue()?.agentEmployee === true;
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -189,6 +192,9 @@ export function AgentCertificateDetail({
                 : "Ссылка недоступна",
               onClick: () => setShareOpen(true),
             },
+            ...(employeeReadOnly
+              ? []
+              : [
             {
               id: "rename",
               label: "Переименовать для себя",
@@ -228,6 +234,7 @@ export function AgentCertificateDetail({
               disabledReason: "Есть использования или заказы",
               onClick: () => void onDelete(),
             },
+                ]),
           ]}
         />
       </div>

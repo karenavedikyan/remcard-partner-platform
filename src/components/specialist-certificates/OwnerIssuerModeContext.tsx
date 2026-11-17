@@ -16,6 +16,10 @@ export type OwnerIssuerModeValue = {
   isBranchStaff?: boolean;
   /** Branch employee: own certificate branches, source of the "Все мои филиалы" filter. */
   staffBranches?: Array<{ id: string; name: string; city: string; address?: string | null }>;
+  /** Employee without a Branch (persisted rights): the employer's name replaces the owner page eyebrow. */
+  employerLabel?: string | null;
+  /** Agent employer's employee: issuer/observer only — no archive, rename, delete or any other owner action. */
+  agentEmployee?: boolean;
 };
 
 const Ctx = createContext<OwnerIssuerModeValue | null>(null);
@@ -27,6 +31,8 @@ export function OwnerIssuerModeProvider({
   canIssueCertificates,
   isBranchStaff,
   staffBranches,
+  employerLabel,
+  agentEmployee,
   children,
 }: {
   mode: OwnerIssuerAccessMode;
@@ -35,10 +41,21 @@ export function OwnerIssuerModeProvider({
   canIssueCertificates?: boolean;
   isBranchStaff?: boolean;
   staffBranches?: Array<{ id: string; name: string; city: string; address?: string | null }>;
+  employerLabel?: string | null;
+  agentEmployee?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Ctx.Provider value={{ mode, businessPartnerType, canLinkOnboardingHistory, canIssueCertificates, isBranchStaff, staffBranches }}>
+    <Ctx.Provider value={{
+        mode,
+        businessPartnerType,
+        canLinkOnboardingHistory,
+        canIssueCertificates,
+        isBranchStaff,
+        staffBranches,
+        employerLabel,
+        agentEmployee,
+      }}>
       {children}
     </Ctx.Provider>
   );

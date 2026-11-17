@@ -7,6 +7,7 @@
 export const RECEIVING_DETAIL_NOTES_PLACEHOLDER = "Только для вашей команды";
 
 export const RECEIVING_DETAIL_NOTES_SAVE_LABEL = "Сохранить";
+export const RECEIVING_DETAIL_NOTES_SAVED_LABEL = "Сохранено ✓";
 
 export const RECEIVING_DETAIL_PURCHASE_HEADING = "Покупка";
 

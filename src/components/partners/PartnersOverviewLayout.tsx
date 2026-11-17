@@ -27,6 +27,8 @@ export type PartnersOverviewLayoutProps = {
   };
   loading: boolean;
   error: string;
+  /** The list is closed for this account (403): a neutral explanation replaces the error and «Повторить». */
+  accessNote?: string;
   listReady: boolean;
   onRetry: () => void;
   onOpenFind: () => void;
@@ -76,6 +78,7 @@ export function PartnersOverviewLayout({
   counts,
   loading,
   error,
+  accessNote,
   listReady,
   onRetry,
   onOpenFind,
@@ -308,7 +311,13 @@ export function PartnersOverviewLayout({
         <WelcomeContentAreaPending testId="partners-welcome-decision-pending" />
       ) : null}
 
-      {!presentationPending && error ? (
+      {!presentationPending && error && accessNote ? (
+        <p className={styles.statusBanner} role="status" data-testid="partners-overview-access-note">
+          {accessNote}
+        </p>
+      ) : null}
+
+      {!presentationPending && error && !accessNote ? (
         <div role="alert" data-testid="partners-overview-error">
           <p className={styles.errorBanner}>{error}</p>
           <button type="button" className={styles.ghostBtn} onClick={onRetry}>

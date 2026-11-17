@@ -285,3 +285,56 @@ describe("Receiving detail: preserve notes draft across CAS conflict", () => {
     ]);
   });
 });
+
+describe("AB-05: explicit confirmation that the note was saved", () => {
+  const saveButton = () => screen.getByTestId("ca-receiving-notes-save");
+
+  it("shows «Сохранено ✓» after a successful save and drops it on the next edit", async () => {
+    const state = install({ conflicts: 0 });
+    const { user } = await open();
+    expect(saveButton()).toHaveTextContent("Сохранить");
+    expect(saveButton()).not.toHaveAttribute("data-saved");
+
+    await enterAndSave(user, "Новая заметка");
+    await waitFor(() => expect(saveButton()).toHaveAttribute("data-saved", "true"));
+    expect(state.notes).toBe("Новая заметка");
+    expect(saveButton()).toHaveTextContent("Сохранено ✓");
+    expect(screen.getByTestId("ca-receiving-notes-saved-status")).toHaveTextContent("Заметка сохранена");
+    expect(screen.queryByTestId("ca-receiving-notes-error")).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId("ca-receiving-notes-input"), "!");
+    expect(saveButton()).not.toHaveAttribute("data-saved");
+    expect(saveButton()).toHaveTextContent("Сохранить");
+    expect(saveButton()).toBeEnabled();
+    expect(screen.getByTestId("ca-receiving-notes-saved-status")).toHaveTextContent("");
+  });
+
+  it("never shows success on a 409 conflict; the draft is kept and the success appears only after the explicit retry", async () => {
+    const state = install();
+    const { user } = await open();
+    await enterAndSave(user);
+    await expectReconciled();
+    expect(saveButton()).not.toHaveAttribute("data-saved");
+    expect(saveButton()).toHaveTextContent("Сохранить");
+
+    await user.click(saveButton());
+    await waitFor(() => expect(state.notes).toBe(draft));
+    await waitFor(() => expect(saveButton()).toHaveAttribute("data-saved", "true"));
+  });
+
+  it("never shows success on an ordinary server error", async () => {
+    install({ conflicts: 0, patchError: true });
+    const { user } = await open();
+    await enterAndSave(user);
+    expect(await screen.findByTestId("ca-receiving-notes-error")).toHaveTextContent("Ошибка сохранения");
+    expect(saveButton()).not.toHaveAttribute("data-saved");
+    expect(saveButton()).toHaveTextContent("Сохранить");
+  });
+
+  it("an intentional empty note is confirmed too", async () => {
+    install({ conflicts: 0 });
+    const { user } = await open();
+    await enterAndSave(user, "");
+    await waitFor(() => expect(saveButton()).toHaveAttribute("data-saved", "true"));
+  });
+});

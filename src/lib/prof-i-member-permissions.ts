@@ -48,7 +48,29 @@ export function effectiveActionIdsForBranch(input: {
   return actionIdsFromFlags(input.defaultPermissions);
 }
 
-export function summarizeMemberAccess(member: TeamMemberRow): {
+export type HeadOfficeRightsMap = Record<
+  string,
+  { role: string | null; permissions: Record<string, boolean> | null }
+>;
+
+/**
+ * Saved rights of a member without Branch, exactly as the server returned them (`headOfficeRights`).
+ * `null` = never saved / revoked / role changed: no rights (fail-closed), nothing is derived from the position.
+ */
+export function savedHeadOfficeFlags(
+  member: TeamMemberRow,
+  headOfficeRights?: HeadOfficeRightsMap,
+): ProfIPermissionFlags | null {
+  if (member.branchAccess.length > 0) return null;
+  const saved = headOfficeRights?.[member.userId]?.permissions;
+  if (!saved) return null;
+  return normalizePermissionFlags(saved as Partial<ProfIPermissionFlags>);
+}
+
+export function summarizeMemberAccess(
+  member: TeamMemberRow,
+  headOfficeRights?: HeadOfficeRightsMap,
+): {
   mixed: boolean;
   actionCount: number;
   hasPayout: boolean;
@@ -56,6 +78,10 @@ export function summarizeMemberAccess(member: TeamMemberRow): {
 } {
   const { permissionsMixed, defaultPermissions, branchPermissions } = memberPermissionState(member);
   const allIds = new Set<ProfIActionId>();
+  const officeFlags = savedHeadOfficeFlags(member, headOfficeRights);
+  if (officeFlags) {
+    for (const id of actionIdsFromFlags(officeFlags)) allIds.add(id);
+  }
   for (const access of member.branchAccess) {
     for (const id of effectiveActionIdsForBranch({
       permissionsMixed,

@@ -3,7 +3,7 @@ import type {
   OrganizationPendingInviteRow,
   TeamMemberRow,
 } from "./employees-overview-types";
-import { summarizeMemberAccess } from "./prof-i-member-permissions";
+import { summarizeMemberAccess, type HeadOfficeRightsMap } from "./prof-i-member-permissions";
 
 export type TeamSectionView = "people" | "locations" | "invites";
 
@@ -126,15 +126,28 @@ export function countHeadOfficeMembers(members: TeamMemberRow[]): number {
   return members.filter((m) => m.membershipKind === "HEAD_OFFICE").length;
 }
 
+/** People actually listed on the page: team members plus direct employees, one per userId. */
+export function countVisiblePeople(
+  members: TeamMemberRow[],
+  directEmployeeUserIds: readonly string[] = [],
+): number {
+  const ids = new Set<string>();
+  for (const m of members) ids.add(m.userId);
+  for (const id of directEmployeeUserIds) if (id) ids.add(id);
+  return ids.size;
+}
+
 export function computeTeamStats(
   overview: EmployeesOverviewResponse,
   members: TeamMemberRow[],
   pendingInvites: UnifiedPendingInvite[],
+  directEmployeeUserIds?: readonly string[],
 ) {
+  const visible = countVisiblePeople(members, directEmployeeUserIds);
   const employees =
-    overview.summary.uniqueEmployees ??
-    overview.summary.totalEmployees ??
-    members.length;
+    directEmployeeUserIds !== undefined || members.length > 0
+      ? visible
+      : (overview.summary.uniqueEmployees ?? overview.summary.totalEmployees ?? 0);
   return {
     employees,
     branches: overview.branches.length,
@@ -286,8 +299,11 @@ export function manageableBranchAccess(
   );
 }
 
-export function memberRoleSummary(member: TeamMemberRow): { title: string; hint: string } {
-  const summary = summarizeMemberAccess(member);
+export function memberRoleSummary(
+  member: TeamMemberRow,
+  headOfficeRights?: HeadOfficeRightsMap,
+): { title: string; hint: string } {
+  const summary = summarizeMemberAccess(member, headOfficeRights);
   let hint = summary.mixed
     ? "Разные права по подразделениям"
     : summary.hasPayout

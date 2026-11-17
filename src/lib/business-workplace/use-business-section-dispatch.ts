@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { fetchAgentR03Status } from "@/lib/agent-r03/api";
 import { fetchSpecialistR06Status } from "@/lib/specialist-r06/api";
+import { isPartnerAssistantContext } from "@/lib/business-clients/assistant";
+import { fetchEmployeeIssuerStatusSafe } from "@/lib/employee-issuer/api";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
@@ -32,13 +34,14 @@ export function useBusinessSectionDispatch(input: {
       setLoading(true);
       setError("");
       try {
-        const [r03, r06, mePayload, proCtxFallback] = await Promise.all([
+        const [r03, r06, mePayload, proCtxFallback, employeeIssuer] = await Promise.all([
           fetchAgentR03Status(),
           fetchSpecialistR06Status(),
           remcardFetch<{ user: AuthUser }>("/api/auth/me"),
           input.presentation
             ? Promise.resolve(null)
             : remcardFetch<ProContextSnapshot>("/api/pro/context").catch(() => null),
+          input.surface === "issuer" ? fetchEmployeeIssuerStatusSafe() : Promise.resolve(null),
         ]);
         if (cancelled) return;
 
@@ -48,6 +51,13 @@ export function useBusinessSectionDispatch(input: {
           input.presentation?.contextReady ??
           Boolean(proCtxFallback && proCtxFallback.role?.trim());
 
+        // Only a solo-partner assistant can be an agent's employee; the employer comes from the server.
+        const employeeForClients =
+          input.surface === "clients" && !r03.eligible && isPartnerAssistantContext(proContext)
+            ? await fetchEmployeeIssuerStatusSafe()
+            : null;
+        if (cancelled) return;
+
         const next = resolveBusinessSectionDispatch({
           user: mePayload.user,
           proContext,
@@ -55,6 +65,7 @@ export function useBusinessSectionDispatch(input: {
           r03Eligible: Boolean(r03.featureEnabled && r03.eligible),
           r06Eligible: Boolean(r06.featureEnabled && r06.eligible),
           surface: input.surface,
+          employeeIssuer: employeeIssuer ?? employeeForClients,
         });
         setResolvedProContext(proContext);
         setDecision(next);

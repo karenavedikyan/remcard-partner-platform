@@ -179,7 +179,7 @@ export function ProfileTeamSection({
       } else {
         setInvites([]);
       }
-      if (data.myRole === "SOLO_PARTNER") {
+      if (data.myRole === "SOLO_PARTNER" || data.myRole === "ORG_OWNER") {
         const solo = await remcardFetch<{ employees: SoloPartnerEmployeeRow[] }>("/api/pro/employees");
         if (generation !== fetchGenerationRef.current) return;
         setSoloEmployees(solo.employees ?? []);
@@ -234,9 +234,9 @@ export function ProfileTeamSection({
   const stats = useMemo(
     () =>
       overview
-        ? computeTeamStats(overview, displayTeam, pendingUnified)
+        ? computeTeamStats(overview, displayTeam, pendingUnified, soloEmployees.map((e) => e.user.id))
         : { employees: 0, branches: 0, headOffice: 0, pendingInvites: 0 },
-    [overview, displayTeam, pendingUnified],
+    [overview, displayTeam, pendingUnified, soloEmployees],
   );
 
   const filteredMembers = useMemo(
@@ -291,7 +291,7 @@ export function ProfileTeamSection({
 
   function renderPersonRow(member: TeamMemberRow) {
     const scope = formatAccessScopeLabel(member, overview?.branches.length ?? 0);
-    const role = memberRoleSummary(member);
+    const role = memberRoleSummary(member, overview?.headOfficeRights);
     const chipClass =
       member.membershipKind === "HEAD_OFFICE" && member.branchAccess.length === 0
         ? styles.scopeChipOffice
@@ -427,7 +427,7 @@ export function ProfileTeamSection({
                     <div key={`${loc.id}-${m.userId}`} className={styles.miniPerson}>
                       <div>
                         <strong>{memberDisplayName(m)}</strong>
-                        <small>{m.position?.trim() || memberRoleSummary(m).title}</small>
+                        <small>{m.position?.trim() || memberRoleSummary(m, overview?.headOfficeRights).title}</small>
                       </div>
                       {canManage && canEditTeamMember(overview, m) ? (
                         <Button
@@ -738,6 +738,20 @@ export function ProfileTeamSection({
               Пригласить в SOLO-команду
             </Button>
           ) : null}
+        </div>
+      ) : null}
+
+      {overview?.myRole === "ORG_OWNER" && soloEmployees.length > 0 ? (
+        <div className={styles.soloBlock} data-testid="team-owner-direct-employees">
+          <p className={formStyles.hint}>
+            Сотрудники, привязанные к вам напрямую (без филиала): права сохраняются здесь, без сохранения они
+            работают без разрешений.
+          </p>
+          <ul className={formStyles.notesList}>
+            {soloEmployees.map((emp) => (
+              <ProfileSoloPartnerEmployeeCard key={emp.id} employee={emp} onChanged={load} organization />
+            ))}
+          </ul>
         </div>
       ) : null}
 

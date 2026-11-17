@@ -98,12 +98,14 @@ export function AgentCertificatesList({
   const ownerMode = useOwnerIssuerModeValue();
   const canIssue = !isBusiness || ownerMode?.canIssueCertificates !== false;
   /** Branch employee: reads, shares and opens certificates; changing and archiving stay with the owner. */
-  const staffReadOnly = isBusiness && ownerMode?.isBranchStaff === true;
+  const agentEmployee = !isIssuerShell && ownerMode?.agentEmployee === true;
+  const staffReadOnly = (isBusiness && ownerMode?.isBranchStaff === true) || agentEmployee;
   const staffBranches = staffReadOnly ? (ownerMode?.staffBranches ?? []) : [];
   const businessPageCopy = isBusiness
-    ? businessCertificatesPageCopy({
-        partnerType: ownerMode?.businessPartnerType ?? "STORE",
-      })
+    ? businessCertificatesPageCopy(
+        { partnerType: ownerMode?.businessPartnerType ?? "STORE" },
+        { employerLabel: ownerMode?.employerLabel },
+      )
     : null;
   const issuerPageCopy = isBusiness
     ? businessPageCopy!
@@ -735,11 +737,11 @@ export function AgentCertificatesList({
             <table className={styles.collectionTable}>
               <thead>
                 <tr>
-                  {staffReadOnly ? null : <th />}
-                  <th>Название</th>
-                  <th>Подробности</th>
-                  <th>Статус</th>
-                  <th>
+                  {staffReadOnly ? null : <th className={styles.colSelect} data-col="select" />}
+                  <th className={styles.colName} data-col="name">Название</th>
+                  <th className={styles.colDetail} data-col="detail">Подробности</th>
+                  <th className={styles.colStatus} data-col="status">Статус</th>
+                  <th className={styles.colAction} data-col="action">
                     <span className="sr-only">Действия</span>
                   </th>
                 </tr>
@@ -748,7 +750,7 @@ export function AgentCertificatesList({
                 {items.map((cert) => (
                   <tr key={cert.id}>
                     {staffReadOnly ? null : (
-                      <td>
+                      <td className={styles.colSelect} data-col="select">
                         <input
                           type="checkbox"
                           checked={selected.has(cert.id)}
@@ -756,7 +758,7 @@ export function AgentCertificatesList({
                         />
                       </td>
                     )}
-                    <td>
+                    <td className={styles.colName} data-col="name">
                       <Link
                         href={`${detailBasePath}/${cert.id}`}
                         className={styles.collectionOpenLink}
@@ -769,14 +771,16 @@ export function AgentCertificatesList({
                       </small>
                       <CertificateIssuedByLine cert={cert} as="small" className={styles.collectionCaption} />
                     </td>
-                    <td className={styles.collectionDetail}>{certificateListDetail(cert)}</td>
-                    <td>
+                    <td className={`${styles.collectionDetail} ${styles.colDetail}`} data-col="detail">
+                      {certificateListDetail(cert)}
+                    </td>
+                    <td className={styles.colStatus} data-col="status">
                       <CertificatePurchaseLink cert={cert} detailBasePath={detailBasePath} />
                       <small className={styles.collectionLifecycle}>
                         {certificateLifecycleStatusLabel(cert)}
                       </small>
                     </td>
-                    <td className={styles.collectionRowAction}>
+                    <td className={`${styles.collectionRowAction} ${styles.colAction}`} data-col="action">
                       <RecordRowActions
                         ariaLabel="Действия"
                         actions={certRowActions(cert)}

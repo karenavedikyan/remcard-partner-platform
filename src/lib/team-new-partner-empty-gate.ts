@@ -20,7 +20,7 @@ export function shouldShowTeamNewPartnerEmptyState(input: TeamNewPartnerEmptyGat
   if (input.locationFilter !== "all") return false;
   if (input.displayTeamCount > 0) return false;
   if (input.pendingInviteCount > 0) return false;
-  if (input.overview.myRole === "SOLO_PARTNER" && input.soloEmployeeCount > 0) return false;
+  if ((input.overview.myRole === "SOLO_PARTNER" || input.overview.myRole === "ORG_OWNER") && input.soloEmployeeCount > 0) return false;
   if (input.canManage && input.invitesLoadError) return false;
   return true;
 }

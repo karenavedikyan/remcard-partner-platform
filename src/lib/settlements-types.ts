@@ -31,7 +31,7 @@ export type SettlementCompleted = SettlementObligation & {
 };
 
 /** Optional server ledger scope for org staff (typed; no copy matching). */
-export type WalletReadScope = "org-staff-company" | "org-staff-branches";
+export type WalletReadScope = "org-staff-company" | "org-staff-branches" | "solo-staff";
 
 export type SettlementsResponse = {
   receivable: SettlementObligation[];

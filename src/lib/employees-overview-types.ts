@@ -11,6 +11,8 @@ export type EmployeesOverviewResponse = {
     uniqueEmployees?: number;
   };
   team?: TeamMemberRow[];
+  /** Persisted rights of members without a Branch; `permissions: null` = never saved (no rights yet). */
+  headOfficeRights?: Record<string, { role: string | null; permissions: Record<string, boolean> | null }>;
   organizationPendingInvites?: OrganizationPendingInviteRow[];
   branches: Array<{
     id: string;

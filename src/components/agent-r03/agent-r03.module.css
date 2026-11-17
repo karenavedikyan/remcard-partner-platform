@@ -1213,30 +1213,27 @@
   background: var(--r03-offset);
 }
 
-.collectionTable .selectCol,
-.collectionTable th:first-child,
-.collectionTable td:first-child {
+.collectionTable .colSelect {
   width: 46px;
   text-align: center;
 }
 
-.collectionTable th:nth-child(2) {
+.collectionTable .colName {
   width: 29%;
 }
 
-.collectionTable th:nth-child(4) {
-  width: 22%;
+.collectionTable .colDetail {
+  width: auto;
 }
 
-.collectionTable th:last-child,
-.collectionTable td.collectionRowAction {
-  width: 280px;
-  min-width: 280px;
-}
-
-.collectionTable td:nth-child(4) {
+.collectionTable .colStatus {
   width: 22%;
   min-width: 8.5rem;
+}
+
+.collectionTable .colAction {
+  width: 280px;
+  min-width: 280px;
 }
 
 .collectionRowAction {

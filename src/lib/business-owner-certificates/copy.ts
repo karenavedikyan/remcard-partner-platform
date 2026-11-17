@@ -1,7 +1,11 @@
 import type { AuthUser } from "@/lib/types";
 
-export function businessCertificatesPageCopy(user: Pick<AuthUser, "partnerType">) {
-  const eyebrow = user.partnerType === "COMPANY" ? "Компания" : "Магазин";
+export function businessCertificatesPageCopy(
+  user: Pick<AuthUser, "partnerType">,
+  options?: { employerLabel?: string | null },
+) {
+  const eyebrow =
+    options?.employerLabel?.trim() || (user.partnerType === "COMPANY" ? "Компания" : "Магазин");
   return {
     eyebrow,
     title: "Сертификаты",

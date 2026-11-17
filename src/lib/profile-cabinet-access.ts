@@ -37,6 +37,8 @@ export type ProContextSnapshot = {
   membershipKind?: string | null;
   membershipPosition?: string | null;
   teamCapabilities?: TeamCapabilitiesSnapshot;
+  /** Persisted owner-saved rights of an employee without a Branch; absent = never saved (no rights). */
+  rights?: { role: string; flags: Record<string, boolean> };
   /** Branch/org effective permissions from trusted GET /api/pro/context (additive). */
   effectivePermissions?: ProfIPermissionFlags;
   /** ACTIVE branch assignments with per-branch flags (preferred over implicit allow). */

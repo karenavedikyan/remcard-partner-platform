@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { partnersAccessNote } from "@/lib/partners/access-note";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
   PARTNERSHIP_STATUS_LABELS,
@@ -294,6 +295,7 @@ export function PartnersHub({
     defaultSearchRoleForUser(profileUserToPartnerSide(initialProfile.user, initialProfile.organization)),
   );
   const [listError, setListError] = useState("");
+  const [listForbidden, setListForbidden] = useState(false);
   const [partnershipListReady, setPartnershipListReady] = useState(false);
   const [overviewLegacyDisclosureOpen, setOverviewLegacyDisclosureOpen] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -907,11 +909,13 @@ export function PartnersHub({
       }
       setPartnerships(parsed.partnerships as Partnership[]);
       setPartnershipListReady(true);
+      setListForbidden(false);
       return true;
     } catch (caught) {
       if (silent) return false;
       setPartnerships([]);
       setPartnershipListReady(false);
+      setListForbidden(caught instanceof RemcardApiError && caught.status === 403);
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить список");
       return false;
     } finally {
@@ -2481,9 +2485,15 @@ export function PartnersHub({
       ) : null}
 
       {listError && tab === "list" && !isOverview ? (
-        <p className={styles.error} role="alert">
-          {listError}
-        </p>
+        listForbidden ? (
+          <p className={styles.searchDescription} role="status" data-testid="partners-access-note">
+            {partnersAccessNote(proContext)}
+          </p>
+        ) : (
+          <p className={styles.error} role="alert">
+            {listError}
+          </p>
+        )
       ) : null}
       {actionError && !lifecycleConfirm ? (
         <p className={styles.error} role="alert" data-testid="partners-hub-action-error">
@@ -2600,6 +2610,7 @@ export function PartnersHub({
           onLegacyDisclosureOpenChange={setOverviewLegacyDisclosureOpen}
           loading={loadingList}
           error={listError}
+          accessNote={listForbidden ? partnersAccessNote(proContext) : undefined}
           onRetry={() => void loadList()}
           partnersAudience={partnersAudience}
           onOpenFind={() => onOpenPartnerHub?.("find")}

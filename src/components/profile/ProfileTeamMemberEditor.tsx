@@ -43,6 +43,13 @@ export function ProfileTeamMemberEditor({ member, overview, onClose, onSaved }: 
     ],
   );
   const initial = memberPermissionState(member);
+  const persistedHeadOffice =
+    member.branchAccess.length === 0 ? overview.headOfficeRights?.[member.userId]?.permissions : null;
+  if (persistedHeadOffice) {
+    initial.defaultPermissions = normalizePermissionFlags(
+      persistedHeadOffice as Partial<ProfIPermissionFlags>,
+    );
+  }
   const [step, setStep] = useState(1);
   const [membershipKind, setMembershipKind] = useState<"BRANCH_STAFF" | "HEAD_OFFICE">(
     member.membershipKind === "HEAD_OFFICE" ? "HEAD_OFFICE" : "BRANCH_STAFF",

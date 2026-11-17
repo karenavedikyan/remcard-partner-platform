@@ -30,14 +30,36 @@ export type ScannerBranchResolution =
       explicitChoice: boolean;
     };
 
+/** Owner-saved right to activate certificates / buy; VIEWER can never hold it (flags are sanitized server-side). */
+function persistedCanActivate(proContext: ProContextSnapshot): boolean {
+  return proContext.rights?.flags?.canActivateCertificates === true && proContext.rights.role !== "VIEWER";
+}
+
+/**
+ * Employee who works in the organization's head-office (NULL-branch) contour on explicitly saved rights:
+ * a direct organization employee (`ORG_EMPLOYEE`) or a head-office member without any branch assignment.
+ * Never derived from the role alone: no saved activation right → not a no-branch operator.
+ */
+export function isHeadOfficeNullContourOperator(proContext: ProContextSnapshot | null): boolean {
+  if (!proContext?.role) return false;
+  if (proContext.role === "ORG_EMPLOYEE") return persistedCanActivate(proContext);
+  if (proContext.role === "ORG_TEAM_MEMBER") {
+    const hasBranch =
+      activeBranchPermissionGrants(proContext).length > 0 || (proContext.branches ?? []).length > 0;
+    return !hasBranch && persistedCanActivate(proContext);
+  }
+  return false;
+}
+
 export function isStorePurchaseBranchScoped(proContext: ProContextSnapshot | null): boolean {
   if (!proContext?.role) return false;
+  if (isHeadOfficeNullContourOperator(proContext)) return false;
   return BRANCH_SCOPED_ROLES.has(proContext.role);
 }
 
 export function isStorePurchaseBranchOptional(proContext: ProContextSnapshot | null): boolean {
   if (!proContext?.role) return false;
-  return OWNER_LIKE_ROLES.has(proContext.role);
+  return OWNER_LIKE_ROLES.has(proContext.role) || isHeadOfficeNullContourOperator(proContext);
 }
 
 /** ACTIVE branches where trusted context grants certificate activation. */

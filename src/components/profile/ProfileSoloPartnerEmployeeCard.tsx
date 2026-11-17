@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
+import { normalizePermissionFlags, type ProfIPermissionFlags } from "@/lib/prof-i-permissions";
+import { ProfileTeamPermissionMatrix } from "./ProfileTeamPermissionMatrix";
 import styles from "./ProfileEditor.module.css";
 
 const ROLE_OPTIONS = [
@@ -16,6 +18,8 @@ export type SoloPartnerEmployeeRow = {
   role: string;
   status: string;
   position: string | null;
+  /** Persisted rights for the current role; null = never saved by the owner (no rights yet). */
+  permissions?: Record<string, boolean> | null;
   user: {
     id: string;
     displayName: string | null;
@@ -27,11 +31,16 @@ export type SoloPartnerEmployeeRow = {
 type Props = {
   employee: SoloPartnerEmployeeRow;
   onChanged: () => Promise<void>;
+  /** Owner of an organization: the employee works in the head-office contour, never in a branch. */
+  organization?: boolean;
 };
 
-export function ProfileSoloPartnerEmployeeCard({ employee, onChanged }: Props) {
+export function ProfileSoloPartnerEmployeeCard({ employee, onChanged, organization = false }: Props) {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState(employee.role);
+  const [permissions, setPermissions] = useState<ProfIPermissionFlags>(() =>
+    normalizePermissionFlags((employee.permissions ?? {}) as Partial<ProfIPermissionFlags>),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,7 +53,7 @@ export function ProfileSoloPartnerEmployeeCard({ employee, onChanged }: Props) {
     try {
       await remcardFetch(`/api/pro/employees/${encodeURIComponent(employee.id)}`, {
         method: "PATCH",
-        body: { role },
+        body: { role, permissions },
       });
       await onChanged();
     } catch (caught) {
@@ -78,7 +87,11 @@ export function ProfileSoloPartnerEmployeeCard({ employee, onChanged }: Props) {
       </Button>
       {open ? (
         <div className={styles.fields}>
-          <p className={styles.hint}>SOLO-партнёр: сотрудник привязан к вашему профилю, не к филиалу.</p>
+          <p className={styles.hint}>
+            {organization
+              ? "Сотрудник привязан к вашему профилю, не к филиалу: работает с головной организацией."
+              : "SOLO-партнёр: сотрудник привязан к вашему профилю, не к филиалу."}
+          </p>
           {error ? (
             <p className={styles.error} role="alert">
               {error}
@@ -94,8 +107,20 @@ export function ProfileSoloPartnerEmployeeCard({ employee, onChanged }: Props) {
               ))}
             </select>
           </label>
+          <p className={styles.hint}>
+            {employee.permissions
+              ? "Права сотрудника:"
+              : "Права ещё не заданы — пока вы их не сохраните, сотрудник работает без разрешений."}{" "}
+            После смены роли отметьте права заново.
+          </p>
+          <ProfileTeamPermissionMatrix
+            value={permissions}
+            onChange={setPermissions}
+            disabled={busy}
+            idPrefix={`solo-emp-${employee.id}`}
+          />
           <Button type="button" disabled={busy} onClick={() => void saveRole()}>
-            Сохранить роль
+            Сохранить роль и права
           </Button>
           <Button type="button" variant="secondary" disabled={busy} onClick={() => void revoke()}>
             Отозвать доступ

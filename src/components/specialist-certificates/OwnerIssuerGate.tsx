@@ -52,6 +52,7 @@ export function OwnerIssuerGate({
 
   let mode: OwnerIssuerAccessMode | null = null;
   let businessPartnerType: "STORE" | "COMPANY" | undefined;
+  let employeeIssuer: { canIssue: boolean; employerLabel: string | null } | null = null;
   let canLinkOnboardingHistory: boolean | undefined = canLinkOnboardingHistoryFromPage;
 
   if (decision?.kind === "specialist-r06") {
@@ -60,6 +61,12 @@ export function OwnerIssuerGate({
   } else if (decision?.kind === "business") {
     mode = "business";
     businessPartnerType = decision.partnerType;
+  } else if (decision?.kind === "employee-issuer") {
+    // Employee without a Branch: the employer's issuer workspace, read-only except issuing.
+    mode = "business";
+    businessPartnerType = decision.partnerType;
+    canLinkOnboardingHistory = false;
+    employeeIssuer = { canIssue: decision.canIssue, employerLabel: decision.employerLabel ?? "Работодатель" };
   } else if (decision?.kind === "legacy-issuer") {
     mode = "legacy";
   }
@@ -70,9 +77,14 @@ export function OwnerIssuerGate({
       mode={mode}
       businessPartnerType={businessPartnerType}
       canLinkOnboardingHistory={canLinkOnboardingHistory}
-      canIssueCertificates={mode === "business" ? canIssueCertificates(proContext) : undefined}
-      isBranchStaff={mode === "business" ? isBranchStaffContext(proContext) : undefined}
-      staffBranches={mode === "business" ? certificateStaffBranches(proContext) : undefined}
+      canIssueCertificates={
+        employeeIssuer ? employeeIssuer.canIssue : mode === "business" ? canIssueCertificates(proContext) : undefined
+      }
+      isBranchStaff={
+        employeeIssuer ? true : mode === "business" ? isBranchStaffContext(proContext) : undefined
+      }
+      staffBranches={employeeIssuer ? [] : mode === "business" ? certificateStaffBranches(proContext) : undefined}
+      employerLabel={employeeIssuer?.employerLabel}
     >
       {children}
     </OwnerIssuerModeProvider>

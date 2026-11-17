@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileTeamSection } from "./ProfileTeamSection";
@@ -128,6 +128,151 @@ describe("ProfileTeamSection access gates", () => {
     expect(screen.queryByTestId("team-stats")).not.toBeInTheDocument();
     expect(screen.queryByTestId("team-view-people")).not.toBeInTheDocument();
     expect(screen.queryByTestId("es-show-demo")).not.toBeInTheDocument();
+  });
+
+  it("AB-07: org owner sees direct (branchless) employees with editable rights; save sends role + permissions", async () => {
+    const user = userEvent.setup();
+    vi.mocked(remcardFetch).mockImplementation(async (path: string, init?: unknown) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: { id: "o1", name: "Shop" },
+          myRole: "ORG_OWNER",
+          myBranchIds: [],
+          summary: { totalEmployees: 0, byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 }, pendingInvites: 0 },
+          branches: [],
+          viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+        };
+      }
+      if (path === "/api/pro/employees") {
+        return {
+          employees: [
+            {
+              id: "pe-9",
+              role: "MANAGER",
+              status: "ACTIVE",
+              position: null,
+              permissions: { canManageCertificates: false },
+              user: { id: "u9", displayName: "Прямой сотрудник", publicId: "RC-9" },
+            },
+          ],
+        };
+      }
+      void init;
+      return { invites: [] };
+    });
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection />
+      </ProfileCabinetAccessProvider>,
+    );
+    const block = await screen.findByTestId("team-owner-direct-employees");
+    expect(vi.mocked(remcardFetch)).toHaveBeenCalledWith("/api/pro/employees");
+    await user.click(within(block).getByRole("button", { name: /Прямой сотрудник/ }));
+    await user.click(screen.getByTestId("team-perm-scan"));
+    await user.click(screen.getByRole("button", { name: "Сохранить роль и права" }));
+    await waitFor(() => {
+      const call = vi.mocked(remcardFetch).mock.calls.find(([p]) => p === "/api/pro/employees/pe-9");
+      expect(call).toBeTruthy();
+      const body = (call![1] as { body: Record<string, unknown> }).body;
+      expect(body.role).toBe("MANAGER");
+      expect(body.permissions).toMatchObject({ canManageCertificates: true });
+    });
+  });
+
+  it("AB-14: head-office members without Branch show their saved rights, and the people counter is the unique visible list", async () => {
+    const member = (userId: string, name: string) => ({
+      userId,
+      displayName: name,
+      publicId: `RC-${userId}`,
+      photoUrl: null,
+      lastActiveAt: null,
+      fullName: name,
+      position: null,
+      membershipKind: "HEAD_OFFICE" as const,
+      orgMemberStatus: "ACTIVE",
+      branchAccess: [],
+    });
+    const seller = { canManageCertificates: true, canActivateCertificates: true, canManageLeads: true, canViewOwnOperations: true };
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: { id: "o1", name: "Shop" },
+          myRole: "ORG_OWNER",
+          myBranchIds: [],
+          summary: { totalEmployees: 1, uniqueEmployees: 1, byRole: { MANAGER: 1, SELLER: 0, VIEWER: 0 }, pendingInvites: 0 },
+          team: [member("u-office", "Офис Один"), member("u-viewer", "Офис Наблюдатель"), member("u-none", "Офис Без прав"), member("u-pay", "Офис Касса")],
+          headOfficeRights: {
+            "u-office": { role: "MANAGER", permissions: seller },
+            "u-viewer": { role: "VIEWER", permissions: { canViewWallet: true, canViewOwnOperations: true } },
+            "u-none": { role: null, permissions: null },
+            "u-pay": { role: "MANAGER", permissions: { ...seller, canPayBonusCash: true } },
+          },
+          branches: [],
+          viewer: { userId: "u1", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+        };
+      }
+      if (path === "/api/pro/employees") {
+        return {
+          employees: [
+            { id: "pe-1", role: "MANAGER", status: "ACTIVE", position: null, permissions: null, user: { id: "u-direct", displayName: "Прямой", publicId: "RC-D" } },
+            { id: "pe-2", role: "SELLER", status: "ACTIVE", position: null, permissions: null, user: { id: "u-office", displayName: "Офис Один", publicId: "RC-u-office" } },
+          ],
+        };
+      }
+      return { invites: [] };
+    });
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection />
+      </ProfileCabinetAccessProvider>,
+    );
+    const stats = await screen.findByTestId("team-stats");
+    // 4 head-office + 1 direct; u-office appears in both lists and is counted once
+    expect(within(stats).getByText("сотрудников").previousElementSibling).toHaveTextContent("5");
+
+    const office = screen.getByTestId("person-u-office");
+    expect(office).toHaveTextContent("Продажа и начисление бонуса · без выплат");
+    expect(office).not.toHaveTextContent("0 разрешений");
+    expect(screen.getByTestId("person-u-pay")).toHaveTextContent("Выплаты партнёрам разрешены");
+    const viewer = screen.getByTestId("person-u-viewer");
+    expect(viewer).toHaveTextContent("Без оформления продаж · без выплат");
+    expect(viewer).not.toHaveTextContent("Продажа");
+    const none = screen.getByTestId("person-u-none");
+    expect(none).toHaveTextContent("0 разрешений");
+    expect(none).toHaveTextContent("Без оформления продаж · без выплат");
+  });
+
+  it("AB-14: SOLO partner with five listed employees shows 5 people, not the empty branch roster", async () => {
+    vi.mocked(remcardFetch).mockImplementation(async (path: string) => {
+      if (path.startsWith("/api/pro/organization/employees-overview")) {
+        return {
+          organization: null,
+          myRole: "SOLO_PARTNER",
+          myBranchIds: [],
+          summary: { totalEmployees: 0, uniqueEmployees: 0, byRole: { MANAGER: 0, SELLER: 0, VIEWER: 0 }, pendingInvites: 0 },
+          team: [],
+          branches: [],
+          viewer: { userId: "u1", isOrgOwner: false, canManageEmployeesByBranchId: {}, canManageSoloPartnerEmployees: true },
+        };
+      }
+      if (path === "/api/pro/employees") {
+        return {
+          employees: [1, 2, 3, 4, 5].map((n) => ({
+            id: `pe-${n}`, role: "SELLER", status: "ACTIVE", position: null, permissions: null,
+            user: { id: `solo-${n}`, displayName: `Сотрудник ${n}`, publicId: `RC-${n}` },
+          })),
+        };
+      }
+      return { invites: [] };
+    });
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileTeamSection />
+      </ProfileCabinetAccessProvider>,
+    );
+    const stats = await screen.findByTestId("team-stats");
+    expect(within(stats).getByText("сотрудников").previousElementSibling).toHaveTextContent("5");
+    expect(await screen.findAllByText(/Сотрудник \d/)).toHaveLength(5);
   });
 
   it("keeps management UI when search filters to zero matches", async () => {

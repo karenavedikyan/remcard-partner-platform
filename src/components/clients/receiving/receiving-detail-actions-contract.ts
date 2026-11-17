@@ -150,7 +150,8 @@ export function buildReceivingAppealDetailReady(
         onConflict: deps.onNotesConflictRefresh,
         onSavePrivateNotes: async (privateNotes) => {
           // The host reconciles notes conflicts without unmounting the dirty form.
-          await deps.mutateProfile({ privateNotes, expectedRevision: revision });
+          const outcome = await deps.mutateProfile({ privateNotes, expectedRevision: revision });
+          return outcome?.ok === true;
         },
         onApplyStage: async (payload) => {
           const result = await deps.mutateStage({

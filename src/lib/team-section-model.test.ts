@@ -8,7 +8,11 @@ import {
   inviteScopeLabel,
   mergePendingInvites,
   resolveDisplayTeam,
+  memberRoleSummary,
+  computeTeamStats,
+  countVisiblePeople,
 } from "./team-section-model";
+import { summarizeMemberAccess } from "./prof-i-member-permissions";
 import type { EmployeesOverviewResponse, TeamMemberRow } from "./employees-overview-types";
 import { shouldShowTeamNewPartnerEmptyState } from "./team-new-partner-empty-gate";
 
@@ -295,5 +299,89 @@ describe("shouldShowTeamNewPartnerEmptyState", () => {
         canManage: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("AB-14 head-office saved-rights summary", () => {
+  const office = (overrides: Partial<TeamMemberRow> = {}) =>
+    sampleMember({ userId: "office-1", membershipKind: "HEAD_OFFICE", branchAccess: [], ...overrides });
+  const rights = (permissions: Record<string, boolean> | null, role: string | null = "MANAGER") => ({
+    "office-1": { role, permissions },
+  });
+
+  it("without Branch and without saved rights stays fail-closed: 0 permissions, no sales, no payouts", () => {
+    for (const map of [undefined, {}, rights(null, null)]) {
+      expect(summarizeMemberAccess(office(), map)).toMatchObject({ actionCount: 0, hasPayout: false, subtitle: "0 разрешений" });
+      expect(memberRoleSummary(office(), map)).toEqual({ title: "0 разрешений", hint: "Без оформления продаж · без выплат" });
+    }
+  });
+
+  it("shows exactly the saved flags: sale without payouts", () => {
+    const m = memberRoleSummary(office(), rights({ canManageCertificates: true, canActivateCertificates: true, canViewOwnOperations: true }));
+    expect(m.title).toBe("3 разрешений");
+    expect(m.hint).toBe("Продажа и начисление бонуса · без выплат");
+  });
+
+  it("payout flags false stay «без выплат»; true flags are shown as payouts", () => {
+    const base = { canActivateCertificates: true, canPayBonusCash: false, canPayBonusTransfer: false };
+    expect(memberRoleSummary(office(), rights(base)).hint).toContain("без выплат");
+    expect(memberRoleSummary(office(), rights({ ...base, canPayBonusTransfer: true })).hint).toBe("Выплаты партнёрам разрешены");
+  });
+
+  it("VIEWER keeps only read actions: no sale, no payout wording", () => {
+    const m = memberRoleSummary(office(), rights({ canViewWallet: true, canViewOwnOperations: true }, "VIEWER"));
+    expect(m.hint).toBe("Без оформления продаж · без выплат");
+    expect(m.title).toBe("2 разрешений");
+  });
+
+  it("a position never produces rights, and saved office rights are not applied to branch members", () => {
+    expect(summarizeMemberAccess(office({ position: "Директор" }), undefined).actionCount).toBe(0);
+    const branchMember = sampleMember({ userId: "office-1" });
+    const map = rights({ canActivateCertificates: true, canPayBonusCash: true });
+    expect(summarizeMemberAccess(branchMember, map)).toEqual(summarizeMemberAccess(branchMember));
+  });
+
+  it("branch matrix is unchanged: mixed permissions per branch", () => {
+    const m = sampleMember({
+      branchAccess: [
+        { employeeId: "e1", branchId: "b1", branchName: "A", city: "К", role: "SELLER", permissions: { canActivateCertificates: true } },
+        { employeeId: "e2", branchId: "b2", branchName: "B", city: "К", role: "SELLER", permissions: { canViewWallet: true } },
+      ],
+    });
+    expect(summarizeMemberAccess(m, rights({ canPayBonusCash: true }))).toMatchObject({ mixed: true, hasPayout: false });
+    expect(memberRoleSummary(m).hint).toBe("Разные права по подразделениям");
+  });
+});
+
+describe("AB-14 unique visible people counter", () => {
+  const overview = (summary: Partial<EmployeesOverviewResponse["summary"]> = {}) =>
+    ({
+      organization: { id: "o", name: "N" },
+      myRole: "ORG_OWNER",
+      myBranchIds: [],
+      summary: { totalEmployees: 1, byRole: { MANAGER: 1, SELLER: 0, VIEWER: 0 }, pendingInvites: 0, ...summary },
+      branches: [],
+      viewer: { userId: "x", isOrgOwner: true, canManageEmployeesByBranchId: {} },
+    }) as unknown as EmployeesOverviewResponse;
+
+  it("counts team members and direct employees once per userId (office / branches / direct)", () => {
+    const a = sampleMember({ userId: "a" });
+    const aOffice = sampleMember({ userId: "a", membershipKind: "HEAD_OFFICE" });
+    const b = sampleMember({ userId: "b", membershipKind: "HEAD_OFFICE", branchAccess: [] });
+    expect(countVisiblePeople([a, aOffice, b], ["b", "c", "c", ""])).toBe(3);
+  });
+
+  it("owner: head office + direct ORG_EMPLOYEE is 2, not the server's 1", () => {
+    const office = sampleMember({ userId: "o1", membershipKind: "HEAD_OFFICE", branchAccess: [] });
+    expect(computeTeamStats(overview({ uniqueEmployees: 1 }), [office], [], ["direct"]).employees).toBe(2);
+  });
+
+  it("SOLO list with five people and an empty team shows 5, not 0", () => {
+    const ids = ["1", "2", "3", "4", "5"];
+    expect(computeTeamStats(overview({ totalEmployees: 0, uniqueEmployees: 0 }), [], [], ids).employees).toBe(5);
+  });
+
+  it("without direct list and without members the server summary is the fallback", () => {
+    expect(computeTeamStats(overview({ uniqueEmployees: 3 }), [], []).employees).toBe(3);
   });
 });

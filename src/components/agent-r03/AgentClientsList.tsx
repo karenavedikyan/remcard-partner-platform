@@ -473,24 +473,24 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
             <table className={styles.collectionTable}>
               <thead>
                 <tr>
-                  <th />
-                  <th>Клиент</th>
-                  <th>Подробности</th>
-                  <th>Статус</th>
-                  <th />
+                  <th className={styles.colSelect} data-col="select" />
+                  <th className={styles.colName} data-col="name">Клиент</th>
+                  <th className={styles.colDetail} data-col="detail">Подробности</th>
+                  <th className={styles.colStatus} data-col="status">Статус</th>
+                  <th className={styles.colAction} data-col="action" />
                 </tr>
               </thead>
               <tbody>
                 {items.map((client) => (
                   <tr key={client.id} data-parity-client-id={client.id}>
-                    <td>
+                    <td className={styles.colSelect} data-col="select">
                       <input
                         type="checkbox"
                         checked={selected.has(client.id)}
                         onChange={(e) => toggleSelected(client.id, e.target.checked)}
                       />
                     </td>
-                    <td>
+                    <td className={styles.colName} data-col="name">
                       <Link href={`/clients/${client.id}`} className={styles.collectionOpenLink}>
                         {client.displayName}
                       </Link>
@@ -500,15 +500,15 @@ export function AgentClientsList({ accessMode = "agent" }: { accessMode?: OwnerC
                         </small>
                       ) : null}
                     </td>
-                    <td className={styles.collectionDetail}>
+                    <td className={`${styles.collectionDetail} ${styles.colDetail}`} data-col="detail">
                       {clientRowDetail(client, accessMode)}
                     </td>
-                    <td>
+                    <td className={styles.colStatus} data-col="status">
                       <span className={styles.purchasePill}>
                         {clientPurchaseStatusLabel(client, archived)}
                       </span>
                     </td>
-                    <td className={styles.collectionRowAction}>
+                    <td className={`${styles.collectionRowAction} ${styles.colAction}`} data-col="action">
                       <RecordRowActions
                         ariaLabel="Действия"
                         actions={clientRowActions(client, true)}

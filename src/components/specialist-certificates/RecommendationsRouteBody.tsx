@@ -31,9 +31,10 @@ function RecommendationsListPageContent() {
     );
   }
   if (mode === "business") {
-    const copy = businessCertificatesPageCopy({
-      partnerType: modeValue?.businessPartnerType ?? "STORE",
-    });
+    const copy = businessCertificatesPageCopy(
+      { partnerType: modeValue?.businessPartnerType ?? "STORE" },
+      { employerLabel: modeValue?.employerLabel },
+    );
     return (
       <>
         <PageHeading eyebrow={copy.eyebrow} title={copy.title} />

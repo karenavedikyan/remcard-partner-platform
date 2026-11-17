@@ -345,12 +345,14 @@ describe("Partners overview greeting (current empty)", () => {
     expect(remcardFetch).toHaveBeenCalledWith("/api/partnership/list");
   });
 
-  it("shows 403 without greeting", async () => {
+  it("shows 403 as a neutral access note (no error, no retry) without greeting", async () => {
     mockListRoutes([], "403");
     renderOverviewHub("agent-r04");
     await waitFor(() => {
-      expect(screen.getByTestId("partners-overview-error")).toBeInTheDocument();
+      expect(screen.getByTestId("partners-overview-access-note")).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("partners-overview-error")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Повторить/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("partners-empty")).not.toBeInTheDocument();
   });
 

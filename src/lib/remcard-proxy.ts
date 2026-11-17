@@ -163,6 +163,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
       pattern: /^\/api\/pro\/cabinet-ui-preferences$/,
     },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r03\/status$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/employee-issuer\/status$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r04\/status$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r05\/status$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/r06\/status$/ },

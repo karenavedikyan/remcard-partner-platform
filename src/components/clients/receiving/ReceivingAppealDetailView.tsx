@@ -12,6 +12,7 @@ import {
   RECEIVING_DETAIL_MARK_PAID_LABEL,
   RECEIVING_DETAIL_NOTES_PLACEHOLDER,
   RECEIVING_DETAIL_NOTES_SAVE_LABEL,
+  RECEIVING_DETAIL_NOTES_SAVED_LABEL,
   RECEIVING_DETAIL_PURCHASE_HEADING,
   RECEIVING_DETAIL_PURCHASE_LINK_PENDING,
   RECEIVING_DETAIL_PURCHASE_MORE_LABEL,
@@ -82,7 +83,8 @@ export type ReceivingAppealDetailActions = {
   expectedRevision: number;
   workingStages: { id: string; label: string }[];
   refusalReasons?: string[];
-  onSavePrivateNotes?: (privateNotes: string) => void | Promise<void>;
+  /** Resolves `true` only when the server confirmed the save (not on conflict / error). */
+  onSavePrivateNotes?: (privateNotes: string) => void | boolean | Promise<void | boolean>;
   onApplyStage?: (payload: {
     stageKey: string;
     refusedReason?: string | null;
@@ -168,6 +170,18 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
     draft: serverNotes,
   }));
   const notesDraft = notesState.draft;
+  const [notesSavedFor, setNotesSavedFor] = useState<{ appealId: string; text: string } | null>(null);
+  const notesJustSaved =
+    notesSavedFor !== null &&
+    notesSavedFor.appealId === notesAppealId &&
+    notesSavedFor.text === notesDraft &&
+    !writable?.error?.notes &&
+    !writable?.notesConflict;
+  async function saveNotes() {
+    const text = notesDraft;
+    const confirmed = await writable?.onSavePrivateNotes?.(text);
+    if (confirmed === true) setNotesSavedFor({ appealId: notesAppealId, text });
+  }
 
   const [panel, setPanel] = useState<Panel>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -883,6 +897,7 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
                   aria-label="Заметки — только для вашей команды"
                   onChange={(e) => {
                     const draft = e.target.value;
+                    setNotesSavedFor(null);
                     setNotesState((current) => ({ ...current, draft }));
                   }}
                   disabled={!writable?.onSavePrivateNotes || writable.busy?.notes}
@@ -893,14 +908,22 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
               </label>
               <button
                 type="button"
-                className="btn"
+                className={notesJustSaved ? "btn ca-notes-saved" : "btn"}
                 data-ca-action="receiving:notes:save"
                 data-testid="ca-receiving-notes-save"
+                data-saved={notesJustSaved ? "true" : undefined}
                 disabled={!writable?.onSavePrivateNotes || writable.busy?.notes || writable.notesSaveBlocked}
-                onClick={() => writable?.onSavePrivateNotes?.(notesDraft)}
+                onClick={() => void saveNotes()}
               >
-                {writable?.busy?.notes ? "Сохраняем…" : RECEIVING_DETAIL_NOTES_SAVE_LABEL}
+                {writable?.busy?.notes
+                  ? "Сохраняем…"
+                  : notesJustSaved
+                    ? RECEIVING_DETAIL_NOTES_SAVED_LABEL
+                    : RECEIVING_DETAIL_NOTES_SAVE_LABEL}
               </button>
+              <span className="sr-only" role="status" aria-live="polite" data-testid="ca-receiving-notes-saved-status">
+                {notesJustSaved ? "Заметка сохранена" : ""}
+              </span>
               {writable?.error?.notes ? (
                 <p className="ca-next-error" role="alert" data-testid="ca-receiving-notes-error">
                   {writable.error.notes}
