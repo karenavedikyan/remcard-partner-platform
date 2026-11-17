@@ -29,16 +29,29 @@ function atPartnersTabEnabled(mode: OwnerClientsAccessMode): boolean {
 
 type TabbedProps = {
   accessMode: "specialist" | "business";
+  /**
+   * "probe": the «у партнёров» direction exists only when `GET /api/pro/referred-appeals` answers 200
+   * (employees, assistants). Any other answer hides it silently. Default: always offered (owners).
+   */
+  atPartnersMode?: "always" | "probe";
   initialAppealId?: string | null;
   /** `?direction=at-partners&partnerId=<receiver User.id>` from a partner row. */
   initialPartnerId?: string | null;
 };
 
-function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartnerId = null }: TabbedProps) {
-  const [direction, setDirection] = useState<ClientsParityDirection>(
+function ClientsDirectionTabbedPane({
+  accessMode,
+  atPartnersMode = "always",
+  initialAppealId,
+  initialPartnerId = null,
+}: TabbedProps) {
+  const [requestedDirection, setDirection] = useState<ClientsParityDirection>(
     initialPartnerId ? "at-partners" : "incoming",
   );
   const [atPartnersMounted, setAtPartnersMounted] = useState(Boolean(initialPartnerId));
+  const [probedAtPartners, setProbedAtPartners] = useState<boolean | null>(null);
+  const atPartnersAllowed = atPartnersMode === "always" ? true : probedAtPartners === true;
+  const direction: ClientsParityDirection = atPartnersAllowed ? requestedDirection : "incoming";
   const chrome = useClientsPageChrome();
   const setAtPartnersProbe = useClientsDirectionProbeSetter("at-partners");
   const hideTabs = chrome?.hideDirectionTabs ?? false;
@@ -57,27 +70,29 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartne
   );
 
   useEffect(() => {
-    if (initialPartnerId) setActiveDirection?.("at-partners");
-  }, [initialPartnerId, setActiveDirection]);
+    if (initialPartnerId && atPartnersAllowed) setActiveDirection?.("at-partners");
+  }, [initialPartnerId, atPartnersAllowed, setActiveDirection]);
 
   useEffect(() => {
-    if (!setAtPartnersProbe) return;
+    if (!setAtPartnersProbe && atPartnersMode !== "probe") return;
     const controller = new AbortController();
     let cancelled = false;
-    setAtPartnersProbe("loading");
+    setAtPartnersProbe?.("loading");
     void fetchObserverReferredAppeals({ signal: controller.signal }).then((res) => {
       if (cancelled) return;
       if (!res.ok) {
-        setAtPartnersProbe(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
+        setProbedAtPartners(false);
+        setAtPartnersProbe?.(res.code === "BLOCKED_CONTRACT" ? "blocked" : "error");
         return;
       }
+      setProbedAtPartners(true);
       const eligible = isObserverDirectionIntroEligible({
         loadState: "ready",
         dataContract: { status: "ready" },
         appealsLength: res.appeals.length,
         filters: { q: "", period: "all", bucket: "active" },
       });
-      setAtPartnersProbe(eligible ? "proven_empty" : "not_empty");
+      setAtPartnersProbe?.(eligible ? "proven_empty" : "not_empty");
     }).catch(() => {
       // The fetcher rethrows only a deliberate AbortError (unmount / re-run); other failures are results.
     });
@@ -85,16 +100,19 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartne
       cancelled = true;
       controller.abort();
     };
-  }, [setAtPartnersProbe]);
+  }, [setAtPartnersProbe, atPartnersMode]);
 
   return (
     <div
       className={styles.clientsScope}
       data-testid="clients-direction-workspace"
       data-ca-clients-direction-mode={accessMode}
+      data-ca-at-partners={
+        atPartnersMode === "always" ? "enabled" : probedAtPartners === null ? "checking" : probedAtPartners ? "enabled" : "disabled"
+      }
       data-clients-chrome-tabs-hidden={hideTabs ? "true" : undefined}
     >
-      {hideTabs || subviewOpen ? null : (
+      {hideTabs || subviewOpen || !atPartnersAllowed ? null : (
         <ClientsDirectionTabs direction={direction} onDirectionChange={onDirectionChange} />
       )}
       <div
@@ -106,7 +124,7 @@ function ClientsDirectionTabbedPane({ accessMode, initialAppealId, initialPartne
       >
         <ReceivingAppealsWorkspace initialAppealId={initialAppealId} directionProbe="incoming" />
       </div>
-      {atPartnersMounted ? (
+      {atPartnersMounted && atPartnersAllowed ? (
         <div
           id="ca-clients-panel-at-partners"
           role="tabpanel"
@@ -134,27 +152,26 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   const initialPartnerId =
     searchParams?.get("direction") === "at-partners" ? searchParams?.get("partnerId")?.trim() || null : null;
 
-  // Org staff are not observer referrers. Mirror the existing workplace dispatch;
-  // do not offer a tab whose backend gate correctly denies this actor.
-  if (accessMode === "business" && presentation && shouldPreferBusinessWorkplaceDispatch({
-    proContextRole: presentation.proContext?.role,
-    workplacePartnerType: presentation.workplacePartnerType,
-    workplacePartnerTypeSource: presentation.workplacePartnerTypeSource,
-  })) {
+  // Employees and assistants get the same pair of directions as an owner, but the «у партнёров» one only
+  // when the server confirms access (`referred-appeals` 200). A denial hides it silently.
+  const employeePane =
+    (accessMode === "business" &&
+      presentation &&
+      shouldPreferBusinessWorkplaceDispatch({
+        proContextRole: presentation.proContext?.role,
+        workplacePartnerType: presentation.workplacePartnerType,
+        workplacePartnerTypeSource: presentation.workplacePartnerTypeSource,
+      })) ||
+    (accessMode === "specialist" && isPartnerAssistantContext(presentation?.proContext));
+  if (employeePane && (accessMode === "business" || accessMode === "specialist")) {
     return (
-      <div className={styles.clientsScope} data-testid="clients-workplace-receiving-only">
-        <ReceivingAppealsWorkspace initialAppealId={initialAppealId} directionProbe="incoming" />
-      </div>
-    );
-  }
-
-  // An assistant of a specialist works the specialist's incoming appeals only; the referral tab is the
-  // specialist's own observer role and its gate denies the assistant.
-  if (accessMode === "specialist" && isPartnerAssistantContext(presentation?.proContext)) {
-    return (
-      <div className={styles.clientsScope} data-testid="clients-assistant-receiving-only">
-        <ReceivingAppealsWorkspace initialAppealId={initialAppealId} directionProbe="incoming" />
-      </div>
+      <ClientsDirectionTabbedPane
+        key={`${accessMode}:employee`}
+        accessMode={accessMode}
+        atPartnersMode="probe"
+        initialAppealId={initialAppealId}
+        initialPartnerId={initialPartnerId}
+      />
     );
   }
 

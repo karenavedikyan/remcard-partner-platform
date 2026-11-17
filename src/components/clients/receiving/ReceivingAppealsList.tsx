@@ -349,7 +349,7 @@ export function ReceivingAppealsList({
           ) : null}
         </section>
       ) : (
-        <div className={`ca-rows ca-rows--bulk ${styles.rows}`}>
+        <div className={`ca-rows${bulkOn ? " ca-rows--bulk" : ""} ${styles.rows}`} data-ca-select-column={bulkOn ? "on" : "off"}>
           <div className="ca-row ca-row--head" role="presentation">
             {bulkOn ? (
               <label className="ca-row-check ca-row-check--head ca-bulk-select-all-desktop">
