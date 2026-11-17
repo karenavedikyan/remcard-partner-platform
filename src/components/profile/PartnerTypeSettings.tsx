@@ -418,7 +418,13 @@ export function PartnerTypeSettings({
             </p>
           ) : null}
         </div>
-        <Button type="button" className={styles.openBtn} data-testid="partner-type-open" onClick={() => openFlow()}>
+        <Button
+          type="button"
+          variant="secondary"
+          className={styles.openBtn}
+          data-testid="partner-type-open"
+          onClick={() => openFlow()}
+        >
           Сменить тип партнёрства
         </Button>
       </section>

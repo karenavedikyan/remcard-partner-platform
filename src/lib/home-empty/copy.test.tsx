@@ -6,7 +6,7 @@ describe("homeEmptyCopy", () => {
     const specialist = homeEmptyCopy("specialist");
     expect(specialist.title).toBe("Начните с профиля и партнёров");
     expect(specialist.steps).toHaveLength(3);
-    expect(specialist.primaryCta.href).toBe("/profile");
+    expect(specialist.primaryCta.href).toBe("/profile?section=basics&fill=1");
     expect(specialist.secondaryCta?.href).toBe("/partners");
 
     const store = homeEmptyCopy("store");

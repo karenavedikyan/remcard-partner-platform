@@ -85,11 +85,15 @@ export function isModerationDeepLink(input: ProfileSectionQueryInput): boolean {
 }
 
 /** Client URL sync: overview omits `section`; preserves unrelated params (e.g. returnTo). */
+/** One-shot query flag: open the working-profile wizard directly (skip the empty intro). */
+export const PROFILE_FILL_PARAM = "fill";
+
 export function buildProfileSectionHref(
   section: ProfileSectionId,
   current: URLSearchParams,
 ): string {
   const next = new URLSearchParams(current.toString());
+  next.delete(PROFILE_FILL_PARAM);
   if (section === "overview") {
     next.delete("section");
     next.delete("moderation");

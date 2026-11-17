@@ -52,3 +52,13 @@ describe("profile-sections", () => {
     ).toBe("notifications");
   });
 });
+
+describe("buildProfileSectionHref fill flag", () => {
+  it("drops the one-shot ?fill=1 flag when navigating between sections", async () => {
+    const { buildProfileSectionHref } = await import("./profile-sections");
+    expect(buildProfileSectionHref("catalog", new URLSearchParams("section=basics&fill=1"))).toBe(
+      "/profile?section=catalog",
+    );
+    expect(buildProfileSectionHref("overview", new URLSearchParams("fill=1"))).toBe("/profile");
+  });
+});

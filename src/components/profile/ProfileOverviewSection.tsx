@@ -37,6 +37,8 @@ import styles from "./ProfileOverviewSection.module.css";
 type ProfileOverviewSectionProps = {
   profile: ProProfileResponse;
   onNavigateSection: (section: ProfileSectionId) => void;
+  /** Opens the working-profile wizard directly (skips the empty intro). */
+  onFillProfile?: () => void;
   hasUnsavedBasicsChanges?: boolean;
   /** Dev/screenshot fixture only — skips live fetch. */
   fixtureOverview?: EmployeesOverviewResponse | null;
@@ -65,6 +67,7 @@ function avatarInitials(title: string): string {
 export function ProfileOverviewSection({
   profile,
   onNavigateSection,
+  onFillProfile,
   hasUnsavedBasicsChanges = false,
   fixtureOverview,
   orgStaffWorkplacePartnerType = null,
@@ -374,9 +377,19 @@ export function ProfileOverviewSection({
             <p className={styles.subline}>
               Данные для партнёрства; публикация в каталоге необязательна.
             </p>
-            <Button type="button" variant="secondary" onClick={() => onNavigateSection("basics")}>
-              Изменить
-            </Button>
+            {ready.ready ? (
+              <Button type="button" variant="secondary" onClick={() => onNavigateSection("basics")}>
+                Изменить
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                data-testid="overview-fill-profile"
+                onClick={() => (onFillProfile ?? (() => onNavigateSection("basics")))()}
+              >
+                Заполнить профиль
+              </Button>
+            )}
           </div>
         ) : null}
       </Panel>

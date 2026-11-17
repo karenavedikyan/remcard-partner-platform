@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ProfileDirectionsPicker } from "./ProfileDirectionsPicker";
@@ -18,25 +19,58 @@ vi.mock("@/lib/partner-taxonomy", () => ({
 }));
 
 describe("ProfileDirectionsPicker ordering", () => {
-  it("keeps selected services first under filter without dropping selection", async () => {
-    render(
+  function Harness({ initial, remountKey }: { initial: string[]; remountKey?: string }) {
+    const [services, setServices] = useState<string[]>(initial);
+    return (
       <ProfileDirectionsPicker
+        key={remountKey}
         specialistMode
         productCategoryIds={[]}
-        serviceSpecializationIds={["c"]}
+        serviceSpecializationIds={services}
         navigatorStageIds={[]}
         primaryDirection={null}
         onChangeProducts={vi.fn()}
-        onChangeServices={vi.fn()}
+        onChangeServices={setServices}
         onChangeStages={vi.fn()}
         onChangePrimary={vi.fn()}
-      />,
+      />
     );
+  }
+
+  const gridLabels = () =>
+    screen
+      .getAllByRole("checkbox")
+      .map((el) => el.parentElement?.textContent ?? "")
+      .filter((t) => t.endsWith("service"));
+
+  it("clicking a tile does not move it; selected rise only when the picker is opened again", async () => {
+    const { unmount } = render(<Harness initial={[]} />);
     await waitFor(() => screen.getByText("Gamma service"));
+    expect(gridLabels()).toEqual(["Alpha service", "Beta service", "Gamma service"]);
+
+    fireEvent.click(screen.getByLabelText("Gamma service"));
+    expect(gridLabels()).toEqual(["Alpha service", "Beta service", "Gamma service"]);
+    expect((screen.getByLabelText("Gamma service") as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByTestId("direction-selected-count").textContent).toContain("Выбрано: 1");
+    unmount();
+
+    render(<Harness initial={["c"]} />);
+    await waitFor(() => screen.getByText("Gamma service"));
+    expect(gridLabels()).toEqual(["Gamma service", "Alpha service", "Beta service"]);
+  });
+
+  it("with a non-empty search only matching tiles are shown; clearing it pins the selection on top", async () => {
+    render(<Harness initial={[]} />);
+    await waitFor(() => screen.getByText("Alpha service"));
+    fireEvent.click(screen.getByLabelText("Beta service"));
+
     const search = screen.getByPlaceholderText(/двери, плитка/i);
     fireEvent.change(search, { target: { value: "alpha" } });
-    expect(screen.getByText("Gamma service")).toBeTruthy();
-    expect(screen.getByText("Alpha service")).toBeTruthy();
+    expect(gridLabels()).toEqual(["Alpha service"]);
+    expect(screen.getByRole("button", { name: /Убрать Услуга: Beta service/ })).toBeTruthy();
+
+    fireEvent.change(search, { target: { value: "" } });
+    expect(gridLabels()).toEqual(["Beta service", "Alpha service", "Gamma service"]);
   });
 
   it("renders advanced collapse when collapseAdvancedDirections is set", async () => {

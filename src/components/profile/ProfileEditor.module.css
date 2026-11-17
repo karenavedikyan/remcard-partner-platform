@@ -441,3 +441,25 @@
   font-weight: 700;
   color: var(--ink);
 }
+
+/* One quiet line while the working profile is not filled in (see isWorkingProfileFilled). */
+.otherSettings {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-2);
+}
+
+.otherSettings > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.otherSettingsBody {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-2);
+}

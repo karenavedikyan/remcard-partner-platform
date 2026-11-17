@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import {
   buildBusinessDirectionLabelMap,
   businessSummaryInitials,
@@ -102,6 +103,10 @@ export function BusinessWorkingProfileWizard({
   );
   editingRef.current = editing;
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const stepCardRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLParagraphElement>(null);
+  useScrollToStepTop(stepCardRef, step);
+  useScrollMessageIntoView(bannerRef, banner);
   const [saving, setSaving] = useState(false);
   const [directionLabelByKey, setDirectionLabelByKey] = useState<Map<string, string>>(
     () => new Map(),
@@ -321,7 +326,11 @@ export function BusinessWorkingProfileWizard({
             <span className={styles.summaryStatus}>Заполнено</span>
           </div>
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
@@ -417,6 +426,8 @@ export function BusinessWorkingProfileWizard({
             patternStep ? `${styles.card} ${stepStyles.patternStepCard}` : styles.card
           }
           data-testid="business-profile-step-card"
+          ref={stepCardRef}
+          data-step-scroll-root
         >
           {step === 2 ? (
             <div className={stepStyles.contactsCardTop}>
@@ -442,11 +453,17 @@ export function BusinessWorkingProfileWizard({
             </div>
           )}
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
           <h2
+            data-step-heading
+            tabIndex={-1}
             className={
               patternStep ? `${styles.title} ${stepStyles.patternStepTitle}` : styles.title
             }
@@ -681,6 +698,8 @@ export function BusinessWorkingProfileWizard({
             <div
               className={step === 2 ? stepStyles.contactsStepActions : stepStyles.stepActions}
               data-testid={step === 2 ? "business-contacts-actions" : "business-step-actions"}
+              data-step-actions=""
+              data-step-no-back={step === 0 ? "" : undefined}
             >
               <div
                 className={step === 2 ? stepStyles.contactsActionsLeft : stepStyles.stepActionsLeft}
@@ -689,6 +708,7 @@ export function BusinessWorkingProfileWizard({
                   <button
                     type="button"
                     className={styles.btn}
+                    data-step-action="back"
                     disabled={saving || !basicsEditable}
                     onClick={() => setStep((s) => Math.max(0, s - 1))}
                   >
@@ -699,6 +719,7 @@ export function BusinessWorkingProfileWizard({
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
+                    data-step-action="link"
                     disabled={saving || !basicsEditable}
                     onClick={reloadSaved}
                   >
@@ -715,6 +736,7 @@ export function BusinessWorkingProfileWizard({
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
+                    data-step-action="link"
                     disabled={saving || !basicsEditable}
                     onClick={() => void skipStep()}
                   >
@@ -724,6 +746,7 @@ export function BusinessWorkingProfileWizard({
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnDraft}`}
+                  data-step-action="draft"
                   disabled={saving || !basicsEditable}
                   onClick={() => void saveDraftOnly()}
                 >
@@ -732,6 +755,7 @@ export function BusinessWorkingProfileWizard({
                 <button
                   type="submit"
                   className={`${styles.btn} ${styles.btnPrimary} ${step !== 2 ? stepStyles.stepPrimaryBtn : ""}`}
+                  data-step-action="primary"
                   disabled={saving || !basicsEditable}
                 >
                   {step === 3 ? "Сохранить профиль" : "Продолжить →"}

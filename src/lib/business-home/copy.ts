@@ -10,6 +10,22 @@ export type BusinessHomeCopy = {
   partnersStatHint: (activeCount: number | null) => string;
 };
 
+export const BUSINESS_HOME_FILL_PROFILE_HREF = "/profile?section=basics&fill=1";
+
+/** Owner without an organization record yet: the first step is the profile wizard, not the team. */
+export function businessHomeNoOrganizationCopy(partnerType: BusinessHomePartnerType): {
+  heroCta: string;
+  hint: string;
+  hintLink: string;
+} {
+  const noun = partnerType === "STORE" ? "магазина" : "компании";
+  return {
+    heroCta: `Заполнить профиль ${noun}`,
+    hint: `Сначала заполните профиль ${noun}`,
+    hintLink: "Перейти к заполнению",
+  };
+}
+
 export function businessHomeCopy(partnerType: BusinessHomePartnerType): BusinessHomeCopy {
   if (partnerType === "STORE") {
     return {

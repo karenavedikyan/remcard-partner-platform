@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError } from "@/lib/api-client";
+import { useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import {
   discardAgentProfileDraft,
   fetchAgentProfileDraft,
@@ -94,6 +95,10 @@ export function AgentProfileWizard({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [banner, setBanner] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const stepCardRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLParagraphElement>(null);
+  useScrollToStepTop(stepCardRef, loading ? null : step);
+  useScrollMessageIntoView(bannerRef, banner);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const hydrateGen = useRef(0);
   const dirtyGen = useRef(0);
@@ -435,7 +440,11 @@ export function AgentProfileWizard({
             </span>
           </div>
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
@@ -518,7 +527,7 @@ export function AgentProfileWizard({
           </div>
         </aside>
 
-        <section className={styles.card}>
+        <section className={styles.card} ref={stepCardRef} data-step-scroll-root>
           <div className={styles.cardTop}>
             <span className={styles.kicker} data-testid="agent-profile-progress">
               Шаг {step + 1} из {STEPS.length}
@@ -532,7 +541,11 @@ export function AgentProfileWizard({
             </span>
           </div>
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
@@ -564,7 +577,7 @@ export function AgentProfileWizard({
               Есть незавершённый черновик — продолжите редактирование или сохраните черновик.
             </p>
           ) : null}
-          <h2 className={styles.title} id="agent-profile-step-title">
+          <h2 className={styles.title} id="agent-profile-step-title" data-step-heading tabIndex={-1}>
             {titles[step]}
           </h2>
           <form onSubmit={onSubmitStep} noValidate>
@@ -698,12 +711,17 @@ export function AgentProfileWizard({
               </>
             ) : null}
 
-            <div className={styles.actions}>
+            <div
+              className={styles.actions}
+              data-step-actions=""
+              data-step-no-back={step === 0 ? "" : undefined}
+            >
               <div className={styles.actionsLeft}>
                 {step > 0 ? (
                   <button
                     type="button"
                     className={styles.btn}
+                    data-step-action="back"
                     disabled={disabled || saving}
                     onClick={() => void goToStep(step - 1)}
                   >
@@ -715,6 +733,7 @@ export function AgentProfileWizard({
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
                     disabled={disabled || saving}
+                    data-step-action="link"
                     data-testid="agent-profile-cancel-edit"
                     onClick={() => void cancelEditing()}
                   >
@@ -727,6 +746,7 @@ export function AgentProfileWizard({
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
+                    data-step-action="link"
                     disabled={disabled || saving}
                     onClick={() => void skipStep()}
                   >
@@ -737,6 +757,7 @@ export function AgentProfileWizard({
                   type="button"
                   className={`${styles.btn} ${styles.btnQuiet} ${styles.btnDraft}`}
                   disabled={disabled || saving}
+                  data-step-action="draft"
                   data-testid="agent-profile-save-draft"
                   onClick={() => void saveDraftOnly()}
                 >
@@ -746,6 +767,7 @@ export function AgentProfileWizard({
                   type="submit"
                   className={`${styles.btn} ${styles.btnPrimary}`}
                   disabled={disabled || saving}
+                  data-step-action="primary"
                   data-testid="agent-profile-next"
                 >
                   {step === STEPS.length - 1 ? "Сохранить профиль" : "Продолжить →"}

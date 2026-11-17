@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthFlow } from "@/components/auth/AuthFlow";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/FormField";
+import { useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import { fetchRegistrationCapabilitiesClient } from "@/lib/registration/capabilities";
 import {
   bindRegistrationDraftOwner,
@@ -93,6 +94,8 @@ export function RegistrationJoinFlow() {
   const [city, setCity] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const flowRef = useRef<HTMLDivElement>(null);
+  useScrollToStepTop(flowRef, step);
   const finishLock = useRef(false);
   const phaseFinishAppliedKeyRef = useRef<string | null>(null);
   const idempotencyKey = useRef(`join-reg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -483,7 +486,7 @@ export function RegistrationJoinFlow() {
   if (step === "auth" && isJoinNewPath && isJoinRegistrationKind(kind)) {
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
-        <div className={styles.joinPage}>
+        <div className={styles.joinPage} ref={flowRef} data-step-scroll-root>
           <JoinProgress current="auth" />
           {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
           {!preAuthReady ? (
@@ -549,9 +552,9 @@ export function RegistrationJoinFlow() {
   if (step === "finish" && isJoinNewPath && joinKindPathEnabled) {
     return (
       <RegistrationPublicShell loginHref={loginRecovery}>
-        <div className={styles.finishWrap}>
+        <div className={styles.finishWrap} ref={flowRef} data-step-scroll-root>
           <JoinProgress current="done" />
-          <h1>Завершение регистрации</h1>
+          <h1 data-step-heading tabIndex={-1}>Завершение регистрации</h1>
           {error ? <p className={styles.error}>{error}</p> : null}
           {busy && !error ? <p className={styles.status}>Сохраняем профиль…</p> : null}
           {!busy && error ? (
@@ -617,11 +620,11 @@ export function RegistrationJoinFlow() {
     <RegistrationPublicShell loginHref={loginRecovery}>
       {storageNotice ? <p className={styles.notice}>{storageNotice}</p> : null}
       {step === "types" ? (
-        <div className={styles.typesRegistration}>
+        <div className={styles.typesRegistration} ref={flowRef} data-step-scroll-root>
           <JoinProgress current="types" layout="typesRegistration" />
           <div className={styles.typesIntro}>
             <p className={styles.typesEyebrow}>Регистрация · шаг 1 из 4</p>
-            <h1>Какой тип партнёрства вам подходит?</h1>
+            <h1 data-step-heading tabIndex={-1}>Какой тип партнёрства вам подходит?</h1>
             <p className={styles.workspaceNote}>
               Сравните варианты и выберите, как планируете работать. Затем начнём заполнять данные
               по шагам.
@@ -687,11 +690,11 @@ export function RegistrationJoinFlow() {
       ) : null}
 
       {step !== "types" ? (
-      <div className={styles.joinPage}>
+      <div className={styles.joinPage} ref={flowRef} data-step-scroll-root>
         {step === "name" && isJoinNewPath ? (
           <>
             <JoinProgress current="data" />
-            <h1>Ваши данные</h1>
+            <h1 data-step-heading tabIndex={-1}>Ваши данные</h1>
             <p className={styles.muted}>Как к вам обращаться?</p>
             <TextField
               label="Имя"
@@ -715,7 +718,7 @@ export function RegistrationJoinFlow() {
         {step === "city" && isJoinNewPath ? (
           <>
             <JoinProgress current="data" />
-            <h1>Ваши данные</h1>
+            <h1 data-step-heading tabIndex={-1}>Ваши данные</h1>
             <p className={styles.muted}>В каком городе вы работаете?</p>
             <TextField
               label="Город"

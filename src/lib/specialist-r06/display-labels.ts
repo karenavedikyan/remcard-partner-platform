@@ -13,6 +13,26 @@ export function specialistKindDisplayLabel(
   return preset?.label ?? title ?? kind;
 }
 
+/**
+ * Specialization line of the saved-profile summary: the chosen role, else the selected services
+ * (the same data as the direction chips). Empty string = nothing to show (the row is omitted).
+ */
+export function specialistSpecializationSummary(
+  profile: Pick<
+    SpecialistProfileDraftPayload,
+    "specialistKind" | "specialistTitle" | "serviceSpecializationIds"
+  >,
+): string {
+  if (profile.specialistKind || profile.specialistTitle?.trim()) {
+    const label = specialistKindDisplayLabel(profile.specialistKind, profile.specialistTitle);
+    if (label && label !== "—") return label;
+  }
+  return (profile.serviceSpecializationIds ?? [])
+    .map((id) => masterDirectionLabel(id))
+    .filter((label) => label && label !== "Категория")
+    .join(", ");
+}
+
 export function specialistIdListDisplay(ids: string[] | undefined): string {
   const labels = (ids ?? [])
     .map((id) => {

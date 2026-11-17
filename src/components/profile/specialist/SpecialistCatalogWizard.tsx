@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent } from "react";
+import { useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
@@ -152,6 +153,9 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
   const submitAlertRef = useRef<HTMLParagraphElement>(null);
+  const stepCardRef = useRef<HTMLElement>(null);
+  useScrollToStepTop(stepCardRef, step);
+  useScrollMessageIntoView(submitAlertRef, error || success);
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const publicationLabel = catalogPublicationStatusLabel(profile);
@@ -348,8 +352,8 @@ export function SpecialistCatalogWizard(props: SpecialistCatalogWizardProps) {
           </button>
         ))}
       </nav>
-      <section className={catalogStyles.card} data-testid="catalog-step-card">
-        <h2 className={catalogStyles.title}>{STEP_PANEL_TITLES[step]}</h2>
+      <section className={catalogStyles.card} data-testid="catalog-step-card" ref={stepCardRef} data-step-scroll-root>
+        <h2 data-step-heading tabIndex={-1} className={catalogStyles.title}>{STEP_PANEL_TITLES[step]}</h2>
         {error ? (
           <p ref={submitAlertRef} className={catalogStyles.bannerError} role="alert">
             {error}

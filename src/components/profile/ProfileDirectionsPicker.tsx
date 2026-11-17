@@ -5,6 +5,7 @@ import { RemcardApiError } from "@/lib/api-client";
 import { fetchPartnerTaxonomy } from "@/lib/partner-taxonomy";
 import type { PartnerTaxonomyItem, WorkingPrimaryDirection } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { directionMatchesFilter, orderedVisibleItems } from "@/lib/profile-directions-order";
 import { TaxonomyProposalSection } from "./TaxonomyProposalSection";
 import styles from "./ProfileDirectionsPicker.module.css";
 
@@ -60,27 +61,6 @@ function toggleId(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
-function matchesFilter(item: PartnerTaxonomyItem, q: string): boolean {
-  if (!q) return true;
-  const needle = q.toLowerCase();
-  return item.label.toLowerCase().includes(needle) || item.id.toLowerCase().includes(needle);
-}
-
-function orderedVisibleItems(
-  all: PartnerTaxonomyItem[],
-  selectedIds: string[],
-  q: string,
-): PartnerTaxonomyItem[] {
-  const selected = selectedIds
-    .map((id) => all.find((item) => item.id === id))
-    .filter((item): item is PartnerTaxonomyItem => Boolean(item));
-  const selectedSet = new Set(selectedIds);
-  const rest = all.filter(
-    (item) => !selectedSet.has(item.id) && matchesFilter(item, q),
-  );
-  return [...selected, ...rest];
-}
-
 export function ProfileDirectionsPicker({
   productCategoryIds,
   serviceSpecializationIds,
@@ -115,6 +95,38 @@ export function ProfileDirectionsPicker({
   const [filter, setFilter] = useState("");
   const [businessPickGroup, setBusinessPickGroup] = useState<"products" | "services">("products");
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [pinned, setPinned] = useState(() => ({
+    products: productCategoryIds,
+    services: serviceSpecializationIds,
+    stages: navigatorStageIds,
+  }));
+  const selectionRef = useRef({
+    products: productCategoryIds,
+    services: serviceSpecializationIds,
+    stages: navigatorStageIds,
+  });
+  selectionRef.current = {
+    products: productCategoryIds,
+    services: serviceSpecializationIds,
+    stages: navigatorStageIds,
+  };
+  const repinPending = useRef(false);
+  const repin = useCallback(() => setPinned({ ...selectionRef.current }), []);
+  useEffect(() => {
+    if (!repinPending.current) return;
+    repinPending.current = false;
+    repin();
+  }, [productCategoryIds, serviceSpecializationIds, navigatorStageIds, repin]);
+
+  const changeFilter = (next: string) => {
+    if (filter.trim() && !next.trim()) repin();
+    setFilter(next);
+  };
+  const changeBusinessGroup = (group: "products" | "services") => {
+    if (group !== businessPickGroup) repin();
+    setBusinessPickGroup(group);
+  };
 
   const load = useCallback(async () => {
     const gen = ++loadGenerationRef.current;
@@ -160,9 +172,9 @@ export function ProfileDirectionsPicker({
     const q = filter.trim();
     if (!fullTaxonomy) return null;
     return {
-      products: fullTaxonomy.products.filter((item) => matchesFilter(item, q)),
-      services: fullTaxonomy.services.filter((item) => matchesFilter(item, q)),
-      stages: fullTaxonomy.stages.filter((item) => matchesFilter(item, q)),
+      products: fullTaxonomy.products.filter((item) => directionMatchesFilter(item, q)),
+      services: fullTaxonomy.services.filter((item) => directionMatchesFilter(item, q)),
+      stages: fullTaxonomy.stages.filter((item) => directionMatchesFilter(item, q)),
     };
   }, [filter, fullTaxonomy]);
 
@@ -315,7 +327,10 @@ export function ProfileDirectionsPicker({
                 className={`${styles.chip} ${styles.copyFromProfile}`}
                 disabled={disabled || !copyFromWorkingProfileAvailable}
                 data-catalog-action="copy-directions"
-                onClick={() => onCopyFromWorkingProfile?.()}
+                onClick={() => {
+                  repinPending.current = true;
+                  onCopyFromWorkingProfile?.();
+                }}
               >
                 Повторно взять из профиля
               </button>
@@ -387,7 +402,7 @@ export function ProfileDirectionsPicker({
             data-testid={tileLayout ? "pw-search" : undefined}
             value={filter}
             disabled={disabled}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(e) => changeFilter(e.target.value)}
             placeholder={
               tileLayout ? "Например, двери или плитка" : "Например: двери, плитка, электрика"
             }
@@ -421,7 +436,7 @@ export function ProfileDirectionsPicker({
                 className={`${styles.groupTab} ${businessPickGroup === "products" ? styles.groupTabActive : ""}`}
                 aria-pressed={businessPickGroup === "products"}
                 disabled={disabled}
-                onClick={() => setBusinessPickGroup("products")}
+                onClick={() => changeBusinessGroup("products")}
               >
                 Товары
               </button>
@@ -430,7 +445,7 @@ export function ProfileDirectionsPicker({
                 className={`${styles.groupTab} ${businessPickGroup === "services" ? styles.groupTabActive : ""}`}
                 aria-pressed={businessPickGroup === "services"}
                 disabled={disabled}
-                onClick={() => setBusinessPickGroup("services")}
+                onClick={() => changeBusinessGroup("services")}
               >
                 Работы и услуги
               </button>
@@ -446,11 +461,15 @@ export function ProfileDirectionsPicker({
                 data-testid="pw-search"
                 value={filter}
                 disabled={disabled}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => changeFilter(e.target.value)}
                 placeholder="Например, двери или плитка"
               />
             </label>
           ) : null}
+
+          <p className={styles.selectedCount} data-testid="direction-selected-count" role="status" aria-live="polite">
+            Выбрано: <strong>{selectedChips.length}</strong>
+          </p>
 
           {!specialistMode && (!businessTabbedPick || businessPickGroup === "products") ? (
           <fieldset
@@ -466,7 +485,7 @@ export function ProfileDirectionsPicker({
               {filtered.products.length === 0 ? (
                 <p className={styles.hint}>Нет совпадений в группе «Товары».</p>
               ) : (
-                orderedVisibleItems(fullTaxonomy.products, productCategoryIds, filter.trim()).map((item) => {
+                orderedVisibleItems(fullTaxonomy.products, pinned.products, filter.trim()).map((item) => {
                   const checked = productCategoryIds.includes(item.id);
                   const rowClass = businessTabbedPick
                     ? `${styles.businessChoice}${checked ? ` ${styles.businessChoiceSelected}` : ""}`
@@ -515,13 +534,13 @@ export function ProfileDirectionsPicker({
                         : styles.optionGrid
                   }
                 >
-                  {orderedVisibleItems(fullTaxonomy.services, serviceSpecializationIds, filter.trim())
+                  {orderedVisibleItems(fullTaxonomy.services, pinned.services, filter.trim())
                     .length === 0 ? (
                     <p className={styles.hint}>Нет совпадений в группе «Работы и услуги».</p>
                   ) : (
                     orderedVisibleItems(
                       fullTaxonomy.services,
-                      serviceSpecializationIds,
+                      pinned.services,
                       filter.trim(),
                     ).map((item) => {
                       const checked = serviceSpecializationIds.includes(item.id);
@@ -587,7 +606,7 @@ export function ProfileDirectionsPicker({
             <div className={tileLayout ? styles.tileGrid : styles.optionGrid}>
               {orderedVisibleItems(
                 fullTaxonomy?.stages ?? [],
-                navigatorStageIds,
+                pinned.stages,
                 filter.trim(),
               ).map((item) => {
                 const checked = navigatorStageIds.includes(item.id);

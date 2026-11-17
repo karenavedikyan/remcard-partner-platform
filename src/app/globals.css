@@ -181,6 +181,23 @@ select option {
   outline-offset: 3px;
 }
 
+/* Wizard/section cards: the sticky header must not cover the top after a step change. */
+[data-step-scroll-root] {
+  scroll-margin-top: calc(var(--topbar-height) + 0.75rem);
+}
+
+@media (max-width: 900px) {
+  [data-step-scroll-root] {
+    scroll-margin-top: calc(4.0625rem + 0.75rem);
+  }
+}
+
+/* Step title takes programmatic focus only; no ring on mouse/tap-driven step changes. */
+[data-step-heading]:focus,
+[data-step-heading]:focus-visible {
+  outline: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -221,4 +238,62 @@ select option {
 
 .stateLoading {
   color: var(--muted);
+}
+
+/*
+ * Phone layout of wizard step buttons: primary action first and full width, «Назад» + «Сохранить»
+ * in one row, the rest (skip / cancel / reset) as light text links. Logic and order in the DOM are
+ * unchanged; only presentation differs below 640px.
+ */
+@media (max-width: 639px) {
+  [data-step-actions] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch !important;
+    gap: 0.625rem !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    scroll-margin-bottom: calc(5.625rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  [data-step-actions] > div {
+    display: contents !important;
+  }
+
+  [data-step-actions] [data-step-action] {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  [data-step-actions] [data-step-action="primary"] {
+    order: 1;
+    grid-column: 1 / -1;
+  }
+
+  [data-step-actions] [data-step-action="back"] {
+    order: 2;
+  }
+
+  [data-step-actions] [data-step-action="draft"] {
+    order: 3;
+  }
+
+  [data-step-actions][data-step-no-back] [data-step-action="draft"] {
+    grid-column: 1 / -1;
+  }
+
+  [data-step-actions] [data-step-action="link"] {
+    order: 4;
+    grid-column: 1 / -1;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: var(--muted);
+  }
 }

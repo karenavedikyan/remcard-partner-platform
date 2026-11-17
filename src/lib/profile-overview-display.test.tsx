@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isWorkingProfileFilled,
   savedDirectionLabels,
   overviewRoleLabel,
   savedWorkingProfileReadyLabel,
@@ -206,5 +207,102 @@ describe("profile-overview-display", () => {
     expect(isOrganizationStaffEmployee(profile, { role: "SOLO_PARTNER", organization: null })).toBe(
       false,
     );
+  });
+});
+
+describe("savedWorkingProfileReadyLabel: directions requirement (M5.1)", () => {
+  const base = (over: Partial<ProProfileResponse["user"]>, organization: ProProfileResponse["organization"] = null): ProProfileResponse => ({
+    organization,
+    programs: [],
+    user: {
+      id: "u9",
+      publicId: "RC9",
+      displayName: "Алексей",
+      city: "Краснодар",
+      specializations: [],
+      role: "PRO",
+      partnerType: "MASTER",
+      description: null,
+      catalogStatus: "DRAFT",
+      isPublic: false,
+      rejectionReason: null,
+      badges: [],
+      photoUrl: null,
+      storeCategories: [],
+      areas: [],
+      website: null,
+      telegram: null,
+      whatsapp: null,
+      instagram: null,
+      vk: null,
+      max: null,
+      yandex: null,
+      publicEmail: null,
+      publicPhone: null,
+      showFullName: false,
+      ...over,
+    },
+  });
+
+  it("name and city without any direction is NOT «Готов к работе»", () => {
+    const res = savedWorkingProfileReadyLabel(base({}));
+    expect(res).toEqual({ label: "Заполните профиль", ready: false });
+  });
+
+  it("is ready once at least one direction is saved", () => {
+    const res = savedWorkingProfileReadyLabel(base({ specializations: ["doors"] }));
+    expect(res).toEqual({ label: "Готов к работе", ready: true });
+  });
+
+  it("a pure agent does not need directions", () => {
+    const res = savedWorkingProfileReadyLabel(
+      base({ partnerType: "MASTER", partnerActivities: ["AGENT"] }),
+    );
+    expect(res.ready).toBe(true);
+  });
+});
+
+describe("isWorkingProfileFilled (M4)", () => {
+  const mk = (over: Partial<ProProfileResponse["user"]>): ProProfileResponse => ({
+    organization: null,
+    programs: [],
+    user: {
+      id: "u1",
+      publicId: "RC1",
+      displayName: "Иван",
+      city: "Москва",
+      specializations: [],
+      role: "PRO",
+      partnerType: "MASTER",
+      description: null,
+      catalogStatus: "DRAFT",
+      isPublic: false,
+      rejectionReason: null,
+      badges: [],
+      photoUrl: null,
+      storeCategories: [],
+      areas: [],
+      website: null,
+      telegram: null,
+      whatsapp: null,
+      instagram: null,
+      vk: null,
+      max: null,
+      yandex: null,
+      publicEmail: null,
+      publicPhone: null,
+      showFullName: false,
+      ...over,
+    },
+  });
+
+  it("is false without directions and true with them", () => {
+    expect(isWorkingProfileFilled(mk({}))).toBe(false);
+    expect(isWorkingProfileFilled(mk({ specializations: ["doors"] }))).toBe(true);
+  });
+
+  it("pure agent needs only name and city", () => {
+    expect(isWorkingProfileFilled(mk({ partnerActivities: ["AGENT"], partnerType: "COMPANY" }))).toBe(true);
+    expect(isWorkingProfileFilled(mk({ partnerActivities: ["AGENT"], city: "" }))).toBe(false);
   });
 });

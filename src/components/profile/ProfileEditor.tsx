@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useScrollActiveTabIntoView, useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import { RemcardApiError } from "@/lib/api-client";
 import { CATALOG_STATUS_LABELS } from "@/lib/partnership-labels";
 import {
@@ -50,6 +51,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { NotificationSettingsPanel } from "./NotificationSettingsPanel";
 import { ProfAnalyticsConsentProfileSetting } from "@/components/consent/ProfAnalyticsConsentUi";
 import { ProfileOverviewSection } from "./ProfileOverviewSection";
+import { isWorkingProfileFilled } from "@/lib/profile-overview-display";
 import { PartnerTypeSettings } from "./PartnerTypeSettings";
 import { ProfileBranchContextSwitcher } from "./ProfileBranchContextSwitcher";
 import {
@@ -85,6 +87,7 @@ import type { WorkingPrimaryDirection } from "@/lib/types";
 import {
   buildProfileSectionHref,
   isPureAgentProfileSection,
+  PROFILE_FILL_PARAM,
   profileSectionNav,
   resolveProfileSectionFromQuery,
   type ProfileSectionId,
@@ -304,8 +307,14 @@ function ProfileEditorInner({
     if (moderationSection) return "catalog";
     return sectionProp;
   });
+  const sectionContentRef = useRef<HTMLDivElement>(null);
+  const tabStripRef = useRef<HTMLUListElement>(null);
+  useScrollToStepTop(sectionContentRef, activeSection);
+  useScrollActiveTabIntoView(tabStripRef, activeSection);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const saveMessageRef = useRef<HTMLParagraphElement>(null);
+  useScrollMessageIntoView(saveMessageRef, error || success);
   const [notes, setNotes] = useState<ModerationNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState("");
@@ -404,9 +413,14 @@ function ProfileEditorInner({
     !isOrgStaffWorkplaceUi &&
     !agentNavPending &&
     (activeSection === "overview" || activeSection === "basics");
-  const analyticsConsentInset = showAnalyticsConsentInset ? (
+  const collapseSecondarySettings =
+    !isOrgStaffWorkplaceUi &&
+    (activeSection === "overview" || activeSection === "basics") &&
+    !isWorkingProfileFilled(profile, cabinetAccess.proContext);
+  const analyticsConsentContent = showAnalyticsConsentInset ? (
     <ProfAnalyticsConsentProfileSetting />
   ) : null;
+  const analyticsConsentInset = collapseSecondarySettings ? null : analyticsConsentContent;
   const sectionNavItems = useMemo(() => {
     if (isOrgStaffWorkplaceUi) return businessOrgProfileSectionNav();
     return profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
@@ -764,6 +778,17 @@ function ProfileEditorInner({
     [activeSection, confirmLeaveUnsaved, profileBasePath, router, searchParams],
   );
 
+  const fillProfileFromOverview = useCallback(() => {
+    if (!confirmLeaveUnsaved()) return;
+    setSpecialistBasicsWizardRevealed(true);
+    setActiveSection("basics");
+    const qs =
+      buildProfileSectionHref("basics", new URLSearchParams(searchParams.toString())).split(
+        "?",
+      )[1] ?? "section=basics";
+    router.push(`${profileBasePath}?${qs}&${PROFILE_FILL_PARAM}=1`, { scroll: false });
+  }, [confirmLeaveUnsaved, profileBasePath, router, searchParams]);
+
   const startSpecialistProfileFromOverview = useCallback(() => {
     setSpecialistBasicsWizardRevealed(true);
     if (activeSection === "basics") return;
@@ -847,6 +872,32 @@ function ProfileEditorInner({
       (activeSection === "overview" || activeSection === "basics"),
   );
 
+  const secondaryBlocks = (
+    <>
+      {(activeSection === "overview" || activeSection === "basics") &&
+        basicsEditable &&
+        !isOrgStaffWorkplaceUi ? (
+          <PartnerTypeSettings
+            profile={profile}
+            hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
+            onProfileUpdated={applyProfile}
+            onRequestRefresh={() => router.refresh()}
+            autoOpenSetupRecovery={focusField === "partnerType"}
+            inviteAcceptedContext={inviteAcceptedContext}
+          />
+        ) : null}
+
+        {certificatePolicyReceiverUi &&
+        (activeSection === "overview" || activeSection === "basics") ? (
+          <CertificatePolicyProfileEntry
+            viewerUserId={profile.user.id}
+            canEditSettings={certificatePolicyCanEdit}
+          />
+        ) : null}
+
+    </>
+  );
+
   return (
     <div
       className={`${styles.shell} ${pureAgentCompactUi ? styles.pureAgentProduction : ""}`}
@@ -879,6 +930,7 @@ function ProfileEditorInner({
           </p>
         ) : null}
         <ul
+          ref={tabStripRef}
           className={styles.tabStrip}
           role="tablist"
           hidden={agentNavPending}
@@ -908,7 +960,7 @@ function ProfileEditorInner({
       <div
         className={`${styles.grid} ${showAside ? "" : styles.gridSingle}`}
       >
-      <div className={styles.main}>
+      <div className={styles.main} ref={sectionContentRef} data-step-scroll-root>
         {!pureAgentCompactUi &&
         !(businessOrgCatalogUi && activeSection === "catalog") ? (
           <ProfileBranchContextSwitcher />
@@ -949,6 +1001,7 @@ function ProfileEditorInner({
                   <ProfileOverviewSection
                     profile={profile}
                     onNavigateSection={navigateSection}
+                  onFillProfile={fillProfileFromOverview}
                     hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
                     fixtureOverview={fixtureOverview}
                     orgStaffWorkplacePartnerType={orgStaffWorkplacePartnerType}
@@ -958,6 +1011,7 @@ function ProfileEditorInner({
                 <ProfileOverviewSection
                   profile={profile}
                   onNavigateSection={navigateSection}
+                  onFillProfile={fillProfileFromOverview}
                   hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
                   fixtureOverview={fixtureOverview}
                   orgStaffWorkplacePartnerType={orgStaffWorkplacePartnerType}
@@ -1158,12 +1212,12 @@ function ProfileEditorInner({
           ) : null}
         </Panel>
           {error ? (
-            <p className={styles.error} role="alert">
+            <p ref={saveMessageRef} className={styles.error} role="alert">
               {error}
             </p>
           ) : null}
           {success ? (
-            <p className={styles.success} role="status">
+            <p ref={saveMessageRef} className={styles.success} role="status">
               {success}
             </p>
           ) : null}
@@ -1504,28 +1558,21 @@ function ProfileEditorInner({
           </Panel>
         )}
 
-        {(activeSection === "overview" || activeSection === "basics") &&
-        basicsEditable &&
-        !isOrgStaffWorkplaceUi ? (
-          <PartnerTypeSettings
-            profile={profile}
-            hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
-            onProfileUpdated={applyProfile}
-            onRequestRefresh={() => router.refresh()}
-            autoOpenSetupRecovery={focusField === "partnerType"}
-            inviteAcceptedContext={inviteAcceptedContext}
-          />
-        ) : null}
-
-        {certificatePolicyReceiverUi &&
-        (activeSection === "overview" || activeSection === "basics") ? (
-          <CertificatePolicyProfileEntry
-            viewerUserId={profile.user.id}
-            canEditSettings={certificatePolicyCanEdit}
-          />
-        ) : null}
-
-        <ProfileSessionActions />
+        {collapseSecondarySettings ? (
+          <details className={styles.otherSettings} data-testid="profile-other-settings">
+            <summary>Другие настройки</summary>
+            <div className={styles.otherSettingsBody}>
+              {analyticsConsentContent}
+              {secondaryBlocks}
+              <ProfileSessionActions />
+            </div>
+          </details>
+        ) : (
+          <>
+            {secondaryBlocks}
+            <ProfileSessionActions />
+          </>
+        )}
       </div>
 
       {showAside || (isOrgStaffWorkplaceUi && activeSection === "overview") ? (

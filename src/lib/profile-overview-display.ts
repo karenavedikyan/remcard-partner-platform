@@ -96,10 +96,40 @@ export function savedWorkingProfileReadyLabel(
     return { label: "Доступ по приглашению", ready: true };
   }
   const saved = profileDraftFromProfile(profile);
-  const ready = workingProfileCabinetReady(saved);
+  const ready = workingProfileCabinetReady(saved) && hasEnoughDirectionsForType(profile);
   return ready
     ? { label: "Готов к работе", ready: true }
-    : { label: "Нужно дозаполнить", ready: false };
+    : { label: "Заполните профиль", ready: false };
+}
+
+/** Every type except a pure agent needs at least one saved direction to count as ready. */
+function hasEnoughDirectionsForType(profile: ProProfileResponse): boolean {
+  const kind = resolvePartnerKindUi({
+    partnerType: profile.user.partnerType,
+    partnerActivities: profile.user.partnerActivities,
+  });
+  if (kind === "agent") return true;
+  return savedDirectionLabels(profile).length > 0;
+}
+
+/**
+ * Whether the working profile is filled in enough to show the secondary account blocks
+ * (partner type, certificate terms, sign-out) in full. While it is not, they are folded into one
+ * «Другие настройки» line so they do not compete with the wizard.
+ */
+export function isWorkingProfileFilled(
+  profile: ProProfileResponse,
+  proContext: ProContextSnapshot | null = null,
+): boolean {
+  const kind = resolvePartnerKindUi({
+    partnerType: profile.user.partnerType,
+    partnerActivities: profile.user.partnerActivities,
+  });
+  if (kind === "agent" && !isOrganizationStaffEmployee(profile, proContext)) {
+    const name = profile.user.displayName?.trim() ?? "";
+    return name.length >= 2 && name !== "Пользователь" && Boolean(profile.user.city?.trim());
+  }
+  return savedWorkingProfileReadyLabel(profile, proContext).ready;
 }
 
 export function savedDirectionLabels(profile: ProProfileResponse): string[] {

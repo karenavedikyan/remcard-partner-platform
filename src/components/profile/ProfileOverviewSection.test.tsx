@@ -162,3 +162,38 @@ describe("ProfileOverviewSection counters", () => {
     expect(within(teamBtn).getByText("1")).toBeInTheDocument();
   });
 });
+
+describe("ProfileOverviewSection fill-profile entry (M5.1)", () => {
+  beforeEach(() => {
+    vi.mocked(remcardFetch).mockReset();
+    vi.mocked(remcardFetch).mockRejectedValue(new Error("no network in this test"));
+  });
+
+  it("shows «Заполните профиль» + a button into the wizard when directions are missing", async () => {
+    const onFillProfile = vi.fn();
+    const empty: ProProfileResponse = {
+      ...storeProfile,
+      user: { ...storeProfile.user, storeCategories: [] },
+    };
+    render(
+      <ProfileCabinetAccessProvider value={ownerProfileCabinetAccess()}>
+        <ProfileOverviewSection
+          profile={empty}
+          onNavigateSection={() => {}}
+          onFillProfile={onFillProfile}
+        />
+      </ProfileCabinetAccessProvider>,
+    );
+    expect(screen.getByText("Заполните профиль")).toBeInTheDocument();
+    expect(screen.queryByText("Готов к работе")).toBeNull();
+    await userEvent.click(screen.getByTestId("overview-fill-profile"));
+    expect(onFillProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps «Изменить» for a ready profile", () => {
+    renderOverview();
+    expect(screen.getByText("Готов к работе")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Изменить" })).toBeInTheDocument();
+    expect(screen.queryByTestId("overview-fill-profile")).toBeNull();
+  });
+});

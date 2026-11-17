@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
-import { businessHomeCopy, type BusinessHomePartnerType } from "@/lib/business-home/copy";
+import {
+  BUSINESS_HOME_FILL_PROFILE_HREF,
+  businessHomeCopy,
+  businessHomeNoOrganizationCopy,
+  type BusinessHomePartnerType,
+} from "@/lib/business-home/copy";
 import { ProfileBranchContextSwitcher } from "@/components/profile/ProfileBranchContextSwitcher";
 import {
   initialBusinessHomeMetricSlices,
@@ -368,6 +373,14 @@ export function BusinessOwnerHomeDashboard({
 
   const emptyRole = partnerType === "STORE" ? "store" : "company";
 
+  // Metrics 404 = this owner has no organization record yet (profile wizard not completed).
+  const noOrganization =
+    !isStaffView &&
+    loadState === "loaded" &&
+    slices.length > 0 &&
+    slices.every((s) => s.state === "unavailable");
+  const noOrgCopy = businessHomeNoOrganizationCopy(partnerType);
+
   return (
     <div className={styles.grid}>
       {!isStaffView && catalogStatus === "NEEDS_REVISION" ? (
@@ -380,7 +393,7 @@ export function BusinessOwnerHomeDashboard({
         <section className={styles.alertBanner} role="status">
           <strong>Дополните профиль</strong>
           <p>Укажите имя представителя, город и направления работы, чтобы отправить карточку на проверку.</p>
-          <Link href="/profile">Заполнить профиль →</Link>
+          <Link href="/profile?section=basics&fill=1">Заполнить профиль →</Link>
         </section>
       ) : null}
 
@@ -410,7 +423,16 @@ export function BusinessOwnerHomeDashboard({
           <h2 id="business-home-hero">{copy.heroTitle}</h2>
           <p className={styles.heroLead}>{copy.heroLead}</p>
         </div>
-        {isStaffView && partnerType === "COMPANY" && !teamActionsEnabled ? (
+        {noOrganization ? (
+          <Link
+            href={BUSINESS_HOME_FILL_PROFILE_HREF}
+            className={styles.primaryCtaLink}
+            data-testid="business-home-fill-profile-cta"
+          >
+            {noOrgCopy.heroCta}
+            <IconArrowUpRight width={20} height={20} />
+          </Link>
+        ) : isStaffView && partnerType === "COMPANY" && !teamActionsEnabled ? (
           <span
             className={styles.primaryCtaLink}
             aria-disabled="true"
@@ -435,8 +457,8 @@ export function BusinessOwnerHomeDashboard({
             <div className={styles.stat} key={label}>
               <span className={styles.statLabel}>{label}</span>
               <strong className={styles.statValue}>{metricCountLabel(slice)}</strong>
-              <span className={styles.statHint}>{hints[index]}</span>
-              {err && !isStaffView ? (
+              <span className={styles.statHint}>{noOrganization ? "" : hints[index]}</span>
+              {err && !isStaffView && !noOrganization ? (
                 <p className={styles.statError} role="alert">
                   {err}
                 </p>
@@ -446,7 +468,14 @@ export function BusinessOwnerHomeDashboard({
         })}
       </div>
 
-      {metricsFailed ? (
+      {noOrganization ? (
+        <p className={styles.statHint} data-testid="business-home-no-org-hint" role="status">
+          {noOrgCopy.hint}.{" "}
+          <Link href={BUSINESS_HOME_FILL_PROFILE_HREF}>{noOrgCopy.hintLink}</Link>
+        </p>
+      ) : null}
+
+      {metricsFailed && !noOrganization ? (
         <div className={styles.retryRow}>
           <Button variant="secondary" onClick={() => void loadMetrics()}>
             Обновить показатели

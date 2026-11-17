@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { RemcardApiError } from "@/lib/api-client";
+import { useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import { uploadCatalogImage, CATALOG_IMAGE_ACCEPT } from "@/lib/catalog-image-upload";
 import { catalogMissingForSubmit, catalogPublicationStatusLabel } from "@/lib/profile-catalog-completeness";
 import type { BusinessProfilePartnerType } from "@/lib/business-profile/eligibility";
@@ -149,6 +150,9 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
   const fileRef = useRef<HTMLInputElement>(null);
   const publicPhoneRef = useRef<AgentPhoneFieldHandle>(null);
   const submitAlertRef = useRef<HTMLParagraphElement>(null);
+  const stepCardRef = useRef<HTMLElement>(null);
+  useScrollToStepTop(stepCardRef, step);
+  useScrollMessageIntoView(submitAlertRef, error || success);
 
   const catalogStatus = effectiveCatalogStatus(profile);
   const publicationLabel = catalogPublicationStatusLabel(profile);
@@ -362,8 +366,8 @@ export function OrganizationCatalogWizard(props: OrganizationCatalogWizardProps)
           </button>
         ))}
       </nav>
-      <section className={catalogStyles.card} data-testid="catalog-step-card">
-        <h2 className={`${catalogStyles.title} ${surfaceStyles.businessStepPanelTitle}`}>
+      <section className={catalogStyles.card} data-testid="catalog-step-card" ref={stepCardRef} data-step-scroll-root>
+        <h2 data-step-heading tabIndex={-1} className={`${catalogStyles.title} ${surfaceStyles.businessStepPanelTitle}`}>
           {STEP_PANEL_TITLES[step]}
         </h2>
         {error ? (

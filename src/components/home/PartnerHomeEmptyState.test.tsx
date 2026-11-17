@@ -10,7 +10,7 @@ describe("PartnerHomeEmptyState", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: /Начните с профиля и партнёров/ }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("es-nav-profile")).toHaveAttribute("href", "/profile");
+    expect(screen.getByTestId("es-nav-profile")).toHaveAttribute("href", "/profile?section=basics&fill=1");
     expect(screen.getByTestId("es-nav-partners")).toHaveAttribute("href", "/partners");
     expect(screen.queryByRole("button", { name: /Посмотреть на примере/ })).not.toBeInTheDocument();
     expect(

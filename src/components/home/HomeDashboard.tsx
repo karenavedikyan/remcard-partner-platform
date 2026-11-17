@@ -72,7 +72,7 @@ export function HomeDashboard({
         <section className={styles.alertBanner} role="status">
           <strong>Дополните профиль</strong>
           <p>Укажите имя представителя, город и направления работы, чтобы отправить карточку на проверку.</p>
-          <Link href="/profile">Заполнить профиль →</Link>
+          <Link href="/profile?fill=1">Заполнить профиль →</Link>
         </section>
       ) : null}
       <section className={styles.welcomeCard}>

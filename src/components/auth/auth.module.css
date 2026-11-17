@@ -261,14 +261,20 @@
 
 .consentRow {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
   align-items: flex-start;
+  min-height: 44px;
+  padding: var(--space-2) 0;
   font-size: var(--text-sm);
   line-height: 1.45;
+  cursor: pointer;
 }
 
+/* One checkbox size on every consent row; the whole row (min 44px high) is the tap target. */
 .consentRow input {
-  margin-top: 0.2rem;
+  margin: 0;
+  width: 1.375rem;
+  height: 1.375rem;
   flex-shrink: 0;
   accent-color: var(--primary);
 }

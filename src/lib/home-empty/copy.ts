@@ -73,7 +73,7 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
         ],
         primaryCta: {
           label: "Заполнить профиль",
-          href: "/profile",
+          href: "/profile?section=basics&fill=1",
           testId: "es-nav-profile",
         },
         secondaryCta: {
@@ -110,7 +110,7 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
         ],
         primaryCta: {
           label: "Заполнить профиль",
-          href: "/profile",
+          href: "/profile?section=basics&fill=1",
           testId: "es-nav-profile",
         },
         secondaryCta: {
@@ -147,7 +147,7 @@ export function homeEmptyCopy(role: HomeEmptyRole): HomeEmptyCopy {
         ],
         primaryCta: {
           label: "Заполнить профиль",
-          href: "/profile",
+          href: "/profile?section=basics&fill=1",
           testId: "es-nav-profile",
         },
         secondaryCta: {

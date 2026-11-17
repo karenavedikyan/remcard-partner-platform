@@ -630,3 +630,25 @@
   cursor: not-allowed;
   color: color-mix(in srgb, var(--ink) 55%, var(--muted));
 }
+
+.selectedCount {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.selectedCount strong {
+  color: var(--primary);
+}
+
+/* Phones: one page scroll, no scroll area nested inside the page. */
+@media (max-width: 639px) {
+  .specialistCompact .optionGrid,
+  .tileGrid,
+  .specialistWorkingProfile .tileGrid,
+  .businessChoicesGrid {
+    max-height: none;
+    overflow: visible;
+  }
+}

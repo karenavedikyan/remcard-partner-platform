@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useScrollMessageIntoView, useScrollToStepTop } from "@/hooks/useScrollToStepTop";
 import { formatPhoneForDisplay } from "@/lib/contact-phone-display";
 import { RemcardApiError } from "@/lib/api-client";
 import { refreshProfile } from "@/lib/profile-save";
@@ -16,6 +17,7 @@ import { applySpecialistPreset } from "@/lib/specialist-r06/presets";
 import {
   specialistIdListDisplay,
   specialistKindDisplayLabel,
+  specialistSpecializationSummary,
 } from "@/lib/specialist-r06/display-labels";
 import { ProfileDirectionsPicker } from "@/components/profile/ProfileDirectionsPicker";
 import { AgentPhoneField, type AgentPhoneFieldHandle } from "@/components/profile/agent/AgentPhoneField";
@@ -101,6 +103,10 @@ export function SpecialistWorkingProfileWizard({
   const [saving, setSaving] = useState(false);
   const [specialistNotice, setSpecialistNotice] = useState("");
   const phoneRef = useRef<AgentPhoneFieldHandle>(null);
+  const stepCardRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLParagraphElement>(null);
+  useScrollToStepTop(stepCardRef, loading ? null : step);
+  useScrollMessageIntoView(bannerRef, banner);
 
   const hydrate = useCallback(async () => {
     setLoading(true);
@@ -282,7 +288,7 @@ export function SpecialistWorkingProfileWizard({
 
   if (!editing && profileComplete) {
     const name = savedProfile.displayName?.trim() || "—";
-    const factRows: { label: string; value: string }[] = [
+    const factRows: { label: string; value: string; omitWhenEmpty?: boolean }[] = [
       {
         label: "Телефон",
         value: savedProfile.partnershipContactPhone?.trim()
@@ -292,11 +298,8 @@ export function SpecialistWorkingProfileWizard({
       { label: "Email", value: savedProfile.partnershipContactEmail?.trim() ?? "" },
       {
         label: "Специализация",
-        value:
-          specialistKindDisplayLabel(
-            savedProfile.specialistKind,
-            savedProfile.specialistTitle,
-          ) || "",
+        value: specialistSpecializationSummary(savedProfile),
+        omitWhenEmpty: true,
       },
       {
         label: "Формат работы",
@@ -308,7 +311,7 @@ export function SpecialistWorkingProfileWizard({
       { label: "Территория", value: savedProfile.areas?.trim() ?? "" },
     ];
     const filledFacts = factRows.filter((row) => row.value.trim());
-    const emptyFacts = factRows.filter((row) => !row.value.trim());
+    const emptyFacts = factRows.filter((row) => !row.value.trim() && !row.omitWhenEmpty);
 
     return (
       <div className={styles.pw} data-testid="specialist-profile-completed-summary">
@@ -323,7 +326,11 @@ export function SpecialistWorkingProfileWizard({
             <span className={styles.summaryStatus}>Заполнено</span>
           </div>
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
@@ -464,6 +471,8 @@ export function SpecialistWorkingProfileWizard({
             patternStep ? `${styles.card} ${stepStyles.patternStepCard}` : styles.card
           }
           data-testid="specialist-profile-step-card"
+          ref={stepCardRef}
+          data-step-scroll-root
         >
           {step === 2 ? (
             <div className={stepStyles.contactsCardTop}>
@@ -489,7 +498,11 @@ export function SpecialistWorkingProfileWizard({
             </div>
           )}
           {banner ? (
-            <p className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}>
+            <p
+              ref={bannerRef}
+              className={banner.kind === "error" ? styles.bannerError : styles.bannerSuccess}
+              role={banner.kind === "error" ? "alert" : "status"}
+            >
               {banner.text}
             </p>
           ) : null}
@@ -540,6 +553,8 @@ export function SpecialistWorkingProfileWizard({
             </div>
           ) : null}
           <h2
+            data-step-heading
+            tabIndex={-1}
             className={
               patternStep ? `${styles.title} ${stepStyles.patternStepTitle}` : styles.title
             }
@@ -818,6 +833,8 @@ export function SpecialistWorkingProfileWizard({
               data-testid={
                 step === 2 ? "specialist-contacts-actions" : "specialist-step-actions"
               }
+              data-step-actions=""
+              data-step-no-back={step === 0 ? "" : undefined}
             >
               <div
                 className={
@@ -828,6 +845,7 @@ export function SpecialistWorkingProfileWizard({
                   <button
                     type="button"
                     className={styles.btn}
+                    data-step-action="back"
                     disabled={saving}
                     onClick={() => setStep((s) => Math.max(0, s - 1))}
                   >
@@ -838,6 +856,7 @@ export function SpecialistWorkingProfileWizard({
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
+                    data-step-action="link"
                     disabled={saving}
                     onClick={() => void resetDraft()}
                   >
@@ -854,6 +873,7 @@ export function SpecialistWorkingProfileWizard({
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnQuiet}`}
+                    data-step-action="link"
                     disabled={saving}
                     onClick={() => void skipStep()}
                   >
@@ -863,6 +883,7 @@ export function SpecialistWorkingProfileWizard({
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnDraft}`}
+                  data-step-action="draft"
                   disabled={saving}
                   onClick={() => void saveDraftOnly()}
                 >
@@ -871,6 +892,7 @@ export function SpecialistWorkingProfileWizard({
                 <button
                   type="submit"
                   className={`${styles.btn} ${styles.btnPrimary} ${step !== 2 ? stepStyles.stepPrimaryBtn : ""}`}
+                  data-step-action="primary"
                   disabled={saving}
                 >
                   {step === 3 ? (

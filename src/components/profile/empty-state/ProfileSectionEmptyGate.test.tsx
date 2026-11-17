@@ -1,9 +1,36 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { ProfileSectionEmptyGate } from "./ProfileSectionEmptyGate";
+
+describe("ProfileSectionEmptyGate ?fill=1 (home «Заполнить профиль»)", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("opens the wizard directly and reports the reveal when ?fill=1 is present", () => {
+    window.history.replaceState(null, "", "/profile?section=basics&fill=1");
+    const onRevealWizard = vi.fn();
+    render(
+      <ProfileSectionEmptyGate showEmptyIntro role="company" onRevealWizard={onRevealWizard}>
+        <div data-testid="profile-wizard">wizard</div>
+      </ProfileSectionEmptyGate>,
+    );
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.getByTestId("profile-wizard")).toBeInTheDocument();
+    expect(onRevealWizard).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the empty intro without the flag", () => {
+    window.history.replaceState(null, "", "/profile?section=basics");
+    render(
+      <ProfileSectionEmptyGate showEmptyIntro role="company">
+        <div data-testid="profile-wizard">wizard</div>
+      </ProfileSectionEmptyGate>,
+    );
+    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+  });
+});
 
 describe("ProfileSectionEmptyGate", () => {
   it("shows empty intro until CTA reveals wizard", () => {

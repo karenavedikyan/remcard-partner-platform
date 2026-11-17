@@ -58,7 +58,7 @@ export function SpecialistPresetSection({
           value={specialistKind ?? ""}
           onChange={(e) => onKindChange(e.target.value as SpecialistKindId | "")}
         >
-          <option value="">Выберите роль или заполните вручную</option>
+          <option value="">Выберите роль</option>
           {SPECIALIST_PRESETS.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}
