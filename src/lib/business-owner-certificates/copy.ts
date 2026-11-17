@@ -18,3 +18,7 @@ export function businessCertificatesPageCopy(user: Pick<AuthUser, "partnerType">
     searchPlaceholder: "Код, название или партнёр",
   } as const;
 }
+
+/** Shown instead of the list when the employee has no certificate permission (server answers 403). */
+export const BUSINESS_CERTIFICATES_NO_ACCESS_NOTE =
+  "Сертификаты филиала доступны сотрудникам с правом на сертификаты.";

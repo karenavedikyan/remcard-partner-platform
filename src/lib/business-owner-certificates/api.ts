@@ -10,6 +10,8 @@ export function fetchBusinessOwnerCertificates(params?: {
   limit?: number;
   sort?: string;
   status?: string;
+  /** Branch employees: narrow to one own branch; omitted means all own branches. */
+  branchId?: string;
 }) {
   const q = new URLSearchParams();
   if (params?.archived) q.set("archived", "true");
@@ -20,6 +22,7 @@ export function fetchBusinessOwnerCertificates(params?: {
   if (params?.limit) q.set("limit", String(params.limit));
   if (params?.sort) q.set("sort", params.sort);
   if (params?.status) q.set("status", params.status);
+  if (params?.branchId) q.set("branchId", params.branchId);
   const suffix = q.toString() ? `?${q}` : "";
   return remcardFetch<
     { certificates: AgentCertificateRow[]; nextCursor: string | null } & AgentR03ListMeta

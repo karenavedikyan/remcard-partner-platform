@@ -869,3 +869,29 @@
     align-items: flex-start;
   }
 }
+
+.issuerBranchField {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 24rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.issuerBranchSelect,
+.issuerBranchValue {
+  min-height: 44px;
+  padding: 0.4rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 400;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.issuerBranchValue {
+  display: flex;
+  align-items: center;
+}

@@ -8,6 +8,7 @@ import {
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 import { CertificatePurchaseLink } from "./CertificatePurchaseLink";
+import { CertificateIssuedByLine } from "./CertificateIssuedByLine";
 
 type Props = {
   cert: AgentCertificateRow;
@@ -15,6 +16,7 @@ type Props = {
   onSelectChange: (checked: boolean) => void;
   actions: RecordRowAction[];
   detailBasePath?: string;
+  selectable?: boolean;
 };
 
 export function AgentR03MobileCertRow({
@@ -23,6 +25,7 @@ export function AgentR03MobileCertRow({
   onSelectChange,
   actions,
   detailBasePath = "/certificates",
+  selectable = true,
 }: Props) {
   const title = cert.userAlias ?? cert.title;
 
@@ -33,13 +36,15 @@ export function AgentR03MobileCertRow({
       data-parity-cert-id={cert.id}
     >
       <div className={styles.mobileRecordTop}>
-        <label className={styles.selectCol}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(e) => onSelectChange(e.target.checked)}
-          />
-        </label>
+        {selectable ? (
+          <label className={styles.selectCol}>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelectChange(e.target.checked)}
+            />
+          </label>
+        ) : null}
         <div className={styles.mobileRecordMain}>
           <Link href={`${detailBasePath}/${cert.id}`} className={styles.mobileRecordTitle}>
             {title}
@@ -50,6 +55,7 @@ export function AgentR03MobileCertRow({
           <p className={styles.meta}>
             {cert.agentClient ? `Клиент: ${cert.agentClient.displayName}` : "Без клиента"}
           </p>
+          <CertificateIssuedByLine cert={cert} className={styles.meta} />
         </div>
       </div>
       <div className={styles.mobileRecordFooter}>

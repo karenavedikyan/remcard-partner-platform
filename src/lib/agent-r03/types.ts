@@ -63,6 +63,8 @@ export type AgentCertificateRow = {
   partnerOffers?: AgentCertificatePartnerOffer[];
   terms?: AgentCertificateTermLine[];
   issuerDisplayName?: string | null;
+  /** Employee who issued it on behalf of the organization; absent for owner/legacy rows. */
+  issuedBy?: { id: string; name: string } | null;
   discountPercent: number;
   archivedInWorkspace: boolean;
   hasOrders: boolean;

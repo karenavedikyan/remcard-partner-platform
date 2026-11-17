@@ -55,6 +55,8 @@ export type StoreCertificate = {
   storeNames?: string[] | null;
   partners?: CertificatePartner[];
   clientUser?: { displayName?: string | null; id?: string } | null;
+  /** Employee who issued the certificate on behalf of the organization (absent for owner/legacy rows). */
+  issuedBy?: { id: string; name: string } | null;
   /** Existing owner-scoped certificate GET includes saved purchase snapshots. */
   orders?: CertificatePurchase[];
 };
@@ -158,6 +160,9 @@ export type AvailablePartnersResponse = {
   certificateRecommendationIssuerReady?: boolean;
   certificateRecommendationIssuerMissing?: CertificateRecommendationIssuerMissingField[];
   isAgentRecommender?: boolean;
+  selfBranches?: Array<{ id: string; name: string; city?: string | null; address?: string | null; isActive?: boolean }>;
+  /** Present only for branch employees: branches they may issue from and the preselected one. */
+  staffIssuer?: { branchIds: string[]; defaultBranchId: string | null };
 };
 
 export type CreateCertificatePartnerInput = {

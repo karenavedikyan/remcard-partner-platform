@@ -12,6 +12,8 @@ import { CertificateResultView } from "@/components/recommendations/CertificateR
 import { SpecialistCertificateEditDetailsDialog } from "./SpecialistCertificateEditDetailsDialog";
 import { SpecialistCertificateEditDiscountsDialog } from "@/components/agent-r03/SpecialistCertificateEditDiscountsDialog";
 import { Button } from "@/components/ui/Button";
+import { CertificateIssuedByLine } from "@/components/agent-r03/CertificateIssuedByLine";
+import { useOwnerIssuerModeValue } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { CertificatePurchases } from "@/components/agent-r03/CertificatePurchases";
 import agentStyles from "@/components/agent-r03/agent-r03.module.css";
 import styles from "@/components/recommendations/recommendations.module.css";
@@ -31,6 +33,7 @@ export function SpecialistCertificateDetailDialog({
   onClose,
   onListMutated,
 }: Props) {
+  const isBranchStaff = useOwnerIssuerModeValue()?.isBranchStaff === true;
   const [storeCert, setStoreCert] = useState<StoreCertificate | null>(null);
   const [meta, setMeta] = useState<AgentCertificateRow | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
@@ -114,9 +117,11 @@ export function SpecialistCertificateDetailDialog({
           {loadState === "loaded" && storeCert && meta ? (
             <>
               <div className={styles.createFormFooter} data-testid="agent-certificate-detail-root">
-                <Button variant="secondary" type="button" onClick={() => setEditDetailsOpen(true)}>
-                  Редактировать детали
-                </Button>
+                {!isBranchStaff ? (
+                  <Button variant="secondary" type="button" onClick={() => setEditDetailsOpen(true)}>
+                    Редактировать детали
+                  </Button>
+                ) : null}
                 {canIssuerMutate ? (
                   <Button
                     variant="secondary"
@@ -132,11 +137,13 @@ export function SpecialistCertificateDetailDialog({
                     data-testid="certificate-detail-view-only-issuer"
                     role="status"
                   >
-                    Скидки и отключение ссылки доступны только автору сертификата. Вы можете
-                    переименовать запись для себя или перенести её в архив.
+                    {isBranchStaff
+                      ? "Скидки и отключение ссылки доступны владельцу организации."
+                      : "Скидки и отключение ссылки доступны только автору сертификата. Вы можете переименовать запись для себя или перенести её в архив."}
                   </p>
                 )}
               </div>
+              <CertificateIssuedByLine cert={meta.issuedBy ? meta : storeCert} className={styles.meta} />
               <CertificatePurchases orders={storeCert.orders} hasPurchases={meta.hasOrders}
                 promoCode={meta.promoCode} clientName={meta.agentClient?.displayName ?? storeCert.clientUser?.displayName} />
               <CertificateResultView

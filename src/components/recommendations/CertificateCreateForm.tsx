@@ -7,6 +7,7 @@ import { getAuthMe, RemcardApiError, remcardFetch } from "@/lib/api-client";
 import {
   buildCreateCertificatePayload,
   categoryFieldKey,
+  isCategoryIssuable,
   partnershipTermsHref,
   previewIssuerPercent,
   resolvePoolPercent,
@@ -102,6 +103,15 @@ type CertificateCreateFormProps = {
   onListRefresh?: () => void;
 };
 
+type StaffIssuerBranchOption = { id: string; label: string };
+
+function staffIssuerBranchOptions(data: AvailablePartnersResponse): StaffIssuerBranchOption[] {
+  const allowed = new Set(data.staffIssuer?.branchIds ?? []);
+  return (data.selfBranches ?? [])
+    .filter((b) => allowed.has(b.id) && b.isActive !== false)
+    .map((b) => ({ id: b.id, label: b.city ? `${b.name} · ${b.city}` : b.name }));
+}
+
 export function CertificateCreateForm({
   agentR03 = false,
   agentClientId,
@@ -192,6 +202,8 @@ export function CertificateCreateForm({
   }, []);
 
   const [blockedPartners, setBlockedPartners] = useState<BlockedPartner[]>([]);
+  const [staffBranches, setStaffBranches] = useState<StaffIssuerBranchOption[] | null>(null);
+  const [issuerBranchId, setIssuerBranchId] = useState("");
 
   const loadPartners = useCallback(async () => {
     setLoadState("loading");
@@ -202,6 +214,18 @@ export function CertificateCreateForm({
       );
       setIssuerReady(data.certificateRecommendationIssuerReady !== false);
       setIssuerMissing(data.certificateRecommendationIssuerMissing ?? []);
+      if (data.staffIssuer) {
+        const options = staffIssuerBranchOptions(data);
+        setStaffBranches(options);
+        setIssuerBranchId((prev) =>
+          options.some((b) => b.id === prev)
+            ? prev
+            : (options.find((b) => b.id === data.staffIssuer?.defaultBranchId) ?? options[0])?.id ?? "",
+        );
+      } else {
+        setStaffBranches(null);
+        setIssuerBranchId("");
+      }
       const rows = [...(data.partners ?? [])];
       if (data.selfScanPartner) {
         rows.push(data.selfScanPartner);
@@ -342,6 +366,12 @@ export function CertificateCreateForm({
         poolPercent: cat.poolPercent,
         isSelfScan: partner.isSelfScan,
       });
+      if (!isCategoryIssuable(cat, partner.isSelfScan)) {
+        setSelectedCategoryKeys((prev) =>
+          prev[fieldKey] === false ? prev : { ...prev, [fieldKey]: false },
+        );
+        continue;
+      }
       setSelectedCategoryKeys((prev) =>
         prev[fieldKey] === undefined ? { ...prev, [fieldKey]: true } : prev,
       );
@@ -431,6 +461,11 @@ export function CertificateCreateForm({
       return;
     }
 
+    if (staffBranches && !issuerBranchId) {
+      setSubmitError("Нет доступного филиала для выпуска сертификата");
+      return;
+    }
+
     setSubmitError("");
     setFieldErrors({});
     setFieldErrorReasons({});
@@ -455,9 +490,11 @@ export function CertificateCreateForm({
 
     setSubmitting(true);
     try {
-      const body = agentClientId
-        ? { ...payloadResult.body, agentClientId }
-        : payloadResult.body;
+      const body = {
+        ...payloadResult.body,
+        ...(agentClientId ? { agentClientId } : {}),
+        ...(staffBranches && issuerBranchId ? { branchId: issuerBranchId } : {}),
+      };
       let result: StoreCertificate;
       if (agentR03) {
         const payloadHash = hashAgentCreatePayload(body);
@@ -680,6 +717,33 @@ export function CertificateCreateForm({
               </ul>
             </section>
           ) : null}
+          {staffBranches ? (
+            <section className={styles.formSection} data-testid="certificate-issuer-branch">
+              {staffBranches.length > 1 ? (
+                <label className={styles.issuerBranchField}>
+                  Филиал
+                  <select
+                    className={styles.issuerBranchSelect}
+                    value={issuerBranchId}
+                    disabled={submitting}
+                    data-testid="certificate-issuer-branch-select"
+                    onChange={(event) => setIssuerBranchId(event.target.value)}
+                  >
+                    {staffBranches.map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <div className={styles.issuerBranchField} data-testid="certificate-issuer-branch-current">
+                  Филиал
+                  <span className={styles.issuerBranchValue}>{staffBranches[0]?.label ?? "—"}</span>
+                </div>
+              )}
+            </section>
+          ) : null}
           {specialistWizard ? (
             <>
               <div className={styles.createSteps} aria-label="Шаги создания сертификата">
@@ -802,7 +866,8 @@ export function CertificateCreateForm({
                             poolPercent: cat.poolPercent,
                             isSelfScan: partner.isSelfScan,
                           });
-                          const categorySelected = selectedCategoryKeys[key] === true;
+                          const rowBlocked = !isCategoryIssuable(cat, partner.isSelfScan);
+                          const categorySelected = !rowBlocked && selectedCategoryKeys[key] === true;
                           const draftValue =
                             discountDrafts[key] ??
                             (cat.discountPercent != null ? String(cat.discountPercent) : "");
@@ -818,7 +883,6 @@ export function CertificateCreateForm({
                                 tenthStepOptions,
                               )
                             : null;
-                          const rowBlocked = pool === null;
                           const termsHref = partnershipTermsHref(partner.partnershipId);
 
                           return (
@@ -839,7 +903,7 @@ export function CertificateCreateForm({
                                 <div className={styles.allocationLimit}>
                                   <small>Согласовано</small>
                                   <strong>{pool != null ? `${pool}%` : cat.poolPercent === 0 ? "0%" : "—"}</strong>
-                                  {pool === null && cat.poolPercent === 0 && !partner.isSelfScan ? (
+                                  {rowBlocked && cat.poolPercent === 0 && !partner.isSelfScan ? (
                                     <small data-testid={`cert-zero-category-${key}`}>
                                       Согласовано 0%: по этой категории сертификат не выдаётся. Остальные категории не затронуты.
                                     </small>
@@ -1038,7 +1102,7 @@ export function CertificateCreateForm({
                           },
                           draftValue,
                         );
-                        const rowBlocked = pool === null;
+                        const rowBlocked = !isCategoryIssuable(cat, partner.isSelfScan);
                         const termsHref = partnershipTermsHref(partner.partnershipId);
 
                         return (

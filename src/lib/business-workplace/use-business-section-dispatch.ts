@@ -19,10 +19,12 @@ export function useBusinessSectionDispatch(input: {
   loading: boolean;
   error: string;
   decision: BusinessSectionDispatchDecision | null;
+  proContext?: ProContextSnapshot | null;
 } {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [decision, setDecision] = useState<BusinessSectionDispatchDecision | null>(null);
+  const [resolvedProContext, setResolvedProContext] = useState<ProContextSnapshot | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +56,7 @@ export function useBusinessSectionDispatch(input: {
           r06Eligible: Boolean(r06.featureEnabled && r06.eligible),
           surface: input.surface,
         });
+        setResolvedProContext(proContext);
         setDecision(next);
       } catch (caught) {
         if (!cancelled) {
@@ -70,5 +73,5 @@ export function useBusinessSectionDispatch(input: {
     };
   }, [input.presentation, input.surface]);
 
-  return { loading, error, decision };
+  return { loading, error, decision, proContext: resolvedProContext };
 }

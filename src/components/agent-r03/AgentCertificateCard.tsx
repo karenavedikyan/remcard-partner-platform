@@ -11,6 +11,7 @@ import {
 import { RecordRowActions, type RecordRowAction } from "./RecordRowActions";
 import styles from "./agent-r03.module.css";
 import { CertificatePurchaseLink } from "./CertificatePurchaseLink";
+import { CertificateIssuedByLine } from "./CertificateIssuedByLine";
 
 type Props = {
   cert: AgentCertificateRow;
@@ -19,6 +20,8 @@ type Props = {
   onSelectChange: (checked: boolean) => void;
   actions: RecordRowAction[];
   detailBasePath?: string;
+  /** False for read-only viewers (branch employees): no selection checkbox. */
+  selectable?: boolean;
 };
 
 function IconTicket() {
@@ -45,6 +48,7 @@ export function AgentCertificateCard({
   onSelectChange,
   actions,
   detailBasePath = "/certificates",
+  selectable = true,
 }: Props) {
   const displayTitle = cert.userAlias ?? cert.title;
   const summaryLine = certificatePartnerSummary(cert);
@@ -57,14 +61,16 @@ export function AgentCertificateCard({
       data-testid="agent-cert-card-shell"
       data-parity-cert-id={cert.id}
     >
-      <label className={styles.collectionCardSelect}>
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={(e) => onSelectChange(e.target.checked)}
-        />
-        Выбрать
-      </label>
+      {selectable ? (
+        <label className={styles.collectionCardSelect}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelectChange(e.target.checked)}
+          />
+          Выбрать
+        </label>
+      ) : null}
       <article className={`${styles.certCard} remcard-certificate link-card`} data-testid="agent-cert-card">
         <div className={styles.certCardHead}>
           <div className={styles.certCardHeadText}>
@@ -85,6 +91,7 @@ export function AgentCertificateCard({
           {cert.agentClient ? (
             <p className={styles.meta}>Клиент: {cert.agentClient.displayName}</p>
           ) : null}
+          <CertificateIssuedByLine cert={cert} className={styles.meta} />
           {terms.length > 0 ? (
             <details className={`${styles.certificateTerms} fold-list certificate-terms`} data-testid="agent-cert-terms">
               <summary>

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
 import { useBusinessSectionDispatch } from "@/lib/business-workplace/use-business-section-dispatch";
+import { canIssueCertificates, certificateStaffBranches, isBranchStaffContext } from "@/lib/certificate-issuance-access";
 import { mapRecommendationsPathToAgentCertificates } from "@/lib/specialist-certificates/recommendationsRedirect";
 import { Button } from "@/components/ui/Button";
 import styles from "@/components/agent-r03/agent-r03.module.css";
@@ -23,7 +24,7 @@ export function OwnerIssuerGate({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const presentation = useCabinetPresentation();
-  const { loading, error, decision } = useBusinessSectionDispatch({
+  const { loading, error, decision, proContext } = useBusinessSectionDispatch({
     surface: "issuer",
     presentation,
   });
@@ -69,6 +70,9 @@ export function OwnerIssuerGate({
       mode={mode}
       businessPartnerType={businessPartnerType}
       canLinkOnboardingHistory={canLinkOnboardingHistory}
+      canIssueCertificates={mode === "business" ? canIssueCertificates(proContext) : undefined}
+      isBranchStaff={mode === "business" ? isBranchStaffContext(proContext) : undefined}
+      staffBranches={mode === "business" ? certificateStaffBranches(proContext) : undefined}
     >
       {children}
     </OwnerIssuerModeProvider>

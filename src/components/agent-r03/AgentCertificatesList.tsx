@@ -30,6 +30,9 @@ import {
   patchBusinessOwnerCertificate,
 } from "@/lib/business-owner-certificates/api";
 import { businessCertificatesPageCopy } from "@/lib/business-owner-certificates/copy";
+import { CertificateIssuedByLine } from "./CertificateIssuedByLine";
+import { formatStaffBranchLine } from "@/lib/profile-staff-cabinet";
+import { BUSINESS_CERTIFICATES_NO_ACCESS_NOTE } from "@/lib/business-owner-certificates/copy";
 import { useOwnerIssuerModeValue } from "@/components/specialist-certificates/OwnerIssuerModeContext";
 import { SpecialistCertificateEditDiscountsDialog } from "./SpecialistCertificateEditDiscountsDialog";
 import { SPECIALIST_CERTIFICATES_PAGE } from "@/lib/specialist-certificates/copy";
@@ -93,6 +96,10 @@ export function AgentCertificatesList({
   const isBusiness = accessMode === "business";
   const isIssuerShell = isSpecialist || isBusiness;
   const ownerMode = useOwnerIssuerModeValue();
+  const canIssue = !isBusiness || ownerMode?.canIssueCertificates !== false;
+  /** Branch employee: reads, shares and opens certificates; changing and archiving stay with the owner. */
+  const staffReadOnly = isBusiness && ownerMode?.isBranchStaff === true;
+  const staffBranches = staffReadOnly ? (ownerMode?.staffBranches ?? []) : [];
   const businessPageCopy = isBusiness
     ? businessCertificatesPageCopy({
         partnerType: ownerMode?.businessPartnerType ?? "STORE",
@@ -121,10 +128,10 @@ export function AgentCertificatesList({
 
   useEffect(() => {
     if (!isIssuerShell) return;
-    if (searchParams.get("create") === "1") {
+    if (canIssue && searchParams.get("create") === "1") {
       setCreateDialogOpen(true);
     }
-  }, [isIssuerShell, searchParams]);
+  }, [canIssue, isIssuerShell, searchParams]);
 
   useEffect(() => {
     if (!isIssuerShell) return;
@@ -169,6 +176,8 @@ export function AgentCertificatesList({
   const [statusFilter, setStatusFilter] = useState("");
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [error, setError] = useState("");
+  const [listForbidden, setListForbidden] = useState(false);
+  const [branchFilterId, setBranchFilterId] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [viewMode, setViewMode] = useState<"cards" | "list">("list");
@@ -195,6 +204,7 @@ export function AgentCertificatesList({
         limit: pageSize,
         sort,
         status: statusFilter || undefined,
+        ...(staffReadOnly && branchFilterId ? { branchId: branchFilterId } : {}),
       };
       const data = isBusiness
         ? await fetchBusinessOwnerCertificates(listParams)
@@ -205,6 +215,7 @@ export function AgentCertificatesList({
         return;
       }
       const nextCertificates = data.certificates ?? [];
+      setListForbidden(false);
       setItems(nextCertificates);
       if (isIssuerShell) {
         issuerListHadSuccessfulRowsRef.current = nextCertificates.length > 0;
@@ -230,6 +241,13 @@ export function AgentCertificatesList({
       if (fetchId !== listFetchGenerationRef.current) {
         return;
       }
+      if (isBusiness && caught instanceof RemcardApiError && caught.status === 403) {
+        setListForbidden(true);
+        setItems([]);
+        setKnownListCounts(null);
+        setLoadState("loaded");
+        return;
+      }
       setError(
         caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить сертификаты",
       );
@@ -246,7 +264,7 @@ export function AgentCertificatesList({
         }));
       }
     }
-  }, [appliedQ, archived, isBusiness, isIssuerShell, isSpecialist, page, pageSize, sort, statusFilter, searchRevision]);
+  }, [appliedQ, archived, branchFilterId, isBusiness, isIssuerShell, isSpecialist, page, pageSize, sort, staffReadOnly, statusFilter, searchRevision]);
 
   useEffect(() => {
     const stored = readAgentR03ViewMode("certificates");
@@ -294,14 +312,17 @@ export function AgentCertificatesList({
 
   const filtersActive = Boolean(appliedQ || archived || statusFilter || sort !== "created_desc");
 
-  const showNewPartnerEmpty = shouldShowCertificatesNewPartnerEmpty({
-    loadState,
-    error,
-    itemsLength: items.length,
-    knownListCounts,
-    archived,
-    filtersActive,
-  });
+  const showNewPartnerEmpty =
+    canIssue &&
+    !listForbidden &&
+    shouldShowCertificatesNewPartnerEmpty({
+      loadState,
+      error,
+      itemsLength: items.length,
+      knownListCounts,
+      archived,
+      filtersActive,
+    });
 
   const welcomeDecisionPending = isCertificatesWelcomeDecisionPending({
     loadState,
@@ -358,14 +379,16 @@ export function AgentCertificatesList({
 
   function certRowActions(cert: AgentCertificateRow): import("./RecordRowActions").RecordRowAction[] {
     const canIssuerMutate = !isBusiness || cert.canMutateIssuer === true;
+    const shareAction: import("./RecordRowActions").RecordRowAction = {
+      id: "share",
+      label: "Поделиться",
+      disabled: cert.status === "CANCELLED" || busy,
+      disabledReason: "Ссылка неактивна",
+      onClick: () => shareCert(cert),
+    };
+    if (staffReadOnly) return [shareAction];
     return [
-      {
-        id: "share",
-        label: "Поделиться",
-        disabled: cert.status === "CANCELLED" || busy,
-        disabledReason: "Ссылка неактивна",
-        onClick: () => shareCert(cert),
-      },
+      shareAction,
       {
         id: "rename",
         label: "Переименовать",
@@ -525,15 +548,17 @@ export function AgentCertificatesList({
       {isBusiness && !welcomeDecisionPending && !showNewPartnerEmpty ? (
         <section className={styles.businessCertStack} data-testid="business-certificates-intro">
           <p className={styles.pageIntroMuted}>{businessPageCopy!.description}</p>
-          <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
-            <Button
-              className={`${styles.heroCtaInline} ${styles.businessCertPrimaryCta}`}
-              data-testid="business-certificates-create-cta"
-              onClick={openCreateDialog}
-            >
-              {businessPageCopy!.createCta}
-            </Button>
-          </div>
+          {canIssue ? (
+            <div className={styles.businessCertCtaWrap} data-testid="business-certificates-create-cta-wrap">
+              <Button
+                className={`${styles.heroCtaInline} ${styles.businessCertPrimaryCta}`}
+                data-testid="business-certificates-create-cta"
+                onClick={openCreateDialog}
+              >
+                {businessPageCopy!.createCta}
+              </Button>
+            </div>
+          ) : null}
           <details className={styles.businessCertOptional} data-testid="business-certificates-client-arrived">
             <summary>{businessPageCopy!.clientArrivedSummary}</summary>
             <p className={styles.businessCertOptionalHint}>{businessPageCopy!.clientArrivedHint}</p>
@@ -560,7 +585,7 @@ export function AgentCertificatesList({
       {welcomeDecisionPending ? (
         <WelcomeContentAreaPending testId="certificates-welcome-decision-pending" />
       ) : null}
-      {!welcomeDecisionPending && !showNewPartnerEmpty ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty && !listForbidden ? (
       <AgentR03ListToolbar
         searchPlaceholder={
           isIssuerShell ? issuerPageCopy.searchPlaceholder : "Название, партнёр или категория"
@@ -583,8 +608,32 @@ export function AgentCertificatesList({
           setSelected(new Set());
         }}
         foundCount={loadState === "loading" || loadState === "error" ? null : meta.totalCount}
-        selectableIds={visibleIds}
+        selectableIds={staffReadOnly ? [] : visibleIds}
         selectedIds={selected}
+        readOnly={staffReadOnly}
+        branchFilter={
+          staffBranches.length > 1 ? (
+            <label className={`${styles.fieldInlineCompact} ${styles.collectionShowField}`}>
+              Филиал
+              <select
+                className={styles.showSelect}
+                value={branchFilterId}
+                onChange={(e) => {
+                  setBranchFilterId(e.target.value);
+                  resetFiltersAndPage();
+                }}
+                data-testid="certificates-branch-filter"
+              >
+                <option value="">Все мои филиалы</option>
+                {staffBranches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {formatStaffBranchLine(b)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null
+        }
         onSelectPage={(checked) => {
           setSelected((prev) => {
             const next = new Set(prev);
@@ -619,6 +668,12 @@ export function AgentCertificatesList({
         />
       ) : null}
 
+      {!welcomeDecisionPending && listForbidden ? (
+        <div className={styles.empty} data-testid="business-certificates-forbidden">
+          <p className={styles.muted}>{BUSINESS_CERTIFICATES_NO_ACCESS_NOTE}</p>
+        </div>
+      ) : null}
+
       {!welcomeDecisionPending && loadState === "error" ? (
         <div className={styles.errorBlock}>
           <p role="alert">{error}</p>
@@ -628,7 +683,7 @@ export function AgentCertificatesList({
         </div>
       ) : null}
 
-      {!welcomeDecisionPending && !showNewPartnerEmpty && loadState === "loaded" && items.length === 0 ? (
+      {!welcomeDecisionPending && !showNewPartnerEmpty && !listForbidden && loadState === "loaded" && items.length === 0 ? (
         <div className={styles.empty} data-testid="business-certificates-empty">
           {isBusiness && !archived ? (
             <p className={styles.muted}>{businessPageCopy!.emptyCollection}</p>
@@ -655,6 +710,7 @@ export function AgentCertificatesList({
               onSelectChange={(checked) => toggleSelected(cert.id, checked)}
               actions={certRowActions(cert)}
               detailBasePath={detailBasePath}
+              selectable={!staffReadOnly}
             />
           ))}
         </div>
@@ -671,6 +727,7 @@ export function AgentCertificatesList({
                 onSelectChange={(checked) => toggleSelected(cert.id, checked)}
                 actions={certRowActions(cert)}
                 detailBasePath={detailBasePath}
+                selectable={!staffReadOnly}
               />
             ))}
           </div>
@@ -678,7 +735,7 @@ export function AgentCertificatesList({
             <table className={styles.collectionTable}>
               <thead>
                 <tr>
-                  <th />
+                  {staffReadOnly ? null : <th />}
                   <th>Название</th>
                   <th>Подробности</th>
                   <th>Статус</th>
@@ -690,13 +747,15 @@ export function AgentCertificatesList({
               <tbody>
                 {items.map((cert) => (
                   <tr key={cert.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(cert.id)}
-                        onChange={(e) => toggleSelected(cert.id, e.target.checked)}
-                      />
-                    </td>
+                    {staffReadOnly ? null : (
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(cert.id)}
+                          onChange={(e) => toggleSelected(cert.id, e.target.checked)}
+                        />
+                      </td>
+                    )}
                     <td>
                       <Link
                         href={`${detailBasePath}/${cert.id}`}
@@ -708,6 +767,7 @@ export function AgentCertificatesList({
                       <small className={styles.collectionCaption}>
                         {cert.displayCode} · {formatCertDate(cert.createdAt)}
                       </small>
+                      <CertificateIssuedByLine cert={cert} as="small" className={styles.collectionCaption} />
                     </td>
                     <td className={styles.collectionDetail}>{certificateListDetail(cert)}</td>
                     <td>
@@ -800,14 +860,16 @@ export function AgentCertificatesList({
 
       {isIssuerShell ? (
         <>
-          <SpecialistCertificateCreateDialog
-            open={createDialogOpen}
-            agentClientId={createClientId}
-            issuerListApi={issuerListApi}
-            onClose={closeCreateDialog}
-            onCertificateCreated={() => void load()}
-            onListRefresh={() => void load()}
-          />
+          {canIssue ? (
+            <SpecialistCertificateCreateDialog
+              open={createDialogOpen}
+              agentClientId={createClientId}
+              issuerListApi={issuerListApi}
+              onClose={closeCreateDialog}
+              onCertificateCreated={() => void load()}
+              onListRefresh={() => void load()}
+            />
+          ) : null}
           <SpecialistCertificateDetailDialog
             open={Boolean(detailCertificateId)}
             certificateId={detailCertificateId}

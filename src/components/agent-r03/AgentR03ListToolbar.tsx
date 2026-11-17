@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { AgentR03ListSort } from "@/lib/agent-r03/types";
 import styles from "./agent-r03.module.css";
 
@@ -25,6 +26,10 @@ type Props = {
   statusOptions?: Array<{ value: string; label: string }>;
   onResetFilters?: () => void;
   filtersActive?: boolean;
+  /** Extra filter placed next to "Показывать" (e.g. employee branch scope). */
+  branchFilter?: ReactNode;
+  /** Read-only viewer: no selection hint. */
+  readOnly?: boolean;
 };
 
 export function AgentR03ListToolbar({
@@ -49,6 +54,8 @@ export function AgentR03ListToolbar({
   statusOptions,
   onResetFilters,
   filtersActive = false,
+  branchFilter,
+  readOnly = false,
 }: Props) {
   const pageAllSelected =
     selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
@@ -89,6 +96,7 @@ export function AgentR03ListToolbar({
               </option>
             </select>
           </label>
+          {branchFilter}
           <div className={`${styles.viewToggle} ${styles.collectionView}`} data-testid="agent-r03-view-toggle">
             <button
               type="button"
@@ -160,7 +168,7 @@ export function AgentR03ListToolbar({
             Сбросить фильтры
           </button>
         ) : null}
-        <small className={styles.collectionHint}>{archiveHint}</small>
+        {readOnly ? null : <small className={styles.collectionHint}>{archiveHint}</small>}
       </div>
 
       {selectableIds.length > 0 ? (

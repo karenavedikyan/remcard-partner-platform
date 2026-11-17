@@ -50,6 +50,23 @@ export function resolvePoolPercent(category: CategoryPercentInput): number | nul
   return pool;
 }
 
+/**
+ * A category nothing can be issued for: the partner marked it not issuable, or its agreed pool is
+ * 0% / missing. Such a category stays visible but is never selected, validated or sent.
+ */
+export function isCategoryIssuable(
+  category: { poolPercent?: number; issuable?: boolean },
+  isSelfScan: boolean,
+): boolean {
+  if (category.issuable === false) return false;
+  return resolvePoolPercent({
+    category: "",
+    categoryLabel: "",
+    poolPercent: category.poolPercent,
+    isSelfScan,
+  }) !== null;
+}
+
 export type ComputeCategoryResult =
   | { ok: true; value: ResolvedCategoryPercents }
   | { ok: false; message: string; reason: CategoryValidationFailureReason };
@@ -162,7 +179,10 @@ export type BuildPayloadInput = {
     categories: AvailablePartnerCategory[];
   }>;
   discountDrafts: Record<string, string>;
-  /** When set, only included keys (value true) are sent. Omitted keys mean all categories selected. */
+  /**
+   * When set, only included keys (value true) are sent. Omitted keys mean all issuable categories
+   * selected. Categories that are not issuable are never sent, whatever the keys say.
+   */
   selectedCategoryKeys?: Record<string, boolean>;
   requireTenthStep?: boolean;
   validUntil?: string;
@@ -200,8 +220,14 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
 
   for (const partner of input.selectedPartners) {
     const categories: CreateCertificatePartnerInput["categories"] = [];
+    const issuableCategoryCount = partner.categories.filter((c) =>
+      isCategoryIssuable(c, partner.isSelfScan),
+    ).length;
 
     for (const cat of partner.categories) {
+      if (!isCategoryIssuable(cat, partner.isSelfScan)) {
+        continue;
+      }
       const key = categoryFieldKey(partner.storeUserId, cat.category);
       if (input.selectedCategoryKeys && input.selectedCategoryKeys[key] !== true) {
         continue;
@@ -240,7 +266,7 @@ export function buildCreateCertificatePayload(input: BuildPayloadInput): BuildPa
     if (categories.length === 0) {
       continue;
     }
-    if (!input.selectedCategoryKeys && categories.length !== partner.categories.length) {
+    if (!input.selectedCategoryKeys && categories.length !== issuableCategoryCount) {
       continue;
     }
 
