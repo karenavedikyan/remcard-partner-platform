@@ -164,4 +164,54 @@ describe("AppShell business nav matrix", () => {
     );
     expect(within(nav).getByRole("link", { name: "Профиль" })).not.toHaveAttribute("aria-current");
   });
+
+  describe("B3: assistant of a solo specialist", () => {
+    const assistantUser: AuthUser = {
+      id: "asst-1",
+      displayName: "Помощник",
+      role: "CLIENT",
+      partnerType: null,
+      partnerActivities: [],
+    };
+    const assistantContext = (role: string) => ({
+      role,
+      organization: null,
+      branches: [],
+      activeBranch: null,
+      employer: { id: "spec-1", displayName: "Специалист" },
+      employeeRole: role === "PARTNER_MANAGER" ? "MANAGER" : "SELLER",
+    });
+
+    it.each(["PARTNER_MANAGER", "PARTNER_EMPLOYEE"])("%s gets «Клиенты» right after «Главная»", (role) => {
+      mockPathname = "/";
+      mockSearch = "";
+      renderNav(assistantUser, assistantContext(role));
+      expect(sidebarLabels()).toEqual([
+        "Главная",
+        "Клиенты",
+        "Партнёры",
+        "Рекомендации",
+        "Сканер",
+        "История",
+        "Взаиморасчёты",
+        "Профиль",
+      ]);
+      const bottom = screen.getByLabelText("Мобильная навигация");
+      expect(within(bottom).getByRole("link", { name: /Клиенты/ }).getAttribute("href")).toBe("/clients");
+    });
+
+    it("a suspended assistant keeps the legacy nav without «Клиенты»", () => {
+      mockPathname = "/";
+      mockSearch = "";
+      renderNav(assistantUser, assistantContext("PARTNER_EMPLOYEE_SUSPENDED"));
+      expect(sidebarLabels()).not.toContain("Клиенты");
+    });
+
+    it("a user without an employer keeps the legacy nav unchanged", () => {
+      mockPathname = "/";
+      mockSearch = "";
+      renderNav(assistantUser, null);
+      expect(sidebarLabels()).not.toContain("Клиенты");
+    });
+  });
 });

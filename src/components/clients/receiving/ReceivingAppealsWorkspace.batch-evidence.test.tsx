@@ -149,7 +149,9 @@ describe("Receiving workspace: request-bound batch evidence", () => {
     install(payload(ids), status);
     await open();
     await waitFor(() => expect(within(screen.getByTestId("ca-receiving-bulk-confirm"))
-      .getByRole("alert")).toHaveTextContent("Синтетический отказ"));
+      .getByRole("alert")).toHaveTextContent(
+        status === 403 ? "Нет доступа к клиентам этого филиала" : "Синтетический отказ",
+      ));
     expect(selectedCount(2)).toBeInTheDocument();
     expect(listReads()).toHaveLength(1);
   });

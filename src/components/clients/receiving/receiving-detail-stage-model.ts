@@ -91,6 +91,9 @@ export function canTransitionStage(facts: StageFacts, nextStageId: string): Stag
   if (nextStageId === facts.stageId) {
     return { ok: false, code: "UNCHANGED", message: "Этап уже установлен." };
   }
+  if (facts.stageId === STAGE_REFUSED && nextStageId === STAGE_NEW) {
+    return { ok: true };
+  }
   if (isTerminalStage(facts.stageId) && !isTerminalStage(nextStageId)) {
     return { ok: false, code: "TERMINAL", message: "Обращение закрыто." };
   }

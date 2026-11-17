@@ -41,6 +41,7 @@ export function isReceivingDirectionIntroCandidate(input: {
   if (input.filters.q.trim()) return false;
   if (input.filters.status !== "Все статусы") return false;
   if (input.filters.source !== "all") return false;
+  if (input.filters.branchId) return false;
   if (input.serverBacked && input.listHasMore) return false;
   return true;
 }

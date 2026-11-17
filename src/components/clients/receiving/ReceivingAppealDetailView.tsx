@@ -16,10 +16,12 @@ import {
   RECEIVING_DETAIL_PURCHASE_LINK_PENDING,
   RECEIVING_DETAIL_PURCHASE_MORE_LABEL,
   RECEIVING_DETAIL_PURCHASE_UNAVAILABLE,
+  RECEIVING_DETAIL_REOPEN_LABEL,
   RECEIVING_DETAIL_STAGE_APPLY_LABEL,
   RECEIVING_DETAIL_STAGE_SHIPPED_LABEL,
 } from "./receiving-detail-user-copy";
 import {
+  STAGE_NEW,
   STAGE_REFUSED,
   STAGE_RETURN,
   STAGE_SHIPPED,
@@ -391,7 +393,22 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
                 ? `Причина: ${appeal.refusedReason.trim()}`
                 : "Причина не указана."}
           </p>
-          <p className="small muted">Обращение закрыто — этап больше изменить нельзя.</p>
+          {isReturn ? (
+            <p className="small muted">Обращение закрыто — этап больше изменить нельзя.</p>
+          ) : (
+            <div className="ca-next-actions">
+              <button
+                type="button"
+                className="btn ghost small-btn"
+                data-ca-action="receiving:stage:reopen"
+                data-testid="ca-receiving-reopen"
+                disabled={busy || !writable.onApplyStage}
+                onClick={() => void runStage({ stageKey: STAGE_NEW, refusedReason: null })}
+              >
+                {writable.busy?.stage ? "Возвращаем…" : RECEIVING_DETAIL_REOPEN_LABEL}
+              </button>
+            </div>
+          )}
           {common}
         </section>
       );

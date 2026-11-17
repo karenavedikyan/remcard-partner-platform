@@ -36,7 +36,11 @@ describe("canTransitionStage mirrors the server guards", () => {
     expect(
       canTransitionStage({ stageId: "sys_shipped", hasPurchase: true, shippedAt: "2026-11-01T10:00:00Z" }, "sys_return"),
     ).toEqual({ ok: true });
-    expect(canTransitionStage({ stageId: "sys_refused", hasPurchase: false }, "sys_new")).toMatchObject({
+    expect(canTransitionStage({ stageId: "sys_refused", hasPurchase: false }, "sys_new")).toEqual({ ok: true });
+    expect(canTransitionStage({ stageId: "sys_refused", hasPurchase: false }, "ws_measure")).toMatchObject({
+      code: "TERMINAL",
+    });
+    expect(canTransitionStage({ stageId: "sys_return", hasPurchase: true }, "sys_new")).toMatchObject({
       code: "TERMINAL",
     });
     expect(canTransitionStage({ stageId: "sys_new", hasPurchase: false }, "sys_new")).toMatchObject({

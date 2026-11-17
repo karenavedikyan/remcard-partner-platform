@@ -61,14 +61,14 @@ export function ReceivingAppealScannerBanner({ context, appealId }: BannerProps)
         </p>
         {context.purchaseOrderId ? (
           <p className={styles.meta}>
-            Заказ уже привязан:{" "}
+            К обращению уже привязан заказ.{" "}
             <Link
               href={receivingAppealPurchaseDetailHrefForReturn(
                 context.purchaseOrderId,
                 context.appealId,
               )}
             >
-              {context.purchaseOrderId}
+              Открыть покупку
             </Link>
           </p>
         ) : null}

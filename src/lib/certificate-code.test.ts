@@ -36,6 +36,31 @@ describe("parseCertificateCode", () => {
     }
   });
 
+  it("upper-cases a manually typed promo code", () => {
+    assert.deepEqual(parseCertificateCode("rc-abc123"), { ok: true, code: "RC-ABC123" });
+    assert.deepEqual(parseCertificateCode("  Rc-AbC123 "), { ok: true, code: "RC-ABC123" });
+  });
+
+  it("upper-cases a promo code taken from a link", () => {
+    assert.deepEqual(parseCertificateCode("https://remcard.ru/certificate/rc-xyz789"), {
+      ok: true,
+      code: "RC-XYZ789",
+    });
+    assert.deepEqual(parseCertificateCode("/certificate/rc-abc123/add"), { ok: true, code: "RC-ABC123" });
+    assert.deepEqual(parseCertificateCode("http://localhost:3001/certificate/rc-q1"), {
+      ok: true,
+      code: "RC-Q1",
+    });
+  });
+
+  it("keeps opaque QR tokens case-exact", () => {
+    assert.deepEqual(parseCertificateCode("https://remcard.ru/certificate/cmwju2VpR"), {
+      ok: true,
+      code: "cmwju2VpR",
+    });
+    assert.deepEqual(parseCertificateCode("cmwju2VpR"), { ok: true, code: "cmwju2VpR" });
+  });
+
   it("rejects empty input", () => {
     assert.deepEqual(parseCertificateCode("   "), { ok: false, error: "Укажите код документа" });
   });
@@ -44,6 +69,10 @@ describe("parseCertificateCode", () => {
 describe("extractCertificateCode", () => {
   it("returns promo code as-is", () => {
     assert.equal(extractCertificateCode("RC-ABC123"), "RC-ABC123");
+  });
+
+  it("upper-cases promo codes", () => {
+    assert.equal(extractCertificateCode("rc-abc123"), "RC-ABC123");
   });
 
   it("returns empty for malformed URL", () => {

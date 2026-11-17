@@ -10,8 +10,9 @@ export function businessClientsPageCopy(partnerType: BusinessClientsPartnerType)
   };
 }
 
-/** Subtitle of the list receiving clients (the reference uses one wording for every receiving partner type). */
+/** Subtitle of the receiving clients list: the store wording is only for a store, everyone else gets the neutral one. */
 export const CLIENTS_RECEIVING_LIST_SUBTITLE = "Покупатели вашего магазина и история их обращений.";
+export const CLIENTS_RECEIVING_LIST_SUBTITLE_NEUTRAL = "Ваши клиенты и история их обращений.";
 export const CLIENTS_AT_PARTNERS_LIST_SUBTITLE =
   "Направленные клиенты и этапы их обращений у принимающих партнёров.";
 
@@ -28,5 +29,10 @@ export function clientsListPageCopy(input: {
   if (input.direction === "at-partners") {
     return { eyebrow, title: "Мои клиенты у партнёров", description: CLIENTS_AT_PARTNERS_LIST_SUBTITLE };
   }
-  return { eyebrow, title: "Клиенты", description: CLIENTS_RECEIVING_LIST_SUBTITLE };
+  const isStore = input.mode === "business" && input.partnerType === "STORE";
+  return {
+    eyebrow,
+    title: "Клиенты",
+    description: isStore ? CLIENTS_RECEIVING_LIST_SUBTITLE : CLIENTS_RECEIVING_LIST_SUBTITLE_NEUTRAL,
+  };
 }

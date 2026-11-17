@@ -84,4 +84,54 @@ describe("resolveBusinessSectionDispatch regression matrix", () => {
       }),
     ).toEqual({ kind: "agent-r03" });
   });
+
+  describe("B3: assistant of a solo specialist", () => {
+    const user = {
+      id: "asst",
+      displayName: "Помощник",
+      role: "CLIENT" as const,
+      partnerType: null,
+      partnerActivities: [],
+    };
+    const ctx = (role: string) => ({
+      role,
+      organization: null,
+      employer: { id: "spec-1", displayName: "Специалист" },
+      employeeRole: "SELLER",
+    });
+    const dispatch = (role: string, surface: "clients" | "issuer" = "clients") =>
+      resolveBusinessSectionDispatch({
+        user,
+        proContext: ctx(role),
+        contextReady: true,
+        r03Eligible: false,
+        r06Eligible: false,
+        surface,
+      });
+
+    it.each(["PARTNER_MANAGER", "PARTNER_EMPLOYEE"])("%s opens the specialist Clients screen", (role) => {
+      expect(dispatch(role)).toEqual({ kind: "specialist-r06" });
+    });
+
+    it("a suspended assistant stays unavailable", () => {
+      expect(dispatch("PARTNER_EMPLOYEE_SUSPENDED")).toEqual({ kind: "clients-unavailable" });
+    });
+
+    it("the issuer surface is unchanged", () => {
+      expect(dispatch("PARTNER_EMPLOYEE", "issuer")).toEqual({ kind: "legacy-issuer" });
+    });
+
+    it("a user without an employer is still unavailable", () => {
+      expect(
+        resolveBusinessSectionDispatch({
+          user,
+          proContext: { role: "SOLO_PARTNER", organization: null },
+          contextReady: true,
+          r03Eligible: false,
+          r06Eligible: false,
+          surface: "clients",
+        }),
+      ).toEqual({ kind: "clients-unavailable" });
+    });
+  });
 });

@@ -82,6 +82,7 @@ export default defineConfig({
       "src/lib/history-loader.merge.vitest.ts",
       "src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx",
       "src/lib/business-clients/client-list-row.test.ts",
+      "src/lib/business-clients/copy.test.ts",
       "src/lib/business-owner-certificates/copy.test.ts",
       "src/lib/business-owner-certificates/api.test.ts",
       "src/lib/business-owner-certificates/issuer-api.test.ts",

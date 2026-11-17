@@ -193,7 +193,7 @@ describe("Receiving card — prototype layout and server-aligned next step", () 
     expect(onMarkShipped).toHaveBeenCalledWith(null);
   });
 
-  it("SHIPPED with a recorded shipment offers the return; REFUSED and RETURN are terminal with no way back", async () => {
+  it("SHIPPED with a recorded shipment offers the return; REFUSED and RETURN are terminal with no stage picker", async () => {
     const a = actions();
     const { unmount } = mount(
       dto({ stageId: "sys_shipped", stageLabel: "Отгружено", purchaseOrderId: "o", paidAt: at, shippedAt: at }),
@@ -251,5 +251,22 @@ describe("Receiving card — prototype layout and server-aligned next step", () 
     expect(items[0]).toHaveTextContent("Отказ — Дорого");
     expect(items[0]).toHaveTextContent("Анна");
     expect(items[1]).toHaveTextContent("Создано обращение по сертификату");
+  });
+
+  it("B4: the refused card offers «Вернуть в работу» that applies sys_new and clears the reason", async () => {
+    const a = actions();
+    mount(dto({ stageId: "sys_refused", stageLabel: "Отказ", refusedReason: "Дорого" }), a);
+    await userEvent.click(screen.getByRole("button", { name: "Вернуть в работу" }));
+    expect(a.onApplyStage).toHaveBeenCalledWith({ stageKey: "sys_new", refusedReason: null });
+    expect(screen.queryByTestId("ca-receiving-refuse")).not.toBeInTheDocument();
+  });
+
+  it("B4: no reopen for a return, and none in the read-only card", () => {
+    const { unmount } = mount(dto({ stageId: "sys_return", stageLabel: "Возврат" }), actions());
+    expect(screen.queryByTestId("ca-receiving-reopen")).not.toBeInTheDocument();
+    expect(screen.getByText("Обращение закрыто — этап больше изменить нельзя.")).toBeInTheDocument();
+    unmount();
+    mount(dto({ stageId: "sys_refused", stageLabel: "Отказ", refusedReason: "Дорого" }), undefined);
+    expect(screen.queryByTestId("ca-receiving-reopen")).not.toBeInTheDocument();
   });
 });

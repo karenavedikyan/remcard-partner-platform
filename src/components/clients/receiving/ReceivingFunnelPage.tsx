@@ -38,6 +38,8 @@ function width(part: number, whole: number): number {
 
 type Props = {
   onBack: () => void;
+  /** Employee's branch filter, when one is selected. */
+  branchId?: string | null;
   /** Test seam; production uses the real BFF route. */
   fetchFunnel?: typeof fetchReceivingFunnel;
 };
@@ -47,7 +49,7 @@ type Props = {
  * the whole permitted set (never from the loaded list page). Cohort: appeals created in the period,
  * excluding the trash and including the archive. Denominator: all appeals of that cohort.
  */
-export function ReceivingFunnelPage({ onBack, fetchFunnel = fetchReceivingFunnel }: Props) {
+export function ReceivingFunnelPage({ onBack, branchId, fetchFunnel = fetchReceivingFunnel }: Props) {
   const initial = presetRange("30");
   const [preset, setPreset] = useState<Preset>("30");
   const [from, setFrom] = useState(initial.from);
@@ -65,7 +67,10 @@ export function ReceivingFunnelPage({ onBack, fetchFunnel = fetchReceivingFunnel
     if (rangeInvalid) return;
     const controller = new AbortController();
     setState({ phase: "loading" });
-    fetchFunnel({ from: from || undefined, to: to || undefined }, controller.signal)
+    fetchFunnel(
+      { from: from || undefined, to: to || undefined, ...(branchId ? { branchId } : {}) },
+      controller.signal,
+    )
       .then((res) => {
         if (controller.signal.aborted) return;
         setState(res.ok ? { phase: "ready", funnel: res.funnel } : { phase: "error", message: res.message });
@@ -74,7 +79,7 @@ export function ReceivingFunnelPage({ onBack, fetchFunnel = fetchReceivingFunnel
         // Only a deliberate abort (new period / unmount) rethrows.
       });
     return () => controller.abort();
-  }, [from, to, rangeInvalid, reload, fetchFunnel]);
+  }, [from, to, branchId, rangeInvalid, reload, fetchFunnel]);
 
   const applyPreset = useCallback((p: Exclude<Preset, "custom">) => {
     const range = presetRange(p);

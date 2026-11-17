@@ -13,6 +13,7 @@ import { ProfNotificationBellSlot } from "@/components/layout/ProfNotificationBe
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
 import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
+import { isPartnerAssistantContext, withAssistantClientsNav } from "@/lib/business-clients/assistant";
 import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
 import { usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
@@ -139,8 +140,10 @@ export function AppShell({
     [navMode, prototypeShell],
   );
 
-  const navItems = prototypeConfig?.desktop ?? BASE_NAV;
-  const mobileBottom = prototypeConfig?.mobileBottom ?? MOBILE_BOTTOM_NAV;
+  const assistantClients = !prototypeShell && isPartnerAssistantContext(presentation.proContext);
+  const navItems = prototypeConfig?.desktop ?? withAssistantClientsNav(BASE_NAV, assistantClients);
+  const mobileBottom =
+    prototypeConfig?.mobileBottom ?? withAssistantClientsNav(MOBILE_BOTTOM_NAV, assistantClients);
   const section = searchParams.get("section");
   const currentPage = prototypeConfig
     ? prototypeConfig.pageTitle(pathname, section)

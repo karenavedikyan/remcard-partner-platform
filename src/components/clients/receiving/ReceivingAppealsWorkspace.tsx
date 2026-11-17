@@ -7,6 +7,8 @@ import {
   isReceivingAppealsProxyReady,
   isReceivingCertificateEntryProxyReady,
   submitReceivingCertificateEntry,
+  receivingDenialMessage,
+  RECEIVING_FORBIDDEN_MESSAGE,
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   RECEIVING_EMPTY_SETTINGS,
   mergeReceivingAppealPages,
@@ -30,6 +32,7 @@ import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
 import type { ReceivingBulkAction, ReceivingBulkContractState } from "./ReceivingBulkActions";
 import { ReceivingBulkConfirmPanel } from "./ReceivingBulkConfirmPanel";
 import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
+import { ReceivingBranchFilter } from "./ReceivingBranchFilter";
 import { ReceivingFunnelPage } from "./ReceivingFunnelPage";
 import {
   applyReceivingBulkEditsPerId,
@@ -247,6 +250,7 @@ export function ReceivingAppealsWorkspace({
       q: "",
       status: "Все статусы" as const,
       source: "all" as const,
+      branchId: listFilters.branchId ?? null,
     };
     const settings = data.settings;
 
@@ -531,7 +535,7 @@ export function ReceivingAppealsWorkspace({
   if (phase === "error" && blocked && !blocked.ok && !previewData) {
     return (
       <section data-testid="ca-receiving-appeals-error" role="alert">
-        <p>{blocked.message}</p>
+        <p>{blocked.httpStatus === 403 ? RECEIVING_FORBIDDEN_MESSAGE : blocked.message}</p>
       </section>
     );
   }
@@ -542,13 +546,29 @@ export function ReceivingAppealsWorkspace({
 
   const readOnly = data.readOnly === true;
   const mutationsAllowed = receivingAppealsMutationsAllowed(data);
-  const denialMessage =
-    data.access?.denialCode ?? RECEIVING_ACCESS_LIST_ONLY_DENIAL;
+  const leadsAllowed = mutationsAllowed && data.access?.canManageLeads !== false;
+  const scanAllowed = mutationsAllowed && data.access?.canScan !== false;
+  const leadsReadOnly = readOnly || !leadsAllowed;
+  const scanReadOnly = readOnly || !scanAllowed;
+  const denialMessage = receivingDenialMessage(
+    data.access?.denialCode ?? (mutationsAllowed ? null : RECEIVING_ACCESS_LIST_ONLY_DENIAL),
+  );
+  const isStaffPrincipal = data.access?.actorKind === "staff";
+  const branchFilterNode = isStaffPrincipal ? (
+    <ReceivingBranchFilter
+      value={listFilters.branchId ?? null}
+      disabled={listRefreshInFlight || batchPending}
+      onChange={(branchId) => {
+        setSelected(new Set());
+        onListFiltersChange({ ...listFilters, branchId });
+      }}
+    />
+  ) : null;
 
   if (data.access?.listAllowed === false) {
     return (
       <section data-testid="ca-receiving-list-denied" role="alert">
-        <p>{denialMessage}</p>
+        <p>{RECEIVING_FORBIDDEN_MESSAGE}</p>
       </section>
     );
   }
@@ -565,7 +585,10 @@ export function ReceivingAppealsWorkspace({
     </section>
   );
 
-  if ((view === "manual" || view === "settings" || view === "scan") && readOnly) {
+  if (
+    ((view === "manual" || view === "settings") && leadsReadOnly) ||
+    (view === "scan" && scanReadOnly)
+  ) {
     return mutationDeniedShell;
   }
 
@@ -597,7 +620,7 @@ export function ReceivingAppealsWorkspace({
   if (view === "manual") {
     return (
       <ReceivingAppealForm
-        disabled={!proxyReady || readOnly}
+        disabled={!proxyReady || leadsReadOnly}
         persistBlockedMessage="Создание обращения ждёт P1 proxy и K1 handler."
         settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
         settingsVersion={data.settingsVersion}
@@ -614,7 +637,7 @@ export function ReceivingAppealsWorkspace({
         }}
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
-          if (!proxyReady || readOnly) return;
+          if (!proxyReady || leadsReadOnly) return;
           const res = await createReceivingAppeal(body, data);
           if (!res.ok) {
             throw new Error(res.message);
@@ -646,7 +669,7 @@ export function ReceivingAppealsWorkspace({
       <WorkingStagesEditor
         settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
         settingsVersion={data.settingsVersion}
-        disabled={readOnly}
+        disabled={leadsReadOnly}
         onCancel={() => setView("list")}
         onSettingsUpdated={(snapshot) => {
           setData((prev) =>
@@ -667,14 +690,16 @@ export function ReceivingAppealsWorkspace({
   if (view === "scan") {
     return (
       <ReceivingCertificateScan
-        disabled={!certEntryReady || readOnly}
+        disabled={!certEntryReady || scanReadOnly}
         persistBlockedMessage={
-          readOnly ? denialMessage
+          scanReadOnly ? denialMessage
             : "Certificate-entry ждёт K1 route + P1 allowlist (authorizeStoreScan без правки store scan)."
         }
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
-          const res = await submitReceivingCertificateEntry(body, data);
+          const res = await submitReceivingCertificateEntry(body, data, {
+            branchId: listFilters.branchId ?? undefined,
+          });
           if (!res.ok) {
             throw new Error(res.message);
           }
@@ -687,7 +712,7 @@ export function ReceivingAppealsWorkspace({
   }
 
   if (view === "analytics") {
-    return <ReceivingFunnelPage onBack={() => setView("list")} />;
+    return <ReceivingFunnelPage onBack={() => setView("list")} branchId={listFilters.branchId ?? null} />;
   }
 
   if (view === "detail" && detailId) {
@@ -697,7 +722,7 @@ export function ReceivingAppealsWorkspace({
         {listRefreshBanner}
         <ReceivingAppealDetailHost
           appealId={detailId}
-          readOnly={readOnly}
+          readOnly={leadsReadOnly}
           referrerPartnerName={listRow?.referrerDisplayName ?? null}
           onBack={() => {
             setView("list");
@@ -773,6 +798,7 @@ export function ReceivingAppealsWorkspace({
     <>
       {persistBanner}
       {listRefreshBanner}
+      {branchFilterNode}
       <ReceivingAppealsList
         bulkEditSlot={bulkEditNode}
         bulkConfirmSlot={bulkConfirmNode}
@@ -786,25 +812,26 @@ export function ReceivingAppealsWorkspace({
         listHasMore={receivingListHasMore(data)}
         loadingMore={loadingMore}
         onLoadMore={onLoadMore}
-        readOnly={readOnly}
-        bulk={mutationsAllowed ? bulkCallbacks : undefined}
+        readOnly={leadsReadOnly}
+        scanOnly={!readOnly && !leadsAllowed && scanAllowed}
+        bulk={leadsAllowed ? bulkCallbacks : undefined}
         onOpenAppeal={(id) => {
           setDetailId(id);
           setView("detail");
         }}
         onNavigateManual={
-          mutationsAllowed
+          leadsAllowed
             ? () => setView("manual")
             : () =>
                 setPersistNotice(denialMessage)
         }
         onNavigateSettings={
-          mutationsAllowed
+          leadsAllowed
             ? () => setView("settings")
             : () => setPersistNotice(denialMessage)
         }
         onNavigateScan={
-          mutationsAllowed
+          scanAllowed
             ? () => setView("scan")
             : () => setPersistNotice(denialMessage)
         }

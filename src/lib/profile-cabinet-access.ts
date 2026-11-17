@@ -32,6 +32,8 @@ export type ProContextSnapshot = {
     companyKind?: string | null;
   } | null;
   branchRole?: string | null;
+  /** Assistant / ORG_EMPLOYEE role inside the employer's team (VIEWER is read-only). */
+  employeeRole?: string | null;
   membershipKind?: string | null;
   membershipPosition?: string | null;
   teamCapabilities?: TeamCapabilitiesSnapshot;

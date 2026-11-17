@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCabinetPresentation } from "@/components/layout/CabinetPresentationContext";
+import { isPartnerAssistantContext } from "@/lib/business-clients/assistant";
 import { shouldPreferBusinessWorkplaceDispatch } from "@/lib/cabinet-presentation/resolve";
 import type { OwnerClientsAccessMode } from "@/components/clients/OwnerClientsModeContext";
 import { AgentClientsList } from "@/components/agent-r03/AgentClientsList";
@@ -142,6 +143,16 @@ export function ClientsDirectionWorkspace({ accessMode }: Props) {
   })) {
     return (
       <div className={styles.clientsScope} data-testid="clients-workplace-receiving-only">
+        <ReceivingAppealsWorkspace initialAppealId={initialAppealId} directionProbe="incoming" />
+      </div>
+    );
+  }
+
+  // An assistant of a specialist works the specialist's incoming appeals only; the referral tab is the
+  // specialist's own observer role and its gate denies the assistant.
+  if (accessMode === "specialist" && isPartnerAssistantContext(presentation?.proContext)) {
+    return (
+      <div className={styles.clientsScope} data-testid="clients-assistant-receiving-only">
         <ReceivingAppealsWorkspace initialAppealId={initialAppealId} directionProbe="incoming" />
       </div>
     );

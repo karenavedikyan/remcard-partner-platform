@@ -43,6 +43,8 @@ export type ReceivingAppealsListProps = {
   onNavigateSettings?: () => void;
   onNavigateAnalytics?: () => void;
   readOnly?: boolean;
+  /** Employee who may accept certificates but not change appeals: only the scan entry stays. */
+  scanOnly?: boolean;
   bulk?: ReceivingBulkCallbacks;
   stageLabelById?: (row: ReceivingAppealListRow) => string;
   /** Prototype order: confirm panel sits under the toolbar, edit panel under the selection bar. */
@@ -100,6 +102,7 @@ export function ReceivingAppealsList({
   onNavigateSettings,
   onNavigateAnalytics,
   readOnly = false,
+  scanOnly = false,
   bulk,
   stageLabelById = (r) => r.stageId,
   serverBackedFilters = false,
@@ -212,15 +215,17 @@ export function ReceivingAppealsList({
         </div>
       ) : null}
 
-      {!readOnly ? (
+      {!readOnly || scanOnly ? (
         <div className={styles.toolbar} data-testid="ca-receiving-toolbar">
           <div className={styles.toolbarPrimary}>
             <button type="button" className="btn primary" data-ca-action="nav:scan" onClick={onNavigateScan}>
               Сканировать сертификат
             </button>
-            <button type="button" className="btn ghost" data-ca-action="nav:manual" onClick={onNavigateManual}>
-              Добавить клиента
-            </button>
+            {readOnly ? null : (
+              <button type="button" className="btn ghost" data-ca-action="nav:manual" onClick={onNavigateManual}>
+                Добавить клиента
+              </button>
+            )}
           </div>
           <div className="ca-quiet-links">
             <button
@@ -232,15 +237,17 @@ export function ReceivingAppealsList({
             >
               <ReceivingIcon name="bar-chart" /> Аналитика
             </button>
-            <button
-              type="button"
-              className="btn ghost ca-quiet-btn"
-              data-ca-action="nav:settings"
-              data-testid="ca-receiving-nav-settings"
-              onClick={onNavigateSettings}
-            >
-              <ReceivingIcon name="settings" /> Этапы и причины
-            </button>
+            {readOnly ? null : (
+              <button
+                type="button"
+                className="btn ghost ca-quiet-btn"
+                data-ca-action="nav:settings"
+                data-testid="ca-receiving-nav-settings"
+                onClick={onNavigateSettings}
+              >
+                <ReceivingIcon name="settings" /> Этапы и причины
+              </button>
+            )}
           </div>
         </div>
       ) : (

@@ -14,6 +14,9 @@ export const RECEIVING_DETAIL_PURCHASE_HEADING = "Покупка";
 export const RECEIVING_DETAIL_PURCHASE_MORE_LABEL = "Подробнее о покупке";
 
 /** prototype `renderNextStepCard` — opens pay panel, not direct stage paid */
+/** «Отказ» card: reopen a refused appeal (only from refusal). */
+export const RECEIVING_DETAIL_REOPEN_LABEL = "Вернуть в работу";
+
 export const RECEIVING_DETAIL_MARK_PAID_LABEL = "Отметить оплату";
 
 export const RECEIVING_DETAIL_STAGE_SHIPPED_LABEL = "Отметить отгрузку";

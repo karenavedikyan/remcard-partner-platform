@@ -16,6 +16,14 @@ function safeDecodeSegment(segment: string): string | null {
 }
 
 /**
+ * Promo codes (`RC-…`) are case-insensitive and always upper-case; opaque QR tokens are
+ * case-exact and must reach the server untouched.
+ */
+function normalizeLookupCode(code: string): string {
+  return /^rc-/i.test(code) ? code.toUpperCase() : code;
+}
+
+/**
  * Parse QR text or manual input into a certificate lookup code.
  * Never throws; does not fetch URL contents.
  */
@@ -31,7 +39,7 @@ export function parseCertificateCode(text: string): CertificateCodeResult {
     if (!code) {
       return { ok: false, error: "Некорректная ссылка в QR-коде. Введите код вручную." };
     }
-    return { ok: true, code };
+    return { ok: true, code: normalizeLookupCode(code) };
   }
 
   const localMatch = trimmed.match(
@@ -42,7 +50,7 @@ export function parseCertificateCode(text: string): CertificateCodeResult {
     if (!code) {
       return { ok: false, error: "Некорректная ссылка в QR-коде. Введите код вручную." };
     }
-    return { ok: true, code };
+    return { ok: true, code: normalizeLookupCode(code) };
   }
 
   const addMatch = trimmed.match(/\/certificate\/([^/?#]+)\/add/i);
@@ -51,7 +59,7 @@ export function parseCertificateCode(text: string): CertificateCodeResult {
     if (!code) {
       return { ok: false, error: "Некорректная ссылка в QR-коде. Введите код вручную." };
     }
-    return { ok: true, code };
+    return { ok: true, code: normalizeLookupCode(code) };
   }
 
   const pathMatch = trimmed.match(/\/certificate\/([^/?#]+)/i);
@@ -60,10 +68,10 @@ export function parseCertificateCode(text: string): CertificateCodeResult {
     if (!code) {
       return { ok: false, error: "Некорректная ссылка в QR-коде. Введите код вручную." };
     }
-    return { ok: true, code };
+    return { ok: true, code: normalizeLookupCode(code) };
   }
 
-  return { ok: true, code: trimmed };
+  return { ok: true, code: normalizeLookupCode(trimmed) };
 }
 
 /** @deprecated Prefer parseCertificateCode for UI flows that need error messages. */

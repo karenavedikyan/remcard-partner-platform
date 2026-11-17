@@ -334,6 +334,8 @@ export type ReceivingListFilters = {
   status: string;
   source: "all" | "cert" | "manual";
   bucket: ReceivingListBucket;
+  /** Employee's branch filter; omitted = all accessible branches. */
+  branchId?: string | null;
 };
 
 export const RECEIVING_LIST_SOURCE_OPTIONS = [
@@ -417,10 +419,34 @@ export type ReceivingPrincipalAccess = {
   mutationsAllowed: boolean;
   /** Reuse origin denial code when list-only principal hits UI (e.g. 403 reason). */
   denialCode?: string | null;
+  /** Server-declared capability: change appeals. Absent on older envelopes (treated as allowed). */
+  canManageLeads?: boolean;
+  /** Server-declared capability: accept certificates (certificate-entry, order-link). */
+  canScan?: boolean;
+  actorKind?: "owner" | "staff" | "assistant";
 };
 
 /** Synthetic marker for list-only org-workplace principal (match K1 when wired). */
 export const RECEIVING_ACCESS_LIST_ONLY_DENIAL = "OWNER_CLIENTS_LIST_CONTEXT_ONLY";
+
+export const RECEIVING_FORBIDDEN_MESSAGE =
+  "Нет доступа к клиентам этого филиала. Обратитесь к владельцу кабинета.";
+export const RECEIVING_VIEW_ONLY_MESSAGE =
+  "В режиме просмотра изменять обращения нельзя.";
+
+/** User-facing text for a denial code from the access envelope; never the raw technical code. */
+export function receivingDenialMessage(code?: string | null): string {
+  if (!code || code === "READ_ONLY" || code === RECEIVING_ACCESS_LIST_ONLY_DENIAL) {
+    return RECEIVING_VIEW_ONLY_MESSAGE;
+  }
+  return RECEIVING_FORBIDDEN_MESSAGE;
+}
+
+/** A 403 of any code reads as a plain access sentence, never a bare «Forbidden». */
+export function receivingApiErrorMessage(caught: unknown, fallback: string): string {
+  if (!(caught instanceof RemcardApiError)) return fallback;
+  return caught.status === 403 ? RECEIVING_FORBIDDEN_MESSAGE : caught.message;
+}
 
 export function normalizeReceivingAccess(
   raw?: Partial<ReceivingPrincipalAccess> | null,
@@ -429,6 +455,11 @@ export function normalizeReceivingAccess(
     listAllowed: raw?.listAllowed !== false,
     mutationsAllowed: raw?.mutationsAllowed === true,
     denialCode: raw?.denialCode ?? null,
+    ...(typeof raw?.canManageLeads === "boolean" ? { canManageLeads: raw.canManageLeads } : {}),
+    ...(typeof raw?.canScan === "boolean" ? { canScan: raw.canScan } : {}),
+    ...(raw?.actorKind === "owner" || raw?.actorKind === "staff" || raw?.actorKind === "assistant"
+      ? { actorKind: raw.actorKind }
+      : {}),
   };
 }
 
@@ -551,7 +582,7 @@ export async function fetchReceivingPartnerSettings(): Promise<
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить настройки",
+      message: receivingApiErrorMessage(caught, "Не удалось загрузить настройки"),
     };
   }
 }
@@ -583,7 +614,7 @@ export async function postReceivingWorkingStagesMutation(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить настройки",
+      message: receivingApiErrorMessage(caught, "Не удалось сохранить настройки"),
     };
   }
 }
@@ -707,6 +738,8 @@ export function buildReceivingAppealsListQuery(
     if (stageKey) params.set("stage", stageKey);
   }
   if (cursor) params.set("cursor", cursor);
+  const branchId = filters?.branchId?.trim();
+  if (branchId) params.set("branchId", branchId);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -1026,6 +1059,14 @@ export async function resolveReceivingScannerCertificateEntryGate(
     }
     return { ok: true, gate: parsed.gate };
   } catch (caught) {
+    if (caught instanceof RemcardApiError && caught.status === 403) {
+      return {
+        ok: false,
+        code: "READ_ONLY",
+        message: RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE,
+        retryable: false,
+      };
+    }
     if (caught instanceof DOMException && caught.name === "AbortError") {
       return {
         ok: false,
@@ -1121,7 +1162,7 @@ export async function submitReceivingCertificateEntry(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось обработать сертификат",
+      message: receivingApiErrorMessage(caught, "Не удалось обработать сертификат"),
     };
   }
 }
@@ -1191,7 +1232,7 @@ export async function postReceivingAppealsBatch(body: {
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось выполнить групповое действие",
+      message: receivingApiErrorMessage(caught, "Не удалось выполнить групповое действие"),
     };
   }
 }
@@ -1264,7 +1305,7 @@ export async function fetchReceivingAppealsWorkspace(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить обращения",
+      message: receivingApiErrorMessage(caught, "Не удалось загрузить обращения"),
       httpStatus: caught instanceof RemcardApiError ? caught.status : undefined,
       retryable: !(caught instanceof RemcardApiError && (caught.status === 401 || caught.status === 403)),
     };
@@ -1307,7 +1348,7 @@ export async function createReceivingAppeal(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось создать обращение",
+      message: receivingApiErrorMessage(caught, "Не удалось создать обращение"),
     };
   }
 }
@@ -1355,7 +1396,7 @@ export async function fetchReceivingAppealDetailWire(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить обращение",
+      message: receivingApiErrorMessage(caught, "Не удалось загрузить обращение"),
     };
   }
 }
@@ -1395,7 +1436,7 @@ export async function patchReceivingAppealProfileCas(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль",
+      message: receivingApiErrorMessage(caught, "Не удалось сохранить профиль"),
     };
   }
 }
@@ -1423,7 +1464,7 @@ export async function patchReceivingAppealStageCas(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сменить этап",
+      message: receivingApiErrorMessage(caught, "Не удалось сменить этап"),
     };
   }
 }
@@ -1450,7 +1491,7 @@ export async function patchReceivingAppealProfile(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить профиль",
+      message: receivingApiErrorMessage(caught, "Не удалось сохранить профиль"),
     };
   }
 }
@@ -1544,7 +1585,7 @@ export async function patchReceivingAppealStage(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось сменить этап",
+      message: receivingApiErrorMessage(caught, "Не удалось сменить этап"),
     };
   }
 }
@@ -1574,6 +1615,7 @@ export type ReceivingFunnelQuery = {
   /** `YYYY-MM-DD` (UTC day end). Omit for no upper bound. */
   to?: string;
   source?: "all" | "cert" | "manual";
+  branchId?: string | null;
 };
 
 export type ReceivingFunnelLoadResult =
@@ -1593,6 +1635,7 @@ export async function fetchReceivingFunnel(
   if (query.from) params.set("from", query.from);
   if (query.to) params.set("to", query.to);
   if (query.source && query.source !== "all") params.set("source", query.source);
+  if (query.branchId?.trim()) params.set("branchId", query.branchId.trim());
   const qs = params.toString();
   try {
     const payload = await remcardFetch<{ funnel?: ReceivingFunnel }>(
@@ -1611,7 +1654,7 @@ export async function fetchReceivingFunnel(
     return {
       ok: false,
       code: "ERROR",
-      message: caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить аналитику",
+      message: receivingApiErrorMessage(caught, "Не удалось загрузить аналитику"),
     };
   }
 }

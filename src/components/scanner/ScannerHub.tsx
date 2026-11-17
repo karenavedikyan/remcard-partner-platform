@@ -1178,7 +1178,9 @@ export function ScannerHub({ userId }: ScannerHubProps) {
     const appealId = receivingHandoff.appealId;
     return (
       <div>
-        <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
+        {receivingHandoff.context.status === "ready" ? null : (
+          <ReceivingAppealScannerBanner context={receivingHandoff.context} appealId={appealId} />
+        )}
         {receivingEntryNotice}
         <div className={styles.successBanner}>Покупка подтверждена</div>
         <div className={`${styles.card} ${styles.cardDark}`} style={{ marginTop: "var(--space-4)" }}>

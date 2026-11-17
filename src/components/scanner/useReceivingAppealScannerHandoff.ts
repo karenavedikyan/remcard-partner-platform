@@ -359,6 +359,15 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       }
       finishCertEntryPending(gen);
 
+      if (!entry.ok && entry.code === "FORBIDDEN") {
+        crmCapableByBranchRef.current.set(branchCapabilityCacheKey(args.branchId), false);
+        setCrmWriteCapable(false);
+        crmEntryGateRef.current = null;
+        setCrmReadOnlyNotice(RECEIVING_SCANNER_CRM_READ_ONLY_NOTICE);
+        setLegacyUncertainRestore(true);
+        return { ok: true };
+      }
+
       if (!entry.ok) {
         setCertEntryError(entry.message);
         if (!binding || binding.certCode !== args.promoCode || binding.branchKey !== branchKey) {

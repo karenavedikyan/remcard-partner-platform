@@ -2,7 +2,9 @@ import {
   resolveWorkplacePartnerTypeResolution,
   shouldPreferBusinessWorkplaceDispatch,
 } from "@/lib/cabinet-presentation/resolve";
+import { isPartnerAssistantContext } from "@/lib/business-clients/assistant";
 import { resolveBusinessOwnerClientsEligibility } from "@/lib/business-clients/gate";
+import { validateProContextSnapshot } from "@/lib/cabinet-presentation/validate";
 import {
   businessOwnerHomePartnerType,
   shouldRenderBusinessOwnerHome,
@@ -58,6 +60,16 @@ export function resolveBusinessSectionDispatch(input: {
 
   if (businessFromContext.eligible) {
     return { kind: "business", partnerType: businessFromContext.partnerType };
+  }
+
+  if (
+    input.surface === "clients" &&
+    input.contextReady &&
+    input.proContext &&
+    validateProContextSnapshot(input.proContext).ok &&
+    isPartnerAssistantContext(input.proContext)
+  ) {
+    return { kind: "specialist-r06" };
   }
 
   if (
