@@ -113,8 +113,38 @@ export function mapReceivingHistoryFromWire(entries: ReceivingAppealHistoryWire[
  * K8/K1 list row wire (K8 `1894569a` / K1 `83f279e8`) — map via `mapReceivingAppealListRowFromWire`.
  * P2 may centralize in `contracts.ts`; П6 owns explicit mapper until re-export.
  */
+/**
+ * Server-computed rights over ONE appeal, from its stored branch and the actor's grants (display only — every write is
+ * re-authorized by the server). Absent on servers that predate it.
+ */
+export type ReceivingRowCapabilities = {
+  canManageLeads: boolean;
+  canScan: boolean;
+};
+
+export function parseReceivingRowCapabilities(raw: unknown): ReceivingRowCapabilities | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.canManageLeads !== "boolean" || typeof r.canScan !== "boolean") return undefined;
+  return { canManageLeads: r.canManageLeads, canScan: r.canScan };
+}
+
+/**
+ * May the actor change this appeal (stage / notes / refusal / archive / trash / bulk)?
+ * The row's own server flag wins. Without it (older server) only a single-branch list answer may be trusted; the general
+ * «all branches» answer is an aggregate over branches, so it never grants a write.
+ */
+export function receivingRowCanManageLeads(
+  row: Pick<ReceivingAppealListRow, "capabilities">,
+  ctx: { listAllowsLeads: boolean; scopeAll: boolean },
+): boolean {
+  if (row.capabilities) return row.capabilities.canManageLeads;
+  return ctx.listAllowsLeads && !ctx.scopeAll;
+}
+
 export type ReceivingAppealListRowWire = {
   id: string;
+  capabilities?: ReceivingRowCapabilities | null;
   clientDisplayName?: string | null;
   certificateId?: string | null;
   /** K1 scan/preview promo when certificate-bound — never substitute raw certificateId. */
@@ -200,6 +230,8 @@ export type ReceivingAppealListRow = {
   manualEntry?: boolean;
   /** K8 field required for bucket tabs — request in P2 if absent from first API draft. */
   bucket?: ReceivingListBucket;
+  /** Per-appeal rights from the server; see `receivingRowCanManageLeads`. */
+  capabilities?: ReceivingRowCapabilities;
 };
 
 /** Detail row — receiving-owner fields. P4 renders full payload. */
@@ -229,7 +261,25 @@ export type ReceivingAppealDetailWire = {
   refusalReasons?: string[];
   readOnly?: boolean;
   access?: Partial<ReceivingPrincipalAccess>;
+  /** This appeal's own rights (the list/«all» aggregate never applies to a card). */
+  capabilities?: ReceivingRowCapabilities | null;
 };
+
+/**
+ * Is the opened card read-only for this actor? Decided by the server's per-card answer; a general «all branches» read
+ * from a server without per-card flags is treated as read-only (its aggregate is not a write right).
+ */
+export function receivingDetailWireReadOnly(
+  wire: Pick<ReceivingAppealDetailWire, "readOnly" | "access" | "capabilities">,
+  opts?: { scopeAll?: boolean },
+): boolean {
+  const caps = parseReceivingRowCapabilities(wire.capabilities);
+  if (caps) return !caps.canManageLeads;
+  if (opts?.scopeAll) return true;
+  if (wire.readOnly === true) return true;
+  if (wire.access?.mutationsAllowed === false) return true;
+  return wire.access?.canManageLeads === false;
+}
 
 /** Mapped detail for P4 — preserves `revision` for CAS writes. */
 export type ReceivingAppealDetailPayload = {
@@ -775,6 +825,7 @@ export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWi
   const paidAmountKopecks =
     wire.paidAmountKopecks ??
     (typeof wire.paidAmount === "number" ? Math.round(wire.paidAmount * 100) : null);
+  const capabilities = parseReceivingRowCapabilities(wire.capabilities);
   const row: ReceivingAppealListRow = {
     id: wire.id,
     clientName: (wire.clientDisplayName ?? wire.clientName ?? "").trim() || "—",
@@ -801,6 +852,7 @@ export function mapReceivingAppealListRowFromWire(wire: ReceivingAppealListRowWi
     updatedAt: wire.updatedAt ?? wire.createdAt ?? new Date(0).toISOString(),
     manualEntry,
     bucket: wire.bucket,
+    ...(capabilities ? { capabilities } : {}),
   };
   return coerceReceivingAppealListRow(row);
 }

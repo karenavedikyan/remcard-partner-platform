@@ -7,6 +7,7 @@ import {
   patchReceivingAppealProfileCas,
   patchReceivingAppealStageCas,
   postReceivingWorkingStagesMutation,
+  receivingDetailWireReadOnly,
   type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import {
@@ -82,6 +83,10 @@ export function ReceivingAppealDetailHost({
   const [mapped, setMapped] = useState<ReturnType<typeof receivingAppealDetailWireToP4Mapped> | null>(
     null,
   );
+  /** The server's per-card answer; a card is editable only when the prop allows it AND this appeal's own flags do. */
+  const [detailReadOnly, setDetailReadOnly] = useState(true);
+  const detailReadOnlyRef = useRef(true);
+  const effectiveReadOnly = readOnly || detailReadOnly;
   const [busy, setBusy] = useState<{ notes?: boolean; stage?: boolean }>({});
   const [actionError, setActionError] = useState<{ notes?: string; stage?: string }>({});
   const [detailRefreshNotice, setDetailRefreshNotice] = useState<string | null>(null);
@@ -136,9 +141,14 @@ export function ReceivingAppealDetailHost({
       const rev =
         typeof res.wire.revision === "number" ? res.wire.revision : Number(res.wire.revision) || 0;
       onRevisionLoaded?.(rev);
+      const cardReadOnly = receivingDetailWireReadOnly(res.wire, {
+        scopeAll: readScopeRef.current?.branchScope === "all",
+      });
+      detailReadOnlyRef.current = cardReadOnly;
+      setDetailReadOnly(cardReadOnly);
       setMapped(
         receivingAppealDetailWireToP4Mapped(res.wire, {
-          readOnly: session.readOnly,
+          readOnly: session.readOnly || cardReadOnly,
           referrerPartnerName: session.referrerPartnerName,
         }),
       );
@@ -290,6 +300,9 @@ export function ReceivingAppealDetailHost({
 
   const mutateProfile = useCallback(
     async (body: ReceivingAppealProfilePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      if (detailReadOnlyRef.current || sessionKeyRef.current.readOnly) {
+        return { ok: false, conflict: false, message: "Карточка доступна только для просмотра." };
+      }
       if (notesInFlightRef.current || notesSaveBlockedRef.current) {
         return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
       }
@@ -332,6 +345,9 @@ export function ReceivingAppealDetailHost({
 
   const mutateStage = useCallback(
     async (body: ReceivingAppealStagePatchInput): Promise<ReceivingAppealDetailMutationOutcome> => {
+      if (detailReadOnlyRef.current || sessionKeyRef.current.readOnly) {
+        return { ok: false, conflict: false, message: "Карточка доступна только для просмотра." };
+      }
       if (notesSaveBlockedRef.current || notesInFlightRef.current) {
         return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
       }
@@ -393,7 +409,7 @@ export function ReceivingAppealDetailHost({
       return buildReceivingAppealDetailReady({
         appealId,
         mapped,
-        readOnly,
+        readOnly: effectiveReadOnly,
         busy,
         error: actionError,
         notesConflict,
@@ -405,9 +421,9 @@ export function ReceivingAppealDetailHost({
         addRefusalReason,
         addWorkingStage,
         reloadDetail,
-        onOpenOrderPipeline: readOnly ? undefined : onOpenOrderPipeline,
+        onOpenOrderPipeline: effectiveReadOnly ? undefined : onOpenOrderPipeline,
         openPurchaseOrder:
-          readOnly || !mapped.appeal.purchaseOrderId?.trim() ? undefined : openPurchaseOrder,
+          effectiveReadOnly || !mapped.appeal.purchaseOrderId?.trim() ? undefined : openPurchaseOrder,
       });
     }
     return null;
@@ -427,7 +443,7 @@ export function ReceivingAppealDetailHost({
     onOpenOrderPipeline,
     openPurchaseOrder,
     phase,
-    readOnly,
+    effectiveReadOnly,
     reloadDetail,
   ]);
 

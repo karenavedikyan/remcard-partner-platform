@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createReceivingAppeal,
+  receivingRowCanManageLeads,
+  type ReceivingAppealListRow,
   fetchReceivingAppealsWorkspace,
   isReceivingAppealsProxyReady,
   isReceivingCertificateEntryProxyReady,
@@ -408,6 +410,18 @@ export function ReceivingAppealsWorkspace({
   const writeBranchId = branchSelection?.kind === "branch" ? branchSelection.branchId : null;
 
   const bulkWriteAllowed = data !== null && receivingAppealsMutationsAllowed(data);
+  const listLeadsAllowed = bulkWriteAllowed && data?.access?.canManageLeads !== false;
+  const scopeIsAll = branchSelection?.kind === "all";
+  // A card/row is editable by its own server flag, never by the aggregate of the general list.
+  const rowWritable = useCallback(
+    (row: ReceivingAppealListRow) =>
+      receivingRowCanManageLeads(row, { listAllowsLeads: listLeadsAllowed, scopeAll: scopeIsAll }),
+    [listLeadsAllowed, scopeIsAll],
+  );
+  const writableIdSet = useMemo(
+    () => new Set((data?.appeals ?? []).filter(rowWritable).map((row) => row.id)),
+    [data?.appeals, rowWritable],
+  );
   const bulkContractState: ReceivingBulkContractState = !batchProxyReady || !bulkWriteAllowed
     ? "blocked"
     : batchPending
@@ -435,7 +449,7 @@ export function ReceivingAppealsWorkspace({
 
   const executeBulkConfirmed = useCallback(async () => {
     if (!bulkConfirm || bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
-    const ids = receivingBulkConfirmTargetIds(bulkConfirm.ids, selected);
+    const ids = receivingBulkConfirmTargetIds(bulkConfirm.ids, selected).filter((id) => writableIdSet.has(id));
     if (ids.length === 0) return;
     bulkInFlightRef.current = true;
     setBatchPending(true);
@@ -472,18 +486,18 @@ export function ReceivingAppealsWorkspace({
       bulkInFlightRef.current = false;
       setBatchPending(false);
     }
-  }, [bulkConfirm, bulkMutationBlocked, refreshListAfterMutation, selected]);
+  }, [bulkConfirm, bulkMutationBlocked, refreshListAfterMutation, selected, writableIdSet]);
 
   const executeBulkEdit = useCallback(
     async (draft: Parameters<typeof applyReceivingBulkEditsPerId>[1]) => {
       if (!data || bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
-      const ids = [...selected];
+      const ids = [...selected].filter((id) => writableIdSet.has(id));
       if (ids.length === 0) return;
       bulkInFlightRef.current = true;
       setBatchPending(true);
       setBatchPartial(null);
       try {
-        const selectedRows = data.appeals.filter((a) => selected.has(a.id));
+        const selectedRows = data.appeals.filter((a) => ids.includes(a.id));
         const stageBlocked = selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row));
         const stageLockedIds = new Set(
           selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
@@ -510,7 +524,7 @@ export function ReceivingAppealsWorkspace({
         setBatchPending(false);
       }
     },
-    [bulkMutationBlocked, data, readScope, refreshListAfterMutation, selected],
+    [bulkMutationBlocked, data, readScope, refreshListAfterMutation, selected, writableIdSet],
   );
 
   const bulkCallbacks = useMemo(
@@ -518,6 +532,7 @@ export function ReceivingAppealsWorkspace({
       selectedIds: selected,
       onToggleRow: (id: string, checked: boolean) => {
         if (bulkMutationBlocked || bulkInFlightRef.current || listRefreshRetryRef.current) return;
+        if (checked && !writableIdSet.has(id)) return;
         setSelected((prev) => {
           const next = new Set(prev);
           if (checked) next.add(id);
@@ -530,6 +545,7 @@ export function ReceivingAppealsWorkspace({
         setSelected((prev) => {
           const next = new Set(prev);
           for (const id of ids) {
+            if (checked && !writableIdSet.has(id)) continue;
             if (checked) next.add(id);
             else next.delete(id);
           }
@@ -549,14 +565,14 @@ export function ReceivingAppealsWorkspace({
         }
         const mapped = receivingToolbarToBatchAction(action, listFilters.bucket);
         if (mapped === "patch-multi") {
-          const ids = [...selected];
+          const ids = [...selected].filter((id) => writableIdSet.has(id));
           if (ids.length === 0) return;
           setBulkConfirm(null);
           setBulkEditOpen(true);
           return;
         }
         if (!mapped) return;
-        const ids = [...selected];
+        const ids = [...selected].filter((id) => writableIdSet.has(id));
         if (ids.length === 0) return;
         const confirmKind: ReceivingBulkConfirmKind | null =
           action === "archive-ask"
@@ -573,7 +589,7 @@ export function ReceivingAppealsWorkspace({
         setBulkConfirm({ kind: confirmKind, ids });
       },
     }),
-    [bulkContractState, bulkMutationBlocked, batchPartial, listFilters.bucket, selected],
+    [bulkContractState, bulkMutationBlocked, batchPartial, listFilters.bucket, selected, writableIdSet],
   );
 
   if (phase === "loading" && !previewData) {
@@ -895,6 +911,7 @@ export function ReceivingAppealsWorkspace({
         readOnly={leadsReadOnly}
         scanOnly={!readOnly && !leadsAllowed && scanAllowed}
         bulk={leadsAllowed ? bulkCallbacks : undefined}
+        rowWritable={rowWritable}
         branchLabelOf={
           allBranchesShown && branches
             ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)

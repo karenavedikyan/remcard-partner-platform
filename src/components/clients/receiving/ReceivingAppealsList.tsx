@@ -50,6 +50,11 @@ export type ReceivingAppealsListProps = {
   /** Prototype order: confirm panel sits under the toolbar, edit panel under the selection bar. */
   bulkConfirmSlot?: ReactNode;
   bulkEditSlot?: ReactNode;
+  /**
+   * Per-appeal write right (server flag). Rows without it get no selection checkbox and are skipped by «select all»;
+   * the bulk toolbar appears only when at least one listed row may be changed. Default: every row.
+   */
+  rowWritable?: (row: ReceivingAppealListRow) => boolean;
   /** Branch caption under the client name; set only while several branches are listed together. */
   branchLabelOf?: (row: ReceivingAppealListRow) => string | null;
   /** Text action of the empty list when one branch is shown: widen to every allowed branch. */
@@ -108,6 +113,7 @@ export function ReceivingAppealsList({
   readOnly = false,
   scanOnly = false,
   bulk,
+  rowWritable,
   stageLabelById = (r) => r.stageId,
   serverBackedFilters = false,
   listHasMore = false,
@@ -146,15 +152,17 @@ export function ReceivingAppealsList({
     [data.appeals, data.settings, serverBackedFilters, stageLabelById, filters.status],
   );
 
-  const bulkOn = !readOnly && Boolean(bulk);
+  const isWritable = (row: ReceivingAppealListRow) => (rowWritable ? rowWritable(row) : true);
+  const writableRows = filtered.filter(isWritable);
+  const bulkOn = !readOnly && Boolean(bulk) && (writableRows.length > 0 || (bulk?.selectedIds.size ?? 0) > 0);
   const selectionDisabled = bulk?.contractState === "pending" || bulk?.contractState === "refresh-required";
   const selected = bulk?.selectedIds ?? new Set<string>();
-  const visibleIds = filtered.map((a) => a.id);
+  const visibleIds = writableRows.map((a) => a.id);
   const selInView = bulkOn ? visibleIds.filter((id) => selected.has(id)) : [];
   const selCount = selInView.length;
   const allChecked =
-    bulkOn && filtered.length > 0 && filtered.every((a) => selected.has(a.id));
-  const someChecked = bulkOn && selCount > 0 && !allChecked && filtered.length > 0;
+    bulkOn && writableRows.length > 0 && writableRows.every((a) => selected.has(a.id));
+  const someChecked = bulkOn && selCount > 0 && !allChecked && writableRows.length > 0;
   const selectionOutsideView = bulkOn ? Math.max(0, selected.size - selCount) : 0;
 
   const emptyCopy = EMPTY_BUCKET_COPY[filters.bucket];
@@ -165,7 +173,7 @@ export function ReceivingAppealsList({
 
   const selectAll = (checked: boolean) =>
     bulk?.onToggleSelectAll(
-      filtered.map((a) => a.id),
+      writableRows.map((a) => a.id),
       checked,
     );
 
@@ -322,7 +330,7 @@ export function ReceivingAppealsList({
         </label>
       </div>
 
-      {bulkOn && filtered.length > 0 ? (
+      {bulkOn && writableRows.length > 0 ? (
         <label className="ca-bulk-select-all-mobile">
           <input
             type="checkbox"
@@ -372,7 +380,7 @@ export function ReceivingAppealsList({
                 <input
                   ref={headCheckRef}
                   type="checkbox"
-                  aria-label={`Все найденные (${filtered.length})`}
+                  aria-label={`Все найденные (${writableRows.length})`}
                   disabled={selectionDisabled}
                   checked={allChecked}
                   onChange={(e) => selectAll(e.target.checked)}
@@ -394,15 +402,19 @@ export function ReceivingAppealsList({
             return (
               <div key={row.id} className="ca-row-lane">
                 {bulkOn ? (
-                  <label className="ca-row-check">
-                    <input
-                      type="checkbox"
-                      aria-label={`Выбрать ${row.clientName}`}
-                      disabled={selectionDisabled}
-                      checked={checked}
-                      onChange={(e) => bulk?.onToggleRow(row.id, e.target.checked)}
-                    />
-                  </label>
+                  isWritable(row) ? (
+                    <label className="ca-row-check">
+                      <input
+                        type="checkbox"
+                        aria-label={`Выбрать ${row.clientName}`}
+                        disabled={selectionDisabled}
+                        checked={checked}
+                        onChange={(e) => bulk?.onToggleRow(row.id, e.target.checked)}
+                      />
+                    </label>
+                  ) : (
+                    <span className="ca-row-check" aria-hidden="true" data-testid="ca-row-view-only" />
+                  )
                 ) : null}
                 <button
                   type="button"
