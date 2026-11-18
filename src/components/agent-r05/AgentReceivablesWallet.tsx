@@ -16,6 +16,7 @@ export function AgentReceivablesWallet({ walletEmptyViewerRole, walletScopeKey }
     <WalletPrototypeShell
       shellTestId="agent-r05-wallet"
       settlementsTabTestId="agent-r05-tab-settlements"
+      settlementsTabLabel="Начисления"
       requisitesTabTestId="agent-r05-tab-requisites"
       requisitesScopeTestId="agent-r05-requisites-scope"
       settlements={

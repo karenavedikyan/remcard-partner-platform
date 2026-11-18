@@ -20,6 +20,7 @@ export type WalletPrototypeShellProps = {
   settlements: ReactNode;
   requisites: ReactNode;
   defaultTab?: WalletPrototypeTab;
+  settlementsTabLabel?: string;
 };
 
 const TAB_ORDER: WalletPrototypeTab[] = ["settlements", "requisites"];
@@ -32,6 +33,7 @@ export function WalletPrototypeShell({
   settlements,
   requisites,
   defaultTab = "settlements",
+  settlementsTabLabel = "Расчёты",
 }: WalletPrototypeShellProps) {
   const [tab, setTab] = useState<WalletPrototypeTab>(defaultTab);
   const tablistId = useId();
@@ -89,7 +91,7 @@ export function WalletPrototypeShell({
             onKeyDown={(event) => onTabKeyDown(event, "settlements")}
             data-testid={settlementsTabTestId}
           >
-            Взаиморасчёты
+            {settlementsTabLabel}
           </button>
           <button
             ref={requisitesTabRef}

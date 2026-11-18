@@ -139,9 +139,29 @@ describe("WalletPrototypeShell", () => {
     );
 
     expect(screen.getByRole("tablist", { name: "Кошелёк" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Взаиморасчёты" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Расчёты" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Реквизиты" })).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Pane A");
+  });
+
+  it("uses the custom settlements tab label when provided", () => {
+    render(
+      <WalletPrototypeShell
+        shellTestId="wallet-shell-label"
+        settlementsTabTestId="wallet-label-settlements"
+        requisitesTabTestId="wallet-label-requisites"
+        requisitesScopeTestId="wallet-label-requisites-scope"
+        settlementsTabLabel="Начисления"
+        settlements={<div>Pane A</div>}
+        requisites={<div>Pane B</div>}
+      />,
+    );
+
+    const tab = screen.getByTestId("wallet-label-settlements");
+    expect(tab).toHaveTextContent("Начисления");
+    expect(tab).toHaveAttribute("role", "tab");
+    expect(screen.queryByRole("tab", { name: "Расчёты" })).toBeNull();
+    expect(screen.queryByText("Взаиморасчёты")).toBeNull();
   });
 
   it("sources tab line-height and dark active border from wallet-prototype-shell.module.css", () => {
