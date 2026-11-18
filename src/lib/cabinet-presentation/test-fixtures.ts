@@ -40,3 +40,45 @@ export const companyOrgEmployeeContext: ProContextSnapshot = {
     canManageEmployeesByBranchId: {},
   },
 };
+
+export const specialistEmployeeContext: ProContextSnapshot = {
+  role: "PARTNER_EMPLOYEE",
+  organization: null,
+  branches: [],
+  activeBranch: null,
+  employer: {
+    id: "spec-1",
+    displayName: "S1 Специалист",
+    companyKind: null,
+    partnerType: "MASTER",
+    partnerActivities: ["SERVICE"],
+  },
+  employeeRole: "SELLER",
+};
+
+export const agentEmployeeContext: ProContextSnapshot = {
+  role: "PARTNER_EMPLOYEE",
+  organization: null,
+  branches: [],
+  activeBranch: null,
+  employer: {
+    id: "agent-1",
+    displayName: "A1 Агент",
+    companyKind: null,
+    partnerType: null,
+    partnerActivities: ["AGENT"],
+  },
+  employeeRole: "SELLER",
+};
+
+export const storeBranchEmployeeContext: ProContextSnapshot = {
+  role: "BRANCH_EMPLOYEE",
+  organization: { id: "org-store-1", name: "Синтетический магазин", partnerType: "STORE" },
+  branches: [{ id: "br-1", name: "Филиал Центр", city: "Москва" }],
+  activeBranch: { id: "br-1", name: "Филиал Центр", city: "Москва" },
+  teamCapabilities: {
+    canOpenTeamSection: false,
+    canFetchEmployeesOverview: false,
+    canManageEmployeesByBranchId: {},
+  },
+};

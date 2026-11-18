@@ -86,7 +86,7 @@ describe("AppShell business nav matrix", () => {
     expect(team.getAttribute("href")).toContain("/profile?section=team");
   });
 
-  it("keeps legacy nav for pure-agent activities on STORE partnerType", () => {
+  it("keeps the non-prototype nav for pure-agent activities on STORE partnerType", () => {
     mockPathname = "/";
     renderNav({
       id: "u3",
@@ -101,7 +101,7 @@ describe("AppShell business nav matrix", () => {
       "Рекомендации",
       "Сканер",
       "История",
-      "Взаиморасчёты",
+      "Кошелёк",
       "Профиль",
     ]);
     expect(screen.queryByTestId("cabinet-mobile-nav-more")).toBeNull();
@@ -193,7 +193,7 @@ describe("AppShell business nav matrix", () => {
         "Рекомендации",
         "Сканер",
         "История",
-        "Взаиморасчёты",
+        "Кошелёк",
         "Профиль",
       ]);
       const bottom = screen.getByLabelText("Мобильная навигация");

@@ -44,7 +44,7 @@ export function masterWalletFixtureData(): SettlementsResponse {
   });
 
   return {
-    coverageNote: "Fixture: order-linked начисления для превью кошелька специалиста.",
+    coverageNote: "Тестовые начисления по покупкам для превью кошелька специалиста.",
     receivable,
     payable,
     completed: [

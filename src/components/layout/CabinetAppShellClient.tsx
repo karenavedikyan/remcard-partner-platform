@@ -8,9 +8,12 @@ import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-
 import { ProfTestModeBanner } from "@/components/layout/ProfTestModeBanner";
 import type { ProfTestSessionInfo } from "@/lib/types";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+import { workspaceTypeCaption } from "@/lib/cabinet-presentation/workplace-kind";
 import { CabinetPresentationProvider } from "@/components/layout/CabinetPresentationContext";
 import { CabinetPresentationRefreshListener } from "@/components/layout/CabinetPresentationRefreshListener";
 import { shouldUseAgentPilotCabinetShell } from "@/lib/agent-nav/root-destination";
+import { agentEmployeeUiPrefs, shouldUseAgentEmployeeShell } from "@/lib/agent-nav/employee-nav";
+import { resolveWorkspaceOrganizationName } from "@/lib/cabinet-presentation/resolve";
 
 type CabinetAppShellClientProps = {
   user: AuthUser;
@@ -50,6 +53,36 @@ export function CabinetAppShellClient({
           incomingCount={incomingCount}
           notificationBell={bell}
           initialPrefs={uiPrefs}
+        >
+          {children}
+        </AgentAppShell>
+      </>,
+    );
+  }
+
+  if (shouldUseAgentEmployeeShell(presentation)) {
+    const employeePrefs = agentEmployeeUiPrefs(presentation.proContext);
+    return wrapped(
+      <>
+        {banner}
+        <AgentAppShell
+          key={`employee:${user.id}`}
+          user={user}
+          incomingCount={incomingCount}
+          notificationBell={bell}
+          initialPrefs={employeePrefs}
+          workspace={{
+            title:
+              resolveWorkspaceOrganizationName(presentation.proContext) ??
+              presentation.workspaceOrganizationName ??
+              user.displayName?.trim() ??
+              "Агент",
+            hint: workspaceTypeCaption({
+              workplaceKind: presentation.workplaceKind,
+              proContext: presentation.proContext,
+            }),
+            roleLabel: presentation.sessionRoleLabel,
+          }}
         >
           {children}
         </AgentAppShell>

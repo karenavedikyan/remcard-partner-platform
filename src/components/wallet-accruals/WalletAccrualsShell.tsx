@@ -32,6 +32,7 @@ import {
   txnViewFromRow,
   walletCardTotals,
 } from "@/lib/wallet-accruals/map-history";
+import { publicSettlementsCoverageNote } from "@/lib/wallet-accruals/settlements-display";
 import { buildTxnFacts, buildTxnTimeline } from "@/lib/wallet-accruals/timeline";
 import type {
   WalletAccrualsData,
@@ -663,9 +664,9 @@ export function WalletAccrualsShell({
       data-wallet-accruals
       data-testid="wallet-accruals"
     >
-      {coverageNote ? (
+      {publicSettlementsCoverageNote(coverageNote) ? (
         <p className="wallet-accruals-coverage pw-muted" data-testid="wallet-coverage-note">
-          {coverageNote}
+          {publicSettlementsCoverageNote(coverageNote)}
         </p>
       ) : null}
       {refreshNotice ? (

@@ -3,6 +3,7 @@ import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
 import type { CabinetPresentationSnapshot, WorkplacePartnerType } from "./types";
+import { resolveEmployerWorkplaceKind, resolveWorkplaceKind } from "./workplace-kind";
 import { proContextRoleLabelRu } from "./role-labels";
 import { validateProContextSnapshot } from "./validate";
 import type { WorkplacePartnerTypeSource } from "./types";
@@ -159,6 +160,14 @@ export function resolveCabinetPresentation(input: {
   const navMode: CabinetNavMode = resolveCabinetNavMode(input.user, {
     workplacePartnerType,
     workplaceNavFromOrgContext: workplace.source === "org-context",
+    employerWorkplaceKind: resolveEmployerWorkplaceKind(input.proContext, input.contextReady),
+  });
+  const workplaceKind = resolveWorkplaceKind({
+    user: input.user,
+    proContext: input.proContext,
+    contextReady: input.contextReady,
+    workplacePartnerType,
+    workplacePartnerTypeSource: workplace.source,
   });
   const actorDisplayName = input.user.displayName?.trim() || "Партнёр RemCard";
 
@@ -168,6 +177,8 @@ export function resolveCabinetPresentation(input: {
     proContext: input.proContext,
     workplacePartnerType,
     workplacePartnerTypeSource: workplace.source,
+    workplaceKind: workplaceKind.kind,
+    workplaceKindSource: workplaceKind.source,
     actorDisplayName,
     workspaceOrganizationName: resolveWorkspaceOrganizationName(input.proContext),
     sessionRoleLabel: resolveCabinetSessionRoleLabel({

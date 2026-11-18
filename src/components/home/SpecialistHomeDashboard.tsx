@@ -35,6 +35,8 @@ import styles from "./SpecialistHomeDashboard.module.css";
 type SpecialistHomeDashboardProps = {
   needsProfileCompletion?: boolean;
   catalogStatus?: string | null;
+  /** Employee of a specialist: no owner profile settings on the home screen. */
+  employeeView?: boolean;
 };
 
 const QUICK_LINKS = [
@@ -78,6 +80,7 @@ function StatMoneyValue({ label }: { label: string }) {
 export function SpecialistHomeDashboard({
   needsProfileCompletion,
   catalogStatus,
+  employeeView = false,
 }: SpecialistHomeDashboardProps) {
   const [metrics, setMetrics] = useState<SpecialistHomeMetrics>(initialSpecialistHomeMetrics);
   const [loadState, setLoadState] = useState<"loading" | "loaded">("loading");
@@ -304,6 +307,7 @@ export function SpecialistHomeDashboard({
           ))}
         </section>
 
+        {employeeView ? null : (
         <section className={styles.panel}>
           <h2>Ничего лишнего на старте</h2>
           <p className={styles.deferredCopy}>
@@ -315,6 +319,7 @@ export function SpecialistHomeDashboard({
             Настроить профиль
           </Link>
         </section>
+        )}
       </div>
         </>
       )}

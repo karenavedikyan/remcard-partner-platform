@@ -48,6 +48,7 @@ export function cabinetNavConfig(mode: CabinetNavMode): CabinetNavConfig | null 
         pageTitle: (pathname, section) =>
           businessPageTitleWithSection(pathname, section, COMPANY_DESKTOP_NAV),
       };
+    case "agent":
     case "legacy":
       return LEGACY_CONFIG;
     default: {

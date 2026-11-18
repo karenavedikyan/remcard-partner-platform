@@ -18,6 +18,8 @@ import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
 import { usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import type { MasterNavItem } from "@/lib/master-nav/sections";
+import { workspaceTypeCaption } from "@/lib/cabinet-presentation/workplace-kind";
+import { userInitials } from "@/lib/user-initials";
 import styles from "./AppShell.module.css";
 
 const BASE_NAV: Array<{
@@ -31,7 +33,7 @@ const BASE_NAV: Array<{
   { href: "/recommendations", label: "Рекомендации", icon: "recommendations" },
   { href: "/scanner", label: "Сканер", icon: "scanner" },
   { href: "/history", label: "История", icon: "history" },
-  { href: "/settlements", label: "Взаиморасчёты", icon: "settlements" },
+  { href: "/settlements", label: "Кошелёк", icon: "settlements" },
   { href: "/profile", label: "Профиль", icon: "profile" },
 ];
 
@@ -48,7 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/recommendations": "Рекомендации",
   "/scanner": "Сканер",
   "/history": "История",
-  "/settlements": "Взаиморасчёты",
+  "/settlements": "Кошелёк",
   "/profile": "Профиль",
   "/clients": "Клиенты",
   "/notifications": "Уведомления",
@@ -64,13 +66,6 @@ function legacyPageTitle(pathname: string, navItems: typeof BASE_NAV): string {
     (item) => item.href !== "/" && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
   );
   return base?.label ?? "Кабинет партнёра";
-}
-
-function userInitials(displayName: string): string {
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "П";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
 
 type AppShellProps = {
@@ -151,7 +146,10 @@ export function AppShell({
 
   const actorName = presentation.actorDisplayName.trim() || "Партнёр RemCard";
   const workspaceTitle = presentation.workspaceOrganizationName?.trim() || actorName;
-  const workspaceHint = presentation.workspaceOrganizationName ? "Организация" : "Рабочее пространство";
+  const workspaceHint = workspaceTypeCaption({
+    workplaceKind: presentation.workplaceKind,
+    proContext: presentation.proContext,
+  });
   const initials = userInitials(actorName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);

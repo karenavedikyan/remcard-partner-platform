@@ -22,14 +22,8 @@ import {
   type AgentNavSectionKey,
 } from "@/lib/agent-nav/sections";
 import type { CabinetUiPreferencesResponse } from "@/lib/cabinet-ui-preferences-types";
+import { userInitials } from "@/lib/user-initials";
 import styles from "./AgentAppShell.module.css";
-
-function userInitials(displayName: string): string {
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "П";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-}
 
 type AgentAppShellProps = {
   user: AuthUser;
@@ -38,6 +32,8 @@ type AgentAppShellProps = {
   initialPrefs: CabinetUiPreferencesResponse;
   /** Dev/screenshot fixture: pretend pathname without changing the route. */
   fixturePathname?: string;
+  /** Employee of an agent: workspace is the employer, menu is fixed (no personal bottom-bar editor). */
+  workspace?: { title: string; hint: string; roleLabel: string };
   children: React.ReactNode;
 };
 
@@ -47,12 +43,14 @@ export function AgentAppShell({
   notificationBell,
   initialPrefs,
   fixturePathname,
+  workspace,
   children,
 }: AgentAppShellProps) {
   const pathname = usePathname();
   const activePathname = fixturePathname ?? pathname;
   const displayName = user.displayName?.trim() || "Партнёр RemCard";
-  const initials = userInitials(displayName);
+  const workspaceTitle = workspace?.title.trim() || displayName;
+  const initials = userInitials(workspaceTitle);
   const { prefs, saveMobileNavKeys, saveTheme } = useAgentCabinetUiPrefs(initialPrefs);
 
   const permittedKeys = useMemo(
@@ -93,7 +91,7 @@ export function AgentAppShell({
           <ThemeToggle />
           <ProfNotificationBellSlot>{notificationBell}</ProfNotificationBellSlot>
           <div data-testid="agent-account-control">
-            <AccountSessionMenu displayName={displayName} roleLabel="Агент" />
+            <AccountSessionMenu displayName={displayName} roleLabel={workspace?.roleLabel ?? "Агент"} />
           </div>
         </div>
       </header>
@@ -102,8 +100,8 @@ export function AgentAppShell({
         <aside className={styles.sidebar} aria-label="Основная навигация">
           <div className={styles.workspace}>
             <span className={styles.workspaceEyebrow}>Ваше пространство</span>
-            <strong className={styles.workspaceName}>{displayName}</strong>
-            <small className={styles.workspaceHint}>Агент RemCard</small>
+            <strong className={styles.workspaceName}>{workspaceTitle}</strong>
+            <small className={styles.workspaceHint}>{workspace?.hint ?? "Агент RemCard"}</small>
           </div>
 
           <nav className={styles.nav}>
@@ -186,7 +184,7 @@ export function AgentAppShell({
         pathname={activePathname}
         permittedKeys={permittedKeys}
         primaryKeys={primaryKeys}
-        onOpenCustomize={() => setEditorOpen(true)}
+        onOpenCustomize={workspace ? undefined : () => setEditorOpen(true)}
       />
 
       <MobileNavEditorDialog

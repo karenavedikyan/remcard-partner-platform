@@ -74,11 +74,11 @@ export default async function SettlementsPage() {
       : shell === "master-wallet"
         ? "СПЕЦИАЛИСТ"
         : "RemCard PROF";
-  const title = businessCopy || shell !== "hub" ? "Кошелёк" : "Взаиморасчёты";
+  const title = "Кошелёк";
   const description = businessCopy
     ? businessCopy.description
     : shell === "agent-r05"
-      ? "Входящие обязательства партнёров и реквизиты для получения оплаты."
+      ? "Начисления от партнёров и реквизиты для получения оплаты."
       : shell === "master-wallet"
         ? "Взаиморасчёты с партнёрами в обоих направлениях и реквизиты для выплат."
         : "Открытые обязательства и завершённые выплаты между партнёрами.";

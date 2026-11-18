@@ -24,6 +24,7 @@ import {
   shouldRenderBusinessOwnerHome,
 } from "@/lib/business-home/gate";
 import { BusinessOwnerHomeDashboard } from "@/components/home/BusinessOwnerHomeDashboard";
+import { resolveCabinetNavMode } from "@/lib/cabinet-nav/mode";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
 import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/access-block";
 import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
@@ -105,6 +106,14 @@ export default async function HomePage(
     redirect(agentRoot);
   }
 
+  const homeNavMode = resolveCabinetNavMode(
+    user,
+    businessHomeNavContextFromPresentation(presentation),
+  );
+  if (homeNavMode === "agent") {
+    redirect("/certificates");
+  }
+
   const enrichedPrefs = prefsData ? enrichCabinetUiPreferencesForShell(prefsData) : null;
   const isAgentCabinet = Boolean(
     enrichedPrefs &&
@@ -148,6 +157,19 @@ export default async function HomePage(
               : readiness.catalogStatus ?? user.catalogStatus
           }
         />
+      </CabinetShell>
+    );
+  }
+
+  if (presentation.workplaceKind === "MASTER" && presentation.workplaceKindSource === "employer-context") {
+    return (
+      <CabinetShell returnTo="/">
+        <PageHeading
+          eyebrow="Специалист"
+          title="Ваш кабинет"
+          description="Начните с того, что нужно вам сегодня."
+        />
+        <SpecialistHomeDashboard needsProfileCompletion={false} catalogStatus={null} employeeView />
       </CabinetShell>
     );
   }

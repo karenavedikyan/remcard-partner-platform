@@ -30,6 +30,9 @@ export type ProContextSnapshot = {
     id: string;
     displayName: string;
     companyKind?: string | null;
+    /** Additive (BE v9.2): trade profile of the employer, used to pick the matching shell. */
+    partnerType?: string | null;
+    partnerActivities?: string[];
   } | null;
   branchRole?: string | null;
   /** Assistant / ORG_EMPLOYEE role inside the employer's team (VIEWER is read-only). */

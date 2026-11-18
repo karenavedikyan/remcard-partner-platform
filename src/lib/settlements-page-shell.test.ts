@@ -61,3 +61,38 @@ describe("resolveSettlementsPageShell", () => {
     ).toBe("hub");
   });
 });
+
+describe("resolveSettlementsPageShell: employees and agents (v9.2)", () => {
+  it("employee of a specialist sees the specialist wallet", () => {
+    expect(
+      resolveSettlementsPageShell({
+        partnerType: null,
+        role: "CLIENT",
+        r05Eligible: false,
+        navContext: { employerWorkplaceKind: "MASTER" },
+      }),
+    ).toBe("master-wallet");
+  });
+
+  it("employee of an agent sees the incoming-only agent wallet, never the generic hub", () => {
+    expect(
+      resolveSettlementsPageShell({
+        partnerType: null,
+        role: "CLIENT",
+        r05Eligible: false,
+        navContext: { employerWorkplaceKind: "AGENT" },
+      }),
+    ).toBe("agent-r05");
+  });
+
+  it("agent owner sees the agent wallet even if the R05 flag is off", () => {
+    expect(
+      resolveSettlementsPageShell({
+        partnerType: "COMPANY",
+        partnerActivities: ["AGENT"],
+        role: "PRO",
+        r05Eligible: false,
+      }),
+    ).toBe("agent-r05");
+  });
+});

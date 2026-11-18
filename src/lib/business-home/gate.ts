@@ -11,12 +11,18 @@ import type { AuthUser } from "@/lib/types";
 export function businessHomeNavContextFromPresentation(
   presentation: Pick<
     CabinetPresentationSnapshot,
-    "workplacePartnerType" | "workplacePartnerTypeSource"
+    "workplacePartnerType" | "workplacePartnerTypeSource" | "workplaceKind" | "workplaceKindSource"
   >,
 ): ResolveCabinetNavModeOptions {
+  const employerKind =
+    presentation.workplaceKindSource === "employer-context" &&
+    (presentation.workplaceKind === "MASTER" || presentation.workplaceKind === "AGENT")
+      ? presentation.workplaceKind
+      : null;
   return {
     workplacePartnerType: presentation.workplacePartnerType,
     workplaceNavFromOrgContext: presentation.workplacePartnerTypeSource === "org-context",
+    employerWorkplaceKind: employerKind,
   };
 }
 

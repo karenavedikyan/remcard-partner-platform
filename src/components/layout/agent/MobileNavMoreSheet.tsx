@@ -16,7 +16,8 @@ type MobileNavMoreSheetProps = {
   pathname: string;
   permittedKeys: AgentNavSectionKey[];
   primaryKeys: AgentNavSectionKey[];
-  onOpenCustomize: () => void;
+  /** Omitted for fixed menus (employees): the bottom bar cannot be customised. */
+  onOpenCustomize?: () => void;
 };
 
 export function MobileNavMoreSheet({
@@ -84,16 +85,18 @@ export function MobileNavMoreSheet({
           })}
         </nav>
         <footer className={styles.footer}>
-          <button
-            type="button"
-            className={styles.customizeBtn}
-            onClick={() => {
-              onClose();
-              onOpenCustomize();
-            }}
-          >
-            Настроить нижнюю панель
-          </button>
+          {onOpenCustomize ? (
+            <button
+              type="button"
+              className={styles.customizeBtn}
+              onClick={() => {
+                onClose();
+                onOpenCustomize();
+              }}
+            >
+              Настроить нижнюю панель
+            </button>
+          ) : null}
           {activeOverflow ? (
             <p className={styles.footerHint} role="status">
               Текущий раздел открыт из «Ещё».

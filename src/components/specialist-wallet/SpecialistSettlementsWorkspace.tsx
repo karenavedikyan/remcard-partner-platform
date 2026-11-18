@@ -40,6 +40,7 @@ import hubStyles from "@/components/settlements/settlements.module.css";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
 import { WalletSectionEmptyState } from "@/components/wallet-empty/WalletSectionEmptyState";
 import { isWalletSettlementsDataEmpty } from "@/lib/wallet-empty/is-empty";
+import { publicSettlementsCoverageNote } from "@/lib/wallet-accruals/settlements-display";
 import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { isSupportedWalletEmptyViewerRole } from "@/lib/wallet-empty/viewer-role";
 import {
@@ -522,7 +523,9 @@ export function SpecialistSettlementsWorkspace({
 
   return (
     <div className={hubStyles.settlementDemo} data-testid="specialist-settlements-workspace">
-      {data.coverageNote ? <p className={hubStyles.note}>{data.coverageNote}</p> : null}
+      {publicSettlementsCoverageNote(data.coverageNote) ? (
+        <p className={hubStyles.note}>{publicSettlementsCoverageNote(data.coverageNote)}</p>
+      ) : null}
       {refreshNotice ? (
         <p className={hubStyles.note} role="status" data-testid="specialist-refresh-notice">
           {refreshNotice}

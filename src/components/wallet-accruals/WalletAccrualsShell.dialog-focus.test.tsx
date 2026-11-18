@@ -199,12 +199,12 @@ describe("WalletAccrualsShell dialog focus restore", () => {
         <WalletAccrualsShell
           data={{ receivable: [receivableRow], payable: [], completed: [] }}
           incomingOnly
-          coverageNote="R05 off"
+          coverageNote="Показаны расчёты по подтверждённым покупкам."
           presentation={presentationFor("AGENT")}
         />,
       );
 
-      expect(screen.getByTestId("wallet-coverage-note")).toHaveTextContent("R05 off");
+      expect(screen.getByTestId("wallet-coverage-note")).toHaveTextContent("Показаны расчёты по подтверждённым покупкам.");
       const trigger = screen.getByTestId("wallet-quick-in-waiting");
       await user.click(trigger);
       focusSpy.mockClear();
