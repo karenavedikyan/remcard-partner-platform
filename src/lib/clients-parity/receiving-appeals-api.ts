@@ -334,9 +334,25 @@ export type ReceivingListFilters = {
   status: string;
   source: "all" | "cert" | "manual";
   bucket: ReceivingListBucket;
-  /** Employee's branch filter; omitted = all accessible branches. */
+  /** Employee's branch filter; omitted = the server default (working branch / owner default). */
   branchId?: string | null;
+  /**
+   * Explicit "all accessible branches" for reading. Sent as `branchScope=all` so the server ignores the
+   * working-branch cookie; never combined with `branchId` and never sent with a mutation.
+   */
+  branchScope?: "all";
 };
+
+/** Read-only scope of a single GET (detail / funnel): a concrete branch or the explicit "all". */
+export type ReceivingReadScope = Pick<ReceivingListFilters, "branchId" | "branchScope">;
+
+export function receivingReadScopeParams(scope?: ReceivingReadScope | null): URLSearchParams {
+  const params = new URLSearchParams();
+  const branchId = scope?.branchId?.trim();
+  if (branchId) params.set("branchId", branchId);
+  else if (scope?.branchScope === "all") params.set("branchScope", "all");
+  return params;
+}
 
 export const RECEIVING_LIST_SOURCE_OPTIONS = [
   { key: "all" as const, label: "Все" },
@@ -477,6 +493,8 @@ export type ReceivingAppealsListResponse = {
   /** Future K1 — not invented when absent. */
   access?: ReceivingPrincipalAccess;
   principal?: ReceivingSessionPrincipal;
+  /** Staff only, from the server's trusted read scope; absent for owners and for servers without it. */
+  visibleBranches?: ReceivingStaffBranch[];
 };
 
 export const RECEIVING_EMPTY_SETTINGS: ReceivingPartnerSettings = {
@@ -655,6 +673,9 @@ export function receivingAppealsMutationsAllowed(data: Pick<ReceivingAppealsList
  * K1 GET wire (`83f279e8`): `{ appeals, nextCursor, tab, readOnly }` (+ optional fields when aligned).
  * @see audit/remcard-parallel-20261113/P6/k1-83f279e8-list-envelope.md
  */
+/** A branch the employee may read in «Клиенты»: name data of the server's trusted read scope. */
+export type ReceivingStaffBranch = { id: string; name: string; city: string; address?: string | null };
+
 export type K1ClientAppealsListWire = {
   appeals?: ReceivingAppealListRowWire[];
   nextCursor?: string | null;
@@ -664,6 +685,8 @@ export type K1ClientAppealsListWire = {
   settings?: ReceivingPartnerSettings;
   access?: Partial<ReceivingPrincipalAccess>;
   principal?: Partial<ReceivingSessionPrincipal>;
+  /** Staff only: active branches readable in «Клиенты» (independent of working assignments). */
+  branchScope?: { branches?: ReceivingStaffBranch[] };
   data?: K1ClientAppealsListWire;
 };
 
@@ -738,8 +761,7 @@ export function buildReceivingAppealsListQuery(
     if (stageKey) params.set("stage", stageKey);
   }
   if (cursor) params.set("cursor", cursor);
-  const branchId = filters?.branchId?.trim();
-  if (branchId) params.set("branchId", branchId);
+  for (const [key, value] of receivingReadScopeParams(filters)) params.set(key, value);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -824,6 +846,12 @@ export function coerceK1ClientAppealsListPayload(
   if (list.access) out.access = normalizeReceivingAccess(list.access);
   if (list.principal) {
     out.principal = normalizeReceivingSessionPrincipal(list.principal, appeals);
+  }
+  const branches = list.branchScope?.branches;
+  if (Array.isArray(branches)) {
+    out.visibleBranches = branches
+      .filter((b) => typeof b?.id === "string" && b.id.trim() !== "")
+      .map((b) => ({ id: b.id, name: String(b.name ?? ""), city: String(b.city ?? ""), address: b.address ?? null }));
   }
   return out;
 }
@@ -1319,6 +1347,7 @@ export type ReceivingAppealCreateResult =
 export async function createReceivingAppeal(
   body: ReceivingAppealCreateBody,
   gate?: Pick<ReceivingAppealsListResponse, "readOnly"> | ReceivingPrincipalAccess,
+  capture?: { branchId?: string | null },
 ): Promise<ReceivingAppealCreateResult> {
   const readOnly =
     gate && "readOnly" in gate
@@ -1340,6 +1369,7 @@ export async function createReceivingAppeal(
     await remcardFetch<{ appeal: ReceivingAppealListRowWire }>("/api/pro/client-appeals", {
       method: "POST",
       body: toK1ReceivingAppealCreateBody(body),
+      searchParams: capture?.branchId?.trim() ? { branchId: capture.branchId.trim() } : undefined,
     });
     // A committed POST must never become a retryable creation error because a
     // subsequent list GET failed. The workspace owns read-only reconciliation.
@@ -1356,11 +1386,12 @@ export async function createReceivingAppeal(
 /** P4 detail load — GET must be read-only on server (no write side effects). */
 export async function fetchReceivingAppealDetail(
   id: string,
+  scope?: ReceivingReadScope | null,
 ): Promise<
   | { ok: true; data: ReceivingAppealDetailPayload }
   | { ok: false; code: "BLOCKED_CONTRACT" | "ERROR"; message: string }
 > {
-  const raw = await fetchReceivingAppealDetailWire(id);
+  const raw = await fetchReceivingAppealDetailWire(id, scope);
   if (!raw.ok) {
     return {
       ok: false,
@@ -1374,6 +1405,7 @@ export async function fetchReceivingAppealDetail(
 /** Raw K1 GET envelope for P4 mapper (`receiving-detail-envelope-bridge.ts`). */
 export async function fetchReceivingAppealDetailWire(
   id: string,
+  scope?: ReceivingReadScope | null,
 ): Promise<
   | { ok: true; wire: ReceivingAppealDetailWire }
   | {
@@ -1387,7 +1419,8 @@ export async function fetchReceivingAppealDetailWire(
     return { ok: false, code: "BLOCKED_CONTRACT", message: RECEIVING_API_CONTRACT_NOTE };
   }
   try {
-    const payload = await remcardFetch<ReceivingAppealDetailWire>(path);
+    const qs = receivingReadScopeParams(scope).toString();
+    const payload = await remcardFetch<ReceivingAppealDetailWire>(qs ? `${path}?${qs}` : path);
     return { ok: true, wire: payload };
   } catch (caught) {
     if (caught instanceof RemcardApiError && caught.status === 404) {
@@ -1616,6 +1649,7 @@ export type ReceivingFunnelQuery = {
   to?: string;
   source?: "all" | "cert" | "manual";
   branchId?: string | null;
+  branchScope?: "all";
 };
 
 export type ReceivingFunnelLoadResult =
@@ -1635,7 +1669,7 @@ export async function fetchReceivingFunnel(
   if (query.from) params.set("from", query.from);
   if (query.to) params.set("to", query.to);
   if (query.source && query.source !== "all") params.set("source", query.source);
-  if (query.branchId?.trim()) params.set("branchId", query.branchId.trim());
+  for (const [key, value] of receivingReadScopeParams(query)) params.set(key, value);
   const qs = params.toString();
   try {
     const payload = await remcardFetch<{ funnel?: ReceivingFunnel }>(

@@ -1,0 +1,135 @@
+.inlineRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.root {
+  position: relative;
+  max-width: 100%;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  min-height: 40px;
+  max-width: min(20rem, 100%);
+  padding: 0 var(--space-3, 0.75rem);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  background: var(--offset);
+}
+
+.trigger:focus-visible,
+.item:focus-visible {
+  outline: 2px solid var(--accent, var(--brand));
+  outline-offset: 2px;
+}
+
+.trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.triggerLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.menu {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  min-width: 16rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  max-height: min(24rem, 60vh);
+  overflow-y: auto;
+  padding: var(--space-2, 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.menuTitle {
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover,
+.item[aria-checked="true"] {
+  background: var(--offset);
+}
+
+.itemText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tag {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.check {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--accent, var(--brand));
+}
+
+@media (max-width: 640px) {
+  .trigger {
+    min-height: 44px;
+    max-width: 11rem;
+  }
+
+  .item {
+    min-height: 44px;
+  }
+
+  .menu {
+    min-width: min(16rem, calc(100vw - 2rem));
+  }
+}

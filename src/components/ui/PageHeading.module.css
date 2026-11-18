@@ -22,3 +22,24 @@
 .headingCompact {
   margin-bottom: 1.2rem;
 }
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.titleRow h1 {
+  min-width: 0;
+}
+
+.titleAction {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.titleAction:empty {
+  display: none;
+}

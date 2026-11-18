@@ -15,6 +15,7 @@ import {
   patchReceivingAppealStageCas,
   type ReceivingAppealDetailWire,
   type ReceivingAppealListRow,
+  type ReceivingReadScope,
   type ReceivingWorkingStage,
 } from "./receiving-appeals-api";
 
@@ -124,7 +125,7 @@ type PatchStageResult = Awaited<ReturnType<typeof patchReceivingAppealStageCas>>
 type PatchProfileResult = Awaited<ReturnType<typeof patchReceivingAppealProfileCas>>;
 
 export type ReceivingBulkApplyTransportDeps = {
-  fetchDetail: (id: string) => Promise<DetailFetchResult>;
+  fetchDetail: (id: string, scope?: ReceivingReadScope | null) => Promise<DetailFetchResult>;
   patchStage: typeof patchReceivingAppealStageCas;
   patchProfile: typeof patchReceivingAppealProfileCas;
 };
@@ -228,9 +229,15 @@ export async function applyReceivingBulkEditsPerId(
     workingStages: ReceivingWorkingStage[];
     stageBlocked: boolean;
     stageLockedIds?: ReadonlySet<string>;
+    /** Read scope of the list the rows were selected in (detail GET only; mutations are not scoped). */
+    readScope?: ReceivingReadScope | null;
   },
-  deps: ReceivingBulkApplyTransportDeps = defaultBulkApplyTransport,
+  baseDeps: ReceivingBulkApplyTransportDeps = defaultBulkApplyTransport,
 ): Promise<ReceivingBulkApplyRun> {
+  const readScope = ctx.readScope ?? null;
+  const deps: ReceivingBulkApplyTransportDeps = readScope
+    ? { ...baseDeps, fetchDetail: (id) => baseDeps.fetchDetail(id, readScope) }
+    : baseDeps;
   const built = buildReceivingBulkPatchIntents(ids, draft, {
     stageBlocked: ctx.stageBlocked,
     stageLockedIds: ctx.stageLockedIds,

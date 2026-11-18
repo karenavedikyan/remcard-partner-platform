@@ -51,6 +51,7 @@ function install(opts: { access: Access; branches?: typeof BRANCHES; listStatus?
         ],
         readOnly: !opts.access.mutationsAllowed,
         access: { listAllowed: true, ...opts.access },
+        ...(opts.access.actorKind === "staff" ? { branchScope: { branches: opts.branches ?? BRANCHES } } : {}),
         nextCursor: null,
       } as never;
     }
@@ -69,23 +70,26 @@ describe("B2: /clients for an organization employee", () => {
     install({ access: staffAccess() });
     const user = userEvent.setup();
     render(<ReceivingAppealsWorkspace />);
-    const select = await screen.findByLabelText("Филиал");
-    const options = within(select).getAllByRole("option").map((o) => o.textContent);
+    const trigger = await screen.findByTestId("ca-receiving-branch-trigger");
+    expect(trigger).toHaveTextContent("Все филиалы");
+    await user.click(trigger);
+    const options = within(screen.getByRole("menu")).getAllByRole("menuitemradio").map((o) => o.textContent);
     expect(options).toHaveLength(3);
-    expect(options[0]).toBe("Все мои филиалы");
+    expect(options[0]).toContain("Все доступные филиалы");
     expect(options.join(" ")).toContain("Филиал А");
     expect(options.join(" ")).toContain("Филиал Б");
 
-    await user.selectOptions(select, "br-b");
+    await user.click(screen.getByTestId("ca-receiving-branch-option-br-b"));
     await waitFor(() => expect(listReads().some((p) => p.includes("branchId=br-b"))).toBe(true));
     expect(listReads()[0]).not.toContain("branchId");
+    expect(listReads()[0]).not.toContain("branchScope");
   });
 
   it("a single-branch employee sees his branch as a label, not a selector", async () => {
     install({ access: staffAccess(), branches: [BRANCHES[0]!] });
     render(<ReceivingAppealsWorkspace />);
     expect(await screen.findByTestId("ca-receiving-branch-single")).toHaveTextContent("Филиал А");
-    expect(screen.queryByRole("combobox", { name: "Филиал" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ca-receiving-branch-trigger")).not.toBeInTheDocument();
   });
 
   it("the owner gets no branch selector (behavior unchanged)", async () => {

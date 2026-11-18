@@ -33,6 +33,13 @@ import type { ReceivingBulkAction, ReceivingBulkContractState } from "./Receivin
 import { ReceivingBulkConfirmPanel } from "./ReceivingBulkConfirmPanel";
 import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
 import { ReceivingBranchFilter } from "./ReceivingBranchFilter";
+import {
+  receivingBranchLabelById,
+  receivingBranchScopeOf,
+  resolveReceivingBranchSelection,
+  type ReceivingStaffBranch,
+} from "./receiving-branch-scope";
+import { formatStaffBranchLine } from "@/lib/profile-staff-cabinet";
 import { ReceivingFunnelPage } from "./ReceivingFunnelPage";
 import {
   applyReceivingBulkEditsPerId,
@@ -57,6 +64,7 @@ import {
   type ReceivingAllBucketsProof,
 } from "@/components/clients/new-partner-empty/clientsEmptyEligibility";
 import {
+  useClientsPageChrome,
   useReportClientsDirectionProbe,
   useReportClientsSubview,
 } from "@/components/clients/new-partner-empty/clientsPageChrome";
@@ -70,6 +78,8 @@ type ReceivingView = "list" | "manual" | "settings" | "scan" | "detail" | "analy
 
 const RECEIVING_LIST_REFRESH_NOTICE_DRAFT =
   "Не удалось обновить список. Черновик и выбранные записи сохранены.";
+const RECEIVING_BRANCH_REQUIRED_NOTICE =
+  "Выберите филиал в фильтре, чтобы добавить клиента или принять сертификат.";
 const RECEIVING_LIST_REFRESH_NOTICE = "Не удалось обновить список.";
 
 function receivingListFailureRecoverable(
@@ -122,6 +132,13 @@ export function ReceivingAppealsWorkspace({
     ids: string[];
   } | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const headingSlot = useClientsPageChrome()?.headingAction ?? null;
+  const [workingBranchId, setWorkingBranchId] = useState<string | null>(null);
+  const [branchRequiredNotice, setBranchRequiredNotice] = useState(false);
+  const listSeqRef = useRef(0);
+  const staffPrincipal = data?.access?.actorKind === "staff";
+  const branches: ReceivingStaffBranch[] | null = staffPrincipal ? (data?.visibleBranches ?? null) : null;
+  const multiBranch = staffPrincipal && (branches?.length ?? 0) >= 2;
   const [bucketsProof, setBucketsProof] = useState<ReceivingAllBucketsProof>(
     previewData && previewData.appeals.length === 0 ? "all_empty" : "unknown",
   );
@@ -151,7 +168,9 @@ export function ReceivingAppealsWorkspace({
       settingsForQuery?: ReceivingPartnerSettings | null,
       preserveMountedList?: boolean,
     ) => {
+      const seq = ++listSeqRef.current;
       const res = await fetchReceivingAppealsWorkspace(filters, cursor, settingsForQuery);
+      if (seq !== listSeqRef.current) return res;
       if (!res.ok) {
         if (preserveMountedList && receivingListFailureRecoverable(res)) return res;
         if (!append) {
@@ -161,6 +180,9 @@ export function ReceivingAppealsWorkspace({
       }
       setPhase("ready");
       setBlocked(null);
+      if (receivingBranchScopeOf(filters) === "default") {
+        setWorkingBranchId(res.data.principal?.receivingBranchId?.trim() || null);
+      }
       setData((prev) => {
         if (!append || !prev) return res.data;
         return {
@@ -230,6 +252,11 @@ export function ReceivingAppealsWorkspace({
       return;
     }
 
+    if (multiBranch) {
+      setBucketsProof(data.appeals.length > 0 ? "has_elsewhere" : "unknown");
+      return;
+    }
+
     const candidate = isReceivingDirectionIntroCandidate({
       phase,
       listView: view,
@@ -251,6 +278,7 @@ export function ReceivingAppealsWorkspace({
       status: "Все статусы" as const,
       source: "all" as const,
       branchId: listFilters.branchId ?? null,
+      branchScope: listFilters.branchScope,
     };
     const settings = data.settings;
 
@@ -289,7 +317,7 @@ export function ReceivingAppealsWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [data, listFilters, phase, serverBacked, view]);
+  }, [data, listFilters, multiBranch, phase, serverBacked, view]);
 
   useEffect(() => {
     if (!directionProbe) return;
@@ -306,6 +334,10 @@ export function ReceivingAppealsWorkspace({
       return;
     }
     if (view !== "list") {
+      reportIncomingProbe("not_empty");
+      return;
+    }
+    if (multiBranch) {
       reportIncomingProbe("not_empty");
       return;
     }
@@ -333,6 +365,7 @@ export function ReceivingAppealsWorkspace({
     data,
     directionProbe,
     listFilters,
+    multiBranch,
     phase,
     reportIncomingProbe,
     serverBacked,
@@ -355,6 +388,24 @@ export function ReceivingAppealsWorkspace({
     void applyListPage(listFilters, data.nextCursor, true, data.settings)
       .finally(() => setLoadingMore(false));
   }, [applyListPage, data?.nextCursor, data?.settings, listFilters, loadingMore]);
+
+  const branchSelection = useMemo(
+    () =>
+      multiBranch && branches
+        ? resolveReceivingBranchSelection(listFilters, branches, workingBranchId)
+        : null,
+    [branches, listFilters, multiBranch, workingBranchId],
+  );
+  const readScope = useMemo(
+    () =>
+      branchSelection
+        ? branchSelection.kind === "all"
+          ? { branchScope: "all" as const }
+          : { branchId: branchSelection.branchId }
+        : null,
+    [branchSelection],
+  );
+  const writeBranchId = branchSelection?.kind === "branch" ? branchSelection.branchId : null;
 
   const bulkWriteAllowed = data !== null && receivingAppealsMutationsAllowed(data);
   const bulkContractState: ReceivingBulkContractState = !batchProxyReady || !bulkWriteAllowed
@@ -442,6 +493,7 @@ export function ReceivingAppealsWorkspace({
           workingStages: data.settings?.workingStages ?? [],
           stageBlocked,
           stageLockedIds,
+          readScope,
         });
         const partialMsg = receivingBulkErrorMessage(result);
         if (partialMsg) setBatchPartial(partialMsg);
@@ -458,7 +510,7 @@ export function ReceivingAppealsWorkspace({
         setBatchPending(false);
       }
     },
-    [bulkMutationBlocked, data, refreshListAfterMutation, selected],
+    [bulkMutationBlocked, data, readScope, refreshListAfterMutation, selected],
   );
 
   const bulkCallbacks = useMemo(
@@ -553,16 +605,36 @@ export function ReceivingAppealsWorkspace({
   const denialMessage = receivingDenialMessage(
     data.access?.denialCode ?? (mutationsAllowed ? null : RECEIVING_ACCESS_LIST_ONLY_DENIAL),
   );
-  const isStaffPrincipal = data.access?.actorKind === "staff";
-  const branchFilterNode = isStaffPrincipal ? (
-    <ReceivingBranchFilter
-      value={listFilters.branchId ?? null}
-      disabled={listRefreshInFlight || batchPending}
-      onChange={(branchId) => {
-        setSelected(new Set());
-        onListFiltersChange({ ...listFilters, branchId });
-      }}
-    />
+  const changeBranchScope = (next: Pick<ReceivingListFilters, "branchId" | "branchScope">) => {
+    setSelected(new Set());
+    setBranchRequiredNotice(false);
+    const { branchId: _branchId, branchScope: _branchScope, ...rest } = listFilters;
+    onListFiltersChange({ ...rest, ...next });
+  };
+  const branchFilterNode =
+    staffPrincipal && branches && branches.length === 1 ? (
+      <p className="small muted" data-testid="ca-receiving-branch-single">
+        Филиал: {formatStaffBranchLine(branches[0]!)}
+      </p>
+    ) : branchSelection && branches ? (
+      <ReceivingBranchFilter
+        branches={branches}
+        selection={branchSelection}
+        currentBranchId={workingBranchId}
+        slot={headingSlot}
+        disabled={listRefreshInFlight || batchPending}
+        onSelectAll={() => changeBranchScope({ branchScope: "all" })}
+        onSelectBranch={(branchId) => changeBranchScope({ branchId })}
+      />
+    ) : null;
+  const allBranchesShown = branchSelection?.kind === "all";
+  const branchRequiredBanner = branchRequiredNotice ? (
+    <div className={styles.receivingNotice} role="status" data-testid="ca-receiving-branch-required">
+      {RECEIVING_BRANCH_REQUIRED_NOTICE}
+      <button type="button" className="btn ghost small-btn" onClick={() => setBranchRequiredNotice(false)}>
+        Закрыть
+      </button>
+    </div>
   ) : null;
 
   if (data.access?.listAllowed === false) {
@@ -638,7 +710,7 @@ export function ReceivingAppealsWorkspace({
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
           if (!proxyReady || leadsReadOnly) return;
-          const res = await createReceivingAppeal(body, data);
+          const res = await createReceivingAppeal(body, data, { branchId: writeBranchId });
           if (!res.ok) {
             throw new Error(res.message);
           }
@@ -698,7 +770,7 @@ export function ReceivingAppealsWorkspace({
         onCancel={() => setView("list")}
         onSubmit={async (body) => {
           const res = await submitReceivingCertificateEntry(body, data, {
-            branchId: listFilters.branchId ?? undefined,
+            branchId: writeBranchId ?? listFilters.branchId ?? undefined,
           });
           if (!res.ok) {
             throw new Error(res.message);
@@ -712,7 +784,13 @@ export function ReceivingAppealsWorkspace({
   }
 
   if (view === "analytics") {
-    return <ReceivingFunnelPage onBack={() => setView("list")} branchId={listFilters.branchId ?? null} />;
+    return (
+      <ReceivingFunnelPage
+        onBack={() => setView("list")}
+        branchId={readScope?.branchId ?? listFilters.branchId ?? null}
+        branchScope={readScope?.branchScope ?? listFilters.branchScope}
+      />
+    );
   }
 
   if (view === "detail" && detailId) {
@@ -724,6 +802,7 @@ export function ReceivingAppealsWorkspace({
           appealId={detailId}
           readOnly={leadsReadOnly}
           referrerPartnerName={listRow?.referrerDisplayName ?? null}
+          readScope={readScope ?? { branchId: listFilters.branchId, branchScope: listFilters.branchScope }}
           onBack={() => {
             setView("list");
             setDetailId(null);
@@ -739,10 +818,10 @@ export function ReceivingAppealsWorkspace({
   // An empty stale snapshot after an accepted create is not proof that no
   // appeals exist. Keep read-only recovery instead of inviting another create.
   if (listRefreshRequired && data.appeals.length === 0) {
-    return <>{persistBanner}{listRefreshBanner}</>;
+    return <>{persistBanner}{listRefreshBanner}{branchFilterNode}</>;
   }
 
-  const showDirectionIntro = isReceivingDirectionIntroEligible({
+  const showDirectionIntro = !multiBranch && isReceivingDirectionIntroEligible({
     phase,
     listView: view,
     filters: listFilters,
@@ -799,6 +878,7 @@ export function ReceivingAppealsWorkspace({
       {persistBanner}
       {listRefreshBanner}
       {branchFilterNode}
+      {branchRequiredBanner}
       <ReceivingAppealsList
         bulkEditSlot={bulkEditNode}
         bulkConfirmSlot={bulkConfirmNode}
@@ -815,13 +895,21 @@ export function ReceivingAppealsWorkspace({
         readOnly={leadsReadOnly}
         scanOnly={!readOnly && !leadsAllowed && scanAllowed}
         bulk={leadsAllowed ? bulkCallbacks : undefined}
+        branchLabelOf={
+          allBranchesShown && branches
+            ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)
+            : undefined
+        }
+        onShowAllBranches={
+          branchSelection?.kind === "branch" ? () => changeBranchScope({ branchScope: "all" }) : undefined
+        }
         onOpenAppeal={(id) => {
           setDetailId(id);
           setView("detail");
         }}
         onNavigateManual={
           leadsAllowed
-            ? () => setView("manual")
+            ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("manual"))
             : () =>
                 setPersistNotice(denialMessage)
         }
@@ -832,7 +920,7 @@ export function ReceivingAppealsWorkspace({
         }
         onNavigateScan={
           scanAllowed
-            ? () => setView("scan")
+            ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("scan"))
             : () => setPersistNotice(denialMessage)
         }
         onNavigateAnalytics={() => setView("analytics")}

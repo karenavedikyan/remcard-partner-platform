@@ -7,6 +7,7 @@ import {
   patchReceivingAppealProfileCas,
   patchReceivingAppealStageCas,
   postReceivingWorkingStagesMutation,
+  type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import {
   ReceivingAppealDetailView,
@@ -36,6 +37,8 @@ export type ReceivingAppealDetailHostProps = {
   appealId: string;
   readOnly?: boolean;
   referrerPartnerName?: string | null;
+  /** Explicit list scope the card was opened from; used for reads only, never for mutations. */
+  readScope?: ReceivingReadScope | null;
   onBack: () => void;
   onRevisionLoaded?: (revision: number) => void;
   onAppealMutated?: () => void | Promise<void>;
@@ -66,11 +69,14 @@ export function ReceivingAppealDetailHost({
   appealId,
   readOnly = false,
   referrerPartnerName,
+  readScope,
   onBack,
   onRevisionLoaded,
   onAppealMutated,
 }: ReceivingAppealDetailHostProps) {
   const router = useRouter();
+  const readScopeRef = useRef<ReceivingReadScope | null>(readScope ?? null);
+  readScopeRef.current = readScope ?? null;
   const [phase, setPhase] = useState<LoadPhase>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapped, setMapped] = useState<ReturnType<typeof receivingAppealDetailWireToP4Mapped> | null>(
@@ -148,7 +154,7 @@ export function ReceivingAppealDetailHost({
         setPhase("loading");
         setLoadError(null);
       }
-      const res = await fetchReceivingAppealDetailWire(session.appealId);
+      const res = await fetchReceivingAppealDetailWire(session.appealId, readScopeRef.current);
       if (isStaleGeneration(generation, session)) {
         return { applied: false as const, stale: true as const };
       }
@@ -198,7 +204,7 @@ export function ReceivingAppealDetailHost({
   const reloadDetail = useCallback(async () => {
     const session = sessionKeyRef.current;
     const generation = detailGenerationRef.current;
-    const res = await fetchReceivingAppealDetailWire(session.appealId);
+    const res = await fetchReceivingAppealDetailWire(session.appealId, readScopeRef.current);
     if (isStaleGeneration(generation, session)) return;
     if (res.ok) {
       applyDetailWire(session, res);
@@ -223,7 +229,7 @@ export function ReceivingAppealDetailHost({
     setNotesSaveBlocked(true);
     setBusy((b) => ({ ...b, notes: true }));
     try {
-      const res = await fetchReceivingAppealDetailWire(session.appealId);
+      const res = await fetchReceivingAppealDetailWire(session.appealId, readScopeRef.current);
       if (isStaleGeneration(generation, session)) return;
       if (res.ok) {
         // Keep the mounted view and its dirty draft. Only the server snapshot/revision changes.

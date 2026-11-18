@@ -35,6 +35,7 @@ export function ClientsListBody() {
           eyebrow={heading.eyebrow}
           title={heading.title}
           description={heading.description}
+          actionSlotRef={chrome?.setHeadingAction}
         />
       )}
       <ClientsDirectionWorkspace accessMode={mode} />

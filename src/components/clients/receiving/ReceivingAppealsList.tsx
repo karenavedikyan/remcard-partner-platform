@@ -50,6 +50,10 @@ export type ReceivingAppealsListProps = {
   /** Prototype order: confirm panel sits under the toolbar, edit panel under the selection bar. */
   bulkConfirmSlot?: ReactNode;
   bulkEditSlot?: ReactNode;
+  /** Branch caption under the client name; set only while several branches are listed together. */
+  branchLabelOf?: (row: ReceivingAppealListRow) => string | null;
+  /** Text action of the empty list when one branch is shown: widen to every allowed branch. */
+  onShowAllBranches?: () => void;
 };
 
 const EMPTY_BUCKET_COPY: Record<
@@ -111,6 +115,8 @@ export function ReceivingAppealsList({
   onLoadMore,
   bulkConfirmSlot,
   bulkEditSlot,
+  branchLabelOf,
+  onShowAllBranches,
 }: ReceivingAppealsListProps) {
   const [localFilters, setLocalFilters] = useState<ReceivingListFilters>({
     q: "",
@@ -333,6 +339,16 @@ export function ReceivingAppealsList({
         <section className="panel empty ca-empty" data-testid="ca-receiving-appeals-empty">
           <h2>{emptyCopy.title}</h2>
           <p className="muted">{emptyCopy.hint}</p>
+          {onShowAllBranches ? (
+            <button
+              type="button"
+              className="btn ghost"
+              data-testid="ca-receiving-show-all-branches"
+              onClick={onShowAllBranches}
+            >
+              Показать все филиалы
+            </button>
+          ) : null}
           {filters.bucket !== "active" ? (
             <button type="button" className="btn ghost" onClick={() => setFilters({ ...filters, bucket: "active" })}>
               К активным
@@ -374,6 +390,7 @@ export function ReceivingAppealsList({
           {filtered.map((row) => {
             const paid = paidLabel(row);
             const checked = selected.has(row.id);
+            const branchLabel = branchLabelOf?.(row) ?? null;
             return (
               <div key={row.id} className="ca-row-lane">
                 {bulkOn ? (
@@ -395,6 +412,11 @@ export function ReceivingAppealsList({
                 >
                   <span className="ca-row-name">
                     <strong>{row.clientName}</strong>
+                    {branchLabel ? (
+                      <small className="ca-row-branch muted" data-testid="ca-row-branch">
+                        {branchLabel}
+                      </small>
+                    ) : null}
                   </span>
                   <span className="ca-row-request muted small">{row.interest?.trim() || "—"}</span>
                   <span className="ca-row-meta muted small">{rowSourceMeta(row)}</span>

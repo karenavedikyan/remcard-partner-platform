@@ -38,6 +38,9 @@ type ChromeCtx = {
   /** A full-screen sub-view (card, analytics, stages…) of the active direction is open: no page header, no switcher. */
   subviewOpen: boolean;
   setSubviewFor: (direction: ClientsChromeDirection, open: boolean) => void;
+  /** Slot at the right of the page title row; the active list may portal its compact controls into it. */
+  headingAction: HTMLElement | null;
+  setHeadingAction: (element: HTMLElement | null) => void;
 };
 
 const ClientsPageChromeContext = createContext<ChromeCtx | null>(null);
@@ -72,6 +75,7 @@ export function ClientsPageChromeProvider({
   const [activeDirection, setActiveDirection] = useState<ClientsChromeDirection>(
     accessMode === "agent" ? "at-partners" : "incoming",
   );
+  const [headingAction, setHeadingAction] = useState<HTMLElement | null>(null);
   const [subviews, setSubviews] = useState<SubviewState>({ incoming: false, "at-partners": false });
   const setSubviewFor = useCallback((direction: ClientsChromeDirection, open: boolean) => {
     setSubviews((cur) => (cur[direction] === open ? cur : { ...cur, [direction]: open }));
@@ -101,8 +105,19 @@ export function ClientsPageChromeProvider({
       setActiveDirection,
       subviewOpen,
       setSubviewFor,
+      headingAction,
+      setHeadingAction,
     }),
-    [activeDirection, atPartners, hideDirectionTabs, hideTopChrome, incoming, setSubviewFor, subviewOpen],
+    [
+      activeDirection,
+      atPartners,
+      headingAction,
+      hideDirectionTabs,
+      hideTopChrome,
+      incoming,
+      setSubviewFor,
+      subviewOpen,
+    ],
   );
 
   return <ClientsPageChromeContext.Provider value={value}>{children}</ClientsPageChromeContext.Provider>;
