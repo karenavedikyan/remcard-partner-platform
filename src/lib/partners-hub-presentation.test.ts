@@ -18,6 +18,27 @@ describe("resolvePartnersHubPresentation", () => {
     expect(p.defaultSearchRole).toBe("agent");
   });
 
+  it("agent heading uses the prototype subtitle, others keep the business one", () => {
+    const agent = resolvePartnersHubPresentation({
+      r04: { featureEnabled: true, eligible: true },
+      r06: null,
+    });
+    expect(agent.heading.description).toBe("Рекомендуйте. Делитесь. Получайте бонусы.");
+    const specialist = resolvePartnersHubPresentation({
+      r04: null,
+      r06: { featureEnabled: true, eligible: true },
+    });
+    expect(specialist.heading.description).toBe("Начните с того, что нужно вам сегодня.");
+    for (const partnerType of ["STORE", "COMPANY"] as const) {
+      const business = resolvePartnersHubPresentation({
+        r04: null,
+        r06: null,
+        business: { eligible: true, partnerType },
+      });
+      expect(business.heading.description).toBe("Начните с того, что нужно вам сегодня.");
+    }
+  });
+
   it("uses specialist shared shell only when r06 feature and eligible", () => {
     const p = resolvePartnersHubPresentation({
       r04: { featureEnabled: true, eligible: false },

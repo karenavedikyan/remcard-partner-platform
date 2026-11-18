@@ -34,6 +34,7 @@ export type BusinessPartnersPresentationGate = {
 };
 
 const BUSINESS_HEADING_DESCRIPTION = "Начните с того, что нужно вам сегодня.";
+const AGENT_HEADING_DESCRIPTION = "Рекомендуйте. Делитесь. Получайте бонусы.";
 
 export function resolvePartnersHubPresentation(input: {
   r04: R04Gate | null;
@@ -50,7 +51,7 @@ export function resolvePartnersHubPresentation(input: {
       heading: {
         eyebrow: "АГЕНТ",
         title: "Партнёры",
-        description: BUSINESS_HEADING_DESCRIPTION,
+        description: AGENT_HEADING_DESCRIPTION,
       },
     };
   }

@@ -85,7 +85,7 @@ describe("certificate receiving policy owner context", () => {
     if (!gate.ok) expect(gate.status).toBe(403);
   });
 
-  it("shows profile entry for pure agent (incoming-only)", () => {
+  it("hides the entry for a solo agent: agents do not accept certificates", () => {
     const ui = resolveCertificateReceivingPolicyUiGate({
       profile: profile({
         partnerType: "COMPANY",
@@ -94,7 +94,46 @@ describe("certificate receiving policy owner context", () => {
       proContext: { role: "SOLO_PARTNER", organization: null },
       isOrgStaffWorkplaceUi: false,
     });
-    expect(ui.showEntry).toBe(true);
-    expect(ui.canEditSettings).toBe(false);
+    expect(ui).toEqual({ showEntry: false, canEditSettings: false });
+  });
+
+  it("hides the entry for an agent that owns an organization", () => {
+    const ui = resolveCertificateReceivingPolicyUiGate({
+      profile: profile({ partnerType: "COMPANY", partnerActivities: ["AGENT"] }),
+      proContext: { role: "ORG_OWNER", organization: { id: "org-a", name: "Агентство" } },
+      isOrgStaffWorkplaceUi: false,
+    });
+    expect(ui).toEqual({ showEntry: false, canEditSettings: false });
+  });
+
+  it("keeps the entry hidden for an agent's employee (delegated context)", () => {
+    const ui = resolveCertificateReceivingPolicyUiGate({
+      profile: profile({ role: "CLIENT", partnerType: null, partnerActivities: [] }),
+      proContext: { role: "PARTNER_EMPLOYEE", organization: null },
+      isOrgStaffWorkplaceUi: false,
+    });
+    expect(ui).toEqual({ showEntry: false, canEditSettings: false });
+  });
+
+  it.each([
+    ["store owner", { partnerType: "STORE", partnerActivities: ["STORE"] }, { role: "ORG_OWNER", organization: { id: "o1", name: "Org" } }],
+    ["company owner", { partnerType: "COMPANY", partnerActivities: ["SERVICE"] }, { role: "ORG_OWNER", organization: { id: "o2", name: "Org" } }],
+    ["solo specialist", { partnerType: "MASTER", partnerActivities: ["SERVICE"] }, { role: "SOLO_PARTNER", organization: null }],
+  ])("keeps the editable entry for %s", (_label, user, proContext) => {
+    const ui = resolveCertificateReceivingPolicyUiGate({
+      profile: profile(user),
+      proContext,
+      isOrgStaffWorkplaceUi: false,
+    });
+    expect(ui).toEqual({ showEntry: true, canEditSettings: true });
+  });
+
+  it("still lets the API gate answer GET for an agent (unchanged)", () => {
+    const gate = assertCertificateReceivingPolicyApiAccess({
+      user: profile({ partnerType: "COMPANY", partnerActivities: ["AGENT"] }).user,
+      proContext: { role: "SOLO_PARTNER", organization: null },
+      method: "GET",
+    });
+    expect(gate.ok).toBe(true);
   });
 });

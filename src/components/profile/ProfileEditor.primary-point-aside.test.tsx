@@ -114,14 +114,17 @@ vi.mock("./ProfileDirectionsPicker", () => ({
 
 const cabinetAccess = ownerProfileCabinetAccess();
 
-function profileWithBranches(branchCount: number): ProProfileResponse {
+function profileWithBranches(
+  branchCount: number,
+  partnerType: "STORE" | "COMPANY" | "MASTER" = "STORE",
+): ProProfileResponse {
   return {
     organization: {
       id: "org-synthetic",
       name: "Синтетический магазин",
       catalogStatus: "APPROVED",
       catalogPublished: true,
-      partnerType: "STORE",
+      partnerType: partnerType === "MASTER" ? "STORE" : partnerType,
       branchCount,
       storeCategories: ["doors"],
       specializations: [],
@@ -134,7 +137,7 @@ function profileWithBranches(branchCount: number): ProProfileResponse {
       city: "Краснодар",
       specializations: [],
       role: "PRO",
-      partnerType: "STORE",
+      partnerType,
       description: null,
       catalogStatus: "APPROVED",
       isPublic: true,
@@ -184,5 +187,17 @@ describe("ProfileEditor aside: дополнительные адреса вме�
     const section = screen.getByTestId("branches-section");
     expect(section.getAttribute("data-primary-name")).toBe("Синтетический магазин");
     expect(section.getAttribute("data-primary-published")).toBe("true");
+  });
+});
+
+describe("ProfileEditor: подпись вкладки branches по типу партнёра", () => {
+  it.each([
+    ["COMPANY", "Филиалы", "Точки"],
+    ["STORE", "Точки", "Филиалы"],
+    ["MASTER", "Точки", "Филиалы"],
+  ] as const)("%s: вкладка «%s», без «%s»", (partnerType, expected, other) => {
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={profileWithBranches(0, partnerType)} />);
+    expect(screen.getByRole("tab", { name: expected })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: other })).toBeNull();
   });
 });

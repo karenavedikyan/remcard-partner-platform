@@ -3,6 +3,7 @@ import {
   buildProfileSectionHref,
   profileSectionNav,
   resolveProfileSectionFromQuery,
+  withPartnerSectionLabels,
 } from "./profile-sections";
 
 describe("profile-sections: основная точка и дополнительные адреса", () => {
@@ -24,5 +25,18 @@ describe("profile-sections: основная точка и дополнител�
       "Сотрудники",
       "Уведомления",
     ]);
+  });
+
+  it("у компании вкладка branches называется «Филиалы», id и порядок прежние; магазин и специалист не меняются", () => {
+    const company = withPartnerSectionLabels(profileSectionNav(), "COMPANY");
+    expect(company.map((item) => item.id)).toEqual(profileSectionNav().map((item) => item.id));
+    expect(company.find((item) => item.id === "branches")?.label).toBe("Филиалы");
+    expect(company.filter((item) => item.id !== "branches")).toEqual(
+      profileSectionNav().filter((item) => item.id !== "branches"),
+    );
+    for (const other of ["STORE", "MASTER", null, undefined]) {
+      expect(withPartnerSectionLabels(profileSectionNav(), other).find((item) => item.id === "branches")?.label).toBe("Точки");
+    }
+    expect(profileSectionNav().find((item) => item.id === "branches")?.label).toBe("Точки");
   });
 });

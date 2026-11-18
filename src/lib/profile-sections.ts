@@ -24,6 +24,19 @@ const PURE_AGENT_SECTIONS = new Set<ProfileSectionId>(
   PURE_AGENT_PROFILE_SECTION_NAV.map((item) => item.id),
 );
 
+export const COMPANY_BRANCHES_SECTION_LABEL = "Филиалы";
+
+/** Company calls its additional addresses «Филиалы»; store and specialist keep «Точки». Ids and routes never change. */
+export function withPartnerSectionLabels<T extends { id: ProfileSectionId; label: string }>(
+  nav: readonly T[],
+  partnerType: string | null | undefined,
+): T[] {
+  if (partnerType !== "COMPANY") return [...nav];
+  return nav.map((item) =>
+    item.id === "branches" ? { ...item, label: COMPANY_BRANCHES_SECTION_LABEL } : item,
+  );
+}
+
 export function profileSectionNav(opts?: { pureAgentCompact?: boolean }) {
   return opts?.pureAgentCompact ? PURE_AGENT_PROFILE_SECTION_NAV : PROFILE_SECTION_NAV;
 }

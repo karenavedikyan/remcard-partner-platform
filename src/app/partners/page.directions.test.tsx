@@ -272,8 +272,9 @@ describe("/partners page wires the trusted pro context into the shared hub", () 
     await renderPage();
     const shell = await screen.findByTestId("agent-r04-partners");
     expect(shell.getAttribute("data-partners-audience")).toBe("agent-r04");
-    expect(await screen.findByTestId("cp-profile-entry")).toBeTruthy();
-    expect(screen.getByTestId("cp-open-settings").textContent).toBe("Посмотреть");
+    expect(screen.getByTestId("agent-r04-partners")).toBeTruthy();
+    expect(screen.queryByTestId("cp-profile-entry")).toBeNull();
+    expect(screen.queryByTestId("cp-open-settings")).toBeNull();
     expect(screen.queryByTestId("cp-entry-summary")).toBeNull();
     expect(
       vi.mocked(remcardFetch).mock.calls.some(([, init]) => (init as { method?: string } | undefined)?.method === "PATCH"),
@@ -290,6 +291,34 @@ describe("/partners page wires the trusted pro context into the shared hub", () 
         vi.mocked(remcardFetch).mock.calls.some(([path]) => String(path).includes("/api/partnership/list")),
       ).toBe(true),
     );
+    expect(screen.queryByTestId("cp-profile-entry")).toBeNull();
+  });
+
+  it("agent with an organization (org owner) gets no certificate conditions entry", async () => {
+    arrange("agent");
+    const user = { id: ME, role: "PRO", displayName: "Я", isBlocked: false, partnerType: "COMPANY", partnerActivities: ["AGENT"] };
+    const organization = { id: "org-9", name: "Агентство", partnerType: "COMPANY", ownerId: ME };
+    sessionUser.value = user;
+    upstream.responses.set("/api/pro/profile", { user, organization });
+    upstream.responses.set("/api/pro/context", { role: "ORG_OWNER", organization });
+    await renderPage();
+    await screen.findByTestId("agent-r04-partners");
+    await screen.findByTestId("partners-overview");
+    expect(screen.queryByTestId("cp-profile-entry")).toBeNull();
+  });
+
+  it("agent employee gets no certificate conditions entry", async () => {
+    arrange("agent");
+    const user = { id: ME, role: "CLIENT", displayName: "Я", isBlocked: false, partnerType: null, partnerActivities: [] };
+    sessionUser.value = user;
+    upstream.responses.set("/api/pro/profile", { user, organization: null });
+    upstream.responses.set("/api/pro/context", {
+      role: "PARTNER_EMPLOYEE",
+      organization: null,
+      employer: { id: "agent-owner", displayName: "A1 Агент", partnerActivities: ["AGENT"] },
+    });
+    await renderPage();
+    await waitFor(() => expect(upstream.calls).toContain("/api/pro/context"));
     expect(screen.queryByTestId("cp-profile-entry")).toBeNull();
   });
 

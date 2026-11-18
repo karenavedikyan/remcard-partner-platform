@@ -90,6 +90,7 @@ import {
   PROFILE_FILL_PARAM,
   profileSectionNav,
   resolveProfileSectionFromQuery,
+  withPartnerSectionLabels,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
 import {
@@ -422,9 +423,11 @@ function ProfileEditorInner({
   ) : null;
   const analyticsConsentInset = collapseSecondarySettings ? null : analyticsConsentContent;
   const sectionNavItems = useMemo(() => {
-    if (isOrgStaffWorkplaceUi) return businessOrgProfileSectionNav();
-    return profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
-  }, [isOrgStaffWorkplaceUi, pureAgentCompactUi]);
+    const base = isOrgStaffWorkplaceUi
+      ? businessOrgProfileSectionNav()
+      : profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
+    return withPartnerSectionLabels(base, effectiveBusinessPartnerType);
+  }, [isOrgStaffWorkplaceUi, pureAgentCompactUi, effectiveBusinessPartnerType]);
   const catalogEditable = isOrgStaffWorkplaceUi ? false : catalogPublicationEditable(profile);
   const revisionBanner = isOrgStaffWorkplaceUi ? false : showRevisionBanner(profile);
 
@@ -1468,6 +1471,7 @@ function ProfileEditorInner({
             defaultCity={city}
             hasOrganization={Boolean(profile.organization)}
             partnerType={partnerType}
+            workplacePartnerType={effectiveBusinessPartnerType}
             initialBranchId={focusBranchId}
             primaryName={profile.organization?.name || displayName}
             primaryPublished={

@@ -75,11 +75,13 @@ export function certificateReceivingPolicyCanMutateSettings(
   return businessReceivingPartnerType(user);
 }
 
-export function resolveCertificateReceivingPolicyUiGate(input: {
+type UiGateInput = {
   profile: ProProfileResponse;
   proContext: ProContextSnapshot | null;
   isOrgStaffWorkplaceUi: boolean;
-}): CertificateReceivingPolicyUiGate {
+};
+
+function evaluateReceivingPolicyUiGate(input: UiGateInput): CertificateReceivingPolicyUiGate {
   if (input.isOrgStaffWorkplaceUi) {
     return { showEntry: false, canEditSettings: false };
   }
@@ -97,6 +99,22 @@ export function resolveCertificateReceivingPolicyUiGate(input: {
     input.proContext,
   );
   return { showEntry: true, canEditSettings };
+}
+
+/** Agents do not accept certificates: no «Условия сертификатов» entry for them. */
+export function resolveCertificateReceivingPolicyUiGate(input: UiGateInput): CertificateReceivingPolicyUiGate {
+  if (isAgentCooperationInviter(input.profile.user)) {
+    return { showEntry: false, canEditSettings: false };
+  }
+  return evaluateReceivingPolicyUiGate(input);
+}
+
+/**
+ * Read-only access to the viewer's partner terms (per-partner validity / purchases preview in the
+ * partners list). Independent of whether the settings entry is shown: agents keep reading them.
+ */
+export function certificateTermsReadableForPartnersList(input: UiGateInput): boolean {
+  return evaluateReceivingPolicyUiGate(input).showEntry;
 }
 
 export function assertCertificateReceivingPolicyApiAccess(input: {

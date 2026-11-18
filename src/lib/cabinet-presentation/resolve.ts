@@ -2,8 +2,12 @@ import { resolveCabinetNavMode, type CabinetNavMode } from "@/lib/cabinet-nav/mo
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { AuthUser } from "@/lib/types";
-import type { CabinetPresentationSnapshot, WorkplacePartnerType } from "./types";
-import { resolveEmployerWorkplaceKind, resolveWorkplaceKind } from "./workplace-kind";
+import type { CabinetPresentationSnapshot, WorkplaceKind, WorkplacePartnerType } from "./types";
+import {
+  resolveEmployerWorkplaceKind,
+  resolveWorkplaceKind,
+  WORKPLACE_KIND_LABELS,
+} from "./workplace-kind";
 import { proContextRoleLabelRu } from "./role-labels";
 import { validateProContextSnapshot } from "./validate";
 import type { WorkplacePartnerTypeSource } from "./types";
@@ -119,10 +123,15 @@ export function resolveCabinetSessionRoleLabel(input: {
   user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">;
   proContext: ProContextSnapshot | null;
   workplacePartnerType: WorkplacePartnerType | null;
+  workplaceKind?: WorkplaceKind | null;
 }): string {
-  const { user, proContext, workplacePartnerType } = input;
+  const { user, proContext, workplacePartnerType, workplaceKind } = input;
   const position = proContext?.membershipPosition?.trim();
   if (position) return position;
+
+  if (proContext?.role === "SOLO_PARTNER" && workplaceKind) {
+    return WORKPLACE_KIND_LABELS[workplaceKind];
+  }
 
   const roleLabel = proContextRoleLabelRu(proContext?.role);
   if (roleLabel) return roleLabel;
@@ -185,6 +194,7 @@ export function resolveCabinetPresentation(input: {
       user: input.user,
       proContext: input.proContext,
       workplacePartnerType,
+      workplaceKind: workplaceKind.kind,
     }),
     navMode,
   };

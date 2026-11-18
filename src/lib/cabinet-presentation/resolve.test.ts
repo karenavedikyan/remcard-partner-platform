@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import {
   employeeRequiresWorkplaceContext,
   isKnownProContextRole,
@@ -187,5 +188,51 @@ describe("employeeRequiresWorkplaceContext", () => {
       contextHttpStatus: 403,
     });
     expect(employeeRequiresWorkplaceContext({ isEmployee: false, presentation })).toBe(false);
+  });
+});
+
+describe("sessionRoleLabel under the account name", () => {
+  const solo = { role: "SOLO_PARTNER", organization: null } as const;
+  const labelFor = (
+    user: { partnerType: "STORE" | "COMPANY" | "MASTER" | null; partnerActivities: string[]; role?: "PRO" | "CLIENT" },
+    proContext: ProContextSnapshot | null,
+  ) =>
+    resolveCabinetPresentation({
+      user: { id: "u", displayName: "Тест", role: "PRO", ...user },
+      proContext,
+      contextReady: true,
+      contextHttpStatus: 200,
+    }).sessionRoleLabel;
+
+  it("solo specialist (S0, S1) is «Специалист», not «Партнёр»", () => {
+    expect(labelFor({ partnerType: "MASTER", partnerActivities: ["SERVICE"] }, solo)).toBe("Специалист");
+  });
+
+  it("solo store is «Магазин», solo company is «Компания», solo agent is «Агент»", () => {
+    expect(labelFor({ partnerType: "STORE", partnerActivities: ["STORE"] }, solo)).toBe("Магазин");
+    expect(labelFor({ partnerType: "COMPANY", partnerActivities: ["SERVICE"] }, solo)).toBe("Компания");
+    expect(labelFor({ partnerType: "COMPANY", partnerActivities: ["AGENT"] }, solo)).toBe("Агент");
+  });
+
+  it("keeps «Партнёр» when the partner type cannot be determined", () => {
+    expect(labelFor({ partnerType: null, partnerActivities: [] }, solo)).toBe("Партнёр");
+  });
+
+  it("org owner (K1) keeps «Владелец организации»", () => {
+    expect(
+      labelFor(
+        { partnerType: "COMPANY", partnerActivities: ["SERVICE"] },
+        { role: "ORG_OWNER", organization: { id: "o1", name: "Компания", partnerType: "COMPANY" } },
+      ),
+    ).toBe("Владелец организации");
+  });
+
+  it("an employee with a position shows the position, without one the role label", () => {
+    expect(
+      labelFor({ partnerType: null, partnerActivities: [], role: "CLIENT" }, companyOrgEmployeeContext),
+    ).toBe("Менеджер отдела");
+    expect(
+      labelFor({ partnerType: null, partnerActivities: [], role: "CLIENT" }, storeOrgEmployeeContext),
+    ).toBe("Сотрудник организации");
   });
 });

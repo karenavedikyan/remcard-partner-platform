@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { partnersHubCertificatePolicyEntry } from "./partners-hub-entry";
+import {
+  partnersHubCertificatePolicyEntry,
+  partnersHubCertificateTermsReadable,
+} from "./partners-hub-entry";
 import type { ProProfileResponse } from "@/lib/types";
 
 const profile = (overrides?: Partial<ProProfileResponse["user"]>): ProProfileResponse =>
@@ -75,13 +78,30 @@ describe("partnersHubCertificatePolicyEntry", () => {
     expect(gate?.canEditSettings).toBe(true);
   });
 
-  it("shows agent incoming-only without settings", () => {
-    const gate = partnersHubCertificatePolicyEntry({
+  it("hides the entry for an agent but still lets the list read the terms for row previews", () => {
+    const input = {
       proContextReady: true,
       proContext: { role: "SOLO_PARTNER", organization: null },
       profile: profile({ partnerType: "COMPANY", partnerActivities: ["AGENT"] }),
-    });
-    expect(gate?.showEntry).toBe(true);
-    expect(gate?.canEditSettings).toBe(false);
+    };
+    expect(partnersHubCertificatePolicyEntry(input)).toEqual({ showEntry: false, canEditSettings: false });
+    expect(partnersHubCertificateTermsReadable(input)).toBe(true);
+  });
+
+  it("terms stay unreadable for an agent's employee and before the context is ready", () => {
+    expect(
+      partnersHubCertificateTermsReadable({
+        proContextReady: true,
+        proContext: { role: "PARTNER_EMPLOYEE", organization: null },
+        profile: profile({ role: "CLIENT", partnerType: null, partnerActivities: [] }),
+      }),
+    ).toBe(false);
+    expect(
+      partnersHubCertificateTermsReadable({
+        proContextReady: false,
+        proContext: { role: "SOLO_PARTNER", organization: null },
+        profile: profile({ partnerType: "COMPANY", partnerActivities: ["AGENT"] }),
+      }),
+    ).toBe(false);
   });
 });

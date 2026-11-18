@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TextField } from "@/components/ui/FormField";
+import { COMPANY_BRANCHES_SECTION_LABEL } from "@/lib/profile-sections";
 import { ProfileBranchDetail } from "./ProfileBranchDetail";
 import styles from "./ProfileEditor.module.css";
 
@@ -41,6 +42,8 @@ type ProfileBranchesSectionProps = {
   defaultCity?: string;
   hasOrganization: boolean;
   partnerType: string;
+  /** Workplace type for staff whose own profile has no partner type; drives the panel title only. */
+  workplacePartnerType?: string | null;
   initialBranchId?: string;
   primaryName?: string;
   primaryPublished?: boolean;
@@ -76,6 +79,7 @@ export function ProfileBranchesSection({
   defaultCity = "",
   hasOrganization,
   partnerType,
+  workplacePartnerType = null,
   initialBranchId,
   primaryName = "",
   primaryPublished,
@@ -137,9 +141,12 @@ export function ProfileBranchesSection({
     }
   }
 
+  const panelTitle =
+    (workplacePartnerType ?? partnerType) === "COMPANY" ? COMPANY_BRANCHES_SECTION_LABEL : "Точки";
+
   if (partnerType === "MASTER") {
     return (
-      <Panel title="Точки" hint="Для специалиста дополнительные адреса не требуются.">
+      <Panel title={panelTitle} hint="Для специалиста дополнительные адреса не требуются.">
         <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />
       </Panel>
     );
@@ -147,7 +154,7 @@ export function ProfileBranchesSection({
 
   if (!hasOrganization) {
     return (
-      <Panel title="Точки">
+      <Panel title={panelTitle}>
         <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />
         <p className={styles.hint}>
           Сохраните название организации в разделе «Основные данные» — затем здесь можно добавить
@@ -163,7 +170,7 @@ export function ProfileBranchesSection({
 
   return (
     <Panel
-      title="Точки"
+      title={panelTitle}
       hint="Основная точка — это вы. Дополнительные адреса необязательны: без них вы работаете и публикуетесь."
     >
       <PrimaryPointCard name={primaryName} city={defaultCity} published={primaryPublished} />

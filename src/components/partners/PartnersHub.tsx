@@ -100,7 +100,10 @@ import { TermChangeModal } from "@/components/partners/TermChangeModal";
 import { fetchCertificatePolicyWorkspace } from "@/lib/certificate-policy/api";
 import type { RowRestrictions } from "@/components/partners/PartnerRowTerms";
 import { CertificatePolicyProfileEntry } from "@/components/certificate-policy/CertificatePolicyProfileEntry";
-import { partnersHubCertificatePolicyEntry } from "@/lib/certificate-receiving-policy/partners-hub-entry";
+import {
+  partnersHubCertificatePolicyEntry,
+  partnersHubCertificateTermsReadable,
+} from "@/lib/certificate-receiving-policy/partners-hub-entry";
 import {
   shouldRenderPartnerSearchInlineTermsPanel,
   shouldShowPublicCertificatePolicyInPartnerSearch,
@@ -937,7 +940,14 @@ export function PartnersHub({
       }
     : null;
 
-  const restrictionsViewerId = isOverview && partnershipListReady ? directionPolicyEntry?.viewerUserId ?? null : null;
+  const termsReadable = partnersHubCertificateTermsReadable({
+    proContextReady: proContextReady === true,
+    proContext: proContext ?? null,
+    profile: meProfile,
+    organizationReadContext,
+  });
+  const restrictionsViewerId =
+    isOverview && partnershipListReady && termsReadable ? meProfile.user.id : null;
   useEffect(() => {
     if (!restrictionsViewerId) {
       setRowRestrictions(null);

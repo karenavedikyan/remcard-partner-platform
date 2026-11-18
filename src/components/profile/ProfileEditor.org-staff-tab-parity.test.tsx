@@ -219,7 +219,9 @@ describe("ProfileEditor org staff tab parity", () => {
         orgStaffWorkplacePartnerType="COMPANY"
       />,
     );
-    expect(tabLabels(companyStaffContainer)).toEqual(ownerLabels);
+    expect(tabLabels(companyStaffContainer)).toEqual(
+      ownerLabels.map((label) => (label === "Точки" ? "Филиалы" : label)),
+    );
   });
 
   it("shows access gate on locked tabs without privileged organization fetches", () => {
