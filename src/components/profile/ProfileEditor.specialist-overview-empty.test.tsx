@@ -188,16 +188,11 @@ const masterProfile: ProProfileResponse = {
   },
 };
 
-async function expectLegacyOverviewSettled() {
-  await waitFor(() => expect(screen.getByText("Рабочий профиль")).toBeInTheDocument());
-  await waitFor(() => {
-    const paths = remcardFetchMock.mock.calls.map((call) => call[0]);
-    expect(paths).toContain("/api/pro/organization/employees-overview");
-    expect(paths).toContain("/api/pro/employees");
-  });
-  const teamBtn = await screen.findByRole("button", { name: /Сотрудники/i });
-  await waitFor(() => expect(within(teamBtn).getByText("0")).toBeInTheDocument());
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+async function expectCardOverviewSettled() {
+  await waitFor(() => expect(fetchSpecialistDraft).toHaveBeenCalled());
+  await waitFor(() => expect(screen.queryByTestId("specialist-profile-loading")).not.toBeInTheDocument());
+  expect(screen.queryByText("Рабочий профиль")).not.toBeInTheDocument();
+  expect(screen.queryByText("Пусть новые клиенты найдут вас")).not.toBeInTheDocument();
 }
 
 describe("ProfileEditor specialist overview empty intro", () => {
@@ -271,7 +266,7 @@ describe("ProfileEditor specialist overview empty intro", () => {
     expect(patchSpecialistDraft).not.toHaveBeenCalled();
   });
 
-  it("keeps legacy overview when draft has partial saved progress", async () => {
+  it("shows the card-based overview (no legacy two-column overview) when draft has partial saved progress", async () => {
     fetchSpecialistDraft.mockResolvedValue({
       contractVersion: "r06",
       featureEnabled: true,
@@ -290,11 +285,10 @@ describe("ProfileEditor specialist overview empty intro", () => {
         section="overview"
       />,
     );
-    await expectLegacyOverviewSettled();
-    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    await expectCardOverviewSettled();
   });
 
-  it("keeps legacy overview when GET fails", async () => {
+  it("shows the card-based overview (no legacy two-column overview) when GET fails", async () => {
     fetchSpecialistDraft.mockRejectedValue(new Error("network"));
     render(
       <ProfileEditor
@@ -304,11 +298,10 @@ describe("ProfileEditor specialist overview empty intro", () => {
         section="overview"
       />,
     );
-    await expectLegacyOverviewSettled();
-    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    await expectCardOverviewSettled();
   });
 
-  it("keeps legacy overview when proof flags are malformed", async () => {
+  it("shows the card-based overview (no legacy two-column overview) when proof flags are malformed", async () => {
     fetchSpecialistDraft.mockResolvedValue({
       contractVersion: "r06",
       featureEnabled: true,
@@ -324,7 +317,142 @@ describe("ProfileEditor specialist overview empty intro", () => {
         section="overview"
       />,
     );
-    await expectLegacyOverviewSettled();
-    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    await expectCardOverviewSettled();
+  });
+
+  describe("completed specialist profile: one summary card as the overview", () => {
+    const completedDraft = {
+      contractVersion: "r06",
+      featureEnabled: true,
+      step: 4,
+      version: 3,
+      hasDraft: false,
+      profileComplete: true,
+      payload: {},
+      savedProfile: {
+        displayName: "Анна Мастер",
+        city: "Краснодар",
+        partnershipContactPhone: "+79001234567",
+        partnershipContactEmail: "anna@example.test",
+        serviceSpecializationIds: [],
+        navigatorStageIds: [],
+      },
+    };
+
+    const renderOverview = (profile: ProProfileResponse = masterProfile, section = "overview") => {
+      mockSearchParams = new URLSearchParams(section === "overview" ? "" : `section=${section}`);
+      return render(
+        <ProfileEditor
+          initial={profile}
+          cabinetAccess={ownerProfileCabinetAccess()}
+          initialSpecialistR06Gate={specialistR06Gate}
+          section={section as "overview"}
+        />,
+      );
+    };
+
+    beforeEach(() => {
+      fetchSpecialistDraft.mockResolvedValue(completedDraft);
+    });
+
+    it("shows the summary card with the specialist type, chip, fields, ID and the catalog line", async () => {
+      renderOverview();
+      const card = await screen.findByTestId("specialist-profile-completed-summary");
+      expect(within(card).getByText("Специалист")).toBeInTheDocument();
+      expect(within(card).getByRole("heading", { name: "Анна Мастер" })).toBeInTheDocument();
+      expect(within(card).getByText("Заполнено")).toBeInTheDocument();
+      expect(within(card).getByText("Имя")).toBeInTheDocument();
+      expect(within(card).getByText("Город", { selector: "dt" })).toBeInTheDocument();
+      expect(within(card).getByText("Телефон")).toBeInTheDocument();
+      expect(within(card).getByText("Email")).toBeInTheDocument();
+      expect(within(card).getByRole("button", { name: "Редактировать профиль" })).toBeInTheDocument();
+      expect(within(card).getByText("ID RC1")).toBeInTheDocument();
+      expect(within(card).getByTestId("specialist-overview-catalog-line")).toHaveTextContent(
+        "Каталог RemCard: Не опубликовано",
+      );
+    });
+
+    it("has no catalog teaser, no two-column «Рабочий профиль» and no separate catalog promo", async () => {
+      renderOverview();
+      await screen.findByTestId("specialist-profile-completed-summary");
+      expect(screen.queryByText("Рабочий профиль")).not.toBeInTheDocument();
+      expect(screen.queryByText("Пусть новые клиенты найдут вас")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("specialist-catalog-cta")).not.toBeInTheDocument();
+    });
+
+    it("the catalog line opens the «Каталог RemCard» tab", async () => {
+      const user = userEvent.setup();
+      renderOverview();
+      await user.click(await screen.findByTestId("specialist-overview-catalog-line"));
+      expect(pushMock).toHaveBeenCalledWith(expect.stringContaining("section=catalog"), expect.anything());
+    });
+
+    it("reports the published and the needs-revision catalog status", async () => {
+      const published: ProProfileResponse = {
+        ...masterProfile,
+        user: { ...masterProfile.user, catalogStatus: "APPROVED", isPublic: true },
+        catalogPublication: { isLivePublic: true } as ProProfileResponse["catalogPublication"],
+      };
+      const view = renderOverview(published);
+      expect(await screen.findByTestId("specialist-overview-catalog-line")).toHaveTextContent(
+        "Каталог RemCard: Проверен · опубликовано",
+      );
+      view.unmount();
+
+      const revision: ProProfileResponse = {
+        ...masterProfile,
+        user: { ...masterProfile.user, catalogStatus: "NEEDS_REVISION" },
+      };
+      renderOverview(revision);
+      expect(await screen.findByTestId("specialist-overview-catalog-line")).toHaveTextContent(
+        "Каталог RemCard: Нужно исправить",
+      );
+      expect(screen.getByText("Нужно исправить публикацию в каталоге")).toBeInTheDocument();
+    });
+
+    it("the basics tab keeps the original summary with the catalog promo and no catalog line", async () => {
+      renderOverview(masterProfile, "basics");
+      await screen.findByTestId("specialist-profile-completed-summary");
+      expect(screen.getByTestId("specialist-catalog-cta")).toBeInTheDocument();
+      expect(screen.queryByTestId("specialist-overview-catalog-line")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("specialist tabs", () => {
+    it("has no «Точки» tab but keeps «Сотрудники»", async () => {
+      mockSearchParams = new URLSearchParams("");
+      render(
+        <ProfileEditor
+          initial={masterProfile}
+          cabinetAccess={ownerProfileCabinetAccess()}
+          initialSpecialistR06Gate={specialistR06Gate}
+          section="overview"
+        />,
+      );
+      const tablist = screen.getByRole("tablist");
+      expect(within(tablist).queryByRole("tab", { name: "Точки" })).toBeNull();
+      expect(within(tablist).getByRole("tab", { name: "Сотрудники" })).toBeInTheDocument();
+      expect(within(tablist).getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+        "Обзор",
+        "Основные данные",
+        "Каталог RemCard",
+        "Сотрудники",
+        "Уведомления",
+      ]);
+    });
+
+    it("?section=branches opens the overview for a specialist", async () => {
+      mockSearchParams = new URLSearchParams("section=branches");
+      render(
+        <ProfileEditor
+          initial={masterProfile}
+          cabinetAccess={ownerProfileCabinetAccess()}
+          initialSpecialistR06Gate={specialistR06Gate}
+          section="branches"
+        />,
+      );
+      expect(screen.getByRole("tab", { name: "Обзор" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.queryByTestId("branches-section")).toBeNull();
+    });
   });
 });

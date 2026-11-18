@@ -194,10 +194,16 @@ describe("ProfileEditor: подпись вкладки branches по типу п
   it.each([
     ["COMPANY", "Филиалы", "Точки"],
     ["STORE", "Точки", "Филиалы"],
-    ["MASTER", "Точки", "Филиалы"],
   ] as const)("%s: вкладка «%s», без «%s»", (partnerType, expected, other) => {
     render(<ProfileEditor cabinetAccess={cabinetAccess} initial={profileWithBranches(0, partnerType)} />);
     expect(screen.getByRole("tab", { name: expected })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: other })).toBeNull();
+  });
+
+  it("MASTER: вкладки branches нет вообще", () => {
+    render(<ProfileEditor cabinetAccess={cabinetAccess} initial={profileWithBranches(0, "MASTER")} />);
+    expect(screen.queryByRole("tab", { name: "Точки" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Филиалы" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Сотрудники" })).toBeInTheDocument();
   });
 });

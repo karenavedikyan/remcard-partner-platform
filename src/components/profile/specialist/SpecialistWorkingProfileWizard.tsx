@@ -66,10 +66,19 @@ const WORK_MODES = [
   { value: "ONLINE", label: "Онлайн" },
 ] as const;
 
+export type SpecialistOverviewCardProps = {
+  /** e.g. «Проверен · опубликовано», «Не опубликовано», «Нужно исправить». */
+  catalogStatusText: string;
+  onOpenCatalog: () => void;
+  publicId?: string;
+};
+
 type Props = {
   onWorkingProfileSaved?: (next: ProProfileResponse) => void;
   onDirtyChange?: (dirty: boolean) => void;
   initialWizardRevealed?: boolean;
+  /** Profile «Обзор»: the completed summary doubles as the overview card (catalog line + ID, no extra catalog promo). */
+  overviewCard?: SpecialistOverviewCardProps;
 };
 
 function specialistDraftDirty(
@@ -83,6 +92,7 @@ export function SpecialistWorkingProfileWizard({
   onWorkingProfileSaved,
   onDirtyChange,
   initialWizardRevealed = false,
+  overviewCard,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
@@ -289,6 +299,12 @@ export function SpecialistWorkingProfileWizard({
   if (!editing && profileComplete) {
     const name = savedProfile.displayName?.trim() || "—";
     const factRows: { label: string; value: string; omitWhenEmpty?: boolean }[] = [
+      ...(overviewCard
+        ? [
+            { label: "Имя", value: savedProfile.displayName?.trim() ?? "" },
+            { label: "Город", value: savedProfile.city?.trim() ?? "" },
+          ]
+        : []),
       {
         label: "Телефон",
         value: savedProfile.partnershipContactPhone?.trim()
@@ -335,11 +351,11 @@ export function SpecialistWorkingProfileWizard({
             </p>
           ) : null}
           {filledFacts.length > 0 ? (
-            <dl className={styles.summaryFactsCompact}>
+            <dl className={stepStyles.compactFacts}>
               {filledFacts.map((row) => (
                 <div key={row.label}>
                   <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
+                  <dd className={row.label === "Телефон" ? stepStyles.nowrap : undefined}>{row.value}</dd>
                 </div>
               ))}
             </dl>
@@ -362,7 +378,7 @@ export function SpecialistWorkingProfileWizard({
           {emptyFacts.length > 0 ? (
             <details className={styles.summaryMore}>
               <summary>Дополнительные сведения ({emptyFacts.length} не заполнено)</summary>
-              <dl className={styles.summaryFactsCompact}>
+              <dl className={stepStyles.compactFacts}>
                 {emptyFacts.map((row) => (
                   <div key={row.label}>
                     <dt>{row.label}</dt>
@@ -398,21 +414,36 @@ export function SpecialistWorkingProfileWizard({
             >
               Редактировать профиль
             </button>
+            {overviewCard?.publicId ? (
+              <span className={styles.cityMuted}>ID {overviewCard.publicId}</span>
+            ) : null}
           </div>
+          {overviewCard ? (
+            <button
+              type="button"
+              className={stepStyles.catalogLine}
+              data-testid="specialist-overview-catalog-line"
+              onClick={overviewCard.onOpenCatalog}
+            >
+              Каталог RemCard: {overviewCard.catalogStatusText}
+            </button>
+          ) : null}
         </section>
-        <section
-          className={styles.summaryAfter}
-          aria-label="Каталог RemCard"
-          data-testid="specialist-catalog-cta"
-        >
-          <div>
-            <h3>Хотите появиться в каталоге?</h3>
-            <p>Публикация добровольна. Публичную карточку можно подготовить отдельно.</p>
-          </div>
-          <Link href="/profile?section=catalog" className={styles.btn}>
-            Перейти к каталогу
-          </Link>
-        </section>
+        {overviewCard ? null : (
+          <section
+            className={styles.summaryAfter}
+            aria-label="Каталог RemCard"
+            data-testid="specialist-catalog-cta"
+          >
+            <div>
+              <h3>Хотите появиться в каталоге?</h3>
+              <p>Публикация добровольна. Публичную карточку можно подготовить отдельно.</p>
+            </div>
+            <Link href="/profile?section=catalog" className={styles.btn}>
+              Перейти к каталогу
+            </Link>
+          </section>
+        )}
       </div>
     );
   }

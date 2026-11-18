@@ -3,6 +3,7 @@ import {
   buildProfileSectionHref,
   profileSectionNav,
   resolveProfileSectionFromQuery,
+  withoutBranchesSection,
   withPartnerSectionLabels,
 } from "./profile-sections";
 
@@ -38,5 +39,14 @@ describe("profile-sections: основная точка и дополнител�
       expect(withPartnerSectionLabels(profileSectionNav(), other).find((item) => item.id === "branches")?.label).toBe("Точки");
     }
     expect(profileSectionNav().find((item) => item.id === "branches")?.label).toBe("Точки");
+  });
+
+  it("у специалиста вкладки branches нет, «Сотрудники» остаётся; deep link ведёт в обзор", () => {
+    const nav = withoutBranchesSection(profileSectionNav());
+    expect(nav.map((item) => item.id)).toEqual(["overview", "basics", "catalog", "team", "notifications"]);
+    expect(resolveProfileSectionFromQuery({ section: "branches" }, { hideBranches: true })).toBe("overview");
+    expect(resolveProfileSectionFromQuery({ branchId: "br_1" }, { hideBranches: true })).toBe("overview");
+    expect(resolveProfileSectionFromQuery({ section: "team" }, { hideBranches: true })).toBe("team");
+    expect(resolveProfileSectionFromQuery({ section: "branches" })).toBe("branches");
   });
 });

@@ -11,7 +11,9 @@ import {
   catalogPublicationEditable,
   profileBasicsEditable,
   showRevisionBanner,
+  catalogLineStatusText,
 } from "@/lib/profile-catalog-state";
+import { resolveEmployerWorkplaceKind } from "@/lib/cabinet-presentation/workplace-kind";
 import { type ProfileDraft } from "@/lib/profile-save";
 import {
   effectiveWorkingProductIds,
@@ -91,6 +93,7 @@ import {
   profileSectionNav,
   resolveProfileSectionFromQuery,
   withPartnerSectionLabels,
+  withoutBranchesSection,
   type ProfileSectionId,
 } from "@/lib/profile-sections";
 import {
@@ -303,10 +306,13 @@ function ProfileEditorInner({
   }, []);
 
   const [saving, setSaving] = useState(false);
+  const specialistWorkplaceUi =
+    profile.user.partnerType === "MASTER" ||
+    resolveEmployerWorkplaceKind(cabinetAccess.proContext, true) === "MASTER";
   const [activeSection, setActiveSection] = useState<ProfileSectionId>(() => {
-    if (focusBranchId) return "branches";
+    if (focusBranchId && !specialistWorkplaceUi) return "branches";
     if (moderationSection) return "catalog";
-    return sectionProp;
+    return specialistWorkplaceUi && sectionProp === "branches" ? "overview" : sectionProp;
   });
   const sectionContentRef = useRef<HTMLDivElement>(null);
   const tabStripRef = useRef<HTMLUListElement>(null);
@@ -426,8 +432,9 @@ function ProfileEditorInner({
     const base = isOrgStaffWorkplaceUi
       ? businessOrgProfileSectionNav()
       : profileSectionNav({ pureAgentCompact: pureAgentCompactUi });
-    return withPartnerSectionLabels(base, effectiveBusinessPartnerType);
-  }, [isOrgStaffWorkplaceUi, pureAgentCompactUi, effectiveBusinessPartnerType]);
+    const labeled = withPartnerSectionLabels(base, effectiveBusinessPartnerType);
+    return specialistWorkplaceUi ? withoutBranchesSection(labeled) : labeled;
+  }, [isOrgStaffWorkplaceUi, pureAgentCompactUi, effectiveBusinessPartnerType, specialistWorkplaceUi]);
   const catalogEditable = isOrgStaffWorkplaceUi ? false : catalogPublicationEditable(profile);
   const revisionBanner = isOrgStaffWorkplaceUi ? false : showRevisionBanner(profile);
 
@@ -716,7 +723,7 @@ function ProfileEditorInner({
         moderation: searchParams.get("moderation"),
         branchId: searchParams.get("branchId"),
       },
-      { pureAgentCompact: pureAgentCompactUi },
+      { pureAgentCompact: pureAgentCompactUi, hideBranches: specialistWorkplaceUi },
     );
     setActiveSection(fromUrl);
     if (!pureAgentCompactUi) return;
@@ -730,7 +737,7 @@ function ProfileEditorInner({
       const href = buildProfileSectionHref(fromUrl, new URLSearchParams(searchParams.toString()));
       router.replace(href, { scroll: false });
     }
-  }, [searchParams, pureAgentCompactUi, router]);
+  }, [searchParams, pureAgentCompactUi, specialistWorkplaceUi, router]);
 
   const currentDraft = buildDraft();
   draftRef.current = currentDraft;
@@ -1001,13 +1008,24 @@ function ProfileEditorInner({
             {!pureAgentCompactUi ? (
               specialistR06Ui ? (
                 <SpecialistOverviewEmptyGate onStartFill={startSpecialistProfileFromOverview}>
-                  <ProfileOverviewSection
-                    profile={profile}
-                    onNavigateSection={navigateSection}
-                  onFillProfile={fillProfileFromOverview}
-                    hasUnsavedBasicsChanges={hasUnsavedBasicsChanges}
-                    fixtureOverview={fixtureOverview}
-                    orgStaffWorkplacePartnerType={orgStaffWorkplacePartnerType}
+                  {revisionBanner ? (
+                    <div className={styles.bannerWarn} role="status" data-testid="specialist-overview-revision-banner">
+                      <strong>Нужно исправить публикацию в каталоге</strong>
+                      <p>Откройте раздел «Каталог RemCard», внесите правки и отправьте повторно.</p>
+                      <button type="button" className={styles.tabButton} onClick={() => navigateSection("catalog")}>
+                        Перейти к замечанию
+                      </button>
+                    </div>
+                  ) : null}
+                  <SpecialistProfileSection
+                    onWorkingProfileSaved={applyProfile}
+                    onDirtyChange={setSpecialistWizardDirty}
+                    initialWizardRevealed={specialistBasicsWizardRevealed}
+                    overviewCard={{
+                      catalogStatusText: catalogLineStatusText(profile),
+                      onOpenCatalog: () => navigateSection("catalog"),
+                      publicId: profile.user.publicId?.trim() || undefined,
+                    }}
                   />
                 </SpecialistOverviewEmptyGate>
               ) : (

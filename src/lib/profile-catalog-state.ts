@@ -46,3 +46,14 @@ export function profileFieldsEditable(profile: ProProfileResponse): boolean {
 export function showRevisionBanner(profile: ProProfileResponse): boolean {
   return effectiveCatalogStatus(profile) === "NEEDS_REVISION";
 }
+
+/** Short catalog publication status for the specialist overview card. */
+export function catalogLineStatusText(profile: ProProfileResponse): string {
+  const status = effectiveCatalogStatus(profile);
+  if (status === "NEEDS_REVISION") return "Нужно исправить";
+  const published = profile.catalogPublication?.isLivePublic === true;
+  if (status === "APPROVED") return published ? "Проверен · опубликовано" : "Проверен · не опубликовано";
+  if (status === "PENDING") return "На проверке";
+  if (status === "REJECTED") return "Отклонён";
+  return "Не опубликовано";
+}

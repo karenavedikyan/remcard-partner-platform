@@ -37,6 +37,10 @@ export function withPartnerSectionLabels<T extends { id: ProfileSectionId; label
   );
 }
 
+export function withoutBranchesSection<T extends { id: ProfileSectionId }>(nav: readonly T[]): T[] {
+  return nav.filter((item) => item.id !== "branches");
+}
+
 export function profileSectionNav(opts?: { pureAgentCompact?: boolean }) {
   return opts?.pureAgentCompact ? PURE_AGENT_PROFILE_SECTION_NAV : PROFILE_SECTION_NAV;
 }
@@ -62,9 +66,19 @@ export type ProfileSectionQueryInput = {
 export type ResolveProfileSectionOptions = {
   /** Principal pure agent with R02 profile gate — disallow business-only tabs/deep links. */
   pureAgentCompact?: boolean;
+  /** Specialist (MASTER owner and staff) has no «Точки» tab: deep links fall back to the overview. */
+  hideBranches?: boolean;
 };
 
 export function resolveProfileSectionFromQuery(
+  input: ProfileSectionQueryInput,
+  opts?: ResolveProfileSectionOptions,
+): ProfileSectionId {
+  const resolved = resolveProfileSectionFromQueryRaw(input, opts);
+  return opts?.hideBranches && resolved === "branches" ? "overview" : resolved;
+}
+
+function resolveProfileSectionFromQueryRaw(
   input: ProfileSectionQueryInput,
   opts?: ResolveProfileSectionOptions,
 ): ProfileSectionId {
