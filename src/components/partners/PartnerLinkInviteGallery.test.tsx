@@ -93,6 +93,32 @@ describe("PartnerLinkInviteGallery", () => {
     });
   }
 
+  it("shows selectable public url when clipboard is denied", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(
+      activeInviteRow({
+        personalLabel: "Секретное имя",
+        recipientLabel: "Получатель",
+        note: "Публичный комментарий",
+      }),
+    );
+    remcardFetch.mockResolvedValue(list);
+
+    render(<PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} />);
+
+    await screen.findByTestId("link-invite-card-inv-copy");
+    fireEvent.click(screen.getByTestId("link-invite-copy"));
+
+    const manual = await screen.findByTestId("link-invite-manual-url-inv-copy");
+    expect(manual).toHaveValue("http://127.0.0.1:4312/invite/copy-me");
+    expect(manual).toHaveAttribute("readonly");
+    expect(screen.getByTestId("link-invite-gallery-hint-inv-copy")).toHaveTextContent(/вручную/i);
+    expect(manual).not.toHaveValue(/Секретное имя/);
+  });
+
   it("copies invitation text with blank line before url from card footer", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });

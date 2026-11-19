@@ -70,6 +70,7 @@ export function PartnerLinkInviteGallery({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [rowHints, setRowHints] = useState<Record<string, string>>({});
+  const [manualCopyUrlById, setManualCopyUrlById] = useState<Record<string, string>>({});
   const [revokeConfirm, setRevokeConfirm] = useState<RevokeConfirm>(null);
   const [revoking, setRevoking] = useState(false);
   const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
@@ -344,8 +345,15 @@ export function PartnerLinkInviteGallery({
     try {
       await navigator.clipboard.writeText(text);
       setRowHint(invite.id, "Текст приглашения скопирован");
+      setManualCopyUrlById((prev) => {
+        if (!prev[invite.id]) return prev;
+        const next = { ...prev };
+        delete next[invite.id];
+        return next;
+      });
     } catch {
       setRowHint(invite.id, "Не удалось скопировать. Скопируйте ссылку вручную.");
+      setManualCopyUrlById((prev) => ({ ...prev, [invite.id]: url }));
     }
   }
 
@@ -471,6 +479,20 @@ export function PartnerLinkInviteGallery({
           <p className={styles.hint} role="status" aria-live="polite" data-testid={`link-invite-gallery-hint-${invite.id}`}>
             {rowHints[invite.id]}
           </p>
+        ) : null}
+        {manualCopyUrlById[invite.id] ? (
+          <label className={styles.manualUrl}>
+            <span className={styles.srOnly}>Публичная ссылка</span>
+            <input
+              type="text"
+              readOnly
+              aria-label="Ссылка"
+              className={styles.manualUrlField}
+              value={manualCopyUrlById[invite.id]}
+              data-testid={`link-invite-manual-url-${invite.id}`}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </label>
         ) : null}
       </>
     );
