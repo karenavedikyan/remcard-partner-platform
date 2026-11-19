@@ -411,7 +411,10 @@ export function PartnerLinkInvitePanel({
       await navigator.clipboard.writeText(inviteShareTextForListRow(invite, url));
       setListShareHint(invite.id, "Текст приглашения скопирован");
     } catch {
-      setListShareHint(invite.id, "Скопируйте текст приглашения вручную из поля «Готовый текст»");
+      setListShareHint(
+        invite.id,
+        "Не удалось скопировать текст приглашения. Ссылку можно скопировать вручную из поля «Ссылка».",
+      );
     }
   }
 

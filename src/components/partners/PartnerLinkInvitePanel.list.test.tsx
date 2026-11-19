@@ -182,6 +182,31 @@ describe("PartnerLinkInvitePanel list resurface", () => {
     expect(copied).toContain("http://127.0.0.1:4312/invite/copy-me");
   });
 
+  it("shows row-scoped fallback when list copy invitation fails", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(activeInviteRow({ id: "inv-msg-fail" }));
+    remcardFetch.mockResolvedValue(list);
+    render(<PartnerLinkInvitePanel meProfile={storeSenderProfile()} />);
+
+    await screen.findByText("Активные");
+    fireEvent.click(screen.getByRole("button", { name: "Открыть" }));
+    fireEvent.click(screen.getByRole("button", { name: "Скопировать приглашение" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("link-invite-row-share-hint-inv-msg-fail")).toHaveTextContent(
+        /Не удалось скопировать текст приглашения/i,
+      );
+      expect(screen.getByTestId("link-invite-row-share-hint-inv-msg-fail")).toHaveTextContent(
+        /поля «Ссылка»/i,
+      );
+    });
+  });
+
   it("copy invitation without row note uses default formatter with persisted intended type", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
