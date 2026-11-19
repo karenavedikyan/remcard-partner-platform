@@ -108,7 +108,6 @@ export function PartnerLinkInviteGallery({
   const [manualCopyById, setManualCopyById] = useState<Record<string, ManualCopySnapshot>>({});
   const [selectAllBusy, setSelectAllBusy] = useState(false);
   const [revokeConfirm, setRevokeConfirm] = useState<RevokeConfirm>(null);
-  const [bulkConfirmIds, setBulkConfirmIds] = useState<string[] | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
   const [reissueWarning, setReissueWarning] = useState("");
@@ -236,7 +235,6 @@ export function PartnerLinkInviteGallery({
     setSelectedIds(new Set());
     setSelectionMode(false);
     setRevokeConfirm(null);
-    setBulkConfirmIds(null);
   }, [search, phase, open]);
 
   const copyContext = useMemo(
@@ -322,13 +320,13 @@ export function PartnerLinkInviteGallery({
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (revokeConfirm || editingId || bulkConfirmIds) return;
+      if (revokeConfirm || editingId) return;
       event.stopPropagation();
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, revokeConfirm, editingId, bulkConfirmIds]);
+  }, [open, onClose, revokeConfirm, editingId]);
 
   useEffect(() => {
     if (open) dialogRef.current?.focus();
@@ -485,7 +483,6 @@ export function PartnerLinkInviteGallery({
     }
     setRevoking(false);
     setRevokeConfirm(null);
-    setBulkConfirmIds(null);
     setSelectedIds(new Set());
     setSelectionMode(false);
     await loadInvites();
@@ -653,7 +650,9 @@ export function PartnerLinkInviteGallery({
           </span>
           <div className={styles.sheetHeadCopy}>
             <p className={styles.sheetOverline}>Партнёры</p>
-            <h2 id={titleId}>Ссылки-приглашения</h2>
+            <h2 id={titleId} className={styles.sheetTitle}>
+              Ссылки-приглашения
+            </h2>
           </div>
           <div className={styles.sheetHeadActions}>
             <InviteGalleryThemeToggle />
@@ -724,12 +723,14 @@ export function PartnerLinkInviteGallery({
         </div>
 
         <div className={styles.listHead}>
-          <h3>{phase === "active" ? "Активные приглашения" : "Архив приглашений"}</h3>
+          <h3 className={styles.listHeadTitle}>
+            {phase === "active" ? "Действуют до принятия или отзыва" : "Принятые приглашения"}
+          </h3>
           <div className={styles.listTopControls}>
             <label className={styles.sectionCaption}>
-              Сортировка
+              <span className={styles.sortLabel}>Сортировка</span>
               <select
-                className={styles.sortSelect}
+                className={`${styles.sortSelect} ${styles.sortSelectHead}`}
                 aria-label="Сортировка"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as LinkInviteGallerySort)}
@@ -743,10 +744,11 @@ export function PartnerLinkInviteGallery({
                 type="button"
                 className={styles.selectionModeToggle}
                 data-active={selectionMode}
+                aria-pressed={selectionMode}
                 onClick={() => {
                   setSelectionMode((v) => !v);
                   setSelectedIds(new Set());
-                  setBulkConfirmIds(null);
+                  setRevokeConfirm(null);
                 }}
               >
                 {selectionMode ? "Готово" : "Выбрать"}
@@ -755,15 +757,13 @@ export function PartnerLinkInviteGallery({
           </div>
         </div>
 
-        {phase === "active" ? (
-          <p className={styles.phaseHint}>Действуют до принятия или отзыва</p>
-        ) : (
-          <p className={styles.phaseHint}>Принятые приглашения — только для чтения</p>
-        )}
         {searchInFlight ? (
           <p className={styles.phaseHint} data-testid="link-invite-gallery-search-loading">
             Загружаем остальные страницы раздела для поиска…
           </p>
+        ) : null}
+        {phase === "archive" ? (
+          <p className={styles.archiveHelp}>Чтобы прекратить сотрудничество, откройте карточку партнёра в разделе «Партнёры».</p>
         ) : null}
 
         {phase === "active" && selectionMode ? (
@@ -798,41 +798,13 @@ export function PartnerLinkInviteGallery({
                 onClick={() => {
                   const ids = resolveRevokeTargetIds(selectedIds);
                   if (!ids.length) return;
-                  setBulkConfirmIds(ids);
+                  setRevokeConfirm({ kind: "bulk", ids });
                 }}
                 data-testid="link-invite-gallery-bulk-revoke"
               >
                 Отозвать ({selectedIds.size})
               </button>
             ) : null}
-          </div>
-        ) : null}
-
-        {bulkConfirmIds ? (
-          <div
-            className={styles.bulkConfirm}
-            role="region"
-            aria-label="Подтверждение массового отзыва"
-          >
-            <p className={styles.bulkConfirmLead}>
-              Будет отозвано ссылок: {bulkConfirmIds.length}. Принятые приглашения в архив не попадут.
-            </p>
-            <div className={styles.bulkConfirmActions}>
-              <button type="button" onClick={() => setBulkConfirmIds(null)} disabled={revoking}>
-                Отмена
-              </button>
-              <button
-                type="button"
-                data-variant="danger"
-                disabled={revoking}
-                onClick={() => {
-                  if (revoking) return;
-                  void revokeIds(bulkConfirmIds);
-                }}
-              >
-                {revoking ? "Отзываем…" : "Отозвать"}
-              </button>
-            </div>
           </div>
         ) : null}
 
@@ -937,6 +909,18 @@ export function PartnerLinkInviteGallery({
               : `Всего ссылок: ${filteredRows.length}`}
             {searchActive && searchPagingComplete ? ` (из ${sourceRows.length} в разделе)` : null}
           </p>
+          <label className={styles.footerSort}>
+            <span className={styles.srOnly}>Сортировка</span>
+            <select
+              className={`${styles.sortSelect} ${styles.sortSelectFoot}`}
+              aria-label="Сортировка"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as LinkInviteGallerySort)}
+            >
+              <option value="newest">Сначала новые</option>
+              <option value="oldest">Сначала старые</option>
+            </select>
+          </label>
           <div className={styles.footerActions}>
             {phase === "active" && inviteList.active.nextCursor ? (
               <Button
@@ -972,18 +956,22 @@ export function PartnerLinkInviteGallery({
         </footer>
       </div>
 
-      {revokeConfirm?.kind === "one" ? (
+      {revokeConfirm ? (
         <PartnerCooperationConfirmDialog
           open
           testId="link-invite-revoke-confirm"
           title="Отозвать ссылку?"
-          body="Ссылка перестанет открываться. Действие нельзя отменить."
+          body={
+            revokeConfirm.kind === "bulk"
+              ? `Будет отозвано ссылок: ${revokeConfirm.ids.length}. Принятые приглашения в архив не попадут.`
+              : "Ссылка перестанет открываться. Действие нельзя отменить."
+          }
           confirmLabel={revoking ? "Отзываем…" : "Отозвать"}
           dismissLabel="Отмена"
           safeAction="dismiss"
           onConfirm={() => {
             if (revoking) return;
-            void revokeIds([revokeConfirm.id]);
+            void revokeIds(revokeConfirm.kind === "bulk" ? revokeConfirm.ids : [revokeConfirm.id]);
           }}
           onDismiss={() => setRevokeConfirm(null)}
         />
@@ -993,6 +981,13 @@ export function PartnerLinkInviteGallery({
 
   if (typeof document === "undefined") return content;
   return createPortal(content, document.body);
+}
+
+function formatInviteCardWhen(iso: string): string {
+  const d = new Date(iso);
+  const dayMonth = d.toLocaleString("ru-RU", { day: "numeric", month: "long" });
+  const time = d.toLocaleString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  return `${dayMonth.replace(" г.", "")}, ${time.replace(" г.", "")}`;
 }
 
 function InviteCardChrome({
@@ -1006,10 +1001,10 @@ function InviteCardChrome({
   const title = linkInviteCardTitle(invite);
   const recipient = linkInviteOriginalRecipientLabel(invite);
   const showRecipient = recipient && recipient !== title;
-  const createdWhen = formatInviteListDate(invite.createdAt);
+  const createdWhenFull = formatInviteListDate(invite.createdAt);
+  const createdWhenShort = formatInviteCardWhen(invite.createdAt);
   return (
     <div className={styles.inviteFace}>
-      <InviteFaceTexture className={styles.inviteTexture} />
       <div className={styles.inviteCardHead}>
         <span className={styles.inviteRibbon} data-type={ribbonType}>
           {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "Партнёр"}
@@ -1025,10 +1020,13 @@ function InviteCardChrome({
         {showRecipient ? <p className={styles.inviteRecipient}>Для: {recipient}</p> : null}
       </div>
       <div className={styles.authorBlock}>
-        <p className={styles.authorLine}>
+        <p
+          className={styles.authorLine}
+          data-author-detail={`${invite.createdBy.displayName} · ${createdWhenShort}`}
+          title={createdWhenFull}
+        >
           {`Создал приглашение ${invite.createdBy.displayName}`}
         </p>
-        <span className={styles.authorWhen}>{createdWhen}</span>
         {invite.acceptedBy ? (
           <p className={styles.inviteAccepted}>
             Принял: {invite.acceptedBy.displayName} · {formatInviteListDate(invite.acceptedBy.at)}
@@ -1119,28 +1117,37 @@ function InviteFootInner(props: {
         <span className={styles.conditionsCountBadge}>{props.count}</span>
         {props.termsOpen ? <IconChevronUp /> : <IconChevronDown />}
       </button>
-      {props.canEditPersonalLabel ? (
+      <div className={styles.rowActionsGroup}>
+        {props.canEditPersonalLabel ? (
+          <button
+            type="button"
+            className={styles.iconOnlyAction}
+            aria-label="Изменить частное название"
+            onClick={props.onEdit}
+          >
+            <IconPencil />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={styles.quickCopy}
+          onClick={props.onCopy}
+          data-testid="link-invite-copy"
+          aria-label="Копировать текст и ссылку"
+          title="Копировать текст и ссылку"
+        >
+          <IconCopy />
+          <span className={styles.quickCopyLabel}>Копировать</span>
+        </button>
         <button
           type="button"
           className={styles.iconOnlyAction}
-          aria-label="Изменить частное название"
-          onClick={props.onEdit}
+          aria-label="Отозвать ссылку"
+          onClick={props.onRevoke}
         >
-          <IconPencil />
+          <IconRevoke />
         </button>
-      ) : null}
-      <button type="button" className={styles.quickCopy} onClick={props.onCopy} data-testid="link-invite-copy">
-        <IconCopy />
-        Копировать
-      </button>
-      <button
-        type="button"
-        className={styles.iconOnlyAction}
-        aria-label="Отозвать ссылку"
-        onClick={props.onRevoke}
-      >
-        <IconRevoke />
-      </button>
+      </div>
     </div>
   );
 }
@@ -1273,28 +1280,6 @@ function IconRevoke() {
         stroke="currentColor"
         strokeWidth="1.4"
         strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function InviteFaceTexture({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 340 230" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <pattern id="inviteTex" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
-          <rect width="28" height="28" fill="transparent" />
-          <path d="M0 14h28M14 0v28" stroke="currentColor" strokeWidth="0.6" opacity="0.35" />
-          <rect x="11" y="11" width="6" height="6" rx="1" fill="currentColor" opacity="0.22" />
-        </pattern>
-      </defs>
-      <rect width="340" height="230" fill="url(#inviteTex)" />
-      <path
-        d="M40 180c30-45 70-60 120-40s80 15 140-30"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        opacity="0.18"
-        fill="none"
       />
     </svg>
   );

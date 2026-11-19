@@ -235,11 +235,59 @@
   padding: 0 20px 12px;
 }
 
-.listHead h3 {
+.sheetTitle {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: clamp(1.06rem, 4.2vw, 1.45rem);
+  line-height: 1.18;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.listHead h3,
+.listHeadTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ink);
   letter-spacing: -0.01em;
+}
+
+.sortLabel {
+  margin-right: 4px;
+}
+
+.sortSelectHead {
+  display: inline-block;
+}
+
+.sortSelectFoot {
+  display: none;
+}
+
+.footerSort {
+  display: none;
+  align-items: center;
+  margin-left: auto;
+}
+
+.footerSort .sortSelect {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted, #8a9188);
+  padding: 4px 18px 4px 0;
+}
+
+.archiveHelp {
+  margin: 0;
+  padding: 0 11px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted, #8a9188);
+}
+
+.quickCopyLabel {
+  white-space: nowrap;
 }
 
 .listTopControls {
@@ -426,6 +474,7 @@
   border-radius: 14px;
   background: color-mix(in srgb, var(--ink) 2%, var(--surface));
   padding: 12px;
+  scrollbar-gutter: stable;
 }
 
 .cardGrid {
@@ -446,10 +495,8 @@
   justify-self: center;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
-  background: var(--surface);
+  border: 0;
+  background: transparent;
   color: var(--ink);
 }
 
@@ -458,24 +505,36 @@
   box-sizing: border-box;
   width: 100%;
   aspect-ratio: 340 / 230;
-  padding: 0 0 0;
+  padding: 0;
   display: grid;
   grid-template-rows: 30px minmax(0, 1fr) auto auto;
   gap: 0;
   color: #f4f5f7;
   overflow: hidden;
   isolation: isolate;
+  border: 1px solid #5a606c8c;
+  border-radius: 16px;
   background:
-    radial-gradient(130% 90% at 100% 0%, rgba(181, 42, 46, 0.14), transparent 55%),
+    radial-gradient(120% 80% at 100% 0%, rgba(181, 42, 46, 0.1), transparent 50%),
     linear-gradient(152deg, #454a52 0%, #2a2e35 44%, #15171c 100%);
+  box-shadow:
+    0 8px 16px #10121629,
+    inset 0 1px 0 #ffffff16,
+    inset 0 -1px 0 #0005;
 }
 
-.inviteTexture {
+.inviteFace::after {
+  content: "";
   position: absolute;
-  inset: 0;
+  inset: -20% -10% -10% 35%;
+  opacity: 0.07;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.12;
-  color: #fff;
+  transform: rotate(-12deg);
+  transform-origin: 70% 40%;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'320'%20height%3D'160'%20viewBox%3D'0%200%20320%20160'%20viewBox%3D'0%200%20320%20160'%3E%3Csvg%20x%3D'8'%20y%3D'8'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Crect%20x%3D'4'%20y%3D'4'%20width%3D'12'%20height%3D'6'%20rx%3D'1.5'%2F%3E%3Cpath%20d%3D'M16%207h3v4h-8v3'%2F%3E%3Crect%20x%3D'10'%20y%3D'14'%20width%3D'2'%20height%3D'6'%20rx%3D'1'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'88'%20y%3D'8'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M13%205l6%206-2%202-6-6z'%2F%3E%3Cpath%20d%3D'M11%207l-7%207%202%202%207-7'%2F%3E%3Cpath%20d%3D'M4%2020l3-3'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'168'%20y%3D'8'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M9%2018h6M10%2021h4M12%203a6%206%200%200%200-4%2010.5c.6.6%201%201.3%201%202.5h6c0-1.2.4-1.9%201-2.5A6%206%200%200%200%2012%203z'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'248'%20y%3D'8'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M3%205h18v14H3zM3%2010h18M3%2015h18M9%205v5M15%2010v5M9%2015v4'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'8'%20y%3D'88'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M4%204l10%204-6%2010z'%2F%3E%3Cpath%20d%3D'M12%2011l7%207'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'88'%20y%3D'88'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M4%204h7v7H4zM13%204h7v7h-7zM4%2013h7v7H4zM13%2013h7v7h-7z'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'168'%20y%3D'88'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M6%2010h8a4%204%200%200%201%204%204v2M10%206v4M7%206h6M18%2018v2'%2F%3E%3C%2Fsvg%3E%3Csvg%20x%3D'248'%20y%3D'88'%20width%3D'30'%20height%3D'30'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23ffffff'%20stroke-width%3D'1.5'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M5%2011V8a3%203%200%200%201%203-3h8a3%203%200%200%201%203%203v3'%2F%3E%3Cpath%20d%3D'M4%2013a2%202%200%200%201%204%200v3h8v-3a2%202%200%200%201%204%200v4H4z'%2F%3E%3Cpath%20d%3D'M6%2020v1M18%2020v1'%2F%3E%3C%2Fsvg%3E%3C%2Fsvg%3E");
+  background-size: 160px 120px;
+  mask-image: linear-gradient(90deg, transparent, #000 45%);
 }
 
 .inviteCardHead {
@@ -498,27 +557,29 @@
   height: 30px;
   padding: 0 14px;
   border-radius: 16px 0 10px 10px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #fff;
+  background: #50545e;
+  box-shadow: 0 3px 10px #0003;
 }
 
 .inviteRibbon[data-type="store"] {
-  background: rgba(181, 42, 46, 0.92);
+  background: #b52a2e;
 }
 
 .inviteRibbon[data-type="specialist"] {
-  background: rgba(47, 125, 74, 0.92);
+  background: #39604d;
 }
 
 .inviteRibbon[data-type="company"] {
-  background: rgba(46, 95, 168, 0.92);
+  background: #425c7d;
 }
 
 .inviteRibbon[data-type="agent"] {
-  background: rgba(158, 117, 42, 0.95);
+  background: #775725;
 }
 
 .inviteWordmark {
@@ -547,12 +608,13 @@
 
 .inviteFaceTitle {
   margin: 0;
-  font-size: clamp(1rem, 3.8vw, 1.28rem);
-  line-height: 1.25;
-  font-weight: 700;
+  font-size: 17.25px;
+  line-height: 1.15;
+  font-weight: 850;
+  letter-spacing: -0.028em;
   overflow-wrap: anywhere;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -580,15 +642,39 @@
 }
 
 .authorLine {
+  position: relative;
   margin: 0;
-  font-size: 0.72rem;
+  width: 100%;
+  font-size: 0;
   line-height: 1.35;
+  text-align: center;
+  color: transparent;
+  user-select: text;
+}
+
+.authorLine::before {
+  content: "Создал приглашение";
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: #d4d9e1;
+  margin-bottom: 2px;
+}
+
+.authorLine::after {
+  content: attr(data-author-detail);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
 }
 
 .authorWhen {
-  display: block;
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.72);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 .inviteRecipient {
@@ -619,12 +705,20 @@
   z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 3px;
   flex-wrap: nowrap;
   min-width: 0;
   padding: 6px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   background: transparent;
+}
+
+.inviteCardActions .rowActionsGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
 }
 
 .inviteCardActions button {
@@ -913,41 +1007,272 @@
 }
 
 @media (max-width: 520px) {
-  .sheetHead {
-    padding-inline: 14px;
+  .backdrop {
+    padding: 19px;
   }
 
-  .browseBar,
-  .listHead,
+  .dialog {
+    width: 100%;
+    max-width: none;
+    border-radius: 14px;
+  }
+
+  .sheetHead {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 11px 10px;
+  }
+
+  .sheetHeadIcon,
+  .sheetOverline {
+    display: none;
+  }
+
+  .sheetHeadCopy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sheetHeadActions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .iconButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .viewTabs {
+    gap: 17px;
+    padding: 0 11px;
+    margin-bottom: 9px;
+  }
+
+  .tab {
+    min-height: 43px;
+    font-size: 13px;
+    padding: 8px 2px;
+  }
+
+  .browseBar {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0 11px 9px;
+    margin-bottom: 0;
+  }
+
+  .inviteSearchBox {
+    flex: 1 1 auto;
+    max-width: none;
+    min-height: 36px;
+    padding: 0 8px;
+    border-radius: 8px;
+  }
+
+  .inviteSearchBox input {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+
+  .layoutSwitch {
+    border-radius: 8px;
+    padding: 2px;
+    flex: none;
+  }
+
+  .layoutSwitch button {
+    min-height: 30px;
+    padding: 0 9px;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .listHead {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0 11px 8px;
+  }
+
+  .listHeadTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  .listTopControls .sectionCaption {
+    display: none;
+  }
+
+  .sortSelectHead {
+    display: none;
+  }
+
+  .footerSort {
+    display: inline-flex;
+  }
+
+  .selectionModeToggle {
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 7px;
+  }
+
   .phaseHint,
-  .listScroll,
-  .footer,
+  .archiveHelp {
+    padding-inline: 11px;
+  }
+
   .bulkBar {
-    padding-inline: 14px;
+    margin: 0 11px 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
   }
 
   .listScroll {
-    margin-inline: 14px;
+    margin: 0 11px 9px;
+    padding: 10px;
+    border-radius: 11px;
+    scrollbar-width: thin;
   }
 
-  .bulkConfirm {
-    margin-inline: 14px;
+  .cardGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 0;
+    justify-content: stretch;
+  }
+
+  .inviteCard {
+    max-width: none;
+    width: 100%;
+  }
+
+  .inviteFace {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    aspect-ratio: 226 / 153;
+  }
+
+  .footer {
+    padding: 10px 11px 13px;
+    gap: 6px 10px;
+    font-size: 11px;
+  }
+
+  .footer p {
+    font-size: 11px;
+  }
+
+  .error {
+    margin-inline: 11px;
   }
 }
 
 @media (max-width: 375px) {
-  .inviteCardActions {
+  .sheetTitle {
+    font-size: 17px;
+    line-height: 1.18;
+  }
+
+  .inviteFaceTitle {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 376px) and (max-width: 520px) {
+  .sheetTitle {
+    font-size: 18px;
+  }
+
+  .inviteFaceTitle {
+    font-size: 17.25px;
+  }
+}
+
+@media (max-width: 355px) {
+  .browseBar {
+    gap: 5px;
+  }
+
+  .layoutSwitch button {
     padding-inline: 6px;
-    gap: 3px;
+  }
+
+  .inviteCardActions {
+    padding: 3px 5px;
+    gap: 2px;
+  }
+
+  .rowActionsGroup {
+    gap: 1px;
+  }
+
+  .inviteCardActions button {
+    min-height: 31px;
   }
 
   .conditionsToggle {
-    max-width: 38%;
-    padding-inline: 5px;
+    min-height: 31px;
+    padding-inline: 6px;
+    gap: 4px;
+    font-size: 11px;
+    max-width: none;
+    flex: 0 1 auto;
+  }
+
+  .iconOnlyAction {
+    width: 29px;
+    min-width: 29px;
+    height: 31px;
+    padding: 0;
   }
 
   .quickCopy {
-    min-width: 2.8rem;
-    padding-inline: 4px;
+    width: 32px;
+    min-width: 32px;
+    flex: 0 0 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .quickCopyLabel {
+    display: none;
+  }
+
+  .inviteFaceName,
+  .inviteFaceMain {
+    padding-block: 1px;
+  }
+
+  .inviteFaceAuthor,
+  .authorBlock {
+    padding-bottom: 4px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+}
+
+@media (min-width: 356px) and (max-width: 520px) {
+  .inviteCardActions button {
+    min-height: 34px;
+  }
+
+  .iconOnlyAction {
+    width: 32px;
+    min-width: 32px;
+  }
+
+  .quickCopy {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding-inline: 8px;
   }
 }

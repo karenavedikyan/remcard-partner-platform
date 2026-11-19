@@ -1,4 +1,4 @@
-import React from "react";
+import "@/app/globals.css";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PartnerLinkInviteGallery } from "@/components/partners/PartnerLinkInviteGallery";
