@@ -213,6 +213,67 @@ describe("PartnerLinkInviteGallery", () => {
     expect(remcardFetch).toHaveBeenCalledWith(expect.stringContaining("archiveCursor=cursor-2"));
   });
 
+  it("clears selection while search is still debouncing", async () => {
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(
+      activeInviteRow({ id: "inv-a", recipientLabel: "Alpha note" }),
+      activeInviteRow({ id: "inv-b", recipientLabel: "Beta note" }),
+    );
+    remcardFetch.mockResolvedValue(list);
+
+    render(<PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} />);
+    await screen.findByTestId("link-invite-card-inv-a");
+
+    fireEvent.click(screen.getByRole("button", { name: "Выбрать" }));
+    fireEvent.click(screen.getByLabelText(/Выбрать Alpha note/i));
+    expect(screen.getByTestId("link-invite-gallery-bulk-revoke")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("link-invite-gallery-search"), { target: { value: "Beta" } });
+    expect(screen.queryByTestId("link-invite-gallery-bulk-revoke")).toBeNull();
+  });
+
+  it("drops manual copy url after invite moves to archive", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const active = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    active.active.items.push(activeInviteRow({ id: "inv-move" }));
+
+    const archived = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    archived.active.items = [];
+    archived.archive.items.push({
+      ...activeInviteRow({ id: "inv-move" }),
+      status: "ACCEPTED",
+      statusLabel: "Принято",
+      canCopyLink: false,
+      previewPath: null,
+      acceptedBy: { userId: "u2", displayName: "Партнёр", at: "2026-11-18T12:00:00.000Z" },
+    });
+
+    let load = 0;
+    remcardFetch.mockImplementation(async () => {
+      load += 1;
+      return load === 1 ? active : archived;
+    });
+
+    const { rerender } = render(
+      <PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} refreshToken={0} />,
+    );
+
+    await screen.findByTestId("link-invite-card-inv-move");
+    fireEvent.click(screen.getByTestId("link-invite-copy"));
+    expect(await screen.findByTestId("link-invite-manual-url-inv-move")).toBeInTheDocument();
+
+    rerender(
+      <PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} refreshToken={1} />,
+    );
+    await screen.findByTestId("link-invite-gallery");
+    fireEvent.click(screen.getByRole("tab", { name: /Архив/i }));
+
+    expect(screen.queryByTestId("link-invite-manual-url-inv-move")).toBeNull();
+    expect(screen.queryByTestId("link-invite-gallery-hint-inv-move")).toBeNull();
+  });
+
   it("clears bulk selection when search query changes", async () => {
     const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
     list.active.items.push(

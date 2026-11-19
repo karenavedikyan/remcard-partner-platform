@@ -40,6 +40,41 @@ export function participatingTermCount(invite: LinkInviteListRow): number {
   return invite.terms.length;
 }
 
+export type LinkInviteCopyContext = {
+  listMode: "v2" | "legacy";
+  resurfaceEnabled: boolean;
+};
+
+/** Pending active row the server still exposes for public link copy. */
+export function inviteRowAllowsPublicCopy(
+  invite: LinkInviteListRow,
+  ctx: LinkInviteCopyContext,
+): boolean {
+  return (
+    invite.status === "PENDING" &&
+    invite.canCopyLink &&
+    Boolean(invite.previewPath?.trim()) &&
+    ctx.listMode === "v2" &&
+    ctx.resurfaceEnabled
+  );
+}
+
+export type ManualCopySnapshot = {
+  url: string;
+  previewPath: string;
+};
+
+export function manualCopySnapshotStillValid(
+  invite: LinkInviteListRow,
+  snapshot: ManualCopySnapshot,
+  absoluteUrl: string | null,
+  ctx: LinkInviteCopyContext,
+): boolean {
+  if (!inviteRowAllowsPublicCopy(invite, ctx)) return false;
+  if (!absoluteUrl || !invite.previewPath) return false;
+  return snapshot.previewPath === invite.previewPath && snapshot.url === absoluteUrl;
+}
+
 export function formatLinkInviteCopyText(input: {
   invite: LinkInviteListRow;
   url: string;

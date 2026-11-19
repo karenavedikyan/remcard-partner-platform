@@ -4,6 +4,8 @@ import {
   formatLinkInviteCopyText,
   linkInviteCardTitle,
   matchesLinkInviteSearch,
+  inviteRowAllowsPublicCopy,
+  manualCopySnapshotStillValid,
   mergeLinkInvitePhaseItems,
 } from "./link-invite-gallery";
 import type { LinkInviteListRow } from "./link-invite-list";
@@ -69,6 +71,26 @@ describe("link-invite gallery helpers", () => {
 
   it("shows honest gap when recipient is missing", () => {
     assert.equal(linkInviteCardTitle(row({ recipientLabel: null, personalLabel: null })), "Имя не сохранено");
+  });
+
+  it("rejects manual snapshot when preview path changes", () => {
+    const ctx = { listMode: "v2" as const, resurfaceEnabled: true };
+    const invite = row({ previewPath: "/invite/new" });
+    const snap = { url: "https://prof.example/invite/old", previewPath: "/invite/old" };
+    assert.equal(
+      manualCopySnapshotStillValid(invite, snap, "https://prof.example/invite/new", ctx),
+      false,
+    );
+  });
+
+  it("archive accepted row cannot show public copy", () => {
+    assert.equal(
+      inviteRowAllowsPublicCopy(
+        row({ status: "ACCEPTED", canCopyLink: false, previewPath: null }),
+        { listMode: "v2", resurfaceEnabled: true },
+      ),
+      false,
+    );
   });
 
   it("dedupes merged phase pages by invite id", () => {

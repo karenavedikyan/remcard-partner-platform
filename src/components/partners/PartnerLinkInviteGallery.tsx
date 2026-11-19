@@ -18,11 +18,14 @@ import {
   linkInviteIntendedLabel,
   linkInviteOriginalRecipientLabel,
   appendLinkInviteListPhase,
+  inviteRowAllowsPublicCopy,
+  manualCopySnapshotStillValid,
   matchesLinkInviteSearch,
   mergeLinkInvitePhaseItems,
   participatingTermCount,
   sortLinkInviteRows,
   type LinkInviteGallerySort,
+  type ManualCopySnapshot,
 } from "@/lib/link-invite-gallery";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -70,7 +73,8 @@ export function PartnerLinkInviteGallery({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [rowHints, setRowHints] = useState<Record<string, string>>({});
-  const [manualCopyUrlById, setManualCopyUrlById] = useState<Record<string, string>>({});
+  const [manualCopyById, setManualCopyById] = useState<Record<string, ManualCopySnapshot>>({});
+  const [selectAllBusy, setSelectAllBusy] = useState(false);
   const [revokeConfirm, setRevokeConfirm] = useState<RevokeConfirm>(null);
   const [revoking, setRevoking] = useState(false);
   const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
@@ -92,6 +96,8 @@ export function PartnerLinkInviteGallery({
     "RemCard PROF",
   [meProfile],
 );
+
+  const appUrl = useMemo(() => getAppUrl(), []);
 
   const fetchListPayload = useCallback(
     async (opts: {
@@ -151,6 +157,8 @@ export function PartnerLinkInviteGallery({
           }));
         } else {
           setInviteList(nextList);
+          setManualCopyById({});
+          setRowHints({});
         }
       } catch (caught) {
         if (gen !== loadGenerationRef.current) return;
@@ -194,7 +202,43 @@ export function PartnerLinkInviteGallery({
     if (!open) return;
     setSelectedIds(new Set());
     setSelectionMode(false);
-  }, [debouncedSearch, phase, open]);
+    setRevokeConfirm(null);
+  }, [search, phase, open]);
+
+  const copyContext = useMemo(
+    () => ({ listMode, resurfaceEnabled: inviteList.resurfaceEnabled }),
+    [listMode, inviteList.resurfaceEnabled],
+  );
+
+  useEffect(() => {
+    setManualCopyById((prev) => {
+      let changed = false;
+      const next: Record<string, ManualCopySnapshot> = {};
+      for (const row of inviteList.active.items) {
+        const snap = prev[row.id];
+        if (!snap) continue;
+        const absolute = inviteAbsoluteUrl(row.previewPath, appUrl);
+        if (manualCopySnapshotStillValid(row, snap, absolute, copyContext)) {
+          next[row.id] = snap;
+        } else {
+          changed = true;
+        }
+      }
+      if (!changed && Object.keys(prev).length === Object.keys(next).length) return prev;
+      return next;
+    });
+    setRowHints((prev) => {
+      const activeIds = new Set(inviteList.active.items.map((row) => row.id));
+      const next: Record<string, string> = {};
+      let changed = false;
+      for (const [id, hint] of Object.entries(prev)) {
+        if (activeIds.has(id)) next[id] = hint;
+        else changed = true;
+      }
+      if (!changed) return prev;
+      return next;
+    });
+  }, [inviteList, copyContext, appUrl]);
 
   useEffect(() => {
     if (!open) return;
@@ -293,9 +337,41 @@ export function PartnerLinkInviteGallery({
     });
   }
 
+  function resolveRevokeTargetIds(ids: Iterable<string>): string[] {
+    return [...ids].filter((id) => pendingFilteredIds.has(id));
+  }
+
+  const revokeSelectionReady =
+    !searchTyping &&
+    !searchInFlight &&
+    !selectAllBusy &&
+    [...selectedIds].length > 0 &&
+    [...selectedIds].every((id) => pendingFilteredIds.has(id));
+
   function selectAllFiltered() {
-    if (searchInFlight) return;
+    if (searchInFlight || searchTyping) return;
     setSelectedIds(new Set(pendingFilteredIds));
+  }
+
+  async function selectAllActivePending() {
+    if (searchTyping || searchInFlight || phase !== "active" || searchActive) return;
+    setSelectAllBusy(true);
+    setListError("");
+    try {
+      let list = inviteListRef.current;
+      while (list.active.nextCursor) {
+        const page = await fetchListPage("active", list.active.nextCursor);
+        list = appendLinkInviteListPhase(list, page, "active");
+        inviteListRef.current = list;
+        setInviteList(list);
+      }
+      const ids = list.active.items.filter((row) => row.status === "PENDING").map((row) => row.id);
+      setSelectedIds(new Set(ids));
+    } catch (caught) {
+      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить активные ссылки");
+    } finally {
+      setSelectAllBusy(false);
+    }
   }
 
   function setRowHint(id: string, hint: string) {
@@ -327,8 +403,8 @@ export function PartnerLinkInviteGallery({
   }
 
   async function copyInvite(invite: LinkInviteListRow) {
-    const url = inviteAbsoluteUrl(invite.previewPath, getAppUrl());
-    if (!invite.canCopyLink || !url || listMode === "legacy" || !inviteList.resurfaceEnabled) {
+    const url = inviteAbsoluteUrl(invite.previewPath, appUrl);
+    if (!inviteRowAllowsPublicCopy(invite, copyContext) || !url) {
       if (invite.canReissue) {
         setRowHint(invite.id, "Старую ссылку восстановить нельзя. Перевыпустите ссылку в условиях.");
       } else {
@@ -345,7 +421,7 @@ export function PartnerLinkInviteGallery({
     try {
       await navigator.clipboard.writeText(text);
       setRowHint(invite.id, "Текст приглашения скопирован");
-      setManualCopyUrlById((prev) => {
+      setManualCopyById((prev) => {
         if (!prev[invite.id]) return prev;
         const next = { ...prev };
         delete next[invite.id];
@@ -353,7 +429,12 @@ export function PartnerLinkInviteGallery({
       });
     } catch {
       setRowHint(invite.id, "Не удалось скопировать. Скопируйте ссылку вручную.");
-      setManualCopyUrlById((prev) => ({ ...prev, [invite.id]: url }));
+      if (invite.previewPath) {
+        setManualCopyById((prev) => ({
+          ...prev,
+          [invite.id]: { url, previewPath: invite.previewPath as string },
+        }));
+      }
     }
   }
 
@@ -417,6 +498,14 @@ export function PartnerLinkInviteGallery({
     const pending = !archive && invite.status === "PENDING";
     const termsOpen = expandedTermsId === invite.id;
     const editOpen = editingId === invite.id;
+    const manualSnapshot = manualCopyById[invite.id];
+  const absoluteUrl = inviteAbsoluteUrl(invite.previewPath, appUrl);
+  const manualUrl =
+    !archive &&
+    manualSnapshot &&
+    manualCopySnapshotStillValid(invite, manualSnapshot, absoluteUrl, copyContext)
+      ? manualSnapshot.url
+      : null;
     return (
       <>
         {termsOpen ? (
@@ -475,12 +564,12 @@ export function PartnerLinkInviteGallery({
             onRevoke={() => setRevokeConfirm({ kind: "one", id: invite.id })}
           />
         ) : null}
-        {rowHints[invite.id] ? (
+        {!archive && rowHints[invite.id] ? (
           <p className={styles.hint} role="status" aria-live="polite" data-testid={`link-invite-gallery-hint-${invite.id}`}>
             {rowHints[invite.id]}
           </p>
         ) : null}
-        {manualCopyUrlById[invite.id] ? (
+        {manualUrl ? (
           <label className={styles.manualUrl}>
             <span className={styles.srOnly}>Публичная ссылка</span>
             <input
@@ -488,7 +577,7 @@ export function PartnerLinkInviteGallery({
               readOnly
               aria-label="Ссылка"
               className={styles.manualUrlField}
-              value={manualCopyUrlById[invite.id]}
+              value={manualUrl}
               data-testid={`link-invite-manual-url-${invite.id}`}
               onFocus={(event) => event.currentTarget.select()}
             />
@@ -605,18 +694,34 @@ export function PartnerLinkInviteGallery({
             <Button
               variant="secondary"
               type="button"
-              disabled={searchInFlight}
+              disabled={searchInFlight || searchTyping}
               onClick={selectAllFiltered}
               data-testid="link-invite-gallery-select-matches"
             >
               Выбрать найденные
             </Button>
           ) : null}
-          {phase === "active" && selectionMode && selectedIds.size > 0 ? (
+          {phase === "active" && selectionMode && !searchActive && !search.trim() ? (
             <Button
               variant="secondary"
               type="button"
-              onClick={() => setRevokeConfirm({ kind: "bulk", ids: [...selectedIds] })}
+              disabled={selectAllBusy || searchTyping}
+              onClick={() => void selectAllActivePending()}
+              data-testid="link-invite-gallery-select-all-active"
+            >
+              {selectAllBusy ? "Загружаем…" : "Выбрать все активные"}
+            </Button>
+          ) : null}
+          {phase === "active" && selectionMode && revokeSelectionReady ? (
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                const ids = resolveRevokeTargetIds(selectedIds);
+                if (!ids.length) return;
+                setRevokeConfirm({ kind: "bulk", ids });
+              }}
+              data-testid="link-invite-gallery-bulk-revoke"
             >
               Отозвать ({selectedIds.size})
             </Button>

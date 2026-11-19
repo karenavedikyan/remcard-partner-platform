@@ -52,10 +52,15 @@ const mockList = {
 const server = await createServer({
   configFile: path.join(harnessDir, "vite.config.ts"),
   root: harnessDir,
-  server: { port: 5216, host: "127.0.0.1" },
+  server: { port: 0, host: "127.0.0.1", strictPort: false },
+  define: {
+    "process.env.NEXT_PUBLIC_APP_URL": JSON.stringify("http://127.0.0.1:4312"),
+    "process.env.REMCARD_API_BASE_URL": JSON.stringify(""),
+  },
 });
 await server.listen();
-const base = "http://127.0.0.1:5216";
+const boundPort = server.config.server.port;
+const base = `http://127.0.0.1:${boundPort}`;
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
