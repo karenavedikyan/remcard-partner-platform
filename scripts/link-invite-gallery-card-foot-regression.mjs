@@ -108,12 +108,46 @@ for (const { theme, width } of cases) {
       return { w: Math.round(r.width), h: Math.round(r.height) };
     }),
   );
-  const minHit = width <= 320 ? 29 : 32;
-  const minHeight = width <= 320 ? 31 : 34;
-  const iconBtns = sizes.filter((_, i) => i === 1 || i === 3);
-  for (const s of iconBtns) {
-    assert.ok(s.w >= minHit && s.h >= minHeight, `icon hit area ${s.w}x${s.h} @${width}/${theme}`);
-  }
+
+  const footBox = await foot.boundingBox();
+  assert.ok(footBox, `foot box missing @${width}/${theme}`);
+  const expectFootH = width <= 320 ? 39 : 47;
+  assert.ok(
+    Math.abs(footBox.height - expectFootH) <= 1,
+    `foot height ${footBox.height} expected ${expectFootH} @${width}/${theme}`,
+  );
+
+  const expectWidths = width <= 320 ? [97, 29, 32, 29] : [97, 32, 97, 32];
+  const expectHeights = width <= 320 ? [31, 31, 32, 31] : [34, 34, 34, 34];
+  sizes.forEach((s, i) => {
+    assert.ok(
+      Math.abs(s.w - expectWidths[i]) <= 1,
+      `button[${i}] width ${s.w} expected ${expectWidths[i]} @${width}/${theme}`,
+    );
+    assert.ok(
+      Math.abs(s.h - expectHeights[i]) <= 1,
+      `button[${i}] height ${s.h} expected ${expectHeights[i]} @${width}/${theme}`,
+    );
+  });
+
+  const groupGap = await foot.evaluate((el) => {
+    const group = el.querySelector('[class*="rowActionsGroup"]');
+    if (!group) return null;
+    const style = getComputedStyle(group);
+    const gap = style.columnGap || style.gap;
+    return parseFloat(gap);
+  });
+  const expectGap = width <= 320 ? 1 : 3;
+  assert.ok(groupGap !== null && Math.abs(groupGap - expectGap) <= 0.5, `rowActionsGroup gap ${groupGap} @${width}/${theme}`);
+
+  const chevronVisible = await foot.locator("button").first().evaluate((btn) => {
+    const svg = btn.querySelector("svg");
+    if (!svg) return false;
+    const r = svg.getBoundingClientRect();
+    const br = btn.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.right <= br.right + 0.5 && r.left >= br.left - 0.5;
+  });
+  assert.ok(chevronVisible, `conditions chevron clipped @${width}/${theme}`);
 
   const termsBtn = foot.locator("button").first();
   const termsPanel = page.locator('[data-testid="link-invite-terms-panel-inv-long"]');

@@ -326,7 +326,10 @@ describe("PartnerLinkInviteGallery", () => {
     );
 
     await screen.findByTestId("link-invite-card-arch-ro");
-    expect(screen.getByText(/Создал приглашение Автор архива/i)).toBeInTheDocument();
+    const archiveCard = screen.getByTestId("link-invite-card-arch-ro");
+    expect(archiveCard).toHaveTextContent("Создал приглашение");
+    expect(archiveCard).toHaveTextContent("Автор архива");
+    expect(archiveCard.querySelector("time[datetime]")).toBeTruthy();
     expect(screen.getByText(/Принял: Партнёр на странице 2/i)).toBeInTheDocument();
     expect(screen.queryByTestId("link-invite-copy")).toBeNull();
     expect(screen.queryByRole("button", { name: "Выбрать" })).toBeNull();

@@ -1020,12 +1020,13 @@ function InviteCardChrome({
         {showRecipient ? <p className={styles.inviteRecipient}>Для: {recipient}</p> : null}
       </div>
       <div className={styles.authorBlock}>
-        <p
-          className={styles.authorLine}
-          data-author-detail={`${invite.createdBy.displayName} · ${createdWhenShort}`}
-          title={createdWhenFull}
-        >
-          {`Создал приглашение ${invite.createdBy.displayName}`}
+        <p className={styles.authorLabel}>Создал приглашение</p>
+        <p className={styles.authorMeta}>
+          <strong>{invite.createdBy.displayName}</strong>
+          {" · "}
+          <time dateTime={invite.createdAt} title={createdWhenFull}>
+            {createdWhenShort}
+          </time>
         </p>
         {invite.acceptedBy ? (
           <p className={styles.inviteAccepted}>

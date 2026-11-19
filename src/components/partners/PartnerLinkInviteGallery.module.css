@@ -608,7 +608,7 @@
 
 .inviteFaceTitle {
   margin: 0;
-  font-size: 17.25px;
+  font-size: clamp(16px, 4.8vw, 17.25px);
   line-height: 1.15;
   font-weight: 850;
   letter-spacing: -0.028em;
@@ -641,40 +641,29 @@
   font-weight: 800;
 }
 
-.authorLine {
-  position: relative;
+.authorLabel {
   margin: 0;
-  width: 100%;
-  font-size: 0;
-  line-height: 1.35;
-  text-align: center;
-  color: transparent;
-  user-select: text;
-}
-
-.authorLine::before {
-  content: "Создал приглашение";
-  display: block;
   font-size: 10px;
+  line-height: 1.35;
   font-weight: 400;
   color: #d4d9e1;
-  margin-bottom: 2px;
 }
 
-.authorLine::after {
-  content: attr(data-author-detail);
-  display: block;
+.authorMeta {
+  margin: 0;
   font-size: 12px;
-  font-weight: 800;
-  color: #fff;
+  line-height: 1.35;
+  font-weight: 400;
+  color: #d4d9e1;
 }
 
-.authorWhen {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+.authorMeta strong {
+  color: #fff;
+  font-weight: 800;
+}
+
+.authorMeta time {
+  font-weight: 400;
 }
 
 .inviteRecipient {
@@ -766,11 +755,18 @@
 .conditionsToggle {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 44%;
   white-space: nowrap;
+  padding-inline: 7px;
+}
+
+.listActions .conditionsToggle {
+  max-width: 44%;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-inline: 7px;
+}
+
+.inviteCardActions .conditionsToggle svg {
+  flex-shrink: 0;
 }
 
 .conditionsCountBadge {
@@ -1161,6 +1157,10 @@
     aspect-ratio: 226 / 153;
   }
 
+  .inviteFaceMain {
+    padding-inline: 12px;
+  }
+
   .footer {
     padding: 10px 11px 13px;
     gap: 6px 10px;
@@ -1181,19 +1181,65 @@
     font-size: 17px;
     line-height: 1.18;
   }
-
-  .inviteFaceTitle {
-    font-size: 16px;
-  }
 }
 
-@media (min-width: 376px) and (max-width: 520px) {
+@media (min-width: 356px) and (max-width: 520px) {
   .sheetTitle {
     font-size: 18px;
   }
 
   .inviteFaceTitle {
     font-size: 17.25px;
+  }
+
+  .inviteCardActions {
+    box-sizing: border-box;
+    height: 47px;
+    min-height: 47px;
+    max-height: 47px;
+    padding: 6px 8px;
+    gap: 0;
+  }
+
+  .inviteCardActions .rowActionsGroup {
+    gap: 3px;
+  }
+
+  .inviteCardActions button {
+    min-height: 34px;
+    font-size: 11px;
+  }
+
+  .inviteCardActions .conditionsToggle {
+    flex: 0 0 97px;
+    width: 97px;
+    min-width: 97px;
+    max-width: 97px;
+    height: 34px;
+    min-height: 34px;
+    padding-inline: 6px;
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .inviteCardActions .iconOnlyAction {
+    width: 32px;
+    min-width: 32px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .inviteCardActions .quickCopy {
+    flex: 0 0 97px;
+    width: 97px;
+    min-width: 97px;
+    height: 34px;
+    min-height: 34px;
+    padding-inline: 8px;
+  }
+
+  .inviteCardActions .quickCopyLabel {
+    display: inline;
   }
 }
 
@@ -1206,73 +1252,76 @@
     padding-inline: 6px;
   }
 
-  .inviteCardActions {
-    padding: 3px 5px;
-    gap: 2px;
+  .inviteFaceTitle {
+    font-size: 16px;
   }
 
-  .rowActionsGroup {
+  .inviteCardActions {
+    box-sizing: border-box;
+    height: 39px;
+    min-height: 39px;
+    max-height: 39px;
+    padding: 4px 6px;
+    gap: 0;
+  }
+
+  .inviteCardActions .rowActionsGroup {
     gap: 1px;
   }
 
   .inviteCardActions button {
-    min-height: 31px;
+    font-size: 11px;
   }
 
-  .conditionsToggle {
+  .inviteCardActions .conditionsToggle {
+    flex: 0 0 97px;
+    width: 97px;
+    min-width: 97px;
+    max-width: 97px;
+    height: 31px;
     min-height: 31px;
     padding-inline: 6px;
     gap: 4px;
-    font-size: 11px;
-    max-width: none;
-    flex: 0 1 auto;
+    overflow: visible;
   }
 
-  .iconOnlyAction {
+  .inviteCardActions .iconOnlyAction {
     width: 29px;
     min-width: 29px;
     height: 31px;
+    min-height: 31px;
     padding: 0;
   }
 
-  .quickCopy {
+  .inviteCardActions .quickCopy {
     width: 32px;
     min-width: 32px;
+    height: 32px;
+    min-height: 32px;
     flex: 0 0 32px;
     padding: 0;
     justify-content: center;
   }
 
-  .quickCopyLabel {
+  .inviteCardActions .quickCopyLabel {
     display: none;
   }
 
-  .inviteFaceName,
   .inviteFaceMain {
     padding-block: 1px;
   }
 
-  .inviteFaceAuthor,
   .authorBlock {
     padding-bottom: 4px;
-    font-size: 11px;
+    gap: 2px;
     line-height: 1.15;
   }
-}
 
-@media (min-width: 356px) and (max-width: 520px) {
-  .inviteCardActions button {
-    min-height: 34px;
+  .authorLabel {
+    font-size: 10px;
   }
 
-  .iconOnlyAction {
-    width: 32px;
-    min-width: 32px;
-  }
-
-  .quickCopy {
-    flex: 0 1 auto;
-    min-width: 0;
-    padding-inline: 8px;
+  .authorMeta {
+    font-size: 12px;
   }
 }
