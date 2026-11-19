@@ -139,7 +139,7 @@ function mockListRoutes(
       return { partnerships };
     }
     if (path === "/api/partnership/link-invite" && init?.method !== "POST") {
-      return { invites: [] };
+      return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     }
     if (typeof path === "string" && path.startsWith("/api/partnership/search")) {
       return { partners: [], nextCursor: null };
@@ -450,7 +450,7 @@ describe("Partners overview greeting (current empty)", () => {
         return { partnerships: rows };
       }
       if (path === "/api/partnership/link-invite" && init?.method !== "POST") {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/search")) {
         return { partners: [], nextCursor: null };

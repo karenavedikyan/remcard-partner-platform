@@ -70,7 +70,11 @@ describe("all four link-invite audiences", () => {
     fetchMock.mockImplementation(async (_path, options) =>
       options?.method === "POST"
         ? { token: "qa-token", previewPath: "/invite/qa-token", expiresAt: "2026-11-16T00:00:00Z" }
-        : { invites: [] },
+        : {
+            active: { items: [], nextCursor: null },
+            archive: { items: [], nextCursor: null },
+            activeLimit: 50,
+          },
     );
   });
   it.each(["MASTER", "STORE", "COMPANY"])("offers agent, specialist, store and company for %s sender", async (type) => {

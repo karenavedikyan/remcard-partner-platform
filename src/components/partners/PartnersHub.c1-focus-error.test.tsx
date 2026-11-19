@@ -117,7 +117,7 @@ describe("PartnersHub C1 focus + confirm error", () => {
         return { requests: [] };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       throw new RemcardApiError(500, `fail-closed ${String(path)}`);
     });
@@ -152,7 +152,7 @@ describe("PartnersHub C1 focus + confirm error", () => {
         return { requests: [] };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       throw new RemcardApiError(500, `fail-closed ${String(path)}`);
     });
@@ -198,7 +198,7 @@ describe("PartnersHub C1 focus + confirm error", () => {
         return { requests: [] };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (
         typeof path === "string" &&
@@ -267,7 +267,7 @@ describe("PartnersHub C1 focus + confirm error", () => {
         return { requests: [] };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (
         typeof path === "string" &&
@@ -322,7 +322,7 @@ describe("PartnersHub C1 focus + confirm error", () => {
         return { requests: [] };
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (
         typeof path === "string" &&

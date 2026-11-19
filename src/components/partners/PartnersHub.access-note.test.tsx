@@ -57,7 +57,7 @@ function mockList(behaviour: "403" | "500") {
     if (path === "/api/partnership/list") {
       throw new RemcardApiError(behaviour === "403" ? 403 : 500, behaviour === "403" ? "Доступно только партнёрам" : "Сбой");
     }
-    if (path === "/api/partnership/link-invite") return { invites: [] };
+    if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     throw new Error(`unexpected ${String(path)}`);
   });
 }

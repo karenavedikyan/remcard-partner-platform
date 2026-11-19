@@ -26,7 +26,11 @@ function review(type = "STORE", message = "Проверенные условия
 }
 
 beforeEach(() => {
-  api.mockReset().mockImplementation(async (_path, options) => options?.method === "POST" ? response : { invites: [] });
+  api.mockReset().mockImplementation(async (_path, options) =>
+    options?.method === "POST"
+      ? response
+      : { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 },
+  );
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
 });
 
@@ -70,7 +74,11 @@ describe("terms link uses the prototype ready composition without changing accep
   it("keeps the submitted snapshot when the profile changes during creation and rejects rapid duplicate submits", async () => {
     let resolve!: (value: typeof response) => void;
     api.mockImplementation((_path, options) => options?.method === "POST"
-      ? new Promise(r => { resolve = r; }) : Promise.resolve({ invites: [] }));
+      ? new Promise(r => { resolve = r; }) : Promise.resolve({
+        active: { items: [], nextCursor: null },
+        archive: { items: [], nextCursor: null },
+        activeLimit: 50,
+      }));
     const { rerender } = render(<PartnerLinkInvitePanel meProfile={sender()} wizard />);
     review("COMPANY", "Первоначальный текст");
     const create = screen.getByRole("button", { name: "Создать приглашение" });
@@ -90,7 +98,7 @@ describe("terms link uses the prototype ready composition without changing accep
   it("retains the draft after failure and exposes manual copying when clipboard is unavailable", async () => {
     let attempts = 0;
     api.mockImplementation(async (_path, options) => {
-      if (options?.method !== "POST") return { invites: [] };
+      if (options?.method !== "POST") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (++attempts === 1) throw new Error("Owned transport failure");
       return response;
     });

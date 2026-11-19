@@ -316,6 +316,10 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET", "POST"]), pattern: /^\/api\/partnership\/link-invite$/ },
     { methods: new Set(["DELETE"]), pattern: /^\/api\/partnership\/link-invite\/[\w-]+$/ },
     {
+      methods: new Set(["POST"]),
+      pattern: /^\/api\/partnership\/link-invite\/[\w-]+\/reissue$/,
+    },
+    {
       methods: new Set(["GET"]),
       pattern: /^\/api\/partnership\/link-invite\/public\/[\w-]+$/,
     },

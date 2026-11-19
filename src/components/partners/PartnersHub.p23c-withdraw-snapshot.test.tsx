@@ -130,7 +130,7 @@ describe("PartnersHub P23c withdraw snapshot dedup", () => {
     const row = baseRow();
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/partnership/list") return { partnerships: [row] };
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       if (path === `/api/partnership/${row.id}` && init?.method === "PATCH") {
         return { partnership: { ...row, status: "CANCELLED" } };
@@ -152,7 +152,7 @@ describe("PartnersHub P23c withdraw snapshot dedup", () => {
     let listRow = baseRow();
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/partnership/list") return { partnerships: [listRow] };
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       if (path === `/api/partnership/${listRow.id}` && init?.method === "PATCH") {
         listRow = { ...listRow, status: "CANCELLED", updatedAt: "2026-10-01T10:05:00.000Z" };
@@ -180,7 +180,7 @@ describe("PartnersHub P23c withdraw snapshot dedup", () => {
     let listRow = row;
     vi.mocked(remcardFetch).mockImplementation(async (path, init) => {
       if (path === "/api/partnership/list") return { partnerships: [listRow] };
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       if (path === `/api/partnership/${row.id}` && init?.method === "PATCH") {
         patchAttempts += 1;
@@ -234,7 +234,7 @@ describe("PartnersHub P23c withdraw snapshot dedup", () => {
         }
         return { partnerships: [listRow] };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       if (path === `/api/partnership/${listRow.id}` && init?.method === "PATCH") {
         const body = init.body as { action?: string };

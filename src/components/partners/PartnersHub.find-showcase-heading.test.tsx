@@ -117,7 +117,7 @@ function mockSearchApi(
         },
       };
     }
-    if (path === "/api/partnership/link-invite") return { invites: [] };
+    if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     if (path === "/api/pro/profile") return agentProfile;
     throw new Error(`unexpected fetch ${String(path)}`);
   });

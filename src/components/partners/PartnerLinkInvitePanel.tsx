@@ -31,6 +31,13 @@ import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
+import {
+  emptyLinkInviteList,
+  formatInviteListDate,
+  inviteAbsoluteUrl,
+  type LinkInviteListResponse,
+  type LinkInviteListRow,
+} from "@/lib/link-invite-list";
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
@@ -56,17 +63,6 @@ function partnerSideFromInviterBusinessSide(dto: InviterBusinessSideDto): Partne
   };
 }
 
-type LinkInviteRow = {
-  id: string;
-  status: string;
-  expiresAt: string;
-  createdAt: string;
-  acceptedAt: string | null;
-  intendedPartnerType: string | null;
-  note: string | null;
-  partnershipId: string | null;
-  terms: { category: string; categoryLabel: string; storePercent: number; isExcluded: boolean }[];
-};
 
 type PartnerLinkInvitePanelProps = {
   meProfile: ProProfileResponse;
@@ -127,13 +123,7 @@ const INTENDED_OPTIONS: { value: IntendedType; label: string }[] = [
 ];
 
 function formatExpiry(iso: string) {
-  return new Date(iso).toLocaleString("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatInviteListDate(iso);
 }
 
 export function PartnerLinkInvitePanel({
@@ -183,7 +173,9 @@ export function PartnerLinkInvitePanel({
   const createdUrl = createdSnapshot?.url ?? null;
   const createdExpires = createdSnapshot?.expiresAt ?? null;
   const [shareOpen, setShareOpen] = useState(false);
-  const [invites, setInvites] = useState<LinkInviteRow[]>([]);
+  const [inviteList, setInviteList] = useState<LinkInviteListResponse>(emptyLinkInviteList());
+  const [expandedInviteId, setExpandedInviteId] = useState<string | null>(null);
+  const [reissueWarning, setReissueWarning] = useState("");
   const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
   useEffect(() => {
@@ -208,17 +200,36 @@ export function PartnerLinkInvitePanel({
     });
   }, [resetKey, resolved.error, formTargetKey]);
 
-  const loadInvites = useCallback(async () => {
+  const loadInvites = useCallback(async (opts?: { appendArchive?: boolean; archiveCursor?: string | null }) => {
     setListError("");
     try {
-      const data = await remcardFetch<{
-        invites: LinkInviteRow[];
-        inviterBusinessSide?: InviterBusinessSideDto;
-      }>("/api/partnership/link-invite");
+      const query =
+        opts?.appendArchive && opts.archiveCursor
+          ? `?archiveCursor=${encodeURIComponent(opts.archiveCursor)}`
+          : "";
+      const data = await remcardFetch<
+        LinkInviteListResponse & { inviterBusinessSide?: InviterBusinessSideDto }
+      >(`/api/partnership/link-invite${query}`);
       if (data.inviterBusinessSide?.principalUserId) {
         setApiInviterSide(partnerSideFromInviterBusinessSide(data.inviterBusinessSide));
       }
-      setInvites(data.invites ?? []);
+      const nextList: LinkInviteListResponse = {
+        active: data.active ?? emptyLinkInviteList().active,
+        archive: data.archive ?? emptyLinkInviteList().archive,
+        activeLimit: data.activeLimit ?? 50,
+      };
+      if (opts?.appendArchive && opts.archiveCursor) {
+        setInviteList((prev) => ({
+          ...nextList,
+          active: prev.active,
+          archive: {
+            items: [...prev.archive.items, ...nextList.archive.items],
+            nextCursor: nextList.archive.nextCursor,
+          },
+        }));
+      } else {
+        setInviteList(nextList);
+      }
     } catch (caught) {
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить ссылки");
     }
@@ -369,10 +380,113 @@ export function PartnerLinkInvitePanel({
   async function revokeInvite(id: string) {
     try {
       await remcardFetch(`/api/partnership/link-invite/${id}`, { method: "DELETE" });
+      setExpandedInviteId(null);
       await loadInvites();
     } catch (caught) {
       setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать");
     }
+  }
+
+  async function reissueInvite(id: string) {
+    setReissueWarning("");
+    try {
+      const result = await remcardFetch<{
+        previewPath: string;
+        reissueWarning?: string;
+      }>(`/api/partnership/link-invite/${id}/reissue`, { method: "POST" });
+      setReissueWarning(
+        result.reissueWarning ??
+          "Выдана новая ссылка. Старый адрес приглашения больше не откроется.",
+      );
+      await loadInvites();
+      setExpandedInviteId(id);
+    } catch (caught) {
+      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось перевыпустить ссылку");
+    }
+  }
+
+  function renderInviteCard(invite: LinkInviteListRow, archive: boolean) {
+    const url = inviteAbsoluteUrl(invite.previewPath, getAppUrl());
+    const expanded = expandedInviteId === invite.id;
+    const intendedLabel =
+      INTENDED_OPTIONS.find((option) => option.value === invite.intendedPartnerType)?.label ??
+      invite.intendedPartnerType;
+    return (
+      <li key={invite.id} className={styles.linkListItem} data-testid={`link-invite-row-${invite.id}`}>
+        <div>
+          <strong>{invite.statusLabel}</strong>
+          <span className={styles.hint}>
+            {" "}
+            · создано {formatExpiry(invite.createdAt)}
+            {invite.legacyTtl ? ` · срок до ${formatExpiry(invite.expiresAt)}` : " · без срока до принятия или отзыва"}
+            {intendedLabel ? ` · ${intendedLabel}` : ""}
+          </span>
+          {archive ? (
+            <p className={styles.hint}>
+              Автор: {invite.createdBy.displayName} · {formatExpiry(invite.createdBy.at)}
+              {invite.acceptedBy
+                ? ` · Принял: ${invite.acceptedBy.displayName} · ${formatExpiry(invite.acceptedBy.at)}`
+                : null}
+            </p>
+          ) : null}
+        </div>
+        <div className={styles.actions}>
+          {!archive && invite.status === "PENDING" ? (
+            <Button variant="secondary" onClick={() => setExpandedInviteId(expanded ? null : invite.id)}>
+              {expanded ? "Свернуть" : "Открыть"}
+            </Button>
+          ) : null}
+          {!archive && invite.status === "PENDING" ? (
+            <Button variant="secondary" onClick={() => void revokeInvite(invite.id)}>
+              Отозвать
+            </Button>
+          ) : null}
+        </div>
+        {expanded && !archive ? (
+          <div className={styles.notice} data-testid="link-invite-active-details">
+            {invite.note ? <p>Комментарий: {invite.note}</p> : null}
+            <ul>
+              {invite.terms.map((term) => (
+                <li key={term.category}>
+                  {term.categoryLabel}: {term.isExcluded ? "не участвует" : `${term.storePercent}%`}
+                </li>
+              ))}
+            </ul>
+            {invite.canCopyLink && url ? (
+              <>
+                <TextField label="Ссылка" value={url} readOnly data-testid="link-invite-list-url" />
+                <div className={styles.actions}>
+                  <Button variant="secondary" onClick={() => void copyUrl(url)}>
+                    Скопировать ссылку
+                  </Button>
+                  <Button variant="secondary" onClick={() => void copyInviteMessage(url)}>
+                    Скопировать приглашение
+                  </Button>
+                  <Button variant="secondary" onClick={() => void shareUrl(url)}>
+                    Поделиться
+                  </Button>
+                </div>
+              </>
+            ) : null}
+            {invite.canReissue ? (
+              <div className={styles.actions}>
+                <Button variant="secondary" onClick={() => void reissueInvite(invite.id)}>
+                  Перевыпустить ссылку
+                </Button>
+                <p className={styles.hint}>
+                  Старую ссылку восстановить нельзя. Перевыпуск создаст новый адрес, прежний перестанет работать.
+                </p>
+              </div>
+            ) : null}
+            {reissueWarning && expandedInviteId === invite.id ? (
+              <p className={styles.hint} role="status">
+                {reissueWarning}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </li>
+    );
   }
 
   const previewTerms = activeInviteRows(form);
@@ -407,7 +521,8 @@ export function PartnerLinkInvitePanel({
         {(!wizard || (step === 3 && !createdUrl)) ? (
         <p className={styles.hint}>
           Создание ссылки не активирует сотрудничество автоматически. После входа партнёр увидит
-          указанные условия и сможет принять их. Ссылка действует 14 дней; условия фиксируются при создании.
+          указанные условия и сможет принять их. Новая ссылка активна до первого принятия или отзыва;
+          условия фиксируются при создании.
         </p>
         ) : null}
         {(!wizard || (step === 1 && !createdUrl)) ? (
@@ -550,7 +665,7 @@ export function PartnerLinkInvitePanel({
               ))}
             </ul>
             {!wizard && form.note.trim() ? <p>Комментарий: {form.note.trim()}</p> : null}
-            <p>Срок действия ссылки: 14 дней после создания.</p>
+            <p>Ссылка активна до принятия или отзыва (старые приглашения с 14-дневным сроком помечаются отдельно).</p>
           </div>
         ) : null}
 
@@ -599,7 +714,11 @@ export function PartnerLinkInvitePanel({
         ) : createdUrl ? (
           <div className={styles.notice} data-testid="link-invite-created">
             <p><strong>{wizard ? "Приглашение готово" : "Ссылка создана"}</strong></p>
-            <p>Действует до {createdExpires ? formatExpiry(createdExpires) : "—"}</p>
+            <p>
+              {createdExpires && createdExpires.startsWith("2099")
+                ? "Активна до принятия или отзыва"
+                : `Действует до ${createdExpires ? formatExpiry(createdExpires) : "—"}`}
+            </p>
             <TextField
               label="Ссылка"
               value={createdUrl}
@@ -624,38 +743,47 @@ export function PartnerLinkInvitePanel({
       </Panel>
 
       {wizard ? <button type="button" className={wizardStyles.historyToggle} aria-expanded={showHistory} onClick={() => setShowHistory(!showHistory)}>Ваши ссылки-приглашения</button> : null}
-      {!wizard || showHistory ? <Panel title="Ваши ссылки-приглашения" hint="Отозванные и использованные ссылки нельзя восстановить.">
-        {listError ? (
-          <p className={styles.error} role="alert">
-            {listError}
-          </p>
-        ) : null}
-        {invites.length === 0 ? (
-          <p className={styles.hint}>Активных ссылок пока нет.</p>
-        ) : (
-          <ul className={styles.linkList}>
-            {invites.map((invite) => (
-              <li key={invite.id} className={styles.linkListItem}>
-                <div>
-                  <strong>{invite.status}</strong>
-                  <span className={styles.hint}>
-                    {" "}
-                    · до {formatExpiry(invite.expiresAt)}
-                    {invite.intendedPartnerType
-                      ? ` · ${INTENDED_OPTIONS.find((option) => option.value === invite.intendedPartnerType)?.label ?? invite.intendedPartnerType}`
-                      : ""}
-                  </span>
-                </div>
-                {invite.status === "PENDING" ? (
-                  <Button variant="secondary" onClick={() => void revokeInvite(invite.id)}>
-                    Отозвать
-                  </Button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel> : null}
+      {!wizard || showHistory ? (
+        <Panel
+          title="Ваши ссылки-приглашения"
+          hint="Активные и архив ведутся отдельно. В архиве ссылок для копирования нет."
+        >
+          {listError ? (
+            <p className={styles.error} role="alert">
+              {listError}
+            </p>
+          ) : null}
+          <h4 className={styles.hint}>Активные</h4>
+          {inviteList.active.items.length === 0 ? (
+            <p className={styles.hint}>Активных ссылок пока нет.</p>
+          ) : (
+            <ul className={styles.linkList} data-testid="link-invite-active-list">
+              {inviteList.active.items.map((invite) => renderInviteCard(invite, false))}
+            </ul>
+          )}
+          <h4 className={styles.hint}>Архив</h4>
+          {inviteList.archive.items.length === 0 ? (
+            <p className={styles.hint}>В архиве пока ничего нет.</p>
+          ) : (
+            <ul className={styles.linkList} data-testid="link-invite-archive-list">
+              {inviteList.archive.items.map((invite) => renderInviteCard(invite, true))}
+            </ul>
+          )}
+          {inviteList.archive.nextCursor ? (
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void loadInvites({
+                  appendArchive: true,
+                  archiveCursor: inviteList.archive.nextCursor,
+                })
+              }
+            >
+              Показать ещё в архиве
+            </Button>
+          ) : null}
+        </Panel>
+      ) : null}
     </div>
   );
 }

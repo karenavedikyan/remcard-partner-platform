@@ -129,7 +129,7 @@ describe("PartnersHub P9b invitation view switches", () => {
       if (path === "/api/partnership/list") {
         return { partnerships: [incoming, outgoing, active] };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });
@@ -206,7 +206,7 @@ describe("PartnersHub P9b invitation view switches", () => {
       if (path === "/api/partnership/list") {
         return { partnerships: [incoming, outgoing] };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });
@@ -254,7 +254,7 @@ describe("PartnersHub P9b invitation view switches", () => {
       const method = String((init as { method?: string } | undefined)?.method || "GET").toUpperCase();
       if (method !== "GET" && method !== "HEAD") posts.push(`${method} ${String(path)}`);
       if (path === "/api/partnership/list") return { partnerships: [incoming, outgoing] };
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });

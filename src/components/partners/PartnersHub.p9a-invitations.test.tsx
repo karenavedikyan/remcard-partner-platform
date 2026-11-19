@@ -129,7 +129,7 @@ describe("PartnersHub P9a invitations wiring", () => {
       if (path === "/api/partnership/list") {
         return { partnerships: [incoming, outgoing, active] };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });
@@ -174,7 +174,7 @@ describe("PartnersHub P9a invitations wiring", () => {
     async (partnersAudience) => {
       vi.mocked(remcardFetch).mockImplementation(async (path) => {
         if (path === "/api/partnership/list") return { partnerships: [partnership({ id: "qa-live", status: "ACTIVE" })] };
-        if (path === "/api/partnership/link-invite") return { invites: [] };
+        if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
         if (path === "/api/pro/profile") return agentProfile;
         throw new Error(`unexpected ${String(path)}`);
       });
@@ -195,7 +195,7 @@ describe("PartnersHub P9a invitations wiring", () => {
       if (path === "/api/partnership/list") {
         return { partnerships: [incoming, outgoing] };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });
@@ -233,7 +233,7 @@ describe("PartnersHub P9a invitations wiring", () => {
           partnerships: [partnership({ id: "in-only", initiatedBy: "store-1" })],
         };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected ${String(path)}`);
     });

@@ -122,7 +122,7 @@ function mockApis(partners: PartnerSearchResult[], total?: number, nextCursor: s
         },
       };
     }
-    if (path === "/api/partnership/link-invite") return { invites: [] };
+    if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     if (path === "/api/pro/profile") return agentProfile;
     throw new Error(`unexpected fetch ${String(path)}`);
   });
@@ -235,7 +235,7 @@ describe("PartnersHub P5b modal search results", () => {
       if (typeof path === "string" && path.startsWith("/api/partnership/search")) {
         throw new (await import("@/lib/api-client")).RemcardApiError(500, "Сервер недоступен");
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected fetch ${String(path)}`);
     });

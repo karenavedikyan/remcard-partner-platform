@@ -133,7 +133,7 @@ function mockListAndSearch(
       return searchImpl(path, init);
     }
     if (path === "/api/partnership/link-invite" && init?.method !== "POST") {
-      return { invites: [] };
+      return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     }
     if (path === "/api/pro/profile") {
       return storeProfile;

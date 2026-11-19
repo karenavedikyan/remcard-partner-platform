@@ -32,7 +32,7 @@ describe("PartnerDiscussionInvitePanel P7/P8a wiring", () => {
     remcardFetch.mockReset();
     remcardFetch.mockImplementation(async (url: string, init?: { method?: string; body?: unknown }) => {
       if (String(url) === "/api/partnership/discussion-invite" && (!init || init.method === "GET" || !init.method)) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (String(url) === "/api/partnership/discussion-invite" && init?.method === "POST") {
         return {

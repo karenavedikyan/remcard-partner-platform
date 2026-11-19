@@ -37,7 +37,9 @@ describe("PartnerLinkInvitePanel inviterBusinessSide from link-invite GET", () =
   it("uses trusted principal categories when pro/context organization slice is sparse", async () => {
     const user = userEvent.setup();
     remcardFetch.mockResolvedValue({
-      invites: [],
+      active: { items: [], nextCursor: null },
+      archive: { items: [], nextCursor: null },
+      activeLimit: 50,
       inviterBusinessSide: {
         principalUserId: "owner-pro",
         partnerType: "COMPANY",

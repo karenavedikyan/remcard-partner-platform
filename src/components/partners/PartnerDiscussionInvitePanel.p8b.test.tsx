@@ -116,7 +116,7 @@ describe("PartnerDiscussionInvitePanel P8b ready / hand-off", () => {
   it("keeps review on create error and does not show ready", async () => {
     remcardFetch.mockImplementation(async (url: string, init?: { method?: string }) => {
       if (String(url) === "/api/partnership/discussion-invite" && (!init || !init.method || init.method === "GET")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (init?.method === "POST") {
         const { RemcardApiError } = await import("@/lib/api-client");

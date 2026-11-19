@@ -78,7 +78,7 @@ function stubListSideRoutes() {
         return { partners: [], nextCursor: null };
       }
       if (path === "/api/partnership/link-invite") {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       throw new Error(`unexpected ${path}`);
     },

@@ -102,7 +102,7 @@ function installMocks() {
       return { requests: [] };
     }
     if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-      return { invites: [] };
+      return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
     }
     if (path === "/api/pro/profile") {
       return agentProfile;
@@ -232,7 +232,7 @@ describe("PartnersHub C1 centered term modal", () => {
         });
       }
       if (typeof path === "string" && path.startsWith("/api/partnership/link-invite")) {
-        return { invites: [] };
+        return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       }
       if (path === "/api/pro/profile") {
         return agentProfile;

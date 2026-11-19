@@ -99,7 +99,7 @@ describe("PartnersHub find intro + AgentPartnerHubModal (real child tree)", () =
           facets: { total: 1, baseTotal: 1, stageTotal: 1, products: {}, services: {}, stages: {} },
         };
       }
-      if (path === "/api/partnership/link-invite") return { invites: [] };
+      if (path === "/api/partnership/link-invite") return { active: { items: [], nextCursor: null }, archive: { items: [], nextCursor: null }, activeLimit: 50 };
       if (path === "/api/pro/profile") return agentProfile;
       throw new Error(`unexpected fetch ${String(path)}`);
     });
