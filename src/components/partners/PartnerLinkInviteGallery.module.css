@@ -11,7 +11,7 @@
 
 .dialog {
   box-sizing: border-box;
-  width: min(100%, 780px);
+  width: min(100%, 1120px);
   max-height: min(92dvh, 900px);
   overflow: hidden;
   display: grid;
