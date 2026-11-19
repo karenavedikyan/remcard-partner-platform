@@ -41,7 +41,12 @@ import { ThemeContext } from "@/contexts/ThemeContext";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
-import { handleDialogTabKey, lockBodyScroll, unlockBodyScroll } from "@/lib/dialog-focus";
+import {
+  focusInitialDialogControl,
+  handleDialogTabKey,
+  lockBodyScroll,
+  unlockBodyScroll,
+} from "@/lib/dialog-focus";
 import styles from "./PartnerLinkInviteGallery.module.css";
 
 export type PartnerLinkInviteGalleryProps = {
@@ -342,7 +347,11 @@ export function PartnerLinkInviteGallery({
   }, [open, onClose, revokeConfirm, editingId, reissueConfirmId]);
 
   useEffect(() => {
-    if (open) dialogRef.current?.focus({ preventScroll: true });
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const id = requestAnimationFrame(() => focusInitialDialogControl(dialog));
+    return () => cancelAnimationFrame(id);
   }, [open]);
 
   const sourceRows = phase === "active" ? inviteList.active.items : inviteList.archive.items;

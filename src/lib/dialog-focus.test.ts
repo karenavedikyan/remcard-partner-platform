@@ -42,6 +42,32 @@ describe("dialog-focus", () => {
     expect(document.activeElement).toBe(only);
   });
 
+  it("wraps Shift+Tab when focus sits on tabindex=-1 dialog root", () => {
+    const root = document.createElement("div");
+    root.tabIndex = -1;
+    root.innerHTML = `
+      <button type="button" id="a">A</button>
+      <button type="button" id="b">B</button>
+    `;
+    document.body.appendChild(root);
+    const a = root.querySelector("#a") as HTMLButtonElement;
+    const b = root.querySelector("#b") as HTMLButtonElement;
+    root.focus();
+
+    const tabBack = new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true });
+    handleDialogTabKey(tabBack, root);
+    expect(tabBack.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(b);
+
+    root.focus();
+    const tabForward = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    handleDialogTabKey(tabForward, root);
+    expect(tabForward.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(a);
+    void a;
+    void b;
+  });
+
   it("traps Tab within container", () => {
     const root = document.createElement("div");
     root.innerHTML = `

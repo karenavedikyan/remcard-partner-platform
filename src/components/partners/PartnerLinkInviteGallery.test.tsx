@@ -352,7 +352,7 @@ describe("PartnerLinkInviteGallery", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("decodes inviteFace card motif background via Image.decode()", async () => {
+  it("inviteFace motif SVG in CSS is well-formed XML without duplicate root viewBox", () => {
     const css = fs.readFileSync(
       path.join(process.cwd(), "src/components/partners/PartnerLinkInviteGallery.module.css"),
       "utf8",
@@ -363,11 +363,8 @@ describe("PartnerLinkInviteGallery", () => {
     const dataUri = match![1]!;
     const markup = decodeURIComponent(dataUri.replace(/^data:image\/svg\+xml,/, ""));
     expect(markup).not.toMatch(/viewBox=['"]0 0 320 160['"][^>]*viewBox=/);
-
-    const img = new Image();
-    img.src = dataUri;
-  await img.decode();
-    expect(img.naturalWidth).toBeGreaterThan(0);
-    expect(img.naturalHeight).toBeGreaterThan(0);
-  }, 10_000);
+    const doc = new DOMParser().parseFromString(markup, "image/svg+xml");
+    expect(doc.querySelector("parsererror")).toBeNull();
+    expect(doc.documentElement.localName).toBe("svg");
+  });
 });

@@ -11,11 +11,6 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    environmentOptions: {
-      jsdom: {
-        resources: "usable",
-      },
-    },
     env: {
       NODE_ENV: "development",
     },

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, type HTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/dialog-focus";
 import styles from "./AgentPartnerHubModal.module.css";
 
 export type HubModalTab = "find" | "link";
@@ -71,11 +72,8 @@ export function AgentPartnerHubModal({
 
   useEffect(() => {
     if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
+    lockBodyScroll();
+    return () => unlockBodyScroll();
   }, [open]);
 
   useEffect(() => {
@@ -94,6 +92,18 @@ export function AgentPartnerHubModal({
     } else {
       wasOverlayPausedRef.current = false;
     }
+  }, [open, overlayPaused]);
+
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const pause = overlayPaused && open;
+    if (pause) {
+      sheet.toggleAttribute("inert", true);
+    } else {
+      sheet.toggleAttribute("inert", false);
+    }
+    sheet.inert = pause;
   }, [open, overlayPaused]);
 
   useEffect(() => {
@@ -165,7 +175,6 @@ export function AgentPartnerHubModal({
         role="dialog"
         aria-modal={overlayPaused ? undefined : "true"}
         aria-hidden={overlayPaused ? true : undefined}
-        {...(overlayPaused ? ({ inert: "" } as HTMLAttributes<HTMLDivElement>) : {})}
         aria-labelledby={titleId}
         data-testid="agent-partner-hub-modal"
         data-overlay-paused={overlayPaused ? "true" : "false"}

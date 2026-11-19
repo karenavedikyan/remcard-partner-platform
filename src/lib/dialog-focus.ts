@@ -24,6 +24,7 @@ function isEffectivelyDisabled(el: HTMLElement): boolean {
 
 function isFocusableVisible(el: HTMLElement): boolean {
   if (el.getAttribute("aria-hidden") === "true") return false;
+  if (el.closest('[aria-hidden="true"]')) return false;
   if (isEffectivelyDisabled(el)) return false;
   if (el.tabIndex < 0) return false;
   const style = window.getComputedStyle(el);
@@ -35,6 +36,11 @@ function isFocusableVisible(el: HTMLElement): boolean {
 
 export function getFocusableElements(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(isFocusableVisible);
+}
+
+function isActiveInFocusTrap(active: HTMLElement | null, focusable: HTMLElement[]): boolean {
+  if (!active) return false;
+  return focusable.includes(active);
 }
 
 export function handleDialogTabKey(event: KeyboardEvent, container: HTMLElement): void {
@@ -49,16 +55,27 @@ export function handleDialogTabKey(event: KeyboardEvent, container: HTMLElement)
   const first = focusable[0]!;
   const last = focusable[focusable.length - 1]!;
   const active = document.activeElement as HTMLElement | null;
+  const activeInTrap = isActiveInFocusTrap(active, focusable);
 
   if (event.shiftKey) {
-    if (active === first || !container.contains(active)) {
+    if (!activeInTrap || active === first) {
       event.preventDefault();
       last.focus();
     }
-  } else if (active === last || !container.contains(active)) {
+  } else if (!activeInTrap || active === last) {
     event.preventDefault();
     first.focus();
   }
+}
+
+/** Focus the first visible control in a dialog, not tabindex=-1 shell roots. */
+export function focusInitialDialogControl(container: HTMLElement): void {
+  const focusable = getFocusableElements(container);
+  if (focusable[0]) {
+    focusable[0].focus({ preventScroll: true });
+    return;
+  }
+  container.focus({ preventScroll: true });
 }
 
 type BodyScrollLock = {
