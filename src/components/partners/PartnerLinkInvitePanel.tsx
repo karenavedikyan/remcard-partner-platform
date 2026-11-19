@@ -181,6 +181,7 @@ export function PartnerLinkInvitePanel({
   const [reissueWarning, setReissueWarning] = useState("");
   const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
+  const [listShareHintById, setListShareHintById] = useState<Record<string, string>>({});
   useEffect(() => {
     onDirtyChange?.(!createdUrl && Boolean(recipientName.trim() || intendedType || form.note.trim()));
     onReadyChange?.(Boolean(createdUrl));
@@ -363,6 +364,21 @@ export function PartnerLinkInvitePanel({
     });
   }
 
+  function inviteShareTextForListRow(invite: LinkInviteListRow, url: string) {
+    const persistedNote = invite.note?.trim();
+    if (persistedNote) return `${persistedNote}\n\n${url}`;
+    return buildInviteShareMessage({
+      inviterName: inviterShareName(),
+      url,
+      inviterType: meProfile.user.partnerType,
+      intendedType: invite.intendedPartnerType || null,
+    });
+  }
+
+  function setListShareHint(inviteId: string, hint: string) {
+    setListShareHintById((prev) => ({ ...prev, [inviteId]: hint }));
+  }
+
   async function copyUrl(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -372,12 +388,30 @@ export function PartnerLinkInvitePanel({
     }
   }
 
+  async function copyListRowUrl(inviteId: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setListShareHint(inviteId, "Ссылка скопирована");
+    } catch {
+      setListShareHint(inviteId, "Скопируйте ссылку вручную из поля «Ссылка»");
+    }
+  }
+
   async function copyInviteMessage(url: string) {
     try {
       await navigator.clipboard.writeText(inviteShareText(url));
       setShareHint("Текст приглашения скопирован");
     } catch {
       setShareHint("Скопируйте текст приглашения вручную из поля «Готовый текст»");
+    }
+  }
+
+  async function copyListRowInviteMessage(invite: LinkInviteListRow, url: string) {
+    try {
+      await navigator.clipboard.writeText(inviteShareTextForListRow(invite, url));
+      setListShareHint(invite.id, "Текст приглашения скопирован");
+    } catch {
+      setListShareHint(invite.id, "Скопируйте текст приглашения вручную из поля «Готовый текст»");
     }
   }
 
@@ -393,6 +427,20 @@ export function PartnerLinkInvitePanel({
       }
     }
     await copyInviteMessage(url);
+  }
+
+  async function shareListRowUrl(invite: LinkInviteListRow, url: string) {
+    const text = inviteShareTextForListRow(invite, url);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Приглашение RemCard PROF", text, url });
+        setListShareHint(invite.id, "Готово");
+        return;
+      } catch {
+        // fallback to copy
+      }
+    }
+    await copyListRowInviteMessage(invite, url);
   }
 
   async function revokeInvite(id: string) {
@@ -447,7 +495,11 @@ export function PartnerLinkInvitePanel({
           <span className={styles.hint}>
             {" "}
             · создано {formatExpiry(invite.createdAt)}
-            {invite.legacyTtl ? ` · срок до ${formatExpiry(invite.expiresAt)}` : " · без срока до принятия или отзыва"}
+            {invite.legacyTtl
+              ? ` · срок до ${formatExpiry(invite.expiresAt)}`
+              : !archive && invite.status === "PENDING"
+                ? " · без срока до принятия или отзыва"
+                : ""}
             {intendedLabel ? ` · ${intendedLabel}` : ""}
           </span>
           {archive ? (
@@ -485,16 +537,26 @@ export function PartnerLinkInvitePanel({
               <>
                 <TextField label="Ссылка" value={url} readOnly data-testid="link-invite-list-url" />
                 <div className={styles.actions}>
-                  <Button variant="secondary" onClick={() => void copyUrl(url)}>
+                  <Button variant="secondary" onClick={() => void copyListRowUrl(invite.id, url)}>
                     Скопировать ссылку
                   </Button>
-                  <Button variant="secondary" onClick={() => void copyInviteMessage(url)}>
+                  <Button variant="secondary" onClick={() => void copyListRowInviteMessage(invite, url)}>
                     Скопировать приглашение
                   </Button>
-                  <Button variant="secondary" onClick={() => void shareUrl(url)}>
+                  <Button variant="secondary" onClick={() => void shareListRowUrl(invite, url)}>
                     Поделиться
                   </Button>
                 </div>
+                {listShareHintById[invite.id] ? (
+                  <p
+                    className={styles.hint}
+                    role="status"
+                    aria-live="polite"
+                    data-testid={`link-invite-row-share-hint-${invite.id}`}
+                  >
+                    {listShareHintById[invite.id]}
+                  </p>
+                ) : null}
               </>
             ) : null}
             {invite.canReissue && listMode === "v2" ? (
