@@ -207,6 +207,63 @@ describe("PartnerLinkInvitePanel list resurface", () => {
     });
   });
 
+  it("hides personal label edit when server denies canEditPersonalLabel", async () => {
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(
+      activeInviteRow({ canEditPersonalLabel: false, personalLabel: "Скрытое" }),
+    );
+    remcardFetch.mockResolvedValue(list);
+    render(<PartnerLinkInvitePanel meProfile={storeSenderProfile()} />);
+
+    await screen.findByText("Скрытое");
+    expect(screen.queryByRole("button", { name: "Изменить частное название" })).toBeNull();
+  });
+
+  it("saves personal label via PATCH without leaking into copy text", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(
+      activeInviteRow({
+        id: "inv-private",
+        canEditPersonalLabel: true,
+        recipientLabel: "Публичный получатель",
+        personalLabel: null,
+        note: "Только публичный комментарий",
+      }),
+    );
+    remcardFetch.mockImplementation(async (path: string, init?: { method?: string; body?: unknown }) => {
+      if (init?.method === "PATCH") {
+        return { ok: true, personalLabel: "Моё имя" };
+      }
+      return list;
+    });
+    render(<PartnerLinkInvitePanel meProfile={storeSenderProfile()} />);
+
+    await screen.findByText("Публичный получатель");
+    fireEvent.click(screen.getByRole("button", { name: "Изменить частное название" }));
+    const editPanel = await screen.findByTestId("link-invite-edit-inv-private");
+    fireEvent.change(editPanel.querySelector("input")!, { target: { value: "Моё имя" } });
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    await waitFor(() => {
+      expect(remcardFetch).toHaveBeenCalledWith(
+        "/api/partnership/link-invite/inv-private",
+        expect.objectContaining({
+          method: "PATCH",
+          body: { personalLabel: "Моё имя" },
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Скопировать приглашение" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    const copied = writeText.mock.calls.at(-1)?.[0] as string;
+    expect(copied).toContain("Только публичный комментарий");
+    expect(copied).not.toMatch(/Моё имя/);
+  });
+
   it("copy invitation without row note uses default formatter with persisted intended type", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {

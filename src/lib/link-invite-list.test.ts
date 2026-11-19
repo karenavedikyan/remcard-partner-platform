@@ -9,6 +9,42 @@ describe("parseLinkInviteListPayload", () => {
     assert.equal(parsed.list.resurfaceEnabled, true);
   });
 
+  it("preserves recipient and personal label fields from v2 items", () => {
+    const parsed = parseLinkInviteListPayload({
+      ...emptyLinkInviteList(),
+      active: {
+        items: [
+          {
+            id: "x",
+            status: "PENDING",
+            statusLabel: "Активно",
+            expiresAt: "2099-01-01T00:00:00.000Z",
+            legacyTtl: false,
+            createdAt: "2026-11-19T10:00:00.000Z",
+            acceptedAt: null,
+            recipientLabel: "Публичный",
+            personalLabel: "Частный",
+            canEditPersonalLabel: true,
+            intendedPartnerType: "MASTER",
+            note: null,
+            partnershipId: null,
+            previewPath: "/invite/x",
+            canCopyLink: true,
+            canReissue: false,
+            createdBy: { userId: "u", displayName: "А", at: "2026-11-19T10:00:00.000Z" },
+            acceptedBy: null,
+            terms: [],
+          },
+        ],
+        nextCursor: null,
+      },
+    });
+    const row = parsed.list.active.items[0];
+    assert.equal(row?.recipientLabel, "Публичный");
+    assert.equal(row?.personalLabel, "Частный");
+    assert.equal(row?.canEditPersonalLabel, true);
+  });
+
   it("parses legacy invites[] without sensitive fields", () => {
     const parsed = parseLinkInviteListPayload({
       invites: [

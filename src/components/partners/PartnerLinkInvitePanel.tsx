@@ -39,6 +39,11 @@ import {
   type LinkInviteListResponse,
   type LinkInviteListRow,
 } from "@/lib/link-invite-list";
+import {
+  formatLinkInviteCopyText,
+  linkInviteListTitle,
+  linkInviteOriginalRecipientLabel,
+} from "@/lib/link-invite-labels";
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
@@ -182,6 +187,8 @@ export function PartnerLinkInvitePanel({
   const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
   const [listShareHintById, setListShareHintById] = useState<Record<string, string>>({});
+  const [personalLabelEditId, setPersonalLabelEditId] = useState<string | null>(null);
+  const [personalLabelDraft, setPersonalLabelDraft] = useState("");
   useEffect(() => {
     onDirtyChange?.(!createdUrl && Boolean(recipientName.trim() || intendedType || form.note.trim()));
     onReadyChange?.(Boolean(createdUrl));
@@ -312,6 +319,7 @@ export function PartnerLinkInvitePanel({
           intendedPartnerType: submitted.intendedPartnerType,
           note: submitted.note || null,
           terms: submitted.terms,
+          recipientLabel: submitted.recipientLabel || null,
         },
       });
       const url = `${getAppUrl()}${result.previewPath}`;
@@ -365,13 +373,11 @@ export function PartnerLinkInvitePanel({
   }
 
   function inviteShareTextForListRow(invite: LinkInviteListRow, url: string) {
-    const persistedNote = invite.note?.trim();
-    if (persistedNote) return `${persistedNote}\n\n${url}`;
-    return buildInviteShareMessage({
-      inviterName: inviterShareName(),
+    return formatLinkInviteCopyText({
+      invite,
       url,
+      inviterName: inviterShareName(),
       inviterType: meProfile.user.partnerType,
-      intendedType: invite.intendedPartnerType || null,
     });
   }
 
@@ -456,6 +462,42 @@ export function PartnerLinkInvitePanel({
     }
   }
 
+  function openPersonalLabelEdit(invite: LinkInviteListRow) {
+    setPersonalLabelEditId(invite.id);
+    setPersonalLabelDraft(invite.personalLabel?.trim() ?? "");
+    setExpandedInviteId(invite.id);
+  }
+
+  function cancelPersonalLabelEdit() {
+    setPersonalLabelEditId(null);
+    setPersonalLabelDraft("");
+  }
+
+  async function savePersonalLabel(invite: LinkInviteListRow) {
+    const trimmed = personalLabelDraft.trim();
+    try {
+      const result = await remcardFetch<{ ok: boolean; personalLabel: string | null }>(
+        `/api/partnership/link-invite/${invite.id}`,
+        { method: "PATCH", body: { personalLabel: trimmed || null } },
+      );
+      const patchRow = (row: LinkInviteListRow): LinkInviteListRow =>
+        row.id === invite.id ? { ...row, personalLabel: result.personalLabel } : row;
+      setInviteList((prev) => ({
+        ...prev,
+        active: { ...prev.active, items: prev.active.items.map(patchRow) },
+        archive: { ...prev.archive, items: prev.archive.items.map(patchRow) },
+      }));
+      setPersonalLabelEditId(null);
+      setPersonalLabelDraft("");
+      setListShareHint(invite.id, "Частное название сохранено в вашем аккаунте");
+    } catch (caught) {
+      setListShareHint(
+        invite.id,
+        caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить название",
+      );
+    }
+  }
+
   async function reissueInvite(id: string) {
     if (reissueConfirmId !== id) {
       setReissueConfirmId(id);
@@ -494,7 +536,11 @@ export function PartnerLinkInvitePanel({
     return (
       <li key={invite.id} className={styles.linkListItem} data-testid={`link-invite-row-${invite.id}`}>
         <div>
-          <strong>{invite.statusLabel}</strong>
+          <strong>{linkInviteListTitle(invite)}</strong>
+          <span className={styles.hint}>
+            {" "}
+            · {invite.statusLabel}
+          </span>
           <span className={styles.hint}>
             {" "}
             · создано {formatExpiry(invite.createdAt)}
@@ -520,6 +566,15 @@ export function PartnerLinkInvitePanel({
               {expanded ? "Свернуть" : "Открыть"}
             </Button>
           ) : null}
+          {!archive && invite.status === "PENDING" && invite.canEditPersonalLabel === true ? (
+            <Button
+              variant="secondary"
+              aria-label="Изменить частное название"
+              onClick={() => (personalLabelEditId === invite.id ? cancelPersonalLabelEdit() : openPersonalLabelEdit(invite))}
+            >
+              {personalLabelEditId === invite.id ? "Отмена названия" : "Частное название"}
+            </Button>
+          ) : null}
           {!archive && invite.status === "PENDING" ? (
             <Button variant="secondary" onClick={() => void revokeInvite(invite.id)}>
               Отозвать
@@ -528,6 +583,28 @@ export function PartnerLinkInvitePanel({
         </div>
         {expanded && !archive ? (
           <div className={styles.notice} data-testid="link-invite-active-details">
+            {personalLabelEditId === invite.id && invite.canEditPersonalLabel === true ? (
+              <div data-testid={`link-invite-edit-${invite.id}`}>
+                <p className={styles.hint}>
+                  Для: {linkInviteOriginalRecipientLabel(invite) ?? "не указано"}
+                </p>
+                <TextField
+                  label="Частное название"
+                  value={personalLabelDraft}
+                  maxLength={120}
+                  onChange={(event) => setPersonalLabelDraft(event.target.value)}
+                />
+                <p className={styles.hint}>Частное название не попадает в ссылку и текст для получателя.</p>
+                <div className={styles.actions}>
+                  <Button variant="secondary" onClick={() => void savePersonalLabel(invite)}>
+                    Сохранить
+                  </Button>
+                  <Button variant="secondary" onClick={cancelPersonalLabelEdit}>
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             {invite.note ? <p>Комментарий: {invite.note}</p> : null}
             <ul>
               {invite.terms.map((term) => (
