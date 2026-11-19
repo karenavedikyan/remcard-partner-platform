@@ -13,6 +13,7 @@ export type LinkInviteListRow = {
   canCopyLink: boolean;
   canReissue: boolean;
   createdBy: { userId: string | null; displayName: string; at: string };
+  reissuedBy?: { userId: string | null; displayName: string; at: string } | null;
   acceptedBy: { userId: string | null; displayName: string; at: string } | null;
   terms: { category: string; categoryLabel: string; storePercent: number; isExcluded: boolean }[];
 };

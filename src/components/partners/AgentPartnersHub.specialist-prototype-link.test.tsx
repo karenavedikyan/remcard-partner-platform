@@ -16,9 +16,29 @@ const profile = { user: { id: "owned-specialist", displayName: "Проверка
   partnerActivities: ["SERVICE"], specializations: ["L1-9"], storeCategories: [],
   badges: [], areas: [], city: "Сочи" }, organization: null, programs: [] } as unknown as ProProfileResponse;
 const response = { id: "owned-discussion", token: "owned", previewPath: "/discussion-invite/owned", expiresAt: "2026-11-16T00:00:00Z" };
+function defaultGetPayload(path: string) {
+  if (path.startsWith("/api/partnership/link-invite")) {
+    return {
+      listVersion: 2,
+      resurfaceEnabled: false,
+      active: { items: [], nextCursor: null },
+      archive: { items: [], nextCursor: null },
+      activeLimit: 50,
+    };
+  }
+  return {
+    user: profile.user,
+    organization: null,
+    programs: [],
+    partnerships: [],
+    invites: [],
+    partners: [],
+  };
+}
 beforeEach(() => {
-  api.mockReset().mockImplementation(async (_path, options) => options?.method === "POST"
-    ? response : { user: profile.user, organization: null, programs: [], partnerships: [], invites: [], partners: [] });
+  api.mockReset().mockImplementation(async (path, options) =>
+    options?.method === "POST" ? response : defaultGetPayload(String(path)),
+  );
 });
 async function openLink() {
   fireEvent.click(screen.getByRole("button", { name: "Найти партнёра", exact: true }));
@@ -81,8 +101,8 @@ describe("specialist default discussion uses the shared prototype wizard", () =>
 
   it("disables mode switching while creation is in flight", async () => {
     let resolve!: (v: typeof response) => void;
-    api.mockImplementation(async (_path, options) => options?.method === "POST"
-      ? new Promise(r => { resolve = r; }) : { user: profile.user, partnerships: [], invites: [] });
+    api.mockImplementation(async (path, options) => options?.method === "POST"
+      ? new Promise(r => { resolve = r; }) : defaultGetPayload(String(path)));
     renderHub(); await openLink(); typeName();
     fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
     fireEvent.change(screen.getByRole("textbox", { name: /^Текст приглашения/ }), { target: { value: "Обсудим сотрудничество" } });
@@ -96,8 +116,8 @@ describe("specialist default discussion uses the shared prototype wizard", () =>
 
   it("ignores the old creation success after confirmed close and reopening a fresh draft", async () => {
     let resolve!: (v: typeof response) => void;
-    api.mockImplementation(async (_path, options) => options?.method === "POST"
-      ? new Promise(r => { resolve = r; }) : { user: profile.user, partnerships: [], invites: [] });
+    api.mockImplementation(async (path, options) => options?.method === "POST"
+      ? new Promise(r => { resolve = r; }) : defaultGetPayload(String(path)));
     renderHub(); await openLink(); typeName();
     fireEvent.click(screen.getByRole("button", { name: "Далее: сообщение" }));
     fireEvent.change(screen.getByRole("textbox", { name: /^Текст приглашения/ }), { target: { value: "Поздний ответ" } });

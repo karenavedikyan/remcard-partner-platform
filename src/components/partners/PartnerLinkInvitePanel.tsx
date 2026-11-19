@@ -203,12 +203,20 @@ export function PartnerLinkInvitePanel({
     });
   }, [resetKey, resolved.error, formTargetKey]);
 
-  const loadInvites = useCallback(async (opts?: { appendArchive?: boolean; archiveCursor?: string | null }) => {
+  const loadInvites = useCallback(async (opts?: {
+    appendArchive?: boolean;
+    appendActive?: boolean;
+    archiveCursor?: string | null;
+    activeCursor?: string | null;
+  }) => {
     setListError("");
     try {
       const params = new URLSearchParams({ listVersion: "2" });
       if (opts?.appendArchive && opts.archiveCursor) {
         params.set("archiveCursor", opts.archiveCursor);
+      }
+      if (opts?.appendActive && opts.activeCursor) {
+        params.set("activeCursor", opts.activeCursor);
       }
       const data = await remcardFetch<
         LinkInviteListResponse & { invites?: unknown; inviterBusinessSide?: InviterBusinessSideDto }
@@ -226,6 +234,15 @@ export function PartnerLinkInvitePanel({
           archive: {
             items: [...prev.archive.items, ...nextList.archive.items],
             nextCursor: nextList.archive.nextCursor,
+          },
+        }));
+      } else if (opts?.appendActive && opts.activeCursor) {
+        setInviteList((prev) => ({
+          ...nextList,
+          archive: prev.archive,
+          active: {
+            items: [...prev.active.items, ...nextList.active.items],
+            nextCursor: nextList.active.nextCursor,
           },
         }));
       } else {
@@ -779,6 +796,19 @@ export function PartnerLinkInvitePanel({
               {inviteList.active.items.map((invite) => renderInviteCard(invite, false))}
             </ul>
           )}
+          {inviteList.active.nextCursor ? (
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void loadInvites({
+                  appendActive: true,
+                  activeCursor: inviteList.active.nextCursor,
+                })
+              }
+            >
+              Показать ещё активные
+            </Button>
+          ) : null}
           <h4 className={styles.hint}>Архив</h4>
           {inviteList.archive.items.length === 0 ? (
             <p className={styles.hint}>В архиве пока ничего нет.</p>
