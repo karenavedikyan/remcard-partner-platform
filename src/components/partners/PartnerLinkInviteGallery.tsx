@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
@@ -520,7 +529,7 @@ export function PartnerLinkInviteGallery({
     }
   }
 
-  function renderActions(invite: LinkInviteListRow, archive: boolean, layout: ViewMode) {
+  function renderActions(invite: LinkInviteListRow, archive: boolean, layout: ViewMode, showFoot = true) {
     const pending = !archive && invite.status === "PENDING";
     const termsOpen = expandedTermsId === invite.id;
     const editOpen = editingId === invite.id;
@@ -587,7 +596,7 @@ export function PartnerLinkInviteGallery({
             }}
           />
         ) : null}
-        {!archive ? (
+        {!archive && showFoot ? (
           <InviteCardFoot
             invite={invite}
             pending={pending}
@@ -869,8 +878,28 @@ export function PartnerLinkInviteGallery({
                         />
                       </label>
                     ) : null}
-                    <InviteCardChrome invite={invite} />
-                    {renderActions(invite, phase === "archive", "cards")}
+                    <InviteCardChrome
+                      invite={invite}
+                      foot={
+                        phase !== "archive" && invite.status === "PENDING" ? (
+                          <InviteCardFoot
+                            invite={invite}
+                            pending
+                            termsOpen={expandedTermsId === invite.id}
+                            layout="card"
+                            onToggleTerms={() =>
+                              setExpandedTermsId(
+                                expandedTermsId === invite.id ? null : invite.id,
+                              )
+                            }
+                            onEdit={() => openEdit(invite)}
+                            onCopy={() => void copyInvite(invite)}
+                            onRevoke={() => setRevokeConfirm({ kind: "one", id: invite.id })}
+                          />
+                        ) : null
+                      }
+                    />
+                    {renderActions(invite, phase === "archive", "cards", false)}
                   </article>
                 </li>
               ))}
@@ -966,35 +995,47 @@ export function PartnerLinkInviteGallery({
   return createPortal(content, document.body);
 }
 
-function InviteCardChrome({ invite }: { invite: LinkInviteListRow }) {
+function InviteCardChrome({
+  invite,
+  foot,
+}: {
+  invite: LinkInviteListRow;
+  foot?: ReactNode;
+}) {
   const ribbonType = inviteRibbonDataType(invite.intendedPartnerType);
   const title = linkInviteCardTitle(invite);
-  const createdLine = `Создал приглашение ${invite.createdBy.displayName}`;
+  const recipient = linkInviteOriginalRecipientLabel(invite);
+  const showRecipient = recipient && recipient !== title;
   const createdWhen = formatInviteListDate(invite.createdAt);
   return (
     <div className={styles.inviteFace}>
       <InviteFaceTexture className={styles.inviteTexture} />
-      <span className={styles.inviteRibbon} data-type={ribbonType}>
-        {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "Партнёр"}
-      </span>
-      <span className={styles.inviteWordmark} aria-hidden="true">
-        remcard<em>.</em>
-      </span>
+      <div className={styles.inviteCardHead}>
+        <span className={styles.inviteRibbon} data-type={ribbonType}>
+          {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "Партнёр"}
+        </span>
+        <span className={styles.inviteWordmark} aria-hidden="true">
+          remcard<em>.</em>
+        </span>
+      </div>
       <div className={styles.inviteFaceMain}>
         <h3 className={styles.inviteFaceTitle} title={title}>
           {title}
         </h3>
+        {showRecipient ? <p className={styles.inviteRecipient}>Для: {recipient}</p> : null}
       </div>
       <div className={styles.authorBlock}>
-        <span>{createdLine}</span>
-        <span>{createdWhen}</span>
+        <p className={styles.authorLine}>
+          {`Создал приглашение ${invite.createdBy.displayName}`}
+        </p>
+        <span className={styles.authorWhen}>{createdWhen}</span>
         {invite.acceptedBy ? (
-          <>
-            <span>Принял: {invite.acceptedBy.displayName}</span>
-            <span>{formatInviteListDate(invite.acceptedBy.at)}</span>
-          </>
+          <p className={styles.inviteAccepted}>
+            Принял: {invite.acceptedBy.displayName} · {formatInviteListDate(invite.acceptedBy.at)}
+          </p>
         ) : null}
       </div>
+      {foot}
     </div>
   );
 }

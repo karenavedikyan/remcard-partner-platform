@@ -65,7 +65,7 @@ const base = `http://127.0.0.1:${boundPort}`;
 const browser = await chromium.launch();
 const page = await browser.newPage();
 
-await page.route("**/api/partnership/link-invite**", async (route) => {
+await page.route("**/api/remcard/api/partnership/link-invite**", async (route) => {
   await route.fulfill({
     status: 200,
     contentType: "application/json",

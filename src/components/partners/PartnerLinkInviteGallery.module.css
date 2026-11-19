@@ -458,10 +458,10 @@
   box-sizing: border-box;
   width: 100%;
   aspect-ratio: 340 / 230;
-  padding: 12px 14px 10px;
+  padding: 0 0 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 8px;
+  grid-template-rows: 30px minmax(0, 1fr) auto auto;
+  gap: 0;
   color: #f4f5f7;
   overflow: hidden;
   isolation: isolate;
@@ -478,14 +478,26 @@
   color: #fff;
 }
 
+.inviteCardHead {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+}
+
 .inviteRibbon {
   position: relative;
   z-index: 1;
-  justify-self: start;
+  align-self: flex-start;
+  margin-right: auto;
   display: inline-flex;
-  padding: 5px 11px;
-  border-radius: 0 9px 9px 0;
-  margin-left: -14px;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 16px 0 10px 10px;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -510,14 +522,12 @@
 }
 
 .inviteWordmark {
-  position: absolute;
-  top: 12px;
-  right: 14px;
+  padding-right: 14px;
   z-index: 1;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  opacity: 0.92;
+  font-size: 0.94rem;
+  font-weight: 850;
+  letter-spacing: -0.055em;
+  opacity: 0.96;
 }
 
 .inviteWordmark em {
@@ -558,35 +568,100 @@
   text-align: center;
 }
 
-.authorBlock span {
+.authorBlock span,
+.authorBlock div,
+.authorBlock p {
   overflow-wrap: anywhere;
 }
 
+.authorBlock strong {
+  color: #fff;
+  font-weight: 800;
+}
+
+.authorLine {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.authorWhen {
+  display: block;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.inviteRecipient {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: #d4d9e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inviteAccepted {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: #d4d9e1;
+}
+
+.cardGrid .termsPanel,
+.cardGrid .editPanel,
+.cardGrid .copyFallback {
+  margin-top: 6px;
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  border-radius: 10px;
+}
+
 .inviteCardActions {
+  position: relative;
+  z-index: 2;
   display: flex;
-  align-items: stretch;
-  gap: 4px;
+  align-items: center;
+  gap: 3px;
   flex-wrap: nowrap;
   min-width: 0;
-  padding: 8px;
-  border-top: 1px solid var(--line, rgba(128, 128, 128, 0.25));
-  background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+  padding: 6px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
 }
 
 .inviteCardActions button {
-  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid transparent;
+  background: transparent;
+  color: #f4f5f7;
   font: inherit;
   font-size: 0.78rem;
-  border-radius: 9px;
+  font-weight: 800;
+  border-radius: 7px;
   padding: 6px 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   min-height: 36px;
+}
+
+.inviteCardActions button:hover,
+.inviteCardActions button[aria-expanded="true"] {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.33);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.inviteCardActions .conditionsCountBadge {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.inviteCardActions .conditionsToggle {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.inviteCardActions .quickCopy {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .inviteCardActions button:focus-visible {

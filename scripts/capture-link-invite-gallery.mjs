@@ -69,6 +69,10 @@ const server = await createServer({
   configFile: path.join(harnessDir, "vite.config.ts"),
   root: harnessDir,
   server: { port: 5215, host: "127.0.0.1" },
+  define: {
+    "process.env.NEXT_PUBLIC_APP_URL": JSON.stringify("http://127.0.0.1:4312"),
+    "process.env.REMCARD_API_BASE_URL": JSON.stringify("http://127.0.0.1:4312"),
+  },
 });
 await server.listen();
 
@@ -86,7 +90,7 @@ const browser = await chromium.launch();
 const context = await browser.newContext();
 const page = await context.newPage();
 
-await page.route("**/api/partnership/link-invite**", async (route) => {
+await page.route("**/api/remcard/api/partnership/link-invite**", async (route) => {
   await route.fulfill({
     status: 200,
     contentType: "application/json",
