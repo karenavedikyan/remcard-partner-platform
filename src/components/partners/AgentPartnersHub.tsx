@@ -218,6 +218,7 @@ export function AgentPartnersHub({
         readyMode={discussionInviteReady}
         choiceMode={chooserOpen}
         prototypeMode
+        overlayPaused={Boolean(props.linkInviteGallery?.open)}
         onChooseMethod={chooseMethod}
         titleReady="Приглашение создано"
         onTabChange={(tab) => { setChooserOpen(false); requestTabChange(tab); }}

@@ -43,3 +43,59 @@
 .titleAction:empty {
   display: none;
 }
+
+.headingPartnersChrome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "eyebrow action"
+    "title title"
+    "desc desc";
+  column-gap: var(--space-3);
+  row-gap: var(--space-3);
+  align-items: center;
+}
+
+.headingPartnersChrome .eyebrow {
+  grid-area: eyebrow;
+  margin-bottom: 0;
+}
+
+.headingPartnersChrome .partnersTitle {
+  grid-area: title;
+  margin: 0;
+  min-width: 0;
+}
+
+.headingPartnersChrome .description {
+  grid-area: desc;
+  margin-top: 0;
+}
+
+.partnersHeadAction {
+  grid-area: action;
+  justify-self: end;
+  align-self: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.partnersHeadAction:empty {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .headingPartnersChrome {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "eyebrow"
+      "title"
+      "desc"
+      "action";
+  }
+
+  .partnersHeadAction {
+    justify-self: start;
+    width: 100%;
+  }
+}

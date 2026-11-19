@@ -80,6 +80,7 @@ import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDial
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
 import { PartnerLinkInviteGallery } from "@/components/partners/PartnerLinkInviteGallery";
+import type { LinkInviteGalleryBindings } from "@/components/partners/partnersPageChrome";
 import { PartnerSearchResultCard, searchResultTypeLabel } from "@/components/partners/PartnerSearchResultCard";
 import { PartnerDiscoveryNavigator } from "@/components/partners/PartnerDiscoveryNavigator";
 import {
@@ -198,6 +199,9 @@ export type PartnersHubProps = {
   /** Trusted GET /api/pro/context — required for certificate-policy entry gate. */
   proContext?: ProContextSnapshot | null;
   proContextReady?: boolean;
+  /** Route-level gallery controller — when set, this hub does not render the gallery layer by default. */
+  linkInviteGallery?: LinkInviteGalleryBindings;
+  renderLinkInviteGallery?: boolean;
 };
 
 type TabId = "list" | "find" | "link";
@@ -246,6 +250,8 @@ export function PartnersHub({
   partnersAudience,
   proContext = null,
   proContextReady = false,
+  linkInviteGallery,
+  renderLinkInviteGallery,
 }: PartnersHubProps) {
   const subjectUserId = partnershipSubjectUserId?.trim() || meId;
   const canMutatePartnerships = orgStaffCanMutatePartnerships(organizationReadContext);
@@ -723,8 +729,28 @@ export function PartnersHub({
   const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
   const [pendingLinkInviteMode, setPendingLinkInviteMode] = useState<"discussion" | "terms" | null>(null);
   const [linkInviteSubmitting, setLinkInviteSubmitting] = useState(false);
-  const [linkInviteGalleryOpen, setLinkInviteGalleryOpen] = useState(false);
-  const [linkInviteGalleryRefresh, setLinkInviteGalleryRefresh] = useState(0);
+  const [internalLinkInviteGalleryOpen, setInternalLinkInviteGalleryOpen] = useState(false);
+  const [internalLinkInviteGalleryRefresh, setInternalLinkInviteGalleryRefresh] = useState(0);
+  const linkInviteGalleryOpen = linkInviteGallery?.open ?? internalLinkInviteGalleryOpen;
+  const linkInviteGalleryRefresh = linkInviteGallery?.refreshToken ?? internalLinkInviteGalleryRefresh;
+  const openLinkInviteGallery = useCallback(
+    (opener?: HTMLElement | null) => {
+      if (linkInviteGallery) linkInviteGallery.onOpen(opener);
+      else setInternalLinkInviteGalleryOpen(true);
+    },
+    [linkInviteGallery],
+  );
+  const closeLinkInviteGallery = useCallback(() => {
+    if (linkInviteGallery) linkInviteGallery.onClose();
+    else setInternalLinkInviteGalleryOpen(false);
+  }, [linkInviteGallery]);
+  const bumpLinkInviteGalleryRefresh = useCallback(() => {
+    if (linkInviteGallery) linkInviteGallery.onRefresh();
+    else setInternalLinkInviteGalleryRefresh((n) => n + 1);
+  }, [linkInviteGallery]);
+  const showLinkInviteGalleryLayer = linkInviteGallery
+    ? renderLinkInviteGallery === true
+    : true;
   const linkModeDirtyRef = useRef(false);
   const linkModeTriggerRef = useRef<HTMLButtonElement | null>(null);
   const reportLinkModeDirty = useCallback((dirty: boolean) => {
@@ -2307,14 +2333,14 @@ export function PartnersHub({
     </div>
   );
 
-  const linkInviteGalleryLayer = (
+  const linkInviteGalleryLayer = showLinkInviteGalleryLayer ? (
     <PartnerLinkInviteGallery
       open={linkInviteGalleryOpen}
-      onClose={() => setLinkInviteGalleryOpen(false)}
+      onClose={closeLinkInviteGallery}
       meProfile={meProfile}
       refreshToken={linkInviteGalleryRefresh}
     />
-  );
+  ) : null;
 
   if (isModalSurface) {
     return (
@@ -2378,8 +2404,8 @@ export function PartnersHub({
             onDirtyChange={reportLinkModeDirty} onReadyChange={onDiscussionInviteReadyChange}
             onSubmittingChange={setLinkInviteSubmitting}
             onAnotherWay={() => onOpenPartnerHub?.("find")}
-            onOpenInvitesGallery={() => setLinkInviteGalleryOpen(true)}
-            onInvitesGalleryRefresh={() => setLinkInviteGalleryRefresh((n) => n + 1)} />
+            onOpenInvitesGallery={(opener) => openLinkInviteGallery(opener)}
+            onInvitesGalleryRefresh={bumpLinkInviteGalleryRefresh} />
                 )}
                 {pendingLinkInviteMode ? (
                   <PartnerCooperationConfirmDialog
@@ -2642,7 +2668,7 @@ export function PartnersHub({
           partnersAudience={partnersAudience}
           onOpenFind={() => onOpenPartnerHub?.("find")}
           onOpenLink={() => onOpenPartnerHub?.("link")}
-          onOpenLinkInvites={() => setLinkInviteGalleryOpen(true)}
+          onOpenLinkInvites={() => openLinkInviteGallery()}
           onTileNavigate={scrollToOverviewZone}
           waitingOpen={waitingOpen}
           onWaitingOpenChange={setWaitingOpen}
@@ -3233,8 +3259,8 @@ export function PartnersHub({
         <PartnerLinkInvitePanel
           meProfile={meProfile}
           inviterSide={inviterSide}
-          onOpenInvitesGallery={() => setLinkInviteGalleryOpen(true)}
-          onInvitesGalleryRefresh={() => setLinkInviteGalleryRefresh((n) => n + 1)}
+          onOpenInvitesGallery={(opener) => openLinkInviteGallery(opener)}
+          onInvitesGalleryRefresh={bumpLinkInviteGalleryRefresh}
         />
       ) : (
         <>

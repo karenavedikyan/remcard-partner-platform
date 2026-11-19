@@ -72,7 +72,7 @@ type PartnerLinkInvitePanelProps = {
   onReadyChange?: (ready: boolean) => void;
   onSubmittingChange?: (submitting: boolean) => void;
   onAnotherWay?: () => void;
-  onOpenInvitesGallery?: () => void;
+  onOpenInvitesGallery?: (opener?: HTMLElement | null) => void;
   onInvitesGalleryRefresh?: () => void;
 };
 
@@ -615,7 +615,7 @@ export function PartnerLinkInvitePanel({
             type="button"
             className={wizard ? wizardStyles.historyToggle : undefined}
             data-testid="link-invite-open-gallery"
-            onClick={onOpenInvitesGallery}
+            onClick={(event) => onOpenInvitesGallery?.(event.currentTarget)}
           >
             {wizard ? "Ваши ссылки-приглашения" : "Ссылки-приглашения"}
           </button>

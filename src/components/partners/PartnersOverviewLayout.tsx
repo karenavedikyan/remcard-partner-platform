@@ -268,11 +268,6 @@ export function PartnersOverviewLayout({
             <button type="button" className={styles.ghostBtn} onClick={onOpenLink}>
               Пригласить по ссылке
             </button>
-            {onOpenLinkInvites ? (
-              <button type="button" className={styles.ghostBtn} onClick={onOpenLinkInvites} data-testid="partners-overview-cta-link-invites">
-                Ссылки-приглашения
-              </button>
-            ) : null}
           </div>
           {waitingSlot}
         </div>

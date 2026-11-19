@@ -1,9 +1,7 @@
 import { headers } from "next/headers";
 import { SessionGate } from "@/components/auth/SessionGate";
-import { AgentPartnersHub } from "@/components/partners/AgentPartnersHub";
-import { PartnersHub } from "@/components/partners/PartnersHub";
+import { PartnersCabinetPage } from "@/components/partners/PartnersCabinetPage";
 import { CabinetShell } from "@/components/layout/CabinetShell";
-import { PageHeading } from "@/components/ui/PageHeading";
 import { fetchRemcardUpstream } from "@/lib/remcard-server";
 import { requireProPageUser } from "@/lib/session";
 import type { ProProfileResponse } from "@/lib/types";
@@ -76,33 +74,15 @@ export default async function PartnersPage(props: {
 
   return (
     <CabinetShell returnTo={returnPath}>
-      <PageHeading
-        eyebrow={presentation.heading.eyebrow}
-        title={presentation.heading.title}
-        description={presentation.heading.description}
-        compact
+      <PartnersCabinetPage
+        presentation={presentation}
+        meId={user.id}
+        partnershipSubjectUserId={partnershipSubjectUserId}
+        organizationReadContext={organizationReadContext}
+        initialProfile={profileResult.data}
+        proContext={proContext}
+        proContextReady={proContextReady}
       />
-      {presentation.shell === "shared-r04" ? (
-        <AgentPartnersHub
-          meId={user.id}
-          partnershipSubjectUserId={partnershipSubjectUserId}
-          organizationReadContext={organizationReadContext}
-          initialProfile={profileResult.data}
-          defaultSearchRole={presentation.defaultSearchRole}
-          presentationAudience={presentation.audience}
-          proContext={proContext}
-          proContextReady={proContextReady}
-        />
-      ) : (
-        <PartnersHub
-          meId={user.id}
-          partnershipSubjectUserId={partnershipSubjectUserId}
-          organizationReadContext={organizationReadContext}
-          initialProfile={profileResult.data}
-          proContext={proContext}
-          proContextReady={proContextReady}
-        />
-      )}
     </CabinetShell>
   );
 }

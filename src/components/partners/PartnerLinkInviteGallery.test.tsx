@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { PartnerLinkInviteGallery } from "./PartnerLinkInviteGallery";
@@ -349,4 +351,23 @@ describe("PartnerLinkInviteGallery", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("decodes inviteFace card motif background via Image.decode()", async () => {
+    const css = fs.readFileSync(
+      path.join(process.cwd(), "src/components/partners/PartnerLinkInviteGallery.module.css"),
+      "utf8",
+    );
+    const rule = css.match(/\.inviteFace::after\s*\{[^}]+\}/s)?.[0];
+    const match = rule?.match(/background-image:\s*url\("([^"]+)"\)/);
+    expect(match).toBeTruthy();
+    const dataUri = match![1]!;
+    const markup = decodeURIComponent(dataUri.replace(/^data:image\/svg\+xml,/, ""));
+    expect(markup).not.toMatch(/viewBox=['"]0 0 320 160['"][^>]*viewBox=/);
+
+    const img = new Image();
+    img.src = dataUri;
+  await img.decode();
+    expect(img.naturalWidth).toBeGreaterThan(0);
+    expect(img.naturalHeight).toBeGreaterThan(0);
+  }, 10_000);
 });

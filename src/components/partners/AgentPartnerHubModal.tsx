@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type HTMLAttributes, type ReactNode } from "react";
 import styles from "./AgentPartnerHubModal.module.css";
 
 export type HubModalTab = "find" | "link";
@@ -21,6 +21,8 @@ type Props = {
   titleReady?: string;
   onTabChange: (tab: HubModalTab) => void;
   onClose: () => void;
+  /** Gallery (or other portal) owns focus/escape while the hub sheet stays mounted. */
+  overlayPaused?: boolean;
   children: ReactNode;
 };
 
@@ -36,6 +38,7 @@ export function AgentPartnerHubModal({
   titleReady = "Приглашение создано",
   onTabChange,
   onClose,
+  overlayPaused = false,
   children,
 }: Props) {
   const modalTitle = choiceMode ? "Найти партнёра" : readyMode ? titleReady : tab === "link" ? (prototypeMode ? "Пригласить по ссылке" : titleLink) : titleFind;
@@ -43,6 +46,7 @@ export function AgentPartnerHubModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const wasOverlayPausedRef = useRef(false);
   const hasOpenedRef = useRef(open);
   const chooseFindRef = useRef<HTMLButtonElement>(null);
   const wasFindShowcaseRef = useRef(false);
@@ -63,9 +67,37 @@ export function AgentPartnerHubModal({
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+      wasOverlayPausedRef.current = false;
+      return;
+    }
+    if (overlayPaused) {
+      wasOverlayPausedRef.current = true;
+      return;
+    }
+    if (!wasOverlayPausedRef.current) {
+      closeRef.current?.focus({ preventScroll: true });
+    } else {
+      wasOverlayPausedRef.current = false;
+    }
+  }, [open, overlayPaused]);
+
+  useEffect(() => {
+    if (!open || overlayPaused) return;
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -89,12 +121,8 @@ export function AgentPartnerHubModal({
       }
     };
     document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreFocusRef.current?.focus();
-    };
-  }, [open, onClose]);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose, overlayPaused]);
 
   const findWide = !readyMode && !choiceMode && tab === "find";
 
@@ -135,9 +163,12 @@ export function AgentPartnerHubModal({
           .filter(Boolean)
           .join(" ")}
         role="dialog"
-        aria-modal="true"
+        aria-modal={overlayPaused ? undefined : "true"}
+        aria-hidden={overlayPaused ? true : undefined}
+        {...(overlayPaused ? ({ inert: "" } as HTMLAttributes<HTMLDivElement>) : {})}
         aria-labelledby={titleId}
         data-testid="agent-partner-hub-modal"
+        data-overlay-paused={overlayPaused ? "true" : "false"}
         data-ready-mode={readyMode ? "true" : "false"}
         data-hub-tab={readyMode ? "ready" : tab}
         onClick={(e) => e.stopPropagation()}

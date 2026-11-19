@@ -41,6 +41,7 @@ import { ThemeContext } from "@/contexts/ThemeContext";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
+import { handleDialogTabKey, lockBodyScroll, unlockBodyScroll } from "@/lib/dialog-focus";
 import styles from "./PartnerLinkInviteGallery.module.css";
 
 export type PartnerLinkInviteGalleryProps = {
@@ -318,18 +319,30 @@ export function PartnerLinkInviteGallery({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (revokeConfirm || editingId) return;
-      event.stopPropagation();
-      onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, revokeConfirm, editingId]);
+    lockBodyScroll();
+    return () => unlockBodyScroll();
+  }, [open]);
 
   useEffect(() => {
-    if (open) dialogRef.current?.focus();
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (revokeConfirm || editingId || reissueConfirmId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (dialogRef.current && !revokeConfirm && !reissueConfirmId) {
+        handleDialogTabKey(event, dialogRef.current);
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, onClose, revokeConfirm, editingId, reissueConfirmId]);
+
+  useEffect(() => {
+    if (open) dialogRef.current?.focus({ preventScroll: true });
   }, [open]);
 
   const sourceRows = phase === "active" ? inviteList.active.items : inviteList.archive.items;
