@@ -33,7 +33,7 @@ vi.mock("@/lib/config", () => ({
 
 describe("PartnerLinkInvitePanel list resurface", () => {
   it("shows active invite with copyable url after expand", async () => {
-    const list = emptyLinkInviteList();
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
     list.active.items.push({
       id: "inv-1",
       status: "PENDING",
@@ -67,7 +67,7 @@ describe("PartnerLinkInvitePanel list resurface", () => {
   });
 
   it("archive rows do not show copy controls", async () => {
-    const list = emptyLinkInviteList();
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
     list.archive.items.push({
       id: "inv-2",
       status: "ACCEPTED",

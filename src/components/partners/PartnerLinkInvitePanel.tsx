@@ -35,6 +35,7 @@ import {
   emptyLinkInviteList,
   formatInviteListDate,
   inviteAbsoluteUrl,
+  parseLinkInviteListPayload,
   type LinkInviteListResponse,
   type LinkInviteListRow,
 } from "@/lib/link-invite-list";
@@ -174,6 +175,8 @@ export function PartnerLinkInvitePanel({
   const createdExpires = createdSnapshot?.expiresAt ?? null;
   const [shareOpen, setShareOpen] = useState(false);
   const [inviteList, setInviteList] = useState<LinkInviteListResponse>(emptyLinkInviteList());
+  const [listMode, setListMode] = useState<"v2" | "legacy">("v2");
+  const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
   const [expandedInviteId, setExpandedInviteId] = useState<string | null>(null);
   const [reissueWarning, setReissueWarning] = useState("");
   const [listError, setListError] = useState("");
@@ -203,21 +206,19 @@ export function PartnerLinkInvitePanel({
   const loadInvites = useCallback(async (opts?: { appendArchive?: boolean; archiveCursor?: string | null }) => {
     setListError("");
     try {
-      const query =
-        opts?.appendArchive && opts.archiveCursor
-          ? `?archiveCursor=${encodeURIComponent(opts.archiveCursor)}`
-          : "";
+      const params = new URLSearchParams({ listVersion: "2" });
+      if (opts?.appendArchive && opts.archiveCursor) {
+        params.set("archiveCursor", opts.archiveCursor);
+      }
       const data = await remcardFetch<
-        LinkInviteListResponse & { inviterBusinessSide?: InviterBusinessSideDto }
-      >(`/api/partnership/link-invite${query}`);
+        LinkInviteListResponse & { invites?: unknown; inviterBusinessSide?: InviterBusinessSideDto }
+      >(`/api/partnership/link-invite?${params.toString()}`);
       if (data.inviterBusinessSide?.principalUserId) {
         setApiInviterSide(partnerSideFromInviterBusinessSide(data.inviterBusinessSide));
       }
-      const nextList: LinkInviteListResponse = {
-        active: data.active ?? emptyLinkInviteList().active,
-        archive: data.archive ?? emptyLinkInviteList().archive,
-        activeLimit: data.activeLimit ?? 50,
-      };
+      const parsed = parseLinkInviteListPayload(data);
+      setListMode(parsed.mode);
+      const nextList = parsed.list;
       if (opts?.appendArchive && opts.archiveCursor) {
         setInviteList((prev) => ({
           ...nextList,
@@ -388,12 +389,23 @@ export function PartnerLinkInvitePanel({
   }
 
   async function reissueInvite(id: string) {
+    if (reissueConfirmId !== id) {
+      setReissueConfirmId(id);
+      setReissueWarning(
+        "Перевыпуск заменит адрес ссылки: старый перестанет открываться. Нажмите «Подтвердить перевыпуск» для продолжения.",
+      );
+      return;
+    }
     setReissueWarning("");
     try {
       const result = await remcardFetch<{
         previewPath: string;
         reissueWarning?: string;
-      }>(`/api/partnership/link-invite/${id}/reissue`, { method: "POST" });
+      }>(`/api/partnership/link-invite/${id}/reissue`, {
+        method: "POST",
+        body: { confirmLegacyReplace: true },
+      });
+      setReissueConfirmId(null);
       setReissueWarning(
         result.reissueWarning ??
           "Выдана новая ссылка. Старый адрес приглашения больше не откроется.",
@@ -452,7 +464,7 @@ export function PartnerLinkInvitePanel({
                 </li>
               ))}
             </ul>
-            {invite.canCopyLink && url ? (
+            {invite.canCopyLink && url && listMode === "v2" && inviteList.resurfaceEnabled ? (
               <>
                 <TextField label="Ссылка" value={url} readOnly data-testid="link-invite-list-url" />
                 <div className={styles.actions}>
@@ -468,10 +480,10 @@ export function PartnerLinkInvitePanel({
                 </div>
               </>
             ) : null}
-            {invite.canReissue ? (
+            {invite.canReissue && listMode === "v2" ? (
               <div className={styles.actions}>
                 <Button variant="secondary" onClick={() => void reissueInvite(invite.id)}>
-                  Перевыпустить ссылку
+                  {reissueConfirmId === invite.id ? "Подтвердить перевыпуск" : "Перевыпустить ссылку"}
                 </Button>
                 <p className={styles.hint}>
                   Старую ссылку восстановить нельзя. Перевыпуск создаст новый адрес, прежний перестанет работать.
@@ -746,7 +758,13 @@ export function PartnerLinkInvitePanel({
       {!wizard || showHistory ? (
         <Panel
           title="Ваши ссылки-приглашения"
-          hint="Активные и архив ведутся отдельно. В архиве ссылок для копирования нет."
+          hint={
+            listMode === "legacy"
+              ? "Список в режиме совместимости со старым API: копирование из списка недоступно."
+              : inviteList.resurfaceEnabled
+                ? "Активные и архив разделены. В архиве нет ссылок для копирования."
+                : "Копирование из списка станет доступно после настройки ключа resurface на сервере."
+          }
         >
           {listError ? (
             <p className={styles.error} role="alert">

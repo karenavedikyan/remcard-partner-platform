@@ -14,8 +14,8 @@ import type { ProProfileResponse } from "@/lib/types";
 
 vi.mock("@/lib/api-client", () => ({
   remcardFetch: vi.fn(async () => {
-    const { mockEmptyPartnershipLinkInviteList } = await import("@/lib/link-invite-list-mock");
-    return mockEmptyPartnershipLinkInviteList();
+    const { mockEmptyPartnershipLinkInviteListV2 } = await import("@/lib/link-invite-list-mock");
+    return mockEmptyPartnershipLinkInviteListV2();
   }),
   RemcardApiError: class extends Error {},
 }));

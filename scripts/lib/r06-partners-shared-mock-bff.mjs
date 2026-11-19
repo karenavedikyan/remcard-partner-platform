@@ -951,7 +951,36 @@ export function startPartnersSharedMockBff(state = createPartnersMockState()) {
         });
       }
       if (path === '/api/partnership/link-invite' && req.method === 'GET') {
-        return send(200, { invites: state.linkInvites });
+        const url = new URL(req.url ?? '', 'http://mock.local');
+        const listVersion = url.searchParams.get('listVersion');
+        const useV2 = listVersion === '2' || listVersion === 'v2';
+        if (!useV2) {
+          return send(200, { invites: state.linkInvites });
+        }
+        const active = [];
+        const archive = [];
+        for (const row of state.linkInvites) {
+          const isPending = row.status === 'PENDING';
+          const enriched = {
+            ...row,
+            statusLabel: row.status === 'PENDING' ? 'Активно' : row.status,
+            legacyTtl: true,
+            previewPath: null,
+            canCopyLink: false,
+            canReissue: false,
+            createdBy: { userId: null, displayName: 'Не указано', at: row.createdAt },
+            acceptedBy: null,
+          };
+          if (isPending) active.push(enriched);
+          else archive.push(enriched);
+        }
+        return send(200, {
+          listVersion: 2,
+          resurfaceEnabled: false,
+          active: { items: active, nextCursor: null },
+          archive: { items: archive, nextCursor: null },
+          activeLimit: 50,
+        });
       }
       if (path === '/api/partnership/link-invite' && req.method === 'POST') {
         const chunks = [];
