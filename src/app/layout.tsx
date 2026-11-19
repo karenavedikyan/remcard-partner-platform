@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import localFont from "next/font/local";
 import { buildSiteLinkMetadata } from "@/lib/site-opengraph";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme-preference";
 import "./globals.css";
 
-const manrope = Manrope({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700", "800"],
+const manrope = localFont({
+  src: "../fonts/manrope/Manrope-VariableFont_wght.ttf",
   variable: "--font-body",
   display: "swap",
+  weight: "400 800",
 });
 
 export const metadata: Metadata = buildSiteLinkMetadata("/");
