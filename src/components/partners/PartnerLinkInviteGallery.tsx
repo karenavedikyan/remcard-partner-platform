@@ -1112,7 +1112,9 @@ function InviteListRecord({
         <span className={styles.listTypeBadge} data-type={ribbonType}>
           {typeLabel}
         </span>
-        {invite.canEditPersonalLabel ? (
+        {invite.canEditPersonalLabel === true &&
+        !archive &&
+        invite.status === "PENDING" ? (
           <button
             type="button"
             className={styles.listTitleEditBtn}

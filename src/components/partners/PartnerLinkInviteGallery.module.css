@@ -1054,9 +1054,17 @@
 }
 
 .listRecord .listActions .conditionsToggle {
+  box-sizing: border-box;
   max-width: none;
-  padding-inline: 6px;
+  padding-inline: 6px 5px;
   white-space: nowrap;
+  justify-content: flex-start;
+}
+
+.listRecord .listActions .conditionsToggle svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
 }
 
 .listRecord .listActions .quickCopy {
@@ -1129,8 +1137,9 @@
     width: 100%;
     max-width: 100%;
     flex-wrap: nowrap;
+    justify-content: space-between;
     overflow: visible;
-    gap: 3px;
+    gap: 4px;
   }
 
   .listRecord .listActions .rowActionsGroup {
@@ -1198,7 +1207,13 @@
 
   .listRecord .listActions .conditionsCountBadge {
     font-size: 10px;
-    padding: 0 4px;
+    padding: 0 3px;
+    min-width: 1.1rem;
+  }
+
+  .listRecord .listActions .conditionsToggle svg {
+    width: 12px;
+    height: 12px;
   }
 
   .listRecord .listActions .quickCopy {
@@ -1609,25 +1624,38 @@
   }
 
   .listRecord .listActions .conditionsToggle {
-    flex: 0 0 86px;
-    width: 86px;
-    min-width: 86px;
-    max-width: 86px;
-    padding-inline: 5px;
+    flex: 0 0 100px;
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    padding-inline: 6px 5px;
     gap: 3px;
+    font-size: 11px;
+  }
+
+  .listRecord .listActions .rowActionsGroup {
+    margin-left: auto;
+    gap: 4px;
   }
 
   .listRecord .listActions .quickCopy {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
-    padding-inline: 7px;
+    flex: 0 0 90px;
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    padding-inline: 6px;
     justify-content: center;
+    gap: 3px;
   }
 
   .listRecord .listActions .quickCopyLabel {
     display: inline;
     font-size: 11px;
+  }
+
+  .listRecord .listActions .quickCopy svg {
+    width: 13px;
+    height: 13px;
   }
 
   .listRecord .listActions .iconOnlyAction {
@@ -1648,23 +1676,23 @@
   }
 
   .listRecord .listActions {
-    gap: 2px;
-    justify-content: flex-start;
+    gap: 3px;
+    justify-content: space-between;
   }
 
   .listRecord .listActions .conditionsToggle {
-    flex: 0 0 78px;
-    width: 78px;
-    min-width: 78px;
-    max-width: 78px;
-    padding-inline: 4px;
+    flex: 0 0 92px;
+    width: 92px;
+    min-width: 92px;
+    max-width: 92px;
+    padding-inline: 5px 4px;
     gap: 2px;
     font-size: 10px;
     overflow: visible;
   }
 
   .listRecord .listActions .conditionsCountBadge {
-    min-width: 1rem;
+    min-width: 1.15rem;
     padding: 0 3px;
     font-size: 9px;
   }
@@ -1672,29 +1700,39 @@
   .listRecord .listActions .rowActionsGroup {
     display: inline-flex;
     align-items: center;
-    gap: 1px;
+    gap: 3px;
     flex: 0 0 auto;
     flex-wrap: nowrap;
+    margin-left: auto;
   }
 
   .listRecord .listActions .quickCopy {
+    flex: 0 0 90px;
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    padding-inline: 5px;
+    justify-content: center;
+    gap: 2px;
+    font-size: 10px;
+  }
+
+  .listRecord .listActions .quickCopyLabel {
+    display: inline;
+    font-size: 10px;
+  }
+
+  .listRecord .listActions .quickCopy svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .listRecord .listActions .iconOnlyAction {
     flex: 0 0 30px;
     width: 30px;
     min-width: 30px;
     max-width: 30px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .listRecord .listActions .quickCopyLabel {
-    display: none;
-  }
-
-  .listRecord .listActions .iconOnlyAction {
-    flex: 0 0 28px;
-    width: 28px;
-    min-width: 28px;
-    max-width: 28px;
     min-height: 30px;
     height: 30px;
     padding: 0;

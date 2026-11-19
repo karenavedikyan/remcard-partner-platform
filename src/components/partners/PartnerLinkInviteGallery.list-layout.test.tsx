@@ -83,6 +83,30 @@ describe("PartnerLinkInviteGallery list layout", () => {
     expect(within(actions).queryByRole("button", { name: "Изменить частное название" })).toBeNull();
   });
 
+  it("list title pencil hidden for archive even when rename allowed", async () => {
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.archive.items.push(
+      activeInviteRow({
+        id: "arch-edit",
+        status: "ACCEPTED",
+        acceptedAt: "2026-11-20T10:00:00.000Z",
+        acceptedBy: { userId: "u2", displayName: "Партнёр", at: "2026-11-20T10:00:00.000Z" },
+        canEditPersonalLabel: true,
+      }),
+    );
+    remcardFetch.mockResolvedValue(list);
+
+    render(
+      <PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} defaultPhase="archive" />,
+    );
+    await screen.findByTestId("link-invite-gallery");
+    fireEvent.click(screen.getByRole("button", { name: "Список" }));
+    await screen.findByTestId("link-invite-list-row-arch-edit");
+
+    const row = screen.getByTestId("link-invite-list-row-arch-edit");
+    expect(within(row).queryByRole("button", { name: "Изменить частное название" })).toBeNull();
+  });
+
   it("archive list rows omit invitation actions", async () => {
     const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
     list.archive.items.push(
