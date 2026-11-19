@@ -113,29 +113,6 @@ describe("PartnersHub link invite gallery entry points", () => {
     expect(screen.getByTestId("agent-r04-modal-link")).toBeInTheDocument();
   });
 
-  it("opens gallery from true-empty overview without outgoing waiting tile", async () => {
-    render(
-      <PartnersHub
-        meId="store-me"
-        initialProfile={storeProfile}
-        variant="agent-r04"
-        agentPresentation="overview"
-        partnersAudience="business-store-r04"
-        proContextReady
-        proContext={{
-          viewerUserId: "store-me",
-          canEditCertificatePolicy: false,
-          canViewCertificatePolicy: false,
-        }}
-      />,
-    );
-
-    await screen.findByTestId("partners-empty");
-    expect(screen.queryByTestId("partners-tile-waiting")).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByTestId("partners-onboarding-cta-link-invites"));
-    expect(await screen.findByTestId("link-invite-gallery")).toBeVisible();
-  });
 
   it("keeps gallery open when Escape hits nested revoke confirm", async () => {
     remcardFetch.mockImplementation(async (path: string) => {

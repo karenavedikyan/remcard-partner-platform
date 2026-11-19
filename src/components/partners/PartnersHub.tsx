@@ -2668,7 +2668,6 @@ export function PartnersHub({
           partnersAudience={partnersAudience}
           onOpenFind={() => onOpenPartnerHub?.("find")}
           onOpenLink={() => onOpenPartnerHub?.("link")}
-          onOpenLinkInvites={() => openLinkInviteGallery()}
           onTileNavigate={scrollToOverviewZone}
           waitingOpen={waitingOpen}
           onWaitingOpenChange={setWaitingOpen}

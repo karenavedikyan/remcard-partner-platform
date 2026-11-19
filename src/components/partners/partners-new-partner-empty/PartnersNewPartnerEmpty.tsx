@@ -28,7 +28,6 @@ export type PartnersNewPartnerEmptyProps = {
   hasArchivedOrHiddenActive?: boolean;
   onOpenFind: () => void;
   onOpenLink: () => void;
-  onOpenLinkInvites?: () => void;
 };
 
 function StepIcon({ step }: { step: PartnersNewPartnerEmptyStep }) {
@@ -53,7 +52,6 @@ export function PartnersNewPartnerEmpty({
   hasArchivedOrHiddenActive = false,
   onOpenFind,
   onOpenLink,
-  onOpenLinkInvites,
 }: PartnersNewPartnerEmptyProps) {
   const role = resolvePartnersNewPartnerEmptyRole(audience);
   if (!role) {
@@ -105,16 +103,6 @@ export function PartnersNewPartnerEmpty({
             >
               {copy.secondaryLabel}
             </button>
-            {onOpenLinkInvites ? (
-              <button
-                type="button"
-                className={styles.ghostBtn}
-                onClick={onOpenLinkInvites}
-                data-testid="partners-onboarding-cta-link-invites"
-              >
-                Ссылки-приглашения
-              </button>
-            ) : null}
           </div>
         </div>
       </div>

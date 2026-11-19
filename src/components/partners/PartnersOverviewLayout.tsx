@@ -33,7 +33,6 @@ export type PartnersOverviewLayoutProps = {
   onRetry: () => void;
   onOpenFind: () => void;
   onOpenLink: () => void;
-  onOpenLinkInvites?: () => void;
   onTileNavigate: (zone: PartnerOverviewZone) => void;
   waitingOpen: boolean;
   onWaitingOpenChange: (open: boolean) => void;
@@ -84,7 +83,6 @@ export function PartnersOverviewLayout({
   onRetry,
   onOpenFind,
   onOpenLink,
-  onOpenLinkInvites,
   onTileNavigate,
   waitingOpen,
   onWaitingOpenChange,
@@ -335,7 +333,6 @@ export function PartnersOverviewLayout({
           hasArchivedOrHiddenActive={hasArchivedOrHiddenActive}
           onOpenFind={onOpenFind}
           onOpenLink={onOpenLink}
-          onOpenLinkInvites={onOpenLinkInvites}
         />
       ) : null}
 
