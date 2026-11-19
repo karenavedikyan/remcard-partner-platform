@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PartnerLinkInviteGallery } from "@/components/partners/PartnerLinkInviteGallery";
 import type { ProProfileResponse } from "@/lib/types";
 
@@ -17,9 +18,7 @@ const profile = {
 
 const root = createRoot(document.getElementById("root")!);
 root.render(
-  <PartnerLinkInviteGallery
-    open
-    onClose={() => {}}
-    meProfile={profile}
-  />,
+  <ThemeProvider>
+    <PartnerLinkInviteGallery open onClose={() => {}} meProfile={profile} />
+  </ThemeProvider>,
 );

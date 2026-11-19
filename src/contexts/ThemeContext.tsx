@@ -24,7 +24,7 @@ type ThemeContextValue = {
   toggleLightDark: () => void;
 };
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 /** SSR + first client render: fixed placeholder; boot script owns `data-theme` until hydrate. */
 const INITIAL_RESOLVED_THEME: "light" | "dark" = "light";

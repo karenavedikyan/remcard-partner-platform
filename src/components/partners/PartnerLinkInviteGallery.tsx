@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RemcardApiError, remcardFetch } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
@@ -28,6 +28,8 @@ import {
   type ManualCopySnapshot,
 } from "@/lib/link-invite-gallery";
 import type { ProProfileResponse } from "@/lib/types";
+import { ThemeContext } from "@/contexts/ThemeContext";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
 import styles from "./PartnerLinkInviteGallery.module.css";
@@ -49,6 +51,27 @@ type RevokeConfirm =
   | null;
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+function inviteRibbonDataType(intendedPartnerType: string | null): string {
+  switch (intendedPartnerType) {
+    case "STORE":
+      return "store";
+    case "COMPANY":
+      return "company";
+    case "MASTER":
+      return "specialist";
+    case "AGENT":
+      return "agent";
+    default:
+      return "store";
+  }
+}
+
+function InviteGalleryThemeToggle() {
+  const themeCtx = useContext(ThemeContext);
+  if (!themeCtx) return null;
+  return <ThemeToggle />;
+}
 
 export function PartnerLinkInviteGallery({
   open,
@@ -76,6 +99,7 @@ export function PartnerLinkInviteGallery({
   const [manualCopyById, setManualCopyById] = useState<Record<string, ManualCopySnapshot>>({});
   const [selectAllBusy, setSelectAllBusy] = useState(false);
   const [revokeConfirm, setRevokeConfirm] = useState<RevokeConfirm>(null);
+  const [bulkConfirmIds, setBulkConfirmIds] = useState<string[] | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
   const [reissueWarning, setReissueWarning] = useState("");
@@ -203,6 +227,7 @@ export function PartnerLinkInviteGallery({
     setSelectedIds(new Set());
     setSelectionMode(false);
     setRevokeConfirm(null);
+    setBulkConfirmIds(null);
   }, [search, phase, open]);
 
   const copyContext = useMemo(
@@ -288,13 +313,13 @@ export function PartnerLinkInviteGallery({
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (revokeConfirm || editingId) return;
+      if (revokeConfirm || editingId || bulkConfirmIds) return;
       event.stopPropagation();
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, revokeConfirm, editingId]);
+  }, [open, onClose, revokeConfirm, editingId, bulkConfirmIds]);
 
   useEffect(() => {
     if (open) dialogRef.current?.focus();
@@ -451,6 +476,7 @@ export function PartnerLinkInviteGallery({
     }
     setRevoking(false);
     setRevokeConfirm(null);
+    setBulkConfirmIds(null);
     setSelectedIds(new Set());
     setSelectionMode(false);
     await loadInvites();
@@ -516,13 +542,22 @@ export function PartnerLinkInviteGallery({
             data-testid={`link-invite-terms-panel-${invite.id}`}
           >
             <strong>Категории</strong>
-            <ul>
-              {invite.terms.map((term) => (
-                <li key={term.category}>
-                  {term.categoryLabel}: {term.isExcluded ? "Не участвует" : `${term.storePercent}%`}
-                </li>
-              ))}
-            </ul>
+            <table className={styles.conditionsTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Категория</th>
+                  <th scope="col">Условие</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invite.terms.map((term) => (
+                  <tr key={term.category}>
+                    <td>{term.categoryLabel}</td>
+                    <td>{term.isExcluded ? "Не участвует" : `${term.storePercent}%`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             {invite.canReissue && listMode === "v2" ? (
               <div className={styles.listActions}>
                 <button type="button" onClick={() => void reissueInvite(invite.id)}>
@@ -570,13 +605,13 @@ export function PartnerLinkInviteGallery({
           </p>
         ) : null}
         {manualUrl ? (
-          <label className={styles.manualUrl}>
+          <label className={styles.copyFallback}>
             <span className={styles.srOnly}>Публичная ссылка</span>
             <input
               type="text"
               readOnly
               aria-label="Ссылка"
-              className={styles.manualUrlField}
+              className={styles.copyFallbackField}
               value={manualUrl}
               data-testid={`link-invite-manual-url-${invite.id}`}
               onFocus={(event) => event.currentTarget.select()}
@@ -603,14 +638,23 @@ export function PartnerLinkInviteGallery({
         data-testid="link-invite-gallery"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className={styles.head}>
-          <h2 id={titleId}>Ссылки-приглашения</h2>
-          <button type="button" className={styles.closeBtn} aria-label="Закрыть" onClick={onClose}>
-            ×
-          </button>
+        <header className={styles.sheetHead}>
+          <span className={styles.sheetHeadIcon} aria-hidden="true">
+            <IconLinkInvites />
+          </span>
+          <div className={styles.sheetHeadCopy}>
+            <p className={styles.sheetOverline}>Партнёры</p>
+            <h2 id={titleId}>Ссылки-приглашения</h2>
+          </div>
+          <div className={styles.sheetHeadActions}>
+            <InviteGalleryThemeToggle />
+            <button type="button" className={styles.iconButton} aria-label="Закрыть" onClick={onClose}>
+              <IconClose />
+            </button>
+          </div>
         </header>
 
-        <div className={styles.tabs} role="tablist" aria-label="Раздел ссылок">
+        <div className={styles.viewTabs} role="tablist" aria-label="Раздел ссылок">
           <button
             type="button"
             role="tab"
@@ -643,11 +687,10 @@ export function PartnerLinkInviteGallery({
           </button>
         </div>
 
-        <div className={styles.toolbar}>
-          <label className={styles.searchWrap}>
-            <span className={styles.hint} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>
-              Найти приглашение
-            </span>
+        <div className={styles.browseBar}>
+          <label className={styles.inviteSearchBox}>
+            <IconSearch />
+            <span className={styles.srOnly}>Найти приглашение</span>
             <input
               type="search"
               value={search}
@@ -661,7 +704,7 @@ export function PartnerLinkInviteGallery({
               </button>
             ) : null}
           </label>
-          <div className={styles.segmented} role="group" aria-label="Вид">
+          <div className={styles.layoutSwitch} role="group" aria-label="Вид">
             <button type="button" data-active={viewMode === "cards"} onClick={() => setViewMode("cards")}>
               Карты
             </button>
@@ -669,74 +712,120 @@ export function PartnerLinkInviteGallery({
               Список
             </button>
           </div>
-          <select
-            className={styles.sortSelect}
-            aria-label="Сортировка"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as LinkInviteGallerySort)}
-          >
-            <option value="newest">Сначала новые</option>
-            <option value="oldest">Сначала старые</option>
-          </select>
-          {phase === "active" ? (
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => {
-                setSelectionMode((v) => !v);
-                setSelectedIds(new Set());
-              }}
-            >
-              {selectionMode ? "Готово" : "Выбрать"}
-            </Button>
-          ) : null}
-          {phase === "active" && selectionMode && searchActive ? (
-            <Button
-              variant="secondary"
-              type="button"
-              disabled={searchInFlight || searchTyping}
-              onClick={selectAllFiltered}
-              data-testid="link-invite-gallery-select-matches"
-            >
-              Выбрать найденные
-            </Button>
-          ) : null}
-          {phase === "active" && selectionMode && !searchActive && !search.trim() ? (
-            <Button
-              variant="secondary"
-              type="button"
-              disabled={selectAllBusy || searchTyping}
-              onClick={() => void selectAllActivePending()}
-              data-testid="link-invite-gallery-select-all-active"
-            >
-              {selectAllBusy ? "Загружаем…" : "Выбрать все активные"}
-            </Button>
-          ) : null}
-          {phase === "active" && selectionMode && revokeSelectionReady ? (
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => {
-                const ids = resolveRevokeTargetIds(selectedIds);
-                if (!ids.length) return;
-                setRevokeConfirm({ kind: "bulk", ids });
-              }}
-              data-testid="link-invite-gallery-bulk-revoke"
-            >
-              Отозвать ({selectedIds.size})
-            </Button>
-          ) : null}
-          {phase === "active" ? (
-            <p className={styles.toolbarHint}>Действуют до принятия или отзыва</p>
-          ) : (
-            <p className={styles.toolbarHint}>Принятые приглашения — только для чтения</p>
-          )}
-          {searchInFlight ? (
-            <p className={styles.toolbarHint} data-testid="link-invite-gallery-search-loading">
-              Загружаем остальные страницы раздела для поиска…
-            </p>
-          ) : null}
         </div>
+
+        <div className={styles.listHead}>
+          <h3>{phase === "active" ? "Активные приглашения" : "Архив приглашений"}</h3>
+          <div className={styles.listTopControls}>
+            <label className={styles.sectionCaption}>
+              Сортировка
+              <select
+                className={styles.sortSelect}
+                aria-label="Сортировка"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as LinkInviteGallerySort)}
+              >
+                <option value="newest">Сначала новые</option>
+                <option value="oldest">Сначала старые</option>
+              </select>
+            </label>
+            {phase === "active" ? (
+              <button
+                type="button"
+                className={styles.selectionModeToggle}
+                data-active={selectionMode}
+                onClick={() => {
+                  setSelectionMode((v) => !v);
+                  setSelectedIds(new Set());
+                  setBulkConfirmIds(null);
+                }}
+              >
+                {selectionMode ? "Готово" : "Выбрать"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {phase === "active" ? (
+          <p className={styles.phaseHint}>Действуют до принятия или отзыва</p>
+        ) : (
+          <p className={styles.phaseHint}>Принятые приглашения — только для чтения</p>
+        )}
+        {searchInFlight ? (
+          <p className={styles.phaseHint} data-testid="link-invite-gallery-search-loading">
+            Загружаем остальные страницы раздела для поиска…
+          </p>
+        ) : null}
+
+        {phase === "active" && selectionMode ? (
+          <div className={styles.bulkBar} role="region" aria-label="Массовые действия">
+            <strong>Выбрано: {selectedIds.size}</strong>
+            {searchActive ? (
+              <button
+                type="button"
+                className={styles.bulkBarBtn}
+                disabled={searchInFlight || searchTyping}
+                onClick={selectAllFiltered}
+                data-testid="link-invite-gallery-select-matches"
+              >
+                Выбрать найденные
+              </button>
+            ) : null}
+            {!searchActive && !search.trim() ? (
+              <button
+                type="button"
+                className={styles.bulkBarBtn}
+                disabled={selectAllBusy || searchTyping}
+                onClick={() => void selectAllActivePending()}
+                data-testid="link-invite-gallery-select-all-active"
+              >
+                {selectAllBusy ? "Загружаем…" : "Выбрать все активные"}
+              </button>
+            ) : null}
+            {revokeSelectionReady ? (
+              <button
+                type="button"
+                className={styles.bulkBarBtnDanger}
+                onClick={() => {
+                  const ids = resolveRevokeTargetIds(selectedIds);
+                  if (!ids.length) return;
+                  setBulkConfirmIds(ids);
+                }}
+                data-testid="link-invite-gallery-bulk-revoke"
+              >
+                Отозвать ({selectedIds.size})
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {bulkConfirmIds ? (
+          <div
+            className={styles.bulkConfirm}
+            role="region"
+            aria-label="Подтверждение массового отзыва"
+          >
+            <p className={styles.bulkConfirmLead}>
+              Будет отозвано ссылок: {bulkConfirmIds.length}. Принятые приглашения в архив не попадут.
+            </p>
+            <div className={styles.bulkConfirmActions}>
+              <button type="button" onClick={() => setBulkConfirmIds(null)} disabled={revoking}>
+                Отмена
+              </button>
+              <button
+                type="button"
+                data-variant="danger"
+                disabled={revoking}
+                onClick={() => {
+                  if (revoking) return;
+                  void revokeIds(bulkConfirmIds);
+                }}
+              >
+                {revoking ? "Отзываем…" : "Отозвать"}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {listError ? (
           <p className={styles.error} role="alert">
@@ -749,7 +838,7 @@ export function PartnerLinkInviteGallery({
           </p>
         ) : null}
 
-        <div className={styles.body}>
+        <div className={styles.listScroll}>
           {loading && sourceRows.length === 0 ? <p className={styles.empty}>Загружаем…</p> : null}
           {searchInFlight && filteredRows.length === 0 ? (
             <p className={styles.empty} data-testid="link-invite-gallery-searching">
@@ -763,11 +852,11 @@ export function PartnerLinkInviteGallery({
           ) : null}
 
           {viewMode === "cards" ? (
-            <ul className={styles.grid} data-testid={`link-invite-gallery-${phase}-cards`}>
+            <ul className={styles.cardGrid} data-testid={`link-invite-gallery-${phase}-cards`}>
               {filteredRows.map((invite) => (
                 <li key={invite.id}>
                   <article
-                    className={`${styles.card} ${phase === "archive" ? styles.archiveReadonly : ""}`}
+                    className={`${styles.inviteCard} ${phase === "archive" ? styles.archiveReadonly : ""}`}
                     data-testid={`link-invite-card-${invite.id}`}
                   >
                     {selectionMode && phase === "active" && invite.status === "PENDING" ? (
@@ -787,10 +876,14 @@ export function PartnerLinkInviteGallery({
               ))}
             </ul>
           ) : (
-            <ul className={styles.list} data-testid={`link-invite-gallery-${phase}-list`}>
+            <ul className={styles.listPane} data-testid={`link-invite-gallery-${phase}-list`}>
               {filteredRows.map((invite) => (
-                <li key={invite.id} className={styles.listRow} data-testid={`link-invite-list-row-${invite.id}`}>
-                  <div className={styles.listRowHead}>
+                <li
+                  key={invite.id}
+                  className={`${styles.listRow} ${phase === "archive" ? styles.listRowArchive : ""}`}
+                  data-testid={`link-invite-list-row-${invite.id}`}
+                >
+                  <div className={styles.recordTop}>
                     <InviteListTitle invite={invite} archive={phase === "archive"} />
                     {selectionMode && phase === "active" && invite.status === "PENDING" ? (
                       <input
@@ -815,7 +908,7 @@ export function PartnerLinkInviteGallery({
               : `Всего ссылок: ${filteredRows.length}`}
             {searchActive && searchPagingComplete ? ` (из ${sourceRows.length} в разделе)` : null}
           </p>
-          <div>
+          <div className={styles.footerActions}>
             {phase === "active" && inviteList.active.nextCursor ? (
               <Button
                 variant="secondary"
@@ -850,22 +943,18 @@ export function PartnerLinkInviteGallery({
         </footer>
       </div>
 
-      {revokeConfirm ? (
+      {revokeConfirm?.kind === "one" ? (
         <PartnerCooperationConfirmDialog
           open
           testId="link-invite-revoke-confirm"
           title="Отозвать ссылку?"
-          body={
-            revokeConfirm.kind === "bulk"
-              ? `Будет отозвано ссылок: ${revokeConfirm.ids.length}. Принятые приглашения в архив не попадут.`
-              : "Ссылка перестанет открываться. Действие нельзя отменить."
-          }
+          body="Ссылка перестанет открываться. Действие нельзя отменить."
           confirmLabel={revoking ? "Отзываем…" : "Отозвать"}
           dismissLabel="Отмена"
           safeAction="dismiss"
           onConfirm={() => {
             if (revoking) return;
-            void revokeIds(revokeConfirm.kind === "bulk" ? revokeConfirm.ids : [revokeConfirm.id]);
+            void revokeIds([revokeConfirm.id]);
           }}
           onDismiss={() => setRevokeConfirm(null)}
         />
@@ -878,32 +967,35 @@ export function PartnerLinkInviteGallery({
 }
 
 function InviteCardChrome({ invite }: { invite: LinkInviteListRow }) {
-  const type = invite.intendedPartnerType ?? "";
+  const ribbonType = inviteRibbonDataType(invite.intendedPartnerType);
   const title = linkInviteCardTitle(invite);
+  const createdLine = `Создал приглашение ${invite.createdBy.displayName}`;
+  const createdWhen = formatInviteListDate(invite.createdAt);
   return (
-    <>
-      <div className={styles.cardHead}>
-        <span className={styles.typeBadge} data-kind={type}>
-          {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "Партнёр"}
-        </span>
-        <span className={styles.lockup} aria-hidden="true">
-          remcard<em>.</em>
-        </span>
-      </div>
-      <div className={styles.cardMain}>
-        <h3 className={styles.cardTitle} title={title}>
+    <div className={styles.inviteFace}>
+      <InviteFaceTexture className={styles.inviteTexture} />
+      <span className={styles.inviteRibbon} data-type={ribbonType}>
+        {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "Партнёр"}
+      </span>
+      <span className={styles.inviteWordmark} aria-hidden="true">
+        remcard<em>.</em>
+      </span>
+      <div className={styles.inviteFaceMain}>
+        <h3 className={styles.inviteFaceTitle} title={title}>
           {title}
         </h3>
-        <p className={styles.cardMeta}>
-          Создал приглашение {invite.createdBy.displayName} · {formatInviteListDate(invite.createdAt)}
-        </p>
+      </div>
+      <div className={styles.authorBlock}>
+        <span>{createdLine}</span>
+        <span>{createdWhen}</span>
         {invite.acceptedBy ? (
-          <p className={styles.cardMeta}>
-            Принял: {invite.acceptedBy.displayName} · {formatInviteListDate(invite.acceptedBy.at)}
-          </p>
+          <>
+            <span>Принял: {invite.acceptedBy.displayName}</span>
+            <span>{formatInviteListDate(invite.acceptedBy.at)}</span>
+          </>
         ) : null}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -911,7 +1003,7 @@ function InviteListTitle({ invite, archive }: { invite: LinkInviteListRow; archi
   const title = linkInviteCardTitle(invite);
   const showTitleDisclosure = invite.canEditPersonalLabel !== true;
   return (
-    <div>
+    <div className={styles.recordTopMain}>
       <strong className={styles.listTitle} title={title}>
         {title}
       </strong>
@@ -921,7 +1013,7 @@ function InviteListTitle({ invite, archive }: { invite: LinkInviteListRow; archi
           <p className={styles.titleDisclosureBody}>{title}</p>
         </details>
       ) : null}
-      <p className={styles.hint}>
+      <p className={styles.recordMeta}>
         {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "—"} · {invite.createdBy.displayName} ·{" "}
         {formatInviteListDate(invite.createdAt)}
         {archive && invite.acceptedBy
@@ -970,48 +1062,45 @@ function InviteFootInner(props: {
   layout: "card" | "list";
 }) {
   if (!props.pending) return null;
-  const Wrapper = props.layout === "card" ? "div" : "div";
-  const className = props.layout === "card" ? styles.cardFoot : styles.listActions;
+  const className = props.layout === "card" ? styles.inviteCardActions : styles.listActions;
   return (
-    <Wrapper
+    <div
       className={className}
       data-testid={props.layout === "card" ? "link-invite-card-foot" : undefined}
     >
       <button
         type="button"
-        className={props.layout === "card" ? styles.termsBtn : undefined}
+        className={styles.conditionsToggle}
         aria-expanded={props.termsOpen}
         onClick={props.onToggleTerms}
       >
-        Условия [{props.count}] {props.termsOpen ? "▴" : "▾"}
+        <span>Условия</span>
+        <span className={styles.conditionsCountBadge}>{props.count}</span>
+        {props.termsOpen ? <IconChevronUp /> : <IconChevronDown />}
       </button>
       {props.canEditPersonalLabel ? (
         <button
           type="button"
-          className={styles.iconAction}
+          className={styles.iconOnlyAction}
           aria-label="Изменить частное название"
           onClick={props.onEdit}
         >
-          ✎
+          <IconPencil />
         </button>
       ) : null}
-      <button
-        type="button"
-        className={props.layout === "card" ? styles.copyBtn : undefined}
-        onClick={props.onCopy}
-        data-testid="link-invite-copy"
-      >
+      <button type="button" className={styles.quickCopy} onClick={props.onCopy} data-testid="link-invite-copy">
+        <IconCopy />
         Копировать
       </button>
       <button
         type="button"
-        className={styles.iconAction}
+        className={styles.iconOnlyAction}
         aria-label="Отозвать ссылку"
         onClick={props.onRevoke}
       >
-        🗑
+        <IconRevoke />
       </button>
-    </Wrapper>
+    </div>
   );
 }
 
@@ -1051,5 +1140,121 @@ function InviteEditActions(props: { onSave: () => void; onCancel: () => void }) 
         Отмена
       </button>
     </div>
+  );
+}
+
+function IconLinkInvites() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M10 13a5 5 0 0 1 7.07 0l1.06 1.06a5 5 0 0 1-7.07 7.07L10 21.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 11a5 5 0 0 1-7.07 0L5.87 9.94a5 5 0 0 1 7.07-7.07L14 2.8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconClose() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconSearch() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="5.25" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconChevronDown() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconChevronUp() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconPencil() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M4 16h3l8.5-8.5a1.5 1.5 0 0 0-2.12-2.12L4.88 13.88 4 16z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCopy() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="7" y="7" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5 13V5.8A1.8 1.8 0 0 1 6.8 4H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconRevoke() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 6h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M7.5 6V5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 9v5M12 9v5M6.5 6l.7 10a1.5 1.5 0 0 0 1.5 1.4h3.6a1.5 1.5 0 0 0 1.5-1.4l.7-10"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function InviteFaceTexture({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 340 230" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <pattern id="inviteTex" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+          <rect width="28" height="28" fill="transparent" />
+          <path d="M0 14h28M14 0v28" stroke="currentColor" strokeWidth="0.6" opacity="0.35" />
+          <rect x="11" y="11" width="6" height="6" rx="1" fill="currentColor" opacity="0.22" />
+        </pattern>
+      </defs>
+      <rect width="340" height="230" fill="url(#inviteTex)" />
+      <path
+        d="M40 180c30-45 70-60 120-40s80 15 140-30"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity="0.18"
+        fill="none"
+      />
+    </svg>
   );
 }
