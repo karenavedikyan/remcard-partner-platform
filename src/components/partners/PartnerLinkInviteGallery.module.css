@@ -323,13 +323,14 @@
 
 .cardFoot {
   position: relative;
-  z-index: 2;
+  z-index: 5;
   margin: 0 -14px;
-  padding: 10px 10px;
+  padding: 8px 6px;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 0;
   background: rgba(0, 0, 0, 0.35);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -374,10 +375,24 @@
   cursor: not-allowed;
 }
 
-.copyBtn {
-  flex: 1 1 auto;
-  justify-content: center;
+.termsBtn {
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 42%;
+  padding-inline: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copyBtn {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 3.5rem;
+  padding-inline: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .selectMark {
@@ -392,8 +407,9 @@
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 56px;
+  bottom: 52px;
   z-index: 4;
+  pointer-events: auto;
   max-height: 55%;
   overflow: auto;
   border-radius: 12px;

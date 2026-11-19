@@ -412,7 +412,12 @@ export function PartnerLinkInviteGallery({
     return (
       <>
         {termsOpen ? (
-          <div className={styles.termsPanel} role="region" aria-label="Условия приглашения">
+          <div
+            className={styles.termsPanel}
+            role="region"
+            aria-label="Условия приглашения"
+            data-testid={`link-invite-terms-panel-${invite.id}`}
+          >
             <strong>Категории</strong>
             <ul>
               {invite.terms.map((term) => (
@@ -841,8 +846,16 @@ function InviteFootInner(props: {
   const Wrapper = props.layout === "card" ? "div" : "div";
   const className = props.layout === "card" ? styles.cardFoot : styles.listActions;
   return (
-    <Wrapper className={className}>
-      <button type="button" aria-expanded={props.termsOpen} onClick={props.onToggleTerms}>
+    <Wrapper
+      className={className}
+      data-testid={props.layout === "card" ? "link-invite-card-foot" : undefined}
+    >
+      <button
+        type="button"
+        className={props.layout === "card" ? styles.termsBtn : undefined}
+        aria-expanded={props.termsOpen}
+        onClick={props.onToggleTerms}
+      >
         Условия [{props.count}] {props.termsOpen ? "▴" : "▾"}
       </button>
       {props.canEditPersonalLabel ? (

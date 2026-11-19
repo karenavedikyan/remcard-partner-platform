@@ -32,6 +32,7 @@ const mockList = {
         previewPath: "/invite/long",
         canCopyLink: true,
         canReissue: false,
+        canEditPersonalLabel: true,
         createdBy: { userId: "u1", displayName: "Анна Волкова", at: "2026-11-19T13:00:00.000Z" },
         acceptedBy: null,
         terms: [
