@@ -657,6 +657,7 @@ function InviteCardFoot(props: {
       pending={props.pending}
       termsOpen={props.termsOpen}
       count={count}
+      canEditPersonalLabel={props.invite.canEditPersonalLabel === true}
       onToggleTerms={props.onToggleTerms}
       onEdit={props.onEdit}
       onCopy={props.onCopy}
@@ -670,6 +671,7 @@ function InviteFootInner(props: {
   pending: boolean;
   termsOpen: boolean;
   count: number;
+  canEditPersonalLabel: boolean;
   onToggleTerms: () => void;
   onEdit: () => void;
   onCopy: () => void;
@@ -684,9 +686,11 @@ function InviteFootInner(props: {
       <button type="button" aria-expanded={props.termsOpen} onClick={props.onToggleTerms}>
         Условия [{props.count}] {props.termsOpen ? "▴" : "▾"}
       </button>
-      <button type="button" aria-label="Изменить частное название" onClick={props.onEdit}>
-        ✎
-      </button>
+      {props.canEditPersonalLabel ? (
+        <button type="button" aria-label="Изменить частное название" onClick={props.onEdit}>
+          ✎
+        </button>
+      ) : null}
       <button
         type="button"
         className={props.layout === "card" ? styles.copyBtn : undefined}

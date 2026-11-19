@@ -10,6 +10,8 @@ export type LinkInviteListRow = {
   recipientLabel?: string | null;
   /** Server-stored private list title when API returns it. */
   personalLabel?: string | null;
+  /** Server capability: current actor may PATCH personalLabel on this invite. */
+  canEditPersonalLabel?: boolean;
   intendedPartnerType: string | null;
   note: string | null;
   partnershipId: string | null;

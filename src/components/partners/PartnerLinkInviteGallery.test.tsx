@@ -82,6 +82,19 @@ describe("PartnerLinkInviteGallery", () => {
     );
   });
 
+  it("hides rename control when server denies canEditPersonalLabel", async () => {
+    const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
+    list.active.items.push(activeInviteRow({ canEditPersonalLabel: false }));
+    remcardFetch.mockResolvedValue(list);
+
+    render(
+      <PartnerLinkInviteGallery open onClose={() => {}} meProfile={storeSenderProfile()} />,
+    );
+
+    await screen.findByTestId("link-invite-card-inv-copy");
+    expect(screen.queryByRole("button", { name: "Изменить частное название" })).toBeNull();
+  });
+
   it("shows empty search state without clearing query when switching view", async () => {
     const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
     list.active.items.push(activeInviteRow({ note: "Alpha" }));
