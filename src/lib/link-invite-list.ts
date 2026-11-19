@@ -6,6 +6,10 @@ export type LinkInviteListRow = {
   legacyTtl: boolean;
   createdAt: string;
   acceptedAt: string | null;
+  /** Public recipient name from create step when API returns it. */
+  recipientLabel?: string | null;
+  /** Server-stored private list title when API returns it. */
+  personalLabel?: string | null;
   intendedPartnerType: string | null;
   note: string | null;
   partnershipId: string | null;

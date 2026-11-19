@@ -33,6 +33,7 @@ export type PartnersOverviewLayoutProps = {
   onRetry: () => void;
   onOpenFind: () => void;
   onOpenLink: () => void;
+  onOpenLinkInvites?: () => void;
   onTileNavigate: (zone: PartnerOverviewZone) => void;
   waitingOpen: boolean;
   onWaitingOpenChange: (open: boolean) => void;
@@ -83,6 +84,7 @@ export function PartnersOverviewLayout({
   onRetry,
   onOpenFind,
   onOpenLink,
+  onOpenLinkInvites,
   onTileNavigate,
   waitingOpen,
   onWaitingOpenChange,
@@ -266,6 +268,11 @@ export function PartnersOverviewLayout({
             <button type="button" className={styles.ghostBtn} onClick={onOpenLink}>
               Пригласить по ссылке
             </button>
+            {onOpenLinkInvites ? (
+              <button type="button" className={styles.ghostBtn} onClick={onOpenLinkInvites} data-testid="partners-overview-cta-link-invites">
+                Ссылки-приглашения
+              </button>
+            ) : null}
           </div>
           {waitingSlot}
         </div>

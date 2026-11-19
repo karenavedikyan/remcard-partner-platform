@@ -183,20 +183,18 @@ export function inviteRegistrationHref(intendedType: PartnerTypeCode, returnTo: 
   return `/join?${new URLSearchParams({ role, returnTo }).toString()}`;
 }
 
-export function buildInviteShareMessage(options: {
+export function buildInviteShareMessageBody(options: {
   inviterName: string;
-  url: string;
   inviterType?: PartnerTypeCode;
   intendedType?: PartnerTypeCode;
 }): string {
   const name = options.inviterName.trim() || "нами";
-  const url = options.url.trim();
   const audience = resolveInviteAudience(
     options.inviterType ?? null,
     options.intendedType ?? null,
   );
 
-  let text = `Приглашаем вас к сотрудничеству с ${name} в RemCard PROF. По ссылке — предложение и условия. Посмотрите их и, если вам подходит, присоединяйтесь: ${url}`;
+  let text = `Приглашаем вас к сотрудничеству с ${name} в RemCard PROF. По ссылке — предложение и условия. Посмотрите их и, если вам подходит, присоединяйтесь.`;
 
   if (audience === "master") {
     text += `\n\nКлиенты получают скидку по вашей рекомендации, вы — вознаграждение на согласованных условиях.`;
@@ -205,6 +203,16 @@ export function buildInviteShareMessage(options: {
   }
 
   return text;
+}
+
+export function buildInviteShareMessage(options: {
+  inviterName: string;
+  url: string;
+  inviterType?: PartnerTypeCode;
+  intendedType?: PartnerTypeCode;
+}): string {
+  const url = options.url.trim();
+  return `${buildInviteShareMessageBody(options)}\n\n${url}`;
 }
 
 export function buildInviteLinkMetadata(input: {

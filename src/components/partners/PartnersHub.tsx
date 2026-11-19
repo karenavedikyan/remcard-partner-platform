@@ -79,6 +79,7 @@ import { PartnerCounterOfferDialog } from "@/components/partners/PartnerCounterO
 import { PartnerListHideDialog } from "@/components/partners/PartnerListHideDialog";
 import { PartnerSearchFilters } from "@/components/partners/PartnerSearchFilters";
 import { PartnerLinkInvitePanel } from "@/components/partners/PartnerLinkInvitePanel";
+import { PartnerLinkInviteGallery } from "@/components/partners/PartnerLinkInviteGallery";
 import { PartnerSearchResultCard, searchResultTypeLabel } from "@/components/partners/PartnerSearchResultCard";
 import { PartnerDiscoveryNavigator } from "@/components/partners/PartnerDiscoveryNavigator";
 import {
@@ -722,6 +723,8 @@ export function PartnersHub({
   const [linkInviteMode, setLinkInviteMode] = useState<"discussion" | "terms">("discussion");
   const [pendingLinkInviteMode, setPendingLinkInviteMode] = useState<"discussion" | "terms" | null>(null);
   const [linkInviteSubmitting, setLinkInviteSubmitting] = useState(false);
+  const [linkInviteGalleryOpen, setLinkInviteGalleryOpen] = useState(false);
+  const [linkInviteGalleryRefresh, setLinkInviteGalleryRefresh] = useState(0);
   const linkModeDirtyRef = useRef(false);
   const linkModeTriggerRef = useRef<HTMLButtonElement | null>(null);
   const reportLinkModeDirty = useCallback((dirty: boolean) => {
@@ -2364,7 +2367,9 @@ export function PartnersHub({
           <PartnerLinkInvitePanel key={`link-${discussionInvitePanelKey}`} meProfile={meProfile} inviterSide={inviterSide} showSectionTitle={false} wizard
             onDirtyChange={reportLinkModeDirty} onReadyChange={onDiscussionInviteReadyChange}
             onSubmittingChange={setLinkInviteSubmitting}
-            onAnotherWay={() => onOpenPartnerHub?.("find")} />
+            onAnotherWay={() => onOpenPartnerHub?.("find")}
+            onOpenInvitesGallery={() => setLinkInviteGalleryOpen(true)}
+            onInvitesGalleryRefresh={() => setLinkInviteGalleryRefresh((n) => n + 1)} />
                 )}
                 {pendingLinkInviteMode ? (
                   <PartnerCooperationConfirmDialog
@@ -2625,6 +2630,7 @@ export function PartnersHub({
           partnersAudience={partnersAudience}
           onOpenFind={() => onOpenPartnerHub?.("find")}
           onOpenLink={() => onOpenPartnerHub?.("link")}
+          onOpenLinkInvites={() => setLinkInviteGalleryOpen(true)}
           onTileNavigate={scrollToOverviewZone}
           waitingOpen={waitingOpen}
           onWaitingOpenChange={setWaitingOpen}
@@ -3212,7 +3218,12 @@ export function PartnersHub({
           )}
         </>
       ) : tab === "link" ? (
-        <PartnerLinkInvitePanel meProfile={meProfile} inviterSide={inviterSide} />
+        <PartnerLinkInvitePanel
+          meProfile={meProfile}
+          inviterSide={inviterSide}
+          onOpenInvitesGallery={() => setLinkInviteGalleryOpen(true)}
+          onInvitesGalleryRefresh={() => setLinkInviteGalleryRefresh((n) => n + 1)}
+        />
       ) : (
         <>
           <Panel compact>
@@ -3521,6 +3532,13 @@ export function PartnersHub({
           onDismiss={discardTermDraftAndContinue}
         />
       ) : null}
+
+      <PartnerLinkInviteGallery
+        open={linkInviteGalleryOpen}
+        onClose={() => setLinkInviteGalleryOpen(false)}
+        meProfile={meProfile}
+        refreshToken={linkInviteGalleryRefresh}
+      />
     </div>
   );
 }
