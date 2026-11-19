@@ -477,6 +477,10 @@
   scrollbar-gutter: stable;
 }
 
+.listScrollList {
+  padding: 0;
+}
+
 .cardGrid {
   list-style: none;
   margin: 0;
@@ -836,37 +840,165 @@
   gap: 10px;
 }
 
+.listPaneCompact {
+  gap: 0;
+}
+
 .listRow {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
-  border-radius: 12px;
-  background: var(--surface);
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  border-radius: 0;
+  background: transparent;
+}
+
+.listRow:last-child {
+  border-bottom: 0;
 }
 
 .listRowArchive {
-  opacity: 0.88;
-  background: color-mix(in srgb, var(--ink) 3%, var(--surface));
-  border-style: dashed;
+  opacity: 0.92;
 }
 
-.recordTop {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+.listRow > .termsPanel,
+.listRow > .editPanel,
+.listRow > .hint,
+.listRow > .copyFallback {
+  margin-inline: 14px;
+}
+
+.listRow > .termsPanel,
+.listRow > .editPanel,
+.listRow > .copyFallback {
+  margin-bottom: 10px;
+}
+
+.listRecord {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px 14px;
+  min-width: 0;
+  padding: 11px 14px;
 }
 
-.recordTopMain {
+.listRecordMain {
+  flex: 1 1 auto;
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 3px;
+}
+
+.listTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .listTitle {
   overflow-wrap: anywhere;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.22;
+  font-weight: 750;
+  min-width: 0;
+}
+
+.listTypeBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--ink) 8%, var(--surface));
+  color: var(--ink);
+}
+
+.listTypeBadge[data-type="store"] {
+  background: #fae9e8;
+  color: #9e2a22;
+}
+
+.listTypeBadge[data-type="specialist"] {
+  background: #e8f2ec;
+  color: #2f5a44;
+}
+
+.listTypeBadge[data-type="company"] {
+  background: #e9eef5;
+  color: #314f72;
+}
+
+.listTypeBadge[data-type="agent"] {
+  background: #f4ecdf;
+  color: #6f4f1e;
+}
+
+:global([data-theme="dark"]) .listTypeBadge[data-type="store"] {
+  background: #3b2729;
+  color: #ffb4b6;
+}
+
+:global([data-theme="dark"]) .listTypeBadge[data-type="specialist"] {
+  background: #24342b;
+  color: #9ad4b3;
+}
+
+:global([data-theme="dark"]) .listTypeBadge[data-type="company"] {
+  background: #262d38;
+  color: #a8c4e8;
+}
+
+:global([data-theme="dark"]) .listTypeBadge[data-type="agent"] {
+  background: #342b20;
+  color: #e4c78a;
+}
+
+.listTitleEditBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #8a9188);
+  cursor: pointer;
+}
+
+.listTitleEditBtn:hover,
+.listTitleEditBtn:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  outline: 2px solid var(--accent-emphasis, #9f1239);
+  outline-offset: 1px;
+}
+
+.listRowSelect {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+}
+
+.listRecord .listActions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
 }
 
 .listActions {
@@ -874,6 +1006,22 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.listRecord .listActions button {
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
 }
 
 .listActions button {
@@ -889,6 +1037,25 @@
   align-items: center;
   gap: 5px;
   min-height: 36px;
+}
+
+.listRecord .listActions .conditionsToggle {
+  max-width: none;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+
+.listRecord .listActions .quickCopy {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.listRecord .listActions .iconOnlyAction {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  justify-content: center;
 }
 
 .listActions .iconOnlyAction {
@@ -924,8 +1091,38 @@
 
 .recordMeta {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 12px;
+  line-height: 1.25;
   color: var(--muted, #8a9188);
+}
+
+@media (max-width: 520px) {
+  .listRecord {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .listRecord .listActions {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .listRecord .listActions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .listTitleRow {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .listRowSelect {
+    margin-left: 0;
+  }
 }
 
 .empty {
@@ -1190,6 +1387,14 @@
     padding: 10px;
     border-radius: 11px;
     scrollbar-width: thin;
+  }
+
+  .listScrollList {
+    padding: 0;
+  }
+
+  .listRecord {
+    padding: 10px 11px;
   }
 
   .cardGrid {

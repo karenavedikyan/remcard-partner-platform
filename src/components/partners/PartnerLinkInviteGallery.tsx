@@ -841,7 +841,9 @@ export function PartnerLinkInviteGallery({
           </p>
         ) : null}
 
-        <div className={styles.listScroll}>
+        <div
+          className={`${styles.listScroll} ${viewMode === "list" ? styles.listScrollList : ""}`}
+        >
           {loading && sourceRows.length === 0 ? <p className={styles.empty}>Загружаем…</p> : null}
           {searchInFlight && filteredRows.length === 0 ? (
             <p className={styles.empty} data-testid="link-invite-gallery-searching">
@@ -899,25 +901,44 @@ export function PartnerLinkInviteGallery({
               ))}
             </ul>
           ) : (
-            <ul className={styles.listPane} data-testid={`link-invite-gallery-${phase}-list`}>
+            <ul
+              className={`${styles.listPane} ${styles.listPaneCompact}`}
+              data-testid={`link-invite-gallery-${phase}-list`}
+            >
               {filteredRows.map((invite) => (
                 <li
                   key={invite.id}
                   className={`${styles.listRow} ${phase === "archive" ? styles.listRowArchive : ""}`}
                   data-testid={`link-invite-list-row-${invite.id}`}
                 >
-                  <div className={styles.recordTop}>
-                    <InviteListTitle invite={invite} archive={phase === "archive"} />
-                    {selectionMode && phase === "active" && invite.status === "PENDING" ? (
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(invite.id)}
-                        onChange={() => toggleSelected(invite.id)}
-                        aria-label={`Выбрать ${linkInviteCardTitle(invite)}`}
+                  <div className={styles.listRecord} data-testid="link-invite-list-record">
+                    <InviteListRecord
+                      invite={invite}
+                      archive={phase === "archive"}
+                      selectionMode={selectionMode && phase === "active" && invite.status === "PENDING"}
+                      selected={selectedIds.has(invite.id)}
+                      onToggleSelect={() => toggleSelected(invite.id)}
+                      onEdit={() => openEdit(invite)}
+                    />
+                    {phase !== "archive" && invite.status === "PENDING" ? (
+                      <InviteCardFoot
+                        invite={invite}
+                        pending
+                        termsOpen={expandedTermsId === invite.id}
+                        layout="list"
+                        pencilInTitle
+                        onToggleTerms={() =>
+                          setExpandedTermsId(
+                            expandedTermsId === invite.id ? null : invite.id,
+                          )
+                        }
+                        onEdit={() => openEdit(invite)}
+                        onCopy={() => void copyInvite(invite)}
+                        onRevoke={() => setRevokeConfirm({ kind: "one", id: invite.id })}
                       />
                     ) : null}
                   </div>
-                  {renderActions(invite, phase === "archive", "list")}
+                  {renderActions(invite, phase === "archive", "list", false)}
                 </li>
               ))}
             </ul>
@@ -1061,14 +1082,56 @@ function InviteCardChrome({
   );
 }
 
-function InviteListTitle({ invite, archive }: { invite: LinkInviteListRow; archive: boolean }) {
+function InviteListRecord({
+  invite,
+  archive,
+  selectionMode,
+  selected,
+  onToggleSelect,
+  onEdit,
+}: {
+  invite: LinkInviteListRow;
+  archive: boolean;
+  selectionMode: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+}) {
   const title = linkInviteCardTitle(invite);
   const showTitleDisclosure = invite.canEditPersonalLabel !== true;
+  const typeLabel = linkInviteIntendedLabel(invite.intendedPartnerType) ?? "—";
+  const ribbonType = inviteRibbonDataType(invite.intendedPartnerType);
+  const recipient = linkInviteOriginalRecipientLabel(invite);
+  const showRecipient = Boolean(recipient && recipient !== title);
   return (
-    <div className={styles.recordTopMain}>
-      <strong className={styles.listTitle} title={title}>
-        {title}
-      </strong>
+    <div className={styles.listRecordMain}>
+      <div className={styles.listTitleRow}>
+        <strong className={styles.listTitle} title={title}>
+          {title}
+        </strong>
+        <span className={styles.listTypeBadge} data-type={ribbonType}>
+          {typeLabel}
+        </span>
+        {invite.canEditPersonalLabel ? (
+          <button
+            type="button"
+            className={styles.listTitleEditBtn}
+            aria-label="Изменить частное название"
+            onClick={onEdit}
+          >
+            <IconPencil />
+          </button>
+        ) : null}
+        {selectionMode ? (
+          <input
+            className={styles.listRowSelect}
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            aria-label={`Выбрать ${title}`}
+          />
+        ) : null}
+      </div>
       {showTitleDisclosure ? (
         <details className={styles.titleDisclosure} data-testid={`link-invite-title-disclosure-${invite.id}`}>
           <summary>Полное название</summary>
@@ -1076,8 +1139,8 @@ function InviteListTitle({ invite, archive }: { invite: LinkInviteListRow; archi
         </details>
       ) : null}
       <p className={styles.recordMeta}>
-        {linkInviteIntendedLabel(invite.intendedPartnerType) ?? "—"} · {invite.createdBy.displayName} ·{" "}
-        {formatInviteListDate(invite.createdAt)}
+        {invite.createdBy.displayName} · {formatInviteListDate(invite.createdAt)}
+        {showRecipient ? ` · Для: ${recipient}` : ""}
         {archive && invite.acceptedBy
           ? ` · Принял: ${invite.acceptedBy.displayName} · ${formatInviteListDate(invite.acceptedBy.at)}`
           : ""}
@@ -1091,6 +1154,7 @@ function InviteCardFoot(props: {
   pending: boolean;
   termsOpen: boolean;
   layout: "card" | "list";
+  pencilInTitle?: boolean;
   onToggleTerms: () => void;
   onEdit: () => void;
   onCopy: () => void;
@@ -1102,7 +1166,9 @@ function InviteCardFoot(props: {
       pending={props.pending}
       termsOpen={props.termsOpen}
       count={count}
-      canEditPersonalLabel={props.invite.canEditPersonalLabel === true}
+      canEditPersonalLabel={
+        props.invite.canEditPersonalLabel === true && !props.pencilInTitle
+      }
       onToggleTerms={props.onToggleTerms}
       onEdit={props.onEdit}
       onCopy={props.onCopy}
@@ -1128,7 +1194,13 @@ function InviteFootInner(props: {
   return (
     <div
       className={className}
-      data-testid={props.layout === "card" ? "link-invite-card-foot" : undefined}
+      data-testid={
+        props.layout === "card"
+          ? "link-invite-card-foot"
+          : props.layout === "list"
+            ? "link-invite-list-actions"
+            : undefined
+      }
     >
       <button
         type="button"
