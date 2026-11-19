@@ -32,22 +32,13 @@ import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { TextAreaField, TextField } from "@/components/ui/FormField";
 import {
-  emptyLinkInviteList,
   formatInviteListDate,
-  inviteAbsoluteUrl,
   parseLinkInviteListPayload,
   type LinkInviteListResponse,
-  type LinkInviteListRow,
 } from "@/lib/link-invite-list";
-import {
-  formatLinkInviteCopyText,
-  linkInviteListTitle,
-  linkInviteOriginalRecipientLabel,
-} from "@/lib/link-invite-labels";
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
-
 type InviterBusinessSideDto = {
   principalUserId: string;
   partnerType: string | null;
@@ -81,6 +72,8 @@ type PartnerLinkInvitePanelProps = {
   onReadyChange?: (ready: boolean) => void;
   onSubmittingChange?: (submitting: boolean) => void;
   onAnotherWay?: () => void;
+  onOpenInvitesGallery?: () => void;
+  onInvitesGalleryRefresh?: () => void;
 };
 
 type IntendedType = "" | "AGENT" | "MASTER" | "STORE" | "COMPANY";
@@ -141,11 +134,12 @@ export function PartnerLinkInvitePanel({
   onReadyChange,
   onSubmittingChange,
   onAnotherWay,
+  onOpenInvitesGallery,
+  onInvitesGalleryRefresh,
 }: PartnerLinkInvitePanelProps) {
   const categoryPercentFieldIdPrefix = useId();
   const [step, setStep] = useState(1);
   const [recipientName, setRecipientName] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
   const [tone, setTone] = useState("short");
   const [apiInviterSide, setApiInviterSide] = useState<PartnerSideProfile | null>(null);
   const inviterSide = useMemo(
@@ -179,16 +173,7 @@ export function PartnerLinkInvitePanel({
   const createdUrl = createdSnapshot?.url ?? null;
   const createdExpires = createdSnapshot?.expiresAt ?? null;
   const [shareOpen, setShareOpen] = useState(false);
-  const [inviteList, setInviteList] = useState<LinkInviteListResponse>(emptyLinkInviteList());
-  const [listMode, setListMode] = useState<"v2" | "legacy">("v2");
-  const [reissueConfirmId, setReissueConfirmId] = useState<string | null>(null);
-  const [expandedInviteId, setExpandedInviteId] = useState<string | null>(null);
-  const [reissueWarning, setReissueWarning] = useState("");
-  const [listError, setListError] = useState("");
   const [shareHint, setShareHint] = useState("");
-  const [listShareHintById, setListShareHintById] = useState<Record<string, string>>({});
-  const [personalLabelEditId, setPersonalLabelEditId] = useState<string | null>(null);
-  const [personalLabelDraft, setPersonalLabelDraft] = useState("");
   useEffect(() => {
     onDirtyChange?.(!createdUrl && Boolean(recipientName.trim() || intendedType || form.note.trim()));
     onReadyChange?.(Boolean(createdUrl));
@@ -211,21 +196,9 @@ export function PartnerLinkInvitePanel({
     });
   }, [resetKey, resolved.error, formTargetKey]);
 
-  const loadInvites = useCallback(async (opts?: {
-    appendArchive?: boolean;
-    appendActive?: boolean;
-    archiveCursor?: string | null;
-    activeCursor?: string | null;
-  }) => {
-    setListError("");
+  const loadInvites = useCallback(async (onLoaded?: (list: LinkInviteListResponse) => void) => {
     try {
       const params = new URLSearchParams({ listVersion: "2" });
-      if (opts?.appendArchive && opts.archiveCursor) {
-        params.set("archiveCursor", opts.archiveCursor);
-      }
-      if (opts?.appendActive && opts.activeCursor) {
-        params.set("activeCursor", opts.activeCursor);
-      }
       const data = await remcardFetch<
         LinkInviteListResponse & { invites?: unknown; inviterBusinessSide?: InviterBusinessSideDto }
       >(`/api/partnership/link-invite?${params.toString()}`);
@@ -233,31 +206,9 @@ export function PartnerLinkInvitePanel({
         setApiInviterSide(partnerSideFromInviterBusinessSide(data.inviterBusinessSide));
       }
       const parsed = parseLinkInviteListPayload(data);
-      setListMode(parsed.mode);
-      const nextList = parsed.list;
-      if (opts?.appendArchive && opts.archiveCursor) {
-        setInviteList((prev) => ({
-          ...nextList,
-          active: prev.active,
-          archive: {
-            items: [...prev.archive.items, ...nextList.archive.items],
-            nextCursor: nextList.archive.nextCursor,
-          },
-        }));
-      } else if (opts?.appendActive && opts.activeCursor) {
-        setInviteList((prev) => ({
-          ...nextList,
-          archive: prev.archive,
-          active: {
-            items: [...prev.active.items, ...nextList.active.items],
-            nextCursor: nextList.active.nextCursor,
-          },
-        }));
-      } else {
-        setInviteList(nextList);
-      }
-    } catch (caught) {
-      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось загрузить ссылки");
+      onLoaded?.(parsed.list);
+    } catch {
+      // Gallery reload is best-effort after create.
     }
   }, []);
 
@@ -342,6 +293,7 @@ export function PartnerLinkInvitePanel({
       });
       setShareOpen(false);
       await loadInvites();
+      onInvitesGalleryRefresh?.();
     } catch (caught) {
       dispatch({
         type: "set_error",
@@ -372,19 +324,6 @@ export function PartnerLinkInvitePanel({
     });
   }
 
-  function inviteShareTextForListRow(invite: LinkInviteListRow, url: string) {
-    return formatLinkInviteCopyText({
-      invite,
-      url,
-      inviterName: inviterShareName(),
-      inviterType: meProfile.user.partnerType,
-    });
-  }
-
-  function setListShareHint(inviteId: string, hint: string) {
-    setListShareHintById((prev) => ({ ...prev, [inviteId]: hint }));
-  }
-
   async function copyUrl(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -394,33 +333,12 @@ export function PartnerLinkInvitePanel({
     }
   }
 
-  async function copyListRowUrl(inviteId: string, url: string) {
-    try {
-      await navigator.clipboard.writeText(url);
-      setListShareHint(inviteId, "Ссылка скопирована");
-    } catch {
-      setListShareHint(inviteId, "Скопируйте ссылку вручную из поля «Ссылка»");
-    }
-  }
-
   async function copyInviteMessage(url: string) {
     try {
       await navigator.clipboard.writeText(inviteShareText(url));
       setShareHint("Текст приглашения скопирован");
     } catch {
       setShareHint("Скопируйте текст приглашения вручную из поля «Готовый текст»");
-    }
-  }
-
-  async function copyListRowInviteMessage(invite: LinkInviteListRow, url: string) {
-    try {
-      await navigator.clipboard.writeText(inviteShareTextForListRow(invite, url));
-      setListShareHint(invite.id, "Текст приглашения скопирован");
-    } catch {
-      setListShareHint(
-        invite.id,
-        "Не удалось скопировать текст приглашения. Ссылку можно скопировать вручную из поля «Ссылка».",
-      );
     }
   }
 
@@ -436,228 +354,6 @@ export function PartnerLinkInvitePanel({
       }
     }
     await copyInviteMessage(url);
-  }
-
-  async function shareListRowUrl(invite: LinkInviteListRow, url: string) {
-    const text = inviteShareTextForListRow(invite, url);
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Приглашение RemCard PROF", text, url });
-        setListShareHint(invite.id, "Готово");
-        return;
-      } catch {
-        // fallback to copy
-      }
-    }
-    await copyListRowInviteMessage(invite, url);
-  }
-
-  async function revokeInvite(id: string) {
-    try {
-      await remcardFetch(`/api/partnership/link-invite/${id}`, { method: "DELETE" });
-      setExpandedInviteId(null);
-      await loadInvites();
-    } catch (caught) {
-      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось отозвать");
-    }
-  }
-
-  function openPersonalLabelEdit(invite: LinkInviteListRow) {
-    setPersonalLabelEditId(invite.id);
-    setPersonalLabelDraft(invite.personalLabel?.trim() ?? "");
-    setExpandedInviteId(invite.id);
-  }
-
-  function cancelPersonalLabelEdit() {
-    setPersonalLabelEditId(null);
-    setPersonalLabelDraft("");
-  }
-
-  async function savePersonalLabel(invite: LinkInviteListRow) {
-    const trimmed = personalLabelDraft.trim();
-    try {
-      const result = await remcardFetch<{ ok: boolean; personalLabel: string | null }>(
-        `/api/partnership/link-invite/${invite.id}`,
-        { method: "PATCH", body: { personalLabel: trimmed || null } },
-      );
-      const patchRow = (row: LinkInviteListRow): LinkInviteListRow =>
-        row.id === invite.id ? { ...row, personalLabel: result.personalLabel } : row;
-      setInviteList((prev) => ({
-        ...prev,
-        active: { ...prev.active, items: prev.active.items.map(patchRow) },
-        archive: { ...prev.archive, items: prev.archive.items.map(patchRow) },
-      }));
-      setPersonalLabelEditId(null);
-      setPersonalLabelDraft("");
-      setListShareHint(invite.id, "Частное название сохранено в вашем аккаунте");
-    } catch (caught) {
-      setListShareHint(
-        invite.id,
-        caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить название",
-      );
-    }
-  }
-
-  async function reissueInvite(id: string) {
-    if (reissueConfirmId !== id) {
-      setReissueConfirmId(id);
-      setReissueWarning(
-        "Перевыпуск заменит адрес ссылки: старый перестанет открываться. Нажмите «Подтвердить перевыпуск» для продолжения.",
-      );
-      return;
-    }
-    setReissueWarning("");
-    try {
-      const result = await remcardFetch<{
-        previewPath: string;
-        reissueWarning?: string;
-      }>(`/api/partnership/link-invite/${id}/reissue`, {
-        method: "POST",
-        body: { confirmLegacyReplace: true },
-      });
-      setReissueConfirmId(null);
-      setReissueWarning(
-        result.reissueWarning ??
-          "Выдана новая ссылка. Старый адрес приглашения больше не откроется.",
-      );
-      await loadInvites();
-      setExpandedInviteId(id);
-    } catch (caught) {
-      setListError(caught instanceof RemcardApiError ? caught.message : "Не удалось перевыпустить ссылку");
-    }
-  }
-
-  function renderInviteCard(invite: LinkInviteListRow, archive: boolean) {
-    const url = inviteAbsoluteUrl(invite.previewPath, getAppUrl());
-    const expanded = expandedInviteId === invite.id;
-    const intendedLabel =
-      INTENDED_OPTIONS.find((option) => option.value === invite.intendedPartnerType)?.label ??
-      invite.intendedPartnerType;
-    return (
-      <li key={invite.id} className={styles.linkListItem} data-testid={`link-invite-row-${invite.id}`}>
-        <div>
-          <strong>{linkInviteListTitle(invite)}</strong>
-          <span className={styles.hint}>
-            {" "}
-            · {invite.statusLabel}
-          </span>
-          <span className={styles.hint}>
-            {" "}
-            · создано {formatExpiry(invite.createdAt)}
-            {invite.legacyTtl
-              ? ` · срок до ${formatExpiry(invite.expiresAt)}`
-              : !archive && invite.status === "PENDING"
-                ? " · без срока до принятия или отзыва"
-                : ""}
-            {intendedLabel ? ` · ${intendedLabel}` : ""}
-          </span>
-          {archive ? (
-            <p className={styles.hint}>
-              Автор: {invite.createdBy.displayName} · {formatExpiry(invite.createdBy.at)}
-              {invite.acceptedBy
-                ? ` · Принял: ${invite.acceptedBy.displayName} · ${formatExpiry(invite.acceptedBy.at)}`
-                : null}
-            </p>
-          ) : null}
-        </div>
-        <div className={styles.actions}>
-          {!archive && invite.status === "PENDING" ? (
-            <Button variant="secondary" onClick={() => setExpandedInviteId(expanded ? null : invite.id)}>
-              {expanded ? "Свернуть" : "Открыть"}
-            </Button>
-          ) : null}
-          {!archive && invite.status === "PENDING" && invite.canEditPersonalLabel === true ? (
-            <Button
-              variant="secondary"
-              aria-label="Изменить частное название"
-              onClick={() => (personalLabelEditId === invite.id ? cancelPersonalLabelEdit() : openPersonalLabelEdit(invite))}
-            >
-              {personalLabelEditId === invite.id ? "Отмена названия" : "Частное название"}
-            </Button>
-          ) : null}
-          {!archive && invite.status === "PENDING" ? (
-            <Button variant="secondary" onClick={() => void revokeInvite(invite.id)}>
-              Отозвать
-            </Button>
-          ) : null}
-        </div>
-        {expanded && !archive ? (
-          <div className={styles.notice} data-testid="link-invite-active-details">
-            {personalLabelEditId === invite.id && invite.canEditPersonalLabel === true ? (
-              <div data-testid={`link-invite-edit-${invite.id}`}>
-                <p className={styles.hint}>
-                  Для: {linkInviteOriginalRecipientLabel(invite) ?? "не указано"}
-                </p>
-                <TextField
-                  label="Частное название"
-                  value={personalLabelDraft}
-                  maxLength={120}
-                  onChange={(event) => setPersonalLabelDraft(event.target.value)}
-                />
-                <p className={styles.hint}>Частное название не попадает в ссылку и текст для получателя.</p>
-                <div className={styles.actions}>
-                  <Button variant="secondary" onClick={() => void savePersonalLabel(invite)}>
-                    Сохранить
-                  </Button>
-                  <Button variant="secondary" onClick={cancelPersonalLabelEdit}>
-                    Отмена
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-            {invite.note ? <p>Комментарий: {invite.note}</p> : null}
-            <ul>
-              {invite.terms.map((term) => (
-                <li key={term.category}>
-                  {term.categoryLabel}: {term.isExcluded ? "не участвует" : `${term.storePercent}%`}
-                </li>
-              ))}
-            </ul>
-            {invite.canCopyLink && url && listMode === "v2" && inviteList.resurfaceEnabled ? (
-              <>
-                <TextField label="Ссылка" value={url} readOnly data-testid="link-invite-list-url" />
-                <div className={styles.actions}>
-                  <Button variant="secondary" onClick={() => void copyListRowUrl(invite.id, url)}>
-                    Скопировать ссылку
-                  </Button>
-                  <Button variant="secondary" onClick={() => void copyListRowInviteMessage(invite, url)}>
-                    Скопировать приглашение
-                  </Button>
-                  <Button variant="secondary" onClick={() => void shareListRowUrl(invite, url)}>
-                    Поделиться
-                  </Button>
-                </div>
-                {listShareHintById[invite.id] ? (
-                  <p
-                    className={styles.hint}
-                    role="status"
-                    aria-live="polite"
-                    data-testid={`link-invite-row-share-hint-${invite.id}`}
-                  >
-                    {listShareHintById[invite.id]}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-            {invite.canReissue && listMode === "v2" ? (
-              <div className={styles.actions}>
-                <Button variant="secondary" onClick={() => void reissueInvite(invite.id)}>
-                  {reissueConfirmId === invite.id ? "Подтвердить перевыпуск" : "Перевыпустить ссылку"}
-                </Button>
-                <p className={styles.hint}>
-                  Старую ссылку восстановить нельзя. Перевыпуск создаст новый адрес, прежний перестанет работать.
-                </p>
-              </div>
-            ) : null}
-            {reissueWarning && expandedInviteId === invite.id ? (
-              <p className={styles.hint} role="status">
-                {reissueWarning}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </li>
-    );
   }
 
   const previewTerms = activeInviteRows(form);
@@ -913,66 +609,17 @@ export function PartnerLinkInvitePanel({
         ) : null}
       </Panel>
 
-      {wizard ? <button type="button" className={wizardStyles.historyToggle} aria-expanded={showHistory} onClick={() => setShowHistory(!showHistory)}>Ваши ссылки-приглашения</button> : null}
-      {!wizard || showHistory ? (
-        <Panel
-          title="Ваши ссылки-приглашения"
-          hint={
-            listMode === "legacy"
-              ? "Список в режиме совместимости со старым API: копирование из списка недоступно."
-              : inviteList.resurfaceEnabled
-                ? "Активные и архив разделены. В архиве нет ссылок для копирования."
-                : "Копирование из списка станет доступно после настройки ключа resurface на сервере."
-          }
-        >
-          {listError ? (
-            <p className={styles.error} role="alert">
-              {listError}
-            </p>
-          ) : null}
-          <h4 className={styles.hint}>Активные</h4>
-          {inviteList.active.items.length === 0 ? (
-            <p className={styles.hint}>Активных ссылок пока нет.</p>
-          ) : (
-            <ul className={styles.linkList} data-testid="link-invite-active-list">
-              {inviteList.active.items.map((invite) => renderInviteCard(invite, false))}
-            </ul>
-          )}
-          {inviteList.active.nextCursor ? (
-            <Button
-              variant="secondary"
-              onClick={() =>
-                void loadInvites({
-                  appendActive: true,
-                  activeCursor: inviteList.active.nextCursor,
-                })
-              }
-            >
-              Показать ещё активные
-            </Button>
-          ) : null}
-          <h4 className={styles.hint}>Архив</h4>
-          {inviteList.archive.items.length === 0 ? (
-            <p className={styles.hint}>В архиве пока ничего нет.</p>
-          ) : (
-            <ul className={styles.linkList} data-testid="link-invite-archive-list">
-              {inviteList.archive.items.map((invite) => renderInviteCard(invite, true))}
-            </ul>
-          )}
-          {inviteList.archive.nextCursor ? (
-            <Button
-              variant="secondary"
-              onClick={() =>
-                void loadInvites({
-                  appendArchive: true,
-                  archiveCursor: inviteList.archive.nextCursor,
-                })
-              }
-            >
-              Показать ещё в архиве
-            </Button>
-          ) : null}
-        </Panel>
+      {onOpenInvitesGallery ? (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={wizard ? wizardStyles.historyToggle : undefined}
+            data-testid="link-invite-open-gallery"
+            onClick={onOpenInvitesGallery}
+          >
+            {wizard ? "Ваши ссылки-приглашения" : "Ссылки-приглашения"}
+          </button>
+        </div>
       ) : null}
     </div>
   );
