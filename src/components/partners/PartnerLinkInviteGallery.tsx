@@ -22,10 +22,6 @@ import {
   sortLinkInviteRows,
   type LinkInviteGallerySort,
 } from "@/lib/link-invite-gallery";
-import {
-  rememberLinkInvitePersonalLabel,
-  rememberLinkInviteRecipientLabel,
-} from "@/lib/link-invite-gallery-storage";
 import type { ProProfileResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { PartnerCooperationConfirmDialog } from "@/components/partners/PartnerCooperationConfirmDialog";
@@ -256,13 +252,29 @@ export function PartnerLinkInviteGallery({
     setExpandedTermsId(null);
   }
 
-  function saveEdit(invite: LinkInviteListRow) {
-    rememberLinkInvitePersonalLabel(invite.id, editDraft);
-    const original = linkInviteOriginalRecipientLabel(invite);
-    if (original) rememberLinkInviteRecipientLabel(invite.id, original);
-    setEditingId(null);
-    setEditDraft("");
-    setRowHint(invite.id, "Частное название сохранено только на этом устройстве");
+  async function saveEdit(invite: LinkInviteListRow) {
+    const trimmed = editDraft.trim();
+    try {
+      const result = await remcardFetch<{ ok: boolean; personalLabel: string | null }>(
+        `/api/partnership/link-invite/${invite.id}`,
+        { method: "PATCH", body: { personalLabel: trimmed || null } },
+      );
+      const patchRow = (row: LinkInviteListRow): LinkInviteListRow =>
+        row.id === invite.id ? { ...row, personalLabel: result.personalLabel } : row;
+      setInviteList((prev) => ({
+        ...prev,
+        active: { ...prev.active, items: prev.active.items.map(patchRow) },
+        archive: { ...prev.archive, items: prev.archive.items.map(patchRow) },
+      }));
+      setEditingId(null);
+      setEditDraft("");
+      setRowHint(invite.id, "Частное название сохранено в вашем аккаунте");
+    } catch (caught) {
+      setRowHint(
+        invite.id,
+        caught instanceof RemcardApiError ? caught.message : "Не удалось сохранить название",
+      );
+    }
   }
 
   function renderActions(invite: LinkInviteListRow, archive: boolean, layout: ViewMode) {

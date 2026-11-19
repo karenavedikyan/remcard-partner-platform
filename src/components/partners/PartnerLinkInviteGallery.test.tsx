@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PartnerLinkInviteGallery } from "./PartnerLinkInviteGallery";
 import { emptyLinkInviteList, type LinkInviteListRow } from "@/lib/link-invite-list";
 import type { ProProfileResponse } from "@/lib/types";
-import { rememberLinkInviteRecipientLabel } from "@/lib/link-invite-gallery-storage";
 
 const { remcardFetch } = vi.hoisted(() => ({
   remcardFetch: vi.fn(),
@@ -65,7 +64,7 @@ describe("PartnerLinkInviteGallery", () => {
     Object.assign(navigator, { clipboard: { writeText } });
 
     const list = { ...emptyLinkInviteList(), resurfaceEnabled: true };
-    list.active.items.push(activeInviteRow());
+    list.active.items.push(activeInviteRow({ recipientLabel: "Илья Лебедев" }));
     remcardFetch.mockResolvedValue(list);
 
     render(
@@ -73,7 +72,6 @@ describe("PartnerLinkInviteGallery", () => {
     );
 
     await screen.findByTestId("link-invite-card-inv-copy");
-    rememberLinkInviteRecipientLabel("inv-copy", "Илья Лебедев");
     fireEvent.click(screen.getByTestId("link-invite-copy"));
 
     await waitFor(() => expect(writeText).toHaveBeenCalled());

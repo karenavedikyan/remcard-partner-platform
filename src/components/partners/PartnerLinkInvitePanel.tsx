@@ -39,10 +39,6 @@ import {
 import styles from "./PartnerInviteDialog.module.css";
 import wizardStyles from "./PartnerLinkInviteWizard.module.css";
 import { AgentDiscussionInviteResult } from "./AgentDiscussionInviteResult";
-import {
-  rememberLinkInviteRecipientLabel,
-} from "@/lib/link-invite-gallery-storage";
-
 type InviterBusinessSideDto = {
   principalUserId: string;
   partnerType: string | null;
@@ -274,6 +270,7 @@ export function PartnerLinkInvitePanel({
           intendedPartnerType: submitted.intendedPartnerType,
           note: submitted.note || null,
           terms: submitted.terms,
+          recipientLabel: submitted.recipientLabel || null,
         },
       });
       const url = `${getAppUrl()}${result.previewPath}`;
@@ -295,12 +292,7 @@ export function PartnerLinkInvitePanel({
           }),
       });
       setShareOpen(false);
-      await loadInvites((list) => {
-        const match = list.active.items.find((item) => item.previewPath === result.previewPath);
-        if (match && submitted.recipientLabel) {
-          rememberLinkInviteRecipientLabel(match.id, submitted.recipientLabel);
-        }
-      });
+      await loadInvites();
       onInvitesGalleryRefresh?.();
     } catch (caught) {
       dispatch({

@@ -1,9 +1,5 @@
 import { buildInviteShareMessage, buildInviteShareMessageBody, type PartnerTypeCode } from "@/lib/invite-presentation";
 import type { LinkInviteListRow } from "@/lib/link-invite-list";
-import {
-  readLinkInvitePersonalLabel,
-  readLinkInviteRecipientLabel,
-} from "@/lib/link-invite-gallery-storage";
 
 export const LINK_INVITE_MISSING_RECIPIENT = "Имя не сохранено";
 
@@ -18,15 +14,12 @@ export type LinkInviteGallerySort = "newest" | "oldest";
 
 export function linkInviteOriginalRecipientLabel(invite: LinkInviteListRow): string | null {
   const fromApi = invite.recipientLabel?.trim();
-  if (fromApi) return fromApi;
-  const stored = readLinkInviteRecipientLabel(invite.id);
-  return stored;
+  return fromApi || null;
 }
 
 export function linkInvitePersonalTitle(invite: LinkInviteListRow): string | null {
   const fromApi = invite.personalLabel?.trim();
-  if (fromApi) return fromApi;
-  return readLinkInvitePersonalLabel(invite.id);
+  return fromApi || null;
 }
 
 /** Title on the card: private list name, else original recipient, else honest gap. */
