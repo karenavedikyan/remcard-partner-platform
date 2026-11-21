@@ -30,4 +30,18 @@ describe("prof side panel CSS contracts", () => {
     expect(profBlock).toMatch(/\.custom-fields > strong\)[\s\S]*font-size:\s*14px/);
     expect(profBlock).toMatch(/\.prof-copy-row \.number-copy\)[\s\S]*height:\s*39px/);
   });
+
+  it("font weights for title and primary actions", () => {
+    expect(profBlock).toMatch(/\.prof-side-header h2\)[\s\S]*font-weight:\s*700/);
+    expect(profBlock).toMatch(/\.prof-side-actions \.btn\.secondary\)[\s\S]*font-weight:\s*720/);
+    expect(profBlock).toMatch(/\.editor-foot \.form-actions \.btn\)[\s\S]*font-weight:\s*720/);
+  });
+
+  it("narrow certificate plates wrap values without break-all", () => {
+    const narrow = profBlock.slice(profBlock.indexOf("@media (max-width: 374px)"));
+    expect(narrow).toMatch(/flex-wrap:\s*wrap/);
+    expect(profBlock).toMatch(/\.certificate-summary strong\)[\s\S]*overflow-wrap:\s*anywhere/);
+    expect(profBlock).not.toMatch(/\.certificate-summary strong\)[\s\S]*word-break:\s*break-all/);
+    expect(profBlock).toMatch(/\.certificate-summary strong\)[\s\S]*word-break:\s*normal/);
+  });
 });

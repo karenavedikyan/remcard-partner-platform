@@ -1132,7 +1132,7 @@
   margin: 0;
   font-size: 21px;
   line-height: 1.25;
-  font-weight: 600;
+  font-weight: 700;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -1260,9 +1260,26 @@
 .profSidePanel :global(.certificate-summary strong) {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
-  word-break: break-all;
+  word-break: normal;
+  overflow-wrap: anywhere;
   flex: 1 1 auto;
   min-width: 0;
+}
+@media (max-width: 374px) {
+  .profSidePanel :global(.appeal-client-box .certificate-summary),
+  .profSidePanel :global(.prof-side-scroll > .certificate-summary) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .profSidePanel :global(.certificate-summary strong) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .profSidePanel :global(.appeal-client-box .certificate-summary .number-copy),
+  .profSidePanel :global(.prof-side-scroll > .certificate-summary .number-copy) {
+    margin-left: auto;
+    align-self: center;
+  }
 }
 .profSidePanel :global(.appeal-client-box .certificate-summary .number-copy) {
   flex: none;
@@ -1296,7 +1313,7 @@
   height: 36px;
   padding: 6px 11px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 720;
   border-radius: 8px;
   box-sizing: border-box;
 }
@@ -1530,7 +1547,7 @@
   min-width: 0;
   padding: 6px 11px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 720;
   border-radius: 8px;
   box-sizing: border-box;
 }
