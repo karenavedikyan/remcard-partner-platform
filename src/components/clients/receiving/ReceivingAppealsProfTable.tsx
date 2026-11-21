@@ -106,7 +106,6 @@ export function ReceivingAppealsProfTable({
   serverBackedFilters = false,
   onOpenAppeal,
   onOpenSources,
-  onOpenPartnerFields,
   readOnly = false,
   bulk,
   rowWritable,
@@ -348,7 +347,8 @@ export function ReceivingAppealsProfTable({
               type="button"
               className="btn ghost"
               data-testid="ca-prof-partner-fields"
-              onClick={onOpenPartnerFields}
+              disabled
+              title="Справочник внешних полей — в карточке обращения; отдельная настройка в списке запланирована"
             >
               Поля партнёра
             </button>

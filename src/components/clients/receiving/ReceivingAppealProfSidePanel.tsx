@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import type { ReceivingAppealProfDrawerFormHandle } from "./ReceivingAppealProfDrawerForm";
 import {
   parseProfAppealDetailWire,
   REMCARD_CLIENT_LOGIN_URL,
@@ -32,6 +33,7 @@ export type ReceivingAppealProfSidePanelProps = {
   partnerWorkPhones?: Array<{ id: string; label: string; number: string }>;
   partnerLogoUrl?: string | null;
   partnerType?: string | null;
+  branchLabel?: string | null;
   offerOpen: boolean;
   onOfferOpenChange: (open: boolean) => void;
 };
@@ -50,6 +52,7 @@ export function ReceivingAppealProfSidePanel({
   partnerWorkPhones = [],
   partnerLogoUrl = null,
   partnerType = null,
+  branchLabel = null,
   offerOpen,
   onOfferOpenChange,
 }: ReceivingAppealProfSidePanelProps) {
@@ -61,6 +64,9 @@ export function ReceivingAppealProfSidePanel({
   const [profDetail, setProfDetail] = useState<ProfAppealDetailState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [commercialProposal, setCommercialProposal] = useState<CommercialProposalDeliveryWire | null>(null);
+  const formRef = useRef<ReceivingAppealProfDrawerFormHandle>(null);
+  const [formBusy, setFormBusy] = useState(false);
+  const [formSaved, setFormSaved] = useState(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -68,6 +74,10 @@ export function ReceivingAppealProfSidePanel({
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
   }, [open]);
+
+  useEffect(() => {
+    setFormSaved(false);
+  }, [appealId, profDetail?.revision]);
 
   useEffect(() => {
     if (!appealId) return;
@@ -121,7 +131,7 @@ export function ReceivingAppealProfSidePanel({
     row?.clientDisplayName?.trim() ||
     row?.clientName?.trim() ||
     "—";
-  const branchHint = row?.receivingBranchId ? `Филиал ${row.receivingBranchId}` : null;
+  const branchHint = branchLabel?.trim() || null;
 
   return (
     <>
@@ -132,8 +142,9 @@ export function ReceivingAppealProfSidePanel({
         aria-labelledby={titleId}
         onClose={onClose}
       >
+        <div className="prof-side-shell">
         <ProfSidePanelHeader id={titleId} title={title} onClose={onClose} />
-        <div className="prof-side-body">
+        <div className="prof-side-scroll">
           {detailPhase === "loading" ? (
             <p className="notice small" data-testid="ca-prof-detail-loading">
               Загрузка карточки…
@@ -186,12 +197,15 @@ export function ReceivingAppealProfSidePanel({
           {detailPhase === "prof" && profDetail ? (
             <>
               <ReceivingAppealProfDrawerForm
+                ref={formRef}
                 key={appealId}
                 detail={profDetail}
                 settings={settings}
                 readScope={readScope}
                 onDetailChange={setProfDetail}
                 onSaved={onAppealMutated}
+                onBusyChange={setFormBusy}
+                onSaveStateChange={setFormSaved}
               />
               <div className="prof-lifecycle-host" data-testid="ca-prof-lifecycle-host">
                 <ReceivingAppealDetailHost
@@ -213,6 +227,28 @@ export function ReceivingAppealProfSidePanel({
               onAppealMutated={onAppealMutated}
             />
           ) : null}
+        </div>
+        {detailPhase === "prof" && profDetail && !profDetail.detailReadOnly ? (
+          <footer className="prof-drawer-footer" data-testid="ca-prof-drawer-footer">
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={formBusy}
+              onClick={() => formRef.current?.resetDraft()}
+            >
+              Отменить
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={formBusy}
+              data-testid="ca-prof-save-profile"
+              onClick={() => void formRef.current?.save()}
+            >
+              {formBusy ? "Сохранение…" : formSaved ? "Сохранено" : "Сохранить"}
+            </button>
+          </footer>
+        ) : null}
         </div>
       </dialog>
       {row && offerOpen ? (

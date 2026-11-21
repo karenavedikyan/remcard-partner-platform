@@ -19,6 +19,8 @@ export type ReceivingCommercialOfferDialogProps = {
   onClose: () => void;
 };
 
+type OfferAttachment = { id: string; name: string; kind: "file" | "photo"; sizeBytes: number };
+
 type OfferDraft = {
   message: string;
   price: string;
@@ -29,7 +31,7 @@ type OfferDraft = {
   contactPhone: string;
   clientAction: string;
   designTemplate: "store" | "company";
-  attachments: Array<{ id: string; name: string; kind: "file" | "photo" }>;
+  attachments: OfferAttachment[];
 };
 
 const INITIAL_DRAFT: OfferDraft = {
@@ -49,6 +51,13 @@ const TEMPLATE_LABEL: Record<OfferDraft["designTemplate"], string> = {
   store: "Шаблон магазина",
   company: "Шаблон компании",
 };
+
+function formatAttachmentSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "";
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1).replace(".", ",")} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} МБ`;
+}
 
 export function ReceivingCommercialOfferDialog({
   open,
@@ -88,32 +97,36 @@ export function ReceivingCommercialOfferDialog({
 
   const clientName = appeal.clientName?.trim() || "Клиент";
   const blockedMessage = commercialProposalBlockedMessage(commercialProposal);
+  const sendBlocked = commercialProposal?.sendEnabled !== true;
+  const stepLabel = step === "compose" ? "1 из 2 · Черновик" : "2 из 2 · Проверка";
 
   return (
     <dialog ref={dialogRef} className={styles.offerDialog} id="offer-dialog" aria-labelledby={titleId} onClose={onClose}>
-      <form method="dialog" className="kp-form stack" onSubmit={(e) => e.preventDefault()}>
-        <header className="kp-header row">
-          <div>
-            <div className="kp-kicker">
-              <span className="kp-step">{step === "compose" ? "Шаг 1 — Черновик" : "Шаг 2 — Предпросмотр"}</span>
-            </div>
-            <h2 id={titleId}>Отправить КП</h2>
+      <form method="dialog" className="kp-form" onSubmit={(e) => e.preventDefault()}>
+        <header className="kp-header">
+          <div className="kp-header-main">
+            <p className="kp-kicker">
+              <span className="kp-step">{stepLabel}</span>
+            </p>
+            <h2 id={titleId}>{step === "compose" ? "Отправить КП" : "Проверка перед отправкой"}</h2>
           </div>
           <button type="button" className="btn ghost kp-close" aria-label="Закрыть" onClick={onClose}>
             ×
           </button>
         </header>
 
-        <div className="kp-body stack">
-          <div className="kp-route">
-            <div>
-              <span>Отправитель</span>
-              <strong>{partnerDisplayName}</strong>
+        <div className="kp-scroll">
+          <div className="kp-route" aria-label="Маршрут предложения">
+            <div className="kp-route-end">
+              <span className="kp-route-label">Отправитель</span>
+              <strong className="kp-route-name">{partnerDisplayName}</strong>
             </div>
-            <span aria-hidden="true">→</span>
-            <div>
-              <span>Клиент</span>
-              <strong>{clientName}</strong>
+            <span className="kp-route-arrow" aria-hidden="true">
+              →
+            </span>
+            <div className="kp-route-end">
+              <span className="kp-route-label">Клиент</span>
+              <strong className="kp-route-name">{clientName}</strong>
             </div>
           </div>
 
@@ -126,13 +139,18 @@ export function ReceivingCommercialOfferDialog({
               photoInputRef={photoInputRef}
             />
           ) : (
-            <PreviewPane
-              draft={draft}
-              partnerDisplayName={partnerDisplayName}
-              partnerLogoUrl={partnerLogoUrl}
-              clientName={clientName}
-              appeal={appeal}
-            />
+            <>
+              <h3 className="kp-preview-title">Как увидит клиент</h3>
+              <div className="kp-partner-surface">
+                <PreviewPane
+                  draft={draft}
+                  partnerDisplayName={partnerDisplayName}
+                  partnerLogoUrl={partnerLogoUrl}
+                  clientName={clientName}
+                  appeal={appeal}
+                />
+              </div>
+            </>
           )}
 
           {sendNotice ? (
@@ -142,41 +160,48 @@ export function ReceivingCommercialOfferDialog({
           ) : null}
         </div>
 
-        <footer className="kp-footer row">
-          {step === "preview" ? (
-            <button type="button" className="btn ghost" onClick={() => setStep("compose")}>
-              Назад
-            </button>
-          ) : (
-            <button type="button" className="btn ghost" onClick={onClose}>
-              Отмена
-            </button>
-          )}
-          {step === "compose" ? (
-            <button
-              type="button"
-              className="btn primary"
-              data-testid="ca-offer-preview"
-              onClick={() => setStep("preview")}
-            >
-              Предпросмотр
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn primary"
-              data-testid="ca-offer-simulate-send"
-              disabled={commercialProposal?.sendEnabled !== true}
-              title={commercialProposal?.sendEnabled !== true ? blockedMessage || "Отправка недоступна" : undefined}
-              onClick={() => {
-                if (commercialProposal?.sendEnabled !== true) {
-                  setSendNotice(blockedMessage || "Ничего не отправлено.");
-                }
-              }}
-            >
-              Отправить
-            </button>
-          )}
+        <footer className="kp-footer">
+          {step === "preview" && sendBlocked && blockedMessage ? (
+            <p className="kp-footer-note muted small" data-testid="ca-offer-footer-blocked">
+              {blockedMessage}
+            </p>
+          ) : null}
+          <div className="kp-footer-actions">
+            {step === "preview" ? (
+              <button type="button" className="btn ghost" onClick={() => setStep("compose")}>
+                Назад
+              </button>
+            ) : (
+              <button type="button" className="btn ghost" onClick={onClose}>
+                Отмена
+              </button>
+            )}
+            {step === "compose" ? (
+              <button
+                type="button"
+                className="btn primary"
+                data-testid="ca-offer-preview"
+                onClick={() => setStep("preview")}
+              >
+                Предпросмотр
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn primary"
+                data-testid="ca-offer-simulate-send"
+                disabled={sendBlocked}
+                title={sendBlocked ? blockedMessage || "Отправка недоступна" : undefined}
+                onClick={() => {
+                  if (sendBlocked) {
+                    setSendNotice(blockedMessage || "Ничего не отправлено.");
+                  }
+                }}
+              >
+                Отправить
+              </button>
+            )}
+          </div>
         </footer>
       </form>
     </dialog>
@@ -203,13 +228,14 @@ function ComposeFields({
       id: `${kind}-${file.name}-${file.lastModified}`,
       name: file.name,
       kind,
+      sizeBytes: file.size,
     }));
     onChange({ ...draft, attachments: [...draft.attachments, ...picked] });
   };
   return (
-    <>
-      <label className="field">
-        Текст предложения
+    <div className="kp-compose stack">
+      <label className="field kp-field">
+        <span className="kp-field-label">Текст предложения</span>
         <textarea
           rows={4}
           value={draft.message}
@@ -217,6 +243,7 @@ function ComposeFields({
           placeholder="Опишите предложение клиенту"
         />
       </label>
+
       <input
         ref={fileInputRef}
         id="ca-offer-file-input"
@@ -240,7 +267,7 @@ function ComposeFields({
           e.target.value = "";
         }}
       />
-      <div className="row kp-attach-row">
+      <div className="kp-attach-row">
         <label htmlFor="ca-offer-file-input" className="btn ghost kp-attach-label" data-testid="ca-offer-attach-file">
           Прикрепить файл
         </label>
@@ -251,8 +278,11 @@ function ComposeFields({
       {draft.attachments.length > 0 ? (
         <ul className="kp-attachments">
           {draft.attachments.map((a) => (
-            <li key={a.id}>
-              {a.name}{" "}
+            <li key={a.id} className="kp-attachment-item">
+              <span className="kp-attachment-name">
+                {a.name}
+                {a.sizeBytes > 0 ? <span className="muted"> · {formatAttachmentSize(a.sizeBytes)}</span> : null}
+              </span>
               <button
                 type="button"
                 className="btn ghost small-btn"
@@ -264,8 +294,9 @@ function ComposeFields({
           ))}
         </ul>
       ) : null}
-      <label className="field">
-        Оформление
+
+      <label className="field kp-field">
+        <span className="kp-field-label">Оформление</span>
         <select
           value={draft.designTemplate}
           data-testid="ca-offer-design-template"
@@ -275,42 +306,60 @@ function ComposeFields({
           <option value="company">Компания</option>
         </select>
       </label>
-      <label className="field">
-        Цена (необязательно)
-        <input value={draft.price} onChange={(e) => set({ price: e.target.value })} />
-      </label>
-      <label className="field">
-        Сроки
+
+      <label className="field kp-field">
+        <span className="kp-field-label">Сроки</span>
         <input value={draft.schedule} onChange={(e) => set({ schedule: e.target.value })} data-testid="ca-offer-schedule" />
       </label>
-      <label className="field">
-        Срок действия
-        <input value={draft.validity} onChange={(e) => set({ validity: e.target.value })} data-testid="ca-offer-validity" />
-      </label>
-      <label className="field">
-        Условия оплаты
-        <input
-          value={draft.paymentTerms}
-          onChange={(e) => set({ paymentTerms: e.target.value })}
-          data-testid="ca-offer-payment-terms"
-        />
-      </label>
-      <label className="field">
-        Что предложить клиенту сделать
-        <textarea rows={2} value={draft.clientAction} onChange={(e) => set({ clientAction: e.target.value })} />
-      </label>
-      <label className="field">
-        Телефон для связи (из сохранённых рабочих)
-        <select value={draft.contactPhone} onChange={(e) => set({ contactPhone: e.target.value })}>
-          <option value="">Не указывать телефон</option>
-          {partnerWorkPhones.map((p) => (
-            <option key={p.id} value={p.number}>
-              {p.label}: {p.number}
-            </option>
-          ))}
-        </select>
-      </label>
-    </>
+
+      <details className="kp-optional-terms">
+        <summary>Дополнительные условия (необязательно)</summary>
+        <div className="kp-optional-terms-body stack">
+          <label className="field kp-field">
+            <span className="kp-field-label">Цена</span>
+            <input value={draft.price} onChange={(e) => set({ price: e.target.value })} />
+          </label>
+          <label className="field kp-field">
+            <span className="kp-field-label">Срок действия</span>
+            <input value={draft.validity} onChange={(e) => set({ validity: e.target.value })} data-testid="ca-offer-validity" />
+          </label>
+          <label className="field kp-field">
+            <span className="kp-field-label">Условия оплаты</span>
+            <input
+              value={draft.paymentTerms}
+              onChange={(e) => set({ paymentTerms: e.target.value })}
+              data-testid="ca-offer-payment-terms"
+            />
+          </label>
+        </div>
+      </details>
+
+      <section className="kp-next stack" aria-labelledby="kp-next-heading">
+        <h3 id="kp-next-heading" className="kp-next-title">
+          Что предлагает сделать партнёр
+        </h3>
+        <label className="field kp-field">
+          <span className="kp-field-label">Инструкция для клиента</span>
+          <textarea
+            rows={2}
+            value={draft.clientAction}
+            onChange={(e) => set({ clientAction: e.target.value })}
+            placeholder="Например: подтвердите смету или выберите время замера"
+          />
+        </label>
+        <label className="field kp-field">
+          <span className="kp-field-label">Телефон для связи</span>
+          <select value={draft.contactPhone} onChange={(e) => set({ contactPhone: e.target.value })}>
+            <option value="">Не указывать телефон</option>
+            {partnerWorkPhones.map((p) => (
+              <option key={p.id} value={p.number}>
+                {p.label}: {p.number}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+    </div>
   );
 }
 
@@ -328,12 +377,17 @@ function PreviewPane({
   appeal: ProfAppealListRow;
 }) {
   const templateClass = draft.designTemplate === "company" ? "offer-preview--company" : "offer-preview--store";
+  const hasCta = draft.clientAction.trim() || draft.contactPhone;
   return (
     <div
       className={`client-shell offer-client-preview ${templateClass}`}
       data-testid="ca-offer-client-preview"
       data-design-template={draft.designTemplate}
     >
+      <div className="kp-remcard-plate" aria-label="RemCard">
+        <span className="kp-remcard-mark">RemCard</span>
+        <span className="kp-remcard-tagline">Навигатор ремонта</span>
+      </div>
       <header className="client-who">
         {partnerLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -350,10 +404,9 @@ function PreviewPane({
             {TEMPLATE_LABEL[draft.designTemplate]}
           </span>
         </div>
-        <small className="client-eyebrow">Навигатор ремонта</small>
       </header>
       <div className="client-content">
-        <h2>{appeal.appealTitle?.trim() || "Предложение"}</h2>
+        <h2 className="client-offer-title">{appeal.appealTitle?.trim() || "Предложение"}</h2>
         {draft.message.trim() ? <p className="client-message">{draft.message}</p> : <p className="muted">Без текста</p>}
         {draft.price.trim() ? (
           <p className="client-offer-meta" data-testid="ca-offer-preview-price">
@@ -375,24 +428,29 @@ function PreviewPane({
             <strong>Условия оплаты:</strong> {draft.paymentTerms}
           </p>
         ) : null}
-        {draft.attachments.map((a) => (
-          <p key={a.id} className="muted small">
-            Вложение: {a.name}
-          </p>
-        ))}
-        {draft.clientAction.trim() ? (
-          <section className="client-offer-card">
+        {draft.attachments.length > 0 ? (
+          <ul className="kp-preview-attachments">
+            {draft.attachments.map((a) => (
+              <li key={a.id}>
+                {a.name}
+                {a.sizeBytes > 0 ? <span className="muted"> · {formatAttachmentSize(a.sizeBytes)}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {hasCta ? (
+          <section className="client-offer-card kp-cta-card">
             <header>Что предлагает сделать партнёр</header>
-            <p>{draft.clientAction}</p>
+            {draft.clientAction.trim() ? <p>{draft.clientAction}</p> : null}
+            {draft.contactPhone ? (
+              <p className="kp-cta-phone">
+                <span className="muted">Телефон: </span>
+                {draft.contactPhone}
+              </p>
+            ) : null}
           </section>
         ) : null}
-        {draft.contactPhone ? (
-          <section className="client-offer-card">
-            <header>Как связаться с партнёром</header>
-            <p>{draft.contactPhone}</p>
-          </section>
-        ) : null}
-        <p className="muted small">Клиент: {clientName}</p>
+        <p className="muted small kp-preview-client">Клиент: {clientName}</p>
       </div>
     </div>
   );

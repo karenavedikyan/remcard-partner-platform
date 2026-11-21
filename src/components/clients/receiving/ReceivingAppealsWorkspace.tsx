@@ -1027,12 +1027,7 @@ export function ReceivingAppealsWorkspace({
           onShowAllBranches={
             branchSelection?.kind === "branch" ? () => changeBranchScope({ branchScope: "all" }) : undefined
           }
-          onOpenPartnerFields={
-            leadsAllowed
-              ? () =>
-                  setPersistNotice("Поля партнёра редактируются в карточке обращения (внешние поля), не в «Источниках».")
-              : () => setPersistNotice(denialMessage)
-          }
+          onOpenPartnerFields={undefined}
         />
       ) : (
         <ReceivingAppealsList
@@ -1094,6 +1089,11 @@ export function ReceivingAppealsWorkspace({
             partnerWorkPhones={partnerWorkPhones}
             partnerLogoUrl={partnerLogoUrl}
             partnerType={partnerType}
+            branchLabel={
+              profPanelRow && branches
+                ? receivingBranchLabelById(profPanelRow.receivingBranchId, branches)
+                : null
+            }
             offerOpen={offerOpen}
             onOfferOpenChange={setOfferOpen}
             onClose={() => {

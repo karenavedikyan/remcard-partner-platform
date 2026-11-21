@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   buildProfProfilePatchBody,
   profProfilePatchHasFieldChanges,
@@ -17,12 +17,21 @@ import {
   type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
 
+export type ReceivingAppealProfDrawerFormHandle = {
+  save: () => Promise<void>;
+  resetDraft: () => void;
+  busy: boolean;
+  saved: boolean;
+};
+
 export type ReceivingAppealProfDrawerFormProps = {
   detail: ProfAppealDetailState;
   settings?: ReceivingPartnerSettings | null;
   readScope?: ReceivingReadScope | null;
   onDetailChange?: (next: ProfAppealDetailState) => void;
   onSaved?: () => void | Promise<void>;
+  onBusyChange?: (busy: boolean) => void;
+  onSaveStateChange?: (saved: boolean) => void;
 };
 
 type ProfileBaseline = ProfAppealProfilePatchBody & {
@@ -40,7 +49,6 @@ type FormDraft = {
   budgetHint: string;
   erpDocumentNumber: string;
   manualSourceKey: string;
-  responsibleUserId: string;
   externalRefs: ReceivingAppealExternalRefWire[];
 };
 
@@ -55,7 +63,6 @@ function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
     budgetHint: a.budgetHint?.trim() ?? "",
     erpDocumentNumber: a.erpDocumentNumber?.trim() ?? "",
     manualSourceKey: a.manualSourceKey?.trim() ?? "",
-    responsibleUserId: a.responsible?.userId?.trim() ?? "",
     externalRefs: a.externalRefs.map((ref) => ({ ...ref })),
   };
 }
@@ -73,7 +80,7 @@ function baselineFromDetail(detail: ProfAppealDetailState): ProfileBaseline {
     budgetHint: draft.budgetHint || null,
     erpDocumentNumber: draft.erpDocumentNumber || null,
     manualSourceKey: draft.manualSourceKey || null,
-    responsibleUserId: draft.responsibleUserId || null,
+    responsibleUserId: detail.appeal.responsible?.userId?.trim() || null,
     externalRefs: draft.externalRefs,
   };
 }
@@ -93,18 +100,18 @@ function draftToPatchShape(
     budgetHint: draft.budgetHint || null,
     erpDocumentNumber: draft.erpDocumentNumber || null,
     manualSourceKey: draft.manualSourceKey || null,
-    responsibleUserId: draft.responsibleUserId.trim() || null,
+    responsibleUserId: detail.appeal.responsible?.userId?.trim() || null,
     externalRefs: draft.externalRefs,
   };
 }
 
-export function ReceivingAppealProfDrawerForm({
-  detail,
-  settings,
-  readScope,
-  onDetailChange,
-  onSaved,
-}: ReceivingAppealProfDrawerFormProps) {
+export const ReceivingAppealProfDrawerForm = forwardRef<
+  ReceivingAppealProfDrawerFormHandle,
+  ReceivingAppealProfDrawerFormProps
+>(function ReceivingAppealProfDrawerForm(
+  { detail, settings, readScope, onDetailChange, onSaved, onBusyChange, onSaveStateChange },
+  ref,
+) {
   const readOnly = detail.detailReadOnly;
   const [draft, setDraft] = useState(() => draftFromDetail(detail));
   const [revision, setRevision] = useState(detail.revision);
@@ -114,13 +121,22 @@ export function ReceivingAppealProfDrawerForm({
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
+
+  useEffect(() => {
+    onSaveStateChange?.(saved);
+  }, [onSaveStateChange, saved]);
+
+  useEffect(() => {
+    if (busy) return;
     const nextDraft = draftFromDetail(detail);
     const nextBaseline = baselineFromDetail(detail);
     setDraft(nextDraft);
     setRevision(detail.revision);
     baselineRef.current = nextBaseline;
     setSaved(false);
-  }, [detail.appeal.id, detail.revision]);
+  }, [busy, detail]);
 
   const channels = useMemo(() => receivingManualChannelOptions(settings), [settings]);
   const isManual = detail.appeal.originKind === "MANUAL";
@@ -183,8 +199,24 @@ export function ReceivingAppealProfDrawerForm({
     await onSaved?.();
   }, [busy, detail, draft, onDetailChange, onSaved, readOnly, readScope, revision]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: () => saveProfile(),
+      resetDraft: () => {
+        setDraft(draftFromDetail(detail));
+        setSaved(false);
+      },
+      busy,
+      saved,
+    }),
+    [busy, detail, saved, saveProfile],
+  );
+
+  const fieldsDisabled = readOnly || busy;
+
   return (
-    <div className="prof-drawer-form stack" data-testid="ca-prof-drawer-form">
+    <fieldset className="prof-drawer-form stack" disabled={fieldsDisabled} data-testid="ca-prof-drawer-form">
       {readOnly ? (
         <p className="notice small" data-testid="ca-prof-drawer-readonly">
           Только просмотр: изменения профиля недоступны.
@@ -251,19 +283,14 @@ export function ReceivingAppealProfDrawerForm({
           <strong>{certPromo}</strong>
         </div>
       ) : null}
-      <label className="field">
-        Ответственный (ID пользователя)
-        <input
-          value={draft.responsibleUserId}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-responsible"
-          placeholder={detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}
-          onChange={(e) => setField("responsibleUserId", e.target.value)}
-        />
-        {detail.appeal.responsible?.displayLabel ? (
-          <span className="muted small">Сейчас: {detail.appeal.responsible.displayLabel}</span>
-        ) : null}
-      </label>
+      <div className="panel stack" data-testid="ca-prof-field-responsible">
+        <span className="small muted">Ответственный</span>
+        <strong>{detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}</strong>
+        <p className="muted small" style={{ margin: 0 }}>
+          Справочник сотрудников по филиалу в этом интерфейсе недоступен — смена ответственного через отдельный
+          staff-read не подключалась.
+        </p>
+      </div>
       {isManual && channels.length > 0 ? (
         <label className="field">
           Источник
@@ -303,22 +330,6 @@ export function ReceivingAppealProfDrawerForm({
           {error}
         </p>
       ) : null}
-      {!readOnly ? (
-        <footer className="prof-drawer-footer">
-          <button type="button" className="btn ghost" disabled={busy} onClick={() => setDraft(draftFromDetail(detail))}>
-            Отменить
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={busy}
-            data-testid="ca-prof-save-profile"
-            onClick={() => void saveProfile()}
-          >
-            {busy ? "Сохранение…" : saved ? "Сохранено" : "Сохранить"}
-          </button>
-        </footer>
-      ) : null}
-    </div>
+    </fieldset>
   );
-}
+});
