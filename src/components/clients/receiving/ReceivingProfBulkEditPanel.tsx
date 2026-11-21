@@ -6,6 +6,7 @@ import type { ReceivingBulkEditDraft, ReceivingProfBulkProfileDraft } from "./re
 import type { ReceivingPartnerSettings } from "@/lib/clients-parity/receiving-appeals-api";
 import { receivingManualChannelOptions } from "@/lib/clients-parity/receiving-appeals-api";
 import { responsibleSelectOptions } from "./ReceivingAppealProfDrawerForm";
+import { ReceivingBulkPartialOutcome } from "./ReceivingBulkPartialOutcome";
 import type { ReceivingAppealResponsibleWire } from "@/lib/clients-parity/prof-appeals-adapter";
 
 type Props = {
@@ -177,11 +178,7 @@ export function ReceivingProfBulkEditPanel({
         <input type="checkbox" name="bulk-note-append" defaultChecked />
         Добавить к существующей заметке
       </label>
-      {saveError ? (
-        <p className="notice" role="alert">
-          {saveError}
-        </p>
-      ) : null}
+      {saveError ? <ReceivingBulkPartialOutcome message={saveError} testId="ca-prof-bulk-save-error" /> : null}
       <div className="ca-form-actions">
         <button type="button" className="btn ghost" data-ca-action="bulk:edit-cancel" onClick={onCancel}>
           Отмена

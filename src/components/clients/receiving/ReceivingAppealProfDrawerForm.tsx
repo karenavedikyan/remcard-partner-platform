@@ -279,7 +279,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       <label className="field">
         <span>Запрос</span>
         <textarea
-          rows={3}
+          rows={2}
           value={draft.requestText}
           readOnly={readOnly}
           maxLength={200}
@@ -377,7 +377,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       <label className="field">
         <span>Внутренняя заметка</span>
         <textarea
-          rows={3}
+          rows={2}
           value={draft.privateNotes}
           readOnly={readOnly}
           maxLength={500}

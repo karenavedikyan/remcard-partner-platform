@@ -194,6 +194,8 @@
 .clientsScope :global(.ca-row-check--head){align-self:center}
 .clientsScope :global(.ca-bucket-tabs){margin:0 0 var(--s4,16px)}
 .clientsScope :global(.ca-bulk-bar){display:flex;flex-wrap:wrap;gap:var(--s3,12px);align-items:center;justify-content:space-between;padding:var(--s3,12px) var(--s4,16px);margin:0 0 var(--s4,16px)}
+.clientsScope :global(.ca-bulk-outcome-list){margin:0;padding-left:1.15em;display:grid;gap:4px;list-style:disc}
+.clientsScope :global(.ca-bulk-outcome-list li){margin:0;line-height:1.35}
 .clientsScope :global(.ca-bulk-count){font-size:var(--text-sm,.875rem);color:var(--muted)}
 .clientsScope :global(.ca-bulk-actions){display:flex;flex-wrap:wrap;gap:var(--s2,8px);align-items:center;justify-content:flex-end}
 .clientsScope :global(.ca-bulk-edit),
@@ -1097,13 +1099,6 @@
   min-width: 0;
   flex: 1;
 }
-.profSidePanel :global(.prof-side-kicker) {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 .profSidePanel :global(.prof-side-status) {
   font-weight: 600;
   color: var(--ink, inherit);
@@ -1127,10 +1122,11 @@
 }
 .profSidePanel :global(.queue-kicker) {
   margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent, var(--primary, #bb3035));
 }
 .profSidePanel :global(.prof-side-header h2) {
   margin: 0;
@@ -1240,34 +1236,69 @@
 }
 .profSidePanel :global(.certificate-summary) {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px 8px;
   flex: 1 1 auto;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--inset, var(--offset));
+  box-sizing: border-box;
   font-size: 12px;
+  border: none;
+  background: var(--inset, var(--offset));
+}
+.profSidePanel :global(.appeal-client-box .certificate-summary) {
+  min-height: 44px;
+  padding: 7px 9px;
+  border-radius: 8px;
+}
+.profSidePanel :global(.prof-side-scroll > .certificate-summary) {
+  min-height: 31px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 .profSidePanel :global(.certificate-summary strong) {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   word-break: break-all;
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.profSidePanel :global(.certificate-summary .number-copy) {
+.profSidePanel :global(.appeal-client-box .certificate-summary .number-copy) {
   flex: none;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface, var(--inset));
+}
+.profSidePanel :global(.prof-side-scroll > .certificate-summary .number-copy) {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
 }
 .profSidePanel :global(.prof-side-actions) {
   flex: none;
   margin: 0;
 }
-.profSidePanel :global(.prof-side-actions .btn) {
+.profSidePanel :global(.prof-side-actions .btn.secondary) {
   min-height: 36px;
+  height: 36px;
+  padding: 6px 11px;
   font-size: 12px;
+  font-weight: 600;
   border-radius: 8px;
+  box-sizing: border-box;
 }
 .profSidePanel :global(.prof-field-grid),
 .profSidePanel :global(.field-grid) {
@@ -1319,7 +1350,11 @@
 }
 .profSidePanel :global(.prof-drawer-form textarea) {
   min-height: 77px;
+  max-height: 240px;
   resize: vertical;
+  line-height: 1.35;
+  padding: 7px 10px;
+  box-sizing: border-box;
 }
 .profSidePanel :global(.prof-drawer-form input:focus-visible),
 .profSidePanel :global(.prof-drawer-form select:focus-visible),
@@ -1399,7 +1434,8 @@
   margin-top: 4px;
 }
 .profSidePanel :global(.custom-fields > strong) {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
 }
 .profSidePanel :global(.prof-copy-input-wrap) {
   display: flex;
@@ -1414,17 +1450,24 @@
 .profSidePanel :global(.prof-copy-row .number-copy) {
   flex: none;
   width: 36px;
-  height: 36px;
+  height: 39px;
   min-width: 36px;
-  min-height: 36px;
+  min-height: 39px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--inset, var(--offset));
+  box-sizing: border-box;
 }
 .profSidePanel :global(.prof-drawer-form .help) {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.profSidePanel :global(.prof-side-scroll > p.help) {
+  margin: 0;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.35;
 }
@@ -1436,17 +1479,27 @@
   background: var(--inset, var(--offset));
   font-size: 12px;
 }
-.profSidePanel :global(.history) {
+.profSidePanel :global(details.history) {
   margin-top: 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--inset, var(--offset));
+  overflow: hidden;
+  box-sizing: border-box;
 }
-.profSidePanel :global(.history summary) {
+.profSidePanel :global(details.history summary) {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-height: 39px;
   padding: 10px 12px;
+  box-sizing: border-box;
   font-weight: 600;
   font-size: 13px;
+  list-style: none;
+}
+.profSidePanel :global(details.history summary::-webkit-details-marker) {
+  display: none;
 }
 .profSidePanel :global(.prof-drawer-form .row) {
   display: grid;
@@ -1473,9 +1526,13 @@
 .profSidePanel :global(.editor-foot .form-actions .btn) {
   flex: 0 1 auto;
   min-height: 36px;
+  height: 36px;
   min-width: 0;
+  padding: 6px 11px;
   font-size: 12px;
+  font-weight: 600;
   border-radius: 8px;
+  box-sizing: border-box;
 }
 @media (max-width: 655px) {
   .profSidePanel :global(.editor-foot .form-actions .btn) {

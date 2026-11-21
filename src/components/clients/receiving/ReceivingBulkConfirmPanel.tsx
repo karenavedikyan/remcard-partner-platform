@@ -1,5 +1,7 @@
 "use client";
 
+import { ReceivingBulkPartialOutcome } from "./ReceivingBulkPartialOutcome";
+
 import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
 import type { ReceivingBulkConfirmKind } from "./receiving-bulk-handoff";
 
@@ -71,11 +73,7 @@ export function ReceivingBulkConfirmPanel({
       {contractState === "blocked" ? (
         <p className="small muted">Групповые действия сейчас недоступны. Финансовых операций здесь нет.</p>
       ) : null}
-      {partialError ? (
-        <p className="notice" role="alert">
-          {partialError}
-        </p>
-      ) : null}
+      {partialError ? <ReceivingBulkPartialOutcome message={partialError} /> : null}
       <div className="ca-form-actions">
         <button type="button" className="btn ghost" data-ca-action="bulk:confirm-no" onClick={onCancel}>
           Отмена

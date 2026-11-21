@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
 import type { ReceivingBulkEditDraft, ReceivingWorkingStageOption } from "./receiving-bulk-handoff";
+import { ReceivingBulkPartialOutcome } from "./ReceivingBulkPartialOutcome";
 
 type Props = {
   count: number;
@@ -108,11 +109,7 @@ export function ReceivingBulkEditPanel({
         />
         Добавить к существующей заметке
       </label>
-      {saveError ? (
-        <p className="notice" role="alert">
-          {saveError}
-        </p>
-      ) : null}
+      {saveError ? <ReceivingBulkPartialOutcome message={saveError} /> : null}
       <div className="ca-form-actions">
         <button type="button" className="btn ghost" data-ca-action="bulk:edit-cancel" onClick={onCancel}>
           Отмена

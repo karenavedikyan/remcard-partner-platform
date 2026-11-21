@@ -1,5 +1,7 @@
 "use client";
 
+import { ReceivingBulkPartialOutcome } from "./ReceivingBulkPartialOutcome";
+
 /** Prototype client-appeals.js bucket naming (receiving CRM, not observer trash overlay). */
 export type ReceivingAppealBucket = "active" | "archive" | "trash";
 
@@ -48,11 +50,7 @@ export function ReceivingBulkActions({
           {batchNotice}
         </p>
       ) : null}
-      {partialError ? (
-        <p className="notice" role="alert" data-testid="ca-receiving-bulk-error">
-          {partialError}
-        </p>
-      ) : null}
+      {partialError ? <ReceivingBulkPartialOutcome message={partialError} /> : null}
     </>
   );
 
