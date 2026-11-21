@@ -294,11 +294,12 @@ export function parseProfAppealDetailWire(
   envelope: ReceivingAppealDetailEnvelopeWire,
   opts?: { scopeAll?: boolean },
 ): ProfAppealDetailState | null {
-  const appealRaw = envelope.appeal as Record<string, unknown>;
-  if (!isProfAppealListItemWire(appealRaw)) return null;
+  const appealRecord = envelope.appeal as Record<string, unknown>;
+  if (!isProfAppealListItemWire(appealRecord)) return null;
 
-  const listRow = mapProfAppealListItemWire(appealRaw as ReceivingAppealListItemWire);
-  const remWire = (appealRaw.remCard ?? {}) as ReceivingAppealRemCardDetailWire;
+  const appealWire = appealRecord as ReceivingAppealListItemWire;
+  const listRow = mapProfAppealListItemWire(appealWire);
+  const remWire = (appealRecord.remCard ?? {}) as ReceivingAppealRemCardDetailWire;
   const remDetail: ReceivingAppealRemCardDetailWire = {
     inCabinet: remWire.inCabinet === true,
     publicId: remWire.publicId?.trim() || undefined,
@@ -310,14 +311,13 @@ export function parseProfAppealDetailWire(
     (envelope as { p149Capabilities?: unknown }).p149Capabilities,
   );
   const profCaps = mergeProfCapabilities(
-    parseReceivingRowCapabilities(envelope.capabilities ?? appealRaw.capabilities) ??
-      (appealRaw.capabilities as ReceivingRowCapabilities),
-    envelopeP149 ?? (appealRaw.p149Capabilities as ReceivingAppealP149CapabilitiesWire),
+    parseReceivingRowCapabilities(envelope.capabilities ?? appealWire.capabilities) ??
+      appealWire.capabilities,
+    envelopeP149 ?? appealWire.p149Capabilities,
   );
 
   const commercialProposal = commercialProposalFromWire(
-    (appealRaw as { commercialProposal?: unknown }).commercialProposal ??
-      (envelope as { commercialProposal?: unknown }).commercialProposal,
+    appealRecord.commercialProposal ?? (envelope as { commercialProposal?: unknown }).commercialProposal,
   );
 
   const detailReadOnly =
@@ -328,10 +328,10 @@ export function parseProfAppealDetailWire(
       ...listRow,
       profCapabilities: profCaps,
       remCard: remDetail,
-      clientCity: (appealRaw.clientCity as string | null) ?? null,
-      clientContact: (appealRaw.clientContact as string | null) ?? null,
-      budgetHint: (appealRaw.budgetHint as string | null) ?? null,
-      privateNotes: (appealRaw.privateNotes as string | null) ?? null,
+      clientCity: (appealRecord.clientCity as string | null | undefined) ?? null,
+      clientContact: (appealRecord.clientContact as string | null | undefined) ?? null,
+      budgetHint: (appealRecord.budgetHint as string | null | undefined) ?? null,
+      privateNotes: (appealRecord.privateNotes as string | null | undefined) ?? null,
       commercialProposal,
     },
     revision: typeof envelope.revision === "number" ? envelope.revision : Number(envelope.revision) || 0,
