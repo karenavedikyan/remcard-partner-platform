@@ -953,6 +953,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.profReferrer {
+  display: block;
+  overflow-wrap: anywhere;
+}
 .clientsScope :global(.prof-appeals-wrap .prof-row-status) {
   display: inline-flex;
   min-width: 0;

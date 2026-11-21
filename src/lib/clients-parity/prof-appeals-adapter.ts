@@ -72,6 +72,8 @@ export type ReceivingAppealListItemWire = {
   receivingBranchLabel?: string | null;
   createdByLabel?: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
+  paidAmountKopecks?: number | null;
+  referrerDisplayName?: string | null;
   createdAt: string;
   updatedAt: string;
   remCard: ReceivingAppealRemCardListWire;
@@ -292,6 +294,11 @@ export function mapProfAppealListItemWire(wire: ReceivingAppealListItemWire): Pr
     receivingPartnerUserId: "",
     receivingPartnerId: "",
     referrerPartnerId: "",
+    referrerDisplayName: typeof wire.referrerDisplayName === "string" ? wire.referrerDisplayName.trim() || null : null,
+    paidAmountKopecks:
+      typeof wire.paidAmountKopecks === "number" && Number.isSafeInteger(wire.paidAmountKopecks) && wire.paidAmountKopecks >= 0
+        ? wire.paidAmountKopecks
+        : null,
     interest,
     stageId: wire.stageKey,
     stageLabel: wire.stageLabel ?? undefined,

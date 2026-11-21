@@ -10,6 +10,7 @@ import {
   type ProfListFilters,
 } from "@/lib/clients-parity/prof-appeals-adapter";
 import {
+  formatReceivingPaidRubFromKopecks,
   receivingManualChannelOptions,
   receivingStageDisplayLabel,
   receivingStageLabelsFromSettings,
@@ -24,6 +25,8 @@ import { ReceivingBulkActions } from "./ReceivingBulkActions";
 import { ReceivingIcon } from "./ReceivingIcons";
 import { useCopyDisplayedValue } from "./useCopyDisplayedValue";
 import styles from "./receiving.module.css";
+
+const createdDate = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeZone: "Europe/Moscow" });
 
 export type ReceivingAppealsProfTableProps = {
   data: ReceivingAppealsListResponse;
@@ -160,6 +163,15 @@ export function ReceivingAppealsProfTable({
   }, [profRows, filters, serverBackedFilters]);
 
   const listTotal = data.kpis?.total ?? profRows.length;
+  const hasFilters = Boolean(
+    filters.q.trim() ||
+      filters.status !== "Все статусы" ||
+      (filters.source && filters.source !== "all") ||
+      filters.remCardOnly ||
+      (filters.requestFilter && filters.requestFilter !== "Все") ||
+      (filters.appealSourceKey && filters.appealSourceKey !== "all"),
+  );
+  const emptyBucket = !hasFilters && !onShowAllBranches && !listHasMore && filters.bucket !== "active" ? filters.bucket : null;
 
   const remcardCount =
     remCardMatchCount ?? profRows.filter((r) => r.remCard.inCabinet).length;
@@ -407,7 +419,19 @@ export function ReceivingAppealsProfTable({
         <div id="rows">
           {filtered.length === 0 ? (
             <section className="panel empty ca-empty" data-testid="ca-receiving-appeals-empty">
-              <h2>По выбранным фильтрам обращений нет</h2>
+              <h2>{emptyBucket === "archive" ? "В архиве пока пусто" : emptyBucket === "trash" ? "Корзина пуста" : "По выбранным фильтрам обращений нет"}</h2>
+              {emptyBucket ? (
+                <>
+                  <p className="muted">
+                    {emptyBucket === "archive"
+                      ? "Сюда попадают обращения, с которыми вы закончили работу в списке."
+                      : "Удалённые обращения можно восстановить отсюда."}
+                  </p>
+                  <button type="button" className="btn ghost" onClick={() => onFiltersChange({ ...filters, bucket: "active" })}>
+                    К активным
+                  </button>
+                </>
+              ) : null}
               {onShowAllBranches ? (
                 <button type="button" className="btn ghost" data-testid="ca-receiving-show-all-branches" onClick={onShowAllBranches}>
                   Показать все филиалы
@@ -421,6 +445,10 @@ export function ReceivingAppealsProfTable({
                 receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel) ||
                 stageLabelById(row);
               const sourceLabel = profRowSourceLabel(row);
+              const referrer = row.originKind === "CERTIFICATE" ? row.referrerDisplayName?.trim() : null;
+              const amount = formatReceivingPaidRubFromKopecks(row.paidAmountKopecks);
+              const date = new Date(row.createdAt);
+              const dateLabel = Number.isFinite(date.getTime()) ? createdDate.format(date) : null;
               const writable = isWritable(row);
               return (
                 <div key={row.id} className="prof-table-row" data-testid={`ca-prof-row-${row.id}`}>
@@ -453,6 +481,8 @@ export function ReceivingAppealsProfTable({
                         {branch}
                       </small>
                     ) : null}
+                    {amount ? <small className="prof-name-sub" data-testid="ca-prof-paid-amount">Сумма: {amount}</small> : null}
+                    {dateLabel ? <time className="muted prof-name-sub" dateTime={row.createdAt}>Создано: {dateLabel}</time> : null}
                   </button>
                   <span
                     className={`prof-row-status appeal-status ${profStageStatusClass(row.stageId)} pill`}
@@ -481,6 +511,7 @@ export function ReceivingAppealsProfTable({
                   <span className="row-source muted small">
                     <span className="source-caption">Источник: </span>
                     {sourceLabel}
+                    {referrer ? <small className={styles.profReferrer}>Направил: {referrer}</small> : null}
                   </span>
                   <span className="row-assignee small">{row.responsible?.displayLabel?.trim() || "—"}</span>
                   <span className="prof-row-account small" data-testid="ca-prof-account">
