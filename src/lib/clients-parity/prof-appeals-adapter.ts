@@ -12,7 +12,11 @@ import type {
   ReceivingRowCapabilities,
   ReceivingWorkingStage,
 } from "./receiving-appeals-api";
-import { parseReceivingRowCapabilities, receivingDetailWireReadOnly } from "./receiving-appeals-api";
+import {
+  mapReceivingHistoryFromWire,
+  parseReceivingRowCapabilities,
+  receivingDetailWireReadOnly,
+} from "./receiving-appeals-api";
 
 export const REMCARD_CLIENT_LOGIN_URL = "https://remcard.ru/?login=client" as const;
 
@@ -189,6 +193,10 @@ export function isProfAppealListItemWire(raw: unknown): raw is ReceivingAppealLi
 export function profListQueryParams(filters: Partial<ProfListFilters>): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.remCardOnly) params.set("remCardOnly", "1");
+  const source = filters.appealSourceKey?.trim();
+  if (source && source !== "all") params.set("manualSourceKey", source);
+  const request = filters.requestFilter?.trim();
+  if (request && request !== "Все") params.set("requestText", request);
   return params;
 }
 
@@ -237,13 +245,7 @@ export type ProfAppealDetailState = {
 };
 
 export function mapProfHistoryFromWire(rows: ReceivingAppealHistoryWire[]): ReceivingAppealHistoryEntry[] {
-  return (rows ?? []).map((h, index) => ({
-    id: `hist_${index}_${h.at}`,
-    at: h.at,
-    authorLabel: h.authorLabel,
-    text: h.text,
-    reason: h.reason ?? null,
-  }));
+  return mapReceivingHistoryFromWire(rows ?? []);
 }
 
 /** Map authoritative p149 list wire → UI row (also fills legacy ReceivingAppealListRow fields). */

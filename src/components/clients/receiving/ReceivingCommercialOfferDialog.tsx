@@ -12,6 +12,7 @@ export type ReceivingCommercialOfferDialogProps = {
   open: boolean;
   appeal: ProfAppealListRow;
   partnerDisplayName: string;
+  partnerWorkPhones?: Array<{ id: string; label: string; number: string }>;
   commercialProposal?: CommercialProposalDeliveryWire | null;
   onClose: () => void;
 };
@@ -46,6 +47,7 @@ export function ReceivingCommercialOfferDialog({
   open,
   appeal,
   partnerDisplayName,
+  partnerWorkPhones = [],
   commercialProposal,
   onClose,
 }: ReceivingCommercialOfferDialogProps) {
@@ -102,7 +104,7 @@ export function ReceivingCommercialOfferDialog({
           </div>
 
           {step === "compose" ? (
-            <ComposeFields draft={draft} onChange={setDraft} />
+            <ComposeFields draft={draft} onChange={setDraft} partnerWorkPhones={partnerWorkPhones} />
           ) : (
             <PreviewPane draft={draft} partnerDisplayName={partnerDisplayName} clientName={clientName} appeal={appeal} />
           )}
@@ -138,8 +140,13 @@ export function ReceivingCommercialOfferDialog({
               type="button"
               className="btn primary"
               data-testid="ca-offer-simulate-send"
-              disabled={commercialProposal?.sendEnabled === true}
-              onClick={() => setSendNotice(blockedMessage || "Ничего не отправлено.")}
+              disabled={commercialProposal?.sendEnabled !== true}
+              title={commercialProposal?.sendEnabled !== true ? blockedMessage || "Отправка недоступна" : undefined}
+              onClick={() => {
+                if (commercialProposal?.sendEnabled !== true) {
+                  setSendNotice(blockedMessage || "Ничего не отправлено.");
+                }
+              }}
             >
               Отправить
             </button>
@@ -150,7 +157,15 @@ export function ReceivingCommercialOfferDialog({
   );
 }
 
-function ComposeFields({ draft, onChange }: { draft: OfferDraft; onChange: (d: OfferDraft) => void }) {
+function ComposeFields({
+  draft,
+  onChange,
+  partnerWorkPhones,
+}: {
+  draft: OfferDraft;
+  onChange: (d: OfferDraft) => void;
+  partnerWorkPhones: Array<{ id: string; label: string; number: string }>;
+}) {
   const set = (patch: Partial<OfferDraft>) => onChange({ ...draft, ...patch });
   const addAttachment = (kind: "file" | "photo") => {
     const id = `${kind}-${Date.now()}`;
@@ -218,6 +233,11 @@ function ComposeFields({ draft, onChange }: { draft: OfferDraft; onChange: (d: O
         Телефон для связи (из сохранённых рабочих)
         <select value={draft.contactPhone} onChange={(e) => set({ contactPhone: e.target.value })}>
           <option value="">Не указывать телефон</option>
+          {partnerWorkPhones.map((p) => (
+            <option key={p.id} value={p.number}>
+              {p.label}: {p.number}
+            </option>
+          ))}
         </select>
       </label>
     </>

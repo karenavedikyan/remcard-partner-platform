@@ -27,6 +27,7 @@ import {
   parseProfFilterCounts,
   profListQueryParams,
   type ProfAppealListRow,
+  type ProfAppealProfilePatchBody,
   type ProfListFilters,
   type ReceivingAppealP149CapabilitiesWire,
 } from "./prof-appeals-adapter";
@@ -962,12 +963,7 @@ export function toK1ReceivingAppealCreateBody(body: ReceivingAppealCreateBody): 
 }
 
 /** Profile PATCH — no stage/finance (K1 rejects immutable fields on `/:id`). */
-export type ReceivingAppealProfilePatchBody = {
-  privateNotes?: string;
-  clientContact?: string;
-  interest?: string;
-  expectedRevision: string | number;
-};
+export type ReceivingAppealProfilePatchBody = ProfAppealProfilePatchBody;
 
 export type ReceivingAppealProfilePatchWire = {
   privateNotes?: string;

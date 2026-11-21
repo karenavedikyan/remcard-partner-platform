@@ -85,6 +85,16 @@ describe("prof-appeals-adapter", () => {
     expect(p.get("remCardOnly")).toBe("1");
   });
 
+  it("forwards manualSourceKey and requestText for backend 463322a", () => {
+    const p = profListQueryParams({
+      remCardOnly: false,
+      appealSourceKey: "phone",
+      requestFilter: "Двери",
+    });
+    expect(p.get("manualSourceKey")).toBe("phone");
+    expect(p.get("requestText")).toBe("Двери");
+  });
+
   it("reads filterCounts.remCardMatchCount only with contract", () => {
     expect(parseProfFilterCounts({ filterCounts: { remCardMatchCount: 3 } })).toBe(3);
     expect(parseProfFilterCounts({})).toBeNull();

@@ -67,6 +67,8 @@ import {
 } from "./receiving-bulk-handoff";
 import styles from "./receiving.module.css";
 import { ClientsNewPartnerEmptyState } from "@/components/clients/new-partner-empty/ClientsNewPartnerEmptyState";
+import { remcardFetch } from "@/lib/api-client";
+import type { ProProfileResponse } from "@/lib/types";
 import {
   isReceivingDirectionIntroCandidate,
   isReceivingDirectionIntroEligible,
@@ -133,6 +135,10 @@ export function ReceivingAppealsWorkspace({
   });
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [partnerDisplayName, setPartnerDisplayName] = useState("Партнёр");
+  const [partnerWorkPhones, setPartnerWorkPhones] = useState<
+    Array<{ id: string; label: string; number: string }>
+  >([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [batchPending, setBatchPending] = useState(false);
   const bulkInFlightRef = useRef(false);
@@ -427,6 +433,32 @@ export function ReceivingAppealsWorkspace({
   // A card/row is editable by its own server flag, never by the aggregate of the general list.
   const profLayout = data?.p149ListContract === true;
   const profAppeals = profLayout ? (data?.profAppeals ?? []) : [];
+
+  useEffect(() => {
+    if (!profLayout || previewData) return;
+    let cancelled = false;
+    void remcardFetch<ProProfileResponse>("/api/pro/profile").then((profile) => {
+      if (cancelled) return;
+      const org = profile.organization?.name?.trim();
+      const user = profile.user?.displayName?.trim();
+      setPartnerDisplayName(org || user || "Партнёр");
+      const phones: Array<{ id: string; label: string; number: string }> = [];
+      const publicPhone =
+        profile.organization?.publicPhone?.trim() ||
+        profile.catalogPublication?.published?.publicPhone?.trim();
+      if (publicPhone) phones.push({ id: "public", label: "Публичный телефон", number: publicPhone });
+      const work = profile.workingProfile?.partnershipContactPhone?.trim();
+      if (work) phones.push({ id: "work", label: "Рабочий телефон", number: work });
+      setPartnerWorkPhones(phones);
+    }).catch(() => {
+      if (!cancelled) {
+        setPartnerWorkPhones([]);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profLayout, previewData]);
   const rowWritable = useCallback(
     (row: ReceivingAppealListRow) => {
       const profRow = data?.profAppeals?.find((p) => p.id === row.id);
@@ -1026,6 +1058,9 @@ export function ReceivingAppealsWorkspace({
             row={profPanelRow}
             readOnly={leadsReadOnly}
             readScope={readScope ?? undefined}
+            settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
+            partnerDisplayName={partnerDisplayName}
+            partnerWorkPhones={partnerWorkPhones}
             offerOpen={offerOpen}
             onOfferOpenChange={setOfferOpen}
             onClose={() => {

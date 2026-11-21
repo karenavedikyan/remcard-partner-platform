@@ -14,7 +14,9 @@ import {
   receivingStageDisplayLabel,
   receivingStageLabelsFromSettings,
   receivingStatusFilterOptions,
+  type ReceivingAppealListRow,
   type ReceivingAppealsListResponse,
+  type ReceivingListBucket,
   type ReceivingManualChannel,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import type { ReceivingBulkCallbacks } from "./ReceivingAppealsList";
@@ -40,6 +42,15 @@ export type ReceivingAppealsProfTableProps = {
   stageLabelById?: (row: ProfAppealListRow) => string;
   bulkConfirmSlot?: ReactNode;
   bulkEditSlot?: ReactNode;
+  listHasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
+  scanOnly?: boolean;
+  onNavigateScan?: () => void;
+  onNavigateManual?: () => void;
+  onNavigateSettings?: () => void;
+  onNavigateAnalytics?: () => void;
+  onShowAllBranches?: () => void;
 };
 
 function NumberCopy({
@@ -103,6 +114,15 @@ export function ReceivingAppealsProfTable({
   stageLabelById = (r) => r.stageLabel ?? r.stageId,
   bulkConfirmSlot,
   bulkEditSlot,
+  listHasMore = false,
+  loadingMore = false,
+  onLoadMore,
+  scanOnly = false,
+  onNavigateScan,
+  onNavigateManual,
+  onNavigateSettings,
+  onNavigateAnalytics,
+  onShowAllBranches,
 }: ReceivingAppealsProfTableProps) {
   const channels: ReceivingManualChannel[] = receivingManualChannelOptions(data.settings);
   const sourceSelectOptions = useMemo(() => {
@@ -117,17 +137,21 @@ export function ReceivingAppealsProfTable({
   }, [channels]);
 
   const requestOptions = useMemo(() => {
-    if (serverBackedFilters) return ["Все"];
     const set = new Set<string>(["Все"]);
+    const active = filters.requestFilter?.trim();
+    if (active && active !== "Все") set.add(active);
     for (const r of profRows) set.add(r.requestText?.trim() || "—");
     return [...set];
-  }, [profRows, serverBackedFilters]);
+  }, [profRows, filters.requestFilter]);
 
   const statusOptions = useMemo(
     () =>
       serverBackedFilters
         ? receivingStageLabelsFromSettings(data.settings)
-        : receivingStatusFilterOptions(profRows, stageLabelById),
+        : receivingStatusFilterOptions(
+            profRows as ReceivingAppealListRow[],
+            (row) => stageLabelById(row as ProfAppealListRow),
+          ),
     [data.settings, profRows, serverBackedFilters, stageLabelById],
   );
 
@@ -161,13 +185,94 @@ export function ReceivingAppealsProfTable({
       checked,
     );
 
-  const profOnlyFiltersDisabled = serverBackedFilters;
+  const kpiItems = data.kpis
+    ? ([
+        ["В работе", data.kpis.inWork],
+        ["Оплачено", data.kpis.paid],
+        ["Отгружено", data.kpis.shipped],
+        ["Конверсия в оплату", data.kpis.conv],
+      ] as const)
+    : null;
 
   return (
     <div
       className={`${styles.receivingShell} ca-section prof-appeals-wrap`}
       data-testid="ca-receiving-appeals-list"
     >
+      <div
+        className="ca-bucket-tabs ca-seg"
+        role="tablist"
+        aria-label="Список обращений"
+        data-testid="ca-receiving-bucket-tabs"
+      >
+        {(
+          [
+            ["active", "Активные"],
+            ["archive", "Архив"],
+            ["trash", "Корзина"],
+          ] as const
+        ).map(([bucket, label]) => (
+          <button
+            key={bucket}
+            type="button"
+            role="tab"
+            aria-selected={filters.bucket === bucket}
+            className={filters.bucket === bucket ? "is-active" : ""}
+            onClick={() => onFiltersChange({ ...filters, bucket: bucket as ReceivingListBucket })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {kpiItems ? (
+        <div className={styles.kpiStrip} role="list" data-testid="ca-receiving-kpi-strip">
+          {kpiItems.map(([label, val]) => (
+            <div key={label} className={`panel ${styles.kpi}`} role="listitem">
+              <span className="small muted">{label}</span>
+              <strong className={styles.kpiVal}>{String(val)}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {!readOnly || scanOnly ? (
+        <div className={styles.toolbar} data-testid="ca-receiving-toolbar">
+          <div className={styles.toolbarPrimary}>
+            <button type="button" className="btn primary" data-ca-action="nav:scan" onClick={onNavigateScan}>
+              Сканировать сертификат
+            </button>
+            {readOnly ? null : (
+              <button type="button" className="btn ghost" data-ca-action="nav:manual" onClick={onNavigateManual}>
+                Добавить клиента
+              </button>
+            )}
+          </div>
+          <div className="ca-quiet-links">
+            <button
+              type="button"
+              className="btn ghost ca-quiet-btn"
+              data-testid="ca-receiving-nav-analytics"
+              onClick={onNavigateAnalytics}
+            >
+              <ReceivingIcon name="bar-chart" /> Аналитика
+            </button>
+            {readOnly ? null : (
+              <button
+                type="button"
+                className="btn ghost ca-quiet-btn"
+                data-testid="ca-receiving-nav-settings"
+                onClick={onNavigateSettings}
+              >
+                <ReceivingIcon name="settings" /> Этапы и причины
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="notice">Только просмотр: изменять статусы и заметки нельзя.</p>
+      )}
+
       <div className="filters panel prof-filters" data-testid="ca-prof-filters">
         <div className="prof-filters-primary">
         <label className="field searchbox search-inner prof-filter-search">
@@ -185,12 +290,7 @@ export function ReceivingAppealsProfTable({
           Запрос
           <select
             value={filters.requestFilter ?? "Все"}
-            disabled={profOnlyFiltersDisabled}
-            title={
-              profOnlyFiltersDisabled
-                ? "Фильтр по тексту запроса ждёт поддержку в GET списка."
-                : undefined
-            }
+            data-testid="ca-prof-filter-request"
             onChange={(e) => onFiltersChange({ ...filters, requestFilter: e.target.value })}
           >
             {requestOptions.map((o) => (
@@ -219,12 +319,7 @@ export function ReceivingAppealsProfTable({
           <select
             data-ca-input="source"
             value={filters.appealSourceKey ?? "all"}
-            disabled={profOnlyFiltersDisabled}
-            title={
-              profOnlyFiltersDisabled
-                ? "Фильтр по ручному источнику ждёт поддержку в GET списка."
-                : undefined
-            }
+            data-testid="ca-prof-filter-manual-source"
             onChange={(e) => onFiltersChange({ ...filters, appealSourceKey: e.target.value })}
           >
             {sourceSelectOptions.map((o) => (
@@ -311,9 +406,14 @@ export function ReceivingAppealsProfTable({
         </div>
         <div id="rows">
           {filtered.length === 0 ? (
-            <p className="notice prof-zero" data-testid="ca-prof-zero">
-              По выбранным фильтрам обращений нет.
-            </p>
+            <section className="panel empty ca-empty" data-testid="ca-receiving-appeals-empty">
+              <h2>По выбранным фильтрам обращений нет</h2>
+              {onShowAllBranches ? (
+                <button type="button" className="btn ghost" data-testid="ca-receiving-show-all-branches" onClick={onShowAllBranches}>
+                  Показать все филиалы
+                </button>
+              ) : null}
+            </section>
           ) : (
             filtered.map((row) => {
               const branch = branchLabelOf?.(row) ?? null;
@@ -406,6 +506,14 @@ export function ReceivingAppealsProfTable({
           )}
         </div>
       </div>
+
+      {listHasMore && onLoadMore ? (
+        <div className="ca-form-actions" data-testid="ca-receiving-load-more">
+          <button type="button" className="btn ghost" disabled={loadingMore} onClick={onLoadMore}>
+            {loadingMore ? "Загрузка…" : "Загрузить ещё"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
