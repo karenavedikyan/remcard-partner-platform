@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
-import type { ReceivingAppealProfDrawerFormHandle } from "./ReceivingAppealProfDrawerForm";
+import type { AppealProfileSaveState, ReceivingAppealProfDrawerFormHandle } from "./ReceivingAppealProfDrawerForm";
 import {
   parseProfAppealDetailWire,
   profAppealRowSubtitle,
@@ -73,7 +73,11 @@ export function ReceivingAppealProfSidePanel({
   const [commercialProposal, setCommercialProposal] = useState<CommercialProposalDeliveryWire | null>(null);
   const formRef = useRef<ReceivingAppealProfDrawerFormHandle>(null);
   const [formBusy, setFormBusy] = useState(false);
-  const [formSaved, setFormSaved] = useState(false);
+  const [formSaveState, setFormSaveState] = useState<AppealProfileSaveState>("idle");
+  const formSaved = !formBusy && formSaveState === "saved";
+  const formSaveNotice = !formBusy && formSaveState === "error"
+    ? "Не сохранено. Попробуйте ещё раз."
+    : !formBusy && formSaveState === "unchanged" ? "Нет изменений" : "";
   const [lastCommit, setLastCommit] = useState<{ appealId: string; revision: number } | null>(null);
   // Only successful writes from this open drawer may advance its sibling editor's CAS.
   const openAppealRef = useRef(appealId);
@@ -97,8 +101,8 @@ export function ReceivingAppealProfSidePanel({
   }, [open]);
 
   useEffect(() => {
-    setFormSaved(false);
-  }, [appealId, profDetail?.revision]);
+    setFormSaveState("idle");
+  }, [appealId]);
 
   useEffect(() => {
     const panelLocked = readOnly || profDetail?.detailReadOnly === true;
@@ -279,7 +283,7 @@ export function ReceivingAppealProfSidePanel({
                   onRevisionCommitted={onRevisionCommitted}
                   onSaved={onAppealMutated}
                   onBusyChange={setFormBusy}
-                  onSaveStateChange={setFormSaved}
+                  onSaveStateChange={setFormSaveState}
                 />
 
                 {createdBy ? (
@@ -321,6 +325,9 @@ export function ReceivingAppealProfSidePanel({
           </div>
           {detailPhase === "prof" && profDetail && !profDetail.detailReadOnly && !readOnly ? (
             <footer className="prof-drawer-footer editor-foot" data-testid="ca-prof-drawer-footer">
+              <div className={formSaveNotice ? "prof-save-notice" : "sr-only"} role="status">
+                {formSaveNotice || (formSaved ? "Изменения сохранены" : "")}
+              </div>
               <div className="form-actions">
                 <button
                   type="button"
@@ -335,11 +342,16 @@ export function ReceivingAppealProfSidePanel({
                 </button>
                 <button
                   type="button"
-                  className="btn primary"
+                  className={`btn ${formSaved ? "prof-profile-saved" : "primary"}`}
                   disabled={formBusy}
                   data-testid="ca-prof-save-profile"
                   onClick={() => void formRef.current?.save()}
                 >
+                  {formSaved ? (
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m5 12 4 4L19 6" />
+                    </svg>
+                  ) : null}
                   {formBusy ? "Сохранение…" : formSaved ? "Сохранено" : "Сохранить"}
                 </button>
               </div>

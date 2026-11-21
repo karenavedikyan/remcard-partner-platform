@@ -36,6 +36,8 @@ export type ReceivingAppealProfDrawerFormHandle = {
   saved: boolean;
 };
 
+export type AppealProfileSaveState = "idle" | "saved" | "unchanged" | "error";
+
 export type ReceivingAppealProfDrawerFormProps = {
   detail: ProfAppealDetailState;
   settings?: ReceivingPartnerSettings | null;
@@ -45,7 +47,7 @@ export type ReceivingAppealProfDrawerFormProps = {
   onRevisionCommitted?: (revision: string | number) => void;
   onSaved?: () => void | Promise<void>;
   onBusyChange?: (busy: boolean) => void;
-  onSaveStateChange?: (saved: boolean) => void;
+  onSaveStateChange?: (state: AppealProfileSaveState) => void;
   titleFocusRef?: RefObject<HTMLInputElement>;
 };
 
@@ -151,9 +153,10 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   const [draft, setDraft] = useState(() => draftFromDetail(detail));
   const [revision, setRevision] = useState(detail.revision);
   const baselineRef = useRef<ProfileBaseline>(baselineFromDetail(detail));
+  const appliedDetailRef = useRef(detail);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<AppealProfileSaveState>("idle");
   const { copy, copiedKey } = useCopyDisplayedValue();
   const localTitleRef = useRef<HTMLInputElement>(null);
   const appealTitleRef = titleFocusRef ?? localTitleRef;
@@ -165,15 +168,16 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   }, [busy, onBusyChange]);
 
   useEffect(() => {
-    onSaveStateChange?.(saved);
-  }, [onSaveStateChange, saved]);
+    onSaveStateChange?.(saveState);
+  }, [onSaveStateChange, saveState]);
 
   useEffect(() => {
-    if (busy) return;
+    if (busy || appliedDetailRef.current === detail) return;
+    appliedDetailRef.current = detail;
     setDraft(draftFromDetail(detail));
     setRevision(detail.revision);
     baselineRef.current = baselineFromDetail(detail);
-    setSaved(false);
+    setSaveState("idle");
   }, [busy, detail]);
 
   const channels = useMemo(() => receivingManualChannelOptions(settings), [settings]);
@@ -194,7 +198,8 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
 
   const setField = <K extends keyof FormDraft>(key: K, value: FormDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
+    setSaveState("idle");
+    setError(null);
   };
 
   const setExternalRefValue = (key: string, value: string) => {
@@ -202,24 +207,26 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       ...prev,
       externalRefs: prev.externalRefs.map((r) => (r.key === key ? { ...r, value } : r)),
     }));
-    setSaved(false);
+    setSaveState("idle");
+    setError(null);
   };
 
   const saveProfile = useCallback(async () => {
     if (readOnly || busy) return;
-    setBusy(true);
     setError(null);
     const patchDraft = patchShapeFromDraft(detail, draft);
     const body = buildProfProfilePatchBody(baselineRef.current, patchDraft, Math.max(revision, committedRevision ?? 0));
     if (!profProfilePatchHasFieldChanges(body)) {
-      setBusy(false);
-      setSaved(true);
+      setSaveState((state) => (state === "saved" ? state : "unchanged"));
       return;
     }
+    setSaveState("idle");
+    setBusy(true);
     const res = await patchReceivingAppealProfileCas(detail.appeal.id, body);
     if (!res.ok) {
       setBusy(false);
       setError(res.message);
+      setSaveState("error");
       return;
     }
     if (res.revision != null) onRevisionCommitted?.(res.revision);
@@ -230,6 +237,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       nextDetail = parseProfAppealDetailWire(refreshed.wire, { scopeAll });
     }
     if (nextDetail) {
+      appliedDetailRef.current = nextDetail;
       setRevision(nextDetail.revision);
       baselineRef.current = baselineFromDetail(nextDetail);
       setDraft(draftFromDetail(nextDetail));
@@ -243,10 +251,12 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
         ...patchDraft,
         expectedRevision: parsedRevision,
       };
-      onDetailChange?.({ ...detail, revision: parsedRevision });
+      const detailWithRevision = { ...detail, revision: parsedRevision };
+      appliedDetailRef.current = detailWithRevision;
+      onDetailChange?.(detailWithRevision);
     }
     setBusy(false);
-    setSaved(true);
+    setSaveState("saved");
     await onSaved?.();
   }, [busy, committedRevision, detail, draft, onDetailChange, onRevisionCommitted, onSaved, readOnly, readScope, revision]);
 
@@ -256,12 +266,13 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       save: () => saveProfile(),
       resetDraft: () => {
         setDraft(draftFromDetail(detail));
-        setSaved(false);
+        setSaveState("idle");
+        setError(null);
       },
       busy,
-      saved,
+      saved: saveState === "saved",
     }),
-    [busy, detail, saved, saveProfile],
+    [busy, detail, saveState, saveProfile],
   );
 
   const fieldsDisabled = readOnly || busy;
