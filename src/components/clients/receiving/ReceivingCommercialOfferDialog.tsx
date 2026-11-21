@@ -54,6 +54,14 @@ const TEMPLATE_LABEL: Record<OfferDraft["designTemplate"], string> = {
   company: "Шаблон компании",
 };
 
+function computeOfferDraftSeed(appeal: ProfAppealListRow, partnerType: string | null | undefined): OfferDraft {
+  return {
+    ...INITIAL_DRAFT,
+    offerTitle: appeal.appealTitle?.trim() || "",
+    designTemplate: partnerType === "COMPANY" ? "company" : "store",
+  };
+}
+
 function formatAttachmentSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "";
   if (bytes < 1024) return `${bytes} Б`;
@@ -76,7 +84,7 @@ export function ReceivingCommercialOfferDialog({
   const photoInputRef = useRef<HTMLInputElement>(null!);
   const titleId = useId();
   const [step, setStep] = useState<"compose" | "preview">("compose");
-  const [draft, setDraft] = useState<OfferDraft>(INITIAL_DRAFT);
+  const [draft, setDraft] = useState<OfferDraft>(() => computeOfferDraftSeed(appeal, partnerType));
   const [sendNotice, setSendNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,11 +97,7 @@ export function ReceivingCommercialOfferDialog({
   useEffect(() => {
     if (!open) {
       setStep("compose");
-      setDraft({
-        ...INITIAL_DRAFT,
-        offerTitle: appeal.appealTitle?.trim() || "",
-        designTemplate: partnerType === "COMPANY" ? "company" : "store",
-      });
+      setDraft(computeOfferDraftSeed(appeal, partnerType));
       setSendNotice(null);
     }
   }, [open, partnerType, appeal.appealTitle]);
