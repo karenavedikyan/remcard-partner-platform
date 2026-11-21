@@ -28,6 +28,13 @@ import {
 import { ReceivingAppealsBlocked } from "@/components/clients/direction/ReceivingAppealsBlocked";
 import { ReceivingAppealForm } from "./ReceivingAppealForm";
 import { ReceivingAppealsList } from "./ReceivingAppealsList";
+import { ReceivingAppealsProfTable } from "./ReceivingAppealsProfTable";
+import { ReceivingAppealProfSidePanel } from "./ReceivingAppealProfSidePanel";
+import { ReceivingManualSourcesDialog } from "./ReceivingManualSourcesDialog";
+import {
+  profRowCanBulkSelect,
+  type ProfListFilters,
+} from "@/lib/clients-parity/prof-appeals-adapter";
 import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
 import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
@@ -115,12 +122,17 @@ export function ReceivingAppealsWorkspace({
   useReportClientsSubview("incoming", view !== "list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [persistNotice, setPersistNotice] = useState<string | null>(null);
-  const [listFilters, setListFilters] = useState<ReceivingListFilters>({
+  const [listFilters, setListFilters] = useState<ProfListFilters>({
     q: "",
     status: "Все статусы",
     source: "all",
     bucket: "active",
+    requestFilter: "Все",
+    appealSourceKey: "all",
+    remCardOnly: false,
   });
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [batchPending, setBatchPending] = useState(false);
   const bulkInFlightRef = useRef(false);
@@ -413,10 +425,15 @@ export function ReceivingAppealsWorkspace({
   const listLeadsAllowed = bulkWriteAllowed && data?.access?.canManageLeads !== false;
   const scopeIsAll = branchSelection?.kind === "all";
   // A card/row is editable by its own server flag, never by the aggregate of the general list.
+  const profAppeals = data?.profAppeals ?? [];
+  const profLayout = profAppeals.length > 0;
   const rowWritable = useCallback(
-    (row: ReceivingAppealListRow) =>
-      receivingRowCanManageLeads(row, { listAllowsLeads: listLeadsAllowed, scopeAll: scopeIsAll }),
-    [listLeadsAllowed, scopeIsAll],
+    (row: ReceivingAppealListRow) => {
+      const profRow = data?.profAppeals?.find((p) => p.id === row.id);
+      if (profRow) return profRowCanBulkSelect(profRow);
+      return receivingRowCanManageLeads(row, { listAllowsLeads: listLeadsAllowed, scopeAll: scopeIsAll });
+    },
+    [data?.profAppeals, listLeadsAllowed, scopeIsAll],
   );
   const writableIdSet = useMemo(
     () => new Set((data?.appeals ?? []).filter(rowWritable).map((row) => row.id)),
@@ -809,7 +826,7 @@ export function ReceivingAppealsWorkspace({
     );
   }
 
-  if (view === "detail" && detailId) {
+  if (view === "detail" && detailId && !profLayout) {
     const listRow = data.appeals.find((row) => row.id === detailId);
     return (
       <>
@@ -889,59 +906,134 @@ export function ReceivingAppealsWorkspace({
       />
     ) : null;
 
+  const branchOptions =
+    branches?.map((b) => ({ id: b.id, label: formatStaffBranchLine(b) })) ?? [];
+  const openProfSide = (id: string) => {
+    setDetailId(id);
+    setView("list");
+    setOfferOpen(false);
+  };
+  const profPanelRow = detailId ? data.profAppeals?.find((r) => r.id === detailId) ?? null : null;
+
   return (
-    <>
+    <div className={profLayout && detailId ? styles.profWorkspaceWithPanel : undefined}>
       {persistBanner}
       {listRefreshBanner}
       {branchFilterNode}
       {branchRequiredBanner}
-      <ReceivingAppealsList
-        bulkEditSlot={bulkEditNode}
-        bulkConfirmSlot={bulkConfirmNode}
-        data={data}
-        stageLabelById={(row) =>
-          receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel)
-        }
-        filters={listFilters}
-        onFiltersChange={onListFiltersChange}
-        serverBackedFilters={serverBacked}
-        listHasMore={receivingListHasMore(data)}
-        loadingMore={loadingMore}
-        onLoadMore={onLoadMore}
-        readOnly={leadsReadOnly}
-        scanOnly={!readOnly && !leadsAllowed && scanAllowed}
-        bulk={leadsAllowed ? bulkCallbacks : undefined}
-        rowWritable={rowWritable}
-        branchLabelOf={
-          allBranchesShown && branches
-            ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)
-            : undefined
-        }
-        onShowAllBranches={
-          branchSelection?.kind === "branch" ? () => changeBranchScope({ branchScope: "all" }) : undefined
-        }
-        onOpenAppeal={(id) => {
-          setDetailId(id);
-          setView("detail");
-        }}
-        onNavigateManual={
-          leadsAllowed
-            ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("manual"))
-            : () =>
-                setPersistNotice(denialMessage)
-        }
-        onNavigateSettings={
-          leadsAllowed
-            ? () => setView("settings")
-            : () => setPersistNotice(denialMessage)
-        }
-        onNavigateScan={
-          scanAllowed
-            ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("scan"))
-            : () => setPersistNotice(denialMessage)
-        }
-        onNavigateAnalytics={() => setView("analytics")}
-      />
-    </>
+      {profLayout ? (
+        <ReceivingAppealsProfTable
+          bulkEditSlot={bulkEditNode}
+          bulkConfirmSlot={bulkConfirmNode}
+          data={data}
+          profRows={profAppeals}
+          remCardMatchCount={data.remCardMatchCount}
+          stageLabelById={(row) =>
+            receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel)
+          }
+          filters={listFilters}
+          onFiltersChange={onListFiltersChange}
+          serverBackedFilters={serverBacked}
+          readOnly={leadsReadOnly}
+          bulk={leadsAllowed ? bulkCallbacks : undefined}
+          rowWritable={(row) => profRowCanBulkSelect(row)}
+          branchLabelOf={
+            allBranchesShown && branches
+              ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)
+              : undefined
+          }
+          branchOptions={branchOptions}
+          onOpenAppeal={openProfSide}
+          onOpenSources={() => setSourcesOpen(true)}
+          onOpenPartnerFields={
+            leadsAllowed
+              ? () => setView("settings")
+              : () => setPersistNotice(denialMessage)
+          }
+        />
+      ) : (
+        <ReceivingAppealsList
+          bulkEditSlot={bulkEditNode}
+          bulkConfirmSlot={bulkConfirmNode}
+          data={data}
+          stageLabelById={(row) =>
+            receivingStageDisplayLabel(row.stageId, data.settings, row.stageLabel)
+          }
+          filters={listFilters}
+          onFiltersChange={onListFiltersChange}
+          serverBackedFilters={serverBacked}
+          listHasMore={receivingListHasMore(data)}
+          loadingMore={loadingMore}
+          onLoadMore={onLoadMore}
+          readOnly={leadsReadOnly}
+          scanOnly={!readOnly && !leadsAllowed && scanAllowed}
+          bulk={leadsAllowed ? bulkCallbacks : undefined}
+          rowWritable={rowWritable}
+          branchLabelOf={
+            allBranchesShown && branches
+              ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)
+              : undefined
+          }
+          onShowAllBranches={
+            branchSelection?.kind === "branch" ? () => changeBranchScope({ branchScope: "all" }) : undefined
+          }
+          onOpenAppeal={(id) => {
+            setDetailId(id);
+            setView("detail");
+          }}
+          onNavigateManual={
+            leadsAllowed
+              ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("manual"))
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateSettings={
+            leadsAllowed
+              ? () => setView("settings")
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateScan={
+            scanAllowed
+              ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("scan"))
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateAnalytics={() => setView("analytics")}
+        />
+      )}
+      {profLayout ? (
+        <>
+          <ReceivingAppealProfSidePanel
+            appealId={detailId}
+            row={profPanelRow}
+            readOnly={leadsReadOnly}
+            readScope={readScope ?? undefined}
+            offerOpen={offerOpen}
+            onOfferOpenChange={setOfferOpen}
+            onClose={() => {
+              setDetailId(null);
+              setOfferOpen(false);
+            }}
+            onAppealMutated={() => void refreshListAfterMutation(true)}
+          />
+          <ReceivingManualSourcesDialog
+            open={sourcesOpen}
+            settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
+            settingsVersion={data.settingsVersion}
+            readOnly={leadsReadOnly}
+            onClose={() => setSourcesOpen(false)}
+            onSettingsUpdated={(channels, version) => {
+              setData((prev) =>
+                prev && prev.settings
+                  ? {
+                      ...prev,
+                      settings: { ...prev.settings, manualChannels: channels },
+                      settingsVersion: version ?? prev.settingsVersion,
+                    }
+                  : prev,
+              );
+            }}
+          />
+        </>
+      ) : null}
+    </div>
   );
 }

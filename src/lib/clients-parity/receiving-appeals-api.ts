@@ -21,6 +21,13 @@ import {
 } from "./client-appeal-display";
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import { isAllowedProxyRoute } from "@/lib/remcard-proxy";
+import {
+  coerceProfAppealsFromListWire,
+  parseProfFilterCounts,
+  profListQueryParams,
+  type ProfAppealListRow,
+  type ProfListFilters,
+} from "./prof-appeals-adapter";
 
 /** System stage ids — prototype `SYSTEM` constant (client-appeals.js). */
 export const RECEIVING_SYSTEM_STAGE = {
@@ -384,6 +391,8 @@ export type ReceivingListFilters = {
   status: string;
   source: "all" | "cert" | "manual";
   bucket: ReceivingListBucket;
+  /** p149 — forwarded as `remCardOnly=1` when server supports filterCounts. */
+  remCardOnly?: boolean;
   /** Employee's branch filter; omitted = the server default (working branch / owner default). */
   branchId?: string | null;
   /**
@@ -532,6 +541,9 @@ export function normalizeReceivingAccess(
 /** UI view-model after K1 adapter (`coerceK1ClientAppealsListPayload`). */
 export type ReceivingAppealsListResponse = {
   appeals: ReceivingAppealListRow[];
+  /** p149 projection; same rows as `appeals` when wire is ReceivingAppealListItemWire. */
+  profAppeals?: ProfAppealListRow[];
+  remCardMatchCount?: number;
   /** K1 `83f279e8` — sole write gate until `access` lands. */
   readOnly: boolean;
   nextCursor?: string | null;
@@ -728,6 +740,7 @@ export type ReceivingStaffBranch = { id: string; name: string; city: string; add
 
 export type K1ClientAppealsListWire = {
   appeals?: ReceivingAppealListRowWire[];
+  filterCounts?: { remCardMatchCount?: number };
   nextCursor?: string | null;
   tab?: string | null;
   readOnly?: boolean;
@@ -797,7 +810,7 @@ export function formatReceivingPaidRubFromKopecks(kopecks: number | null | undef
 
 /** List GET query — K1 reads `bucket` + `stage` (stageKey). */
 export function buildReceivingAppealsListQuery(
-  filters?: Partial<ReceivingListFilters>,
+  filters?: Partial<ReceivingListFilters & ProfListFilters>,
   cursor?: string | null,
   settings?: ReceivingPartnerSettings | null,
 ): string {
@@ -812,6 +825,7 @@ export function buildReceivingAppealsListQuery(
   }
   if (cursor) params.set("cursor", cursor);
   for (const [key, value] of receivingReadScopeParams(filters)) params.set(key, value);
+  for (const [key, value] of profListQueryParams(filters ?? {})) params.set(key, value);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -885,10 +899,15 @@ export function coerceK1ClientAppealsListPayload(
   wire: K1ClientAppealsListWire,
 ): ReceivingAppealsListResponse {
   const list: K1ClientAppealsListWire = wire.data?.appeals != null ? wire.data : wire;
-  const appeals = (list.appeals ?? []).map(mapReceivingAppealListRowFromWire);
+  const appealsWire = list.appeals ?? [];
+  const appeals = appealsWire.map(mapReceivingAppealListRowFromWire);
+  const profAppeals = coerceProfAppealsFromListWire(appealsWire, mapReceivingAppealListRowFromWire);
+  const remCardMatchCount = parseProfFilterCounts(list) ?? undefined;
   const readOnly = list.readOnly === true;
   const out: ReceivingAppealsListResponse = {
     appeals,
+    profAppeals,
+    ...(remCardMatchCount != null ? { remCardMatchCount } : {}),
     readOnly,
     nextCursor: list.nextCursor ?? null,
     tab: list.tab ?? null,

@@ -180,6 +180,8 @@ export default defineConfig({
       "src/lib/specialist-certificates/recommendationsRedirect.test.ts",
       "src/components/layout/icons/PartnersHandshakeIcon.test.tsx",
       "src/lib/clients-rsc-boundary.test.ts",
+      "src/lib/clients-parity/prof-appeals-adapter.test.ts",
+      "src/components/clients/receiving/ReceivingAppealsProfTable.test.tsx",
       "src/lib/agent-r03/certificatePurchaseStatus.test.ts",
       "src/components/agent-r03/RecordRowActions.test.tsx",
       "src/components/agent-r03/clientContactShare.test.ts",
