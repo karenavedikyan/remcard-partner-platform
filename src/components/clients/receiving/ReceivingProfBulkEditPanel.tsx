@@ -50,7 +50,6 @@ export function ReceivingProfBulkEditPanel({
       budgetHint: String(fd.get("prof-budgetHint") ?? ""),
       erpDocumentNumber: String(fd.get("prof-erp") ?? ""),
       manualSourceKey: String(fd.get("prof-manualSource") ?? ""),
-      responsibleUserId: String(fd.get("prof-responsibleUserId") ?? ""),
     };
     onApply({
       stageId: stageBlocked ? "" : String(fd.get("bulk-stage") ?? ""),
@@ -128,10 +127,13 @@ export function ReceivingProfBulkEditPanel({
             </select>
           </label>
         ) : null}
-        <label className="field">
-          Ответственный (ID пользователя)
-          <input name="prof-responsibleUserId" disabled={applyDisabled} placeholder="Не менять" />
-        </label>
+        <div className="panel stack" data-testid="ca-bulk-responsible-readonly">
+          <span className="small muted">Ответственный</span>
+          <p className="muted small" style={{ margin: 0 }}>
+            Массовое назначение недоступно: нет безопасного staff-read по филиалу. Меняйте только в карточке
+            обращения (только просмотр текущего ответственного).
+          </p>
+        </div>
       </fieldset>
       <label className="field">
         Этап работ

@@ -22,6 +22,7 @@ export type ReceivingCommercialOfferDialogProps = {
 type OfferAttachment = { id: string; name: string; kind: "file" | "photo"; sizeBytes: number };
 
 type OfferDraft = {
+  offerTitle: string;
   message: string;
   price: string;
   schedule: string;
@@ -35,6 +36,7 @@ type OfferDraft = {
 };
 
 const INITIAL_DRAFT: OfferDraft = {
+  offerTitle: "",
   message: "",
   price: "",
   schedule: "",
@@ -89,11 +91,12 @@ export function ReceivingCommercialOfferDialog({
       setStep("compose");
       setDraft({
         ...INITIAL_DRAFT,
+        offerTitle: appeal.appealTitle?.trim() || "",
         designTemplate: partnerType === "COMPANY" ? "company" : "store",
       });
       setSendNotice(null);
     }
-  }, [open, partnerType]);
+  }, [open, partnerType, appeal.appealTitle]);
 
   const clientName = appeal.clientName?.trim() || "Клиент";
   const blockedMessage = commercialProposalBlockedMessage(commercialProposal);
@@ -234,6 +237,15 @@ function ComposeFields({
   };
   return (
     <div className="kp-compose stack">
+      <label className="field kp-field">
+        <span className="kp-field-label">Название предложения</span>
+        <input
+          value={draft.offerTitle}
+          onChange={(e) => set({ offerTitle: e.target.value })}
+          data-testid="ca-offer-title"
+          placeholder="Как клиент увидит заголовок КП"
+        />
+      </label>
       <label className="field kp-field">
         <span className="kp-field-label">Текст предложения</span>
         <textarea
@@ -377,7 +389,9 @@ function PreviewPane({
   appeal: ProfAppealListRow;
 }) {
   const templateClass = draft.designTemplate === "company" ? "offer-preview--company" : "offer-preview--store";
-  const hasCta = draft.clientAction.trim() || draft.contactPhone;
+  const hasClientAction = draft.clientAction.trim().length > 0;
+  const hasContactPhone = Boolean(draft.contactPhone);
+  const previewOfferTitle = draft.offerTitle.trim() || appeal.appealTitle?.trim() || "Предложение";
   return (
     <div
       className={`client-shell offer-client-preview ${templateClass}`}
@@ -406,7 +420,9 @@ function PreviewPane({
         </div>
       </header>
       <div className="client-content">
-        <h2 className="client-offer-title">{appeal.appealTitle?.trim() || "Предложение"}</h2>
+        <h2 className="client-offer-title" data-testid="ca-offer-preview-title">
+          {previewOfferTitle}
+        </h2>
         {draft.message.trim() ? <p className="client-message">{draft.message}</p> : <p className="muted">Без текста</p>}
         {draft.price.trim() ? (
           <p className="client-offer-meta" data-testid="ca-offer-preview-price">
@@ -438,16 +454,22 @@ function PreviewPane({
             ))}
           </ul>
         ) : null}
-        {hasCta ? (
-          <section className="client-offer-card kp-cta-card">
+        {hasClientAction ? (
+          <section className="client-offer-card kp-cta-card" data-testid="ca-offer-cta-action">
             <header>Что предлагает сделать партнёр</header>
-            {draft.clientAction.trim() ? <p>{draft.clientAction}</p> : null}
-            {draft.contactPhone ? (
+            <p>{draft.clientAction.trim()}</p>
+            {hasContactPhone ? (
               <p className="kp-cta-phone">
                 <span className="muted">Телефон: </span>
                 {draft.contactPhone}
               </p>
             ) : null}
+          </section>
+        ) : null}
+        {hasContactPhone && !hasClientAction ? (
+          <section className="client-offer-card kp-cta-card" data-testid="ca-offer-cta-contact">
+            <header>Как связаться с партнёром</header>
+            <p className="kp-cta-phone">{draft.contactPhone}</p>
           </section>
         ) : null}
         <p className="muted small kp-preview-client">Клиент: {clientName}</p>
