@@ -1383,6 +1383,36 @@
   border-radius: 8px;
   box-sizing: border-box;
 }
+.profSidePanel :global(.appeal-client-box-row--invite .certificate-summary) {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-height: 32px;
+}
+.profSidePanel :global(.appeal-client-box-row--invite .certificate-summary strong) {
+  flex: 0 1 auto;
+}
+.profSidePanel :global(.invite-client) {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.profSidePanel :global(.invite-client .btn.secondary) {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 6px 11px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 720;
+  border-radius: 8px;
+}
+.profSidePanel :global(.invite-client .btn.secondary svg) {
+  flex-shrink: 0;
+}
+.profSidePanel :global(.invite-client-error) {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
 .profSidePanel :global(.prof-field-grid),
 .profSidePanel :global(.field-grid) {
   display: grid;
@@ -1467,13 +1497,6 @@
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
   word-break: break-all;
-}
-.profSidePanel :global(.registration-help) {
-  margin-bottom: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px dashed var(--line);
-  background: var(--offset, #f8fafc);
 }
 .profSidePanel :global(.prof-side-actions) {
   margin-bottom: 12px;

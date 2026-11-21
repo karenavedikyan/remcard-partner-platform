@@ -215,7 +215,7 @@ export function ReceivingAppealProfSidePanel({
             {detailPhase === "prof" && profDetail ? (
               <>
                 <section className="appeal-client-box" aria-label="Клиент RemCard" data-testid="ca-prof-client-box">
-                  <div className="appeal-client-box-row">
+                  <div className={`appeal-client-box-row${!panelReadOnly && !hasCabinet ? " appeal-client-box-row--invite" : ""}`}>
                     <div className="certificate-summary" data-testid="ca-prof-client-id-plate">
                       <span>ID клиента RemCard</span>
                       <strong>{publicId ?? "Нет ID"}</strong>
@@ -239,10 +239,9 @@ export function ReceivingAppealProfSidePanel({
                           onSend={() => onOfferOpenChange(true)}
                         />
                       ) : (
-                        <RegistrationHelp
-                          url={inviteUrl}
+                        <InviteClientButton
                           copied={copiedKey === "registration"}
-                          onCopy={() => void copy("registration", inviteUrl)}
+                          onCopy={() => copy("registration", inviteUrl)}
                         />
                       )
                     ) : null}
@@ -459,24 +458,35 @@ function CopyIconButton({
   );
 }
 
-function RegistrationHelp({
-  url,
+function InviteClientButton({
   copied,
   onCopy,
 }: {
-  url: string;
   copied: boolean;
-  onCopy: () => void;
+  onCopy: () => Promise<boolean>;
 }) {
+  const [copyFailed, setCopyFailed] = useState(false);
+  const label = copied ? "Ссылка скопирована" : "Пригласить клиента";
   return (
-    <div className="registration-help" data-testid="ca-prof-registration-help">
-      <span className="muted small">Клиента нет в RemCard — пригласите по ссылке:</span>
-      <div className="registration-link">
-        <a href={url}>{url}</a>
-        <button type="button" className="btn ghost small-btn" onClick={onCopy}>
-          {copied ? "Скопировано" : "Копировать"}
-        </button>
-      </div>
+    <div className="invite-client">
+      <button
+        type="button"
+        className="btn secondary"
+        data-testid="ca-prof-invite-client"
+        title="Скопировать ссылку на регистрацию"
+        onClick={async () => setCopyFailed(!(await onCopy()))}
+      >
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
+          {copied ? <path d="m5 12 4 4L19 6" /> : <>
+            <rect x="9" y="9" width="11" height="11" rx="2" />
+            <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+          </>}
+        </svg>
+        {label}
+      </button>
+      <span className={copyFailed && !copied ? "invite-client-error" : "sr-only"} role="status">
+        {copied ? label : copyFailed ? "Не удалось скопировать ссылку. Попробуйте ещё раз." : ""}
+      </span>
     </div>
   );
 }
