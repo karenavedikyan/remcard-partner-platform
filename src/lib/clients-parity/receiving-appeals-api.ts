@@ -22,11 +22,13 @@ import {
 import { CLIENTS_CONTRACT_BLOCKERS } from "./contracts";
 import { isAllowedProxyRoute } from "@/lib/remcard-proxy";
 import {
-  coerceProfAppealsFromListWire,
+  coerceProfAppealsFromP149ListWire,
+  isP149ListContractWire,
   parseProfFilterCounts,
   profListQueryParams,
   type ProfAppealListRow,
   type ProfListFilters,
+  type ReceivingAppealP149CapabilitiesWire,
 } from "./prof-appeals-adapter";
 
 /** System stage ids — prototype `SYSTEM` constant (client-appeals.js). */
@@ -268,8 +270,10 @@ export type ReceivingAppealDetailWire = {
   refusalReasons?: string[];
   readOnly?: boolean;
   access?: Partial<ReceivingPrincipalAccess>;
-  /** This appeal's own rights (the list/«all» aggregate never applies to a card). */
+  /** Legacy per-card rights (`canManageLeads`, `canScan`). */
   capabilities?: ReceivingRowCapabilities | null;
+  /** Additive p149 rights when server serves PROF contract. */
+  p149Capabilities?: ReceivingAppealP149CapabilitiesWire | null;
 };
 
 /**
@@ -541,7 +545,9 @@ export function normalizeReceivingAccess(
 /** UI view-model after K1 adapter (`coerceK1ClientAppealsListPayload`). */
 export type ReceivingAppealsListResponse = {
   appeals: ReceivingAppealListRow[];
-  /** p149 projection; same rows as `appeals` when wire is ReceivingAppealListItemWire. */
+  /** True when GET carried `filterCounts.remCardMatchCount` (p149 contract, including empty page). */
+  p149ListContract?: boolean;
+  /** p149 rows only — never synthesized from legacy appeals. */
   profAppeals?: ProfAppealListRow[];
   remCardMatchCount?: number;
   /** K1 `83f279e8` — sole write gate until `access` lands. */
@@ -901,12 +907,14 @@ export function coerceK1ClientAppealsListPayload(
   const list: K1ClientAppealsListWire = wire.data?.appeals != null ? wire.data : wire;
   const appealsWire = list.appeals ?? [];
   const appeals = appealsWire.map(mapReceivingAppealListRowFromWire);
-  const profAppeals = coerceProfAppealsFromListWire(appealsWire, mapReceivingAppealListRowFromWire);
+  const p149ListContract = isP149ListContractWire(list);
+  const profAppeals = p149ListContract ? coerceProfAppealsFromP149ListWire(appealsWire) : undefined;
   const remCardMatchCount = parseProfFilterCounts(list) ?? undefined;
   const readOnly = list.readOnly === true;
   const out: ReceivingAppealsListResponse = {
     appeals,
-    profAppeals,
+    ...(p149ListContract ? { p149ListContract: true } : {}),
+    ...(profAppeals != null ? { profAppeals } : {}),
     ...(remCardMatchCount != null ? { remCardMatchCount } : {}),
     readOnly,
     nextCursor: list.nextCursor ?? null,

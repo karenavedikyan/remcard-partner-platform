@@ -12,6 +12,8 @@ import {
 import {
   receivingManualChannelOptions,
   receivingStageDisplayLabel,
+  receivingStageLabelsFromSettings,
+  receivingStatusFilterOptions,
   type ReceivingAppealsListResponse,
   type ReceivingManualChannel,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -38,7 +40,6 @@ export type ReceivingAppealsProfTableProps = {
   stageLabelById?: (row: ProfAppealListRow) => string;
   bulkConfirmSlot?: ReactNode;
   bulkEditSlot?: ReactNode;
-  branchOptions?: Array<{ id: string; label: string }>;
 };
 
 function NumberCopy({
@@ -102,7 +103,6 @@ export function ReceivingAppealsProfTable({
   stageLabelById = (r) => r.stageLabel ?? r.stageId,
   bulkConfirmSlot,
   bulkEditSlot,
-  branchOptions = [],
 }: ReceivingAppealsProfTableProps) {
   const channels: ReceivingManualChannel[] = receivingManualChannelOptions(data.settings);
   const sourceSelectOptions = useMemo(() => {
@@ -117,15 +117,26 @@ export function ReceivingAppealsProfTable({
   }, [channels]);
 
   const requestOptions = useMemo(() => {
+    if (serverBackedFilters) return ["Все"];
     const set = new Set<string>(["Все"]);
     for (const r of profRows) set.add(r.requestText?.trim() || "—");
     return [...set];
-  }, [profRows]);
+  }, [profRows, serverBackedFilters]);
+
+  const statusOptions = useMemo(
+    () =>
+      serverBackedFilters
+        ? receivingStageLabelsFromSettings(data.settings)
+        : receivingStatusFilterOptions(profRows, stageLabelById),
+    [data.settings, profRows, serverBackedFilters, stageLabelById],
+  );
 
   const filtered = useMemo(() => {
     if (serverBackedFilters) return profRows;
     return filterProfAppealsClient(profRows, filters);
   }, [profRows, filters, serverBackedFilters]);
+
+  const listTotal = data.kpis?.total ?? profRows.length;
 
   const remcardCount =
     remCardMatchCount ?? profRows.filter((r) => r.remCard.inCabinet).length;
@@ -150,17 +161,16 @@ export function ReceivingAppealsProfTable({
       checked,
     );
 
-  return (
-    <div className={`${styles.receivingShell} ca-section prof-appeals-wrap`} data-testid="ca-prof-appeals-table">
-      <h1 className="prof-list-heading">
-        Обращения{" "}
-        <span className="pill muted prof-count-pill" data-testid="ca-prof-appeals-count">
-          {filtered.length} из {profRows.length || filtered.length}
-        </span>
-      </h1>
+  const profOnlyFiltersDisabled = serverBackedFilters;
 
+  return (
+    <div
+      className={`${styles.receivingShell} ca-section prof-appeals-wrap`}
+      data-testid="ca-receiving-appeals-list"
+    >
       <div className="filters panel prof-filters" data-testid="ca-prof-filters">
-        <label className="field searchbox search-inner">
+        <div className="prof-filters-primary">
+        <label className="field searchbox search-inner prof-filter-search">
           Поиск по всем полям
           <input
             type="search"
@@ -171,30 +181,16 @@ export function ReceivingAppealsProfTable({
           />
           <ReceivingIcon name="search" data-icon="search" />
         </label>
-        {branchOptions.length > 0 ? (
-          <label className="field">
-            Филиал
-            <select
-              value={filters.branchScope === "all" ? "__all__" : filters.branchId ?? ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "__all__") onFiltersChange({ ...filters, branchScope: "all", branchId: undefined });
-                else onFiltersChange({ ...filters, branchId: v, branchScope: undefined });
-              }}
-            >
-              <option value="__all__">Все доступные</option>
-              {branchOptions.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-        <label className="field">
+        <label className="field prof-filter-request">
           Запрос
           <select
             value={filters.requestFilter ?? "Все"}
+            disabled={profOnlyFiltersDisabled}
+            title={
+              profOnlyFiltersDisabled
+                ? "Фильтр по тексту запроса ждёт поддержку в GET списка."
+                : undefined
+            }
             onChange={(e) => onFiltersChange({ ...filters, requestFilter: e.target.value })}
           >
             {requestOptions.map((o) => (
@@ -204,11 +200,31 @@ export function ReceivingAppealsProfTable({
             ))}
           </select>
         </label>
-        <label className="field" id="source-filter">
-          Источник
+        <label className="field prof-filter-status">
+          Статус
+          <select
+            data-ca-input="status"
+            value={filters.status}
+            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+          >
+            {statusOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field prof-filter-source" id="source-filter">
+          Источник обращения
           <select
             data-ca-input="source"
             value={filters.appealSourceKey ?? "all"}
+            disabled={profOnlyFiltersDisabled}
+            title={
+              profOnlyFiltersDisabled
+                ? "Фильтр по ручному источнику ждёт поддержку в GET списка."
+                : undefined
+            }
             onChange={(e) => onFiltersChange({ ...filters, appealSourceKey: e.target.value })}
           >
             {sourceSelectOptions.map((o) => (
@@ -218,31 +234,40 @@ export function ReceivingAppealsProfTable({
             ))}
           </select>
         </label>
-        <label className="remcard-filter" data-testid="ca-remcard-filter">
-          <input
-            type="checkbox"
-            checked={Boolean(filters.remCardOnly)}
-            onChange={(e) => onFiltersChange({ ...filters, remCardOnly: e.target.checked })}
-          />
-          Только клиенты с RemCard
-          <span className="remcard-filter-count">{remcardCount}</span>
-        </label>
+        </div>
+        <div className="prof-filters-secondary">
+          <label className="remcard-filter" data-testid="ca-remcard-filter">
+            <input
+              type="checkbox"
+              checked={Boolean(filters.remCardOnly)}
+              onChange={(e) => onFiltersChange({ ...filters, remCardOnly: e.target.checked })}
+            />
+            Только клиенты с RemCard
+            <span className="remcard-filter-count">{remcardCount}</span>
+          </label>
+          <div className="prof-filter-actions" data-testid="ca-prof-filter-actions">
+            <button type="button" className="btn ghost" data-testid="ca-prof-sources" onClick={onOpenSources}>
+              Источники
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              data-testid="ca-prof-partner-fields"
+              onClick={onOpenPartnerFields}
+            >
+              Поля партнёра
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="prof-list-toolbar">
-        <div className="prof-list-toolbar-actions">
-          <button type="button" className="btn ghost" data-testid="ca-prof-sources" onClick={onOpenSources}>
-            Источники
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            data-testid="ca-prof-partner-fields"
-            onClick={onOpenPartnerFields}
-          >
-            Поля партнёра
-          </button>
-        </div>
+      <div className="prof-list-head-row">
+        <h1 className="prof-list-heading">
+          Обращения{" "}
+          <span className="pill muted prof-count-pill" data-testid="ca-prof-appeals-count">
+            {serverBackedFilters ? `${filtered.length} из ${listTotal}` : `${filtered.length} из ${profRows.length}`}
+          </span>
+        </h1>
       </div>
 
       {bulkOn ? bulkConfirmSlot : null}
@@ -259,8 +284,8 @@ export function ReceivingAppealsProfTable({
       ) : null}
       {bulkOn ? bulkEditSlot : null}
 
-      <div className="table-wrap" data-testid="ca-prof-table-wrap">
-        <div className="table-head" id="table-head">
+      <div className="prof-table-wrap" data-testid="ca-prof-table-wrap">
+        <div className="prof-table-head" id="table-head">
           {bulkOn ? (
             <label className="check select-all">
               <input
@@ -298,7 +323,7 @@ export function ReceivingAppealsProfTable({
               const sourceLabel = profRowSourceLabel(row);
               const writable = isWritable(row);
               return (
-                <div key={row.id} className="entry row-lane" data-testid={`ca-prof-row-${row.id}`}>
+                <div key={row.id} className="prof-table-row" data-testid={`ca-prof-row-${row.id}`}>
                   {bulkOn ? (
                     writable ? (
                       <label className="check pick">
@@ -317,19 +342,25 @@ export function ReceivingAppealsProfTable({
                   )}
                   <button
                     type="button"
-                    className="entry row name-cell"
+                    className="prof-name-cell"
                     data-ca-action={`open:${row.id}`}
                     onClick={() => onOpenAppeal?.(row.id)}
                   >
-                    <div className="title-line name-button">
-                      <strong>{row.appealTitle?.trim() || row.clientName}</strong>
-                    </div>
-                    <small className="muted">{profAppealRowSubtitle(row, branch)}</small>
+                    <strong className="prof-name-title">{row.appealTitle?.trim() || row.clientName}</strong>
+                    <small className="muted prof-name-sub">{profAppealRowSubtitle(row, branch ? null : undefined)}</small>
+                    {branch ? (
+                      <small className="ca-row-branch muted" data-testid="ca-row-branch">
+                        {branch}
+                      </small>
+                    ) : null}
                   </button>
-                  <span className={`row-state appeal-status ${profStageStatusClass(row.stageId)} pill`}>
+                  <span
+                    className={`prof-row-status appeal-status ${profStageStatusClass(row.stageId)} pill`}
+                    title={statusLabel}
+                  >
                     {statusLabel}
                   </span>
-                  <span className="request muted small">{row.requestText?.trim() || "—"}</span>
+                  <span className="prof-row-request muted small">{row.requestText?.trim() || "—"}</span>
                   <NumberCopy
                     label="№ сертификата"
                     value={row.certificatePromoCode}
@@ -352,7 +383,7 @@ export function ReceivingAppealsProfTable({
                     {sourceLabel}
                   </span>
                   <span className="row-assignee small">{row.responsible?.displayLabel?.trim() || "—"}</span>
-                  <span className="row-account small" data-testid="ca-prof-account">
+                  <span className="prof-row-account small" data-testid="ca-prof-account">
                     {row.remCard.inCabinet ? (
                       <>
                         <span aria-hidden="true">✓</span> Есть в RemCard

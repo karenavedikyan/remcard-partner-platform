@@ -792,14 +792,76 @@
   font-size: clamp(1.25rem, 2.5vw, 1.5rem);
 }
 .clientsScope :global(.prof-filters.filters) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 150px) minmax(0, 128px) minmax(0, 180px);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  margin-bottom: 8px;
+}
+.clientsScope :global(.prof-filters .prof-filters-primary) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
   align-items: end;
+}
+.clientsScope :global(.prof-filters .prof-filters-secondary) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  justify-content: space-between;
+}
+.clientsScope :global(.prof-filters .prof-filter-search) {
+  position: relative;
+  grid-column: 1 / -1;
+}
+.clientsScope :global(.prof-filters .prof-filter-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.clientsScope :global(.prof-filters .prof-filter-actions .btn) {
+  min-width: 0;
+  white-space: nowrap;
 }
 .clientsScope :global(.prof-filters .search-inner) {
   position: relative;
-  grid-column: 1 / -1;
+}
+.clientsScope :global(.prof-list-head-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 12px;
+}
+.clientsScope :global(.prof-list-head-row .prof-list-heading) {
+  margin: 0;
+}
+@media (min-width: 960px) {
+  .clientsScope :global(.prof-filters .prof-filters-primary) {
+    grid-template-columns:
+      minmax(200px, 2.2fr) minmax(120px, 0.9fr) minmax(140px, 1fr) minmax(160px, 1.1fr);
+  }
+  .clientsScope :global(.prof-filters .prof-filter-search) {
+    grid-column: auto;
+  }
+  .clientsScope :global(.prof-filters .prof-filter-source),
+  .clientsScope :global(.prof-filters #source-filter) {
+    grid-column: auto;
+  }
+}
+@media (max-width: 480px) {
+  .clientsScope :global(.prof-filters .prof-filters-primary) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .clientsScope :global(.prof-filters .prof-filter-actions) {
+    width: 100%;
+    margin-left: 0;
+  }
+  .clientsScope :global(.prof-filters .prof-filter-actions .btn) {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
 }
 .clientsScope :global(.prof-filters .search-inner [data-icon="search"]) {
   position: absolute;
@@ -842,10 +904,12 @@
   border-color: var(--good, var(--green, #30684c));
   background: color-mix(in srgb, var(--good, #30684c) 12%, var(--surface));
 }
-.clientsScope :global(.table-wrap .entry) {
+.clientsScope :global(.prof-appeals-wrap .prof-table-row) {
   display: grid;
-  grid-template-columns: 20px minmax(150px, 1.45fr) minmax(92px, 0.6fr) minmax(100px, 1.1fr) minmax(124px, 0.9fr) minmax(116px, 0.9fr) minmax(70px, 0.68fr) minmax(91px, 0.7fr) 110px 34px;
-  gap: 7px;
+  grid-template-columns:
+    20px minmax(160px, 1.5fr) minmax(120px, 0.85fr) minmax(96px, 1fr) minmax(108px, 0.85fr)
+    minmax(108px, 0.85fr) minmax(76px, 0.65fr) minmax(88px, 0.65fr) minmax(118px, 0.75fr) 34px;
+  gap: 8px;
   align-items: center;
   padding: 9px 12px;
   border: 1px solid var(--line);
@@ -853,14 +917,59 @@
   background: var(--surface);
   margin-bottom: 8px;
 }
-.clientsScope :global(.table-wrap .table-head) {
+.clientsScope :global(.prof-appeals-wrap .prof-table-head) {
   display: grid;
-  grid-template-columns: 20px minmax(150px, 1.45fr) minmax(92px, 0.6fr) minmax(100px, 1.1fr) minmax(124px, 0.9fr) minmax(116px, 0.9fr) minmax(70px, 0.68fr) minmax(91px, 0.7fr) 110px 34px;
-  gap: 7px;
+  grid-template-columns:
+    20px minmax(160px, 1.5fr) minmax(120px, 0.85fr) minmax(96px, 1fr) minmax(108px, 0.85fr)
+    minmax(108px, 0.85fr) minmax(76px, 0.65fr) minmax(88px, 0.65fr) minmax(118px, 0.75fr) 34px;
+  gap: 8px;
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
   padding: 0 12px 8px;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-name-cell) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-name-title),
+.clientsScope :global(.prof-appeals-wrap .prof-name-sub) {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-row-status) {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  justify-self: start;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-row-request) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-row-account) {
+  justify-self: end;
+  text-align: right;
+  white-space: nowrap;
 }
 .clientsScope :global(.appeal-status.pill) {
   display: inline-flex;
@@ -904,10 +1013,10 @@
   padding: 0;
 }
 @media (max-width: 1280px) {
-  .clientsScope :global(.table-wrap .table-head span:not(:first-child)) {
+  .clientsScope :global(.prof-appeals-wrap .prof-table-head span:not(:first-child)) {
     display: none;
   }
-  .clientsScope :global(.table-wrap .entry) {
+  .clientsScope :global(.prof-appeals-wrap .prof-table-row) {
     grid-template-areas:
       "pick subject subject open"
       ". status account account"
@@ -916,32 +1025,34 @@
       ". source source .";
     grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 36px;
   }
-  .clientsScope :global(.table-wrap .pick) {
+  .clientsScope :global(.prof-appeals-wrap .pick) {
     grid-area: pick;
   }
-  .clientsScope :global(.table-wrap .name-cell) {
+  .clientsScope :global(.prof-appeals-wrap .prof-name-cell) {
     grid-area: subject;
   }
-  .clientsScope :global(.table-wrap .row-state) {
+  .clientsScope :global(.prof-appeals-wrap .prof-row-status) {
     grid-area: status;
+    justify-self: start;
+    max-width: calc(100% - 8px);
   }
-  .clientsScope :global(.table-wrap .request) {
+  .clientsScope :global(.prof-appeals-wrap .prof-row-request) {
     grid-area: request;
   }
-  .clientsScope :global(.table-wrap .row-account) {
+  .clientsScope :global(.prof-appeals-wrap .prof-row-account) {
     grid-area: account;
     justify-self: end;
   }
-  .clientsScope :global(.table-wrap .row-source) {
+  .clientsScope :global(.prof-appeals-wrap .row-source) {
     grid-area: source;
   }
-  .clientsScope :global(.table-wrap .certificate-cell) {
+  .clientsScope :global(.prof-appeals-wrap .certificate-cell) {
     grid-area: certificate;
   }
-  .clientsScope :global(.table-wrap .one-c-cell) {
+  .clientsScope :global(.prof-appeals-wrap .one-c-cell) {
     grid-area: one-c;
   }
-  .clientsScope :global(.number-label) {
+  .clientsScope :global(.prof-appeals-wrap .number-label) {
     display: block;
   }
 }

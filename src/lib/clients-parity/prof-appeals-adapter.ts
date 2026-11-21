@@ -1,25 +1,31 @@
 /**
  * PROF p149 — mirror of navigator `receivingAppealsWireContract.ts`
- * @see karenavedikyan/remcard-navigator @ cursor/remcard-149-f208 (96b6431)
+ * @see karenavedikyan/remcard-navigator @ 5b93ee1
  */
 
 import type {
+  ReceivingAppealDetailWire as ReceivingAppealDetailEnvelopeWire,
+  ReceivingAppealHistoryEntry,
+  ReceivingAppealHistoryWire,
   ReceivingAppealListRow,
-  ReceivingAppealListRowWire,
   ReceivingListFilters,
   ReceivingRowCapabilities,
+  ReceivingWorkingStage,
 } from "./receiving-appeals-api";
+import { parseReceivingRowCapabilities, receivingDetailWireReadOnly } from "./receiving-appeals-api";
 
 export const REMCARD_CLIENT_LOGIN_URL = "https://remcard.ru/?login=client" as const;
 
+/** List row — only `inCabinet` (no registration timestamp). */
 export type ReceivingAppealRemCardListWire = {
   inCabinet: boolean;
-  registeredAt: string | null;
 };
 
+/** Detail card — never treat `certificateTermsAcceptedAt` as RemCard registration. */
 export type ReceivingAppealRemCardDetailWire = ReceivingAppealRemCardListWire & {
   publicId?: string;
   inviteLoginUrl?: typeof REMCARD_CLIENT_LOGIN_URL;
+  certificateTermsAcceptedAt?: string;
 };
 
 export type ReceivingAppealExternalRefWire = {
@@ -33,11 +39,17 @@ export type ReceivingAppealResponsibleWire = {
   displayLabel: string;
 };
 
-export type ReceivingAppealCapabilitiesWire = ReceivingRowCapabilities & {
+/** Legacy per-row wire — exactly `{ canManageLeads, canScan }`. */
+export type ReceivingAppealLegacyCapabilitiesWire = ReceivingRowCapabilities;
+
+export type ReceivingAppealP149CapabilitiesWire = {
   canSelectForBulkWrite: boolean;
   canPrepareCommercialProposal: boolean;
   canSendCommercialProposal: boolean;
 };
+
+/** Merged view for UI (legacy + additive p149). */
+export type ProfAppealCapabilitiesWire = ReceivingRowCapabilities & ReceivingAppealP149CapabilitiesWire;
 
 export type ReceivingAppealListItemWire = {
   id: string;
@@ -57,7 +69,8 @@ export type ReceivingAppealListItemWire = {
   createdAt: string;
   updatedAt: string;
   remCard: ReceivingAppealRemCardListWire;
-  capabilities: ReceivingAppealCapabilitiesWire;
+  capabilities: ReceivingAppealLegacyCapabilitiesWire;
+  p149Capabilities: ReceivingAppealP149CapabilitiesWire;
 };
 
 export type CommercialProposalInvestigatedDestination = {
@@ -74,18 +87,12 @@ export type CommercialProposalDeliveryWire = {
   investigatedDestinations: CommercialProposalInvestigatedDestination[];
 };
 
-export type ReceivingAppealDetailWire = ReceivingAppealListItemWire & {
+export type ReceivingAppealProfDetailRowWire = ReceivingAppealListItemWire & {
   remCard: ReceivingAppealRemCardDetailWire;
   clientCity: string | null;
   clientContact: string | null;
   budgetHint: string | null;
   privateNotes: string | null;
-  discountPercent: number | null;
-  certValidUntil: string | null;
-  purchaseOrderId: string | null;
-  paidAmountKopecks: number | null;
-  paidAt: string | null;
-  referrerDisplayName: string | null;
   commercialProposal: CommercialProposalDeliveryWire;
 };
 
@@ -93,32 +100,11 @@ export type ReceivingAppealsListFilterCountsWire = {
   remCardMatchCount: number;
 };
 
-export type ReceivingAppealsListResponseWire = {
-  appeals: ReceivingAppealListItemWire[];
-  filterCounts: ReceivingAppealsListFilterCountsWire;
-  nextCursor: string | null;
-  bucket: string;
-  tab: "incoming";
-};
-
-/** UI row — list + legacy bulk/stage helpers. */
-export type ProfAppealListRow = ReceivingAppealListRow & {
-  appealTitle: string | null;
-  clientDisplayName: string;
-  requestText: string | null;
-  certificatePromoCode: string | null;
-  erpDocumentNumber: string | null;
-  externalRefs: ReceivingAppealExternalRefWire[];
-  manualSourceLabel: string | null;
-  responsible: ReceivingAppealResponsibleWire | null;
-  originKind: "CERTIFICATE" | "MANUAL";
-  remCard: ReceivingAppealRemCardListWire;
-  profCapabilities: ReceivingAppealCapabilitiesWire;
-};
-
 export type ProfListFilters = ReceivingListFilters & {
   remCardOnly?: boolean;
+  /** Client-only until backend list query accepts requestText. */
   requestFilter?: string;
+  /** Client-only until backend list query accepts manualSourceKey. */
   appealSourceKey?: string;
 };
 
@@ -137,15 +123,67 @@ export type ProfAppealProfilePatchBody = {
   externalRefs?: ReceivingAppealExternalRefWire[] | null;
 };
 
+/** UI row — list + legacy bulk/stage helpers. */
+export type ProfAppealListRow = ReceivingAppealListRow & {
+  appealTitle: string | null;
+  clientDisplayName: string;
+  requestText: string | null;
+  certificatePromoCode: string | null;
+  erpDocumentNumber: string | null;
+  externalRefs: ReceivingAppealExternalRefWire[];
+  manualSourceLabel: string | null;
+  responsible: ReceivingAppealResponsibleWire | null;
+  originKind: "CERTIFICATE" | "MANUAL";
+  remCard: ReceivingAppealRemCardListWire;
+  profCapabilities: ProfAppealCapabilitiesWire;
+};
+
+/**
+ * Authoritative p149 list signal: `filterCounts.remCardMatchCount` on GET (even 0 on an empty page).
+ * Do not infer from row shape or synthesized projections.
+ */
+export function isP149ListContractWire(wire: unknown): boolean {
+  if (!wire || typeof wire !== "object") return false;
+  const fc = (wire as { filterCounts?: unknown }).filterCounts;
+  if (!fc || typeof fc !== "object") return false;
+  const n = (fc as ReceivingAppealsListFilterCountsWire).remCardMatchCount;
+  return typeof n === "number" && Number.isFinite(n);
+}
+
+function parseP149Capabilities(raw: unknown): ReceivingAppealP149CapabilitiesWire | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.canSelectForBulkWrite !== "boolean") return null;
+  if (typeof r.canPrepareCommercialProposal !== "boolean") return null;
+  if (typeof r.canSendCommercialProposal !== "boolean") return null;
+  return {
+    canSelectForBulkWrite: r.canSelectForBulkWrite,
+    canPrepareCommercialProposal: r.canPrepareCommercialProposal,
+    canSendCommercialProposal: r.canSendCommercialProposal,
+  };
+}
+
+export function mergeProfCapabilities(
+  legacy?: ReceivingRowCapabilities | null,
+  p149?: ReceivingAppealP149CapabilitiesWire | null,
+): ProfAppealCapabilitiesWire {
+  const base = legacy ?? { canManageLeads: false, canScan: false };
+  return {
+    canManageLeads: base.canManageLeads,
+    canScan: base.canScan,
+    canSelectForBulkWrite: p149?.canSelectForBulkWrite ?? base.canManageLeads,
+    canPrepareCommercialProposal: p149?.canPrepareCommercialProposal ?? false,
+    canSendCommercialProposal: p149?.canSendCommercialProposal ?? false,
+  };
+}
+
 export function isProfAppealListItemWire(raw: unknown): raw is ReceivingAppealListItemWire {
   if (!raw || typeof raw !== "object") return false;
   const r = raw as Record<string, unknown>;
-  return (
-    typeof r.id === "string" &&
-    r.remCard != null &&
-    typeof r.remCard === "object" &&
-    typeof (r.remCard as ReceivingAppealRemCardListWire).inCabinet === "boolean"
-  );
+  const rem = r.remCard;
+  if (!rem || typeof rem !== "object") return false;
+  if (typeof (rem as ReceivingAppealRemCardListWire).inCabinet !== "boolean") return false;
+  return parseP149Capabilities(r.p149Capabilities) != null;
 }
 
 export function profListQueryParams(filters: Partial<ProfListFilters>): URLSearchParams {
@@ -155,29 +193,65 @@ export function profListQueryParams(filters: Partial<ProfListFilters>): URLSearc
 }
 
 export function parseProfFilterCounts(wire: unknown): number | null {
-  if (!wire || typeof wire !== "object") return null;
-  const fc = (wire as { filterCounts?: unknown }).filterCounts;
-  if (!fc || typeof fc !== "object") return null;
-  const n = (fc as ReceivingAppealsListFilterCountsWire).remCardMatchCount;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
+  if (!isP149ListContractWire(wire)) return null;
+  const fc = (wire as { filterCounts: ReceivingAppealsListFilterCountsWire }).filterCounts;
+  return fc.remCardMatchCount;
 }
 
-function defaultProfCapabilities(
-  base?: ReceivingRowCapabilities | null,
-): ReceivingAppealCapabilitiesWire {
+const DEFAULT_COMMERCIAL_PROPOSAL: CommercialProposalDeliveryWire = {
+  prepareAllowed: false,
+  previewAllowed: false,
+  sendEnabled: false,
+  sendDisabledReason: null,
+  investigatedDestinations: [],
+};
+
+function commercialProposalFromWire(raw: unknown): CommercialProposalDeliveryWire {
+  if (!raw || typeof raw !== "object") return DEFAULT_COMMERCIAL_PROPOSAL;
+  const w = raw as CommercialProposalDeliveryWire;
   return {
-    canManageLeads: base?.canManageLeads ?? false,
-    canScan: base?.canScan ?? false,
-    canSelectForBulkWrite: base?.canManageLeads ?? false,
-    canPrepareCommercialProposal: false,
-    canSendCommercialProposal: false,
+    prepareAllowed: w.prepareAllowed === true,
+    previewAllowed: w.previewAllowed === true,
+    sendEnabled: w.sendEnabled === true,
+    sendDisabledReason: w.sendDisabledReason ?? null,
+    investigatedDestinations: Array.isArray(w.investigatedDestinations) ? w.investigatedDestinations : [],
   };
+}
+
+export type ProfAppealDetailRow = ProfAppealListRow & {
+  remCard: ReceivingAppealRemCardDetailWire;
+  clientCity: string | null;
+  clientContact: string | null;
+  budgetHint: string | null;
+  privateNotes: string | null;
+  commercialProposal: CommercialProposalDeliveryWire;
+};
+
+export type ProfAppealDetailState = {
+  appeal: ProfAppealDetailRow;
+  revision: number;
+  history: ReceivingAppealHistoryEntry[];
+  workingStages: ReceivingWorkingStage[];
+  refusalReasons: string[];
+  detailReadOnly: boolean;
+};
+
+export function mapProfHistoryFromWire(rows: ReceivingAppealHistoryWire[]): ReceivingAppealHistoryEntry[] {
+  return (rows ?? []).map((h, index) => ({
+    id: `hist_${index}_${h.at}`,
+    at: h.at,
+    authorLabel: h.authorLabel,
+    text: h.text,
+    reason: h.reason ?? null,
+  }));
 }
 
 /** Map authoritative p149 list wire → UI row (also fills legacy ReceivingAppealListRow fields). */
 export function mapProfAppealListItemWire(wire: ReceivingAppealListItemWire): ProfAppealListRow {
   const manualEntry = wire.originKind === "MANUAL";
   const interest = wire.requestText?.trim() || "—";
+  const legacyCaps = parseReceivingRowCapabilities(wire.capabilities) ?? wire.capabilities;
+  const profCapabilities = mergeProfCapabilities(legacyCaps, wire.p149Capabilities);
   const legacy: ReceivingAppealListRow = {
     id: wire.id,
     clientName: wire.clientDisplayName.trim() || "—",
@@ -193,10 +267,7 @@ export function mapProfAppealListItemWire(wire: ReceivingAppealListItemWire): Pr
     manualEntry,
     manualSourceKey: wire.manualSourceKey,
     receivingBranchId: wire.receivingBranchId,
-    capabilities: {
-      canManageLeads: wire.capabilities.canManageLeads,
-      canScan: wire.capabilities.canScan,
-    },
+    capabilities: { canManageLeads: legacyCaps.canManageLeads, canScan: legacyCaps.canScan },
   };
   return {
     ...legacy,
@@ -209,41 +280,66 @@ export function mapProfAppealListItemWire(wire: ReceivingAppealListItemWire): Pr
     manualSourceLabel: wire.manualSourceLabel,
     responsible: wire.responsible,
     originKind: wire.originKind,
-    remCard: wire.remCard,
-    profCapabilities: wire.capabilities,
+    remCard: { inCabinet: wire.remCard.inCabinet },
+    profCapabilities,
   };
 }
 
-/** Legacy K1 row before p149 deploy — best-effort prof projection without heuristics on cabinet. */
-export function mapLegacyReceivingRowToProf(base: ReceivingAppealListRow, wire?: ReceivingAppealListRowWire): ProfAppealListRow {
-  const w = wire as (ReceivingAppealListRowWire & Partial<ReceivingAppealListItemWire>) | undefined;
-  if (w && isProfAppealListItemWire(w)) return mapProfAppealListItemWire(w);
-  const promo = w?.certificatePromoCode?.trim() || null;
-  const cap = defaultProfCapabilities(base.capabilities);
+/** Only wire rows that carry p149 overlay — never legacy projection. */
+export function coerceProfAppealsFromP149ListWire(appealsWire: unknown[]): ProfAppealListRow[] {
+  return appealsWire.filter(isProfAppealListItemWire).map(mapProfAppealListItemWire);
+}
+
+export function parseProfAppealDetailWire(
+  envelope: ReceivingAppealDetailEnvelopeWire,
+  opts?: { scopeAll?: boolean },
+): ProfAppealDetailState | null {
+  const appealRaw = envelope.appeal as Record<string, unknown>;
+  if (!isProfAppealListItemWire(appealRaw)) return null;
+
+  const listRow = mapProfAppealListItemWire(appealRaw as ReceivingAppealListItemWire);
+  const remWire = (appealRaw.remCard ?? {}) as ReceivingAppealRemCardDetailWire;
+  const remDetail: ReceivingAppealRemCardDetailWire = {
+    inCabinet: remWire.inCabinet === true,
+    publicId: remWire.publicId?.trim() || undefined,
+    inviteLoginUrl: remWire.inviteLoginUrl,
+    certificateTermsAcceptedAt: remWire.certificateTermsAcceptedAt,
+  };
+
+  const envelopeP149 = parseP149Capabilities(
+    (envelope as { p149Capabilities?: unknown }).p149Capabilities,
+  );
+  const profCaps = mergeProfCapabilities(
+    parseReceivingRowCapabilities(envelope.capabilities ?? appealRaw.capabilities) ??
+      (appealRaw.capabilities as ReceivingRowCapabilities),
+    envelopeP149 ?? (appealRaw.p149Capabilities as ReceivingAppealP149CapabilitiesWire),
+  );
+
+  const commercialProposal = commercialProposalFromWire(
+    (appealRaw as { commercialProposal?: unknown }).commercialProposal ??
+      (envelope as { commercialProposal?: unknown }).commercialProposal,
+  );
+
+  const detailReadOnly =
+    receivingDetailWireReadOnly(envelope, { scopeAll: opts?.scopeAll }) || !profCaps.canManageLeads;
+
   return {
-    ...base,
-    appealTitle: w?.appealTitle ?? null,
-    clientDisplayName: base.clientName,
-    requestText: base.interest === "—" ? null : base.interest,
-    certificatePromoCode: promo,
-    erpDocumentNumber: (w as { erpDocumentNumber?: string | null })?.erpDocumentNumber ?? null,
-    externalRefs: [],
-    manualSourceLabel: null,
-    responsible: null,
-    originKind: base.manualEntry ? "MANUAL" : "CERTIFICATE",
-    remCard: { inCabinet: false, registeredAt: null },
-    profCapabilities: cap,
+    appeal: {
+      ...listRow,
+      profCapabilities: profCaps,
+      remCard: remDetail,
+      clientCity: (appealRaw.clientCity as string | null) ?? null,
+      clientContact: (appealRaw.clientContact as string | null) ?? null,
+      budgetHint: (appealRaw.budgetHint as string | null) ?? null,
+      privateNotes: (appealRaw.privateNotes as string | null) ?? null,
+      commercialProposal,
+    },
+    revision: typeof envelope.revision === "number" ? envelope.revision : Number(envelope.revision) || 0,
+    history: mapProfHistoryFromWire(envelope.history ?? []),
+    workingStages: envelope.workingStages ?? [],
+    refusalReasons: envelope.refusalReasons ?? [],
+    detailReadOnly,
   };
-}
-
-export function coerceProfAppealsFromListWire(
-  appealsWire: unknown[],
-  mapLegacy: (w: ReceivingAppealListRowWire) => ReceivingAppealListRow,
-): ProfAppealListRow[] {
-  return appealsWire.map((raw) => {
-    if (isProfAppealListItemWire(raw)) return mapProfAppealListItemWire(raw);
-    return mapLegacyReceivingRowToProf(mapLegacy(raw as ReceivingAppealListRowWire), raw as ReceivingAppealListRowWire);
-  });
 }
 
 export function profAppealRowSubtitle(row: ProfAppealListRow, branchLabel?: string | null): string {
@@ -311,3 +407,6 @@ export function commercialProposalBlockedMessage(wire?: CommercialProposalDelive
   if (wire.sendEnabled) return "";
   return wire.sendDisabledReason?.trim() || "Отправка КП отключена.";
 }
+
+/** @deprecated use coerceProfAppealsFromP149ListWire */
+export const coerceProfAppealsFromListWire = coerceProfAppealsFromP149ListWire;

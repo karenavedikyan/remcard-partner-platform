@@ -7,6 +7,12 @@ import type { ReceivingAppealsListResponse } from "./receiving-appeals-api";
 
 const AT = "2026-11-10T10:00:00.000Z";
 
+const P149 = {
+  canSelectForBulkWrite: true,
+  canPrepareCommercialProposal: true,
+  canSendCommercialProposal: false,
+} as const;
+
 function wireItem(over: Partial<ReceivingAppealListItemWire>): ReceivingAppealListItemWire {
   return {
     id: "appeal-2408",
@@ -25,14 +31,9 @@ function wireItem(over: Partial<ReceivingAppealListItemWire>): ReceivingAppealLi
     originKind: "MANUAL",
     createdAt: AT,
     updatedAt: AT,
-    remCard: { inCabinet: true, registeredAt: AT },
-    capabilities: {
-      canManageLeads: true,
-      canScan: true,
-      canSelectForBulkWrite: true,
-      canPrepareCommercialProposal: true,
-      canSendCommercialProposal: false,
-    },
+    remCard: { inCabinet: true },
+    capabilities: { canManageLeads: true, canScan: true },
+    p149Capabilities: { ...P149 },
     ...over,
   };
 }
@@ -48,7 +49,7 @@ export const PROF_DEMO_APPEAL_2401: ProfAppealListRow = mapProfAppealListItemWir
     manualSourceLabel: "Направил партнёр",
     stageKey: "sys_new",
     stageLabel: "Новое",
-    remCard: { inCabinet: false, registeredAt: null },
+    remCard: { inCabinet: false },
   }),
 );
 
@@ -62,13 +63,14 @@ export const PROF_DEMO_APPEALS: ProfAppealListRow[] = [
         appealTitle: `Обращение ${i + 3}`,
         clientDisplayName: `Демо ${i + 1}`,
         requestText: i % 2 ? "Плитка" : "Сантехника",
-        remCard: { inCabinet: false, registeredAt: null },
+        remCard: { inCabinet: false },
       }),
     ),
   ),
 ];
 
 export type ProfReceivingAppealsListResponse = ReceivingAppealsListResponse & {
+  p149ListContract: true;
   profAppeals: ProfAppealListRow[];
   remCardMatchCount: number;
 };
@@ -76,6 +78,7 @@ export type ProfReceivingAppealsListResponse = ReceivingAppealsListResponse & {
 export function profDemoListResponse(over: Partial<ReceivingAppealsListResponse> = {}): ProfReceivingAppealsListResponse {
   return {
     appeals: PROF_DEMO_APPEALS,
+    p149ListContract: true,
     profAppeals: PROF_DEMO_APPEALS,
     remCardMatchCount: 1,
     readOnly: false,

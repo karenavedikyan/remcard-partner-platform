@@ -425,8 +425,8 @@ export function ReceivingAppealsWorkspace({
   const listLeadsAllowed = bulkWriteAllowed && data?.access?.canManageLeads !== false;
   const scopeIsAll = branchSelection?.kind === "all";
   // A card/row is editable by its own server flag, never by the aggregate of the general list.
-  const profAppeals = data?.profAppeals ?? [];
-  const profLayout = profAppeals.length > 0;
+  const profLayout = data?.p149ListContract === true;
+  const profAppeals = profLayout ? (data?.profAppeals ?? []) : [];
   const rowWritable = useCallback(
     (row: ReceivingAppealListRow) => {
       const profRow = data?.profAppeals?.find((p) => p.id === row.id);
@@ -809,7 +809,7 @@ export function ReceivingAppealsWorkspace({
             throw new Error(res.message);
           }
           setDetailId(res.appealId);
-          setView("detail");
+          setView(profLayout ? "list" : "detail");
           await refreshListAfterMutation(true);
         }}
       />
@@ -906,8 +906,6 @@ export function ReceivingAppealsWorkspace({
       />
     ) : null;
 
-  const branchOptions =
-    branches?.map((b) => ({ id: b.id, label: formatStaffBranchLine(b) })) ?? [];
   const openProfSide = (id: string) => {
     setDetailId(id);
     setView("list");
@@ -934,7 +932,11 @@ export function ReceivingAppealsWorkspace({
           filters={listFilters}
           onFiltersChange={onListFiltersChange}
           serverBackedFilters={serverBacked}
+          listHasMore={receivingListHasMore(data)}
+          loadingMore={loadingMore}
+          onLoadMore={onLoadMore}
           readOnly={leadsReadOnly}
+          scanOnly={!readOnly && !leadsAllowed && scanAllowed}
           bulk={leadsAllowed ? bulkCallbacks : undefined}
           rowWritable={(row) => profRowCanBulkSelect(row)}
           branchLabelOf={
@@ -942,12 +944,30 @@ export function ReceivingAppealsWorkspace({
               ? (row) => receivingBranchLabelById(row.receivingBranchId, branches)
               : undefined
           }
-          branchOptions={branchOptions}
           onOpenAppeal={openProfSide}
           onOpenSources={() => setSourcesOpen(true)}
-          onOpenPartnerFields={
+          onNavigateScan={
+            scanAllowed
+              ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("scan"))
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateManual={
+            leadsAllowed
+              ? () => (allBranchesShown ? setBranchRequiredNotice(true) : setView("manual"))
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateSettings={
             leadsAllowed
               ? () => setView("settings")
+              : () => setPersistNotice(denialMessage)
+          }
+          onNavigateAnalytics={() => setView("analytics")}
+          onShowAllBranches={
+            branchSelection?.kind === "branch" ? () => changeBranchScope({ branchScope: "all" }) : undefined
+          }
+          onOpenPartnerFields={
+            leadsAllowed
+              ? () => setSourcesOpen(true)
               : () => setPersistNotice(denialMessage)
           }
         />
