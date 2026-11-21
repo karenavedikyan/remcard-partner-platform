@@ -41,6 +41,56 @@ describe("explicit read scope in requests", () => {
     expect(receivingReadScopeParams({ branchId: "b", branchScope: "all" }).toString()).toBe("branchId=b");
   });
 
+  it("p149 bulk CRM PATCH uses fresh revision and changed fields only", async () => {
+    const P149_ROW = {
+      id: "a1",
+      appealTitle: "T",
+      clientDisplayName: "Клиент",
+      requestText: "Q",
+      stageKey: "ws_work",
+      stageLabel: "В работе",
+      certificatePromoCode: null,
+      erpDocumentNumber: null,
+      externalRefs: [],
+      manualSourceKey: "phone",
+      manualSourceLabel: "Звонок",
+      responsible: null,
+      receivingBranchId: "b1",
+      originKind: "MANUAL" as const,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-02T00:00:00.000Z",
+      remCard: { inCabinet: true },
+      capabilities: { canManageLeads: true, canScan: true },
+      p149Capabilities: {
+        canSelectForBulkWrite: true,
+        canPrepareCommercialProposal: true,
+        canSendCommercialProposal: false,
+      },
+    };
+    const wire = (revision: number) => ({
+      revision,
+      appeal: { ...P149_ROW, clientCity: "Москва", budgetHint: null, clientContact: null, privateNotes: "" },
+      history: [],
+      workingStages: [],
+      refusalReasons: [],
+      capabilities: { canManageLeads: true, canScan: true },
+    });
+    const fetchDetail = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, wire: wire(3) })
+      .mockResolvedValueOnce({ ok: true, wire: wire(4) });
+    const patchProfile = vi.fn().mockResolvedValue({ ok: true, revision: 4 });
+    const patchStage = vi.fn();
+    const { outcomes } = await applyReceivingBulkEditsPerId(
+      ["a1"],
+      { stageId: "", serviceNote: "", appendNote: true, prof: { clientCity: "Казань" } },
+      { appeals: [{ id: "a1", stageId: "ws_work" } as never], workingStages: [], stageBlocked: false },
+      { fetchDetail, patchStage, patchProfile },
+    );
+    expect(outcomes[0]?.ok).toBe(true);
+    expect(patchProfile).toHaveBeenCalledWith("a1", { expectedRevision: 3, clientCity: "Казань" });
+  });
+
   it("bulk edit reads the card with the list scope but patches without it", async () => {
     const fetchDetail = vi.fn().mockResolvedValue({ ok: false, code: "ERROR", message: "x" });
     await applyReceivingBulkEditsPerId(

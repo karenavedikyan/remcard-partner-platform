@@ -14,6 +14,7 @@ import {
   RECEIVING_ACCESS_LIST_ONLY_DENIAL,
   RECEIVING_EMPTY_SETTINGS,
   mergeReceivingAppealPages,
+  mergeProfAppealPages,
   fetchReceivingPartnerSettings,
   isReceivingBatchProxyReady,
   postReceivingAppealsBatch,
@@ -41,6 +42,7 @@ import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
 import type { ReceivingBulkAction, ReceivingBulkContractState } from "./ReceivingBulkActions";
 import { ReceivingBulkConfirmPanel } from "./ReceivingBulkConfirmPanel";
 import { ReceivingBulkEditPanel } from "./ReceivingBulkEditPanel";
+import { ReceivingProfBulkEditPanel } from "./ReceivingProfBulkEditPanel";
 import { ReceivingBranchFilter } from "./ReceivingBranchFilter";
 import {
   receivingBranchLabelById,
@@ -139,6 +141,8 @@ export function ReceivingAppealsWorkspace({
   const [partnerWorkPhones, setPartnerWorkPhones] = useState<
     Array<{ id: string; label: string; number: string }>
   >([]);
+  const [partnerLogoUrl, setPartnerLogoUrl] = useState<string | null>(null);
+  const [partnerType, setPartnerType] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [batchPending, setBatchPending] = useState(false);
   const bulkInFlightRef = useRef(false);
@@ -205,11 +209,17 @@ export function ReceivingAppealsWorkspace({
       }
       setData((prev) => {
         if (!append || !prev) return res.data;
+        const mergedProf =
+          res.data.profAppeals != null || prev.profAppeals != null
+            ? mergeProfAppealPages(prev.profAppeals ?? [], res.data.profAppeals ?? [])
+            : undefined;
         return {
           ...res.data,
-          // KPI is computed for the whole filtered set on the first page only; later pages keep it.
+          // KPI / filter counts describe the full filtered set on the first page only.
           kpis: res.data.kpis ?? prev.kpis,
+          remCardMatchCount: res.data.remCardMatchCount ?? prev.remCardMatchCount,
           appeals: mergeReceivingAppealPages(prev.appeals, res.data.appeals),
+          ...(mergedProf != null ? { profAppeals: mergedProf } : {}),
         };
       });
       return res;
@@ -442,6 +452,8 @@ export function ReceivingAppealsWorkspace({
       const org = profile.organization?.name?.trim();
       const user = profile.user?.displayName?.trim();
       setPartnerDisplayName(org || user || "Партнёр");
+      setPartnerLogoUrl(profile.organization?.logoUrl?.trim() || profile.user?.photoUrl?.trim() || null);
+      setPartnerType(profile.organization?.partnerType?.trim() || null);
       const phones: Array<{ id: string; label: string; number: string }> = [];
       const publicPhone =
         profile.organization?.publicPhone?.trim() ||
@@ -546,13 +558,14 @@ export function ReceivingAppealsWorkspace({
       setBatchPending(true);
       setBatchPartial(null);
       try {
-        const selectedRows = data.appeals.filter((a) => ids.includes(a.id));
+        const listRows = profLayout ? (data.profAppeals ?? []) : data.appeals;
+        const selectedRows = listRows.filter((a) => ids.includes(a.id));
         const stageBlocked = selectedRows.some((row) => isReceivingAppealLockedForBulkStage(row));
         const stageLockedIds = new Set(
           selectedRows.filter((row) => isReceivingAppealLockedForBulkStage(row)).map((row) => row.id),
         );
         const { result, outcomes } = await applyReceivingBulkEditsPerId(ids, draft, {
-          appeals: data.appeals,
+          appeals: listRows,
           workingStages: data.settings?.workingStages ?? [],
           stageBlocked,
           stageLockedIds,
@@ -573,7 +586,7 @@ export function ReceivingAppealsWorkspace({
         setBatchPending(false);
       }
     },
-    [bulkMutationBlocked, data, readScope, refreshListAfterMutation, selected, writableIdSet],
+    [bulkMutationBlocked, data, profLayout, readScope, refreshListAfterMutation, selected, writableIdSet],
   );
 
   const bulkCallbacks = useMemo(
@@ -909,22 +922,39 @@ export function ReceivingAppealsWorkspace({
     );
   }
 
+  const bulkSelectedRows = profLayout
+    ? (data.profAppeals ?? []).filter((a) => selected.has(a.id))
+    : data.appeals.filter((a) => selected.has(a.id));
   const bulkEditNode =
     bulkEditOpen && selected.size > 0 && mutationsAllowed ? (
-      <ReceivingBulkEditPanel
-        count={selected.size}
-        stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
-          id: s.id,
-          label: s.label,
-        }))}
-        stageBlocked={data.appeals
-          .filter((a) => selected.has(a.id))
-          .some((row) => isReceivingAppealLockedForBulkStage(row))}
-        contractState={bulkContractState}
-        saveError={batchPartial}
-        onCancel={() => setBulkEditOpen(false)}
-        onApply={(draft) => void executeBulkEdit(draft)}
-      />
+      profLayout ? (
+        <ReceivingProfBulkEditPanel
+          count={selected.size}
+          stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
+            id: s.id,
+            label: s.label,
+          }))}
+          stageBlocked={bulkSelectedRows.some((row) => isReceivingAppealLockedForBulkStage(row))}
+          settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
+          contractState={bulkContractState}
+          saveError={batchPartial}
+          onCancel={() => setBulkEditOpen(false)}
+          onApply={(draft) => void executeBulkEdit(draft)}
+        />
+      ) : (
+        <ReceivingBulkEditPanel
+          count={selected.size}
+          stageOptions={(data.settings?.workingStages ?? []).map((s) => ({
+            id: s.id,
+            label: s.label,
+          }))}
+          stageBlocked={bulkSelectedRows.some((row) => isReceivingAppealLockedForBulkStage(row))}
+          contractState={bulkContractState}
+          saveError={batchPartial}
+          onCancel={() => setBulkEditOpen(false)}
+          onApply={(draft) => void executeBulkEdit(draft)}
+        />
+      )
     ) : null;
   const bulkConfirmNode =
     bulkConfirm && mutationsAllowed ? (
@@ -999,7 +1029,8 @@ export function ReceivingAppealsWorkspace({
           }
           onOpenPartnerFields={
             leadsAllowed
-              ? () => setSourcesOpen(true)
+              ? () =>
+                  setPersistNotice("Поля партнёра редактируются в карточке обращения (внешние поля), не в «Источниках».")
               : () => setPersistNotice(denialMessage)
           }
         />
@@ -1061,6 +1092,8 @@ export function ReceivingAppealsWorkspace({
             settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
             partnerDisplayName={partnerDisplayName}
             partnerWorkPhones={partnerWorkPhones}
+            partnerLogoUrl={partnerLogoUrl}
+            partnerType={partnerType}
             offerOpen={offerOpen}
             onOfferOpenChange={setOfferOpen}
             onClose={() => {

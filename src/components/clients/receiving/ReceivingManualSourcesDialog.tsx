@@ -75,11 +75,19 @@ export function ReceivingManualSourcesDialog({
         </header>
         <p className="muted small">Справочник ручных источников обращения. Автоматические источники только для чтения.</p>
         <ul id="source-settings-form" className="settings-list">
-          {channels.map((c) => (
-            <li key={c.key} className="settings-item row">
-              <span>{c.label}</span>
-            </li>
-          ))}
+          {channels.map((c) => {
+            const custom = c.key.startsWith("custom_");
+            return (
+              <li key={c.key} className="settings-item row" data-testid={custom ? "ca-manual-source-custom" : undefined}>
+                <span>{c.label}</span>
+                {custom ? (
+                  <span className="muted small" title="Ключ сохраняется в обращениях">
+                    {c.key}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
           <li className="settings-item muted small">Направил партнёр (только чтение)</li>
         </ul>
         {readOnly ? (

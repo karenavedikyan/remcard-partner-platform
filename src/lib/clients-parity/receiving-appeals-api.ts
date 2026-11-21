@@ -887,6 +887,8 @@ export function mergeReceivingAppealPages(
   return [...byId.values()];
 }
 
+export { mergeProfAppealPages } from "./prof-appeals-adapter";
+
 export function receivingListHasMore(data: Pick<ReceivingAppealsListResponse, "nextCursor">): boolean {
   return Boolean(data.nextCursor?.trim());
 }
@@ -1521,8 +1523,13 @@ function assertReceivingMutationAllowed(
   return readOnly ? RECEIVING_ACCESS_LIST_ONLY_DENIAL : null;
 }
 
+export type ReceivingAppealProfilePatchResponseWire = {
+  revision?: string | number;
+  appeal?: unknown;
+};
+
 export type ReceivingAppealPatchOneResult =
-  | { ok: true }
+  | { ok: true; revision?: string | number; appealWire?: unknown }
   | { ok: false; code: "CONFLICT" | "BLOCKED_CONTRACT" | "ERROR"; message: string };
 
 /** Detail host — profile PATCH with CAS, no list reload. */
@@ -1535,8 +1542,12 @@ export async function patchReceivingAppealProfileCas(
     return { ok: false, code: "BLOCKED_CONTRACT", message: "PATCH profile ждёт P1 allowlist." };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body });
-    return { ok: true };
+    const data = await remcardFetch<ReceivingAppealProfilePatchResponseWire>(path, { method: "PATCH", body });
+    return {
+      ok: true,
+      ...(data.revision != null ? { revision: data.revision } : {}),
+      ...(data.appeal != null ? { appealWire: data.appeal } : {}),
+    };
   } catch (caught) {
     if (caught instanceof RemcardApiError && caught.status === 409) {
       return { ok: false, code: "CONFLICT", message: caught.message };

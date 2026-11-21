@@ -1,19 +1,34 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import type { ProfAppealDetailState, ProfAppealProfilePatchBody } from "@/lib/clients-parity/prof-appeals-adapter";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  buildProfProfilePatchBody,
+  profProfilePatchHasFieldChanges,
+  type ProfAppealDetailState,
+  type ProfAppealProfilePatchBody,
+  type ReceivingAppealExternalRefWire,
+  parseProfAppealDetailWire,
+} from "@/lib/clients-parity/prof-appeals-adapter";
+import {
+  fetchReceivingAppealDetailWire,
   patchReceivingAppealProfileCas,
   receivingManualChannelOptions,
   type ReceivingPartnerSettings,
+  type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
-import { ReceivingAppealTimeline } from "./ReceivingAppealTimeline";
 
 export type ReceivingAppealProfDrawerFormProps = {
   detail: ProfAppealDetailState;
   settings?: ReceivingPartnerSettings | null;
+  readScope?: ReceivingReadScope | null;
   onDetailChange?: (next: ProfAppealDetailState) => void;
   onSaved?: () => void | Promise<void>;
+};
+
+type ProfileBaseline = ProfAppealProfilePatchBody & {
+  originKind: "CERTIFICATE" | "MANUAL";
+  externalRefs: ReceivingAppealExternalRefWire[];
+  responsibleUserId: string | null;
 };
 
 type FormDraft = {
@@ -23,9 +38,10 @@ type FormDraft = {
   clientCity: string;
   clientContact: string;
   budgetHint: string;
-  privateNotes: string;
   erpDocumentNumber: string;
   manualSourceKey: string;
+  responsibleUserId: string;
+  externalRefs: ReceivingAppealExternalRefWire[];
 };
 
 function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
@@ -37,29 +53,89 @@ function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
     clientCity: a.clientCity?.trim() ?? "",
     clientContact: a.clientContact?.trim() ?? "",
     budgetHint: a.budgetHint?.trim() ?? "",
-    privateNotes: a.privateNotes?.trim() ?? "",
     erpDocumentNumber: a.erpDocumentNumber?.trim() ?? "",
     manualSourceKey: a.manualSourceKey?.trim() ?? "",
+    responsibleUserId: a.responsible?.userId?.trim() ?? "",
+    externalRefs: a.externalRefs.map((ref) => ({ ...ref })),
+  };
+}
+
+function baselineFromDetail(detail: ProfAppealDetailState): ProfileBaseline {
+  const draft = draftFromDetail(detail);
+  return {
+    originKind: detail.appeal.originKind,
+    expectedRevision: detail.revision,
+    appealTitle: draft.appealTitle || null,
+    clientDisplayName: draft.clientDisplayName || undefined,
+    interest: draft.requestText || null,
+    clientCity: draft.clientCity || null,
+    clientContact: draft.clientContact || null,
+    budgetHint: draft.budgetHint || null,
+    erpDocumentNumber: draft.erpDocumentNumber || null,
+    manualSourceKey: draft.manualSourceKey || null,
+    responsibleUserId: draft.responsibleUserId || null,
+    externalRefs: draft.externalRefs,
+  };
+}
+
+function draftToPatchShape(
+  detail: ProfAppealDetailState,
+  draft: FormDraft,
+): ProfileBaseline {
+  const base = baselineFromDetail(detail);
+  return {
+    ...base,
+    appealTitle: draft.appealTitle || null,
+    clientDisplayName: draft.clientDisplayName || undefined,
+    interest: draft.requestText || null,
+    clientCity: draft.clientCity || null,
+    clientContact: draft.clientContact || null,
+    budgetHint: draft.budgetHint || null,
+    erpDocumentNumber: draft.erpDocumentNumber || null,
+    manualSourceKey: draft.manualSourceKey || null,
+    responsibleUserId: draft.responsibleUserId.trim() || null,
+    externalRefs: draft.externalRefs,
   };
 }
 
 export function ReceivingAppealProfDrawerForm({
   detail,
   settings,
+  readScope,
   onDetailChange,
   onSaved,
 }: ReceivingAppealProfDrawerFormProps) {
   const readOnly = detail.detailReadOnly;
   const [draft, setDraft] = useState(() => draftFromDetail(detail));
   const [revision, setRevision] = useState(detail.revision);
+  const baselineRef = useRef<ProfileBaseline>(baselineFromDetail(detail));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    const nextDraft = draftFromDetail(detail);
+    const nextBaseline = baselineFromDetail(detail);
+    setDraft(nextDraft);
+    setRevision(detail.revision);
+    baselineRef.current = nextBaseline;
+    setSaved(false);
+  }, [detail.appeal.id, detail.revision]);
+
   const channels = useMemo(() => receivingManualChannelOptions(settings), [settings]);
+  const isManual = detail.appeal.originKind === "MANUAL";
+  const certPromo = detail.appeal.certificatePromoCode?.trim();
 
   const setField = <K extends keyof FormDraft>(key: K, value: FormDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+  };
+
+  const setExternalRefValue = (key: string, value: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      externalRefs: prev.externalRefs.map((ref) => (ref.key === key ? { ...ref, value } : ref)),
+    }));
     setSaved(false);
   };
 
@@ -67,46 +143,45 @@ export function ReceivingAppealProfDrawerForm({
     if (readOnly || busy) return;
     setBusy(true);
     setError(null);
-    const body: ProfAppealProfilePatchBody = {
-      expectedRevision: revision,
-      appealTitle: draft.appealTitle.trim() || null,
-      clientDisplayName: draft.clientDisplayName.trim() || undefined,
-      interest: draft.requestText.trim() || null,
-      clientCity: draft.clientCity.trim() || null,
-      clientContact: draft.clientContact.trim() || null,
-      budgetHint: draft.budgetHint.trim() || null,
-      privateNotes: draft.privateNotes.trim() || null,
-      erpDocumentNumber: draft.erpDocumentNumber.trim() || null,
-      manualSourceKey: draft.manualSourceKey.trim() || null,
-    };
+    const patchDraft = draftToPatchShape(detail, draft);
+    const body = buildProfProfilePatchBody(baselineRef.current, patchDraft, revision);
+    if (!profProfilePatchHasFieldChanges(body)) {
+      setBusy(false);
+      setSaved(true);
+      return;
+    }
     const res = await patchReceivingAppealProfileCas(detail.appeal.id, body);
-    setBusy(false);
     if (!res.ok) {
+      setBusy(false);
       setError(res.message);
       return;
     }
-    const nextRevision = revision + 1;
-    setRevision(nextRevision);
+    const scopeAll = readScope?.branchScope === "all";
+    const refreshed = await fetchReceivingAppealDetailWire(detail.appeal.id, readScope ?? undefined);
+    let nextDetail: ProfAppealDetailState | null = null;
+    if (refreshed.ok) {
+      nextDetail = parseProfAppealDetailWire(refreshed.wire, { scopeAll });
+    }
+    if (nextDetail) {
+      setRevision(nextDetail.revision);
+      baselineRef.current = baselineFromDetail(nextDetail);
+      setDraft(draftFromDetail(nextDetail));
+      onDetailChange?.(nextDetail);
+    } else if (res.revision != null) {
+      const parsedRevision =
+        typeof res.revision === "number" ? res.revision : Number(res.revision) || revision;
+      setRevision(parsedRevision);
+      baselineRef.current = {
+        ...baselineRef.current,
+        ...patchDraft,
+        expectedRevision: parsedRevision,
+      };
+      onDetailChange?.({ ...detail, revision: parsedRevision });
+    }
+    setBusy(false);
     setSaved(true);
-    const patched: ProfAppealDetailState = {
-      ...detail,
-      revision: nextRevision,
-      appeal: {
-        ...detail.appeal,
-        appealTitle: body.appealTitle ?? null,
-        clientDisplayName: draft.clientDisplayName.trim() || detail.appeal.clientDisplayName,
-        requestText: draft.requestText.trim() || null,
-        clientCity: draft.clientCity.trim() || null,
-        clientContact: draft.clientContact.trim() || null,
-        budgetHint: draft.budgetHint.trim() || null,
-        privateNotes: draft.privateNotes.trim() || null,
-        erpDocumentNumber: draft.erpDocumentNumber.trim() || null,
-        manualSourceKey: draft.manualSourceKey.trim() || null,
-      },
-    };
-    onDetailChange?.(patched);
     await onSaved?.();
-  }, [busy, detail, draft, onDetailChange, onSaved, readOnly, revision]);
+  }, [busy, detail, draft, onDetailChange, onSaved, readOnly, readScope, revision]);
 
   return (
     <div className="prof-drawer-form stack" data-testid="ca-prof-drawer-form">
@@ -166,15 +241,36 @@ export function ReceivingAppealProfDrawerForm({
         <input
           value={draft.erpDocumentNumber}
           readOnly={readOnly}
+          data-testid="ca-prof-field-erp"
           onChange={(e) => setField("erpDocumentNumber", e.target.value)}
         />
       </label>
-      {channels.length > 0 ? (
+      {certPromo ? (
+        <div className="panel stack" data-testid="ca-prof-certificate-promo">
+          <span className="muted small">Номер сертификата</span>
+          <strong>{certPromo}</strong>
+        </div>
+      ) : null}
+      <label className="field">
+        Ответственный (ID пользователя)
+        <input
+          value={draft.responsibleUserId}
+          readOnly={readOnly}
+          data-testid="ca-prof-field-responsible"
+          placeholder={detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}
+          onChange={(e) => setField("responsibleUserId", e.target.value)}
+        />
+        {detail.appeal.responsible?.displayLabel ? (
+          <span className="muted small">Сейчас: {detail.appeal.responsible.displayLabel}</span>
+        ) : null}
+      </label>
+      {isManual && channels.length > 0 ? (
         <label className="field">
           Источник
           <select
             value={draft.manualSourceKey || ""}
             disabled={readOnly}
+            data-testid="ca-prof-field-manual-source"
             onChange={(e) => setField("manualSourceKey", e.target.value)}
           >
             <option value="">—</option>
@@ -186,27 +282,20 @@ export function ReceivingAppealProfDrawerForm({
           </select>
         </label>
       ) : null}
-      <label className="field">
-        Служебные заметки
-        <textarea
-          rows={4}
-          value={draft.privateNotes}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-privateNotes"
-          onChange={(e) => setField("privateNotes", e.target.value)}
-        />
-      </label>
-      {detail.appeal.externalRefs.length > 0 ? (
-        <section className="panel stack">
-          <h3 className="small muted">Поля партнёра</h3>
-          <ul className="stack">
-            {detail.appeal.externalRefs.map((ref) => (
-              <li key={ref.key}>
-                <span className="muted small">{ref.label}</span>
-                <div>{ref.value?.trim() || "—"}</div>
-              </li>
-            ))}
-          </ul>
+      {draft.externalRefs.length > 0 ? (
+        <section className="panel stack" data-testid="ca-prof-external-refs">
+          <h3 className="small muted">Внешние поля</h3>
+          {draft.externalRefs.map((ref) => (
+            <label key={ref.key} className="field">
+              {ref.label}
+              <input
+                value={ref.value ?? ""}
+                readOnly={readOnly}
+                data-testid={`ca-prof-external-${ref.key}`}
+                onChange={(e) => setExternalRefValue(ref.key, e.target.value)}
+              />
+            </label>
+          ))}
         </section>
       ) : null}
       {error ? (
@@ -215,17 +304,20 @@ export function ReceivingAppealProfDrawerForm({
         </p>
       ) : null}
       {!readOnly ? (
-        <div className="row">
-          <button type="button" className="btn primary" disabled={busy} data-testid="ca-prof-save-profile" onClick={() => void saveProfile()}>
+        <footer className="prof-drawer-footer">
+          <button type="button" className="btn ghost" disabled={busy} onClick={() => setDraft(draftFromDetail(detail))}>
+            Отменить
+          </button>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={busy}
+            data-testid="ca-prof-save-profile"
+            onClick={() => void saveProfile()}
+          >
             {busy ? "Сохранение…" : saved ? "Сохранено" : "Сохранить"}
           </button>
-        </div>
-      ) : null}
-      {detail.history.length > 0 ? (
-        <section data-testid="ca-prof-appeal-history">
-          <h3 className="small muted">История</h3>
-          <ReceivingAppealTimeline entries={detail.history} />
-        </section>
+        </footer>
       ) : null}
     </div>
   );

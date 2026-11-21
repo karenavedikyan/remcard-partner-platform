@@ -13,12 +13,31 @@ export type ReceivingBulkConfirmKind = "archive" | "delete" | "unarchive" | "res
 
 export type ReceivingWorkingStageOption = { id: string; label: string };
 
-/** Draft from `ReceivingBulkEditPanel` (prototype `renderBulkEditPanel`). */
+/** Non-empty field = apply to each eligible row; empty = leave unchanged. */
+export type ReceivingProfBulkProfileDraft = {
+  appealTitle?: string;
+  clientDisplayName?: string;
+  requestText?: string;
+  clientCity?: string;
+  clientContact?: string;
+  budgetHint?: string;
+  erpDocumentNumber?: string;
+  manualSourceKey?: string;
+  responsibleUserId?: string;
+};
+
+/** Draft from `ReceivingBulkEditPanel` / prof bulk panel. */
 export type ReceivingBulkEditDraft = {
   stageId: string;
   serviceNote: string;
   appendNote: boolean;
+  prof?: ReceivingProfBulkProfileDraft;
 };
+
+export function receivingProfBulkDraftHasChanges(draft: ReceivingProfBulkProfileDraft | undefined): boolean {
+  if (!draft) return false;
+  return Object.values(draft).some((v) => typeof v === "string" && v.trim().length > 0);
+}
 
 /**
  * P6 transport: one `PATCH /api/pro/client-appeals/:id` per intent (sequential or parallel).
@@ -94,8 +113,9 @@ export function buildReceivingBulkPatchIntents(
 ): { intents: ReceivingAppealPatchIntent[]; validationError?: string } {
   const wantStage = !opts.stageBlocked && Boolean(draft.stageId.trim());
   const wantNote = Boolean(draft.serviceNote.trim());
-  if (!wantStage && !wantNote) {
-    return { intents: [], validationError: "Укажите этап или заметку" };
+  const wantProf = receivingProfBulkDraftHasChanges(draft.prof);
+  if (!wantStage && !wantNote && !wantProf) {
+    return { intents: [], validationError: "Укажите этап, CRM-поля или заметку" };
   }
   const intents: ReceivingAppealPatchIntent[] = [];
   for (const appealId of appealIds) {
@@ -109,7 +129,7 @@ export function buildReceivingBulkPatchIntents(
       body.serviceNote = draft.serviceNote;
       body.serviceNoteAppend = draft.appendNote;
     }
-    if (body.stageId || body.serviceNote) {
+    if (body.stageId || body.serviceNote || wantProf) {
       intents.push({ appealId, body });
     }
   }

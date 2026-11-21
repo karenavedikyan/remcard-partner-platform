@@ -13,6 +13,8 @@ export type ReceivingCommercialOfferDialogProps = {
   appeal: ProfAppealListRow;
   partnerDisplayName: string;
   partnerWorkPhones?: Array<{ id: string; label: string; number: string }>;
+  partnerLogoUrl?: string | null;
+  partnerType?: string | null;
   commercialProposal?: CommercialProposalDeliveryWire | null;
   onClose: () => void;
 };
@@ -26,7 +28,7 @@ type OfferDraft = {
   nextStep: string;
   contactPhone: string;
   clientAction: string;
-  designTemplate: string;
+  designTemplate: "store" | "company";
   attachments: Array<{ id: string; name: string; kind: "file" | "photo" }>;
 };
 
@@ -43,15 +45,24 @@ const INITIAL_DRAFT: OfferDraft = {
   attachments: [],
 };
 
+const TEMPLATE_LABEL: Record<OfferDraft["designTemplate"], string> = {
+  store: "Шаблон магазина",
+  company: "Шаблон компании",
+};
+
 export function ReceivingCommercialOfferDialog({
   open,
   appeal,
   partnerDisplayName,
   partnerWorkPhones = [],
+  partnerLogoUrl = null,
+  partnerType = null,
   commercialProposal,
   onClose,
 }: ReceivingCommercialOfferDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null!);
+  const photoInputRef = useRef<HTMLInputElement>(null!);
   const titleId = useId();
   const [step, setStep] = useState<"compose" | "preview">("compose");
   const [draft, setDraft] = useState<OfferDraft>(INITIAL_DRAFT);
@@ -67,10 +78,13 @@ export function ReceivingCommercialOfferDialog({
   useEffect(() => {
     if (!open) {
       setStep("compose");
-      setDraft(INITIAL_DRAFT);
+      setDraft({
+        ...INITIAL_DRAFT,
+        designTemplate: partnerType === "COMPANY" ? "company" : "store",
+      });
       setSendNotice(null);
     }
-  }, [open]);
+  }, [open, partnerType]);
 
   const clientName = appeal.clientName?.trim() || "Клиент";
   const blockedMessage = commercialProposalBlockedMessage(commercialProposal);
@@ -104,9 +118,21 @@ export function ReceivingCommercialOfferDialog({
           </div>
 
           {step === "compose" ? (
-            <ComposeFields draft={draft} onChange={setDraft} partnerWorkPhones={partnerWorkPhones} />
+            <ComposeFields
+              draft={draft}
+              onChange={setDraft}
+              partnerWorkPhones={partnerWorkPhones}
+              fileInputRef={fileInputRef}
+              photoInputRef={photoInputRef}
+            />
           ) : (
-            <PreviewPane draft={draft} partnerDisplayName={partnerDisplayName} clientName={clientName} appeal={appeal} />
+            <PreviewPane
+              draft={draft}
+              partnerDisplayName={partnerDisplayName}
+              partnerLogoUrl={partnerLogoUrl}
+              clientName={clientName}
+              appeal={appeal}
+            />
           )}
 
           {sendNotice ? (
@@ -161,18 +187,24 @@ function ComposeFields({
   draft,
   onChange,
   partnerWorkPhones,
+  fileInputRef,
+  photoInputRef,
 }: {
   draft: OfferDraft;
   onChange: (d: OfferDraft) => void;
   partnerWorkPhones: Array<{ id: string; label: string; number: string }>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  photoInputRef: React.RefObject<HTMLInputElement>;
 }) {
   const set = (patch: Partial<OfferDraft>) => onChange({ ...draft, ...patch });
-  const addAttachment = (kind: "file" | "photo") => {
-    const id = `${kind}-${Date.now()}`;
-    onChange({
-      ...draft,
-      attachments: [...draft.attachments, { id, name: kind === "file" ? "document.pdf" : "photo.jpg", kind }],
-    });
+  const attachFiles = (files: FileList | null, kind: "file" | "photo") => {
+    if (!files?.length) return;
+    const picked = Array.from(files).map((file) => ({
+      id: `${kind}-${file.name}-${file.lastModified}`,
+      name: file.name,
+      kind,
+    }));
+    onChange({ ...draft, attachments: [...draft.attachments, ...picked] });
   };
   return (
     <>
@@ -185,13 +217,36 @@ function ComposeFields({
           placeholder="Опишите предложение клиенту"
         />
       </label>
-      <div className="row">
-        <button type="button" className="btn ghost" data-testid="ca-offer-attach-file" onClick={() => addAttachment("file")}>
+      <input
+        ref={fileInputRef}
+        id="ca-offer-file-input"
+        type="file"
+        className={styles.offerFileInput}
+        data-testid="ca-offer-file-input"
+        onChange={(e) => {
+          attachFiles(e.target.files, "file");
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={photoInputRef}
+        id="ca-offer-photo-input"
+        type="file"
+        accept="image/*"
+        className={styles.offerFileInput}
+        data-testid="ca-offer-photo-input"
+        onChange={(e) => {
+          attachFiles(e.target.files, "photo");
+          e.target.value = "";
+        }}
+      />
+      <div className="row kp-attach-row">
+        <label htmlFor="ca-offer-file-input" className="btn ghost kp-attach-label" data-testid="ca-offer-attach-file">
           Прикрепить файл
-        </button>
-        <button type="button" className="btn ghost" data-testid="ca-offer-attach-photo" onClick={() => addAttachment("photo")}>
+        </label>
+        <label htmlFor="ca-offer-photo-input" className="btn ghost kp-attach-label" data-testid="ca-offer-attach-photo">
           Добавить фото
-        </button>
+        </label>
       </div>
       {draft.attachments.length > 0 ? (
         <ul className="kp-attachments">
@@ -210,20 +265,35 @@ function ComposeFields({
         </ul>
       ) : null}
       <label className="field">
+        Оформление
+        <select
+          value={draft.designTemplate}
+          data-testid="ca-offer-design-template"
+          onChange={(e) => set({ designTemplate: e.target.value as OfferDraft["designTemplate"] })}
+        >
+          <option value="store">Магазин</option>
+          <option value="company">Компания</option>
+        </select>
+      </label>
+      <label className="field">
         Цена (необязательно)
         <input value={draft.price} onChange={(e) => set({ price: e.target.value })} />
       </label>
       <label className="field">
         Сроки
-        <input value={draft.schedule} onChange={(e) => set({ schedule: e.target.value })} />
+        <input value={draft.schedule} onChange={(e) => set({ schedule: e.target.value })} data-testid="ca-offer-schedule" />
       </label>
       <label className="field">
         Срок действия
-        <input value={draft.validity} onChange={(e) => set({ validity: e.target.value })} />
+        <input value={draft.validity} onChange={(e) => set({ validity: e.target.value })} data-testid="ca-offer-validity" />
       </label>
       <label className="field">
         Условия оплаты
-        <input value={draft.paymentTerms} onChange={(e) => set({ paymentTerms: e.target.value })} />
+        <input
+          value={draft.paymentTerms}
+          onChange={(e) => set({ paymentTerms: e.target.value })}
+          data-testid="ca-offer-payment-terms"
+        />
       </label>
       <label className="field">
         Что предложить клиенту сделать
@@ -247,29 +317,64 @@ function ComposeFields({
 function PreviewPane({
   draft,
   partnerDisplayName,
+  partnerLogoUrl,
   clientName,
   appeal,
 }: {
   draft: OfferDraft;
   partnerDisplayName: string;
+  partnerLogoUrl?: string | null;
   clientName: string;
   appeal: ProfAppealListRow;
 }) {
+  const templateClass = draft.designTemplate === "company" ? "offer-preview--company" : "offer-preview--store";
   return (
-    <div className="client-shell offer-client-preview" data-testid="ca-offer-client-preview">
+    <div
+      className={`client-shell offer-client-preview ${templateClass}`}
+      data-testid="ca-offer-client-preview"
+      data-design-template={draft.designTemplate}
+    >
       <header className="client-who">
-        <span className="avatar" aria-hidden="true">
-          {partnerDisplayName.slice(0, 1)}
-        </span>
+        {partnerLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={partnerLogoUrl} alt="" className="offer-partner-logo" data-testid="ca-offer-partner-logo" />
+        ) : (
+          <span className="avatar" aria-hidden="true">
+            {partnerDisplayName.slice(0, 1)}
+          </span>
+        )}
         <div>
           <strong>{partnerDisplayName}</strong>
           <div>Коммерческое предложение</div>
+          <span className="muted small" data-testid="ca-offer-template-label">
+            {TEMPLATE_LABEL[draft.designTemplate]}
+          </span>
         </div>
         <small className="client-eyebrow">Навигатор ремонта</small>
       </header>
       <div className="client-content">
         <h2>{appeal.appealTitle?.trim() || "Предложение"}</h2>
         {draft.message.trim() ? <p className="client-message">{draft.message}</p> : <p className="muted">Без текста</p>}
+        {draft.price.trim() ? (
+          <p className="client-offer-meta" data-testid="ca-offer-preview-price">
+            <strong>Цена:</strong> {draft.price}
+          </p>
+        ) : null}
+        {draft.schedule.trim() ? (
+          <p className="client-offer-meta" data-testid="ca-offer-preview-schedule">
+            <strong>Сроки:</strong> {draft.schedule}
+          </p>
+        ) : null}
+        {draft.validity.trim() ? (
+          <p className="client-offer-meta" data-testid="ca-offer-preview-validity">
+            <strong>Срок действия:</strong> {draft.validity}
+          </p>
+        ) : null}
+        {draft.paymentTerms.trim() ? (
+          <p className="client-offer-meta" data-testid="ca-offer-preview-payment">
+            <strong>Условия оплаты:</strong> {draft.paymentTerms}
+          </p>
+        ) : null}
         {draft.attachments.map((a) => (
           <p key={a.id} className="muted small">
             Вложение: {a.name}

@@ -4,10 +4,18 @@
 import {
   aggregateReceivingPatchResults,
   buildReceivingBulkPatchIntents,
+  receivingProfBulkDraftHasChanges,
   type ReceivingAppealPatchIntent,
   type ReceivingBulkEditDraft,
   type ReceivingBulkMutationResult,
 } from "@/components/clients/receiving/receiving-bulk-handoff";
+import {
+  buildProfProfilePatchBody,
+  overlayProfBulkDraftOnBaseline,
+  parseProfAppealDetailWire,
+  profBaselineFromDetailState,
+  profProfilePatchHasFieldChanges,
+} from "./prof-appeals-adapter";
 import {
   RECEIVING_SYSTEM_STAGE,
   fetchReceivingAppealDetailWire,
@@ -139,6 +147,8 @@ const defaultBulkApplyTransport: ReceivingBulkApplyTransportDeps = {
 export async function applyOneReceivingBulkIntent(
   intent: ReceivingAppealPatchIntent,
   row: ReceivingAppealListRow | undefined,
+  bulkDraft: ReceivingBulkEditDraft,
+  readScope: ReceivingReadScope | null,
   deps: ReceivingBulkApplyTransportDeps = defaultBulkApplyTransport,
 ): Promise<ReceivingBulkIntentOutcome> {
   const { appealId, body } = intent;
@@ -193,6 +203,52 @@ export async function applyOneReceivingBulkIntent(
       return { appealId, ok: true, stageApplied: true };
     }
     noteSnapshot = receivingBulkNoteSnapshotFromWire(refreshed.wire);
+  }
+
+  if (receivingProfBulkDraftHasChanges(bulkDraft.prof)) {
+    const detailForProf = await deps.fetchDetail(appealId, readScope ?? undefined);
+    if (!detailForProf.ok) {
+      return {
+        appealId,
+        ok: false,
+        stageApplied: stageMutated || undefined,
+        reason: detailForProf.code,
+        message: detailForProf.message,
+      };
+    }
+    const profState = parseProfAppealDetailWire(detailForProf.wire, {
+      scopeAll: readScope?.branchScope === "all",
+    });
+    if (profState) {
+      const baseline = profBaselineFromDetailState(profState);
+      const overlay = overlayProfBulkDraftOnBaseline(baseline, bulkDraft.prof ?? {});
+      if (overlay) {
+        const patchBody = buildProfProfilePatchBody(baseline, overlay, profState.revision);
+        if (profProfilePatchHasFieldChanges(patchBody)) {
+          const profRes = await deps.patchProfile(appealId, patchBody);
+          if (!profRes.ok) {
+            return {
+              appealId,
+              ok: false,
+              stageApplied: stageMutated || undefined,
+              reason: profRes.code === "CONFLICT" ? "version_conflict" : profRes.code,
+              message: profRes.message,
+            };
+          }
+          const afterProf = await deps.fetchDetail(appealId, readScope ?? undefined);
+          if (!afterProf.ok) {
+            return {
+              appealId,
+              ok: false,
+              stageApplied: stageMutated || undefined,
+              reason: afterProf.code ?? "ERROR",
+              message: "CRM-поля сохранены частично — не удалось перечитать карточку.",
+            };
+          }
+          noteSnapshot = receivingBulkNoteSnapshotFromWire(afterProf.wire);
+        }
+      }
+    }
   }
 
   if (body.serviceNote?.trim()) {
@@ -266,7 +322,9 @@ export async function applyReceivingBulkEditsPerId(
   const outcomes: ReceivingBulkIntentOutcome[] = [];
   const byId = new Map(ctx.appeals.map((a) => [a.id, a]));
   for (const intent of built.intents) {
-    outcomes.push(await applyOneReceivingBulkIntent(intent, byId.get(intent.appealId), deps));
+    outcomes.push(
+      await applyOneReceivingBulkIntent(intent, byId.get(intent.appealId), draft, readScope, deps),
+    );
   }
 
   const intentIds = new Set(built.intents.map((i) => i.appealId));

@@ -30,6 +30,8 @@ export type ReceivingAppealProfSidePanelProps = {
   onAppealMutated?: () => void | Promise<void>;
   partnerDisplayName?: string;
   partnerWorkPhones?: Array<{ id: string; label: string; number: string }>;
+  partnerLogoUrl?: string | null;
+  partnerType?: string | null;
   offerOpen: boolean;
   onOfferOpenChange: (open: boolean) => void;
 };
@@ -46,6 +48,8 @@ export function ReceivingAppealProfSidePanel({
   onAppealMutated,
   partnerDisplayName = "Партнёр",
   partnerWorkPhones = [],
+  partnerLogoUrl = null,
+  partnerType = null,
   offerOpen,
   onOfferOpenChange,
 }: ReceivingAppealProfSidePanelProps) {
@@ -111,6 +115,13 @@ export function ReceivingAppealProfSidePanel({
       : null;
   const inviteUrl =
     profDetail?.appeal.remCard.inviteLoginUrl?.trim() || REMCARD_CLIENT_LOGIN_URL;
+  const statusLabel = profDetail?.appeal.stageLabel ?? row?.stageLabel ?? "—";
+  const clientLine =
+    profDetail?.appeal.clientDisplayName?.trim() ||
+    row?.clientDisplayName?.trim() ||
+    row?.clientName?.trim() ||
+    "—";
+  const branchHint = row?.receivingBranchId ? `Филиал ${row.receivingBranchId}` : null;
 
   return (
     <>
@@ -132,6 +143,21 @@ export function ReceivingAppealProfSidePanel({
             <p className="notice accent" role="alert" data-testid="ca-prof-detail-error">
               {loadError ?? "Не удалось загрузить обращение."}
             </p>
+          ) : null}
+          {detailPhase === "prof" && (profDetail || row) ? (
+            <div className="prof-status-meta" data-testid="ca-prof-status-meta">
+              <div>
+                <span className="muted">Статус</span> <strong>{statusLabel}</strong>
+              </div>
+              <div>
+                <span className="muted">Клиент</span> {clientLine}
+              </div>
+              {branchHint ? (
+                <div>
+                  <span className="muted">Охват</span> {branchHint}
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {publicId ? (
             <ClientIdPlate
@@ -158,13 +184,26 @@ export function ReceivingAppealProfSidePanel({
             onSend={() => onOfferOpenChange(true)}
           />
           {detailPhase === "prof" && profDetail ? (
-            <ReceivingAppealProfDrawerForm
-              key={`${appealId}:${profDetail.revision}`}
-              detail={profDetail}
-              settings={settings}
-              onDetailChange={setProfDetail}
-              onSaved={onAppealMutated}
-            />
+            <>
+              <ReceivingAppealProfDrawerForm
+                key={appealId}
+                detail={profDetail}
+                settings={settings}
+                readScope={readScope}
+                onDetailChange={setProfDetail}
+                onSaved={onAppealMutated}
+              />
+              <div className="prof-lifecycle-host" data-testid="ca-prof-lifecycle-host">
+                <ReceivingAppealDetailHost
+                  appealId={appealId}
+                  readOnly={readOnly}
+                  readScope={readScope}
+                  companionProfPanel
+                  onBack={onClose}
+                  onAppealMutated={onAppealMutated}
+                />
+              </div>
+            </>
           ) : detailPhase === "legacy" ? (
             <ReceivingAppealDetailHost
               appealId={appealId}
@@ -182,6 +221,8 @@ export function ReceivingAppealProfSidePanel({
           appeal={profDetail?.appeal ?? row}
           partnerDisplayName={partnerDisplayName}
           partnerWorkPhones={partnerWorkPhones}
+          partnerLogoUrl={partnerLogoUrl}
+          partnerType={partnerType}
           commercialProposal={commercialProposal ?? profDetail?.appeal.commercialProposal}
           onClose={() => onOfferOpenChange(false)}
         />

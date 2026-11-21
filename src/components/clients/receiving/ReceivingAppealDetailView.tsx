@@ -126,6 +126,8 @@ export type ReceivingAppealDetailReady = {
   /** When true, CRM stage/notes actions stay disabled (observer must never write). */
   readOnly?: boolean;
   actions?: ReceivingAppealDetailActions;
+  /** P149 prof side panel: hide duplicate profile chrome; keep stage, purchase, notes. */
+  companionProfPanel?: boolean;
 };
 
 export type ReceivingAppealDetailProps = {
@@ -158,7 +160,15 @@ function composeRefusalText(reason: string, comment: string): string {
 
 type ReadyProps = ReceivingAppealDetailReady & { onBack: () => void };
 
-function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingStages: wsProp, onBack }: ReadyProps) {
+function ReceivingAppealReadyBody({
+  appeal,
+  history,
+  readOnly,
+  actions,
+  workingStages: wsProp,
+  onBack,
+  companionProfPanel = false,
+}: ReadyProps) {
   const writable = !readOnly && actions ? actions : undefined;
   const busy = Boolean(writable?.busy?.stage || writable?.busy?.notes || writable?.notesSaveBlocked);
 
@@ -785,22 +795,27 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
     ) : null;
 
   return (
-    <div className="stack ca-section" data-testid="ca-receiving-appeal-detail">
-      <ReceivingSubpageHead
-        onBack={onBack}
-        titleId="ca-receiving-appeal-title"
-        title={appeal.clientName}
-        badge={
-          <span
-            className={stageBadgeClassName(appeal.stageId, appeal.stageLabel)}
-            data-testid="ca-receiving-detail-stage-pill"
-          >
-            {appeal.stageLabel}
-          </span>
-        }
-        subtitle={`${createdLabel ? `Обращение от ${createdLabel} · ` : ""}${sourceText}${readOnly ? " · только просмотр" : ""}`}
-        subtitleTestId="ca-receiving-detail-context"
-      />
+    <div
+      className={companionProfPanel ? "stack ca-section ca-companion-prof" : "stack ca-section"}
+      data-testid="ca-receiving-appeal-detail"
+    >
+      {companionProfPanel ? null : (
+        <ReceivingSubpageHead
+          onBack={onBack}
+          titleId="ca-receiving-appeal-title"
+          title={appeal.clientName}
+          badge={
+            <span
+              className={stageBadgeClassName(appeal.stageId, appeal.stageLabel)}
+              data-testid="ca-receiving-detail-stage-pill"
+            >
+              {appeal.stageLabel}
+            </span>
+          }
+          subtitle={`${createdLabel ? `Обращение от ${createdLabel} · ` : ""}${sourceText}${readOnly ? " · только просмотр" : ""}`}
+          subtitleTestId="ca-receiving-detail-context"
+        />
+      )}
 
       <div className="ca-detail-layout">
         <div className="ca-detail-main">
@@ -825,6 +840,7 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
         </div>
 
         <aside className="ca-detail-side" aria-label="Сведения об обращении">
+          {companionProfPanel ? null : (
           <section className="panel stack ca-side-card" data-testid="ca-receiving-client-card">
             <h3>Клиент</h3>
             <p>
@@ -860,7 +876,9 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
               </div>
             </dl>
           </section>
+          )}
 
+          {companionProfPanel ? null : (
           <section className="panel stack ca-side-card" data-testid="ca-receiving-cert-card">
             <h3>Сертификат</h3>
             {isCertificate ? (
@@ -884,6 +902,7 @@ function ReceivingAppealReadyBody({ appeal, history, readOnly, actions, workingS
               <p className="muted">{RECEIVING_DETAIL_MANUAL_CERT_NOTE}</p>
             )}
           </section>
+          )}
 
           {purchaseCard}
 

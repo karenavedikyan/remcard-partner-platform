@@ -40,6 +40,8 @@ export type ReceivingAppealDetailHostProps = {
   referrerPartnerName?: string | null;
   /** Explicit list scope the card was opened from; used for reads only, never for mutations. */
   readScope?: ReceivingReadScope | null;
+  /** P149 drawer companion: stage, scan, notes — without duplicate profile chrome. */
+  companionProfPanel?: boolean;
   onBack: () => void;
   onRevisionLoaded?: (revision: number) => void;
   onAppealMutated?: () => void | Promise<void>;
@@ -71,6 +73,7 @@ export function ReceivingAppealDetailHost({
   readOnly = false,
   referrerPartnerName,
   readScope,
+  companionProfPanel = false,
   onBack,
   onRevisionLoaded,
   onAppealMutated,
@@ -406,31 +409,35 @@ export function ReceivingAppealDetailHost({
       };
     }
     if (phase === "ready" && mapped?.status === "ready") {
-      return buildReceivingAppealDetailReady({
-        appealId,
-        mapped,
-        readOnly: effectiveReadOnly,
-        busy,
-        error: actionError,
-        notesConflict,
-        notesSaveBlocked,
-        onNotesConflictRefresh:
-          notesConflict && notesSaveBlocked ? () => void refreshNotesAfterConflict() : undefined,
-        mutateProfile,
-        mutateStage,
-        addRefusalReason,
-        addWorkingStage,
-        reloadDetail,
-        onOpenOrderPipeline: effectiveReadOnly ? undefined : onOpenOrderPipeline,
-        openPurchaseOrder:
-          effectiveReadOnly || !mapped.appeal.purchaseOrderId?.trim() ? undefined : openPurchaseOrder,
-      });
+      return {
+        ...buildReceivingAppealDetailReady({
+          appealId,
+          mapped,
+          readOnly: effectiveReadOnly,
+          busy,
+          error: actionError,
+          notesConflict,
+          notesSaveBlocked,
+          onNotesConflictRefresh:
+            notesConflict && notesSaveBlocked ? () => void refreshNotesAfterConflict() : undefined,
+          mutateProfile,
+          mutateStage,
+          addRefusalReason,
+          addWorkingStage,
+          reloadDetail,
+          onOpenOrderPipeline: effectiveReadOnly ? undefined : onOpenOrderPipeline,
+          openPurchaseOrder:
+            effectiveReadOnly || !mapped.appeal.purchaseOrderId?.trim() ? undefined : openPurchaseOrder,
+        }),
+        companionProfPanel,
+      };
     }
     return null;
   }, [
     actionError,
     appealId,
     busy,
+    companionProfPanel,
     loadError,
     mapped,
     notesConflict,

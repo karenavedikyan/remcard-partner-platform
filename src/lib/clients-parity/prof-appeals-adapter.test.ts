@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildProfProfilePatchBody,
   coerceProfAppealsFromP149ListWire,
   filterProfAppealsClient,
   isP149ListContractWire,
   isProfAppealListItemWire,
   mapProfAppealListItemWire,
+  mergeProfAppealPages,
   mergeProfCapabilities,
   parseProfFilterCounts,
   profListQueryParams,
+  profProfilePatchHasFieldChanges,
   profRowCanBulkSelect,
   type ReceivingAppealListItemWire,
 } from "./prof-appeals-adapter";
@@ -131,5 +134,59 @@ describe("prof-appeals-adapter", () => {
     const only = filterProfAppealsClient(rows, { remCardOnly: true, q: "" });
     expect(only).toHaveLength(1);
     expect(only[0]!.id).toBe("a1");
+  });
+
+  it("profile PATCH omits manualSourceKey for certificate cards", () => {
+    const baseline = {
+      originKind: "CERTIFICATE" as const,
+      expectedRevision: 2,
+      appealTitle: "A",
+      interest: "B",
+      manualSourceKey: null,
+      externalRefs: [],
+      responsibleUserId: null,
+    };
+    const draft = {
+      ...baseline,
+      interest: "B changed",
+      manualSourceKey: "phone",
+    };
+    const body = buildProfProfilePatchBody(baseline, draft, 2);
+    expect(body.manualSourceKey).toBeUndefined();
+    expect(body.interest).toBe("B changed");
+    expect(profProfilePatchHasFieldChanges(body)).toBe(true);
+  });
+
+  it("profile PATCH sends manualSourceKey only for MANUAL", () => {
+    const baseline = {
+      originKind: "MANUAL" as const,
+      expectedRevision: 1,
+      manualSourceKey: "phone",
+      externalRefs: [],
+      responsibleUserId: null,
+    };
+    const draft = { ...baseline, manualSourceKey: "web" };
+    const body = buildProfProfilePatchBody(baseline, draft, 1);
+    expect(body.manualSourceKey).toBe("web");
+  });
+
+  it("mergeProfAppealPages keeps earlier pages on load-more", () => {
+    const r1 = mapProfAppealListItemWire(LIST_ITEM);
+    const r2 = mapProfAppealListItemWire({ ...LIST_ITEM, id: "a2" });
+    const r3 = mapProfAppealListItemWire({ ...LIST_ITEM, id: "a3" });
+    expect(mergeProfAppealPages([r1, r2], [r3]).map((r) => r.id)).toEqual(["a1", "a2", "a3"]);
+  });
+
+  it("profile PATCH with no field changes is empty aside from revision", () => {
+    const shape = {
+      originKind: "MANUAL" as const,
+      expectedRevision: 5,
+      appealTitle: "T",
+      interest: "Q",
+      externalRefs: [] as { key: string; label: string; value: string }[],
+      responsibleUserId: null,
+    };
+    const body = buildProfProfilePatchBody(shape, shape, 5);
+    expect(profProfilePatchHasFieldChanges(body)).toBe(false);
   });
 });

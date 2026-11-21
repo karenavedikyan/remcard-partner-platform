@@ -292,6 +292,13 @@ export function coerceProfAppealsFromP149ListWire(appealsWire: unknown[]): ProfA
   return appealsWire.filter(isProfAppealListItemWire).map(mapProfAppealListItemWire);
 }
 
+/** Append pages for p149 table — dedupe by appeal id (stable order: first page, then new rows). */
+export function mergeProfAppealPages(prev: ProfAppealListRow[], next: ProfAppealListRow[]): ProfAppealListRow[] {
+  const byId = new Map(prev.map((row) => [row.id, row]));
+  for (const row of next) byId.set(row.id, row);
+  return [...byId.values()];
+}
+
 export function parseProfAppealDetailWire(
   envelope: ReceivingAppealDetailEnvelopeWire,
   opts?: { scopeAll?: boolean },
@@ -399,6 +406,142 @@ export function profStageStatusClass(stageId: string): string {
   if (stageId === "sys_new") return "appeal-status is-new";
   if (stageId === "sys_refused" || stageId === "sys_return") return "appeal-status";
   return "appeal-status is-progress";
+}
+
+const norm = (v: string | null | undefined): string => (v ?? "").trim();
+
+/** Only keys that changed — never send manualSourceKey unless MANUAL and changed. */
+export function buildProfProfilePatchBody(
+  baseline: ProfAppealProfilePatchBody & {
+    originKind: "CERTIFICATE" | "MANUAL";
+    externalRefs?: ReceivingAppealExternalRefWire[];
+    responsibleUserId?: string | null;
+  },
+  draft: ProfAppealProfilePatchBody & {
+    originKind: "CERTIFICATE" | "MANUAL";
+    externalRefs?: ReceivingAppealExternalRefWire[];
+    responsibleUserId?: string | null;
+  },
+  revision: string | number,
+): ProfAppealProfilePatchBody {
+  const body: ProfAppealProfilePatchBody = { expectedRevision: revision };
+  const put = <K extends keyof ProfAppealProfilePatchBody>(key: K, next: ProfAppealProfilePatchBody[K]) => {
+    body[key] = next;
+  };
+  if (norm(draft.appealTitle as string) !== norm(baseline.appealTitle as string)) {
+    put("appealTitle", norm(draft.appealTitle as string) || null);
+  }
+  if (norm(draft.clientDisplayName) !== norm(baseline.clientDisplayName)) {
+    const v = norm(draft.clientDisplayName);
+    if (v) put("clientDisplayName", v);
+  }
+  if (norm(draft.interest as string) !== norm(baseline.interest as string)) {
+    put("interest", norm(draft.interest as string) || null);
+  }
+  if (norm(draft.clientCity as string) !== norm(baseline.clientCity as string)) {
+    put("clientCity", norm(draft.clientCity as string) || null);
+  }
+  if (norm(draft.clientContact as string) !== norm(baseline.clientContact as string)) {
+    put("clientContact", norm(draft.clientContact as string) || null);
+  }
+  if (norm(draft.budgetHint as string) !== norm(baseline.budgetHint as string)) {
+    put("budgetHint", norm(draft.budgetHint as string) || null);
+  }
+  if (norm(draft.privateNotes as string) !== norm(baseline.privateNotes as string)) {
+    put("privateNotes", norm(draft.privateNotes as string) || null);
+  }
+  if (norm(draft.erpDocumentNumber as string) !== norm(baseline.erpDocumentNumber as string)) {
+    put("erpDocumentNumber", norm(draft.erpDocumentNumber as string) || null);
+  }
+  if (
+    draft.originKind === "MANUAL" &&
+    norm(draft.manualSourceKey as string) !== norm(baseline.manualSourceKey as string)
+  ) {
+    const v = norm(draft.manualSourceKey as string);
+    if (v) put("manualSourceKey", v);
+  }
+  if (draft.responsibleUserId !== undefined && draft.responsibleUserId !== baseline.responsibleUserId) {
+    put("responsibleUserId", draft.responsibleUserId?.trim() || null);
+  }
+  if (draft.externalRefs && JSON.stringify(draft.externalRefs) !== JSON.stringify(baseline.externalRefs)) {
+    put("externalRefs", draft.externalRefs);
+  }
+  return body;
+}
+
+export function profProfilePatchHasFieldChanges(body: ProfAppealProfilePatchBody): boolean {
+  return Object.keys(body).some((key) => key !== "expectedRevision");
+}
+
+export type ProfBulkProfileOverlayInput = {
+  appealTitle?: string;
+  clientDisplayName?: string;
+  requestText?: string;
+  clientCity?: string;
+  clientContact?: string;
+  budgetHint?: string;
+  erpDocumentNumber?: string;
+  manualSourceKey?: string;
+  responsibleUserId?: string;
+};
+
+/** Apply bulk CRM draft onto a row baseline — only non-empty keys; MANUAL-only source. */
+export function overlayProfBulkDraftOnBaseline(
+  baseline: ProfAppealProfilePatchBody & {
+    originKind: "CERTIFICATE" | "MANUAL";
+    externalRefs?: ReceivingAppealExternalRefWire[];
+    responsibleUserId?: string | null;
+  },
+  draft: ProfBulkProfileOverlayInput,
+): (ProfAppealProfilePatchBody & {
+  originKind: "CERTIFICATE" | "MANUAL";
+  externalRefs?: ReceivingAppealExternalRefWire[];
+  responsibleUserId?: string | null;
+}) | null {
+  const next = { ...baseline };
+  let touched = false;
+  const put = (apply: () => void) => {
+    apply();
+    touched = true;
+  };
+  const t = (v: string | undefined) => v?.trim() ?? "";
+  if (t(draft.appealTitle)) put(() => { next.appealTitle = t(draft.appealTitle); });
+  if (t(draft.clientDisplayName)) put(() => { next.clientDisplayName = t(draft.clientDisplayName); });
+  if (t(draft.requestText)) put(() => { next.interest = t(draft.requestText); });
+  if (t(draft.clientCity)) put(() => { next.clientCity = t(draft.clientCity); });
+  if (t(draft.clientContact)) put(() => { next.clientContact = t(draft.clientContact); });
+  if (t(draft.budgetHint)) put(() => { next.budgetHint = t(draft.budgetHint); });
+  if (t(draft.erpDocumentNumber)) put(() => { next.erpDocumentNumber = t(draft.erpDocumentNumber); });
+  if (baseline.originKind === "MANUAL" && t(draft.manualSourceKey)) {
+    put(() => { next.manualSourceKey = t(draft.manualSourceKey); });
+  }
+  if (t(draft.responsibleUserId)) put(() => { next.responsibleUserId = t(draft.responsibleUserId); });
+  return touched ? next : null;
+}
+
+export function profBaselineFromDetailState(
+  detail: ProfAppealDetailState,
+): ProfAppealProfilePatchBody & {
+  originKind: "CERTIFICATE" | "MANUAL";
+  externalRefs: ReceivingAppealExternalRefWire[];
+  responsibleUserId: string | null;
+} {
+  const a = detail.appeal;
+  return {
+    originKind: a.originKind,
+    expectedRevision: detail.revision,
+    appealTitle: a.appealTitle,
+    clientDisplayName: a.clientDisplayName || undefined,
+    interest: a.requestText,
+    clientCity: a.clientCity,
+    clientContact: a.clientContact,
+    budgetHint: a.budgetHint,
+    erpDocumentNumber: a.erpDocumentNumber,
+    manualSourceKey: a.manualSourceKey,
+    privateNotes: a.privateNotes,
+    externalRefs: a.externalRefs.map((ref) => ({ ...ref })),
+    responsibleUserId: a.responsible?.userId?.trim() || null,
+  };
 }
 
 export function commercialProposalBlockedMessage(wire?: CommercialProposalDeliveryWire | null): string {
