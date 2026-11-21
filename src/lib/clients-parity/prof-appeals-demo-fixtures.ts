@@ -76,7 +76,7 @@ export type ProfReceivingAppealsListResponse = ReceivingAppealsListResponse & {
 };
 
 export function profDemoListResponse(over: Partial<ReceivingAppealsListResponse> = {}): ProfReceivingAppealsListResponse {
-  return {
+  const base: ProfReceivingAppealsListResponse = {
     appeals: PROF_DEMO_APPEALS,
     p149ListContract: true,
     profAppeals: PROF_DEMO_APPEALS,
@@ -96,6 +96,6 @@ export function profDemoListResponse(over: Partial<ReceivingAppealsListResponse>
       ],
     },
     access: { listAllowed: true, mutationsAllowed: true, canManageLeads: true, canScan: true, actorKind: "owner" },
-    ...over,
   };
+  return { ...base, ...over, p149ListContract: true };
 }
