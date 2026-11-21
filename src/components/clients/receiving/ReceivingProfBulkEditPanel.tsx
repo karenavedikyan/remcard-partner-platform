@@ -5,12 +5,15 @@ import type { ReceivingBulkContractState } from "./ReceivingBulkActions";
 import type { ReceivingBulkEditDraft, ReceivingProfBulkProfileDraft } from "./receiving-bulk-handoff";
 import type { ReceivingPartnerSettings } from "@/lib/clients-parity/receiving-appeals-api";
 import { receivingManualChannelOptions } from "@/lib/clients-parity/receiving-appeals-api";
+import { responsibleSelectOptions } from "./ReceivingAppealProfDrawerForm";
+import type { ReceivingAppealResponsibleWire } from "@/lib/clients-parity/prof-appeals-adapter";
 
 type Props = {
   count: number;
   stageOptions: Array<{ id: string; label: string }>;
   stageBlocked: boolean;
   settings?: ReceivingPartnerSettings | null;
+  responsibleOptions?: ReceivingAppealResponsibleWire[];
   contractState?: ReceivingBulkContractState;
   saveError?: string | null;
   onCancel: () => void;
@@ -22,6 +25,7 @@ export function ReceivingProfBulkEditPanel({
   stageOptions,
   stageBlocked,
   settings,
+  responsibleOptions = [],
   contractState = "blocked",
   saveError,
   onCancel,
@@ -50,6 +54,7 @@ export function ReceivingProfBulkEditPanel({
       budgetHint: String(fd.get("prof-budgetHint") ?? ""),
       erpDocumentNumber: String(fd.get("prof-erp") ?? ""),
       manualSourceKey: String(fd.get("prof-manualSource") ?? ""),
+      responsibleUserId: String(fd.get("prof-responsibleUserId") ?? ""),
     };
     onApply({
       stageId: stageBlocked ? "" : String(fd.get("bulk-stage") ?? ""),
@@ -127,13 +132,31 @@ export function ReceivingProfBulkEditPanel({
             </select>
           </label>
         ) : null}
-        <div className="panel stack" data-testid="ca-bulk-responsible-readonly">
-          <span className="small muted">Ответственный</span>
-          <p className="muted small" style={{ margin: 0 }}>
-            Массовое назначение недоступно: нет безопасного staff-read по филиалу. Меняйте только в карточке
-            обращения (только просмотр текущего ответственного).
-          </p>
-        </div>
+        {responsibleOptions.length > 0 ? (
+          <label className="field">
+            Ответственный
+            <select
+              name="prof-responsibleUserId"
+              defaultValue=""
+              disabled={applyDisabled}
+              data-testid="ca-bulk-prof-responsible"
+            >
+              {responsibleSelectOptions(responsibleOptions, null, "Не менять").map((opt) => (
+                <option key={opt.value || "empty"} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="panel stack" data-testid="ca-bulk-responsible-readonly">
+            <span className="small muted">Ответственный</span>
+            <p className="muted small" style={{ margin: 0 }}>
+              Массовое назначение недоступно: нет общего справочника по выбранным обращениям. Назначайте в
+              карточке обращения.
+            </p>
+          </div>
+        )}
       </fieldset>
       <label className="field">
         Этап работ

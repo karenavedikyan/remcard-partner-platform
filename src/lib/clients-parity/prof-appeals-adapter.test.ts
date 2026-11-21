@@ -12,8 +12,12 @@ import {
   profListQueryParams,
   profProfilePatchHasFieldChanges,
   profRowCanBulkSelect,
+  profAppealRowSubtitle,
+  intersectResponsibleOptions,
+  parseProfAppealDetailWire,
   type ReceivingAppealListItemWire,
 } from "./prof-appeals-adapter";
+import type { ReceivingAppealDetailWire } from "./receiving-appeals-api";
 import { mapReceivingAppealListRowFromWire } from "./receiving-appeals-api";
 
 const P149_CAPS = {
@@ -175,6 +179,44 @@ describe("prof-appeals-adapter", () => {
     const r2 = mapProfAppealListItemWire({ ...LIST_ITEM, id: "a2" });
     const r3 = mapProfAppealListItemWire({ ...LIST_ITEM, id: "a3" });
     expect(mergeProfAppealPages([r1, r2], [r3]).map((r) => r.id)).toEqual(["a1", "a2", "a3"]);
+  });
+
+  it("profAppealRowSubtitle prefers row receivingBranchLabel", () => {
+    const row = mapProfAppealListItemWire({
+      ...LIST_ITEM,
+      receivingBranchLabel: "Wire branch",
+    });
+    expect(profAppealRowSubtitle(row, "Prop branch")).toContain("Wire branch");
+  });
+
+  it("intersectResponsibleOptions returns empty when lists disagree", () => {
+    expect(
+      intersectResponsibleOptions([
+        [{ userId: "u1", displayLabel: "A" }],
+        [{ userId: "u2", displayLabel: "B" }],
+      ]),
+    ).toEqual([]);
+  });
+
+  it("parseProfAppealDetailWire maps branch and created-by labels", () => {
+    const envelope: ReceivingAppealDetailWire = {
+      revision: 1,
+      appeal: {
+        ...LIST_ITEM,
+        receivingBranchLabel: "Филиал X",
+        createdByLabel: "Кто создал",
+        clientCity: null,
+        clientContact: null,
+        budgetHint: null,
+        privateNotes: null,
+      },
+      history: [],
+      responsibleOptions: [{ userId: "u1", displayLabel: "Мария" }],
+    };
+    const state = parseProfAppealDetailWire(envelope);
+    expect(state?.appeal.receivingBranchLabel).toBe("Филиал X");
+    expect(state?.appeal.createdByLabel).toBe("Кто создал");
+    expect(state?.responsibleOptions).toHaveLength(1);
   });
 
   it("profile PATCH with no field changes is empty aside from revision", () => {

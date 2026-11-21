@@ -835,7 +835,7 @@ function ReceivingAppealReadyBody({
               ))}
             </ol>
             {nextCard}
-            <ReceivingAppealTimeline entries={history} />
+            {companionProfPanel ? null : <ReceivingAppealTimeline entries={history} />}
           </div>
         </div>
 
@@ -906,7 +906,7 @@ function ReceivingAppealReadyBody({
 
           {purchaseCard}
 
-          {!readOnly ? (
+          {companionProfPanel ? null : !readOnly ? (
             <section className="panel stack ca-side-card" data-testid="ca-receiving-detail-notes">
               <h3>Заметки</h3>
               <label className="field">

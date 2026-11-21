@@ -1,12 +1,23 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   buildProfProfilePatchBody,
   profProfilePatchHasFieldChanges,
+  profRowSourceLabel,
   type ProfAppealDetailState,
   type ProfAppealProfilePatchBody,
   type ReceivingAppealExternalRefWire,
+  type ReceivingAppealResponsibleWire,
   parseProfAppealDetailWire,
 } from "@/lib/clients-parity/prof-appeals-adapter";
 import {
@@ -16,6 +27,7 @@ import {
   type ReceivingPartnerSettings,
   type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
+import { useCopyDisplayedValue } from "./useCopyDisplayedValue";
 
 export type ReceivingAppealProfDrawerFormHandle = {
   save: () => Promise<void>;
@@ -32,6 +44,7 @@ export type ReceivingAppealProfDrawerFormProps = {
   onSaved?: () => void | Promise<void>;
   onBusyChange?: (busy: boolean) => void;
   onSaveStateChange?: (saved: boolean) => void;
+  titleFocusRef?: RefObject<HTMLInputElement>;
 };
 
 type ProfileBaseline = ProfAppealProfilePatchBody & {
@@ -47,10 +60,33 @@ type FormDraft = {
   clientCity: string;
   clientContact: string;
   budgetHint: string;
+  privateNotes: string;
   erpDocumentNumber: string;
   manualSourceKey: string;
+  responsibleUserId: string;
   externalRefs: ReceivingAppealExternalRefWire[];
 };
+
+export function responsibleSelectOptions(
+  options: ReceivingAppealResponsibleWire[],
+  current?: { userId?: string | null; displayLabel?: string | null } | null,
+  emptyLabel = "Не назначен",
+): Array<{ value: string; label: string }> {
+  const items: Array<{ value: string; label: string }> = [{ value: "", label: emptyLabel }];
+  const seen = new Set<string>();
+  for (const opt of options) {
+    const id = opt.userId.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    items.push({ value: id, label: opt.displayLabel.trim() || id });
+  }
+  const cur = current?.userId?.trim();
+  const curLabel = current?.displayLabel?.trim();
+  if (cur && !seen.has(cur)) {
+    items.push({ value: cur, label: curLabel || "Текущий ответственный" });
+  }
+  return items;
+}
 
 function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
   const a = detail.appeal;
@@ -61,8 +97,10 @@ function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
     clientCity: a.clientCity?.trim() ?? "",
     clientContact: a.clientContact?.trim() ?? "",
     budgetHint: a.budgetHint?.trim() ?? "",
+    privateNotes: a.privateNotes?.trim() ?? "",
     erpDocumentNumber: a.erpDocumentNumber?.trim() ?? "",
     manualSourceKey: a.manualSourceKey?.trim() ?? "",
+    responsibleUserId: a.responsible?.userId?.trim() ?? "",
     externalRefs: a.externalRefs.map((ref) => ({ ...ref })),
   };
 }
@@ -78,17 +116,15 @@ function baselineFromDetail(detail: ProfAppealDetailState): ProfileBaseline {
     clientCity: draft.clientCity || null,
     clientContact: draft.clientContact || null,
     budgetHint: draft.budgetHint || null,
+    privateNotes: draft.privateNotes || null,
     erpDocumentNumber: draft.erpDocumentNumber || null,
     manualSourceKey: draft.manualSourceKey || null,
-    responsibleUserId: detail.appeal.responsible?.userId?.trim() || null,
+    responsibleUserId: draft.responsibleUserId || null,
     externalRefs: draft.externalRefs,
   };
 }
 
-function draftToPatchShape(
-  detail: ProfAppealDetailState,
-  draft: FormDraft,
-): ProfileBaseline {
+function patchShapeFromDraft(detail: ProfAppealDetailState, draft: FormDraft): ProfileBaseline {
   const base = baselineFromDetail(detail);
   return {
     ...base,
@@ -98,9 +134,10 @@ function draftToPatchShape(
     clientCity: draft.clientCity || null,
     clientContact: draft.clientContact || null,
     budgetHint: draft.budgetHint || null,
+    privateNotes: draft.privateNotes || null,
     erpDocumentNumber: draft.erpDocumentNumber || null,
     manualSourceKey: draft.manualSourceKey || null,
-    responsibleUserId: detail.appeal.responsible?.userId?.trim() || null,
+    responsibleUserId: draft.responsibleUserId.trim() || null,
     externalRefs: draft.externalRefs,
   };
 }
@@ -109,7 +146,16 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   ReceivingAppealProfDrawerFormHandle,
   ReceivingAppealProfDrawerFormProps
 >(function ReceivingAppealProfDrawerForm(
-  { detail, settings, readScope, onDetailChange, onSaved, onBusyChange, onSaveStateChange },
+  {
+    detail,
+    settings,
+    readScope,
+    onDetailChange,
+    onSaved,
+    onBusyChange,
+    onSaveStateChange,
+    titleFocusRef,
+  },
   ref,
 ) {
   const readOnly = detail.detailReadOnly;
@@ -119,6 +165,11 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { copy, copiedKey } = useCopyDisplayedValue();
+  const localTitleRef = useRef<HTMLInputElement>(null);
+  const appealTitleRef = titleFocusRef ?? localTitleRef;
+
+  const shortId = detail.appeal.id.replace(/^appeal-/, "").slice(-4) || detail.appeal.id.slice(-4);
 
   useEffect(() => {
     onBusyChange?.(busy);
@@ -140,7 +191,15 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
 
   const channels = useMemo(() => receivingManualChannelOptions(settings), [settings]);
   const isManual = detail.appeal.originKind === "MANUAL";
-  const certPromo = detail.appeal.certificatePromoCode?.trim();
+  const responsibleOpts = useMemo(
+    () =>
+      responsibleSelectOptions(detail.responsibleOptions, {
+        userId: draft.responsibleUserId || detail.appeal.responsible?.userId,
+        displayLabel: detail.appeal.responsible?.displayLabel,
+      }),
+    [detail.responsibleOptions, draft.responsibleUserId],
+  );
+  const sourceReadonlyLabel = useMemo(() => profRowSourceLabel(detail.appeal), [detail.appeal]);
 
   const setField = <K extends keyof FormDraft>(key: K, value: FormDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -150,7 +209,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   const setExternalRefValue = (key: string, value: string) => {
     setDraft((prev) => ({
       ...prev,
-      externalRefs: prev.externalRefs.map((ref) => (ref.key === key ? { ...ref, value } : ref)),
+      externalRefs: prev.externalRefs.map((r) => (r.key === key ? { ...r, value } : r)),
     }));
     setSaved(false);
   };
@@ -159,7 +218,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
     if (readOnly || busy) return;
     setBusy(true);
     setError(null);
-    const patchDraft = draftToPatchShape(detail, draft);
+    const patchDraft = patchShapeFromDraft(detail, draft);
     const body = buildProfProfilePatchBody(baselineRef.current, patchDraft, revision);
     if (!profProfilePatchHasFieldChanges(body)) {
       setBusy(false);
@@ -214,6 +273,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   );
 
   const fieldsDisabled = readOnly || busy;
+  const showResponsibleSelect = !readOnly && detail.responsibleOptions.length > 0;
 
   return (
     <fieldset className="prof-drawer-form stack" disabled={fieldsDisabled} data-testid="ca-prof-drawer-form">
@@ -222,109 +282,169 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
           Только просмотр: изменения профиля недоступны.
         </p>
       ) : null}
-      <label className="field">
-        Название обращения
-        <input
-          value={draft.appealTitle}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-appealTitle"
-          onChange={(e) => setField("appealTitle", e.target.value)}
-        />
-      </label>
-      <label className="field">
-        Клиент
-        <input
-          value={draft.clientDisplayName}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-clientDisplayName"
-          onChange={(e) => setField("clientDisplayName", e.target.value)}
-        />
-      </label>
-      <label className="field">
-        Запрос
-        <textarea
-          rows={3}
-          value={draft.requestText}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-requestText"
-          onChange={(e) => setField("requestText", e.target.value)}
-        />
-      </label>
-      <div className="row">
+
+      <div className="prof-field-grid" data-testid="ca-prof-main-fields">
+        <label className="field prof-field-span">
+          Название обращения
+          <input
+            ref={appealTitleRef}
+            value={draft.appealTitle}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-appealTitle"
+            onChange={(e) => setField("appealTitle", e.target.value)}
+          />
+        </label>
+        <label className="field">
+          Клиент
+          <input
+            value={draft.clientDisplayName}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-clientDisplayName"
+            onChange={(e) => setField("clientDisplayName", e.target.value)}
+          />
+        </label>
+        <label className="field prof-field-span">
+          Запрос
+          <textarea
+            rows={3}
+            value={draft.requestText}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-requestText"
+            onChange={(e) => setField("requestText", e.target.value)}
+          />
+        </label>
         <label className="field">
           Город
-          <input value={draft.clientCity} readOnly={readOnly} onChange={(e) => setField("clientCity", e.target.value)} />
+          <input
+            value={draft.clientCity}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-clientCity"
+            onChange={(e) => setField("clientCity", e.target.value)}
+          />
         </label>
         <label className="field">
           Контакт
           <input
             value={draft.clientContact}
             readOnly={readOnly}
+            data-testid="ca-prof-field-clientContact"
             onChange={(e) => setField("clientContact", e.target.value)}
           />
         </label>
-      </div>
-      <label className="field">
-        Бюджет
-        <input value={draft.budgetHint} readOnly={readOnly} onChange={(e) => setField("budgetHint", e.target.value)} />
-      </label>
-      <label className="field">
-        Номер в 1С
-        <input
-          value={draft.erpDocumentNumber}
-          readOnly={readOnly}
-          data-testid="ca-prof-field-erp"
-          onChange={(e) => setField("erpDocumentNumber", e.target.value)}
-        />
-      </label>
-      {certPromo ? (
-        <div className="panel stack" data-testid="ca-prof-certificate-promo">
-          <span className="muted small">Номер сертификата</span>
-          <strong>{certPromo}</strong>
-        </div>
-      ) : null}
-      <div className="panel stack" data-testid="ca-prof-field-responsible">
-        <span className="small muted">Ответственный</span>
-        <strong>{detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}</strong>
-        <p className="muted small" style={{ margin: 0 }}>
-          Справочник сотрудников по филиалу в этом интерфейсе недоступен — смена ответственного через отдельный
-          staff-read не подключалась.
-        </p>
-      </div>
-      {isManual && channels.length > 0 ? (
+        <label className="field prof-field-span">
+          Бюджет
+          <input
+            value={draft.budgetHint}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-budgetHint"
+            onChange={(e) => setField("budgetHint", e.target.value)}
+          />
+        </label>
+        <label className="field prof-field-span">
+          Заметки команды
+          <textarea
+            rows={3}
+            value={draft.privateNotes}
+            readOnly={readOnly}
+            data-testid="ca-prof-field-privateNotes"
+            onChange={(e) => setField("privateNotes", e.target.value)}
+          />
+        </label>
         <label className="field">
           Источник
-          <select
-            value={draft.manualSourceKey || ""}
-            disabled={readOnly}
-            data-testid="ca-prof-field-manual-source"
-            onChange={(e) => setField("manualSourceKey", e.target.value)}
-          >
-            <option value="">—</option>
-            {channels.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          {isManual && channels.length > 0 && !readOnly ? (
+            <select
+              value={draft.manualSourceKey || ""}
+              disabled={readOnly}
+              data-testid="ca-prof-field-manual-source"
+              onChange={(e) => setField("manualSourceKey", e.target.value)}
+            >
+              <option value="">—</option>
+              {channels.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input readOnly value={sourceReadonlyLabel} data-testid="ca-prof-field-source-readonly" />
+          )}
         </label>
-      ) : null}
-      {draft.externalRefs.length > 0 ? (
-        <section className="panel stack" data-testid="ca-prof-external-refs">
-          <h3 className="small muted">Внешние поля</h3>
+        <label className="field" data-testid="ca-prof-field-responsible">
+          Ответственный
+          {showResponsibleSelect ? (
+            <select
+              value={draft.responsibleUserId}
+              data-testid="ca-prof-field-responsible-select"
+              onChange={(e) => setField("responsibleUserId", e.target.value)}
+            >
+              {responsibleOpts.map((opt) => (
+                <option key={opt.value || "empty"} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              readOnly
+              value={detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}
+              data-testid="ca-prof-field-responsible-readonly"
+            />
+          )}
+        </label>
+      </div>
+
+      <section className="prof-partner-section stack" data-testid="ca-prof-partner-fields">
+        <h3 className="prof-section-title">Поля партнёра</h3>
+        <p className="muted small prof-partner-help">
+          Эти номера не заменяют № {shortId} в RemCard.
+        </p>
+        <div className="prof-field-grid">
+          <label className="field">
+            Номер в 1С
+            <div className="prof-copy-field">
+              <input
+                value={draft.erpDocumentNumber}
+                readOnly={readOnly}
+                data-testid="ca-prof-field-erp"
+                onChange={(e) => setField("erpDocumentNumber", e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn ghost small-btn"
+                disabled={!draft.erpDocumentNumber.trim()}
+                data-testid="ca-prof-copy-erp"
+                onClick={() => void copy("erp", draft.erpDocumentNumber)}
+              >
+                {copiedKey === "erp" ? "Скопировано" : "Копировать"}
+              </button>
+            </div>
+          </label>
           {draft.externalRefs.map((ref) => (
             <label key={ref.key} className="field">
               {ref.label}
-              <input
-                value={ref.value ?? ""}
-                readOnly={readOnly}
-                data-testid={`ca-prof-external-${ref.key}`}
-                onChange={(e) => setExternalRefValue(ref.key, e.target.value)}
-              />
+              <div className="prof-copy-field">
+                <input
+                  value={ref.value ?? ""}
+                  readOnly={readOnly}
+                  data-testid={`ca-prof-external-${ref.key}`}
+                  onChange={(e) => setExternalRefValue(ref.key, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn ghost small-btn"
+                  disabled={!ref.value?.trim()}
+                  data-testid={`ca-prof-copy-external-${ref.key}`}
+                  onClick={() => void copy(`ext-${ref.key}`, ref.value ?? "")}
+                >
+                  {copiedKey === `ext-${ref.key}` ? "Скопировано" : "Копировать"}
+                </button>
+              </div>
             </label>
           ))}
-        </section>
-      ) : null}
+        </div>
+      </section>
+
       {error ? (
         <p className="notice accent" role="alert">
           {error}

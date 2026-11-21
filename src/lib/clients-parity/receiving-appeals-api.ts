@@ -275,6 +275,8 @@ export type ReceivingAppealDetailWire = {
   capabilities?: ReceivingRowCapabilities | null;
   /** Additive p149 rights when server serves PROF contract. */
   p149Capabilities?: ReceivingAppealP149CapabilitiesWire | null;
+  /** Staff assignable on this appeal's receiving branch (empty when detail is read-only). */
+  responsibleOptions?: Array<{ userId: string; displayLabel: string }>;
 };
 
 /**

@@ -5,6 +5,7 @@ import {
   createReceivingAppeal,
   receivingRowCanManageLeads,
   type ReceivingAppealListRow,
+  fetchReceivingAppealDetailWire,
   fetchReceivingAppealsWorkspace,
   isReceivingAppealsProxyReady,
   isReceivingCertificateEntryProxyReady,
@@ -33,8 +34,11 @@ import { ReceivingAppealsProfTable } from "./ReceivingAppealsProfTable";
 import { ReceivingAppealProfSidePanel } from "./ReceivingAppealProfSidePanel";
 import { ReceivingManualSourcesDialog } from "./ReceivingManualSourcesDialog";
 import {
+  intersectResponsibleOptions,
+  parseProfAppealDetailWire,
   profRowCanBulkSelect,
   type ProfListFilters,
+  type ReceivingAppealResponsibleWire,
 } from "@/lib/clients-parity/prof-appeals-adapter";
 import { ReceivingCertificateScan } from "./ReceivingCertificateScan";
 import { WorkingStagesEditor } from "./WorkingStagesEditor";
@@ -156,6 +160,7 @@ export function ReceivingAppealsWorkspace({
     ids: string[];
   } | null>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkResponsibleOptions, setBulkResponsibleOptions] = useState<ReceivingAppealResponsibleWire[]>([]);
   const headingSlot = useClientsPageChrome()?.headingAction ?? null;
   const [workingBranchId, setWorkingBranchId] = useState<string | null>(null);
   const [branchRequiredNotice, setBranchRequiredNotice] = useState(false);
@@ -443,6 +448,35 @@ export function ReceivingAppealsWorkspace({
   // A card/row is editable by its own server flag, never by the aggregate of the general list.
   const profLayout = data?.p149ListContract === true;
   const profAppeals = profLayout ? (data?.profAppeals ?? []) : [];
+
+  useEffect(() => {
+    if (!bulkEditOpen || !profLayout || selected.size === 0) {
+      setBulkResponsibleOptions([]);
+      return;
+    }
+    let cancelled = false;
+    const ids = [...selected].filter((id) => {
+      const row = data?.profAppeals?.find((r) => r.id === id);
+      return row && profRowCanBulkSelect(row);
+    });
+    if (ids.length === 0) {
+      setBulkResponsibleOptions([]);
+      return;
+    }
+    const scopeAll = readScope?.branchScope === "all";
+    void Promise.all(ids.map((id) => fetchReceivingAppealDetailWire(id, readScope ?? undefined))).then(
+      (results) => {
+        if (cancelled) return;
+        const lists = results
+          .filter((r): r is Extract<typeof r, { ok: true }> => r.ok)
+          .map((r) => parseProfAppealDetailWire(r.wire, { scopeAll })?.responsibleOptions ?? []);
+        setBulkResponsibleOptions(intersectResponsibleOptions(lists));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [bulkEditOpen, data?.profAppeals, profLayout, readScope, selected]);
 
   useEffect(() => {
     if (!profLayout || previewData) return;
@@ -936,6 +970,7 @@ export function ReceivingAppealsWorkspace({
           }))}
           stageBlocked={bulkSelectedRows.some((row) => isReceivingAppealLockedForBulkStage(row))}
           settings={data.settings ?? RECEIVING_EMPTY_SETTINGS}
+          responsibleOptions={bulkResponsibleOptions}
           contractState={bulkContractState}
           saveError={batchPartial}
           onCancel={() => setBulkEditOpen(false)}
@@ -1090,8 +1125,11 @@ export function ReceivingAppealsWorkspace({
             partnerLogoUrl={partnerLogoUrl}
             partnerType={partnerType}
             branchLabel={
-              profPanelRow && branches
-                ? receivingBranchLabelById(profPanelRow.receivingBranchId, branches)
+              profPanelRow
+                ? profPanelRow.receivingBranchLabel ??
+                  (branches
+                    ? receivingBranchLabelById(profPanelRow.receivingBranchId, branches)
+                    : null)
                 : null
             }
             offerOpen={offerOpen}

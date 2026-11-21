@@ -69,6 +69,8 @@ export type ReceivingAppealListItemWire = {
   manualSourceLabel: string | null;
   responsible: ReceivingAppealResponsibleWire | null;
   receivingBranchId: string | null;
+  receivingBranchLabel?: string | null;
+  createdByLabel?: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   createdAt: string;
   updatedAt: string;
@@ -137,6 +139,8 @@ export type ProfAppealListRow = ReceivingAppealListRow & {
   externalRefs: ReceivingAppealExternalRefWire[];
   manualSourceLabel: string | null;
   responsible: ReceivingAppealResponsibleWire | null;
+  receivingBranchLabel?: string | null;
+  createdByLabel?: string | null;
   originKind: "CERTIFICATE" | "MANUAL";
   remCard: ReceivingAppealRemCardListWire;
   profCapabilities: ProfAppealCapabilitiesWire;
@@ -242,7 +246,34 @@ export type ProfAppealDetailState = {
   workingStages: ReceivingWorkingStage[];
   refusalReasons: string[];
   detailReadOnly: boolean;
+  responsibleOptions: ReceivingAppealResponsibleWire[];
 };
+
+export function parseResponsibleOptionsWire(raw: unknown): ReceivingAppealResponsibleWire[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is ReceivingAppealResponsibleWire => {
+      if (!item || typeof item !== "object") return false;
+      const o = item as Record<string, unknown>;
+      return typeof o.userId === "string" && typeof o.displayLabel === "string";
+    })
+    .map((o) => ({
+      userId: o.userId.trim(),
+      displayLabel: o.displayLabel.trim(),
+    }))
+    .filter((o) => o.userId.length > 0 && o.displayLabel.length > 0);
+}
+
+/** Shared assignable staff across bulk-selected appeals (intersection by userId). */
+export function intersectResponsibleOptions(
+  lists: ReceivingAppealResponsibleWire[][],
+): ReceivingAppealResponsibleWire[] {
+  if (lists.length === 0) return [];
+  const [first, ...rest] = lists;
+  if (!first?.length) return [];
+  if (rest.length === 0) return [...first];
+  return first.filter((opt) => rest.every((list) => list.some((o) => o.userId === opt.userId)));
+}
 
 export function mapProfHistoryFromWire(rows: ReceivingAppealHistoryWire[]): ReceivingAppealHistoryEntry[] {
   return mapReceivingHistoryFromWire(rows ?? []);
@@ -281,6 +312,8 @@ export function mapProfAppealListItemWire(wire: ReceivingAppealListItemWire): Pr
     externalRefs: Array.isArray(wire.externalRefs) ? wire.externalRefs : [],
     manualSourceLabel: wire.manualSourceLabel,
     responsible: wire.responsible,
+    receivingBranchLabel: wire.receivingBranchLabel ?? null,
+    createdByLabel: wire.createdByLabel ?? null,
     originKind: wire.originKind,
     remCard: { inCabinet: wire.remCard.inCabinet },
     profCapabilities,
@@ -331,11 +364,18 @@ export function parseProfAppealDetailWire(
   const detailReadOnly =
     receivingDetailWireReadOnly(envelope, { scopeAll: opts?.scopeAll }) || !profCaps.canManageLeads;
 
+  const responsibleOptions = detailReadOnly
+    ? []
+    : parseResponsibleOptionsWire((envelope as { responsibleOptions?: unknown }).responsibleOptions);
+
   return {
     appeal: {
       ...listRow,
       profCapabilities: profCaps,
       remCard: remDetail,
+      receivingBranchLabel:
+        appealWire.receivingBranchLabel?.trim() || listRow.receivingBranchLabel?.trim() || null,
+      createdByLabel: appealWire.createdByLabel?.trim() || listRow.createdByLabel?.trim() || null,
       clientCity: (profileFields.clientCity as string | null | undefined) ?? null,
       clientContact: (profileFields.clientContact as string | null | undefined) ?? null,
       budgetHint: (profileFields.budgetHint as string | null | undefined) ?? null,
@@ -347,6 +387,7 @@ export function parseProfAppealDetailWire(
     workingStages: envelope.workingStages ?? [],
     refusalReasons: envelope.refusalReasons ?? [],
     detailReadOnly,
+    responsibleOptions,
   };
 }
 
@@ -356,7 +397,8 @@ export function profAppealRowSubtitle(row: ProfAppealListRow, branchLabel?: stri
   if (client && client !== "—") parts.push(client);
   const tail = row.id.replace(/^appeal-/, "").slice(-4);
   if (tail) parts.push(`№ ${tail}`);
-  if (branchLabel?.trim()) parts.push(branchLabel.trim());
+  const branch = row.receivingBranchLabel?.trim() || branchLabel?.trim();
+  if (branch) parts.push(branch);
   return parts.join(" · ") || "—";
 }
 
