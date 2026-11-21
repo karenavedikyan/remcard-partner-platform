@@ -687,9 +687,15 @@ export async function postReceivingWorkingStagesMutation(
     };
   }
   try {
+    const wireBody =
+      body.kind === "addRefusalReason"
+        ? { kind: "refusalReason", reason: body.label, expectedVersion: body.expectedVersion }
+        : body.kind === "addWorkingStage"
+          ? { kind: "workingStage", label: body.label, expectedVersion: body.expectedVersion }
+          : body;
     const payload = await remcardFetch<ReceivingPartnerSettingsWire>(RECEIVING_WORKING_STAGES_PATH, {
       method: "POST",
-      body,
+      body: wireBody,
     });
     const snapshot = unwrapReceivingPartnerSettingsWire(payload);
     if (!snapshot) {
@@ -1576,8 +1582,8 @@ export async function patchReceivingAppealStageCas(
     };
   }
   try {
-    await remcardFetch(path, { method: "PATCH", body });
-    return { ok: true };
+    const data = await remcardFetch<ReceivingAppealProfilePatchResponseWire>(path, { method: "PATCH", body });
+    return { ok: true, ...(data?.revision != null ? { revision: data.revision } : {}) };
   } catch (caught) {
     if (caught instanceof RemcardApiError && caught.status === 409) {
       return { ok: false, code: "CONFLICT", message: caught.message };

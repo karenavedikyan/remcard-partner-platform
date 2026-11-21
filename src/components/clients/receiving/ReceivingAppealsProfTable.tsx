@@ -513,8 +513,12 @@ export function ReceivingAppealsProfTable({
                     {sourceLabel}
                     {referrer ? <small className={styles.profReferrer}>Направил: {referrer}</small> : null}
                   </span>
-                  <span className="row-assignee small">{row.responsible?.displayLabel?.trim() || "—"}</span>
+                  <span className="row-assignee small">
+                    <span className="number-label">Ответственный</span>
+                    {row.responsible?.displayLabel?.trim() || "—"}
+                  </span>
                   <span className="prof-row-account small" data-testid="ca-prof-account">
+                    <span className="number-label">Кабинет</span>
                     {row.remCard.inCabinet ? (
                       <>
                         <span aria-hidden="true">✓</span> Есть в RemCard

@@ -453,6 +453,7 @@ export function profRowCanBulkSelect(row: ProfAppealListRow): boolean {
 
 export function profStageStatusClass(stageId: string): string {
   if (stageId === "sys_new") return "appeal-status is-new";
+  if (stageId === "sys_shipped") return "appeal-status is-shipped";
   if (stageId === "sys_refused" || stageId === "sys_return") return "appeal-status";
   return "appeal-status is-progress";
 }

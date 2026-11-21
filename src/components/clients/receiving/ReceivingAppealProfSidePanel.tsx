@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { ReceivingAppealProfDrawerFormHandle } from "./ReceivingAppealProfDrawerForm";
 import {
   parseProfAppealDetailWire,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/clients-parity/prof-appeals-adapter";
 import {
   fetchReceivingAppealDetailWire,
+  type ReceivingAppealDetailWire,
   type ReceivingPartnerSettings,
   type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -67,11 +68,26 @@ export function ReceivingAppealProfSidePanel({
   const open = Boolean(appealId);
   const [detailPhase, setDetailPhase] = useState<DetailPhase>("loading");
   const [profDetail, setProfDetail] = useState<ProfAppealDetailState | null>(null);
+  const [lifecycleDetail, setLifecycleDetail] = useState<ProfAppealDetailState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [commercialProposal, setCommercialProposal] = useState<CommercialProposalDeliveryWire | null>(null);
   const formRef = useRef<ReceivingAppealProfDrawerFormHandle>(null);
   const [formBusy, setFormBusy] = useState(false);
   const [formSaved, setFormSaved] = useState(false);
+  const [lastCommit, setLastCommit] = useState<{ appealId: string; revision: number } | null>(null);
+  // Only successful writes from this open drawer may advance its sibling editor's CAS.
+  const openAppealRef = useRef(appealId);
+  openAppealRef.current = appealId;
+  const onRevisionCommitted = useCallback((value: string | number) => {
+    const revision = Number(value);
+    if (!appealId || openAppealRef.current !== appealId || !Number.isSafeInteger(revision) || revision <= 0) return;
+    setLastCommit((prev) => prev?.appealId === appealId && prev.revision >= revision ? prev : { appealId, revision });
+  }, [appealId]);
+  const committedRevision = lastCommit && lastCommit.appealId === appealId ? lastCommit.revision : undefined;
+  const onDetailRefreshed = useCallback((wire: ReceivingAppealDetailWire) => {
+    const next = parseProfAppealDetailWire(wire, { scopeAll: readScope?.branchScope === "all" });
+    if (next && next.appeal.id === openAppealRef.current) setLifecycleDetail(next);
+  }, [readScope?.branchScope]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -98,6 +114,7 @@ export function ReceivingAppealProfSidePanel({
     let cancelled = false;
     setDetailPhase("loading");
     setProfDetail(null);
+    setLifecycleDetail(null);
     setLoadError(null);
     setCommercialProposal(null);
     void fetchReceivingAppealDetailWire(appealId, readScope).then((res) => {
@@ -135,7 +152,9 @@ export function ReceivingAppealProfSidePanel({
 
   if (!appealId) return null;
 
-  const appealRow = profDetail?.appeal ?? row;
+  const summaryDetail = lifecycleDetail?.appeal.id === appealId &&
+    lifecycleDetail.revision >= (profDetail?.revision ?? 0) ? lifecycleDetail : profDetail;
+  const appealRow = summaryDetail?.appeal ?? row;
   const panelReadOnly = readOnly || profDetail?.detailReadOnly === true;
   const title =
     profDetail?.appeal.appealTitle?.trim() ||
@@ -148,8 +167,8 @@ export function ReceivingAppealProfSidePanel({
   const hasCabinet = profDetail?.appeal.remCard.inCabinet ?? row?.remCard.inCabinet === true;
   const publicId = profDetail?.appeal.remCard.publicId?.trim() || null;
   const inviteUrl = profDetail?.appeal.remCard.inviteLoginUrl?.trim() || REMCARD_CLIENT_LOGIN_URL;
-  const statusLabel = profDetail?.appeal.stageLabel ?? row?.stageLabel ?? null;
-  const stageId = profDetail?.appeal.stageId ?? row?.stageId ?? "";
+  const statusLabel = summaryDetail?.appeal.stageLabel ?? row?.stageLabel ?? null;
+  const stageId = summaryDetail?.appeal.stageId ?? row?.stageId ?? "";
   const branchEffective =
     profDetail?.appeal.receivingBranchLabel?.trim() ??
     row?.receivingBranchLabel?.trim() ??
@@ -159,7 +178,7 @@ export function ReceivingAppealProfSidePanel({
   const createdBy =
     profDetail?.appeal.createdByLabel?.trim() ?? row?.createdByLabel?.trim() ?? null;
   const certificate = profDetail?.appeal.certificatePromoCode?.trim() ?? row?.certificatePromoCode?.trim() ?? null;
-  const historyCount = profDetail?.history.length ?? 0;
+  const historyCount = summaryDetail?.history.length ?? 0;
 
   return (
     <>
@@ -257,6 +276,8 @@ export function ReceivingAppealProfSidePanel({
                   readScope={readScope}
                   titleFocusRef={titleInputRef}
                   onDetailChange={setProfDetail}
+                  committedRevision={committedRevision}
+                  onRevisionCommitted={onRevisionCommitted}
                   onSaved={onAppealMutated}
                   onBusyChange={setFormBusy}
                   onSaveStateChange={setFormSaved}
@@ -270,10 +291,15 @@ export function ReceivingAppealProfSidePanel({
 
                 <div className="prof-lifecycle-host" data-testid="ca-prof-lifecycle-host">
                   <ReceivingAppealDetailHost
+                    key={appealId}
                     appealId={appealId}
                     readOnly={panelReadOnly}
                     readScope={readScope}
                     companionProfPanel
+                    companionProfileBusy={formBusy}
+                    committedRevision={committedRevision}
+                    onRevisionCommitted={onRevisionCommitted}
+                    onDetailRefreshed={onDetailRefreshed}
                     onBack={onClose}
                     onAppealMutated={onAppealMutated}
                   />
@@ -281,7 +307,7 @@ export function ReceivingAppealProfSidePanel({
 
                 <details className="history" data-testid="ca-prof-history">
                   <summary>История изменений · {historyCount}</summary>
-                  <ReceivingAppealTimeline entries={profDetail.history} emptyLabel="Пока изменений нет." />
+                  <ReceivingAppealTimeline entries={summaryDetail?.history ?? []} emptyLabel="Пока изменений нет." />
                 </details>
               </>
             ) : detailPhase === "legacy" ? (

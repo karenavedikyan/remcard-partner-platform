@@ -41,6 +41,8 @@ export type ReceivingAppealProfDrawerFormProps = {
   settings?: ReceivingPartnerSettings | null;
   readScope?: ReceivingReadScope | null;
   onDetailChange?: (next: ProfAppealDetailState) => void;
+  committedRevision?: number;
+  onRevisionCommitted?: (revision: string | number) => void;
   onSaved?: () => void | Promise<void>;
   onBusyChange?: (busy: boolean) => void;
   onSaveStateChange?: (saved: boolean) => void;
@@ -136,6 +138,8 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
     settings,
     readScope,
     onDetailChange,
+    committedRevision,
+    onRevisionCommitted,
     onSaved,
     onBusyChange,
     onSaveStateChange,
@@ -206,7 +210,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
     setBusy(true);
     setError(null);
     const patchDraft = patchShapeFromDraft(detail, draft);
-    const body = buildProfProfilePatchBody(baselineRef.current, patchDraft, revision);
+    const body = buildProfProfilePatchBody(baselineRef.current, patchDraft, Math.max(revision, committedRevision ?? 0));
     if (!profProfilePatchHasFieldChanges(body)) {
       setBusy(false);
       setSaved(true);
@@ -218,6 +222,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
       setError(res.message);
       return;
     }
+    if (res.revision != null) onRevisionCommitted?.(res.revision);
     const scopeAll = readScope?.branchScope === "all";
     const refreshed = await fetchReceivingAppealDetailWire(detail.appeal.id, readScope ?? undefined);
     let nextDetail: ProfAppealDetailState | null = null;
@@ -243,7 +248,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
     setBusy(false);
     setSaved(true);
     await onSaved?.();
-  }, [busy, detail, draft, onDetailChange, onSaved, readOnly, readScope, revision]);
+  }, [busy, committedRevision, detail, draft, onDetailChange, onRevisionCommitted, onSaved, readOnly, readScope, revision]);
 
   useImperativeHandle(
     ref,
@@ -364,7 +369,7 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
             onChange={(e) => setField("clientContact", e.target.value)}
           />
         </label>
-        <label className="field">
+        <label className="field prof-field-span">
           <span>Бюджет</span>
           <input
             value={draft.budgetHint}

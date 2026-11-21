@@ -8,6 +8,7 @@ import {
   patchReceivingAppealStageCas,
   postReceivingWorkingStagesMutation,
   receivingDetailWireReadOnly,
+  type ReceivingAppealDetailWire,
   type ReceivingReadScope,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import {
@@ -42,6 +43,10 @@ export type ReceivingAppealDetailHostProps = {
   readScope?: ReceivingReadScope | null;
   /** P149 drawer companion: stage, scan, notes — without duplicate profile chrome. */
   companionProfPanel?: boolean;
+  companionProfileBusy?: boolean;
+  committedRevision?: number;
+  onRevisionCommitted?: (revision: string | number) => void;
+  onDetailRefreshed?: (wire: ReceivingAppealDetailWire) => void;
   onBack: () => void;
   onRevisionLoaded?: (revision: number) => void;
   onAppealMutated?: () => void | Promise<void>;
@@ -74,6 +79,10 @@ export function ReceivingAppealDetailHost({
   referrerPartnerName,
   readScope,
   companionProfPanel = false,
+  companionProfileBusy = false,
+  committedRevision,
+  onRevisionCommitted,
+  onDetailRefreshed,
   onBack,
   onRevisionLoaded,
   onAppealMutated,
@@ -179,7 +188,7 @@ export function ReceivingAppealDetailHost({
         return { applied: false as const, stale: false as const, ok: false as const };
       }
       applyDetailWire(session, res);
-      return { applied: true as const, stale: false as const, ok: true as const };
+      return { applied: true as const, stale: false as const, ok: true as const, wire: res.wire };
     },
     [applyDetailWire, isStaleGeneration],
   );
@@ -196,9 +205,10 @@ export function ReceivingAppealDetailHost({
       return false;
     }
     if (!result.applied) return false;
+    if (result.ok) onDetailRefreshed?.(result.wire);
     setDetailRefreshNotice(null);
     return true;
-  }, [fetchDetailForSession]);
+  }, [fetchDetailForSession, onDetailRefreshed]);
 
   useEffect(() => {
     sessionKeyRef.current = { appealId, readOnly, referrerPartnerName };
@@ -306,7 +316,7 @@ export function ReceivingAppealDetailHost({
       if (detailReadOnlyRef.current || sessionKeyRef.current.readOnly) {
         return { ok: false, conflict: false, message: "Карточка доступна только для просмотра." };
       }
-      if (notesInFlightRef.current || notesSaveBlockedRef.current) {
+      if (companionProfileBusy || notesInFlightRef.current || notesSaveBlockedRef.current) {
         return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
       }
       const session = sessionKeyRef.current;
@@ -318,7 +328,7 @@ export function ReceivingAppealDetailHost({
       try {
         const result = await patchReceivingAppealProfileCas(appealId, {
           privateNotes: body.privateNotes,
-          expectedRevision: body.expectedRevision,
+          expectedRevision: Math.max(body.expectedRevision, committedRevision ?? 0),
         });
         const outcome = toMutationOutcome(result);
         if (isStaleGeneration(generation, session)) return outcome;
@@ -332,6 +342,7 @@ export function ReceivingAppealDetailHost({
           return outcome;
         }
         setNotesConflict(false);
+        if (result.ok && result.revision != null) onRevisionCommitted?.(result.revision);
         await afterSuccessfulMutation();
         return { ok: true };
       } finally {
@@ -343,7 +354,7 @@ export function ReceivingAppealDetailHost({
         }
       }
     },
-    [afterSuccessfulMutation, appealId, isStaleGeneration, refreshNotesAfterConflict],
+    [afterSuccessfulMutation, appealId, committedRevision, companionProfileBusy, isStaleGeneration, onRevisionCommitted, refreshNotesAfterConflict],
   );
 
   const mutateStage = useCallback(
@@ -351,7 +362,7 @@ export function ReceivingAppealDetailHost({
       if (detailReadOnlyRef.current || sessionKeyRef.current.readOnly) {
         return { ok: false, conflict: false, message: "Карточка доступна только для просмотра." };
       }
-      if (notesSaveBlockedRef.current || notesInFlightRef.current) {
+      if (companionProfileBusy || notesSaveBlockedRef.current || notesInFlightRef.current) {
         return { ok: false, conflict: false, message: "Дождитесь обновления карточки." };
       }
       setBusy((b) => ({ ...b, stage: true }));
@@ -360,7 +371,7 @@ export function ReceivingAppealDetailHost({
         stageKey: body.stageKey,
         refusedReason: body.refusedReason ?? null,
         ...(body.shippedAt ? { shippedAt: body.shippedAt } : {}),
-        expectedRevision: body.expectedRevision,
+        expectedRevision: Math.max(body.expectedRevision, committedRevision ?? 0),
       });
       setBusy((b) => ({ ...b, stage: false }));
       const outcome = toMutationOutcome(result);
@@ -368,10 +379,11 @@ export function ReceivingAppealDetailHost({
         setActionError((e) => ({ ...e, stage: outcome.message }));
         return outcome;
       }
+      if (result.ok && result.revision != null) onRevisionCommitted?.(result.revision);
       await afterSuccessfulMutation();
       return { ok: true };
     },
-    [afterSuccessfulMutation, appealId],
+    [afterSuccessfulMutation, appealId, committedRevision, companionProfileBusy, onRevisionCommitted],
   );
 
   const addRefusalReason = useCallback(
@@ -414,7 +426,7 @@ export function ReceivingAppealDetailHost({
           appealId,
           mapped,
           readOnly: effectiveReadOnly,
-          busy,
+          busy: companionProfileBusy ? { ...busy, stage: true } : busy,
           error: actionError,
           notesConflict,
           notesSaveBlocked,
@@ -438,6 +450,7 @@ export function ReceivingAppealDetailHost({
     appealId,
     busy,
     companionProfPanel,
+    companionProfileBusy,
     loadError,
     mapped,
     notesConflict,

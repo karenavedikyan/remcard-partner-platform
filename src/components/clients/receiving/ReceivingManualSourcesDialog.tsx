@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import {
   findDuplicateManualChannelLabel,
   postReceivingManualChannel,
+  receivingManualChannelOptions,
   type ReceivingManualChannel,
   type ReceivingPartnerSettings,
 } from "@/lib/clients-parity/receiving-appeals-api";
@@ -39,7 +40,7 @@ export function ReceivingManualSourcesDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  const channels = settings.manualChannels ?? [];
+  const channels = receivingManualChannelOptions(settings);
 
   const submit = async () => {
     if (readOnly) return;
@@ -65,8 +66,8 @@ export function ReceivingManualSourcesDialog({
   };
 
   return (
-    <dialog ref={dialogRef} className={styles.sourcesDialog} aria-labelledby={titleId} onClose={onClose}>
-      <form method="dialog" className="stack panel" onSubmit={(e) => e.preventDefault()}>
+    <dialog ref={dialogRef} className={styles.sourcesDialog} aria-labelledby={titleId} onClose={onClose} data-testid="ca-prof-sources-dialog">
+      <form className="stack panel" onSubmit={(e) => { e.preventDefault(); if (!busy) void submit(); }}>
         <header className="row">
           <h2 id={titleId}>Источники</h2>
           <button type="button" className="btn ghost" onClick={onClose}>
@@ -98,7 +99,7 @@ export function ReceivingManualSourcesDialog({
               Новый источник
               <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Выставка" />
             </label>
-            <button type="button" className="btn primary" disabled={busy} onClick={() => void submit()}>
+            <button type="submit" className="btn primary" disabled={busy}>
               Добавить
             </button>
           </div>

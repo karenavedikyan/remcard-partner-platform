@@ -796,8 +796,9 @@
 .clientsScope :global(.prof-filters.filters) {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 0;
+  margin-bottom: 16px;
+  padding: 14px 16px;
 }
 .clientsScope :global(.prof-filters .prof-filters-primary) {
   display: grid;
@@ -811,6 +812,9 @@
   align-items: center;
   gap: 10px 12px;
   justify-content: space-between;
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 8px;
 }
 .clientsScope :global(.prof-filters .prof-filter-search) {
   position: relative;
@@ -860,10 +864,6 @@
     width: 100%;
     margin-left: 0;
   }
-  .clientsScope :global(.prof-filters .prof-filter-actions .btn) {
-    flex: 1 1 calc(50% - 4px);
-    justify-content: center;
-  }
 }
 .clientsScope :global(.prof-filters .search-inner [data-icon="search"]) {
   position: absolute;
@@ -884,13 +884,13 @@
   width: fit-content;
   max-width: 100%;
   min-height: 36px;
-  padding: 4px 8px;
-  border: 1px solid var(--line);
+  padding: 4px 0;
+  border: 1px solid transparent;
   border-radius: 8px;
-  background: var(--offset, var(--inset, #f1f5f9));
+  background: transparent;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
 }
 .clientsScope :global(.remcard-filter input) {
   margin: 0;
@@ -901,6 +901,9 @@
   color: var(--muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  background: var(--offset, var(--inset));
+  padding: 2px 6px;
+  border-radius: 999px;
 }
 .clientsScope :global(.remcard-filter:has(input:checked)) {
   border-color: var(--good, var(--green, #30684c));
@@ -1000,6 +1003,14 @@
 .clientsScope :global(.appeal-status.is-progress) {
   color: var(--warning, #b45309);
 }
+.clientsScope :global(.appeal-status.is-shipped) {
+  background: color-mix(in srgb, #16a34a 12%, var(--surface));
+  color: #15803d;
+  border-color: color-mix(in srgb, #16a34a 28%, transparent);
+}
+:global([data-theme=dark]) .clientsScope :global(.appeal-status.is-shipped) {
+  color: #86efac;
+}
 .clientsScope :global(.number-cell) {
   display: grid;
   gap: 2px;
@@ -1024,12 +1035,12 @@
   }
   .clientsScope :global(.prof-appeals-wrap .prof-table-row) {
     grid-template-areas:
-      "pick subject subject open"
-      ". status account account"
-      ". request request ."
+      "pick subject status open"
+      ". request request open"
+      ". source source ."
       "certificate certificate one-c one-c"
-      ". source source .";
-    grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 36px;
+      "assignee assignee account account";
+    grid-template-columns: 18px minmax(0, 1.25fr) minmax(0, 1fr) 36px;
   }
   .clientsScope :global(.prof-appeals-wrap .pick) {
     grid-area: pick;
@@ -1040,14 +1051,27 @@
   .clientsScope :global(.prof-appeals-wrap .prof-row-status) {
     grid-area: status;
     justify-self: start;
-    max-width: calc(100% - 8px);
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-row-request) {
     grid-area: request;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-row-account) {
     grid-area: account;
+    justify-self: start;
+    text-align: start;
+    white-space: normal;
+  }
+  .clientsScope :global(.prof-appeals-wrap .row-assignee) {
+    grid-area: assignee;
+    overflow-wrap: anywhere;
+  }
+  .clientsScope :global(.prof-appeals-wrap .row-action) {
+    grid-area: open;
     justify-self: end;
+    align-self: start;
   }
   .clientsScope :global(.prof-appeals-wrap .row-source) {
     grid-area: source;
@@ -1060,6 +1084,44 @@
   }
   .clientsScope :global(.prof-appeals-wrap .number-label) {
     display: block;
+  }
+  .clientsScope :global(.prof-appeals-wrap .number-cell) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+  }
+  .clientsScope :global(.prof-appeals-wrap .number-cell .number-label) {
+    grid-column: 1 / -1;
+  }
+  .clientsScope :global(.prof-appeals-wrap .number-value) {
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 680px) {
+  .clientsScope :global(.prof-appeals-wrap .ca-bucket-tabs) {
+    width: 100%;
+  }
+  .clientsScope .toolbar {
+    display: grid;
+    gap: 12px;
+  }
+  .clientsScope .toolbarPrimary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  .clientsScope .toolbarPrimary :global(.btn),
+  .clientsScope .toolbar :global(.ca-quiet-btn) {
+    min-width: 0;
+    min-height: 48px;
+    padding: 9px 8px;
+    text-align: center;
+    line-height: 1.25;
+    white-space: normal;
+  }
+  .clientsScope .toolbarPrimary :global(.btn:only-child) {
+    grid-column: 1 / -1;
   }
 }
 .profSidePanel {
@@ -2024,10 +2086,54 @@
   object-fit: cover;
   flex: none;
 }
+.sourcesDialog:not([open]) {
+  display: none;
+}
 .sourcesDialog {
-  width: min(480px, calc(100% - 24px));
-  border: none;
+  position: fixed;
+  inset: 0;
+  width: min(520px, calc(100% - 38px));
+  max-width: calc(100% - 38px);
+  max-height: calc(100dvh - 38px);
+  height: max-content;
+  margin: auto;
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 0;
+  color: var(--ink);
   background: var(--surface);
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgb(0 0 0 / .28);
+}
+.sourcesDialog::backdrop {
+  background: rgb(14 19 17 / .55);
+  backdrop-filter: blur(2px);
+}
+.sourcesDialog > :global(form.panel) {
+  border: 0;
+  padding: 20px;
+  gap: 12px;
+}
+.sourcesDialog :global(header.row) {
+  justify-content: space-between;
+}
+.sourcesDialog :global(header h2),
+.sourcesDialog :global(p) {
+  margin: 0;
+}
+.sourcesDialog :global(.settings-list) {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sourcesDialog :global(.settings-item) {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.sourcesDialog :global(form > .row) {
+  align-items: end;
+}
+.sourcesDialog :global(.field) {
+  min-width: 0;
 }
