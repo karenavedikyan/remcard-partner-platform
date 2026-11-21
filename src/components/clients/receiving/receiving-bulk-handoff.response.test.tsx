@@ -6,6 +6,7 @@ import {
   receivingBulkErrorMessage,
   receivingBulkFailedIds,
   receivingBulkMergeSelection,
+  receivingBulkPerCardOutcomeMessage,
   type ReceivingCrmBatchAction,
 } from "./receiving-bulk-handoff";
 
@@ -108,12 +109,26 @@ describe("receiving batch: only explicitly confirmed requested records succeed",
   });
 
   it("per-ID PATCH aggregation uses the same unique/contradiction rules", () => {
-    const result = aggregateReceivingPatchResults([
-      { appealId: "one", ok: true }, { appealId: "one", ok: true },
-      { appealId: "two", ok: true }, { appealId: "two", ok: false, reason: "CONFLICT" },
-    ]);
-    expect(result).toMatchObject({ ok: true, kind: "partial", updatedIds: ["one"] });
+    const outcomes = [
+      { appealId: "appeal-2408", ok: true },
+      { appealId: "appeal-2401", ok: false, reason: "CONFLICT" },
+    ];
+    const result = aggregateReceivingPatchResults(outcomes);
+    expect(result).toMatchObject({ ok: true, kind: "partial", updatedIds: ["appeal-2408"] });
     expect(receivingBulkErrorMessage(result)).toBe("Обновлено: 1, пропущено: 1.");
+    expect(receivingBulkErrorMessage(result, outcomes)).toBe(
+      "№ 2408 — обновлено\n№ 2401 — не обновлено: обращение изменилось (конфликт ревизии)",
+    );
+  });
+
+  it("per-card bulk message maps forbidden and invalid responsible", () => {
+    const outcomes = [
+      { appealId: "appeal-2402", ok: false, reason: "FORBIDDEN", message: "Нет прав" },
+      { appealId: "appeal-2403", ok: false, reason: "INVALID", message: "Ответственный недоступен" },
+    ];
+    expect(receivingBulkPerCardOutcomeMessage(outcomes)).toBe(
+      "№ 2402 — не обновлено: нет прав\n№ 2403 — не обновлено: недопустимый ответственный",
+    );
   });
 
   it("counts one record once even in legacy overlapping failure collections", () => {

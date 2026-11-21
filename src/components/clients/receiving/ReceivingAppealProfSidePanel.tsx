@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import type { RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { ReceivingAppealProfDrawerFormHandle } from "./ReceivingAppealProfDrawerForm";
 import {
   parseProfAppealDetailWire,
   profAppealRowSubtitle,
+  profStageStatusClass,
   REMCARD_CLIENT_LOGIN_URL,
   type CommercialProposalDeliveryWire,
   type ProfAppealDetailState,
@@ -18,7 +18,7 @@ import {
 } from "@/lib/clients-parity/receiving-appeals-api";
 import { ReceivingAppealDetailHost } from "./ReceivingAppealDetailHost";
 import { ReceivingAppealProfDrawerForm } from "./ReceivingAppealProfDrawerForm";
-import { ReceivingAppealHistory } from "./ReceivingAppealHistory";
+import { ReceivingAppealTimeline } from "./ReceivingAppealTimeline";
 import { ReceivingCommercialOfferDialog } from "./ReceivingCommercialOfferDialog";
 import { useCopyDisplayedValue } from "./useCopyDisplayedValue";
 import styles from "./receiving.module.css";
@@ -61,7 +61,6 @@ export function ReceivingAppealProfSidePanel({
   onOfferOpenChange,
 }: ReceivingAppealProfSidePanelProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const titleId = useId();
   const { copy, copiedKey } = useCopyDisplayedValue();
@@ -82,21 +81,17 @@ export function ReceivingAppealProfSidePanel({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-    const t = window.setTimeout(() => {
-      const writable = profDetail && !profDetail.detailReadOnly && !readOnly;
-      if (writable) {
-        titleInputRef.current?.focus({ preventScroll: true });
-      } else {
-        closeBtnRef.current?.focus({ preventScroll: true });
-      }
-    }, 0);
-    return () => window.clearTimeout(t);
-  }, [open, appealId, profDetail?.detailReadOnly, profDetail?.revision, readOnly]);
-
-  useEffect(() => {
     setFormSaved(false);
   }, [appealId, profDetail?.revision]);
+
+  useEffect(() => {
+    const panelLocked = readOnly || profDetail?.detailReadOnly === true;
+    if (!open || detailPhase !== "prof" || !profDetail || panelLocked) return;
+    const t = window.setTimeout(() => {
+      titleInputRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open, appealId, detailPhase, profDetail, readOnly]);
 
   useEffect(() => {
     if (!appealId) return;
@@ -151,30 +146,20 @@ export function ReceivingAppealProfSidePanel({
     commercialProposal?.prepareAllowed ?? profDetail?.appeal.commercialProposal.prepareAllowed ?? false;
   const canPrepareOffer = !panelReadOnly && prepareAllowed;
   const hasCabinet = profDetail?.appeal.remCard.inCabinet ?? row?.remCard.inCabinet === true;
-  const publicId =
-    detailPhase === "prof" &&
-    profDetail &&
-    !profDetail.detailReadOnly &&
-    profDetail.appeal.remCard.publicId?.trim()
-      ? profDetail.appeal.remCard.publicId.trim()
-      : null;
+  const publicId = profDetail?.appeal.remCard.publicId?.trim() || null;
   const inviteUrl = profDetail?.appeal.remCard.inviteLoginUrl?.trim() || REMCARD_CLIENT_LOGIN_URL;
-  const statusLabel = profDetail?.appeal.stageLabel ?? row?.stageLabel ?? "—";
+  const statusLabel = profDetail?.appeal.stageLabel ?? row?.stageLabel ?? null;
+  const stageId = profDetail?.appeal.stageId ?? row?.stageId ?? "";
   const branchEffective =
     profDetail?.appeal.receivingBranchLabel?.trim() ??
     row?.receivingBranchLabel?.trim() ??
     branchLabel?.trim() ??
     null;
-  const subtitleLine = appealRow ? profAppealRowSubtitle(appealRow, branchEffective) : "—";
+  const subtitle = appealRow ? profAppealRowSubtitle(appealRow, branchEffective) : null;
   const createdBy =
     profDetail?.appeal.createdByLabel?.trim() ?? row?.createdByLabel?.trim() ?? null;
-  const certPromo = profDetail?.appeal.certificatePromoCode?.trim() ?? row?.certificatePromoCode?.trim() ?? null;
-  const clientLine =
-    profDetail?.appeal.clientDisplayName?.trim() ||
-    row?.clientDisplayName?.trim() ||
-    row?.clientName?.trim() ||
-    "—";
-  const contactLine = profDetail?.appeal.clientContact?.trim() || "—";
+  const certificate = profDetail?.appeal.certificatePromoCode?.trim() ?? row?.certificatePromoCode?.trim() ?? null;
+  const historyCount = profDetail?.history.length ?? 0;
 
   return (
     <>
@@ -186,39 +171,17 @@ export function ReceivingAppealProfSidePanel({
         onClose={onClose}
       >
         <div className="prof-side-shell">
-          <header className="prof-side-header prof-side-header--prototype">
-            <div className="prof-side-header-main">
-              <p className="prof-side-kicker" id={titleId}>
-                <span className="prof-side-status" data-testid="ca-prof-side-status">
-                  {statusLabel}
-                </span>
-              </p>
-              {panelReadOnly ? (
-                <h2 className="prof-side-title-readonly" data-testid="ca-prof-side-title-readonly">
-                  {title}
-                </h2>
-              ) : null}
-              <p className="prof-side-subtitle muted small" data-testid="ca-prof-side-subtitle">
-                {subtitleLine}
-              </p>
-              {createdBy ? (
-                <p className="prof-side-created-by muted small" data-testid="ca-prof-side-created-by">
-                  Создал: {createdBy}
-                </p>
-              ) : null}
-            </div>
-            <button
-              ref={closeBtnRef}
-              type="button"
-              className="btn ghost icon"
-              aria-label="Закрыть"
-              data-testid="ca-prof-side-close"
-              onClick={onClose}
-            >
-              ×
-            </button>
-          </header>
-          <div className="prof-side-scroll">
+          <ProfSidePanelHeader
+            titleId={titleId}
+            title={title}
+            readOnly={panelReadOnly}
+            statusLabel={statusLabel}
+            statusClass={profStageStatusClass(stageId)}
+            subtitle={subtitle}
+            onClose={onClose}
+            onCloseRefFocus={panelReadOnly}
+          />
+          <div className="prof-side-scroll editor-body">
             {detailPhase === "loading" ? (
               <p className="notice small" data-testid="ca-prof-detail-loading">
                 Загрузка карточки…
@@ -230,48 +193,62 @@ export function ReceivingAppealProfSidePanel({
               </p>
             ) : null}
 
-            {publicId ? (
-              <ClientIdPlate
-                publicId={publicId}
-                copied={copiedKey === "client-public-id"}
-                onCopy={() => void copy("client-public-id", publicId)}
-              />
-            ) : detailPhase === "prof" && profDetail && !profDetail.appeal.remCard.inCabinet ? (
-              <RegistrationHelp
-                url={inviteUrl}
-                copied={copiedKey === "registration"}
-                onCopy={() => void copy("registration", inviteUrl)}
-              />
-            ) : null}
-
-            {detailPhase === "prof" && appealRow ? (
-              <div className="prof-info-boxes" data-testid="ca-prof-info-boxes">
-                <section className="prof-info-box" data-testid="ca-prof-client-box">
-                  <span className="muted small">Клиент</span>
-                  <strong>{clientLine}</strong>
-                  <span className="muted small">{contactLine}</span>
-                </section>
-                {certPromo ? (
-                  <section className="prof-info-box" data-testid="ca-prof-certificate-box">
-                    <span className="muted small">Сертификат</span>
-                    <strong>{certPromo}</strong>
-                  </section>
-                ) : null}
-              </div>
-            ) : null}
-
-            <ProfSideActions
-              canSendOffer={canPrepareOffer}
-              sendBlockedReason={
-                commercialProposal?.sendEnabled === false ? commercialProposal.sendDisabledReason : null
-              }
-              readOnly={panelReadOnly}
-              hasCabinet={hasCabinet}
-              onSend={() => onOfferOpenChange(true)}
-            />
-
             {detailPhase === "prof" && profDetail ? (
               <>
+                <section className="appeal-client-box" aria-label="Клиент RemCard" data-testid="ca-prof-client-box">
+                  <div className="appeal-client-box-row">
+                    <div className="certificate-summary" data-testid="ca-prof-client-id-plate">
+                      <span>ID клиента RemCard</span>
+                      <strong>{publicId ?? "Нет ID"}</strong>
+                      {publicId ? (
+                        <CopyIconButton
+                          caption="ID клиента RemCard"
+                          copied={copiedKey === "client-public-id"}
+                          onCopy={() => void copy("client-public-id", publicId)}
+                        />
+                      ) : null}
+                    </div>
+                    {!panelReadOnly ? (
+                      hasCabinet ? (
+                        <ProfSideActions
+                          canSendOffer={canPrepareOffer}
+                          sendBlockedReason={
+                            commercialProposal?.sendEnabled === false
+                              ? commercialProposal.sendDisabledReason
+                              : null
+                          }
+                          onSend={() => onOfferOpenChange(true)}
+                        />
+                      ) : (
+                        <RegistrationHelp
+                          url={inviteUrl}
+                          copied={copiedKey === "registration"}
+                          onCopy={() => void copy("registration", inviteUrl)}
+                        />
+                      )
+                    ) : null}
+                  </div>
+                </section>
+
+                <div className="certificate-summary" data-testid="ca-prof-certificate">
+                  <span>Номер сертификата RemCard</span>
+                  <strong>{certificate ?? "Не привязан"}</strong>
+                  {certificate ? (
+                    <CopyIconButton
+                      caption="Номер сертификата RemCard"
+                      withLabel
+                      copied={copiedKey === "certificate"}
+                      onCopy={() => void copy("certificate", certificate)}
+                    />
+                  ) : null}
+                </div>
+
+                {panelReadOnly ? (
+                  <p className="review" data-testid="ca-prof-drawer-readonly">
+                    У этой роли нет права редактировать обращение.
+                  </p>
+                ) : null}
+
                 <ReceivingAppealProfDrawerForm
                   ref={formRef}
                   key={appealId}
@@ -284,16 +261,13 @@ export function ReceivingAppealProfSidePanel({
                   onBusyChange={setFormBusy}
                   onSaveStateChange={setFormSaved}
                 />
-                {profDetail.history.length > 0 ? (
-                  <details className="prof-side-history" data-testid="ca-prof-side-history">
-                    <summary>История</summary>
-                    <ReceivingAppealHistory
-                      entries={profDetail.history}
-                      projection="receiving-full"
-                      refusedReason={profDetail.refusalReasons[0] ?? null}
-                    />
-                  </details>
+
+                {createdBy ? (
+                  <p className="help" data-testid="ca-prof-created-by">
+                    Создал: {createdBy}. Статус здесь не меняется.
+                  </p>
                 ) : null}
+
                 <div className="prof-lifecycle-host" data-testid="ca-prof-lifecycle-host">
                   <ReceivingAppealDetailHost
                     appealId={appealId}
@@ -304,6 +278,11 @@ export function ReceivingAppealProfSidePanel({
                     onAppealMutated={onAppealMutated}
                   />
                 </div>
+
+                <details className="history" data-testid="ca-prof-history">
+                  <summary>История изменений · {historyCount}</summary>
+                  <ReceivingAppealTimeline entries={profDetail.history} emptyLabel="Пока изменений нет." />
+                </details>
               </>
             ) : detailPhase === "legacy" ? (
               <ReceivingAppealDetailHost
@@ -315,25 +294,30 @@ export function ReceivingAppealProfSidePanel({
               />
             ) : null}
           </div>
-          {detailPhase === "prof" && profDetail && !profDetail.detailReadOnly ? (
-            <footer className="prof-drawer-footer" data-testid="ca-prof-drawer-footer">
-              <button
-                type="button"
-                className="btn ghost"
-                disabled={formBusy}
-                onClick={() => formRef.current?.resetDraft()}
-              >
-                Отменить
-              </button>
-              <button
-                type="button"
-                className="btn primary"
-                disabled={formBusy}
-                data-testid="ca-prof-save-profile"
-                onClick={() => void formRef.current?.save()}
-              >
-                {formBusy ? "Сохранение…" : formSaved ? "Сохранено" : "Сохранить"}
-              </button>
+          {detailPhase === "prof" && profDetail && !profDetail.detailReadOnly && !readOnly ? (
+            <footer className="prof-drawer-footer editor-foot" data-testid="ca-prof-drawer-footer">
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={formBusy}
+                  onClick={() => {
+                    formRef.current?.resetDraft();
+                    onClose();
+                  }}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={formBusy}
+                  data-testid="ca-prof-save-profile"
+                  onClick={() => void formRef.current?.save()}
+                >
+                  {formBusy ? "Сохранение…" : formSaved ? "Сохранено" : "Сохранить"}
+                </button>
+              </div>
             </footer>
           ) : null}
         </div>
@@ -354,25 +338,98 @@ export function ReceivingAppealProfSidePanel({
   );
 }
 
-function ClientIdPlate({
-  publicId,
+function ProfSidePanelHeader({
+  titleId,
+  title,
+  readOnly,
+  statusLabel,
+  statusClass,
+  subtitle,
+  onClose,
+  onCloseRefFocus,
+}: {
+  titleId: string;
+  title: string;
+  readOnly: boolean;
+  statusLabel: string | null;
+  statusClass: string;
+  subtitle: string | null;
+  onClose: () => void;
+  onCloseRefFocus: boolean;
+}) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (onCloseRefFocus) {
+      closeRef.current?.focus({ preventScroll: true });
+    }
+  }, [onCloseRefFocus, title]);
+  return (
+    <header className="prof-side-header editor-head">
+      <div className="prof-side-head-text">
+        <div className="queue-kicker" data-testid="ca-prof-side-kicker">
+          {readOnly ? "ТОЛЬКО ПРОСМОТР" : "РЕДАКТИРОВАНИЕ"}
+        </div>
+        <h2 id={titleId} data-testid="ca-prof-side-title">
+          {title}
+        </h2>
+        {statusLabel ? (
+          <div className="editor-status">
+            <span className={`${statusClass} pill appeal-status`} data-testid="ca-prof-side-status">
+              <span className="sr-only">Статус: </span>
+              {statusLabel}
+            </span>
+          </div>
+        ) : null}
+        {subtitle ? (
+          <p className="prof-side-subtitle" data-testid="ca-prof-side-subtitle">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+      <button
+        ref={closeRef}
+        type="button"
+        className="btn secondary icon-button"
+        aria-label="Закрыть"
+        data-testid="ca-prof-side-close"
+        onClick={onClose}
+      >
+        ×
+      </button>
+    </header>
+  );
+}
+
+function CopyIconButton({
+  caption,
   copied,
+  withLabel = false,
   onCopy,
 }: {
-  publicId: string;
+  caption: string;
   copied: boolean;
+  withLabel?: boolean;
   onCopy: () => void;
 }) {
   return (
-    <div className="client-id-plate" data-testid="ca-prof-client-id-plate">
-      <div>
-        <small>RemCard ID клиента</small>
-        <strong>{publicId}</strong>
-      </div>
-      <button type="button" className="btn ghost small-btn" onClick={onCopy}>
-        {copied ? "Скопировано" : "Копировать"}
+    <>
+      <button
+        type="button"
+        className={withLabel ? "btn ghost small-btn copy-btn" : "btn ghost icon copy-btn number-copy"}
+        aria-label={`Скопировать: ${caption}`}
+        title={`Скопировать: ${caption}`}
+        onClick={onCopy}
+      >
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="9" y="9" width="11" height="11" rx="2" />
+          <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+        </svg>
+        {withLabel ? (copied ? "Скопировано" : "Копировать") : null}
       </button>
-    </div>
+      <span className="sr-only" role="status">
+        {copied ? "Скопировано" : ""}
+      </span>
+    </>
   );
 }
 
@@ -386,43 +443,36 @@ function RegistrationHelp({
   onCopy: () => void;
 }) {
   return (
-    <details className="registration-help" open>
-      <summary>Пригласить клиента</summary>
-      <p>Ссылка для регистрации в RemCard — без раскрытия внутренних идентификаторов.</p>
+    <div className="registration-help" data-testid="ca-prof-registration-help">
+      <span className="muted small">Клиента нет в RemCard — пригласите по ссылке:</span>
       <div className="registration-link">
         <a href={url}>{url}</a>
         <button type="button" className="btn ghost small-btn" onClick={onCopy}>
           {copied ? "Скопировано" : "Копировать"}
         </button>
       </div>
-    </details>
+    </div>
   );
 }
 
 function ProfSideActions({
   canSendOffer,
   sendBlockedReason,
-  readOnly,
-  hasCabinet,
   onSend,
 }: {
   canSendOffer: boolean;
   sendBlockedReason?: string | null;
-  readOnly: boolean;
-  hasCabinet: boolean;
   onSend: () => void;
 }) {
-  if (readOnly) return null;
-  if (!hasCabinet) return null;
   const disabled = !canSendOffer;
   return (
     <div className="prof-side-actions">
       <button
         type="button"
-        className="btn primary"
+        className="btn secondary"
         data-testid="ca-prof-send-offer"
         disabled={disabled}
-        title={disabled ? sendBlockedReason ?? "Подготовка КП недоступна" : undefined}
+        title={disabled ? sendBlockedReason ?? "Подготовка КП недоступна" : "Отправить коммерческое предложение"}
         onClick={onSend}
       >
         Отправить КП

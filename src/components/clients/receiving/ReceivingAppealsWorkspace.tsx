@@ -605,7 +605,7 @@ export function ReceivingAppealsWorkspace({
           stageLockedIds,
           readScope,
         });
-        const partialMsg = receivingBulkErrorMessage(result);
+        const partialMsg = receivingBulkErrorMessage(result, outcomes);
         if (partialMsg) setBatchPartial(partialMsg);
         setSelected((prev) => new Set(receivingBulkMergeSelection([...prev], result)));
         if (result.ok && result.kind === "full") {

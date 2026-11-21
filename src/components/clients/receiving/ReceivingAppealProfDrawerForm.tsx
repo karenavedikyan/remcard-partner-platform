@@ -106,28 +106,13 @@ function draftFromDetail(detail: ProfAppealDetailState): FormDraft {
 }
 
 function baselineFromDetail(detail: ProfAppealDetailState): ProfileBaseline {
-  const draft = draftFromDetail(detail);
-  return {
-    originKind: detail.appeal.originKind,
-    expectedRevision: detail.revision,
-    appealTitle: draft.appealTitle || null,
-    clientDisplayName: draft.clientDisplayName || undefined,
-    interest: draft.requestText || null,
-    clientCity: draft.clientCity || null,
-    clientContact: draft.clientContact || null,
-    budgetHint: draft.budgetHint || null,
-    privateNotes: draft.privateNotes || null,
-    erpDocumentNumber: draft.erpDocumentNumber || null,
-    manualSourceKey: draft.manualSourceKey || null,
-    responsibleUserId: draft.responsibleUserId || null,
-    externalRefs: draft.externalRefs,
-  };
+  return patchShapeFromDraft(detail, draftFromDetail(detail));
 }
 
 function patchShapeFromDraft(detail: ProfAppealDetailState, draft: FormDraft): ProfileBaseline {
-  const base = baselineFromDetail(detail);
   return {
-    ...base,
+    originKind: detail.appeal.originKind,
+    expectedRevision: detail.revision,
     appealTitle: draft.appealTitle || null,
     clientDisplayName: draft.clientDisplayName || undefined,
     interest: draft.requestText || null,
@@ -181,25 +166,27 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
 
   useEffect(() => {
     if (busy) return;
-    const nextDraft = draftFromDetail(detail);
-    const nextBaseline = baselineFromDetail(detail);
-    setDraft(nextDraft);
+    setDraft(draftFromDetail(detail));
     setRevision(detail.revision);
-    baselineRef.current = nextBaseline;
+    baselineRef.current = baselineFromDetail(detail);
     setSaved(false);
   }, [busy, detail]);
 
   const channels = useMemo(() => receivingManualChannelOptions(settings), [settings]);
   const isManual = detail.appeal.originKind === "MANUAL";
+  const canPickResponsible = !readOnly && detail.responsibleOptions.length > 0;
   const responsibleOpts = useMemo(
     () =>
       responsibleSelectOptions(detail.responsibleOptions, {
         userId: draft.responsibleUserId || detail.appeal.responsible?.userId,
         displayLabel: detail.appeal.responsible?.displayLabel,
       }),
-    [detail.responsibleOptions, draft.responsibleUserId],
+    [detail.responsibleOptions, detail.appeal.responsible, draft.responsibleUserId],
   );
-  const sourceReadonlyLabel = useMemo(() => profRowSourceLabel(detail.appeal), [detail.appeal]);
+  const sourceLabel =
+    detail.appeal.manualSourceLabel?.trim() ||
+    (isManual ? channels.find((c) => c.key === detail.appeal.manualSourceKey)?.label : null) ||
+    (isManual ? "Не указан" : profRowSourceLabel(detail.appeal));
 
   const setField = <K extends keyof FormDraft>(key: K, value: FormDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -273,66 +260,112 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
   );
 
   const fieldsDisabled = readOnly || busy;
-  const showResponsibleSelect = !readOnly && detail.responsibleOptions.length > 0;
+  const responsibleLabel = detail.appeal.responsible?.displayLabel?.trim() || "Не назначен";
 
   return (
-    <fieldset className="prof-drawer-form stack" disabled={fieldsDisabled} data-testid="ca-prof-drawer-form">
-      {readOnly ? (
-        <p className="notice small" data-testid="ca-prof-drawer-readonly">
-          Только просмотр: изменения профиля недоступны.
-        </p>
-      ) : null}
-
-      <div className="prof-field-grid" data-testid="ca-prof-main-fields">
-        <label className="field prof-field-span">
-          Название обращения
-          <input
-            ref={appealTitleRef}
-            value={draft.appealTitle}
-            readOnly={readOnly}
-            data-testid="ca-prof-field-appealTitle"
-            onChange={(e) => setField("appealTitle", e.target.value)}
-          />
-        </label>
+    <fieldset className="prof-drawer-form edit-fields" disabled={fieldsDisabled} data-testid="ca-prof-drawer-form">
+      <legend className="sr-only">Профиль обращения</legend>
+      <label className="field">
+        <span>Название обращения</span>
+        <input
+          ref={appealTitleRef}
+          value={draft.appealTitle}
+          readOnly={readOnly}
+          maxLength={120}
+          data-testid="ca-prof-field-appealTitle"
+          onChange={(e) => setField("appealTitle", e.target.value)}
+        />
+      </label>
+      <label className="field">
+        <span>Запрос</span>
+        <textarea
+          rows={3}
+          value={draft.requestText}
+          readOnly={readOnly}
+          maxLength={200}
+          placeholder="Например, двери и замер"
+          data-testid="ca-prof-field-requestText"
+          onChange={(e) => setField("requestText", e.target.value)}
+        />
+      </label>
+      {isManual && !readOnly && channels.length > 0 ? (
         <label className="field">
-          Клиент
+          <span>Источник обращения</span>
+          <select
+            value={draft.manualSourceKey || ""}
+            data-testid="ca-prof-field-manual-source"
+            onChange={(e) => setField("manualSourceKey", e.target.value)}
+          >
+            <option value="">Не указан</option>
+            {channels.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <small className="source-note">Обращение внесено вручную</small>
+        </label>
+      ) : (
+        <div className="source-readonly" data-testid="ca-prof-field-source-readonly">
+          <span>Источник обращения</span>
+          <strong>{sourceLabel}</strong>
+          {isManual ? null : <small className="source-note">Определён автоматически</small>}
+        </div>
+      )}
+      <div className="field-grid">
+        <label className="field">
+          <span>Имя клиента</span>
           <input
             value={draft.clientDisplayName}
             readOnly={readOnly}
+            maxLength={120}
             data-testid="ca-prof-field-clientDisplayName"
             onChange={(e) => setField("clientDisplayName", e.target.value)}
           />
         </label>
-        <label className="field prof-field-span">
-          Запрос
-          <textarea
-            rows={3}
-            value={draft.requestText}
-            readOnly={readOnly}
-            data-testid="ca-prof-field-requestText"
-            onChange={(e) => setField("requestText", e.target.value)}
-          />
-        </label>
+        {canPickResponsible ? (
+          <label className="field">
+            <span>Ответственный</span>
+            <select
+              value={draft.responsibleUserId}
+              data-testid="ca-prof-field-responsible-select"
+              onChange={(e) => setField("responsibleUserId", e.target.value)}
+            >
+              {responsibleOpts.map((o) => (
+                <option key={o.value || "none"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="source-readonly" data-testid="ca-prof-field-responsible-readonly">
+            <span>Ответственный</span>
+            <strong>{responsibleLabel}</strong>
+          </div>
+        )}
         <label className="field">
-          Город
+          <span>Город</span>
           <input
             value={draft.clientCity}
             readOnly={readOnly}
+            maxLength={70}
             data-testid="ca-prof-field-clientCity"
             onChange={(e) => setField("clientCity", e.target.value)}
           />
         </label>
         <label className="field">
-          Контакт
+          <span>Контакт</span>
           <input
             value={draft.clientContact}
             readOnly={readOnly}
+            maxLength={80}
             data-testid="ca-prof-field-clientContact"
             onChange={(e) => setField("clientContact", e.target.value)}
           />
         </label>
-        <label className="field prof-field-span">
-          Бюджет
+        <label className="field">
+          <span>Бюджет</span>
           <input
             value={draft.budgetHint}
             readOnly={readOnly}
@@ -340,109 +373,65 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
             onChange={(e) => setField("budgetHint", e.target.value)}
           />
         </label>
-        <label className="field prof-field-span">
-          Заметки команды
-          <textarea
-            rows={3}
-            value={draft.privateNotes}
-            readOnly={readOnly}
-            data-testid="ca-prof-field-privateNotes"
-            onChange={(e) => setField("privateNotes", e.target.value)}
-          />
-        </label>
-        <label className="field">
-          Источник
-          {isManual && channels.length > 0 && !readOnly ? (
-            <select
-              value={draft.manualSourceKey || ""}
-              disabled={readOnly}
-              data-testid="ca-prof-field-manual-source"
-              onChange={(e) => setField("manualSourceKey", e.target.value)}
-            >
-              <option value="">—</option>
-              {channels.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input readOnly value={sourceReadonlyLabel} data-testid="ca-prof-field-source-readonly" />
-          )}
-        </label>
-        <label className="field" data-testid="ca-prof-field-responsible">
-          Ответственный
-          {showResponsibleSelect ? (
-            <select
-              value={draft.responsibleUserId}
-              data-testid="ca-prof-field-responsible-select"
-              onChange={(e) => setField("responsibleUserId", e.target.value)}
-            >
-              {responsibleOpts.map((opt) => (
-                <option key={opt.value || "empty"} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              readOnly
-              value={detail.appeal.responsible?.displayLabel?.trim() || "Не назначен"}
-              data-testid="ca-prof-field-responsible-readonly"
-            />
-          )}
-        </label>
       </div>
+      <label className="field">
+        <span>Внутренняя заметка</span>
+        <textarea
+          rows={3}
+          value={draft.privateNotes}
+          readOnly={readOnly}
+          maxLength={500}
+          placeholder="Только для вашей команды"
+          data-testid="ca-prof-field-privateNotes"
+          onChange={(e) => setField("privateNotes", e.target.value)}
+        />
+      </label>
 
-      <section className="prof-partner-section stack" data-testid="ca-prof-partner-fields">
-        <h3 className="prof-section-title">Поля партнёра</h3>
-        <p className="muted small prof-partner-help">
-          Эти номера не заменяют № {shortId} в RemCard.
-        </p>
-        <div className="prof-field-grid">
-          <label className="field">
-            Номер в 1С
-            <div className="prof-copy-field">
+      <section className="custom-fields" data-testid="ca-prof-partner-fields" aria-label="Поля партнёра">
+        <strong>Поля партнёра</strong>
+        <div className="field-grid">
+          <label className="field prof-copy-row">
+            <span>Номер заказа в 1С</span>
+            <span className="prof-copy-input-wrap">
               <input
                 value={draft.erpDocumentNumber}
                 readOnly={readOnly}
                 data-testid="ca-prof-field-erp"
                 onChange={(e) => setField("erpDocumentNumber", e.target.value)}
               />
-              <button
-                type="button"
-                className="btn ghost small-btn"
+              <CopyIconButton
                 disabled={!draft.erpDocumentNumber.trim()}
-                data-testid="ca-prof-copy-erp"
-                onClick={() => void copy("erp", draft.erpDocumentNumber)}
-              >
-                {copiedKey === "erp" ? "Скопировано" : "Копировать"}
-              </button>
-            </div>
+                copied={copiedKey === "erp"}
+                caption="Номер заказа в 1С"
+                onCopy={() => void copy("erp", draft.erpDocumentNumber)}
+                testId="ca-prof-copy-erp"
+              />
+            </span>
           </label>
           {draft.externalRefs.map((ref) => (
-            <label key={ref.key} className="field">
-              {ref.label}
-              <div className="prof-copy-field">
+            <label key={ref.key} className="field prof-copy-row">
+              <span>{ref.label}</span>
+              <span className="prof-copy-input-wrap">
                 <input
                   value={ref.value ?? ""}
                   readOnly={readOnly}
                   data-testid={`ca-prof-external-${ref.key}`}
                   onChange={(e) => setExternalRefValue(ref.key, e.target.value)}
                 />
-                <button
-                  type="button"
-                  className="btn ghost small-btn"
+                <CopyIconButton
                   disabled={!ref.value?.trim()}
-                  data-testid={`ca-prof-copy-external-${ref.key}`}
-                  onClick={() => void copy(`ext-${ref.key}`, ref.value ?? "")}
-                >
-                  {copiedKey === `ext-${ref.key}` ? "Скопировано" : "Копировать"}
-                </button>
-              </div>
+                  copied={copiedKey === `ext-${ref.key}`}
+                  caption={ref.label}
+                  onCopy={() => void copy(`ext-${ref.key}`, ref.value ?? "")}
+                  testId={`ca-prof-copy-external-${ref.key}`}
+                />
+              </span>
             </label>
           ))}
         </div>
+        <p className="help" data-testid="ca-prof-partner-help">
+          Эти номера не заменяют № {shortId} в RemCard.
+        </p>
       </section>
 
       {error ? (
@@ -453,3 +442,33 @@ export const ReceivingAppealProfDrawerForm = forwardRef<
     </fieldset>
   );
 });
+
+function CopyIconButton({
+  caption,
+  copied,
+  disabled,
+  onCopy,
+  testId,
+}: {
+  caption: string;
+  copied: boolean;
+  disabled?: boolean;
+  onCopy: () => void;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="btn ghost icon copy-btn number-copy"
+      aria-label={copied ? "Скопировано" : `Скопировать: ${caption}`}
+      disabled={disabled}
+      data-testid={testId}
+      onClick={onCopy}
+    >
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+      </svg>
+    </button>
+  );
+}

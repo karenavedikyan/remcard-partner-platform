@@ -270,7 +270,52 @@ export function normalizeReceivingBatchResponse(
   };
 }
 
-export function receivingBulkErrorMessage(result: ReceivingBulkMutationResult): string | null {
+export type ReceivingBulkPatchOutcome = {
+  appealId: string;
+  ok: boolean;
+  reason?: string;
+  message?: string;
+};
+
+export function receivingAppealShortNumber(appealId: string): string {
+  const bare = appealId.replace(/^appeal-/, "").trim();
+  const tail = bare.slice(-4);
+  if (/^\d{1,4}$/.test(tail)) return tail;
+  return bare.length > 6 ? tail : bare;
+}
+
+function receivingBulkFailurePhrase(outcome: ReceivingBulkPatchOutcome): string {
+  const code = (outcome.reason ?? "").toUpperCase();
+  const msg = outcome.message?.trim() ?? "";
+  if (code === "CONFLICT" || code === "VERSION_CONFLICT" || /ревизи|version|409/i.test(msg)) {
+    return "не обновлено: обращение изменилось (конфликт ревизии)";
+  }
+  if (code === "INVALID" || code === "422" || /ответственн/i.test(msg)) {
+    return "не обновлено: недопустимый ответственный";
+  }
+  if (code === "FORBIDDEN" || code === "BLOCKED_CONTRACT" || /нет прав/i.test(msg)) {
+    return "не обновлено: нет прав";
+  }
+  if (msg) return `не обновлено: ${msg}`;
+  return "не обновлено";
+}
+
+export function receivingBulkPerCardOutcomeMessage(outcomes: ReceivingBulkPatchOutcome[]): string | null {
+  if (outcomes.length === 0) return null;
+  const lines = outcomes.map((o) => {
+    const num = receivingAppealShortNumber(o.appealId);
+    return o.ok ? `№ ${num} — обновлено` : `№ ${num} — ${receivingBulkFailurePhrase(o)}`;
+  });
+  if (outcomes.every((o) => o.ok)) return null;
+  return lines.join("\n");
+}
+
+export function receivingBulkErrorMessage(
+  result: ReceivingBulkMutationResult,
+  patchOutcomes?: ReceivingBulkPatchOutcome[],
+): string | null {
+  const perCard = patchOutcomes?.length ? receivingBulkPerCardOutcomeMessage(patchOutcomes) : null;
+  if (perCard) return perCard;
   if (result.ok) {
     if (result.kind === "partial") {
       const n = receivingBulkFailedIds(result).length;
