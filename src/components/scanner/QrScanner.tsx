@@ -13,23 +13,30 @@ type QrScannerProps = {
 
 const READER_ID = "partner-scanner-qr-reader";
 
+async function stopScanner(scanner: { stop: () => Promise<void> } | null) {
+  try {
+    await scanner?.stop();
+  } catch {
+    // An interrupted start can make stop throw before it returns a promise.
+  }
+}
+
 export function QrScanner({ onCode, onError }: QrScannerProps) {
   const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null);
   const lastEmitRef = useRef<QrLastEmit | null>(null);
   const generationRef = useRef(0);
+  const callbacksRef = useRef({ onCode, onError });
   const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    callbacksRef.current = { onCode, onError };
+  }, [onCode, onError]);
 
   const stopCamera = useCallback(async () => {
     generationRef.current += 1;
     const html5 = scannerRef.current;
     scannerRef.current = null;
-    if (html5) {
-      try {
-        await html5.stop();
-      } catch {
-        // ignore stop errors
-      }
-    }
+    await stopScanner(html5);
     setActive(false);
   }, []);
 
@@ -48,15 +55,15 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
       }
 
       if (result.kind === "error") {
-        onError(result.message);
+        callbacksRef.current.onError(result.message);
         return;
       }
 
       lastEmitRef.current = result.nextLastEmit;
-      onCode(result.raw);
+      callbacksRef.current.onCode(result.raw);
       void stopCamera();
     },
-    [onCode, onError, stopCamera],
+    [stopCamera],
   );
 
   useEffect(() => {
@@ -82,11 +89,7 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
         );
 
         if (cancelled || scanGeneration !== generationRef.current) {
-          try {
-            await html5.stop();
-          } catch {
-            // ignore
-          }
+          await stopScanner(html5);
           if (scannerRef.current === html5) {
             scannerRef.current = null;
           }
@@ -95,7 +98,7 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
       } catch {
         if (!cancelled && scanGeneration === generationRef.current) {
           setActive(false);
-          onError(
+          callbacksRef.current.onError(
             "Не удалось запустить камеру. Разрешите доступ или используйте ручной ввод кода.",
           );
         }
@@ -109,12 +112,10 @@ export function QrScanner({ onCode, onError }: QrScannerProps) {
       generationRef.current += 1;
       const html5 = scannerRef.current;
       scannerRef.current = null;
-      if (html5) {
-        void html5.stop().catch(() => {});
-      }
+      void stopScanner(html5);
       setActive(false);
     };
-  }, [handleDecode, onError]);
+  }, [handleDecode]);
 
   return (
     <div className={styles.cameraWrap}>
