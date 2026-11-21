@@ -31,7 +31,7 @@ import { ReceivingAppealsBlocked } from "@/components/clients/direction/Receivin
 import { ReceivingAppealForm } from "./ReceivingAppealForm";
 import { ReceivingAppealsList } from "./ReceivingAppealsList";
 import { ReceivingAppealsProfTable } from "./ReceivingAppealsProfTable";
-import { ReceivingAppealProfSidePanel } from "./ReceivingAppealProfSidePanel";
+import { ReceivingAppealProfSidePanel, type AppealQuickEditField } from "./ReceivingAppealProfSidePanel";
 import { ReceivingManualSourcesDialog } from "./ReceivingManualSourcesDialog";
 import {
   intersectResponsibleOptions,
@@ -127,6 +127,8 @@ export function ReceivingAppealsWorkspace({
   const [data, setData] = useState<ReceivingAppealsListResponse | null>(previewData ?? null);
   const [view, setView] = useState<ReceivingView>("list");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailFocusField, setDetailFocusField] = useState<AppealQuickEditField>();
+  const detailOpenerRef = useRef<HTMLButtonElement | null>(null);
   useReportClientsSubview("incoming", view !== "list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [persistNotice, setPersistNotice] = useState<string | null>(null);
@@ -1003,7 +1005,9 @@ export function ReceivingAppealsWorkspace({
       />
     ) : null;
 
-  const openProfSide = (id: string) => {
+  const openProfSide = (id: string, field?: AppealQuickEditField, opener?: HTMLButtonElement) => {
+    detailOpenerRef.current = opener ?? null;
+    setDetailFocusField(field);
     setDetailId(id);
     setView("list");
     setOfferOpen(false);
@@ -1116,6 +1120,7 @@ export function ReceivingAppealsWorkspace({
         <>
           <ReceivingAppealProfSidePanel
             appealId={detailId}
+            focusField={detailFocusField}
             row={profPanelRow}
             readOnly={leadsReadOnly}
             readScope={readScope ?? undefined}
@@ -1135,8 +1140,14 @@ export function ReceivingAppealsWorkspace({
             offerOpen={offerOpen}
             onOfferOpenChange={setOfferOpen}
             onClose={() => {
+              const opener = detailOpenerRef.current;
+              detailOpenerRef.current = null;
+              setDetailFocusField(undefined);
               setDetailId(null);
               setOfferOpen(false);
+              if (opener) window.requestAnimationFrame(() => {
+                if (opener.isConnected) opener.focus({ preventScroll: true });
+              });
             }}
             onAppealMutated={() => void refreshListAfterMutation(true)}
           />

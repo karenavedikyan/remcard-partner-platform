@@ -24,10 +24,18 @@ import { ReceivingCommercialOfferDialog } from "./ReceivingCommercialOfferDialog
 import { useCopyDisplayedValue } from "./useCopyDisplayedValue";
 import styles from "./receiving.module.css";
 
+const quickEditFields = {
+  appealTitle: "ca-prof-field-appealTitle",
+  requestText: "ca-prof-field-requestText",
+  manualSourceKey: "ca-prof-field-manual-source",
+} as const;
+export type AppealQuickEditField = keyof typeof quickEditFields;
+
 export type ReceivingAppealProfSidePanelProps = {
   appealId: string | null;
   row: ProfAppealListRow | null;
   readOnly?: boolean;
+  focusField?: AppealQuickEditField;
   readScope?: ReceivingReadScope | null;
   settings?: ReceivingPartnerSettings | null;
   returnFocusRef?: RefObject<HTMLElement | null>;
@@ -48,6 +56,7 @@ export function ReceivingAppealProfSidePanel({
   appealId,
   row,
   readOnly = false,
+  focusField = "appealTitle",
   readScope,
   settings,
   returnFocusRef,
@@ -105,13 +114,14 @@ export function ReceivingAppealProfSidePanel({
   }, [appealId]);
 
   useEffect(() => {
-    const panelLocked = readOnly || profDetail?.detailReadOnly === true;
-    if (!open || detailPhase !== "prof" || !profDetail || panelLocked) return;
+    if (!open || detailPhase !== "prof" || readOnly || profDetail?.detailReadOnly !== false) return;
     const t = window.setTimeout(() => {
-      titleInputRef.current?.focus({ preventScroll: true });
+      const field = dialogRef.current?.querySelector<HTMLElement>(`[data-testid="${quickEditFields[focusField]}"]`);
+      const target = field ?? titleInputRef.current;
+      target?.focus({ preventScroll: target === titleInputRef.current });
     }, 0);
     return () => window.clearTimeout(t);
-  }, [open, appealId, detailPhase, profDetail, readOnly]);
+  }, [open, appealId, detailPhase, focusField, profDetail?.detailReadOnly, readOnly]);
 
   useEffect(() => {
     if (!appealId) return;

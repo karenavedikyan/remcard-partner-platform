@@ -275,6 +275,17 @@
   box-sizing: border-box;
 }
 
+.content:has(:global(.prof-appeals-wrap)) {
+  width: min(1720px, 100%);
+  padding-inline: clamp(18px, 3vw, 44px);
+}
+
+@media (max-width: 655px) {
+  .content:has(:global(.prof-appeals-wrap)) {
+    padding-inline: 12px;
+  }
+}
+
 .shellFooter {
   max-width: var(--content-max);
   width: 100%;

@@ -6,6 +6,7 @@ type ReceivingIconName =
   | "archive"
   | "plus"
   | "copy"
+  | "pencil"
   | "search";
 
 const PATHS: Record<ReceivingIconName, string> = {
@@ -17,6 +18,7 @@ const PATHS: Record<ReceivingIconName, string> = {
     '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  pencil: '<path d="m15 5 4 4M4 20l4-.8L20 8a2.8 2.8 0 0 0-4-4L4.8 16Z"/>',
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
 };
 

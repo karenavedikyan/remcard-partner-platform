@@ -79,7 +79,7 @@ function profDetailWire(
   };
 }
 
-function renderPanel(readOnly = false) {
+function renderPanel(readOnly = false, focusField?: "appealTitle" | "requestText" | "manualSourceKey") {
   const row = mapProfAppealListItemWire(profDetailWire().appeal);
   vi.mocked(fetchReceivingAppealDetailWire).mockResolvedValue({ ok: true, wire: profDetailWire() });
   return render(
@@ -87,6 +87,8 @@ function renderPanel(readOnly = false) {
       appealId="appeal-2408"
       row={row}
       readOnly={readOnly}
+      focusField={focusField}
+      manualChannels={[{ key: "phone", label: "Звонок" }]}
       offerOpen={false}
       onOfferOpenChange={() => {}}
       onClose={() => {}}
@@ -123,6 +125,16 @@ describe("ReceivingAppealProfSidePanel", () => {
         this.open = false;
       };
     }
+  });
+
+  it.each([
+    ["appealTitle", "ca-prof-field-appealTitle"],
+    ["requestText", "ca-prof-field-requestText"],
+    ["manualSourceKey", "ca-prof-field-manual-source"],
+  ] as const)("focuses the editable field %s when the card loads", async (field, id) => {
+    renderPanel(false, field);
+    const control = await screen.findByTestId(id);
+    await waitFor(() => expect(control).toHaveFocus());
   });
 
   it("subtitle prefers wire receivingBranchLabel over prop", () => {

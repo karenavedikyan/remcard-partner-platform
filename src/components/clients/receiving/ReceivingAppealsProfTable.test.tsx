@@ -1,10 +1,38 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { profDemoListResponse } from "@/lib/clients-parity/prof-appeals-demo-fixtures";
 import { ReceivingAppealsProfTable } from "./ReceivingAppealsProfTable";
 
 describe("ReceivingAppealsProfTable — p149", () => {
+  it("opens the intended field from a pencil and hides pencils when editing is not allowed", async () => {
+    const user = userEvent.setup();
+    const data = profDemoListResponse();
+    const onOpenAppeal = vi.fn();
+    const manual = { ...data.profAppeals[0], originKind: "MANUAL" as const };
+    const cert = { ...manual, id: "cert", originKind: "CERTIFICATE" as const };
+    const readOnly = { ...manual, id: "view", profCapabilities: { ...manual.profCapabilities, canManageLeads: false } };
+    render(<ReceivingAppealsProfTable
+      data={data}
+      profRows={[manual, cert, readOnly]}
+      filters={{ q: "", status: "Все статусы", source: "all", bucket: "active" }}
+      onFiltersChange={() => {}}
+      onOpenAppeal={onOpenAppeal}
+    />);
+    const row = within(screen.getByTestId(`ca-prof-row-${manual.id}`));
+    for (const [label, field] of [
+      ["Изменить название обращения", "appealTitle"],
+      ["Изменить запрос", "requestText"],
+      ["Изменить источник", "manualSourceKey"],
+    ]) {
+      const button = row.getByRole("button", { name: label });
+      await user.click(button);
+      expect(onOpenAppeal).toHaveBeenLastCalledWith(manual.id, field, button);
+    }
+    expect(within(screen.getByTestId("ca-prof-row-cert")).queryByRole("button", { name: "Изменить источник" })).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("ca-prof-row-view")).queryByRole("button", { name: /^Изменить/ })).not.toBeInTheDocument();
+  });
+
   it("keeps existing controls and shows date, amount and referrer when supplied", () => {
     const data = profDemoListResponse();
     const row = {

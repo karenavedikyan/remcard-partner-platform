@@ -909,35 +909,88 @@
   border-color: var(--good, var(--green, #30684c));
   background: color-mix(in srgb, var(--good, #30684c) 12%, var(--surface));
 }
-.clientsScope :global(.prof-appeals-wrap .prof-table-row) {
-  display: grid;
-  grid-template-columns:
-    20px minmax(160px, 1.5fr) minmax(120px, 0.85fr) minmax(96px, 1fr) minmax(108px, 0.85fr)
-    minmax(108px, 0.85fr) minmax(76px, 0.65fr) minmax(88px, 0.65fr) minmax(118px, 0.75fr) 34px;
-  gap: 8px;
-  align-items: center;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  margin-bottom: 8px;
+.clientsScope :global(.prof-appeals-wrap) {
+  container: prof-appeals / inline-size;
+  max-width: 1632px;
+  --prof-list-columns:
+    20px minmax(150px, 1.45fr) minmax(92px, 0.6fr) minmax(100px, 1.1fr)
+    minmax(124px, 0.9fr) minmax(116px, 0.9fr) minmax(70px, 0.68fr)
+    minmax(91px, 0.7fr) 110px 34px;
 }
+.clientsScope :global(.prof-appeals-wrap .prof-table-row),
 .clientsScope :global(.prof-appeals-wrap .prof-table-head) {
   display: grid;
-  grid-template-columns:
-    20px minmax(160px, 1.5fr) minmax(120px, 0.85fr) minmax(96px, 1fr) minmax(108px, 0.85fr)
-    minmax(108px, 0.85fr) minmax(76px, 0.65fr) minmax(88px, 0.65fr) minmax(118px, 0.75fr) 34px;
-  gap: 8px;
-  font-size: 12px;
+  grid-template-columns: var(--prof-list-columns);
+  gap: 7px;
+  align-items: center;
+  padding: 10px 10px 10px 12px;
+  min-width: 0;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-table-row) {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  margin-bottom: 6px;
+  min-height: 59px;
+  line-height: 1.45;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-table-row:hover) {
+  border-color: var(--muted);
+}
+.clientsScope :global(.prof-appeals-wrap .prof-table-head) {
+  min-height: 41px;
+  border: 1px solid transparent;
+  font-size: 11px;
   font-weight: 700;
   color: var(--muted);
-  padding: 0 12px 8px;
+}
+.clientsScope :global(.prof-appeals-wrap .pick input) {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: middle;
+}
+.clientsScope :global(.prof-appeals-wrap .row-action.btn) {
+  justify-self: end;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 9px;
+}
+.clientsScope :global(.prof-appeals-wrap .row-action.btn svg) {
+  width: 17px;
+  height: 17px;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-quick-cell) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-quick-pencil) {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-quick-pencil svg) {
+  width: 15px;
+  height: 15px;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-quick-pencil:hover),
+.clientsScope :global(.prof-appeals-wrap .prof-quick-pencil:focus-visible) {
+  color: var(--accent);
+  background: var(--offset);
 }
 .clientsScope :global(.prof-appeals-wrap .prof-name-cell) {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -946,39 +999,77 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+  font-size: 14px;
+  font-weight: 750;
   color: inherit;
+  overflow-wrap: anywhere;
 }
-.clientsScope :global(.prof-appeals-wrap .prof-name-title),
+.clientsScope :global(.prof-appeals-wrap .prof-name-slot) {
+  min-width: 0;
+}
 .clientsScope :global(.prof-appeals-wrap .prof-name-sub) {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 7px;
+  margin-top: 1px;
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .profReferrer {
   display: block;
   overflow-wrap: anywhere;
 }
-.clientsScope :global(.prof-appeals-wrap .prof-row-status) {
+.clientsScope :global(.prof-appeals-wrap .prof-row-status.appeal-status) {
   display: inline-flex;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 11px;
   justify-self: start;
 }
-.clientsScope :global(.prof-appeals-wrap .prof-row-request) {
+.clientsScope :global(.prof-appeals-wrap .prof-row-status.is-new) {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: transparent;
+}
+:global([data-theme=dark]) .clientsScope :global(.prof-appeals-wrap .prof-row-status.is-progress) {
+  color: #efd198;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-request-value) {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-source-value),
+.clientsScope :global(.prof-appeals-wrap .row-assignee) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--muted);
+}
+.clientsScope :global(.prof-appeals-wrap .source-caption) {
+  display: none;
+}
+.clientsScope :global(.prof-appeals-wrap .row-source .prof-quick-pencil) {
+  width: 28px;
+  height: 28px;
 }
 .clientsScope :global(.prof-appeals-wrap .prof-row-account) {
   justify-self: end;
   text-align: right;
   white-space: nowrap;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-account-label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.clientsScope :global(.prof-appeals-wrap .prof-account-label [aria-hidden]) {
+  color: var(--good);
 }
 .clientsScope :global(.appeal-status.pill) {
   display: inline-flex;
@@ -1029,44 +1120,75 @@
   width: 36px;
   padding: 0;
 }
-@media (max-width: 1280px) {
+.clientsScope :global(.prof-appeals-wrap .prof-number-content) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 3px;
+}
+.clientsScope :global(.prof-appeals-wrap .number-value) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.clientsScope :global(.prof-appeals-wrap .number-copy) {
+  flex: none;
+  width: 26px;
+  min-height: 28px;
+  padding-inline: 0;
+  border: 1px solid transparent;
+}
+.clientsScope :global(.prof-appeals-wrap .number-copy svg) {
+  width: 15px;
+  height: 15px;
+}
+@container prof-appeals (width < 998px) {
+  .clientsScope :global(.prof-appeals-wrap .prof-table-head) {
+    display: flex;
+    min-height: 34px;
+    padding: 3px 5px;
+  }
   .clientsScope :global(.prof-appeals-wrap .prof-table-head span:not(:first-child)) {
     display: none;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-table-row) {
     grid-template-areas:
-      "pick subject status open"
-      ". request request open"
-      ". source source ."
+      "pick subject subject open"
+      ". status account account"
+      ". request request ."
       "certificate certificate one-c one-c"
-      "assignee assignee account account";
-    grid-template-columns: 18px minmax(0, 1.25fr) minmax(0, 1fr) 36px;
+      ". source assignee assignee";
+    grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 36px;
+    gap: 4px 7px;
+    padding: 9px;
   }
   .clientsScope :global(.prof-appeals-wrap .pick) {
     grid-area: pick;
   }
-  .clientsScope :global(.prof-appeals-wrap .prof-name-cell) {
+  .clientsScope :global(.prof-appeals-wrap .prof-name-slot) {
     grid-area: subject;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-row-status) {
     grid-area: status;
-    justify-self: start;
-    max-width: 100%;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-row-request) {
     grid-area: request;
   }
   .clientsScope :global(.prof-appeals-wrap .prof-row-account) {
     grid-area: account;
-    justify-self: start;
-    text-align: start;
     white-space: normal;
+  }
+  .clientsScope :global(.prof-appeals-wrap .prof-row-account .number-label) {
+    display: none;
   }
   .clientsScope :global(.prof-appeals-wrap .row-assignee) {
     grid-area: assignee;
     overflow-wrap: anywhere;
+  }
+  .clientsScope :global(.prof-appeals-wrap .row-assignee .number-label) {
+    display: inline;
+    margin-inline-end: 4px;
   }
   .clientsScope :global(.prof-appeals-wrap .row-action) {
     grid-area: open;
@@ -1075,6 +1197,9 @@
   }
   .clientsScope :global(.prof-appeals-wrap .row-source) {
     grid-area: source;
+  }
+  .clientsScope :global(.prof-appeals-wrap .source-caption) {
+    display: inline;
   }
   .clientsScope :global(.prof-appeals-wrap .certificate-cell) {
     grid-area: certificate;
@@ -1086,16 +1211,25 @@
     display: block;
   }
   .clientsScope :global(.prof-appeals-wrap .number-cell) {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    padding-top: 6px;
-    border-top: 1px solid var(--line);
+    align-self: stretch;
+    padding: 4px 6px 1px;
+    background: var(--offset, var(--inset));
+    border-radius: 7px;
   }
-  .clientsScope :global(.prof-appeals-wrap .number-cell .number-label) {
-    grid-column: 1 / -1;
+  .clientsScope :global(.prof-appeals-wrap .number-copy) {
+    width: 30px;
+    min-height: 30px;
   }
-  .clientsScope :global(.prof-appeals-wrap .number-value) {
-    overflow-wrap: anywhere;
+}
+@container prof-appeals (width < 440px) {
+  .clientsScope :global(.prof-appeals-wrap .prof-table-row) {
+    grid-template-areas:
+      "pick subject subject open"
+      ". status account account"
+      ". request request ."
+      "certificate certificate one-c one-c"
+      ". source source ."
+      ". assignee assignee .";
   }
 }
 @media (max-width: 680px) {

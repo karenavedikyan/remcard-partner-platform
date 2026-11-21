@@ -21,6 +21,7 @@ import {
   type ReceivingManualChannel,
 } from "@/lib/clients-parity/receiving-appeals-api";
 import type { ReceivingBulkCallbacks } from "./ReceivingAppealsList";
+import type { AppealQuickEditField } from "./ReceivingAppealProfSidePanel";
 import { ReceivingBulkActions } from "./ReceivingBulkActions";
 import { ReceivingIcon } from "./ReceivingIcons";
 import { useCopyDisplayedValue } from "./useCopyDisplayedValue";
@@ -35,7 +36,7 @@ export type ReceivingAppealsProfTableProps = {
   filters: ProfListFilters;
   onFiltersChange: (next: ProfListFilters) => void;
   serverBackedFilters?: boolean;
-  onOpenAppeal?: (appealId: string) => void;
+  onOpenAppeal?: (appealId: string, field?: AppealQuickEditField, opener?: HTMLButtonElement) => void;
   onOpenSources?: () => void;
   onOpenPartnerFields?: () => void;
   readOnly?: boolean;
@@ -79,25 +80,42 @@ function NumberCopy({
       className={`number-cell ${cellClass ?? ""}${tone === "green" ? " cert-green" : ""}`}
     >
       <span className="number-label">{label}</span>
-      <NumberValueDisplay value={display} />
-      <button
-        type="button"
-        className="number-copy btn ghost"
-        aria-label={`Копировать ${label}`}
-        disabled={display === "—"}
-        onClick={(e) => {
-          e.stopPropagation();
-          void onCopy(copyId, display);
-        }}
-      >
-        {copiedKey === copyId ? "✓" : <ReceivingIcon name="copy" />}
-      </button>
+      <div className="prof-number-content">
+        <NumberValueDisplay value={display} />
+        {display !== "—" ? (
+          <button
+            type="button"
+            className="number-copy btn ghost"
+            aria-label={`Копировать ${label}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy(copyId, display);
+            }}
+          >
+            {copiedKey === copyId ? "✓" : <ReceivingIcon name="copy" />}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
 
 function NumberValueDisplay({ value }: { value: string }) {
   return <span className={`number-value${value === "—" ? " muted" : ""}`}>{value}</span>;
+}
+
+function QuickEditPencil({ label, onClick }: { label: string; onClick: (opener: HTMLButtonElement) => void }) {
+  return (
+    <button
+      type="button"
+      className="prof-quick-pencil"
+      aria-label={label}
+      title={label}
+      onClick={(event) => onClick(event.currentTarget)}
+    >
+      <ReceivingIcon name="pencil" />
+    </button>
+  );
 }
 
 export function ReceivingAppealsProfTable({
@@ -450,6 +468,8 @@ export function ReceivingAppealsProfTable({
               const date = new Date(row.createdAt);
               const dateLabel = Number.isFinite(date.getTime()) ? createdDate.format(date) : null;
               const writable = isWritable(row);
+              const quickEditable = !readOnly && (filters.bucket ?? "active") === "active" &&
+                row.profCapabilities.canManageLeads && Boolean(onOpenAppeal);
               return (
                 <div key={row.id} className="prof-table-row" data-testid={`ca-prof-row-${row.id}`}>
                   {bulkOn ? (
@@ -468,29 +488,37 @@ export function ReceivingAppealsProfTable({
                   ) : (
                     <span className="check pick" aria-hidden="true" />
                   )}
-                  <button
-                    type="button"
-                    className="prof-name-cell"
-                    data-ca-action={`open:${row.id}`}
-                    onClick={() => onOpenAppeal?.(row.id)}
-                  >
-                    <strong className="prof-name-title">{row.appealTitle?.trim() || row.clientName}</strong>
-                    <small className="muted prof-name-sub">{profAppealRowSubtitle(row, branch ? null : undefined)}</small>
-                    {branch ? (
-                      <small className="ca-row-branch muted" data-testid="ca-row-branch">
-                        {branch}
-                      </small>
-                    ) : null}
-                    {amount ? <small className="prof-name-sub" data-testid="ca-prof-paid-amount">Сумма: {amount}</small> : null}
-                    {dateLabel ? <time className="muted prof-name-sub" dateTime={row.createdAt}>Создано: {dateLabel}</time> : null}
-                  </button>
+                  <div className="prof-name-slot">
+                    <div className="prof-quick-cell">
+                      <button
+                        type="button"
+                        className="prof-name-cell"
+                        data-ca-action={`open:${row.id}`}
+                        onClick={(event) => onOpenAppeal?.(row.id, undefined, event.currentTarget)}
+                      >
+                        {row.appealTitle?.trim() || row.clientName}
+                      </button>
+                      {quickEditable ? <QuickEditPencil label="Изменить название обращения" onClick={(opener) => onOpenAppeal?.(row.id, "appealTitle", opener)} /> : null}
+                    </div>
+                    <div className="prof-name-sub muted">
+                      <span>{profAppealRowSubtitle(row, branch ? null : undefined)}</span>
+                      {branch ? <span data-testid="ca-row-branch">{branch}</span> : null}
+                      {amount ? <span data-testid="ca-prof-paid-amount">Сумма: {amount}</span> : null}
+                      {dateLabel ? <time dateTime={row.createdAt}>Создано: {dateLabel}</time> : null}
+                    </div>
+                  </div>
                   <span
                     className={`prof-row-status appeal-status ${profStageStatusClass(row.stageId)} pill`}
                     title={statusLabel}
                   >
                     {statusLabel}
                   </span>
-                  <span className="prof-row-request muted small">{row.requestText?.trim() || "—"}</span>
+                  <div className="prof-row-request prof-quick-cell">
+                    <span className={`prof-request-value${row.requestText?.trim() ? "" : " muted"}`}>
+                      {row.requestText?.trim() || "Не указан"}
+                    </span>
+                    {quickEditable ? <QuickEditPencil label="Изменить запрос" onClick={(opener) => onOpenAppeal?.(row.id, "requestText", opener)} /> : null}
+                  </div>
                   <NumberCopy
                     label="№ сертификата"
                     value={row.certificatePromoCode}
@@ -508,21 +536,26 @@ export function ReceivingAppealsProfTable({
                     copiedKey={copiedKey}
                     cellClass="one-c-cell"
                   />
-                  <span className="row-source muted small">
-                    <span className="source-caption">Источник: </span>
-                    {sourceLabel}
-                    {referrer ? <small className={styles.profReferrer}>Направил: {referrer}</small> : null}
-                  </span>
+                  <div className="row-source prof-quick-cell muted small">
+                    <span className="prof-source-value">
+                      <span className="source-caption">Источник: </span>
+                      {sourceLabel}
+                      {referrer ? <small className={styles.profReferrer}>Направил: {referrer}</small> : null}
+                    </span>
+                    {quickEditable && row.originKind === "MANUAL" && channels.length > 0 ? (
+                      <QuickEditPencil label="Изменить источник" onClick={(opener) => onOpenAppeal?.(row.id, "manualSourceKey", opener)} />
+                    ) : null}
+                  </div>
                   <span className="row-assignee small">
-                    <span className="number-label">Ответственный</span>
+                    <span className="number-label">Ответственный:</span>
                     {row.responsible?.displayLabel?.trim() || "—"}
                   </span>
                   <span className="prof-row-account small" data-testid="ca-prof-account">
                     <span className="number-label">Кабинет</span>
                     {row.remCard.inCabinet ? (
-                      <>
+                      <span className="prof-account-label">
                         <span aria-hidden="true">✓</span> Есть в RemCard
-                      </>
+                      </span>
                     ) : (
                       <span className="muted">—</span>
                     )}
@@ -531,7 +564,7 @@ export function ReceivingAppealsProfTable({
                     type="button"
                     className="row-action btn ghost icon"
                     aria-label="Открыть"
-                    onClick={() => onOpenAppeal?.(row.id)}
+                    onClick={(event) => onOpenAppeal?.(row.id, undefined, event.currentTarget)}
                   >
                     ›
                   </button>
