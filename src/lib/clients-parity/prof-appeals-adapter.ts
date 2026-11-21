@@ -294,12 +294,11 @@ export function parseProfAppealDetailWire(
   envelope: ReceivingAppealDetailEnvelopeWire,
   opts?: { scopeAll?: boolean },
 ): ProfAppealDetailState | null {
-  const appealRecord = envelope.appeal as Record<string, unknown>;
-  if (!isProfAppealListItemWire(appealRecord)) return null;
-
-  const appealWire = appealRecord as ReceivingAppealListItemWire;
+  if (!isProfAppealListItemWire(envelope.appeal)) return null;
+  const profileFields = envelope.appeal as Record<string, unknown>;
+  const appealWire = envelope.appeal as ReceivingAppealListItemWire;
   const listRow = mapProfAppealListItemWire(appealWire);
-  const remWire = (appealRecord.remCard ?? {}) as ReceivingAppealRemCardDetailWire;
+  const remWire = (profileFields.remCard ?? {}) as ReceivingAppealRemCardDetailWire;
   const remDetail: ReceivingAppealRemCardDetailWire = {
     inCabinet: remWire.inCabinet === true,
     publicId: remWire.publicId?.trim() || undefined,
@@ -317,7 +316,7 @@ export function parseProfAppealDetailWire(
   );
 
   const commercialProposal = commercialProposalFromWire(
-    appealRecord.commercialProposal ?? (envelope as { commercialProposal?: unknown }).commercialProposal,
+    profileFields.commercialProposal ?? (envelope as { commercialProposal?: unknown }).commercialProposal,
   );
 
   const detailReadOnly =
@@ -328,10 +327,10 @@ export function parseProfAppealDetailWire(
       ...listRow,
       profCapabilities: profCaps,
       remCard: remDetail,
-      clientCity: (appealRecord.clientCity as string | null | undefined) ?? null,
-      clientContact: (appealRecord.clientContact as string | null | undefined) ?? null,
-      budgetHint: (appealRecord.budgetHint as string | null | undefined) ?? null,
-      privateNotes: (appealRecord.privateNotes as string | null | undefined) ?? null,
+      clientCity: (profileFields.clientCity as string | null | undefined) ?? null,
+      clientContact: (profileFields.clientContact as string | null | undefined) ?? null,
+      budgetHint: (profileFields.budgetHint as string | null | undefined) ?? null,
+      privateNotes: (profileFields.privateNotes as string | null | undefined) ?? null,
       commercialProposal,
     },
     revision: typeof envelope.revision === "number" ? envelope.revision : Number(envelope.revision) || 0,
