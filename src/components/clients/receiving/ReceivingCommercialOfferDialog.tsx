@@ -111,7 +111,12 @@ export function ReceivingCommercialOfferDialog({
             <p className="kp-kicker">
               <span className="kp-step">{stepLabel}</span>
             </p>
-            <h2 id={titleId}>{step === "compose" ? "Отправить КП" : "Проверка перед отправкой"}</h2>
+            <h2 id={titleId}>{step === "compose" ? "Отправить КП" : "Как увидит клиент"}</h2>
+            {step === "preview" ? (
+              <p className="kp-header-lead muted small">
+                Проверьте текст, условия и вложения перед отправкой.
+              </p>
+            ) : null}
           </div>
           <button type="button" className="btn ghost kp-close" aria-label="Закрыть" onClick={onClose}>
             ×
@@ -119,41 +124,39 @@ export function ReceivingCommercialOfferDialog({
         </header>
 
         <div className="kp-scroll">
-          <div className="kp-route" aria-label="Маршрут предложения">
-            <div className="kp-route-end">
-              <span className="kp-route-label">Отправитель</span>
-              <strong className="kp-route-name">{partnerDisplayName}</strong>
-            </div>
-            <span className="kp-route-arrow" aria-hidden="true">
-              →
-            </span>
-            <div className="kp-route-end">
-              <span className="kp-route-label">Клиент</span>
-              <strong className="kp-route-name">{clientName}</strong>
-            </div>
-          </div>
-
           {step === "compose" ? (
-            <ComposeFields
-              draft={draft}
-              onChange={setDraft}
-              partnerWorkPhones={partnerWorkPhones}
-              fileInputRef={fileInputRef}
-              photoInputRef={photoInputRef}
-            />
-          ) : (
             <>
-              <h3 className="kp-preview-title">Как увидит клиент</h3>
-              <div className="kp-partner-surface">
-                <PreviewPane
-                  draft={draft}
-                  partnerDisplayName={partnerDisplayName}
-                  partnerLogoUrl={partnerLogoUrl}
-                  clientName={clientName}
-                  appeal={appeal}
-                />
+              <div className="kp-route" aria-label="Маршрут предложения">
+                <div className="kp-route-end">
+                  <span className="kp-route-label">Отправитель</span>
+                  <strong className="kp-route-name">{partnerDisplayName}</strong>
+                </div>
+                <span className="kp-route-arrow" aria-hidden="true">
+                  →
+                </span>
+                <div className="kp-route-end">
+                  <span className="kp-route-label">Клиент</span>
+                  <strong className="kp-route-name">{clientName}</strong>
+                </div>
               </div>
+              <ComposeFields
+                draft={draft}
+                onChange={setDraft}
+                partnerWorkPhones={partnerWorkPhones}
+                fileInputRef={fileInputRef}
+                photoInputRef={photoInputRef}
+              />
             </>
+          ) : (
+            <div className="kp-partner-surface">
+              <PreviewPane
+                draft={draft}
+                partnerDisplayName={partnerDisplayName}
+                partnerLogoUrl={partnerLogoUrl}
+                clientName={clientName}
+                appeal={appeal}
+              />
+            </div>
           )}
 
           {sendNotice ? (
@@ -392,38 +395,57 @@ function PreviewPane({
   const hasClientAction = draft.clientAction.trim().length > 0;
   const hasContactPhone = Boolean(draft.contactPhone);
   const previewOfferTitle = draft.offerTitle.trim() || appeal.appealTitle?.trim() || "Предложение";
+  const partnerInitials = partnerDisplayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+  const recipientDate = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
   return (
     <div
       className={`client-shell offer-client-preview ${templateClass}`}
       data-testid="ca-offer-client-preview"
       data-design-template={draft.designTemplate}
     >
-      <div className="kp-remcard-plate" aria-label="RemCard">
-        <span className="kp-remcard-mark">RemCard</span>
-        <span className="kp-remcard-tagline">Навигатор ремонта</span>
-      </div>
-      <header className="client-who">
-        {partnerLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={partnerLogoUrl} alt="" className="offer-partner-logo" data-testid="ca-offer-partner-logo" />
-        ) : (
-          <span className="avatar" aria-hidden="true">
-            {partnerDisplayName.slice(0, 1)}
-          </span>
-        )}
-        <div>
-          <strong>{partnerDisplayName}</strong>
-          <div>Коммерческое предложение</div>
-          <span className="muted small" data-testid="ca-offer-template-label">
-            {TEMPLATE_LABEL[draft.designTemplate]}
-          </span>
+      <div className="kp-preview-brand">
+        <div className="kp-preview-partner-row">
+          {partnerLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={partnerLogoUrl} alt="" className="offer-partner-logo" data-testid="ca-offer-partner-logo" />
+          ) : (
+            <span className="kp-preview-avatar" aria-hidden="true">
+              {partnerInitials || partnerDisplayName.slice(0, 1)}
+            </span>
+          )}
+          <p className="kp-preview-partner-label">
+            Предложение от партнёра <strong>{partnerDisplayName}</strong>
+          </p>
         </div>
-      </header>
-      <div className="client-content">
+        <div className="kp-remcard-badge" aria-label="RemCard">
+          <span className="kp-remcard-mark">remcard</span>
+          <span className="kp-remcard-tagline">Навигатор ремонта</span>
+        </div>
         <h2 className="client-offer-title" data-testid="ca-offer-preview-title">
           {previewOfferTitle}
         </h2>
-        {draft.message.trim() ? <p className="client-message">{draft.message}</p> : <p className="muted">Без текста</p>}
+        <p className="kp-preview-recipient muted small">
+          Получатель: {clientName} · {recipientDate}
+        </p>
+      </div>
+      <div className="client-content">
+        {draft.message.trim() ? (
+          <>
+            <p className="kp-preview-section-label">Что предлагаем</p>
+            <p className="client-message">{draft.message}</p>
+          </>
+        ) : (
+          <p className="muted">Без текста</p>
+        )}
         {draft.price.trim() ? (
           <p className="client-offer-meta" data-testid="ca-offer-preview-price">
             <strong>Цена:</strong> {draft.price}
@@ -445,14 +467,17 @@ function PreviewPane({
           </p>
         ) : null}
         {draft.attachments.length > 0 ? (
-          <ul className="kp-preview-attachments">
-            {draft.attachments.map((a) => (
-              <li key={a.id}>
-                {a.name}
-                {a.sizeBytes > 0 ? <span className="muted"> · {formatAttachmentSize(a.sizeBytes)}</span> : null}
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="kp-preview-section-label">Вложения</p>
+            <ul className="kp-preview-attachments">
+              {draft.attachments.map((a) => (
+                <li key={a.id}>
+                  {a.name}
+                  {a.sizeBytes > 0 ? <span className="muted"> · {formatAttachmentSize(a.sizeBytes)}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </>
         ) : null}
         {hasClientAction ? (
           <section className="client-offer-card kp-cta-card" data-testid="ca-offer-cta-action">
@@ -472,7 +497,6 @@ function PreviewPane({
             <p className="kp-cta-phone">{draft.contactPhone}</p>
           </section>
         ) : null}
-        <p className="muted small kp-preview-client">Клиент: {clientName}</p>
       </div>
     </div>
   );
