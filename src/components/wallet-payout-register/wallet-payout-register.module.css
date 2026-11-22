@@ -1,0 +1,198 @@
+.register {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.register h2 {
+  margin: 3px 0;
+  font-size: 1.25rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.directionTabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.directionTabs button {
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+.payoutCard {
+  cursor: default;
+  min-height: 154px;
+}
+
+.payoutCard:hover {
+  transform: none;
+}
+
+.partnersTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.partners {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.item,
+.empty {
+  border: 1px solid var(--pw-line);
+  border-radius: 12px;
+  background: var(--pw-bg);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.heading h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.balance {
+  display: grid;
+  gap: 2px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.balance span {
+  font-size: 0.73rem;
+  color: var(--pw-muted);
+}
+
+.status {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 0.83rem;
+  color: var(--pw-muted);
+}
+
+.statusSuccess {
+  color: var(--good);
+  font-weight: 800;
+}
+
+.primaryAction {
+  min-height: 44px;
+}
+
+.history summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.history ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--pw-line);
+}
+
+.badgeIn {
+  color: var(--good);
+}
+
+.badgeOut {
+  color: #855010;
+}
+
+:global([data-theme="dark"]) .badgeOut {
+  color: #f3c378;
+}
+
+.badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+}
+
+.dialogField {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.dialogField input {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--pw-line);
+  border-radius: 8px;
+  background: var(--pw-bg);
+  color: inherit;
+  font: inherit;
+}
+
+.dialogError {
+  color: var(--pw-accent);
+  font-size: 0.85rem;
+}
+
+.codeBox {
+  padding: 10px;
+  margin-top: 8px;
+  background: var(--pw-soft);
+  border-radius: 8px;
+}
+
+@media (max-width: 1010px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .heading:has(.balance) .primaryAction {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

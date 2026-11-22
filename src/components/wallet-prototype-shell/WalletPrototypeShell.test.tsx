@@ -45,9 +45,11 @@ describe("WalletPrototypeShell", () => {
       <WalletPrototypeShell
         shellTestId="wallet-shell"
         settlementsTabTestId="wallet-tab-settlements"
+        payoutsTabTestId="wallet-tab-payouts"
         requisitesTabTestId="wallet-tab-requisites"
         requisitesScopeTestId="wallet-requisites-scope"
         settlements={<div data-testid="settlements-body">settlements</div>}
+        payouts={<div data-testid="payouts-body">payouts</div>}
         requisites={<div data-testid="requisites-body">requisites</div>}
       />,
     );
@@ -74,9 +76,11 @@ describe("WalletPrototypeShell", () => {
       <WalletPrototypeShell
         shellTestId="wallet-shell-kb"
         settlementsTabTestId="wallet-kb-settlements"
+        payoutsTabTestId="wallet-kb-payouts"
         requisitesTabTestId="wallet-kb-requisites"
         requisitesScopeTestId="wallet-kb-requisites-scope"
         settlements={<div>Settlements pane</div>}
+        payouts={<div>Payouts pane</div>}
         requisites={<div>Requisites pane</div>}
       />,
     );
@@ -85,9 +89,17 @@ describe("WalletPrototypeShell", () => {
     const requisitesTab = screen.getByTestId("wallet-kb-requisites");
 
     settlementsTab.focus();
+    const payoutsTab = screen.getByTestId("wallet-kb-payouts");
+
+    await user.keyboard("{ArrowRight}");
+    await vi.waitFor(() => expect(payoutsTab).toHaveFocus());
+    expect(screen.getByText("Payouts pane")).toBeInTheDocument();
+
     await user.keyboard("{ArrowRight}");
     await vi.waitFor(() => expect(requisitesTab).toHaveFocus());
-    expect(screen.getByText("Requisites pane")).toBeInTheDocument();
+
+    await user.keyboard("{ArrowLeft}");
+    await vi.waitFor(() => expect(payoutsTab).toHaveFocus());
 
     await user.keyboard("{ArrowLeft}");
     await vi.waitFor(() => expect(settlementsTab).toHaveFocus());
@@ -102,17 +114,21 @@ describe("WalletPrototypeShell", () => {
         <WalletPrototypeShell
           shellTestId="wallet-shell-a"
           settlementsTabTestId="wallet-a-settlements"
+          payoutsTabTestId="wallet-a-payouts"
           requisitesTabTestId="wallet-a-requisites"
           requisitesScopeTestId="wallet-a-requisites-scope"
           settlements={<div>A settlements</div>}
+          payouts={<div>A payouts</div>}
           requisites={<div>A requisites</div>}
         />
         <WalletPrototypeShell
           shellTestId="wallet-shell-b"
           settlementsTabTestId="wallet-b-settlements"
+          payoutsTabTestId="wallet-b-payouts"
           requisitesTabTestId="wallet-b-requisites"
           requisitesScopeTestId="wallet-b-requisites-scope"
           settlements={<div>B settlements</div>}
+          payouts={<div>B payouts</div>}
           requisites={<div>B requisites</div>}
         />
       </>,
@@ -120,7 +136,7 @@ describe("WalletPrototypeShell", () => {
 
     const shellBSettlements = screen.getByTestId("wallet-b-settlements");
     shellBSettlements.focus();
-    await user.keyboard("{ArrowRight}");
+    await user.keyboard("{ArrowRight}{ArrowRight}");
     await vi.waitFor(() => expect(screen.getByTestId("wallet-b-requisites")).toHaveFocus());
     expect(screen.getByTestId("wallet-a-settlements")).not.toHaveFocus();
     expect(screen.getByTestId("wallet-a-requisites")).not.toHaveFocus();
@@ -131,15 +147,17 @@ describe("WalletPrototypeShell", () => {
       <WalletPrototypeShell
         shellTestId="wallet-shell-a11y"
         settlementsTabTestId="wallet-a11y-settlements"
+        payoutsTabTestId="wallet-a11y-payouts"
         requisitesTabTestId="wallet-a11y-requisites"
         requisitesScopeTestId="wallet-a11y-requisites-scope"
         settlements={<div>Pane A</div>}
+        payouts={<div>Payouts</div>}
         requisites={<div>Pane B</div>}
       />,
     );
 
     expect(screen.getByRole("tablist", { name: "Кошелёк" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Расчёты" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Взаиморасчёты" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Реквизиты" })).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Pane A");
   });
@@ -149,10 +167,12 @@ describe("WalletPrototypeShell", () => {
       <WalletPrototypeShell
         shellTestId="wallet-shell-label"
         settlementsTabTestId="wallet-label-settlements"
+        payoutsTabTestId="wallet-label-payouts"
         requisitesTabTestId="wallet-label-requisites"
         requisitesScopeTestId="wallet-label-requisites-scope"
         settlementsTabLabel="Начисления"
         settlements={<div>Pane A</div>}
+        payouts={<div>Payouts</div>}
         requisites={<div>Pane B</div>}
       />,
     );

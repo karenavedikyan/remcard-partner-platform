@@ -35,7 +35,16 @@ export const dynamic = "force-dynamic";
 
 const RETURN_PATH = "/settlements";
 
-export default async function SettlementsPage() {
+type SearchParams = { tab?: string; counterparty?: string };
+
+export default async function SettlementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
+  const defaultWalletTab = sp.tab === "payouts" ? "payouts" : "settlements";
+  const payoutFocusCounterpartyId = sp.counterparty?.trim() || null;
   const user = await requireProPageUser(RETURN_PATH);
   if (!user) {
     return <SessionGate reason="session" returnTo={RETURN_PATH} />;
@@ -128,6 +137,8 @@ export default async function SettlementsPage() {
         <AgentReceivablesWallet
           walletEmptyViewerRole={walletEmptyViewerRole}
           walletScopeKey={agentWalletScopeKey}
+          defaultWalletTab={defaultWalletTab}
+          payoutFocusCounterpartyId={payoutFocusCounterpartyId}
         />
       ) : shell === "master-wallet" && businessCopy && businessPartnerType ? (
         <BusinessOwnerWallet
@@ -138,11 +149,15 @@ export default async function SettlementsPage() {
           canLinkOnboardingHistory={canLinkOnboardingHistoryFromUserRole(user.role)}
           settlementsAccessBlockedMessage={settlementsAccessBlockedMessage}
           walletLedgerBranchIds={walletLedgerBranchIds}
+          defaultWalletTab={defaultWalletTab}
+          payoutFocusCounterpartyId={payoutFocusCounterpartyId}
         />
       ) : shell === "master-wallet" ? (
         <SpecialistMasterWallet
           walletEmptyViewerRole={walletEmptyViewerRole}
           walletScopeKey={specialistWalletScopeKey}
+          defaultWalletTab={defaultWalletTab}
+          payoutFocusCounterpartyId={payoutFocusCounterpartyId}
         />
       ) : (
         <SettlementsHub

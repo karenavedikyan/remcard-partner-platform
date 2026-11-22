@@ -6,7 +6,8 @@ import type { WalletEmptyViewerProps } from "@/lib/wallet-empty/viewer-role";
 import { AgentPayoutRequisitesPanel } from "@/components/profile/agent/AgentPayoutRequisitesPanel";
 import { WalletAccrualsWorkspace } from "@/components/wallet-accruals/WalletAccrualsWorkspace";
 import agentStyles from "@/components/profile/agent/AgentProfileWizard.module.css";
-import { WalletPrototypeShell } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
+import { WalletPrototypeShell, type WalletPrototypeTab } from "@/components/wallet-prototype-shell/WalletPrototypeShell";
+import { WalletPayoutRegisterWorkspace } from "@/components/wallet-payout-register/WalletPayoutRegisterWorkspace";
 import type { ReactNode } from "react";
 import walletStyles from "@/components/specialist-wallet/specialist-wallet.module.css";
 
@@ -21,6 +22,8 @@ type Props = WalletEmptyViewerProps & {
   settlementsAccessBlockedMessage?: string | null;
   /** Org staff: per-branch settlements fetch + merge (owner/solo omit). */
   walletLedgerBranchIds?: string[] | null;
+  defaultWalletTab?: WalletPrototypeTab;
+  payoutFocusCounterpartyId?: string | null;
 };
 
 export function BusinessOwnerWallet({
@@ -32,6 +35,8 @@ export function BusinessOwnerWallet({
   canLinkOnboardingHistory,
   settlementsAccessBlockedMessage = null,
   walletLedgerBranchIds = null,
+  defaultWalletTab = "settlements",
+  payoutFocusCounterpartyId = null,
 }: Props) {
   const copy = businessWalletPageCopy(partnerType);
 
@@ -58,9 +63,21 @@ export function BusinessOwnerWallet({
     <WalletPrototypeShell
       shellTestId="business-owner-wallet"
       settlementsTabTestId="business-wallet-tab-settlements"
+      payoutsTabTestId="business-wallet-tab-payouts"
+      defaultTab={defaultWalletTab}
       requisitesTabTestId="business-wallet-tab-requisites"
       requisitesScopeTestId="business-wallet-requisites-scope"
       settlements={workspace}
+      payouts={
+        <WalletPayoutRegisterWorkspace
+          key={`${ledgerScopeKey}:payouts`}
+          scopeKey={ledgerScopeKey}
+          walletLedgerBranchIds={walletLedgerBranchIds}
+          accessBlockedMessage={settlementsAccessBlockedMessage}
+          fallbackRibbon={copy.eyebrow}
+          initialCounterpartyId={payoutFocusCounterpartyId}
+        />
+      }
       requisites={
         canManageRequisites ? (
           <div className={`${agentStyles.agentScope} ${walletStyles.requisitesScope}`}>

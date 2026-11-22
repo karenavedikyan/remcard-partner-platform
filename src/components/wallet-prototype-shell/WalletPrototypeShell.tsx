@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -10,40 +11,54 @@ import {
 } from "react";
 import styles from "./wallet-prototype-shell.module.css";
 
-export type WalletPrototypeTab = "settlements" | "requisites";
+export type WalletPrototypeTab = "settlements" | "payouts" | "requisites";
 
 export type WalletPrototypeShellProps = {
   shellTestId: string;
   settlementsTabTestId: string;
+  payoutsTabTestId: string;
   requisitesTabTestId: string;
   requisitesScopeTestId: string;
   settlements: ReactNode;
+  payouts: ReactNode;
   requisites: ReactNode;
   defaultTab?: WalletPrototypeTab;
   settlementsTabLabel?: string;
 };
 
-const TAB_ORDER: WalletPrototypeTab[] = ["settlements", "requisites"];
+const TAB_ORDER: WalletPrototypeTab[] = ["settlements", "payouts", "requisites"];
 
 export function WalletPrototypeShell({
   shellTestId,
   settlementsTabTestId,
+  payoutsTabTestId,
   requisitesTabTestId,
   requisitesScopeTestId,
   settlements,
+  payouts,
   requisites,
   defaultTab = "settlements",
-  settlementsTabLabel = "Расчёты",
+  settlementsTabLabel = "Взаиморасчёты",
 }: WalletPrototypeShellProps) {
   const [tab, setTab] = useState<WalletPrototypeTab>(defaultTab);
   const tablistId = useId();
   const settlementsTabRef = useRef<HTMLButtonElement>(null);
+  const payoutsTabRef = useRef<HTMLButtonElement>(null);
   const requisitesTabRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [defaultTab]);
 
   const focusTab = useCallback((next: WalletPrototypeTab) => {
     setTab(next);
     queueMicrotask(() => {
-      const target = next === "settlements" ? settlementsTabRef.current : requisitesTabRef.current;
+      const target =
+        next === "settlements"
+          ? settlementsTabRef.current
+          : next === "payouts"
+            ? payoutsTabRef.current
+            : requisitesTabRef.current;
       target?.focus();
     });
   }, []);
@@ -70,6 +85,13 @@ export function WalletPrototypeShell({
     [focusTab],
   );
 
+  const panelLabel =
+    tab === "settlements"
+      ? `${tablistId}-settlements`
+      : tab === "payouts"
+        ? `${tablistId}-payouts`
+        : `${tablistId}-requisites`;
+
   return (
     <div
       className={`${styles.pw} ${styles.cabSections}`}
@@ -94,6 +116,21 @@ export function WalletPrototypeShell({
             {settlementsTabLabel}
           </button>
           <button
+            ref={payoutsTabRef}
+            type="button"
+            role="tab"
+            id={`${tablistId}-payouts`}
+            aria-selected={tab === "payouts"}
+            aria-controls={`${tablistId}-panel`}
+            tabIndex={tab === "payouts" ? 0 : -1}
+            className={`${styles.tab} ${tab === "payouts" ? styles.tabActive : ""}`}
+            onClick={() => setTab("payouts")}
+            onKeyDown={(event) => onTabKeyDown(event, "payouts")}
+            data-testid={payoutsTabTestId}
+          >
+            Выплаты
+          </button>
+          <button
             ref={requisitesTabRef}
             type="button"
             role="tab"
@@ -114,10 +151,12 @@ export function WalletPrototypeShell({
         className={styles.panel}
         role="tabpanel"
         id={`${tablistId}-panel`}
-        aria-labelledby={tab === "settlements" ? `${tablistId}-settlements` : `${tablistId}-requisites`}
+        aria-labelledby={panelLabel}
       >
         {tab === "settlements" ? (
           settlements
+        ) : tab === "payouts" ? (
+          payouts
         ) : (
           <div className={styles.requisitesScope} data-testid={requisitesScopeTestId}>
             {requisites}
