@@ -27,6 +27,7 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
       certificate.partners?.[0]?.categories?.[0]?.categoryLabel,
     );
   const clientName = certificate.clientUser?.displayName?.trim() || "";
+  const programTitle = program?.trim() || "Программа";
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
@@ -74,8 +75,8 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
         <p className={styles.certCode} data-testid="mini-cert-code">
           {code}
         </p>
-        {program ? <p className={styles.certMeta}>{program}</p> : null}
-        {clientName ? <p className={styles.certMeta}>{clientName}</p> : null}
+        <p className={styles.certMetaTitle}>{programTitle}</p>
+        {clientName ? <p className={styles.certMetaClient}>{clientName}</p> : null}
       </div>
       <button type="button" className={styles.primaryBtn} onClick={() => void copyCode()}>
         <MiniIconCopy />

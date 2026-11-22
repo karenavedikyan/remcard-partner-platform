@@ -5,7 +5,12 @@ import { notFound, useSearchParams } from "next/navigation";
 import { MiniAppRoot } from "@/components/mini-app/MiniAppRoot";
 import { MINI_APP_FIXTURES } from "../mini-app-fixture/fixtures-data";
 
-const FLOW_SCREENS = new Set(["create", "scan", "invite", "full-cabinet"]);
+import {
+  MINI_APP_FIXTURE_CREATED_CERTIFICATE,
+  MINI_APP_FIXTURE_CREATE_SEED,
+} from "../mini-app-fixture/fixtures-data";
+
+const FLOW_SCREENS = new Set(["create", "certificate-ready", "scan", "invite", "full-cabinet"]);
 
 function MiniAppFlowInner() {
   const searchParams = useSearchParams();
@@ -20,7 +25,15 @@ function MiniAppFlowInner() {
       <MiniAppRoot
         fixtureBootstrap={row.bootstrap}
         fixturePlatform={row.platform}
-        initialScreen={screen as "create" | "scan" | "invite" | "full-cabinet" | "home"}
+        initialScreen={
+          screen as "create" | "certificate-ready" | "scan" | "invite" | "full-cabinet" | "home"
+        }
+        fixtureCreatedCertificate={
+          screen === "certificate-ready" || screen === "create"
+            ? MINI_APP_FIXTURE_CREATED_CERTIFICATE
+            : undefined
+        }
+        fixtureCreateSeed={screen === "create" ? MINI_APP_FIXTURE_CREATE_SEED : undefined}
       />
     </div>
   );

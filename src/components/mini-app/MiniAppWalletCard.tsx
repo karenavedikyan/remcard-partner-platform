@@ -35,6 +35,9 @@ export function MiniAppWalletCard({ bootstrap, onCardClick }: Props) {
             remcard<span className={styles.walletLockupDot}>.</span>
           </span>
         </div>
+        <span className={styles.walletCardFab} aria-hidden="true">
+          →
+        </span>
         <div className={styles.walletBody}>
           <p className={styles.walletLabel}>Начислено к получению</p>
           <div className={styles.walletHero}>

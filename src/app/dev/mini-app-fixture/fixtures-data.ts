@@ -1,4 +1,35 @@
+import type { StoreCertificate } from "@/lib/certificate-types";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
+
+/** Synthetic certificate for dev flow screenshots only — not proof of live create. */
+export const MINI_APP_FIXTURE_CREATED_CERTIFICATE: StoreCertificate = {
+  id: "fixture-cert-1",
+  promoCode: "RC-FIXTURE",
+  qrCode: "https://prof.remcard.ru/certificate/fixture",
+  status: "ACTIVE",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  discountPercent: 10,
+  usageCount: 0,
+  maxUsages: 1,
+  validUntil: null,
+  partners: [
+    {
+      id: "p1",
+      storeUserId: "store-fixture",
+      storeName: "RemCard Showcase",
+      partnershipId: "ps-fixture",
+      isSelfScan: false,
+      categories: [{ category: "doors", categoryLabel: "Двери и входные группы", discountPercent: 10 }],
+    },
+  ],
+  clientUser: { id: "cl-fixture", displayName: "Анна Клиентова" },
+};
+
+/** Dev-only labels for create-flow screenshots — not loaded from live APIs. */
+export const MINI_APP_FIXTURE_CREATE_SEED = {
+  programLabel: "Двери и входные группы",
+  clientLabel: "Анна Клиентова",
+};
 
 const CABINET_TITLE: Record<MiniAppBootstrap["role"], string> = {
   agent: "Кабинет агента",

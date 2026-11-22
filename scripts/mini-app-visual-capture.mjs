@@ -17,12 +17,7 @@ const FIXTURES = [
   "company-max",
 ];
 
-const FLOW_SCREENS = [
-  { screen: "create", selector: '[data-testid="mini-action-create_certificate"], .mini-app-host' },
-  { screen: "scan", selector: '[data-testid="mini-action-scan_qr"], .mini-app-host' },
-  { screen: "invite", selector: '[data-testid="mini-action-invite_partner"], .mini-app-host' },
-  { screen: "full-cabinet", selector: '[data-testid="mini-action-open_full_cabinet"], .mini-app-host' },
-];
+const FLOW_SCREENS = ["create", "certificate-ready", "invite", "full-cabinet"];
 
 async function main() {
   await mkdir(OUT, { recursive: true });
@@ -32,6 +27,10 @@ async function main() {
     viewport: { width: 375, height: 812 },
   });
   const page = await context.newPage();
+  await page.addStyleTag({
+    content:
+      "#__nextjs-build-indicator, nextjs-portal, [data-nextjs-toast], #devtools-indicator { display: none !important; }",
+  });
   const metrics = [];
   for (const key of FIXTURES) {
     await page.goto(`${BASE}/dev/mini-app-fixture?fixture=${key}`, { waitUntil: "networkidle" });
@@ -44,12 +43,12 @@ async function main() {
   }
   const flowFixture = "specialist-telegram";
   for (const flow of FLOW_SCREENS) {
-    await page.goto(`${BASE}/dev/mini-app-flow?fixture=${flowFixture}&screen=${flow.screen}`, {
+    await page.goto(`${BASE}/dev/mini-app-flow?fixture=${flowFixture}&screen=${flow}`, {
       waitUntil: "networkidle",
     });
     await page.waitForSelector('[data-mini-app-flow-screen]');
     await page.screenshot({
-      path: path.join(OUT, `flow-${flowFixture}-${flow.screen}.png`),
+      path: path.join(OUT, `flow-${flowFixture}-${flow}.png`),
       fullPage: true,
     });
   }

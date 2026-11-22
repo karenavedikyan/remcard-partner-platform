@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { StoreCertificate } from "@/lib/certificate-types";
-import { CertificateCreateForm } from "@/components/recommendations/CertificateCreateForm";
+import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 import { MiniAppWalletCard } from "./MiniAppWalletCard";
 import { MiniAppScanVerify } from "./MiniAppScanVerify";
 import { MiniAppProfBrand } from "./MiniAppProfBrand";
@@ -38,12 +38,16 @@ type PilotProps = {
   fixtureBootstrap?: MiniAppBootstrap;
   fixturePlatform?: MiniAppPlatform;
   initialScreen?: Screen;
+  fixtureCreatedCertificate?: StoreCertificate;
+  fixtureCreateSeed?: import("./MiniAppCertificateCreate").MiniAppFixtureCreateSeed;
 };
 
 export function MiniAppRoot({
   fixtureBootstrap,
   fixturePlatform,
   initialScreen = "home",
+  fixtureCreatedCertificate,
+  fixtureCreateSeed,
 }: PilotProps = {}) {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
@@ -52,7 +56,9 @@ export function MiniAppRoot({
   const [error, setError] = useState<string | null>(null);
   const [unlinked, setUnlinked] = useState<{ message: string; url: string } | null>(null);
   const [branchId, setBranchId] = useState<string | null>(fixtureBootstrap?.activeBranchId ?? null);
-  const [createdCertificate, setCreatedCertificate] = useState<StoreCertificate | null>(null);
+  const [createdCertificate, setCreatedCertificate] = useState<StoreCertificate | null>(
+    fixtureCreatedCertificate ?? null,
+  );
 
   const loadBootstrap = useCallback(
     async (hostPlatform: MiniAppPlatform, activeBranch?: string | null) => {
@@ -189,26 +195,21 @@ export function MiniAppRoot({
   }
 
   if (screen === "create") {
-    const agentR03 = bootstrap.role === "agent";
     return (
       <div className={styles.shell}>
         <MiniAppSubpage
           title="Новый сертификат"
-          lead="Заполните короткую форму для выпуска."
+          lead="Выберите программу и клиента из доступных в вашем кабинете."
           onBack={() => setScreen("home")}
         >
           <div className={styles.createWrap}>
-            <CertificateCreateForm
-              agentR03={agentR03}
-              miniApp={
-                platform
-                  ? { platform, branchId, role: bootstrap.role }
-                  : undefined
-              }
-              issuerUi={bootstrap.role === "specialist" ? "specialist" : "default"}
-              issuerListApi={bootstrap.role === "store" || bootstrap.role === "company" ? "business" : "specialist"}
-              presentation="page"
-              onCertificateCreated={(cert) => {
+            <MiniAppCertificateCreate
+              platform={platform}
+              bootstrap={bootstrap}
+              branchId={branchId}
+              fixtureCreateSeed={fixtureCreateSeed}
+              fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
+              onCreated={(cert) => {
                 setCreatedCertificate(cert);
                 setScreen("certificate-ready");
               }}
@@ -358,7 +359,7 @@ export function MiniAppRoot({
                 </span>
                 <span>{action.label}</span>
                 <span className={styles.actionRowChevron} aria-hidden="true">
-                  ›
+                  →
                 </span>
               </button>
             ) : (

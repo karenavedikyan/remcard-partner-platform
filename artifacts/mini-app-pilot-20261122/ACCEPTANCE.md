@@ -1,21 +1,29 @@
 # RemCard mini cabinet pilot — acceptance notes
 
-Branches (no PR, pilot off by default):
+Branches (closed pilot, **no PR / merge / deploy**):
 
 | Repo | Branch |
 |------|--------|
 | remcard-partner-platform | `cursor/remcard-mini-app-telegram-and-max-6d4e` |
 | remcard-navigator | `cursor/remcard-mini-app-telegram-and-max-6d4e` |
 
-## Closed pilot access
+Baseline (previous push): partner `3ffb52ad`, navigator `0a99c0c9`.
 
-- `PROF_MINI_APP_ENABLED=1` **alone is not enough**
-- Required: `PROF_MINI_APP_PILOT_USER_IDS` — comma-separated internal `userId` and/or `publicId` values
-- Without a non-empty allowlist, mini-app routes return **404** even when the flag is on
+## Task status (this iteration)
 
-## Visual QA (375×812, this VM)
+| # | Task | Status |
+|---|------|--------|
+| 1 | `miniAppReadOnlyCertificateScan` fail-closed per cert/branch/role before any client fields; agent forbidden | **Done** — reordered auth; vitest (6 cases, mocks, no DB writes) |
+| 2 | Short «Новый сертификат» + ready screen with QR/copy via `POST /api/pro/mini-app/certificate` + `Idempotency-Key` | **Done live path** — loads `available-partners` + `agent-clients`; store/company need branch, no invented values. **Not E2E** against staging DB |
+| 3 | Wallet UI + captures | **Done** — `remcard.` top-right; circular `→` bottom-right; agent row CTA `→`. 8 home + 4 flows (`create`, `certificate-ready`, `invite`, `full-cabinet`); Next dev badge hidden in capture CSS |
 
-Command:
+### Synthetic / fixture disclaimer
+
+- `/dev/mini-app-fixture` and `/dev/mini-app-flow` use `data-mini-app-synthetic-fixture`.
+- `create` flow screenshot uses `MINI_APP_FIXTURE_CREATE_SEED` (static program/client) — **not** proof of live API create.
+- `certificate-ready` uses `MINI_APP_FIXTURE_CREATED_CERTIFICATE` + real QR generation from fixture URL.
+
+## Visual QA (375×812)
 
 ```bash
 cd remcard-partner-platform
@@ -23,25 +31,25 @@ npm run dev -- --port 3000
 MINI_APP_CAPTURE_BASE=http://127.0.0.1:3000 node scripts/mini-app-visual-capture.mjs
 ```
 
-- 8 home fixtures: `artifacts/mini-app-pilot-20261122/screenshots/*-home.png`
-- 4 flow screens (specialist): `flow-specialist-telegram-{create,scan,invite,full-cabinet}.png`
-- Wallet card metrics on capture: **286×176 px** (all 8 fixtures; target ~176.5)
-- Synthetic markup only on `/dev/mini-app-fixture` and `/dev/mini-app-flow`, not on `/mini-app`
+Outputs: `artifacts/mini-app-pilot-20261122/screenshots/*`
 
-## Tests run (this iteration)
+## Tests (this iteration)
 
 | Repo | Command | Result |
 |------|---------|--------|
-| navigator | `vitest` messengerWebAppInitData, miniAppSessionCookie, profMiniAppConfig, miniAppBootstrap.actions | pass |
+| navigator | `vitest run src/lib/__tests__/miniAppCertificateScan.test.ts` | 6 pass |
+| navigator | `pnpm run build` (NODE_OPTIONS=--max-old-space-size=8192) | pass |
 | partner-platform | `npm run build` | pass |
-| partner-platform | `vitest` host.test, mini-app-bootstrap-path.test | pass |
+| partner-platform | `vitest run src/lib/mini-app/*.test.ts` | 5 pass |
+| partner-platform | `npm run test:proxy` | 312 pass, **2 legacy fail** (`order-totals`, `store-order-attempt`) |
 
-## Still not verified on real Telegram / MAX
+## Blockers / not verified
 
-- Physical WebApp `initData`, consent-linked accounts, live QR scan/create against staging DB
-- Prototype pixel-diff against user reference images (manual eyeball on capture only)
+- Telegram / MAX WebApp `initData`, pilot allowlist users, live scan/create on staging DB
+- Store/company create without agent client list — relies on server `available-partners` only (no separate client picker unless business rules add one)
+- Pixel parity with user reference images IMG_7117/7118 (manual review of captures only)
 
 ## Config (no secrets)
 
-- Navigator: `PROF_MINI_APP_ENABLED`, `PROF_MINI_APP_PILOT_USER_IDS`, `TELEGRAM_BOT_TOKEN`, `MAX_BOT_TOKEN`, `JWT_SECRET`
+- Navigator: `PROF_MINI_APP_ENABLED`, `PROF_MINI_APP_PILOT_USER_IDS`, bot tokens, `JWT_SECRET`
 - Partner: `REMCARD_API_BASE_URL`, `NEXT_PUBLIC_PROF_APP_URL`
