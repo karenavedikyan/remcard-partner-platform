@@ -14,8 +14,7 @@ import {
   resolveCreateIdempotencySession,
   type CreateIdempotencySession,
 } from "@/lib/agent-r03/create-idempotency";
-import { fetchAgentClients } from "@/lib/agent-r03/api";
-import { miniAppCreateCertificate } from "@/lib/mini-app/api";
+import { miniAppCreateCertificate, miniAppFetchCertificateOptions } from "@/lib/mini-app/api";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import styles from "./mini-app.module.css";
 
@@ -78,9 +77,12 @@ export function MiniAppCertificateCreate({
   const [submitError, setSubmitError] = useState("");
   const idempotencyRef = useRef<CreateIdempotencySession | null>(null);
 
-  const needsClient = bootstrap.role === "agent" || bootstrap.role === "specialist";
-  const needsBranch =
-    (bootstrap.role === "store" || bootstrap.role === "company") && bootstrap.branches.length > 0;
+  const [needsClient, setNeedsClient] = useState(
+    bootstrap.role === "agent" || bootstrap.role === "specialist",
+  );
+  const [needsBranch, setNeedsBranch] = useState(
+    (bootstrap.role === "store" || bootstrap.role === "company") && bootstrap.branches.length > 0,
+  );
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -116,9 +118,14 @@ export function MiniAppCertificateCreate({
       return;
     }
     try {
-      const partnersPayload = await remcardFetch<AvailablePartnersResponse>(
-        "/api/store/certificate/available-partners",
-      );
+      const partnersPayload = await miniAppFetchCertificateOptions(platform, branchId);
+      if (partnersPayload.miniOptionsBlocked) {
+        setBlockMessage(partnersPayload.miniOptionsBlocked);
+        setLoadState("blocked");
+        return;
+      }
+      setNeedsClient(partnersPayload.needsClient);
+      setNeedsBranch(partnersPayload.needsBranch);
       if (partnersPayload.certificateRecommendationIssuerReady === false) {
         const missing = partnersPayload.certificateRecommendationIssuerMissing ?? [];
         setBlockMessage(
@@ -140,9 +147,8 @@ export function MiniAppCertificateCreate({
       setPrograms(options);
       setProgramKey(options[0].key);
 
-      if (needsClient) {
-        const clientPayload = await fetchAgentClients({ limit: 50, archived: false });
-        const clientRows: ClientOption[] = (clientPayload.clients ?? []).map((c) => ({
+      if (partnersPayload.needsClient) {
+        const clientRows: ClientOption[] = (partnersPayload.miniClients ?? []).map((c) => ({
           id: c.id,
           label: c.displayName?.trim() || "Клиент",
         }));
@@ -155,7 +161,7 @@ export function MiniAppCertificateCreate({
         setClientId(clientRows[0].id);
       }
 
-      if (needsBranch && !branchId) {
+      if (partnersPayload.needsBranch && !branchId) {
         setBlockMessage("Выберите филиал выпуска на главном экране.");
         setLoadState("blocked");
         return;
@@ -170,7 +176,7 @@ export function MiniAppCertificateCreate({
       );
       setLoadState("blocked");
     }
-  }, [branchId, fixtureCreateSeed, needsBranch, needsClient]);
+  }, [branchId, fixtureCreateSeed, needsBranch, needsClient, platform]);
 
   useEffect(() => {
     void load();

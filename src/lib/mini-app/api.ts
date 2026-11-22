@@ -43,6 +43,25 @@ export async function miniAppExchangeSession(
   }
 }
 
+export type MiniAppCertificateOptionsResponse = import("@/lib/certificate-types").AvailablePartnersResponse & {
+  miniClients: Array<{ id: string; displayName: string }>;
+  needsClient: boolean;
+  needsBranch: boolean;
+  miniOptionsBlocked: string | null;
+};
+
+export async function miniAppFetchCertificateOptions(
+  platform: MiniAppPlatform,
+  branchId?: string | null,
+): Promise<MiniAppCertificateOptionsResponse> {
+  const params: Record<string, string> = { host: platform };
+  if (branchId) params.branchId = branchId;
+  return remcardFetch<MiniAppCertificateOptionsResponse>("/api/pro/mini-app/certificate/options", {
+    searchParams: params,
+    extraHeaders: { "x-remcard-mini-app-platform": platform },
+  });
+}
+
 export async function miniAppFetchBootstrap(
   platform: MiniAppPlatform,
   branchId?: string | null,

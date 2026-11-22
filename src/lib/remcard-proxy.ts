@@ -34,6 +34,7 @@ const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
   "/api/pro/mini-app/bootstrap",
   "/api/pro/mini-app/scan",
   "/api/pro/mini-app/certificate",
+  "/api/pro/mini-app/certificate/options",
 ]);
 
 export function extraAllowedCookieNamesForProxyRequest(
@@ -310,6 +311,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/bootstrap$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/scan$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/certificate$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/certificate\/options$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/store\/scan$/ },
     {
       methods: new Set(["GET", "POST"]),

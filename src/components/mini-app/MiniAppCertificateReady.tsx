@@ -26,7 +26,11 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
       certificate.partners?.[0]?.categories?.[0]?.category ?? "",
       certificate.partners?.[0]?.categories?.[0]?.categoryLabel,
     );
-  const clientName = certificate.clientUser?.displayName?.trim() || "";
+  const clientName =
+    certificate.clientUser?.displayName?.trim() ||
+    (certificate as StoreCertificate & { agentClient?: { displayName?: string | null } }).agentClient
+      ?.displayName?.trim() ||
+    "";
   const programTitle = program?.trim() || "Программа";
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
