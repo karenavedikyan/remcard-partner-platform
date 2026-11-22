@@ -335,7 +335,7 @@ export function MiniAppRoot({
 
       <MiniAppWalletCard bootstrap={bootstrap} onCardClick={() => setScreen("card-info")} />
 
-      {bootstrap.role === "company" && bootstrap.branches.length > 0 ? (
+      {(bootstrap.role === "company" || bootstrap.role === "store") && bootstrap.branches.length > 1 ? (
         <button
           type="button"
           className={styles.branchButton}
@@ -350,7 +350,7 @@ export function MiniAppRoot({
         </button>
       ) : null}
 
-      {bootstrap.role === "store" && bootstrap.workplaceLabel ? (
+      {bootstrap.role === "store" && bootstrap.workplaceLabel && bootstrap.branches.length <= 1 ? (
         <p className={styles.workplacePin}>
           <MiniIconPin />
           {bootstrap.workplaceLabel}
@@ -371,7 +371,7 @@ export function MiniAppRoot({
                 type="button"
                 className={styles.actionRowPrimary}
                 data-testid={`mini-action-${action.id}`}
-                onClick={() => dispatchAction(action.id, setScreen)}
+                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
               >
                 <span className={styles.actionIconPrimary}>
                   {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -387,7 +387,7 @@ export function MiniAppRoot({
                 type="button"
                 className={`${styles.actionTile} ${styles.actionTilePrimary}`}
                 data-testid={`mini-action-${action.id}`}
-                onClick={() => dispatchAction(action.id, setScreen)}
+                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
               >
                 <span className={styles.actionIconPrimary}>
                   {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -402,7 +402,7 @@ export function MiniAppRoot({
               type="button"
               className={`${styles.actionTile} ${styles.actionTileSecondary}`}
               data-testid={`mini-action-${action.id}`}
-              onClick={() => dispatchAction(action.id, setScreen)}
+              onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
             >
               <span className={styles.actionIconSecondary}>
                 {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -420,7 +420,7 @@ export function MiniAppRoot({
             type="button"
             className={styles.listNavItem}
             data-testid={`mini-action-${action.id}`}
-            onClick={() => dispatchAction(action.id, setScreen)}
+            onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
           >
             {action.id === "invite_partner" ? <MiniIconLink /> : <MiniIconExternal />}
             <span>{action.label}</span>
@@ -432,8 +432,25 @@ export function MiniAppRoot({
   );
 }
 
-function dispatchAction(id: string, setScreen: (s: Screen) => void) {
-  if (id === "create_certificate") setScreen("create");
+function dispatchAction(
+  id: string,
+  setScreen: (s: Screen) => void,
+  bootstrap?: MiniAppBootstrap,
+  branchId?: string | null,
+) {
+  if (id === "create_certificate") {
+    if (
+      bootstrap &&
+      (bootstrap.role === "store" || bootstrap.role === "company") &&
+      !branchId &&
+      bootstrap.branches.length > 1
+    ) {
+      setScreen("branch-pick");
+      return;
+    }
+    setScreen("create");
+    return;
+  }
   else if (id === "scan_qr") setScreen("scan");
   else if (id === "invite_partner") setScreen("invite");
   else if (id === "open_full_cabinet") setScreen("full-cabinet");
