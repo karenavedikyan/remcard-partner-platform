@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   approveWalletPayout,
@@ -31,6 +31,8 @@ type Props = {
   presentation: WalletPresentation;
   onRefresh: () => void | Promise<void>;
   initialCounterpartyId?: string | null;
+  initialRequestId?: string | null;
+  initialReceiptId?: string | null;
 };
 
 const DIRECTION_LABEL: Record<WalletPayoutDirection, string> = {
@@ -91,7 +93,14 @@ function rowDetail(partner: WalletPayoutPartnerRow) {
   return { text: "", success: false };
 }
 
-export function WalletPayoutRegisterShell({ data, presentation, onRefresh, initialCounterpartyId }: Props) {
+export function WalletPayoutRegisterShell({
+  data,
+  presentation,
+  onRefresh,
+  initialCounterpartyId,
+  initialRequestId,
+  initialReceiptId,
+}: Props) {
   const incomingOnly = data.incomingOnly;
   const [direction, setDirection] = useState<WalletPayoutDirection>("in");
   const effectiveDirection = incomingOnly ? "in" : direction;
@@ -237,12 +246,43 @@ export function WalletPayoutRegisterShell({ data, presentation, onRefresh, initi
     ? visiblePartners.find((p) => p.counterpartyId === initialCounterpartyId)
     : null;
 
+  const focusNotice = useMemo(() => {
+    if (initialRequestId) {
+      const found = data.partners.some((p) => p.pending?.requestId === initialRequestId);
+      if (!found) return "Запрос недоступен в выбранном подразделении или устарел.";
+    }
+    if (initialReceiptId) {
+      const found = data.receipts.some((r) => r.receiptId === initialReceiptId);
+      if (!found) return "Квитанция недоступна в выбранном подразделении.";
+    }
+    return null;
+  }, [data.partners, data.receipts, initialReceiptId, initialRequestId]);
+
+  useEffect(() => {
+    if (!initialRequestId) return;
+    const partner = data.partners.find((p) => p.pending?.requestId === initialRequestId);
+    if (!partner) return;
+    if (partner.direction !== effectiveDirection) setDirection(partner.direction);
+    queueMicrotask(() => {
+      const row = document.querySelector<HTMLElement>(
+        `[data-payout-row="${partner.counterpartyId}"]`,
+      );
+      row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      row?.focus();
+    });
+  }, [data.partners, effectiveDirection, initialRequestId]);
+
   return (
     <section className={styles.register} data-payout-register data-testid="wallet-payout-register">
       <header>
         <h2 id="wallet-register-title">Выплаты</h2>
         {data.readOnly ? (
           <p className="pw-muted">Только просмотр по доступным подразделениям.</p>
+        ) : null}
+        {focusNotice ? (
+          <p className="pw-muted" role="status" data-testid="wallet-payout-focus-notice">
+            {focusNotice}
+          </p>
         ) : null}
       </header>
       <div className={styles.layout}>

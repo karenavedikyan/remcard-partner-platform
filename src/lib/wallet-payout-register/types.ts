@@ -6,6 +6,7 @@ export type WalletPayoutPartnerRow = {
   counterpartyId: string;
   counterpartyName: string;
   branchLabel: string | null;
+  payerBranchId?: string | null;
   direction: WalletPayoutDirection;
   readyKopecks: number;
   pending: null | {
@@ -20,8 +21,11 @@ export type WalletPayoutPartnerRow = {
 };
 
 export type WalletPayoutReceiptRow = {
+  receiptId: string;
+  requestId: string;
   counterpartyId: string;
   counterpartyName: string;
+  payerBranchId?: string | null;
   amountKopecks: number;
   confirmedAt: string;
   direction: WalletPayoutDirection;

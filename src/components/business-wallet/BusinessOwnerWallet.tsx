@@ -24,6 +24,8 @@ type Props = WalletEmptyViewerProps & {
   walletLedgerBranchIds?: string[] | null;
   defaultWalletTab?: WalletPrototypeTab;
   payoutFocusCounterpartyId?: string | null;
+  payoutFocusRequestId?: string | null;
+  payoutFocusReceiptId?: string | null;
 };
 
 export function BusinessOwnerWallet({
@@ -37,6 +39,8 @@ export function BusinessOwnerWallet({
   walletLedgerBranchIds = null,
   defaultWalletTab = "settlements",
   payoutFocusCounterpartyId = null,
+  payoutFocusRequestId = null,
+  payoutFocusReceiptId = null,
 }: Props) {
   const copy = businessWalletPageCopy(partnerType);
 
@@ -76,6 +80,8 @@ export function BusinessOwnerWallet({
           accessBlockedMessage={settlementsAccessBlockedMessage}
           fallbackRibbon={copy.eyebrow}
           initialCounterpartyId={payoutFocusCounterpartyId}
+          initialRequestId={payoutFocusRequestId}
+          initialReceiptId={payoutFocusReceiptId}
         />
       }
       requisites={

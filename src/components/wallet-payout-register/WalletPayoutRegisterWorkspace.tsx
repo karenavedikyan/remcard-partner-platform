@@ -16,6 +16,8 @@ type Props = {
   accessBlockedMessage?: string | null;
   fallbackRibbon?: string;
   initialCounterpartyId?: string | null;
+  initialRequestId?: string | null;
+  initialReceiptId?: string | null;
 };
 
 export function WalletPayoutRegisterWorkspace({
@@ -24,6 +26,8 @@ export function WalletPayoutRegisterWorkspace({
   accessBlockedMessage = null,
   fallbackRibbon = "Кошелёк",
   initialCounterpartyId = null,
+  initialRequestId = null,
+  initialReceiptId = null,
 }: Props) {
   const [data, setData] = useState<WalletPayoutRegisterResponse | null>(null);
   const [presentation, setPresentation] = useState<WalletPresentation>({
@@ -89,6 +93,8 @@ export function WalletPayoutRegisterWorkspace({
       presentation={presentation}
       onRefresh={load}
       initialCounterpartyId={initialCounterpartyId}
+      initialRequestId={initialRequestId}
+      initialReceiptId={initialReceiptId}
     />
   );
 }

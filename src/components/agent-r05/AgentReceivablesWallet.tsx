@@ -12,6 +12,8 @@ type Props = WalletEmptyViewerProps & {
   walletScopeKey: string;
   defaultWalletTab?: WalletPrototypeTab;
   payoutFocusCounterpartyId?: string | null;
+  payoutFocusRequestId?: string | null;
+  payoutFocusReceiptId?: string | null;
 };
 
 export function AgentReceivablesWallet({
@@ -19,6 +21,8 @@ export function AgentReceivablesWallet({
   walletScopeKey,
   defaultWalletTab = "settlements",
   payoutFocusCounterpartyId = null,
+  payoutFocusRequestId = null,
+  payoutFocusReceiptId = null,
 }: Props) {
   return (
     <WalletPrototypeShell
@@ -35,6 +39,8 @@ export function AgentReceivablesWallet({
           scopeKey={walletScopeKey}
           fallbackRibbon="Агент"
           initialCounterpartyId={payoutFocusCounterpartyId}
+          initialRequestId={payoutFocusRequestId}
+          initialReceiptId={payoutFocusReceiptId}
         />
       }
       settlements={

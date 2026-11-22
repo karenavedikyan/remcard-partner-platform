@@ -16,6 +16,8 @@ type Props = WalletEmptyViewerProps & {
   walletScopeKey?: string;
   defaultWalletTab?: WalletPrototypeTab;
   payoutFocusCounterpartyId?: string | null;
+  payoutFocusRequestId?: string | null;
+  payoutFocusReceiptId?: string | null;
 };
 
 export function SpecialistMasterWallet({
@@ -24,6 +26,8 @@ export function SpecialistMasterWallet({
   walletScopeKey,
   defaultWalletTab = "settlements",
   payoutFocusCounterpartyId = null,
+  payoutFocusRequestId = null,
+  payoutFocusReceiptId = null,
 }: Props) {
   const resolvedScopeKey = walletScopeKey ?? "specialist:preview";
   return (
@@ -39,6 +43,8 @@ export function SpecialistMasterWallet({
           key={`${resolvedScopeKey}:payouts`}
           scopeKey={resolvedScopeKey}
           initialCounterpartyId={payoutFocusCounterpartyId}
+          initialRequestId={payoutFocusRequestId}
+          initialReceiptId={payoutFocusReceiptId}
         />
       }
       settlements={
