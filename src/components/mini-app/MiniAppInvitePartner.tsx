@@ -11,6 +11,8 @@ import styles from "./mini-app.module.css";
 type Props = {
   partnersSearchUrl: string;
   onBack: () => void;
+  /** Dev fixture flows only — skips network link-invite fetch. */
+  fixtureInviteLink?: string | null;
 };
 
 function pickCopyableInvite(items: LinkInviteListRow[]): string | null {
@@ -19,13 +21,18 @@ function pickCopyableInvite(items: LinkInviteListRow[]): string | null {
   return `${getAppUrl()}${row.previewPath}`;
 }
 
-export function MiniAppInvitePartner({ partnersSearchUrl, onBack }: Props) {
+export function MiniAppInvitePartner({ partnersSearchUrl, onBack, fixtureInviteLink }: Props) {
   const [link, setLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copyOk, setCopyOk] = useState(false);
 
   useEffect(() => {
+    if (fixtureInviteLink) {
+      setLink(fixtureInviteLink);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
@@ -56,7 +63,7 @@ export function MiniAppInvitePartner({ partnersSearchUrl, onBack }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fixtureInviteLink]);
 
   async function copyLink() {
     if (!link) return;

@@ -57,7 +57,7 @@
   max-width: 286px;
   min-height: 176px;
   margin: 0 auto;
-  padding: 0 0 40px;
+  padding: 0 0 36px;
   border: 1px solid rgba(90, 96, 108, 0.45);
   border-radius: 16px;
   cursor: pointer;
@@ -118,8 +118,8 @@
 .walletBody {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px 12px;
+  gap: 1px;
+  padding: 7px 14px 5px;
   flex: 1;
   min-height: 0;
 }
@@ -132,20 +132,20 @@
 }
 
 .walletLabelSecondary {
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .walletHero {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-top: 1px;
+  margin-top: 0;
 }
 
 .walletAmount {
-  font-size: 1.65rem;
+  font-size: 1.52rem;
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1;
   letter-spacing: -0.02em;
 }
 
@@ -162,8 +162,9 @@
 }
 
 .walletWaitingAmount {
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 700;
+  line-height: 1.1;
 }
 
 .walletWaitingUnit {

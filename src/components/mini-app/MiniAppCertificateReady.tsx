@@ -68,7 +68,14 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
       <div className={styles.certResultCard}>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={qrDataUrl} alt="" className={styles.certQr} width={200} height={200} />
+          <img
+            src={qrDataUrl}
+            alt=""
+            className={styles.certQr}
+            width={200}
+            height={200}
+            data-testid="mini-cert-qr"
+          />
         ) : (
           <p className={styles.scanNotice}>QR недоступен</p>
         )}

@@ -20,6 +20,7 @@ import {
 } from "./MiniAppIcons";
 import { ensureMiniAppBridgeReady } from "@/lib/mini-app/bridge-loader";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
+import { RemcardApiError } from "@/lib/api-client";
 import { miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import styles from "./mini-app.module.css";
@@ -40,6 +41,7 @@ type PilotProps = {
   initialScreen?: Screen;
   fixtureCreatedCertificate?: StoreCertificate;
   fixtureCreateSeed?: import("./MiniAppCertificateCreate").MiniAppFixtureCreateSeed;
+  fixtureInviteLink?: string | null;
 };
 
 export function MiniAppRoot({
@@ -48,6 +50,7 @@ export function MiniAppRoot({
   initialScreen = "home",
   fixtureCreatedCertificate,
   fixtureCreateSeed,
+  fixtureInviteLink,
 }: PilotProps = {}) {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
@@ -56,6 +59,8 @@ export function MiniAppRoot({
   const [error, setError] = useState<string | null>(null);
   const [unlinked, setUnlinked] = useState<{ message: string; url: string } | null>(null);
   const [branchId, setBranchId] = useState<string | null>(fixtureBootstrap?.activeBranchId ?? null);
+  const [branchPickError, setBranchPickError] = useState<string | null>(null);
+  const [branchSwitching, setBranchSwitching] = useState(false);
   const [createdCertificate, setCreatedCertificate] = useState<StoreCertificate | null>(
     fixtureCreatedCertificate ?? null,
   );
@@ -132,21 +137,26 @@ export function MiniAppRoot({
   }
 
   async function onBranchChange(id: string) {
-    const previous = branchId;
     if (!platform) return;
-    setLoading(true);
-    try {
-      await remcardPatchBranch(id);
-      await loadBootstrap(platform, id);
-      setBranchId(id);
+    if (id === branchId) {
       setScreen("home");
-    } catch {
-      if (previous !== id) {
-        setBranchId(previous);
-      }
-      setError("Не удалось сменить филиал. Выбранная точка не изменена.");
+      return;
+    }
+    setBranchPickError(null);
+    setBranchSwitching(true);
+    try {
+      const data = await miniAppFetchBootstrap(platform, id);
+      setBootstrap(data);
+      setBranchId(data.activeBranchId ?? id);
+      setScreen("home");
+    } catch (e) {
+      setBranchPickError(
+        e instanceof RemcardApiError
+          ? e.message
+          : "Не удалось выбрать филиал. Точка полного кабинета не менялась — повторите выбор.",
+      );
     } finally {
-      setLoading(false);
+      setBranchSwitching(false);
     }
   }
 
@@ -239,6 +249,7 @@ export function MiniAppRoot({
       <div className={styles.shell}>
         <MiniAppInvitePartner
           partnersSearchUrl={bootstrap.partnersUrl}
+          fixtureInviteLink={fixtureInviteLink}
           onBack={() => setScreen("home")}
         />
       </div>
@@ -259,14 +270,22 @@ export function MiniAppRoot({
 
   if (screen === "branch-pick") {
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-testid="mini-app-branch-pick">
         <MiniAppSubpage title="Рабочая точка" onBack={() => setScreen("home")}>
+          {branchSwitching ? <p className={styles.scanNotice}>Обновление мини-кабинета…</p> : null}
+          {branchPickError ? (
+            <p className={styles.scanBad} role="alert" data-testid="mini-branch-pick-error">
+              {branchPickError}
+            </p>
+          ) : null}
           <div className={styles.branchSheet}>
             {bootstrap.branches.map((b) => (
               <button
                 key={b.id}
                 type="button"
+                disabled={branchSwitching}
                 className={`${styles.branchOption} ${b.id === branchId ? styles.branchOptionActive : ""}`}
+                data-testid={`mini-branch-option-${b.id}`}
                 onClick={() => void onBranchChange(b.id)}
               >
                 {b.label}
@@ -418,9 +437,4 @@ function dispatchAction(id: string, setScreen: (s: Screen) => void) {
   else if (id === "scan_qr") setScreen("scan");
   else if (id === "invite_partner") setScreen("invite");
   else if (id === "open_full_cabinet") setScreen("full-cabinet");
-}
-
-async function remcardPatchBranch(branchId: string) {
-  const { remcardFetch } = await import("@/lib/api-client");
-  await remcardFetch("/api/pro/context", { method: "PATCH", body: { branchId }, requireCsrf: true });
 }

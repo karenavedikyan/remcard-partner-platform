@@ -8,6 +8,7 @@ import { MINI_APP_FIXTURES } from "../mini-app-fixture/fixtures-data";
 import {
   MINI_APP_FIXTURE_CREATED_CERTIFICATE,
   MINI_APP_FIXTURE_CREATE_SEED,
+  MINI_APP_FIXTURE_INVITE_LINK,
 } from "../mini-app-fixture/fixtures-data";
 
 const FLOW_SCREENS = new Set(["create", "certificate-ready", "scan", "invite", "full-cabinet"]);
@@ -34,6 +35,7 @@ function MiniAppFlowInner() {
             : undefined
         }
         fixtureCreateSeed={screen === "create" ? MINI_APP_FIXTURE_CREATE_SEED : undefined}
+        fixtureInviteLink={screen === "invite" ? MINI_APP_FIXTURE_INVITE_LINK : undefined}
       />
     </div>
   );

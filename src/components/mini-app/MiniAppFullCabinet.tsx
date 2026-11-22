@@ -12,7 +12,8 @@ type Props = {
 
 export function MiniAppFullCabinet({ partnersUrl, onBack, onOpenLink }: Props) {
   return (
-    <MiniAppSubpage backLabel="← Назад" title="Полный кабинет" onBack={onBack}>
+    <div data-testid="mini-full-cabinet">
+      <MiniAppSubpage backLabel="← Назад" title="Полный кабинет" onBack={onBack}>
       <p className={styles.subpageLead}>
         Здесь мини-приложение откроет раздел «Партнёры» в RemCard.
       </p>
@@ -32,5 +33,6 @@ export function MiniAppFullCabinet({ partnersUrl, onBack, onOpenLink }: Props) {
         Открыть партнёров
       </button>
     </MiniAppSubpage>
+    </div>
   );
 }
