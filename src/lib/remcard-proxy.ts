@@ -274,6 +274,9 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET", "PATCH"]), pattern: branchByIdPath() },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/business-home\/metrics$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/session$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/bootstrap$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/store\/scan$/ },
     {
       methods: new Set(["GET", "POST"]),
       pattern: /^\/api\/pro\/organization\/permission-templates$/,

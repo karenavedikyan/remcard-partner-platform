@@ -1,0 +1,435 @@
+.shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 24.4375rem;
+  margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #faf8f5;
+  color: #3a2f35;
+}
+
+.profBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profBrandIcon {
+  color: #b91c1c;
+  display: flex;
+}
+
+.profBrandText {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: #3a2f35;
+  letter-spacing: 0.01em;
+}
+
+.heroIntro {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6f5f68;
+}
+
+.heroTitle {
+  margin: 2px 0 0;
+  font-size: clamp(1.55rem, 6vw, 1.85rem);
+  line-height: 1.15;
+  font-weight: 700;
+  color: #35252f;
+}
+
+.cardWrap {
+  width: 100%;
+  padding: 0 4px;
+  container-type: inline-size;
+}
+
+.cardWrap :global(.wallet-rc-card) {
+  width: 100%;
+  max-width: 286px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 18px;
+}
+
+.cardWrap :global(.wallet-rc-card__head) {
+  position: relative;
+  min-height: 2.5rem;
+}
+
+.cardWrap :global(.wallet-rc-card__ribbon:not(.wallet-rc-card__ribbon--role)) {
+  display: none;
+}
+
+.cardWrap :global(.wallet-rc-card__ribbon--role) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: auto;
+  transform: none;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 14px 6px 12px;
+  border-radius: 0 0 10px 0;
+  clip-path: none;
+  max-width: 58%;
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+
+.cardArrow {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+.workplacePin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px;
+  font-size: 0.9rem;
+  color: #6f5f68;
+}
+
+.branchButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+  color: #35252f;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.branchButtonLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.quickLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #7d6d76;
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.quickGridSingle {
+  grid-template-columns: 1fr;
+}
+
+.actionTile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 108px;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.actionTilePrimary {
+  background: #9f1239;
+  color: #fff;
+}
+
+.actionTileSecondary {
+  background: #fff;
+  color: #3a2f35;
+  border: 1px solid #e5d5dc;
+}
+
+.actionIconPrimary,
+.actionIconSecondary {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionIconPrimary {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.actionIconSecondary {
+  background: #fdf1f4;
+  color: #9f1239;
+}
+
+.listNav {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #ebe3e7;
+  margin-top: 4px;
+}
+
+.listNavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 4px;
+  border: none;
+  border-bottom: 1px solid #ebe3e7;
+  background: transparent;
+  color: #3a2f35;
+  font-size: 0.98rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+}
+
+.listNavItem span {
+  flex: 1;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.backBtn {
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 16px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.primaryBtn {
+  background: #9f1239;
+  color: #fff;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.55;
+}
+
+.secondaryBtn {
+  background: #fff;
+  border: 1px solid #e5d5dc;
+  color: #3a2f35;
+}
+
+.backBtn {
+  background: transparent;
+  color: #5c4d56;
+  padding: 6px 0;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: auto;
+  justify-content: flex-start;
+}
+
+.scanNotice,
+.walletNotice {
+  font-size: 0.9rem;
+  color: #865c20;
+  margin: 0;
+}
+
+.subpage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.subpageTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  color: #35252f;
+}
+
+.subpageLead {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.createWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.scanPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scanLead {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.9rem;
+}
+
+.manualForm {
+  display: grid;
+  gap: 10px;
+}
+
+.scanOk,
+.scanBad {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.scanOk {
+  background: #eef5ef;
+  color: #35684b;
+}
+
+.scanBad {
+  background: #fff5f5;
+  color: #9f1239;
+}
+
+.fieldLabel {
+  font-size: 0.85rem;
+  color: #6f5f68;
+}
+
+.readOnlyField {
+  width: 100%;
+  border: 1px solid #e5d5dc;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.85rem;
+  color: #3a2f35;
+  background: #fff;
+}
+
+.footnote {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #8a7a83;
+  line-height: 1.4;
+}
+
+.infoCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.infoCardTitle {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #35252f;
+}
+
+.infoCardText {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.certResultCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.certQr {
+  border-radius: 8px;
+}
+
+.certCode {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #35252f;
+}
+
+.certMeta {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.92rem;
+}
+
+.branchSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.branchOption {
+  text-align: left;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  cursor: pointer;
+  color: #3a2f35;
+}
+
+.branchOptionActive {
+  border-color: #9f1239;
+  box-shadow: 0 0 0 1px #9f1239;
+}
