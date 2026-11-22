@@ -224,7 +224,22 @@ export function MiniAppCertificateCreate({
       idempotencyRef.current = null;
       onCreated(cert);
     } catch (err) {
-      setSubmitError(err instanceof RemcardApiError ? err.message : "Не удалось выпустить сертификат");
+      if (err instanceof RemcardApiError) {
+        const code =
+          err.body && typeof err.body === "object"
+            ? (err.body as { code?: string }).code
+            : undefined;
+        if (err.status === 422 && code === "MINI_LIMIT_EXCEEDED") {
+          setSubmitError(
+            err.message ||
+              "Превышен лимит пула % для выбранного филиала. Уменьшите условия программы или смените точку.",
+          );
+        } else {
+          setSubmitError(err.message);
+        }
+      } else {
+        setSubmitError("Не удалось выпустить сертификат");
+      }
     } finally {
       setSubmitting(false);
     }

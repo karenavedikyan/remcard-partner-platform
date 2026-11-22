@@ -544,6 +544,22 @@ describe("remcard proxy transport checks", () => {
     assert.ok(kept[0]?.startsWith(`${MINI_APP_SESSION_COOKIE}=v`));
   });
 
+  it("link-invite BFF uses prof session cookie only (no mini cookie upstream)", async () => {
+    assert.equal(extraAllowedCookieNamesForProxyRequest("/api/partnership/link-invite"), undefined);
+    const clientJar = `remcard-token=prof-from-mini-exchange; ${MINI_APP_SESSION_COOKIE}=mini-pilot`;
+    const invite = await proxyRemcardRequest({
+      method: "GET",
+      pathname: "/api/partnership/link-invite",
+      search: "?listVersion=2",
+      contentType: null,
+      cookieHeader: clientJar,
+      origin: null,
+    });
+    assert.equal(invite.ok, true);
+    assert.match(stubState.lastCookie ?? "", /remcard-token=prof-from-mini-exchange/);
+    assert.doesNotMatch(stubState.lastCookie ?? "", new RegExp(`${MINI_APP_SESSION_COOKIE}=`));
+  });
+
   it("mini-app BFF session cookie round-trip via proxy path", async () => {
     const session = await proxyRemcardRequest({
       method: "POST",

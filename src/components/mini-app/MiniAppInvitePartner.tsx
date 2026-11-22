@@ -15,8 +15,10 @@ type Props = {
   fixtureInviteLink?: string | null;
 };
 
-function pickCopyableInvite(items: LinkInviteListRow[]): string | null {
-  const row = items.find((i) => i.canCopyLink && i.previewPath);
+function pickCopyableActiveInvite(items: LinkInviteListRow[]): string | null {
+  const row = items.find(
+    (i) => i.status === "PENDING" && i.canCopyLink && Boolean(i.previewPath?.trim()),
+  );
   if (!row?.previewPath) return null;
   return `${getAppUrl()}${row.previewPath}`;
 }
@@ -36,12 +38,11 @@ export function MiniAppInvitePartner({ partnersSearchUrl, onBack, fixtureInviteL
     let cancelled = false;
     void (async () => {
       try {
-        const raw = await remcardFetch<unknown>("/api/partnership/link-invite");
+        const raw = await remcardFetch<unknown>("/api/partnership/link-invite", {
+          searchParams: { listVersion: "2" },
+        });
         const parsed = parseLinkInviteListPayload(raw);
-        const rows = parsed
-          ? [...parsed.list.active.items, ...parsed.list.archive.items]
-          : [];
-        const url = pickCopyableInvite(rows);
+        const url = parsed ? pickCopyableActiveInvite(parsed.list.active.items) : null;
         if (!cancelled) {
           if (url) setLink(url);
           else {
