@@ -2,46 +2,46 @@
 
 Branches (no PR, pilot off by default):
 
-| Repo | Branch | Base SHA (start) |
-|------|--------|------------------|
-| remcard-partner-platform | `cursor/remcard-mini-app-telegram-and-max-6d4e` | `cef882f3181b1905904dcb5c4b5ffbec69cb8351` |
-| remcard-navigator | `cursor/remcard-mini-app-telegram-and-max-6d4e` | `84cace7cec8865fdb807f60c1660567bb2c77edd` |
+| Repo | Branch |
+|------|--------|
+| remcard-partner-platform | `cursor/remcard-mini-app-telegram-and-max-6d4e` |
+| remcard-navigator | `cursor/remcard-mini-app-telegram-and-max-6d4e` |
 
-## Prototype alignment (user-provided screenshots)
+## Closed pilot access
 
-| Screen | Prototype reference | Implementation | Notes |
-|--------|---------------------|----------------|-------|
-| Agent home | Image 1 | `/mini-app` + dev fixture `agent-*` | Horizontal role plaque top-left; primary full-width «Создать сертификат»; list rows for invite + full cabinet; no DEMO badge |
-| Specialist home | Image 2 | `specialist-*` | Dual quick-action tiles; create primary / scan secondary |
-| Store home | Image 3 | `store-*` | Scan primary; pin line under card; create secondary |
-| Company home | Image 4 | `company-*` | Branch button under card; dual quick actions |
-| New certificate | Collage TL | `screen=create` | Uses live `CertificateCreateForm` (real programs/clients from API) |
-| Certificate ready | Collage TR | `certificate-ready` | Real QR (`qrcode`) + promo code; button «Скопировать код» |
-| Invite partner | Collage BL | `screen=invite` | Copies existing link-invite URL; no auto-send |
-| Full cabinet | Collage BR | `screen=full-cabinet` | Transition copy + link to `/partners` |
+- `PROF_MINI_APP_ENABLED=1` **alone is not enough**
+- Required: `PROF_MINI_APP_PILOT_USER_IDS` — comma-separated internal `userId` and/or `publicId` values
+- Without a non-empty allowlist, mini-app routes return **404** even when the flag is on
 
-Telegram and MAX share the same React UI (`/mini-app`); only host `initData` exchange differs.
+## Visual QA (375×812, this VM)
 
-## Tests run (this VM)
+Command:
 
-- `remcard-navigator`: `vitest` — `messengerWebAppInitData.test.ts`, `miniAppBootstrap.actions.test.ts` — pass
-- `remcard-partner-platform`: `npm run build` — pass (after fixture type fix)
-- `npm run test:proxy` — 2 pre-existing failures (`order-totals`, `store-order-attempt`)
+```bash
+cd remcard-partner-platform
+npm run dev -- --port 3000
+MINI_APP_CAPTURE_BASE=http://127.0.0.1:3000 node scripts/mini-app-visual-capture.mjs
+```
 
-## Real devices vs local
+- 8 home fixtures: `artifacts/mini-app-pilot-20261122/screenshots/*-home.png`
+- 4 flow screens (specialist): `flow-specialist-telegram-{create,scan,invite,full-cabinet}.png`
+- Wallet card metrics on capture: **286×176 px** (all 8 fixtures; target ~176.5)
+- Synthetic markup only on `/dev/mini-app-fixture` and `/dev/mini-app-flow`, not on `/mini-app`
 
-| Area | Local stand | Real Telegram / MAX |
-|------|-------------|---------------------|
-| UI fixtures 375×812 | `scripts/mini-app-visual-capture.mjs` + `/dev/mini-app-fixture` | Not run on physical devices in this session |
-| initData session | Unit-tested HMAC | Needs bot + linked account |
-| Certificate issue / scan | Proxied APIs when backend up | Same |
+## Tests run (this iteration)
 
-## Config for pilot (no secret values)
+| Repo | Command | Result |
+|------|---------|--------|
+| navigator | `vitest` messengerWebAppInitData, miniAppSessionCookie, profMiniAppConfig, miniAppBootstrap.actions | pass |
+| partner-platform | `npm run build` | pass |
+| partner-platform | `vitest` host.test, mini-app-bootstrap-path.test | pass |
 
-- `PROF_MINI_APP_ENABLED=1` (navigator)
-- `TELEGRAM_BOT_TOKEN`, `MAX_BOT_TOKEN` (navigator — WebApp validation only; not logged)
-- `REMCARD_API_BASE_URL` (partner platform BFF)
-- `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_PROF_APP_URL`
-- Existing prof cabinet + partnership routes (unchanged)
+## Still not verified on real Telegram / MAX
 
-Pilot remains disabled until ops sets `PROF_MINI_APP_ENABLED`.
+- Physical WebApp `initData`, consent-linked accounts, live QR scan/create against staging DB
+- Prototype pixel-diff against user reference images (manual eyeball on capture only)
+
+## Config (no secrets)
+
+- Navigator: `PROF_MINI_APP_ENABLED`, `PROF_MINI_APP_PILOT_USER_IDS`, `TELEGRAM_BOT_TOKEN`, `MAX_BOT_TOKEN`, `JWT_SECRET`
+- Partner: `REMCARD_API_BASE_URL`, `NEXT_PUBLIC_PROF_APP_URL`

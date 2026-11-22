@@ -18,6 +18,7 @@ import {
   MiniIconPin,
   MiniIconScan,
 } from "./MiniAppIcons";
+import { ensureMiniAppBridgeReady } from "@/lib/mini-app/bridge-loader";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
 import { miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
@@ -36,10 +37,15 @@ type Screen =
 type PilotProps = {
   fixtureBootstrap?: MiniAppBootstrap;
   fixturePlatform?: MiniAppPlatform;
+  initialScreen?: Screen;
 };
 
-export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = {}) {
-  const [screen, setScreen] = useState<Screen>("home");
+export function MiniAppRoot({
+  fixtureBootstrap,
+  fixturePlatform,
+  initialScreen = "home",
+}: PilotProps = {}) {
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
   const [bootstrap, setBootstrap] = useState<MiniAppBootstrap | null>(fixtureBootstrap ?? null);
   const [loading, setLoading] = useState(!fixtureBootstrap);
@@ -62,17 +68,21 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
       setLoading(false);
       return;
     }
-    const host = detectMiniAppHost();
-    if (!host) {
-      setLoading(false);
-      setError("Откройте мини-кабинет из Telegram или MAX.");
-      return;
-    }
-    host.ready();
-    host.expand();
-    setPlatform(host.platform);
     void (async () => {
       try {
+        const bridge = await ensureMiniAppBridgeReady();
+        if (bridge.bridgeError && !bridge.platform) {
+          setError(bridge.bridgeError);
+          return;
+        }
+        const host = detectMiniAppHost(bridge.platform);
+        if (!host) {
+          setError(bridge.bridgeError ?? "Откройте мини-кабинет из Telegram или MAX.");
+          return;
+        }
+        host.ready();
+        host.expand();
+        setPlatform(host.platform);
         const session = await miniAppExchangeSession(host.platform, host.initData);
         if (session.status === "unlinked") {
           setUnlinked({ message: session.message, url: session.profLoginUrl });
@@ -109,16 +119,26 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
     return () => host.offBack(back);
   }, [screen]);
 
+  function openProfLink(url: string) {
+    const host = detectMiniAppHost(platform);
+    if (host) host.openExternalLink(url);
+    else window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   async function onBranchChange(id: string) {
-    setBranchId(id);
+    const previous = branchId;
     if (!platform) return;
     setLoading(true);
     try {
       await remcardPatchBranch(id);
       await loadBootstrap(platform, id);
+      setBranchId(id);
       setScreen("home");
     } catch {
-      setError("Не удалось сменить филиал");
+      if (previous !== id) {
+        setBranchId(previous);
+      }
+      setError("Не удалось сменить филиал. Выбранная точка не изменена.");
     } finally {
       setLoading(false);
     }
@@ -180,6 +200,11 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
           <div className={styles.createWrap}>
             <CertificateCreateForm
               agentR03={agentR03}
+              miniApp={
+                platform
+                  ? { platform, branchId, role: bootstrap.role }
+                  : undefined
+              }
               issuerUi={bootstrap.role === "specialist" ? "specialist" : "default"}
               issuerListApi={bootstrap.role === "store" || bootstrap.role === "company" ? "business" : "specialist"}
               presentation="page"
@@ -202,7 +227,7 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
           lead="Проверка не активирует и не списывает сертификат."
           onBack={() => setScreen("home")}
         >
-          <MiniAppScanVerify branchId={branchId} onDone={() => setScreen("home")} embed />
+          <MiniAppScanVerify platform={platform} branchId={branchId} onDone={() => setScreen("home")} embed />
         </MiniAppSubpage>
       </div>
     );
@@ -222,7 +247,11 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
   if (screen === "full-cabinet") {
     return (
       <div className={styles.shell}>
-        <MiniAppFullCabinet partnersUrl={bootstrap.partnersUrl} onBack={() => setScreen("home")} />
+        <MiniAppFullCabinet
+          partnersUrl={bootstrap.partnersUrl}
+          onBack={() => setScreen("home")}
+          onOpenLink={openProfLink}
+        />
       </div>
     );
   }
@@ -253,9 +282,13 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
       <div className={styles.shell}>
         <MiniAppSubpage title="Кошелёк" onBack={() => setScreen("home")}>
           <p>{bootstrap.presentation.cardExplainer}</p>
-          <a className={styles.secondaryBtn} href={bootstrap.presentation.historyHref}>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => openProfLink(bootstrap.presentation.historyHref)}
+          >
             История начислений в кабинете
-          </a>
+          </button>
         </MiniAppSubpage>
       </div>
     );
@@ -311,20 +344,38 @@ export function MiniAppRoot({ fixtureBootstrap, fixturePlatform }: PilotProps = 
         <div
           className={`${styles.quickGrid} ${bootstrap.role === "agent" ? styles.quickGridSingle : ""}`}
         >
-          {primary.map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              className={`${styles.actionTile} ${styles.actionTilePrimary}`}
-              data-testid={`mini-action-${action.id}`}
-              onClick={() => dispatchAction(action.id, setScreen)}
-            >
-              <span className={styles.actionIconPrimary}>
-                {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
-              </span>
-              <span>{action.label}</span>
-            </button>
-          ))}
+          {primary.map((action) =>
+            bootstrap.role === "agent" ? (
+              <button
+                key={action.id}
+                type="button"
+                className={styles.actionRowPrimary}
+                data-testid={`mini-action-${action.id}`}
+                onClick={() => dispatchAction(action.id, setScreen)}
+              >
+                <span className={styles.actionIconPrimary}>
+                  {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
+                </span>
+                <span>{action.label}</span>
+                <span className={styles.actionRowChevron} aria-hidden="true">
+                  ›
+                </span>
+              </button>
+            ) : (
+              <button
+                key={action.id}
+                type="button"
+                className={`${styles.actionTile} ${styles.actionTilePrimary}`}
+                data-testid={`mini-action-${action.id}`}
+                onClick={() => dispatchAction(action.id, setScreen)}
+              >
+                <span className={styles.actionIconPrimary}>
+                  {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
+                </span>
+                <span>{action.label}</span>
+              </button>
+            ),
+          )}
           {secondary.map((action) => (
             <button
               key={action.id}

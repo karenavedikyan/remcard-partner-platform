@@ -33,7 +33,7 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void QRCode.toDataURL(pageUrl, { margin: 0, width: 200, color: { dark: "#1b1f1a", light: "#ffffff" } })
+    void QRCode.toDataURL(pageUrl, { margin: 4, width: 200, color: { dark: "#1b1f1a", light: "#ffffff" } })
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);
       })

@@ -1,6 +1,7 @@
 "use client";
 
 import type { MiniAppPlatform } from "./types";
+import { readQueryPlatform } from "./bridge-loader";
 
 export type MiniAppHostAdapter = {
   platform: MiniAppPlatform;
@@ -10,23 +11,30 @@ export type MiniAppHostAdapter = {
   onBack: (handler: () => void) => void;
   offBack: (handler: () => void) => void;
   shareText: (text: string) => boolean;
-  openTelegramLink: (url: string) => void;
+  openExternalLink: (url: string) => void;
   copyToClipboard: (text: string) => Promise<boolean>;
 };
 
 type TelegramWebApp = {
   initData: string;
   ready: () => void;
-  expand: () => void;
-  BackButton: { show: () => void; hide: () => void; onClick: (cb: () => void) => void; offClick: (cb: () => void) => void };
+  expand?: () => void;
+  BackButton: {
+    show: () => void;
+    hide: () => void;
+    onClick: (cb: () => void) => void;
+    offClick: (cb: () => void) => void;
+  };
   openTelegramLink: (url: string) => void;
+  openLink?: (url: string) => void;
 };
 
 type MaxWebApp = {
   initData: string;
   ready: () => void;
-  expand: () => void;
+  expand?: () => void;
   BackButton?: TelegramWebApp["BackButton"];
+  openLink?: (url: string) => void;
   openMaxLink?: (url: string) => void;
 };
 
@@ -37,24 +45,24 @@ declare global {
   }
 }
 
-function readQueryPlatform(): MiniAppPlatform | null {
-  if (typeof window === "undefined") return null;
-  const q = new URLSearchParams(window.location.search).get("platform")?.toLowerCase();
-  if (q === "telegram" || q === "tg") return "telegram";
-  if (q === "max") return "max";
-  return null;
+function safeExpand(fn: (() => void) | undefined): void {
+  try {
+    fn?.();
+  } catch {
+    /* MAX bridge may not implement expand */
+  }
 }
 
-export function detectMiniAppHost(): MiniAppHostAdapter | null {
+export function detectMiniAppHost(forcedPlatform?: MiniAppPlatform | null): MiniAppHostAdapter | null {
   if (typeof window === "undefined") return null;
-  const forced = readQueryPlatform();
+  const forced = forcedPlatform ?? readQueryPlatform();
   const tg = window.Telegram?.WebApp;
   if ((forced === "telegram" || !forced) && tg?.initData) {
     return {
       platform: "telegram",
       initData: tg.initData,
       ready: () => tg.ready(),
-      expand: () => tg.expand(),
+      expand: () => safeExpand(tg.expand),
       onBack: (h) => {
         tg.BackButton.show();
         tg.BackButton.onClick(h);
@@ -70,7 +78,17 @@ export function detectMiniAppHost(): MiniAppHostAdapter | null {
         }
         return false;
       },
-      openTelegramLink: (url) => tg.openTelegramLink(url),
+      openExternalLink: (url) => {
+        if (url.startsWith("https://t.me/") || url.startsWith("tg://")) {
+          tg.openTelegramLink(url);
+          return;
+        }
+        if (typeof tg.openLink === "function") {
+          tg.openLink(url);
+          return;
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+      },
       copyToClipboard: async (text) => {
         try {
           await navigator.clipboard.writeText(text);
@@ -87,7 +105,7 @@ export function detectMiniAppHost(): MiniAppHostAdapter | null {
       platform: "max",
       initData: max.initData,
       ready: () => max.ready(),
-      expand: () => max.expand(),
+      expand: () => safeExpand(max.expand),
       onBack: (h) => {
         max.BackButton?.show();
         max.BackButton?.onClick(h);
@@ -103,7 +121,17 @@ export function detectMiniAppHost(): MiniAppHostAdapter | null {
         }
         return false;
       },
-      openTelegramLink: (url) => max.openMaxLink?.(url),
+      openExternalLink: (url) => {
+        if (typeof max.openLink === "function") {
+          max.openLink(url);
+          return;
+        }
+        if (typeof max.openMaxLink === "function") {
+          max.openMaxLink(url);
+          return;
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+      },
       copyToClipboard: async (text) => {
         try {
           await navigator.clipboard.writeText(text);

@@ -49,6 +49,8 @@ type FetchOptions = {
   requireCsrf?: boolean;
   /** Query string for store order branch scoping (?branchId=). */
   searchParams?: Record<string, string>;
+  /** Additional request headers (e.g. mini-app platform hints). */
+  extraHeaders?: Record<string, string>;
 };
 
 function pathWithSearch(path: string, searchParams?: Record<string, string>): string {
@@ -70,6 +72,11 @@ async function buildRemcardFetchHeaders(options: FetchOptions): Promise<HeadersI
   };
   if (options.idempotencyKey) {
     headers["Idempotency-Key"] = options.idempotencyKey;
+  }
+  if (options.extraHeaders) {
+    for (const [key, value] of Object.entries(options.extraHeaders)) {
+      headers[key] = value;
+    }
   }
   const method = options.method ?? "GET";
   if (method !== "GET" && options.requireCsrf) {

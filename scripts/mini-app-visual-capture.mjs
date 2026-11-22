@@ -17,6 +17,13 @@ const FIXTURES = [
   "company-max",
 ];
 
+const FLOW_SCREENS = [
+  { screen: "create", selector: '[data-testid="mini-action-create_certificate"], .mini-app-host' },
+  { screen: "scan", selector: '[data-testid="mini-action-scan_qr"], .mini-app-host' },
+  { screen: "invite", selector: '[data-testid="mini-action-invite_partner"], .mini-app-host' },
+  { screen: "full-cabinet", selector: '[data-testid="mini-action-open_full_cabinet"], .mini-app-host' },
+];
+
 async function main() {
   await mkdir(OUT, { recursive: true });
   const browser = await chromium.launch();
@@ -25,13 +32,30 @@ async function main() {
     viewport: { width: 375, height: 812 },
   });
   const page = await context.newPage();
+  const metrics = [];
   for (const key of FIXTURES) {
     await page.goto(`${BASE}/dev/mini-app-fixture?fixture=${key}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="mini-app-home"]');
+    const card = page.locator('[data-testid="mini-app-wallet-card"]');
+  await card.waitFor();
+    const box = await card.boundingBox();
+    if (box) metrics.push({ fixture: key, cardWidth: Math.round(box.width), cardHeight: Math.round(box.height) });
     await page.screenshot({ path: path.join(OUT, `${key}-home.png`), fullPage: true });
   }
+  const flowFixture = "specialist-telegram";
+  for (const flow of FLOW_SCREENS) {
+    await page.goto(`${BASE}/dev/mini-app-flow?fixture=${flowFixture}&screen=${flow.screen}`, {
+      waitUntil: "networkidle",
+    });
+    await page.waitForSelector('[data-mini-app-flow-screen]');
+    await page.screenshot({
+      path: path.join(OUT, `flow-${flowFixture}-${flow.screen}.png`),
+      fullPage: true,
+    });
+  }
   await browser.close();
-  console.log(`Saved ${FIXTURES.length} screenshots to ${OUT}`);
+  console.log(`Saved ${FIXTURES.length} home + ${FLOW_SCREENS.length} flow screenshots to ${OUT}`);
+  console.log(JSON.stringify({ walletCardMetrics: metrics }, null, 2));
 }
 
 main().catch((err) => {

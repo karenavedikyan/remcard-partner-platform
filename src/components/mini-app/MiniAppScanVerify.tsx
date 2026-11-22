@@ -5,16 +5,26 @@ import { useCallback, useState } from "react";
 import { QrScanner } from "@/components/scanner/QrScanner";
 import { TextField } from "@/components/ui/FormField";
 import { parseCertificateCode } from "@/lib/certificate-code";
-import { miniAppStoreScanLookup } from "@/lib/mini-app/api";
+import { miniAppStoreScanLookup, type MiniAppScanState } from "@/lib/mini-app/api";
+import type { MiniAppPlatform } from "@/lib/mini-app/types";
 import styles from "./mini-app.module.css";
 
 type Props = {
+  platform: MiniAppPlatform;
   branchId: string | null;
   onDone: () => void;
   embed?: boolean;
 };
 
-export function MiniAppScanVerify({ branchId, onDone, embed = false }: Props) {
+const STATE_LABEL: Partial<Record<MiniAppScanState, string>> = {
+  used: "Сертификат уже использован или недействителен",
+  unknown: "Сертификат не найден",
+  wrong_branch: "Сертификат недоступен в этом филиале",
+  forbidden: "Нет доступа к проверке",
+  invalid_input: "Введите код сертификата",
+};
+
+export function MiniAppScanVerify({ platform, branchId, onDone, embed = false }: Props) {
   const [manual, setManual] = useState("");
   const [loading, setLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -36,8 +46,8 @@ export function MiniAppScanVerify({ branchId, onDone, embed = false }: Props) {
       setLoading(true);
       setResult({ kind: "idle" });
       try {
-        const res = await miniAppStoreScanLookup(code, branchId);
-        if (res.valid) {
+        const res = await miniAppStoreScanLookup(platform, code, branchId);
+        if (res.state === "valid") {
           const usage =
             res.maxUsages && res.maxUsages > 0
               ? `Использований: ${res.usageCount ?? 0} из ${res.maxUsages}`
@@ -48,7 +58,10 @@ export function MiniAppScanVerify({ branchId, onDone, embed = false }: Props) {
             details: [res.promoCode ? `Код: ${res.promoCode}` : null, usage].filter(Boolean).join(" · "),
           });
         } else {
-          setResult({ kind: "invalid", message: res.reason || "Сертификат недоступен в этом филиале." });
+          setResult({
+            kind: "invalid",
+            message: res.message || STATE_LABEL[res.state] || "Сертификат недоступен.",
+          });
         }
       } catch {
         setResult({ kind: "error", message: "Не удалось проверить сертификат. Проверьте сеть." });
@@ -56,7 +69,7 @@ export function MiniAppScanVerify({ branchId, onDone, embed = false }: Props) {
         setLoading(false);
       }
     },
-    [branchId],
+    [platform, branchId],
   );
 
   return (

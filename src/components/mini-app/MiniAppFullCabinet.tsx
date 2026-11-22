@@ -7,9 +7,10 @@ import styles from "./mini-app.module.css";
 type Props = {
   partnersUrl: string;
   onBack: () => void;
+  onOpenLink?: (url: string) => void;
 };
 
-export function MiniAppFullCabinet({ partnersUrl, onBack }: Props) {
+export function MiniAppFullCabinet({ partnersUrl, onBack, onOpenLink }: Props) {
   return (
     <MiniAppSubpage backLabel="← Назад" title="Полный кабинет" onBack={onBack}>
       <p className={styles.subpageLead}>
@@ -21,16 +22,15 @@ export function MiniAppFullCabinet({ partnersUrl, onBack }: Props) {
           История кошелька, список сертификатов, оформление покупок, поиск партнёров и настройки.
         </p>
       </div>
-      <a
+      <button
+        type="button"
         className={styles.primaryBtn}
-        href={partnersUrl}
-        target="_blank"
-        rel="noreferrer"
         data-testid="mini-open-partners"
+        onClick={() => (onOpenLink ? onOpenLink(partnersUrl) : window.open(partnersUrl, "_blank"))}
       >
         <MiniIconExternal />
         Открыть партнёров
-      </a>
+      </button>
     </MiniAppSubpage>
   );
 }

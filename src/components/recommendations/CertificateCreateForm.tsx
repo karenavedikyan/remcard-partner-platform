@@ -36,6 +36,8 @@ import {
   profileHrefForIssuerMissing,
 } from "@/lib/recommendation-profile-focus";
 import { createAgentCertificate } from "@/lib/agent-r03/api";
+import { miniAppCreateCertificate } from "@/lib/mini-app/api";
+import type { MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   type IssuerCertificatesApiMode,
   patchIssuerCertificate,
@@ -101,6 +103,11 @@ type CertificateCreateFormProps = {
   onCertificateCreated?: (certificate: StoreCertificate) => void;
   /** Reload parent list after alias persisted (initial PATCH or retry). */
   onListRefresh?: () => void;
+  miniApp?: {
+    platform: MiniAppPlatform;
+    branchId: string | null;
+    role: "agent" | "specialist" | "store" | "company";
+  };
 };
 
 type StaffIssuerBranchOption = { id: string; label: string };
@@ -122,6 +129,7 @@ export function CertificateCreateForm({
   onRequestClose,
   onCertificateCreated,
   onListRefresh,
+  miniApp,
 }: CertificateCreateFormProps = {}) {
   const returnPath = agentR03 ? "/certificates/new" : RETURN_PATH;
   const [partners, setPartners] = useState<AvailablePartner[]>([]);
@@ -494,6 +502,9 @@ export function CertificateCreateForm({
         ...payloadResult.body,
         ...(agentClientId ? { agentClientId } : {}),
         ...(staffBranches && issuerBranchId ? { branchId: issuerBranchId } : {}),
+        ...(miniApp?.branchId && (miniApp.role === "store" || miniApp.role === "company")
+          ? { branchId: miniApp.branchId }
+          : {}),
       };
       let result: StoreCertificate;
       if (agentR03) {
@@ -501,6 +512,12 @@ export function CertificateCreateForm({
         const session = resolveCreateIdempotencySession(createIdempotencyRef.current, payloadHash);
         createIdempotencyRef.current = session;
         result = await createAgentCertificate(body, { idempotencyKey: session.key });
+        createIdempotencyRef.current = null;
+      } else if (miniApp) {
+        const payloadHash = hashAgentCreatePayload(body);
+        const session = resolveCreateIdempotencySession(createIdempotencyRef.current, payloadHash);
+        createIdempotencyRef.current = session;
+        result = await miniAppCreateCertificate(miniApp.platform, body, session.key);
         createIdempotencyRef.current = null;
       } else {
         result = await remcardFetch<StoreCertificate>("/api/store/certificate", {

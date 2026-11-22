@@ -51,18 +51,54 @@ export async function miniAppFetchBootstrap(
   if (branchId) params.branchId = branchId;
   return remcardFetch<MiniAppBootstrap>("/api/pro/mini-app/bootstrap", {
     searchParams: params,
+    extraHeaders: { "x-remcard-mini-app-platform": platform },
   });
 }
 
-export type StoreScanLookupResponse =
-  | { valid: true; clientDisplayName: string; promoCode?: string; usageCount?: number; maxUsages?: number }
-  | { valid: false; reason: string };
+export type MiniAppScanState =
+  | "valid"
+  | "used"
+  | "unknown"
+  | "wrong_branch"
+  | "forbidden"
+  | "invalid_input";
+
+export type MiniAppScanLookupResponse =
+  | {
+      state: "valid";
+      clientDisplayName: string;
+      promoCode: string;
+      usageCount: number;
+      maxUsages: number;
+      certificateId: string;
+    }
+  | { state: Exclude<MiniAppScanState, "valid">; message: string };
 
 export async function miniAppStoreScanLookup(
+  platform: MiniAppPlatform,
   code: string,
   branchId?: string | null,
-): Promise<StoreScanLookupResponse> {
-  const params: Record<string, string> = { code };
+): Promise<MiniAppScanLookupResponse> {
+  const params: Record<string, string> = { code, host: platform };
   if (branchId) params.branchId = branchId;
-  return remcardFetch<StoreScanLookupResponse>("/api/store/scan", { searchParams: params });
+  return remcardFetch<MiniAppScanLookupResponse>("/api/pro/mini-app/scan", {
+    searchParams: params,
+    extraHeaders: { "x-remcard-mini-app-platform": platform },
+  });
+}
+
+export async function miniAppCreateCertificate(
+  platform: MiniAppPlatform,
+  body: Record<string, unknown>,
+  idempotencyKey: string,
+): Promise<import("@/lib/certificate-types").StoreCertificate> {
+  return remcardFetch("/api/store/certificate", {
+    method: "POST",
+    body,
+    extraHeaders: {
+      "x-remcard-mini-app-certificate-create": "1",
+      "x-remcard-mini-app-platform": platform,
+      "x-idempotency-key": idempotencyKey,
+    },
+  });
 }
