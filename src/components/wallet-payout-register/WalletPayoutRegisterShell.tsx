@@ -109,6 +109,7 @@ export function WalletPayoutRegisterShell({
   const [dialogCode, setDialogCode] = useState<string | null>(null);
   const [dialogAmount, setDialogAmount] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const visiblePartners = useMemo(
@@ -246,17 +247,21 @@ export function WalletPayoutRegisterShell({
     ? visiblePartners.find((p) => p.counterpartyId === initialCounterpartyId)
     : null;
 
+  const focusReceipt = useMemo(
+    () => (initialReceiptId ? data.receipts.find((r) => r.receiptId === initialReceiptId) ?? null : null),
+    [data.receipts, initialReceiptId],
+  );
+
   const focusNotice = useMemo(() => {
     if (initialRequestId) {
       const found = data.partners.some((p) => p.pending?.requestId === initialRequestId);
       if (!found) return "Запрос недоступен в выбранном подразделении или устарел.";
     }
-    if (initialReceiptId) {
-      const found = data.receipts.some((r) => r.receiptId === initialReceiptId);
-      if (!found) return "Квитанция недоступна в выбранном подразделении.";
+    if (initialReceiptId && !focusReceipt) {
+      return "Квитанция недоступна в выбранном подразделении.";
     }
     return null;
-  }, [data.partners, data.receipts, initialReceiptId, initialRequestId]);
+  }, [data.partners, focusReceipt, initialReceiptId, initialRequestId]);
 
   useEffect(() => {
     if (!initialRequestId) return;
@@ -267,10 +272,23 @@ export function WalletPayoutRegisterShell({
       const row = document.querySelector<HTMLElement>(
         `[data-payout-row="${partner.counterpartyId}"]`,
       );
-      row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      if (row?.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
       row?.focus();
     });
   }, [data.partners, effectiveDirection, initialRequestId]);
+
+  useEffect(() => {
+    if (!initialReceiptId || !focusReceipt) return;
+    if (!incomingOnly && focusReceipt.direction !== effectiveDirection) {
+      setDirection(focusReceipt.direction);
+    }
+    setHistoryOpen(true);
+    queueMicrotask(() => {
+      const row = document.querySelector<HTMLElement>(`[data-receipt-id="${initialReceiptId}"]`);
+      if (row?.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      row?.focus();
+    });
+  }, [effectiveDirection, focusReceipt, incomingOnly, initialReceiptId]);
 
   return (
     <section className={styles.register} data-payout-register data-testid="wallet-payout-register">
@@ -390,11 +408,22 @@ export function WalletPayoutRegisterShell({
           </div>
           {focusPartner ? <span className="sr-only">Фокус: {focusPartner.counterpartyName}</span> : null}
           {history.length ? (
-            <details className={styles.history}>
+            <details
+              className={styles.history}
+              open={historyOpen}
+              onToggle={(event) => setHistoryOpen(event.currentTarget.open)}
+            >
               <summary>История выплат</summary>
               <ul>
                 {history.map((entry) => (
-                  <li key={`${entry.counterpartyId}-${entry.confirmedAt}`}>
+                  <li
+                    key={entry.receiptId}
+                    data-receipt-id={entry.receiptId}
+                    data-testid={`wallet-payout-receipt-${entry.receiptId}`}
+                    className={
+                      initialReceiptId === entry.receiptId ? styles.historyFocus : undefined
+                    }
+                  >
                     <div>
                       <span>{entry.counterpartyName}</span>
                       <time className="pw-muted" style={{ fontSize: "0.78rem" }}>

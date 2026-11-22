@@ -103,6 +103,12 @@
   min-height: 44px;
 }
 
+.historyFocus {
+  outline: 2px solid var(--pw-accent, #2563eb);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .history summary {
   cursor: pointer;
   font-weight: 700;

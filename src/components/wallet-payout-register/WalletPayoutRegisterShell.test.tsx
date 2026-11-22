@@ -36,6 +36,30 @@ const mockData: WalletPayoutRegisterResponse = {
   receipts: [],
 };
 
+const mockWithReceipt: WalletPayoutRegisterResponse = {
+  ...mockData,
+  receipts: [
+    {
+      receiptId: "rcpt-out-1",
+      requestId: "req-old",
+      counterpartyId: "cp-out",
+      counterpartyName: "Списание тест",
+      amountKopecks: 50_000,
+      confirmedAt: new Date().toISOString(),
+      direction: "out",
+    },
+    {
+      receiptId: "rcpt-in-1",
+      requestId: "req-in",
+      counterpartyId: "cp-1",
+      counterpartyName: "Дом материалов",
+      amountKopecks: 30_000,
+      confirmedAt: new Date().toISOString(),
+      direction: "in",
+    },
+  ],
+};
+
 describe("WalletPayoutRegisterShell", () => {
   it("renders card total and partner row actions", async () => {
     const user = userEvent.setup();
@@ -54,5 +78,47 @@ describe("WalletPayoutRegisterShell", () => {
 
     await user.click(screen.getByTestId("wallet-payout-direction-out"));
     expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("focuses exact outgoing receipt from link", () => {
+    render(
+      <WalletPayoutRegisterShell
+        data={mockWithReceipt}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-out-1"
+      />,
+    );
+    expect(screen.getByTestId("wallet-payout-receipt-rcpt-out-1")).toBeInTheDocument();
+    expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows inaccessible notice for unknown receipt", () => {
+    render(
+      <WalletPayoutRegisterShell
+        data={mockData}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="missing-rcpt"
+      />,
+    );
+    expect(screen.getByTestId("wallet-payout-focus-notice")).toHaveTextContent("Квитанция недоступна");
+  });
+
+  it("agent incoming-only ignores outgoing receipt deep link", () => {
+    render(
+      <WalletPayoutRegisterShell
+        data={{
+          ...mockWithReceipt,
+          incomingOnly: true,
+          receipts: mockWithReceipt.receipts.filter((r) => r.direction === "in"),
+        }}
+        presentation={{ ribbonLabel: "Агент", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-out-1"
+      />,
+    );
+    expect(screen.getByTestId("wallet-payout-focus-notice")).toBeInTheDocument();
+    expect(screen.queryByTestId("wallet-payout-receipt-rcpt-out-1")).not.toBeInTheDocument();
   });
 });
