@@ -20,7 +20,7 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
 
   const result = await proxyRemcardRequest(input);
 
-  return buildProxyNextResponse(result);
+  return buildProxyNextResponse(result, input.pathname);
 }
 
 export async function GET(

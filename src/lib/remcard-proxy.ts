@@ -20,6 +20,8 @@ const SESSION_COOKIE = "remcard-token";
 const PRO_BRANCH_CONTEXT_COOKIE = "remcard-pro-branch";
 const ADMIN_RETURN_COOKIE = "remcard-admin-return";
 const ANALYTICS_CONSENT_COOKIE = "cookie-consent";
+/** HttpOnly pilot cookie from POST /api/pro/mini-app/session — scoped, not a global allowlist member. */
+export const MINI_APP_SESSION_COOKIE = "remcard-mini-app-session";
 
 const ALLOWED_COOKIE_NAMES = new Set([
   SESSION_COOKIE,
@@ -27,6 +29,36 @@ const ALLOWED_COOKIE_NAMES = new Set([
   ADMIN_RETURN_COOKIE,
   CSRF_COOKIE,
 ]);
+
+const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
+  "/api/pro/mini-app/bootstrap",
+  "/api/pro/mini-app/scan",
+  "/api/pro/mini-app/certificate",
+]);
+
+export function extraAllowedCookieNamesForProxyRequest(
+  pathname: string,
+): ReadonlySet<string> | undefined {
+  if (MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS.has(pathname)) {
+    return new Set<string>([MINI_APP_SESSION_COOKIE]);
+  }
+  return undefined;
+}
+
+export function filterAllowedSetCookiesForProxyPath(
+  pathname: string,
+  setCookies: readonly string[],
+): string[] {
+  const allowed = new Set(ALLOWED_COOKIE_NAMES);
+  if (pathname === "/api/pro/mini-app/session") {
+    allowed.add(MINI_APP_SESSION_COOKIE);
+  }
+  return setCookies.filter((cookie) => {
+    const firstSegment = cookie.split(";")[0] ?? "";
+    const name = getCookieHeaderName(firstSegment);
+    return Boolean(name && allowed.has(name));
+  });
+}
 const UNSAFE_LOCATION_CHARS = /[\u0000-\u001F\u007F\\]/;
 const ENCODED_CONTROL_CHARS = /%(?:0[0-9a-fA-F]|1[0-9a-fA-F]|7[Ff])/;
 
@@ -277,6 +309,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/session$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/bootstrap$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/scan$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/certificate$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/store\/scan$/ },
     {
       methods: new Set(["GET", "POST"]),
@@ -476,6 +509,8 @@ export type ProxyRequestInput = {
   bodyBinary?: ArrayBuffer;
   /** Raw client key, validated and forwarded only for the scoped idempotent POST routes. */
   idempotencyKeyHeader?: string | null;
+  miniAppPlatformHeader?: string | null;
+  miniAppCertificateCreateHeader?: string | null;
 };
 
 export type ProxyResponseResult =
@@ -506,12 +541,48 @@ function parseOptionalIdempotencyKey(
   return { ok: true, key: parsed.key };
 }
 
+const MINI_APP_CERTIFICATE_PATH = "/api/pro/mini-app/certificate";
+
+function isMiniAppCertificateProxyPath(method: string, pathname: string): boolean {
+  return method.toUpperCase() === "POST" && pathname === MINI_APP_CERTIFICATE_PATH;
+}
+
+function isMiniAppStoreCertificateCreate(
+  method: string,
+  pathname: string,
+  miniCreateHeader: string | null | undefined,
+): boolean {
+  return (
+    method.toUpperCase() === "POST" &&
+    pathname === "/api/store/certificate" &&
+    miniCreateHeader === "1"
+  );
+}
+
 export function resolveStoreOrderIdempotencyKey(
   method: string,
   pathname: string,
   rawHeader: string | null | undefined,
+  miniCreateHeader?: string | null,
 ): { ok: true; key: string | null } | { ok: false; status: number; body: string } {
   const upper = method.toUpperCase();
+
+  if (isMiniAppCertificateProxyPath(upper, pathname)) {
+    const parsed = parseStoreOrderIdempotencyKey(rawHeader);
+    if (!parsed.ok) {
+      return { ok: false, status: 400, body: JSON.stringify({ error: parsed.error }) };
+    }
+    return { ok: true, key: parsed.key };
+  }
+
+  if (isMiniAppStoreCertificateCreate(upper, pathname, miniCreateHeader)) {
+    const parsed = parseStoreOrderIdempotencyKey(rawHeader);
+    if (!parsed.ok) {
+      return { ok: false, status: 400, body: JSON.stringify({ error: parsed.error }) };
+    }
+    return { ok: true, key: parsed.key };
+  }
+
   if (
     upper === "POST" &&
     (BONUS_PAY_PATH.test(pathname) || pathname === "/api/pro/agent-certificates" ||
@@ -786,6 +857,7 @@ export async function proxyRemcardRequest(
     input.method,
     pathname,
     input.idempotencyKeyHeader,
+    input.miniAppCertificateCreateHeader,
   );
   if (!idempotency.ok) {
     return idempotency;
@@ -838,9 +910,10 @@ export async function proxyRemcardRequest(
   }
 
   const extraCookies =
-    pathname === "/api/pro/activity/session-visit"
+    extraAllowedCookieNamesForProxyRequest(pathname) ??
+    (pathname === "/api/pro/activity/session-visit"
       ? new Set<string>([ANALYTICS_CONSENT_COOKIE])
-      : undefined;
+      : undefined);
   const cookie = filterAllowedCookies(input.cookieHeader, extraCookies);
   if (cookie) {
     headers.set("cookie", cookie);
@@ -853,6 +926,26 @@ export async function proxyRemcardRequest(
 
   if (idempotency.key) {
     headers.set("Idempotency-Key", idempotency.key);
+    if (
+      isMiniAppCertificateProxyPath(upperMethod, pathname) ||
+      isMiniAppStoreCertificateCreate(upperMethod, pathname, input.miniAppCertificateCreateHeader)
+    ) {
+      headers.set("x-idempotency-key", idempotency.key);
+    }
+  }
+  const miniPlatform = input.miniAppPlatformHeader?.trim();
+  if (
+    miniPlatform &&
+    (pathname.startsWith("/api/pro/mini-app/") ||
+      isMiniAppStoreCertificateCreate(upperMethod, pathname, input.miniAppCertificateCreateHeader))
+  ) {
+    headers.set("x-remcard-mini-app-platform", miniPlatform);
+  }
+  if (
+    input.miniAppCertificateCreateHeader === "1" &&
+    (pathname === MINI_APP_CERTIFICATE_PATH || pathname === "/api/store/certificate")
+  ) {
+    headers.set("x-remcard-mini-app-certificate-create", "1");
   }
   if (input.csrfHeader) {
     headers.set(CSRF_HEADER, input.csrfHeader);
@@ -903,13 +996,16 @@ export async function proxyRemcardRequest(
     status: upstream.status,
     body,
     contentType: upstream.headers.get("content-type"),
-    setCookies: filterAllowedSetCookies(rawSetCookies),
+    setCookies: filterAllowedSetCookiesForProxyPath(pathname, rawSetCookies),
     location,
     idempotentReplayed: upstream.headers.get("Idempotent-Replayed"),
   };
 }
 
-export function buildProxyNextResponse(result: ProxyResponseResult): Response {
+export function buildProxyNextResponse(
+  result: ProxyResponseResult,
+  proxyPathname?: string,
+): Response {
   if (!result.ok) {
     return new Response(result.body, {
       status: result.status,
@@ -934,7 +1030,10 @@ export function buildProxyNextResponse(result: ProxyResponseResult): Response {
     headers.set("Idempotent-Replayed", result.idempotentReplayed);
   }
 
-  for (const cookie of filterAllowedSetCookies(result.setCookies)) {
+  const setCookies = proxyPathname
+    ? filterAllowedSetCookiesForProxyPath(proxyPathname, result.setCookies)
+    : filterAllowedSetCookies(result.setCookies);
+  for (const cookie of setCookies) {
     headers.append("set-cookie", cookie);
   }
 

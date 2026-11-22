@@ -92,13 +92,12 @@ export async function miniAppCreateCertificate(
   body: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<import("@/lib/certificate-types").StoreCertificate> {
-  return remcardFetch("/api/store/certificate", {
+  return remcardFetch("/api/pro/mini-app/certificate", {
     method: "POST",
     body,
     extraHeaders: {
-      "x-remcard-mini-app-certificate-create": "1",
       "x-remcard-mini-app-platform": platform,
-      "x-idempotency-key": idempotencyKey,
+      "Idempotency-Key": idempotencyKey,
     },
   });
 }

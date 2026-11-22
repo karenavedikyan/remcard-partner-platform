@@ -6,10 +6,13 @@ import { NextRequest } from "next/server";
 import { buildRemcardProxyRequestInput } from "./remcard-proxy-bff.ts";
 import {
   buildProxyNextResponse,
+  extraAllowedCookieNamesForProxyRequest,
   filterAllowedCookies,
   filterAllowedSetCookies,
+  filterAllowedSetCookiesForProxyPath,
   isAllowedMutatingOrigin,
   isAllowedProxyRoute,
+  MINI_APP_SESSION_COOKIE,
   normalizeProxyPath,
   proxyRemcardRequest,
   responseMustNotIncludeBody,
@@ -22,6 +25,9 @@ type StubState = {
   lastAuthorization: string | null;
   lastIdempotencyKey: string | null;
   lastRewardBody: string | null;
+  lastMiniPlatform: string | null;
+  lastMiniCreate: string | null;
+  lastXIdempotency: string | null;
   hang: boolean;
 };
 
@@ -30,6 +36,9 @@ const stubState: StubState = {
   lastAuthorization: null,
   lastIdempotencyKey: null,
   lastRewardBody: null,
+  lastMiniPlatform: null,
+  lastMiniCreate: null,
+  lastXIdempotency: null,
   hang: false,
 };
 
@@ -39,6 +48,9 @@ const stubServer = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", stubBaseUrl);
   stubState.lastCookie = request.headers.cookie ?? null;
   stubState.lastAuthorization = request.headers.authorization ?? null;
+  stubState.lastMiniPlatform = request.headers["x-remcard-mini-app-platform"] ?? null;
+  stubState.lastMiniCreate = request.headers["x-remcard-mini-app-certificate-create"] ?? null;
+  stubState.lastXIdempotency = request.headers["x-idempotency-key"] ?? null;
 
   if (stubState.hang) {
     return;
@@ -101,6 +113,75 @@ const stubServer = createServer(async (request, response) => {
       ],
     });
     response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (url.pathname === "/api/pro/mini-app/session" && request.method === "POST") {
+    response.writeHead(200, {
+      "content-type": "application/json",
+      "set-cookie": [
+        "remcard-token=prof-tok; Path=/; HttpOnly",
+        `${MINI_APP_SESSION_COOKIE}=mini-pilot; Path=/; HttpOnly`,
+        "unexpected_cookie=evil; Path=/",
+      ],
+    });
+    response.end(JSON.stringify({ status: "ok", platform: "telegram" }));
+    return;
+  }
+
+  if (url.pathname === "/api/pro/mini-app/bootstrap" && request.method === "GET") {
+    const cookie = request.headers.cookie ?? "";
+    const ok = cookie.includes(`${MINI_APP_SESSION_COOKIE}=mini-pilot`);
+    response.writeHead(ok ? 200 : 401, { "content-type": "application/json" });
+    response.end(JSON.stringify({ role: ok ? "agent" : null }));
+    return;
+  }
+
+  if (url.pathname === "/api/pro/mini-app/scan" && request.method === "GET") {
+    const cookie = request.headers.cookie ?? "";
+    const ok = cookie.includes(`${MINI_APP_SESSION_COOKIE}=mini-pilot`);
+    response.writeHead(ok ? 200 : 403, { "content-type": "application/json" });
+    response.end(JSON.stringify({ state: ok ? "unknown" : "forbidden" }));
+    return;
+  }
+
+  if (url.pathname === "/api/store/certificate" && request.method === "POST") {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    if (stubState.lastMiniCreate !== "1") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ id: "legacy-cert" }));
+      return;
+    }
+    if (!stubState.lastMiniPlatform || !stubState.lastIdempotencyKey) {
+      response.writeHead(400, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({
+          error: "mini headers",
+          platform: Boolean(stubState.lastMiniPlatform),
+          idempotency: Boolean(stubState.lastIdempotencyKey),
+        }),
+      );
+      return;
+    }
+    response.writeHead(201, { "content-type": "application/json" });
+    response.end(JSON.stringify({ id: "store-mini-cert" }));
+    return;
+  }
+
+  if (url.pathname === "/api/pro/mini-app/certificate" && request.method === "POST") {
+    stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
+    if (!stubState.lastMiniPlatform) {
+      response.writeHead(400, { "content-type": "application/json" });
+      response.end(JSON.stringify({ error: "platform" }));
+      return;
+    }
+    if (!stubState.lastIdempotencyKey) {
+      response.writeHead(400, { "content-type": "application/json" });
+      response.end(JSON.stringify({ error: "idempotency" }));
+      return;
+    }
+    response.writeHead(201, { "content-type": "application/json" });
+    response.end(JSON.stringify({ id: "cert-mini", promoCode: "RC-TEST" }));
     return;
   }
 
@@ -346,6 +427,7 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/session"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/bootstrap"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/scan"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/certificate"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order/preview"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order"), true);
@@ -438,6 +520,203 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join"), false);
     assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
+  });
+
+  it("scopes mini-app session cookie to mini upstream routes only", () => {
+    const allow = extraAllowedCookieNamesForProxyRequest("/api/pro/mini-app/bootstrap");
+    assert.ok(allow?.has(MINI_APP_SESSION_COOKIE));
+    assert.equal(
+      filterAllowedCookies(
+        `remcard-token=t; ${MINI_APP_SESSION_COOKIE}=x; evil=1`,
+        extraAllowedCookieNamesForProxyRequest("/api/pro/mini-app/bootstrap"),
+      ),
+      `remcard-token=t; ${MINI_APP_SESSION_COOKIE}=x`,
+    );
+    assert.equal(
+      filterAllowedCookies(`${MINI_APP_SESSION_COOKIE}=x`, extraAllowedCookieNamesForProxyRequest("/api/auth/me")),
+      null,
+    );
+    const kept = filterAllowedSetCookiesForProxyPath("/api/pro/mini-app/session", [
+      `${MINI_APP_SESSION_COOKIE}=v; Path=/; HttpOnly`,
+      "unexpected_cookie=evil; Path=/",
+    ]);
+    assert.equal(kept.length, 1);
+    assert.ok(kept[0]?.startsWith(`${MINI_APP_SESSION_COOKIE}=v`));
+  });
+
+  it("mini-app BFF session cookie round-trip via proxy path", async () => {
+    const session = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/mini-app/session",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: null,
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ platform: "telegram", initData: "stub" }),
+    });
+    assert.equal(session.ok, true);
+    if (!session.ok) return;
+
+    const sessionResponse = buildProxyNextResponse(session, "/api/pro/mini-app/session");
+    const clientCookies =
+      typeof sessionResponse.headers.getSetCookie === "function"
+        ? sessionResponse.headers.getSetCookie()
+        : [];
+    assert.ok(clientCookies.some((c) => c.startsWith(`${MINI_APP_SESSION_COOKIE}=mini-pilot`)));
+    assert.ok(!clientCookies.some((c) => c.startsWith("unexpected_cookie=")));
+
+    const clientJar = "remcard-token=prof-tok; remcard-mini-app-session=mini-pilot";
+    const bootstrap = await proxyRemcardRequest({
+      method: "GET",
+      pathname: "/api/pro/mini-app/bootstrap",
+      search: "?host=telegram",
+      contentType: null,
+      cookieHeader: clientJar,
+      origin: null,
+      miniAppPlatformHeader: "telegram",
+    });
+    assert.equal(bootstrap.ok, true);
+    assert.match(stubState.lastCookie ?? "", /remcard-mini-app-session=mini-pilot/);
+    assert.match(stubState.lastCookie ?? "", /remcard-token=prof-tok/);
+
+    const scan = await proxyRemcardRequest({
+      method: "GET",
+      pathname: "/api/pro/mini-app/scan",
+      search: "?code=x&host=telegram",
+      contentType: null,
+      cookieHeader: clientJar,
+      origin: null,
+      miniAppPlatformHeader: "telegram",
+    });
+    assert.equal(scan.ok, true);
+
+    const blocked = await proxyRemcardRequest({
+      method: "GET",
+      pathname: "/api/pro/mini-app/bootstrap",
+      search: "?host=telegram",
+      contentType: null,
+      cookieHeader: "remcard-token=prof-tok",
+      origin: null,
+      miniAppPlatformHeader: "telegram",
+    });
+    assert.equal(blocked.ok, true);
+    if (blocked.ok) {
+      assert.equal(blocked.status, 401);
+    }
+  });
+
+  it("HTTP /api/remcard/* mini-app session cookie and store/certificate headers end-to-end", async () => {
+    const sessionSegments = ["api", "pro", "mini-app", "session"];
+    const sessionRequest = new NextRequest(
+      `http://localhost:3000/api/remcard/${sessionSegments.join("/")}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://localhost:3000",
+        },
+        body: JSON.stringify({ platform: "telegram", initData: "fixture" }),
+      },
+    );
+    const sessionInput = await buildRemcardProxyRequestInput(sessionRequest, sessionSegments);
+    assert.ok(sessionInput);
+    assert.equal(sessionInput.pathname, "/api/pro/mini-app/session");
+    const sessionResult = await proxyRemcardRequest(sessionInput);
+    assert.equal(sessionResult.ok, true);
+    if (!sessionResult.ok) return;
+
+    const sessionHttp = buildProxyNextResponse(sessionResult, sessionInput.pathname);
+    assert.equal(sessionHttp.status, 200);
+    const setCookies =
+      typeof sessionHttp.headers.getSetCookie === "function"
+        ? sessionHttp.headers.getSetCookie()
+        : [];
+    assert.ok(
+      setCookies.some((c) => c.startsWith(`${MINI_APP_SESSION_COOKIE}=mini-pilot`)),
+      "client must receive mini session Set-Cookie",
+    );
+
+    const clientJar = `remcard-token=prof-tok; ${MINI_APP_SESSION_COOKIE}=mini-pilot`;
+    const bootstrapSegments = ["api", "pro", "mini-app", "bootstrap"];
+    const bootstrapRequest = new NextRequest(
+      `http://localhost:3000/api/remcard/${bootstrapSegments.join("/")}?host=telegram`,
+      {
+        method: "GET",
+        headers: {
+          Cookie: clientJar,
+          "x-remcard-mini-app-platform": "telegram",
+        },
+      },
+    );
+    const bootstrapInput = await buildRemcardProxyRequestInput(bootstrapRequest, bootstrapSegments);
+    assert.ok(bootstrapInput);
+    const bootstrapResult = await proxyRemcardRequest(bootstrapInput);
+    assert.equal(bootstrapResult.ok, true);
+    assert.match(
+      stubState.lastCookie ?? "",
+      new RegExp(`${MINI_APP_SESSION_COOKIE}=mini-pilot`),
+      "bootstrap must forward mini cookie upstream",
+    );
+    assert.equal(stubState.lastMiniPlatform, "telegram");
+
+    const certSegments = ["api", "store", "certificate"];
+    const certRequest = new NextRequest(
+      `http://localhost:3000/api/remcard/${certSegments.join("/")}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://localhost:3000",
+          Cookie: clientJar,
+          "x-remcard-mini-app-platform": "max",
+          "x-remcard-mini-app-certificate-create": "1",
+          "x-idempotency-key": "bff-mini-001",
+        },
+        body: JSON.stringify({ partners: [] }),
+      },
+    );
+    const certInput = await buildRemcardProxyRequestInput(certRequest, certSegments);
+    assert.ok(certInput);
+    assert.equal(certInput.miniAppPlatformHeader, "max");
+    assert.equal(certInput.miniAppCertificateCreateHeader, "1");
+    assert.equal(certInput.idempotencyKeyHeader, "bff-mini-001");
+    const certResult = await proxyRemcardRequest(certInput);
+    assert.equal(certResult.ok, true);
+    assert.equal(stubState.lastMiniPlatform, "max");
+    assert.equal(stubState.lastMiniCreate, "1");
+    assert.equal(stubState.lastIdempotencyKey, "bff-mini-001");
+    assert.equal(stubState.lastXIdempotency, "bff-mini-001");
+  });
+
+  it("forwards mini certificate idempotency and platform through BFF", async () => {
+    const missing = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/mini-app/certificate",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: `remcard-token=t; ${MINI_APP_SESSION_COOKIE}=mini-pilot`,
+      origin: "http://localhost:3000",
+      bodyText: "{}",
+      miniAppPlatformHeader: "max",
+      idempotencyKeyHeader: null,
+    });
+    assert.equal(missing.ok, false);
+
+    const create = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/mini-app/certificate",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: `remcard-token=t; ${MINI_APP_SESSION_COOKIE}=mini-pilot`,
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ partners: [] }),
+      miniAppPlatformHeader: "max",
+      idempotencyKeyHeader: "mini-key-001",
+    });
+    assert.equal(create.ok, true);
+    assert.equal(stubState.lastIdempotencyKey, "mini-key-001");
+    assert.equal(stubState.lastMiniPlatform, "max");
+    assert.equal(stubState.lastXIdempotency, "mini-key-001");
   });
 
   it("forwards only allowlisted cookies", () => {
