@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { WalletPayoutRegisterShell } from "@/components/wallet-payout-register/WalletPayoutRegisterShell";
 import type { WalletPayoutRegisterResponse } from "@/lib/wallet-payout-register/types";
+import { PayoutFixtureClient } from "./PayoutFixtureClient";
 
 /** Synthetic payout register layout preview — no API, non-production only. */
 export default function PayoutFixturePage() {
@@ -12,6 +12,7 @@ export default function PayoutFixturePage() {
   const data: WalletPayoutRegisterResponse = {
     incomingOnly: false,
     readOnly: false,
+    canReceive: true,
     canPayout: true,
     totals: { inKopecks: 890_000, outKopecks: 480_000 },
     partners: [
@@ -60,11 +61,7 @@ export default function PayoutFixturePage() {
       data-testid="payout-fixture-page"
     >
       <PageHeading eyebrow="КОМПАНИЯ" title="Кошелёк" description="Синтетический превью вкладки «Выплаты»." />
-      <WalletPayoutRegisterShell
-        data={data}
-        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
-        onRefresh={() => undefined}
-      />
+      <PayoutFixtureClient data={data} presentation={{ ribbonLabel: "Компания", cardIdentifier: null }} />
     </main>
   );
 }

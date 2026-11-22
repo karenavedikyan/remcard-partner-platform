@@ -10,6 +10,7 @@ vi.mock("../wallet-accruals/wallet-accruals.global.css", () => ({}));
 const mockData: WalletPayoutRegisterResponse = {
   incomingOnly: false,
   readOnly: false,
+  canReceive: true,
   canPayout: true,
   totals: { inKopecks: 890_000, outKopecks: 480_000 },
   partners: [

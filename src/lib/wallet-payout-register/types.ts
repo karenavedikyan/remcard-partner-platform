@@ -33,5 +33,6 @@ export type WalletPayoutRegisterResponse = {
   totals: { inKopecks: number; outKopecks: number };
   incomingOnly: boolean;
   readOnly: boolean;
+  canReceive: boolean;
   canPayout: boolean;
 };

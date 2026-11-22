@@ -76,7 +76,7 @@ function rowDetail(partner: WalletPayoutPartnerRow) {
     if (pending?.status === "approved") {
       return { text: `Ждём ввода кода: ${formatKopecks(pending.amountKopecks)}`, success: false };
     }
-    if (partner.lastReceipt) {
+    if (partner.lastReceipt && !pending) {
       return { text: `Получено ${formatKopecks(partner.lastReceipt.amountKopecks)}`, success: true };
     }
     return { text: "Ждём сумму", success: false };
@@ -139,16 +139,28 @@ export function WalletPayoutRegisterShell({ data, presentation, onRefresh, initi
     closeDialog();
   }, [closeDialog, onRefresh]);
 
+  const revealPending = (requestId: string) => {
+    void revealWalletPayoutCode(requestId)
+      .then((res) => {
+        setDialogCode(res.code);
+        setDialogAmount(formatKopecks(res.amountKopecks));
+      })
+      .catch((error) => {
+        setDialogError(error instanceof Error ? error.message : "Не удалось показать код");
+      });
+  };
+
   const onPrimaryAction = (partner: WalletPayoutPartnerRow) => {
-    if (data.readOnly) return;
+    if (partner.direction === "in" && !data.canReceive) return;
+    if (partner.direction === "out" && (data.readOnly || !data.canPayout)) return;
     if (partner.direction === "in") {
       const approved = partner.pending?.status === "approved";
       openDialog({ type: "receive", partner, approved: !!approved });
-      if (approved && partner.pending) {
-        void revealWalletPayoutCode(partner.pending.requestId).then((res) => {
-          setDialogCode(res.code);
-          setDialogAmount(formatKopecks(res.amountKopecks));
-        });
+      if (
+        partner.pending &&
+        (partner.pending.status === "waiting" || partner.pending.status === "approved")
+      ) {
+        revealPending(partner.pending.requestId);
       }
       return;
     }
@@ -171,7 +183,7 @@ export function WalletPayoutRegisterShell({ data, presentation, onRefresh, initi
     if (partner.pending?.status === "approved") return "Списать по коду";
     if (partner.readyKopecks > 0 && data.canPayout) return "Запросить код";
     if (partner.pending?.status === "waiting" || partner.pending?.status === "rejected") {
-      return partner.pending.status === "rejected" ? "Исправить сумму" : "Изменить сумму";
+      return partner.pending.status === "rejected" ? "Запросить новый код" : "Изменить сумму";
     }
     return "";
   };
@@ -312,7 +324,9 @@ export function WalletPayoutRegisterShell({ data, presentation, onRefresh, initi
                           <strong>{formatKopecks(partner.readyKopecks)}</strong>
                         </div>
                       ) : null}
-                      {action && !data.readOnly ? (
+                      {action &&
+                      ((partner.direction === "in" && data.canReceive) ||
+                        (partner.direction === "out" && !data.readOnly && data.canPayout)) ? (
                         <Button
                           type="button"
                           variant="primary"
