@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSettlementsReturnPath,
+  parseSettlementsPayoutSearchParams,
   sanitizePayoutFocusToken,
   settlementsConsentReturnSearchParams,
 } from "./settlements-return-path";
@@ -54,6 +55,45 @@ describe("buildSettlementsReturnPath", () => {
 describe("sanitizePayoutFocusToken", () => {
   it("accepts qa smoke ids", () => {
     expect(sanitizePayoutFocusToken("qa-receipt")).toBe("qa-receipt");
+  });
+});
+
+describe("parseSettlementsPayoutSearchParams duplicate keys", () => {
+  it("uses first scalar when tab is duplicated", () => {
+    const payout = parseSettlementsPayoutSearchParams({
+      tab: ["payouts", "payouts"],
+      receipt: "qa-one",
+    });
+    expect(payout.tab).toBe("payouts");
+    expect(payout.receipt).toBe("qa-one");
+    expect(buildSettlementsReturnPath({ tab: ["payouts", "payouts"], receipt: "qa-one" })).toBe(
+      "/settlements?tab=payouts&receipt=qa-one",
+    );
+  });
+
+  it("drops later receipt values and keeps first valid focus field", () => {
+    const payout = parseSettlementsPayoutSearchParams({
+      tab: "payouts",
+      receipt: ["qa-one", "qa-two"],
+    });
+    expect(payout.receipt).toBe("qa-one");
+    expect(buildSettlementsReturnPath({ tab: "payouts", receipt: ["qa-one", "qa-two"] })).toBe(
+      "/settlements?tab=payouts&receipt=qa-one",
+    );
+  });
+
+  it("normalizes duplicated counterparty and request", () => {
+    expect(
+      parseSettlementsPayoutSearchParams({
+        counterparty: ["cp-a", "cp-b"],
+        request: ["req-1", "req-2"],
+      }),
+    ).toEqual({
+      tab: "payouts",
+      counterparty: "cp-a",
+      request: "req-1",
+      receipt: null,
+    });
   });
 });
 

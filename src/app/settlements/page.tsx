@@ -30,11 +30,20 @@ import {
   actorWalletSurfaceScopeKey,
   walletSettlementsFetchScopeKey,
 } from "@/lib/settlements-fetch-scope";
-import { buildSettlementsReturnPath } from "@/lib/wallet-payout/settlements-return-path";
+import {
+  buildSettlementsReturnPath,
+  parseSettlementsPayoutSearchParams,
+  type SettlementsSearchParamValue,
+} from "@/lib/wallet-payout/settlements-return-path";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = { tab?: string; counterparty?: string; request?: string; receipt?: string };
+type SearchParams = {
+  tab?: SettlementsSearchParamValue;
+  counterparty?: SettlementsSearchParamValue;
+  request?: SettlementsSearchParamValue;
+  receipt?: SettlementsSearchParamValue;
+};
 
 export default async function SettlementsPage({
   searchParams,
@@ -42,16 +51,12 @@ export default async function SettlementsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const defaultWalletTab = sp.tab === "payouts" ? "payouts" : "settlements";
-  const payoutFocusCounterpartyId = sp.counterparty?.trim() || null;
-  const payoutFocusRequestId = sp.request?.trim() || null;
-  const payoutFocusReceiptId = sp.receipt?.trim() || null;
-  const returnPath = buildSettlementsReturnPath({
-    tab: sp.tab,
-    counterparty: sp.counterparty,
-    request: sp.request,
-    receipt: sp.receipt,
-  });
+  const payout = parseSettlementsPayoutSearchParams(sp);
+  const defaultWalletTab = payout.tab;
+  const payoutFocusCounterpartyId = payout.counterparty;
+  const payoutFocusRequestId = payout.request;
+  const payoutFocusReceiptId = payout.receipt;
+  const returnPath = buildSettlementsReturnPath(sp);
   const user = await requireProPageUser(returnPath);
   if (!user) {
     return <SessionGate reason="session" returnTo={returnPath} />;
