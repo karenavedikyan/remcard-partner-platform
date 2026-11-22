@@ -78,6 +78,7 @@ export default defineConfig({
       "src/lib/business-wallet/**/*.test.ts",
       "src/lib/cabinet-presentation/**/*.test.ts",
       "src/lib/settlements-page-shell.test.ts",
+      "src/lib/wallet-payout/settlements-return-path.test.ts",
       "src/lib/settlements-fetch-scope.actor.test.ts",
       "src/lib/history-loader.unauthorized.vitest.ts",
       "src/lib/history-loader.merge.vitest.ts",

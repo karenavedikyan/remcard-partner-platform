@@ -30,10 +30,9 @@ import {
   actorWalletSurfaceScopeKey,
   walletSettlementsFetchScopeKey,
 } from "@/lib/settlements-fetch-scope";
+import { buildSettlementsReturnPath } from "@/lib/wallet-payout/settlements-return-path";
 
 export const dynamic = "force-dynamic";
-
-const RETURN_PATH = "/settlements";
 
 type SearchParams = { tab?: string; counterparty?: string; request?: string; receipt?: string };
 
@@ -47,9 +46,15 @@ export default async function SettlementsPage({
   const payoutFocusCounterpartyId = sp.counterparty?.trim() || null;
   const payoutFocusRequestId = sp.request?.trim() || null;
   const payoutFocusReceiptId = sp.receipt?.trim() || null;
-  const user = await requireProPageUser(RETURN_PATH);
+  const returnPath = buildSettlementsReturnPath({
+    tab: sp.tab,
+    counterparty: sp.counterparty,
+    request: sp.request,
+    receipt: sp.receipt,
+  });
+  const user = await requireProPageUser(returnPath);
   if (!user) {
-    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
+    return <SessionGate reason="session" returnTo={returnPath} />;
   }
 
   const cookieHeader = (await headers()).get("cookie");
@@ -133,7 +138,7 @@ export default async function SettlementsPage({
   const legacySettlementsScopeKey = actorWalletSurfaceScopeKey("legacy-settlements", user.id);
 
   return (
-    <CabinetShell returnTo={RETURN_PATH}>
+    <CabinetShell returnTo={returnPath}>
       <PageHeading eyebrow={eyebrow} title={title} description={description} />
       {shell === "agent-r05" ? (
         <AgentReceivablesWallet
