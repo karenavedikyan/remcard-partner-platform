@@ -603,3 +603,168 @@
   border-color: #9f1239;
   box-shadow: 0 0 0 1px #9f1239;
 }
+
+.inviteTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.inviteTab,
+.inviteTabActive {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  font-weight: 600;
+  color: #6f5f68;
+}
+
+.inviteTabActive {
+  border-color: #9f1239;
+  color: #35252f;
+}
+
+.inviteList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inviteCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inviteCardTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #35252f;
+}
+
+.inviteCardMeta {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6f5f68;
+}
+
+.inviteSteps {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+}
+
+.inviteSteps li {
+  flex: 1;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: #f3ecef;
+  color: #8a7a83;
+}
+
+.inviteSteps li[aria-current="step"] {
+  background: #9f1239;
+  color: #fff;
+}
+
+.inviteTemplates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inviteTemplateBtn,
+.inviteTemplateActive {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  font-size: 0.85rem;
+}
+
+.inviteTemplateActive {
+  border-color: #9f1239;
+  font-weight: 600;
+}
+
+.miniTextarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #e5d5dc;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.inviteTermsBlock {
+  margin: 8px 0;
+}
+
+.inviteTermsList {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+}
+
+.inviteTermRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid #f0e8ec;
+}
+
+.inviteReview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0e8ec;
+}
+
+.inviteWizardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ghostBtn {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #9f1239;
+  font-weight: 600;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.miniCheckboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+
+.inviteRevokeConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invitePersonalEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
