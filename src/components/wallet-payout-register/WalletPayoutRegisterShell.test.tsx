@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { WalletPayoutRegisterShell } from "./WalletPayoutRegisterShell";
@@ -96,7 +96,7 @@ describe("WalletPayoutRegisterShell", () => {
     expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("focuses exact outgoing receipt from link", () => {
+  it("focuses exact outgoing receipt from link", async () => {
     render(
       <WalletPayoutRegisterShell
         data={mockWithReceipt}
@@ -105,8 +105,51 @@ describe("WalletPayoutRegisterShell", () => {
         initialReceiptId="rcpt-out-1"
       />,
     );
-    expect(screen.getByTestId("wallet-payout-receipt-rcpt-out-1")).toBeInTheDocument();
+    const row = screen.getByTestId("wallet-payout-receipt-rcpt-out-1");
     expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it("focuses after receipts load and when receipt link changes", async () => {
+    const { rerender } = render(
+      <WalletPayoutRegisterShell
+        data={mockData}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-out-1"
+      />,
+    );
+    expect(screen.queryByTestId("wallet-payout-receipt-rcpt-out-1")).not.toBeInTheDocument();
+
+    rerender(
+      <WalletPayoutRegisterShell
+        data={mockWithReceipt}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-out-1"
+      />,
+    );
+
+    const outRow = screen.getByTestId("wallet-payout-receipt-rcpt-out-1");
+    await waitFor(() =>
+      expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true"),
+    );
+    await waitFor(() => expect(outRow).toHaveFocus());
+
+    rerender(
+      <WalletPayoutRegisterShell
+        data={mockWithReceipt}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-in-1"
+      />,
+    );
+
+    const inRow = screen.getByTestId("wallet-payout-receipt-rcpt-in-1");
+    await waitFor(() =>
+      expect(screen.getByTestId("wallet-payout-direction-in")).toHaveAttribute("aria-pressed", "true"),
+    );
+    await waitFor(() => expect(inRow).toHaveFocus());
   });
 
   it("shows inaccessible notice for unknown receipt", () => {
@@ -127,7 +170,6 @@ describe("WalletPayoutRegisterShell", () => {
         data={{
           ...mockWithReceipt,
           incomingOnly: true,
-          receipts: mockWithReceipt.receipts.filter((r) => r.direction === "in"),
         }}
         presentation={{ ribbonLabel: "Агент", cardIdentifier: null }}
         onRefresh={vi.fn()}
@@ -136,5 +178,6 @@ describe("WalletPayoutRegisterShell", () => {
     );
     expect(screen.getByTestId("wallet-payout-focus-notice")).toBeInTheDocument();
     expect(screen.queryByTestId("wallet-payout-receipt-rcpt-out-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wallet-payout-receipt-rcpt-in-1")).not.toHaveFocus();
   });
 });

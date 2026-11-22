@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   approveWalletPayout,
@@ -112,6 +112,8 @@ export function WalletPayoutRegisterShell({
   const [historyOpen, setHistoryOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const appliedReceiptDeepLinkRef = useRef<string | null>(null);
+  const pendingReceiptFocusIdRef = useRef<string | null>(null);
+  const receiptRowRefs = useRef(new Map<string, HTMLLIElement>());
 
   const visiblePartners = useMemo(
     () =>
@@ -248,10 +250,16 @@ export function WalletPayoutRegisterShell({
     ? visiblePartners.find((p) => p.counterpartyId === initialCounterpartyId)
     : null;
 
-  const focusReceipt = useMemo(
+  const linkedReceipt = useMemo(
     () => (initialReceiptId ? data.receipts.find((r) => r.receiptId === initialReceiptId) ?? null : null),
     [data.receipts, initialReceiptId],
   );
+
+  const focusReceipt = useMemo(() => {
+    if (!linkedReceipt) return null;
+    if (incomingOnly && linkedReceipt.direction === "out") return null;
+    return linkedReceipt;
+  }, [incomingOnly, linkedReceipt]);
 
   const focusNotice = useMemo(() => {
     if (initialRequestId) {
@@ -281,23 +289,33 @@ export function WalletPayoutRegisterShell({
   useEffect(() => {
     if (!initialReceiptId) {
       appliedReceiptDeepLinkRef.current = null;
+      pendingReceiptFocusIdRef.current = null;
       return;
     }
     if (!focusReceipt) return;
     if (appliedReceiptDeepLinkRef.current === initialReceiptId) return;
 
     appliedReceiptDeepLinkRef.current = initialReceiptId;
-    if (!incomingOnly && focusReceipt.direction !== direction) {
+    pendingReceiptFocusIdRef.current = initialReceiptId;
+    if (!incomingOnly && focusReceipt.direction !== effectiveDirection) {
       setDirection(focusReceipt.direction);
     }
     setHistoryOpen(true);
-    const receiptId = initialReceiptId;
-    queueMicrotask(() => {
-      const row = document.querySelector<HTMLElement>(`[data-receipt-id="${receiptId}"]`);
-      if (row?.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      row?.focus();
-    });
-  }, [direction, focusReceipt, incomingOnly, initialReceiptId]);
+  }, [effectiveDirection, focusReceipt, incomingOnly, initialReceiptId]);
+
+  useLayoutEffect(() => {
+    const targetId = pendingReceiptFocusIdRef.current;
+    if (!targetId || !focusReceipt || targetId !== focusReceipt.receiptId) return;
+    if (!historyOpen) return;
+    if (effectiveDirection !== focusReceipt.direction) return;
+
+    const row = receiptRowRefs.current.get(targetId);
+    if (!row) return;
+
+    if (row.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    row.focus();
+    pendingReceiptFocusIdRef.current = null;
+  }, [effectiveDirection, focusReceipt, history.length, historyOpen, initialReceiptId]);
 
   return (
     <section className={styles.register} data-payout-register data-testid="wallet-payout-register">
@@ -427,6 +445,11 @@ export function WalletPayoutRegisterShell({
                 {history.map((entry) => (
                   <li
                     key={entry.receiptId}
+                    ref={(node) => {
+                      if (node) receiptRowRefs.current.set(entry.receiptId, node);
+                      else receiptRowRefs.current.delete(entry.receiptId);
+                    }}
+                    tabIndex={-1}
                     data-receipt-id={entry.receiptId}
                     data-testid={`wallet-payout-receipt-${entry.receiptId}`}
                     className={
