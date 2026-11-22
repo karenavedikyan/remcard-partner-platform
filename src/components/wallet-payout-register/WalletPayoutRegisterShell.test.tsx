@@ -80,6 +80,22 @@ describe("WalletPayoutRegisterShell", () => {
     expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("keeps manual incoming tab after outgoing receipt deep link", async () => {
+    const user = userEvent.setup();
+    render(
+      <WalletPayoutRegisterShell
+        data={mockWithReceipt}
+        presentation={{ ribbonLabel: "Компания", cardIdentifier: null }}
+        onRefresh={vi.fn()}
+        initialReceiptId="rcpt-out-1"
+      />,
+    );
+    expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByTestId("wallet-payout-direction-in"));
+    expect(screen.getByTestId("wallet-payout-direction-in")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("wallet-payout-direction-out")).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("focuses exact outgoing receipt from link", () => {
     render(
       <WalletPayoutRegisterShell

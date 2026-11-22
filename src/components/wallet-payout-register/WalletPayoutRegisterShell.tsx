@@ -111,6 +111,7 @@ export function WalletPayoutRegisterShell({
   const [busy, setBusy] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const appliedReceiptDeepLinkRef = useRef<string | null>(null);
 
   const visiblePartners = useMemo(
     () =>
@@ -278,17 +279,25 @@ export function WalletPayoutRegisterShell({
   }, [data.partners, effectiveDirection, initialRequestId]);
 
   useEffect(() => {
-    if (!initialReceiptId || !focusReceipt) return;
-    if (!incomingOnly && focusReceipt.direction !== effectiveDirection) {
+    if (!initialReceiptId) {
+      appliedReceiptDeepLinkRef.current = null;
+      return;
+    }
+    if (!focusReceipt) return;
+    if (appliedReceiptDeepLinkRef.current === initialReceiptId) return;
+
+    appliedReceiptDeepLinkRef.current = initialReceiptId;
+    if (!incomingOnly && focusReceipt.direction !== direction) {
       setDirection(focusReceipt.direction);
     }
     setHistoryOpen(true);
+    const receiptId = initialReceiptId;
     queueMicrotask(() => {
-      const row = document.querySelector<HTMLElement>(`[data-receipt-id="${initialReceiptId}"]`);
+      const row = document.querySelector<HTMLElement>(`[data-receipt-id="${receiptId}"]`);
       if (row?.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
       row?.focus();
     });
-  }, [effectiveDirection, focusReceipt, incomingOnly, initialReceiptId]);
+  }, [direction, focusReceipt, incomingOnly, initialReceiptId]);
 
   return (
     <section className={styles.register} data-payout-register data-testid="wallet-payout-register">
