@@ -11,7 +11,7 @@ import {
   MINI_APP_FIXTURE_INVITE_LINK,
 } from "../mini-app-fixture/fixtures-data";
 
-const FLOW_SCREENS = new Set(["create", "certificate-ready", "scan", "invite", "full-cabinet"]);
+const FLOW_SCREENS = new Set(["create", "certificate-ready", "scan", "invite", "full-cabinet", "wallet"]);
 
 function MiniAppFlowInner() {
   const searchParams = useSearchParams();
@@ -27,7 +27,7 @@ function MiniAppFlowInner() {
         fixtureBootstrap={row.bootstrap}
         fixturePlatform={row.platform}
         initialScreen={
-          screen as "create" | "certificate-ready" | "scan" | "invite" | "full-cabinet" | "home"
+          screen as "create" | "certificate-ready" | "scan" | "invite" | "full-cabinet" | "wallet" | "home"
         }
         fixtureCreatedCertificate={
           screen === "certificate-ready" || screen === "create"

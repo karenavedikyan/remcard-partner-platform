@@ -1,0 +1,175 @@
+diff --git a/src/app/api/pro/mini-app/wallet/settlements/route.ts b/src/app/api/pro/mini-app/wallet/settlements/route.ts
+new file mode 100644
+index 00000000..a8e4dc21
+--- /dev/null
++++ b/src/app/api/pro/mini-app/wallet/settlements/route.ts
+@@ -0,0 +1,48 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { isProfMiniAppEnabled } from '@/lib/profMiniAppConfig';
++import { assertMiniAppSessionUser } from '@/lib/miniAppSession';
++import { loadMiniAppWalletSettlements } from '@/lib/miniAppWalletSettlements';
++
++function notFound() {
++  return NextResponse.json({ error: 'Not found' }, { status: 404 });
++}
++
++export async function GET(req: NextRequest) {
++  if (!isProfMiniAppEnabled()) {
++    return notFound();
++  }
++  const session = await assertMiniAppSessionUser(req);
++  if (!session.ok) {
++    return session.response;
++  }
++  const branchId = req.nextUrl.searchParams.get('branchId')?.trim() || null;
++  try {
++    const payload = await loadMiniAppWalletSettlements({
++      req,
++      userId: session.userId,
++      branchId,
++    });
++    if (payload.status === 'forbidden') {
++      return NextResponse.json({ error: payload.message }, { status: 403 });
++    }
++    return NextResponse.json(payload.body);
++  } catch (e) {
++    const message = e instanceof Error ? e.message : 'Не удалось загрузить кошелёк';
++    return NextResponse.json({ error: message }, { status: 500 });
++  }
++}
+diff --git a/src/lib/miniAppWalletSettlements.ts b/src/lib/miniAppWalletSettlements.ts
+new file mode 100644
+index 00000000..f2b7d4e8
+--- /dev/null
++++ b/src/lib/miniAppWalletSettlements.ts
+@@ -0,0 +1,109 @@
++import type { NextRequest } from 'next/server';
++import { getAuthenticatedUser } from '@/lib/proAuth';
++import { getProContextForRequest, preferredBranchIdFromRequest } from '@/lib/proContextRequest';
++import { authorizeSettlementWalletRead } from '@/lib/settlementWalletReadAuth';
++import { loadProWalletSettlements } from '@/lib/proWalletSettlements';
++import { applyAgentR05IncomingOnlySettlements } from '@/lib/agentR05IncomingOnly';
++import { isProfR05AgentReceivablesEnabled } from '@/lib/agentR05Gate';
++import type { SettlementsResponse } from '@/lib/proWalletSettlementsTypes';
++
++type LoadResult =
++  | { status: 'ok'; body: SettlementsResponse }
++  | { status: 'forbidden'; message: string };
++
++function stripPayoutTokens(response: SettlementsResponse): SettlementsResponse {
++  return {
++    ...response,
++    receivable: response.receivable.map((row) => ({ ...row, payoutActions: undefined })),
++    payable: response.payable.map((row) => ({ ...row, payoutActions: undefined })),
++    completed: response.completed.map((row) => ({ ...row, payoutActions: undefined })),
++  };
++}
++
++export async function loadMiniAppWalletSettlements(input: {
++  req: NextRequest;
++  userId: string;
++  branchId: string | null;
++}): Promise<LoadResult> {
++  const user = await getAuthenticatedUser(input.req);
++  if (!user || user.id !== input.userId) {
++    return { status: 'forbidden', message: 'Сессия мини-кабинета недействительна.' };
++  }
++  const proContext = await getProContextForRequest(input.req, user.id);
++  const auth = authorizeSettlementWalletRead({
++    user,
++    proContext,
++    contextReady: Boolean(proContext),
++  });
++  if (!auth.allowed) {
++    return { status: 'forbidden', message: 'Нет доступа к кошельку для этой роли или филиала.' };
++  }
++
++  const preferredBranch =
++    input.branchId ??
++    preferredBranchIdFromRequest(input.req) ??
++    proContext?.activeBranch?.id?.trim() ??
++    null;
++
++  const ledgerBranchIds =
++    auth.mode === 'org-member-with-ledger' ? auth.branchIds : undefined;
++
++  let response = await loadProWalletSettlements({
++    user,
++    proContext,
++    branchId: preferredBranch,
++    walletLedgerBranchIds: ledgerBranchIds,
++  });
++
++  const gateOn = isProfR05AgentReceivablesEnabled();
++  if (gateOn) {
++    response = applyAgentR05IncomingOnlySettlements(response, { user, proContext });
++  }
++
++  return { status: 'ok', body: stripPayoutTokens(response) };
++}
+diff --git a/src/lib/__tests__/miniAppWalletSettlements.test.ts b/src/lib/__tests__/miniAppWalletSettlements.test.ts
+new file mode 100644
+index 00000000..e14f0c09
+--- /dev/null
++++ b/src/lib/__tests__/miniAppWalletSettlements.test.ts
+@@ -0,0 +1,74 @@
++import { describe, expect, it, vi, beforeEach } from 'vitest';
++import { loadMiniAppWalletSettlements } from '@/lib/miniAppWalletSettlements';
++import { NextRequest } from 'next/server';
++
++const mockUser = vi.fn();
++const mockProContext = vi.fn();
++const mockAuth = vi.fn();
++const mockLoad = vi.fn();
++
++vi.mock('@/lib/proAuth', () => ({ getAuthenticatedUser: (...a: unknown[]) => mockUser(...a) }));
++vi.mock('@/lib/proContextRequest', () => ({
++  getProContextForRequest: (...a: unknown[]) => mockProContext(...a),
++  preferredBranchIdFromRequest: () => null,
++}));
++vi.mock('@/lib/settlementWalletReadAuth', () => ({
++  authorizeSettlementWalletRead: (...a: unknown[]) => mockAuth(...a),
++}));
++vi.mock('@/lib/proWalletSettlements', () => ({
++  loadProWalletSettlements: (...a: unknown[]) => mockLoad(...a),
++}));
++vi.mock('@/lib/agentR05IncomingOnly', () => ({
++  applyAgentR05IncomingOnlySettlements: (body: unknown) => body,
++}));
++vi.mock('@/lib/agentR05Gate', () => ({ isProfR05AgentReceivablesEnabled: () => false }));
++
++describe('loadMiniAppWalletSettlements', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockUser.mockResolvedValue({ id: 'u1', role: 'PRO' });
++    mockProContext.mockResolvedValue({ role: 'SOLO_PARTNER' });
++    mockAuth.mockReturnValue({ allowed: true, mode: 'pro-solo' });
++    mockLoad.mockResolvedValue({
++      receivable: [
++        {
++          id: 'r1',
++          payoutActions: { canRecordCash: true, canRecordTransfer: false },
++        },
++      ],
++      payable: [],
++      completed: [],
++      coverageNote: '',
++    });
++  });
++
++  it('strips payout action tokens for mini-app read', async () => {
++    const req = new NextRequest('https://x/api/pro/mini-app/wallet/settlements');
++    const out = await loadMiniAppWalletSettlements({ req, userId: 'u1', branchId: null });
++    expect(out.status).toBe('ok');
++    if (out.status === 'ok') {
++      expect(out.body.receivable[0]?.payoutActions).toBeUndefined();
++    }
++  });
++
++  it('denies when authorizeSettlementWalletRead fails', async () => {
++    mockAuth.mockReturnValue({ allowed: false, reason: 'missing_wallet_permission' });
++    const req = new NextRequest('https://x/api/pro/mini-app/wallet/settlements');
++    const out = await loadMiniAppWalletSettlements({ req, userId: 'u1', branchId: null });
++    expect(out.status).toBe('forbidden');
++  });
++});

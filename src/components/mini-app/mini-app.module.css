@@ -759,3 +759,274 @@
   cursor: pointer;
   align-self: center;
 }
+
+.mwDirTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mwDirTab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mwDirTabActive {
+  border-color: #c9a3b0;
+  background: #fff7f9;
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.08);
+}
+
+.mwDirTabLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6f5f68;
+}
+
+.mwDirTabSum {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #35252f;
+}
+
+.mwSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+}
+
+.mwSummaryHeroLabel {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6f5f68;
+}
+
+.mwSummaryHeroValue {
+  margin: 4px 0 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #35252f;
+}
+
+.mwSummaryHeroHint {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #6f5f68;
+}
+
+.mwStatList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mwStatRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mwStatLabelWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.mwStatLabel {
+  font-size: 0.86rem;
+  color: #4b3f47;
+}
+
+.mwStatNote {
+  font-size: 0.76rem;
+  color: #8a7a84;
+}
+
+.mwStatValue {
+  font-size: 0.95rem;
+  color: #35252f;
+}
+
+.mwChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mwChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  font-size: 0.82rem;
+  color: #4b3f47;
+  cursor: pointer;
+}
+
+.mwChipActive {
+  border-color: #c9a3b0;
+  background: #fdf4f6;
+  font-weight: 600;
+}
+
+.mwChipCount {
+  min-width: 1.25rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.mwPartners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mwPartnerGroup {
+  border: 1px solid #ebe0e6;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mwPartnerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mwPartnerHead::-webkit-details-marker {
+  display: none;
+}
+
+.mwPartnerName {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #35252f;
+}
+
+.mwPartnerSum {
+  font-size: 0.95rem;
+}
+
+.mwPartnerBody {
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid #f0e6eb;
+}
+
+.mwPartnerLineTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+
+.mwPartnerMeta {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: #7a6b74;
+}
+
+.mwSchedule {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mwScheduleRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ebe0e6;
+  background: #fff;
+  font-size: 0.84rem;
+}
+
+.mwScheduleMid {
+  color: #5c4d56;
+}
+
+.mwScheduleBadge {
+  grid-column: 2 / -1;
+  font-size: 0.78rem;
+  color: #8a7a84;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shell {
+    background: #1a1719;
+    color: #f2ecef;
+  }
+
+  .heroTitle,
+  .subpageTitle,
+  .mwSummaryHeroValue,
+  .mwDirTabSum,
+  .mwPartnerName,
+  .mwStatValue {
+    color: #f7f2f4;
+  }
+
+  .heroIntro,
+  .mwStatLabel,
+  .mwStatNote,
+  .mwDirTabLabel,
+  .mwSummaryHeroHint,
+  .mwPartnerMeta,
+  .scanNotice {
+    color: #b9aab2;
+  }
+
+  .mwDirTab,
+  .mwSummary,
+  .mwChip,
+  .mwPartnerGroup,
+  .mwScheduleRow,
+  .branchButton,
+  .secondaryBtn {
+    background: #2a2528;
+    border-color: #443b41;
+    color: #f2ecef;
+  }
+
+  .mwDirTabActive,
+  .mwChipActive {
+    background: #352a30;
+    border-color: #7a4a58;
+  }
+
+  .blockedPanel {
+    background: #2e2420;
+    border-color: #5c4033;
+    color: #f0e2d8;
+  }
+}

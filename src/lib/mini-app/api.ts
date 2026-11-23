@@ -6,6 +6,7 @@ import type {
   MiniAppPlatform,
   MiniAppSessionResult,
 } from "./types";
+import type { SettlementsResponse } from "@/lib/settlements-types";
 import type { MiniAppEmbeddedContext } from "./embedded-context";
 import { buildMiniAppExtraHeaders } from "./mini-app-request-headers";
 import { miniAppUsesEmbeddedSession } from "./embedded-context";
@@ -220,6 +221,19 @@ export async function miniAppFetchBootstrap(
   const params: Record<string, string> = { host: platform };
   if (opts?.branchId) params.branchId = opts.branchId;
   return remcardFetch<MiniAppBootstrap>("/api/pro/mini-app/bootstrap", {
+    searchParams: params,
+    extraHeaders: miniHeaders(platform, opts),
+  });
+}
+
+/** Read-only settlements alias for mini-app wallet — same contract as /api/pro/wallet/settlements, sans payout tokens. */
+export async function miniAppFetchWalletSettlements(
+  platform: MiniAppPlatform,
+  opts?: MiniAppCallOptions,
+): Promise<SettlementsResponse> {
+  const params: Record<string, string> = { host: platform };
+  if (opts?.branchId) params.branchId = opts.branchId;
+  return remcardFetch<SettlementsResponse>("/api/pro/mini-app/wallet/settlements", {
     searchParams: params,
     extraHeaders: miniHeaders(platform, opts),
   });

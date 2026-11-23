@@ -37,6 +37,7 @@ const ALLOWED_COOKIE_NAMES = new Set([
 
 const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
   "/api/pro/mini-app/bootstrap",
+  "/api/pro/mini-app/wallet/settlements",
   "/api/pro/mini-app/scan",
   "/api/pro/mini-app/certificate",
   "/api/pro/mini-app/certificate/options",
@@ -326,6 +327,7 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/auth\/send-code$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/auth\/verify-code$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/bootstrap$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/wallet\/settlements$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/scan$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/certificate$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/certificate\/options$/ },
