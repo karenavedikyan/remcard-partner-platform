@@ -15,6 +15,21 @@ git apply /path/to/be.patch
 
 SHA-256: see `checksums.txt`.
 
+### Patch scope (product only)
+
+Touched paths under `remcard-navigator` (no DB migrations, no prod flags, no bot command edits):
+
+- `src/app/api/pro/mini-app/session/route.ts` — `POST` only (no helper re-exports)
+- `src/app/api/pro/mini-app/auth/send-code/route.ts`
+- `src/app/api/pro/mini-app/auth/verify-code/route.ts`
+- `src/app/api/pro/mini-app/bootstrap/route.ts`
+- `src/app/api/pro/mini-app/scan/route.ts`
+- `src/app/api/pro/mini-app/certificate/options/route.ts`
+- `src/app/api/pro/mini-app/__tests__/auth.routes.test.ts`
+- `src/lib/miniAppSessionCookie.ts`, `miniAppEmbeddedAuth.ts`, `miniAppCabinetAuth.ts`
+- `src/lib/bots/miniAppLoginDispatch.ts`
+- `src/lib/__tests__/miniAppEmbeddedAuth.test.ts`, `miniAppCabinetAuth.test.ts`
+
 ## Manual verification
 
 **Не выполнено:** реальный Comet / web.max.ru iframe на prof.remcard.ru с живым аккаунтом.

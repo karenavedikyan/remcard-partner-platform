@@ -425,7 +425,7 @@ index f772d1b..4ad2ec9 100644
      return NextResponse.json(
        { state: 'forbidden', message: sessionGuard.message, code: sessionGuard.code },
 diff --git a/src/app/api/pro/mini-app/session/route.ts b/src/app/api/pro/mini-app/session/route.ts
-index 8150b22..9b6c5ec 100644
+index 8150b22..dba10b7 100644
 --- a/src/app/api/pro/mini-app/session/route.ts
 +++ b/src/app/api/pro/mini-app/session/route.ts
 @@ -13,7 +13,7 @@ import {
@@ -437,16 +437,7 @@ index 8150b22..9b6c5ec 100644
  import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
  
  export const dynamic = miniAppApiDynamic.dynamic;
-@@ -31,6 +31,8 @@ function providerFor(platform: 'telegram' | 'max'): MessengerProvider {
-   return platform === 'telegram' ? 'TELEGRAM' : 'MAX';
- }
- 
-+export { applyMiniAppSessionCookies };
-+
- export async function POST(req: NextRequest) {
-   if (!isProfMiniAppEnabled()) {
-     return apiError('NOT_FOUND');
-@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
+@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
  
    const body = await req.json().catch(() => ({}));
    const initData = typeof body.initData === 'string' ? body.initData.trim() : '';
@@ -454,7 +445,7 @@ index 8150b22..9b6c5ec 100644
    const platform = parseHostPlatform(typeof body.platform === 'string' ? body.platform : null);
    if (!platform) {
      return apiError('BAD_REQUEST', 'Укажите platform: telegram или max');
-@@ -109,17 +112,12 @@ export async function POST(req: NextRequest) {
+@@ -109,17 +110,12 @@ export async function POST(req: NextRequest) {
        displayName: fullUser.displayName,
      },
    });

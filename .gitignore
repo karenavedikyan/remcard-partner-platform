@@ -34,6 +34,10 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 
+# agent scratch trees for BE patch generation (not part of release deliverable)
+/staging/nav-be-regen/
+/staging/nav-base-fec124/
+
 # dumps and local artifacts
 *.sql
 *.sqlite
