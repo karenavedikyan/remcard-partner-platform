@@ -15,6 +15,7 @@ import {
   type CreateIdempotencySession,
 } from "@/lib/agent-r03/create-idempotency";
 import { miniAppCreateCertificate, miniAppFetchCertificateOptions } from "@/lib/mini-app/api";
+import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import styles from "./mini-app.module.css";
 
@@ -39,6 +40,7 @@ type Props = {
   /** Dev fixture flows only — shows static program/client, submit does not call PROF. */
   fixtureCreateSeed?: MiniAppFixtureCreateSeed;
   fixtureSubmitCertificate?: StoreCertificate;
+  embeddedContext?: MiniAppEmbeddedContext;
 };
 
 function partnerPrograms(partners: AvailablePartner[]): ProgramOption[] {
@@ -66,6 +68,7 @@ export function MiniAppCertificateCreate({
   onCreated,
   fixtureCreateSeed,
   fixtureSubmitCertificate,
+  embeddedContext = "default",
 }: Props) {
   const [loadState, setLoadState] = useState<"loading" | "ready" | "blocked">("loading");
   const [blockMessage, setBlockMessage] = useState("");
@@ -118,7 +121,10 @@ export function MiniAppCertificateCreate({
       return;
     }
     try {
-      const partnersPayload = await miniAppFetchCertificateOptions(platform, branchId);
+      const partnersPayload = await miniAppFetchCertificateOptions(platform, {
+        branchId,
+        embeddedContext,
+      });
       if (partnersPayload.miniOptionsBlocked) {
         setBlockMessage(partnersPayload.miniOptionsBlocked);
         setLoadState("blocked");
@@ -220,7 +226,10 @@ export function MiniAppCertificateCreate({
       const payloadHash = hashAgentCreatePayload(body);
       const session = resolveCreateIdempotencySession(idempotencyRef.current, payloadHash);
       idempotencyRef.current = session;
-      const cert = await miniAppCreateCertificate(platform, body, session.key);
+      const cert = await miniAppCreateCertificate(platform, body, session.key, {
+        branchId,
+        embeddedContext,
+      });
       idempotencyRef.current = null;
       onCreated(cert);
     } catch (err) {

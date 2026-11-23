@@ -1,8 +1,13 @@
 import styles from "./mini-app.module.css";
 
-export function MiniAppProfBrand() {
+type Props = { variant?: "default" | "onDark" };
+
+export function MiniAppProfBrand({ variant = "default" }: Props) {
   return (
-    <div className={styles.profBrand} data-testid="mini-app-brand">
+    <div
+      className={variant === "onDark" ? `${styles.profBrand} ${styles.profBrandOnDark}` : styles.profBrand}
+      data-testid="mini-app-brand"
+    >
       <span className={styles.profBrandIcon} aria-hidden="true">
         <svg viewBox="0 0 36 36" width="32" height="32" role="img" aria-label="">
           <rect width="36" height="36" rx="8" fill="currentColor" />

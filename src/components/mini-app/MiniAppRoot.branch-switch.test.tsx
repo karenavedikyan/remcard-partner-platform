@@ -41,7 +41,7 @@ describe("MiniAppRoot branch pick", () => {
     });
     expect(screen.queryByTestId("mini-app-error")).toBeNull();
     expect(screen.getByTestId("mini-branch-option-b1")).toHaveClass(/branchOptionActive/);
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", "b2");
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", { branchId: "b2", embeddedContext: "default" });
   });
 
   it("passes selected branch to mini bootstrap without patching pro context", async () => {
@@ -64,6 +64,6 @@ describe("MiniAppRoot branch pick", () => {
       expect(screen.getByTestId("mini-app-home")).toBeInTheDocument();
     });
     expect(screen.getByTestId("mini-app-branch-select")).toHaveTextContent("пр. Демо, Казань");
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", "b2");
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", { branchId: "b2", embeddedContext: "default" });
   });
 });

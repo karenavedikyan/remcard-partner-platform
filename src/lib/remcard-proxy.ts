@@ -22,6 +22,11 @@ const ADMIN_RETURN_COOKIE = "remcard-admin-return";
 const ANALYTICS_CONSENT_COOKIE = "cookie-consent";
 /** HttpOnly pilot cookie from POST /api/pro/mini-app/session — scoped, not a global allowlist member. */
 export const MINI_APP_SESSION_COOKIE = "remcard-mini-app-session";
+/** Partitioned cookies for cross-site MAX iframe (SameSite=None); regular PROF cookie unchanged. */
+export const MINI_APP_EMBEDDED_TOKEN_COOKIE = "remcard-mini-app-embedded-token";
+export const MINI_APP_EMBEDDED_BIND_COOKIE = "remcard-mini-app-embedded-bind";
+export const MINI_APP_LAUNCH_HEADER = "x-remcard-mini-app-launch";
+export const MINI_APP_EMBEDDED_HEADER = "x-remcard-mini-app-embedded";
 
 const ALLOWED_COOKIE_NAMES = new Set([
   SESSION_COOKIE,
@@ -35,13 +40,19 @@ const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
   "/api/pro/mini-app/scan",
   "/api/pro/mini-app/certificate",
   "/api/pro/mini-app/certificate/options",
+  "/api/pro/mini-app/auth/send-code",
+  "/api/pro/mini-app/auth/verify-code",
 ]);
 
 export function extraAllowedCookieNamesForProxyRequest(
   pathname: string,
 ): ReadonlySet<string> | undefined {
   if (MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS.has(pathname)) {
-    return new Set<string>([MINI_APP_SESSION_COOKIE]);
+    return new Set<string>([
+      MINI_APP_SESSION_COOKIE,
+      MINI_APP_EMBEDDED_TOKEN_COOKIE,
+      MINI_APP_EMBEDDED_BIND_COOKIE,
+    ]);
   }
   return undefined;
 }
@@ -51,8 +62,10 @@ export function filterAllowedSetCookiesForProxyPath(
   setCookies: readonly string[],
 ): string[] {
   const allowed = new Set(ALLOWED_COOKIE_NAMES);
-  if (pathname === "/api/pro/mini-app/session") {
+  if (pathname === "/api/pro/mini-app/session" || pathname.startsWith("/api/pro/mini-app/auth/")) {
     allowed.add(MINI_APP_SESSION_COOKIE);
+    allowed.add(MINI_APP_EMBEDDED_TOKEN_COOKIE);
+    allowed.add(MINI_APP_EMBEDDED_BIND_COOKIE);
   }
   return setCookies.filter((cookie) => {
     const firstSegment = cookie.split(";")[0] ?? "";
@@ -308,6 +321,8 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/business-home\/metrics$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/session$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/auth\/send-code$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/auth\/verify-code$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/bootstrap$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/scan$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/certificate$/ },
@@ -513,6 +528,8 @@ export type ProxyRequestInput = {
   idempotencyKeyHeader?: string | null;
   miniAppPlatformHeader?: string | null;
   miniAppCertificateCreateHeader?: string | null;
+  miniAppLaunchHeader?: string | null;
+  miniAppEmbeddedHeader?: string | null;
 };
 
 export type ProxyResponseResult =
@@ -948,6 +965,12 @@ export async function proxyRemcardRequest(
     (pathname === MINI_APP_CERTIFICATE_PATH || pathname === "/api/store/certificate")
   ) {
     headers.set("x-remcard-mini-app-certificate-create", "1");
+  }
+  if (input.miniAppLaunchHeader?.trim() && pathname.startsWith("/api/pro/mini-app/")) {
+    headers.set(MINI_APP_LAUNCH_HEADER, input.miniAppLaunchHeader.trim());
+  }
+  if (input.miniAppEmbeddedHeader === "1" && pathname.startsWith("/api/pro/mini-app/")) {
+    headers.set(MINI_APP_EMBEDDED_HEADER, "1");
   }
   if (input.csrfHeader) {
     headers.set(CSRF_HEADER, input.csrfHeader);

@@ -23,7 +23,14 @@ import { ensureMiniAppBridgeReady } from "@/lib/mini-app/bridge-loader";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
 import { RemcardApiError } from "@/lib/api-client";
 import { miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
+import {
+  detectMiniAppEmbeddedContext,
+  type MiniAppEmbeddedContext,
+} from "@/lib/mini-app/embedded-context";
+import { setMiniAppLaunchPayload, clearMiniAppLaunchPayload } from "@/lib/mini-app/launch-session";
+import { MiniAppSessionProvider } from "@/lib/mini-app/MiniAppSessionContext";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
+import { MiniAppMaxEntry } from "./MiniAppMaxEntry";
 import styles from "./mini-app.module.css";
 
 type Screen =
@@ -35,6 +42,8 @@ type Screen =
   | "full-cabinet"
   | "certificate-ready"
   | "branch-pick";
+
+type AuthGate = "none" | "max_login" | "session_retry";
 
 type PilotProps = {
   fixtureBootstrap?: MiniAppBootstrap;
@@ -67,14 +76,66 @@ export function MiniAppRoot({
   const [createdCertificate, setCreatedCertificate] = useState<StoreCertificate | null>(
     fixtureCreatedCertificate ?? null,
   );
+  const [embeddedContext, setEmbeddedContext] = useState<MiniAppEmbeddedContext>("default");
+  const [authGate, setAuthGate] = useState<AuthGate>("none");
+  const [hostInitData, setHostInitData] = useState<string>("");
+  const [profUrls, setProfUrls] = useState({ login: "/login", register: "/join" });
 
   const loadBootstrap = useCallback(
-    async (hostPlatform: MiniAppPlatform, activeBranch?: string | null) => {
-      const data = await miniAppFetchBootstrap(hostPlatform, activeBranch);
+    async (hostPlatform: MiniAppPlatform, activeBranch?: string | null, ctx?: MiniAppEmbeddedContext) => {
+      const data = await miniAppFetchBootstrap(hostPlatform, {
+        branchId: activeBranch,
+        embeddedContext: ctx ?? embeddedContext,
+      });
       setBootstrap(data);
       setBranchId(data.activeBranchId);
     },
-    [],
+    [embeddedContext],
+  );
+
+  const completeSession = useCallback(
+    async (host: NonNullable<ReturnType<typeof detectMiniAppHost>>, ctx: MiniAppEmbeddedContext) => {
+      setPlatform(host.platform);
+      setEmbeddedContext(ctx);
+      setHostInitData(host.initData);
+      setMiniAppLaunchPayload(host.initData);
+      const session = await miniAppExchangeSession(host.platform, host.initData, { embeddedContext: ctx });
+      if (session.status === "unlinked") {
+        if (host.platform === "max") {
+          setAuthGate("max_login");
+          setProfUrls({
+            login: session.profLoginUrl,
+            register: "/join",
+          });
+          return;
+        }
+        setUnlinked({ message: session.message, url: session.profLoginUrl });
+        return;
+      }
+      if (session.status === "session_missing") {
+        setAuthGate("session_retry");
+        setError(session.message);
+        return;
+      }
+      if (session.status === "no_access") {
+        setError(session.message);
+        return;
+      }
+      if (session.status === "cabinet_blocked") {
+        setError(session.message ?? "Кабинет ещё не готов. Продолжите на сайте PROF.");
+        return;
+      }
+      if (session.status === "error") {
+        setError(session.message);
+        return;
+      }
+      if (session.status !== "ok") {
+        return;
+      }
+      setAuthGate("none");
+      await loadBootstrap(host.platform, undefined, ctx);
+    },
+    [loadBootstrap],
   );
 
   useEffect(() => {
@@ -96,31 +157,16 @@ export function MiniAppRoot({
         }
         host.ready();
         host.expand();
-        setPlatform(host.platform);
-        const session = await miniAppExchangeSession(host.platform, host.initData);
-        if (session.status === "unlinked") {
-          setUnlinked({ message: session.message, url: session.profLoginUrl });
-          return;
-        }
-        if (session.status === "error") {
-          setError(session.message);
-          return;
-        }
-        if (session.status === "cabinet_blocked") {
-          setError("Кабинет ещё не готов. Продолжите на сайте PROF.");
-          return;
-        }
-        if (session.status !== "ok") {
-          return;
-        }
-        await loadBootstrap(host.platform);
+        const ctx = detectMiniAppEmbeddedContext(host.platform);
+        await completeSession(host, ctx);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Не удалось войти");
       } finally {
         setLoading(false);
       }
     })();
-  }, [fixtureBootstrap, loadBootstrap]);
+    return () => clearMiniAppLaunchPayload();
+  }, [fixtureBootstrap, completeSession]);
 
   useEffect(() => {
     const host = detectMiniAppHost();
@@ -148,7 +194,7 @@ export function MiniAppRoot({
     setBranchPickError(null);
     setBranchSwitching(true);
     try {
-      const data = await miniAppFetchBootstrap(platform, id);
+      const data = await miniAppFetchBootstrap(platform, { branchId: id, embeddedContext });
       setBootstrap(data);
       setBranchId(data.activeBranchId ?? id);
       setScreen("home");
@@ -171,6 +217,37 @@ export function MiniAppRoot({
     );
   }
 
+  if (authGate === "max_login" && platform === "max" && hostInitData) {
+    return (
+      <MiniAppMaxEntry
+        platform="max"
+        initData={hostInitData}
+        embeddedContext={embeddedContext}
+        profLoginUrl={profUrls.login}
+        profRegisterUrl={profUrls.register}
+        onOpenExternal={openProfLink}
+        onAuthenticated={() => {
+          setLoading(true);
+          setError(null);
+          void (async () => {
+            try {
+              const host = detectMiniAppHost("max");
+              if (!host) {
+                setError("Не удалось подключиться к MAX");
+                return;
+              }
+              await completeSession(host, embeddedContext);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Не удалось войти");
+            } finally {
+              setLoading(false);
+            }
+          })();
+        }}
+      />
+    );
+  }
+
   if (unlinked) {
     return (
       <div className={styles.shell} data-testid="mini-app-unlinked">
@@ -185,10 +262,41 @@ export function MiniAppRoot({
   }
 
   if (error || !bootstrap || !platform) {
+    const host = detectMiniAppHost(platform);
     return (
       <div className={styles.shell} data-testid="mini-app-error">
         <MiniAppProfBrand />
         <p role="alert">{error ?? "Нет данных"}</p>
+        {authGate === "session_retry" || error?.includes("сесс") ? (
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            data-testid="mini-app-retry-login"
+            onClick={() => {
+              setError(null);
+              if (host) {
+                setLoading(true);
+                void completeSession(host, embeddedContext).finally(() => setLoading(false));
+              }
+            }}
+          >
+            Повторить вход
+          </button>
+        ) : null}
+        {bootstrap?.fullCabinetUrl || platform ? (
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() =>
+              openProfLink(
+                bootstrap?.fullCabinetUrl?.replace(/\/+$/, "") ??
+                  "https://prof.remcard.ru",
+              )
+            }
+          >
+            Открыть обычный кабинет
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -220,6 +328,7 @@ export function MiniAppRoot({
               platform={platform}
               bootstrap={bootstrap}
               branchId={branchId}
+              embeddedContext={embeddedContext}
               fixtureCreateSeed={fixtureCreateSeed}
               fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
               onCreated={(cert) => {
@@ -245,6 +354,7 @@ export function MiniAppRoot({
             platform={platform}
             bootstrap={bootstrap}
             branchId={branchId}
+            embeddedContext={embeddedContext}
             appealId={appealIdFromUrl}
             onDone={() => setScreen("home")}
             onClientsDeepLink={(appealId) => {
@@ -349,6 +459,7 @@ export function MiniAppRoot({
       : null);
 
   return (
+    <MiniAppSessionProvider platform={platform} embeddedContext={embeddedContext}>
     <div className={styles.shell} data-testid="mini-app-home">
       <MiniAppProfBrand />
       {introLine ? <p className={styles.heroIntro}>{introLine}</p> : null}
@@ -454,6 +565,7 @@ export function MiniAppRoot({
         ))}
       </nav>
     </div>
+    </MiniAppSessionProvider>
   );
 }
 

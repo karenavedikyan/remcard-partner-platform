@@ -6,6 +6,7 @@ import { TextField } from "@/components/ui/FormField";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import { miniAppStoreScanLookup } from "@/lib/mini-app/api";
+import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   buildOrderItems,
@@ -92,6 +93,7 @@ type Props = {
   /** Synthetic tests only: skip scan gate. */
   fixturePreview?: OrderPreviewAllowed;
   fixtureCertCode?: string;
+  embeddedContext?: MiniAppEmbeddedContext;
 };
 
 const LOCKED_ATTEMPT_OTHER_CODE_MESSAGE =
@@ -137,6 +139,7 @@ export function MiniAppScanReceive({
   onClientsDeepLink,
   fixturePreview,
   fixtureCertCode = "RC-FIXTURE",
+  embeddedContext = "default",
 }: Props) {
   const actorUserId = bootstrap.actorUserId;
   const receiving = useReceivingAppealScannerHandoff(appealId?.trim() || null);
@@ -536,7 +539,7 @@ export function MiniAppScanReceive({
       setLoading(true);
       setGateError("");
       try {
-        const gate = await miniAppStoreScanLookup(platform, parsed.code, branchId);
+        const gate = await miniAppStoreScanLookup(platform, parsed.code, { branchId, embeddedContext });
         if (gate.state !== "valid") {
           setGateError(gate.message || "Сертификат недоступен.");
           return;

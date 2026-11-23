@@ -58,7 +58,9 @@ describe("/mini-app bootstrap path", () => {
       expect(screen.getByTestId("mini-app-home")).toBeInTheDocument();
     });
     expect(bridgeLoader.ensureMiniAppBridgeReady).toHaveBeenCalled();
-    expect(api.miniAppExchangeSession).toHaveBeenCalledWith("telegram", "signed-init");
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", undefined);
+    expect(api.miniAppExchangeSession).toHaveBeenCalledWith("telegram", "signed-init", {
+      embeddedContext: "default",
+    });
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", { branchId: undefined, embeddedContext: "default" });
   });
 });
