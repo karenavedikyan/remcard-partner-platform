@@ -30,8 +30,20 @@
 
 ## Тесты
 
-- BE: `vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts`
-- FE: `vitest run src/lib/order-totals.test.ts src/lib/mini-app/mini-app-scan-receive-policy.test.ts`
+- BE: `vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts` (6 cases)
+- FE: `vitest run src/lib/order-totals.test.ts src/lib/mini-app/mini-app-scan-receive-policy.test.ts src/components/mini-app/MiniAppScanReceive.discount.test.tsx src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx` (15 cases)
+
+## Скидки (итерация приёмки)
+
+- Сброс по blur → unset → UI снова % сертификата; payload без `discountPercent`
+- Явный `0` сохраняется и уходит в заказ
+- Ошибка у поля и блок «К подтверждению» до клика при отрицательной скидке и +0,01 п.п. над пулом
+
+## Повтор после HTTP 400 (приёмка)
+
+- `validation_failed` (в т.ч. 400 лимит скидки): `releaseStoreOrderAttemptForEdit`, сообщение сервера, второй POST с новым `Idempotency-Key`
+- `uncertain` / сеть: попытка в `unknown`, новая покупка заблокирована (без автоповтора)
+- `409`: `conflict`, отдельно от validation
 
 ## Экспорт патчей
 

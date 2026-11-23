@@ -22,14 +22,21 @@ import {
 } from "@/lib/order-totals";
 import type { OrderPreviewAllowed, OrderPreviewResponse } from "@/lib/order-types";
 import {
+  ATTEMPT_BODY_MISMATCH_MESSAGE,
   ATTEMPT_CONFLICT_MESSAGE,
+  UNCERTAIN_ORDER_DETAIL,
   classifyStoreOrderNetworkFailure,
   classifyStoreOrderPostResponse,
   clearStoreOrderAttempt,
   createStoreOrderAttempt,
+  isStoreOrderAttemptLocked,
+  loadStoreOrderAttempt,
+  markStoreOrderAttemptConflict,
   markStoreOrderAttemptInFlight,
   markStoreOrderAttemptSucceeded,
   markStoreOrderAttemptUnknown,
+  releaseStoreOrderAttemptForEdit,
+  type OrderPostOutcome,
 } from "@/lib/store-order-attempt";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
@@ -114,6 +121,8 @@ export function MiniAppScanReceive({
   const [rewardDrafts, setRewardDrafts] = useState<Record<string, RewardConfirmationDraft>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [orderUncertain, setOrderUncertain] = useState(false);
+  const [orderConflict, setOrderConflict] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const submitInFlight = useRef(false);
@@ -143,10 +152,59 @@ export function MiniAppScanReceive({
 
   const purchaseStepBlocked = useMemo(() => {
     if (!preview) return true;
+    if (orderUncertain || orderConflict) return true;
     if (Object.keys(discountFieldErrors).length > 0) return true;
     const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
     return !amounts.ok;
-  }, [preview, amountDrafts, discountFieldErrors]);
+  }, [preview, amountDrafts, discountFieldErrors, orderUncertain, orderConflict]);
+
+  const applyPostOutcome = useCallback((outcome: OrderPostOutcome) => {
+    switch (outcome.kind) {
+      case "success":
+        markStoreOrderAttemptSucceeded(actorUserId, outcome.data.order.id);
+        setSuccessOrderId(outcome.data.order.id);
+        setConfirmOpen(false);
+        setPhase("success");
+        clearStoreOrderAttempt();
+        setOrderUncertain(false);
+        setOrderConflict(false);
+        break;
+      case "conflict":
+        markStoreOrderAttemptConflict(actorUserId);
+        setOrderConflict(true);
+        setOrderUncertain(false);
+        setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
+        setConfirmOpen(false);
+        break;
+      case "uncertain":
+        markStoreOrderAttemptUnknown(actorUserId);
+        setOrderUncertain(true);
+        setOrderConflict(false);
+        setSubmitError(UNCERTAIN_ORDER_DETAIL);
+        setConfirmOpen(false);
+        break;
+      case "unknown_persist":
+        markStoreOrderAttemptUnknown(actorUserId);
+        setOrderUncertain(true);
+        setOrderConflict(false);
+        setSubmitError(outcome.message ?? UNCERTAIN_ORDER_DETAIL);
+        setConfirmOpen(false);
+        break;
+      case "auth_required":
+        setSubmitError(outcome.message);
+        setConfirmOpen(false);
+        break;
+      case "validation_failed":
+        releaseStoreOrderAttemptForEdit();
+        setOrderUncertain(false);
+        setOrderConflict(false);
+        setSubmitError(outcome.message);
+        setConfirmOpen(false);
+        break;
+      default:
+        break;
+    }
+  }, [actorUserId]);
 
   const beginPurchase = useCallback(
     async (raw: string) => {
@@ -257,10 +315,15 @@ export function MiniAppScanReceive({
       branchId: branchId ?? undefined,
     });
     if (!created.ok) {
+      const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
       setSubmitError(
-        created.reason === "body_mismatch" || created.reason === "blocked"
-          ? ATTEMPT_CONFLICT_MESSAGE
-          : "Не удалось сохранить попытку оформления",
+        created.reason === "body_mismatch"
+          ? ATTEMPT_BODY_MISMATCH_MESSAGE
+          : created.reason === "blocked"
+            ? locked && orderUncertain
+              ? UNCERTAIN_ORDER_DETAIL
+              : ATTEMPT_CONFLICT_MESSAGE
+            : "Не удалось сохранить попытку оформления",
       );
       return;
     }
@@ -276,38 +339,24 @@ export function MiniAppScanReceive({
         searchParams: branchId ? { branchId } : undefined,
       });
       const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry: false });
+      applyPostOutcome(outcome);
       if (outcome.kind === "success") {
-        markStoreOrderAttemptSucceeded(actorUserId, outcome.data.order.id);
-        setSuccessOrderId(outcome.data.order.id);
-        setConfirmOpen(false);
-        setPhase("success");
         lastIdempotencyKey.current = created.record.idempotencyKey;
         receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, created.record.idempotencyKey);
-      } else if (outcome.kind === "validation_failed" || outcome.kind === "auth_required") {
-        setSubmitError(outcome.message);
-        markStoreOrderAttemptUnknown(actorUserId);
-      } else if (outcome.kind === "unknown_persist") {
-        setSubmitError(outcome.message ?? "Статус заказа неизвестен. Проверьте историю в кабинете.");
-        markStoreOrderAttemptUnknown(actorUserId);
-      } else if (outcome.kind === "conflict") {
-        setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
-        markStoreOrderAttemptUnknown(actorUserId);
-      } else {
-        setSubmitError("Не удалось завершить оформление. Проверьте сеть.");
-        markStoreOrderAttemptUnknown(actorUserId);
       }
     } catch (caught) {
       if (caught instanceof RemcardApiError) {
-        setSubmitError(caught.message);
-      } else {
-        const net = classifyStoreOrderNetworkFailure(false);
-        setSubmitError(
-          net.kind === "validation_failed" || net.kind === "auth_required" || net.kind === "unknown_persist"
-            ? (net.message ?? "Сетевая ошибка")
-            : "Сетевая ошибка",
+        const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
+        applyPostOutcome(
+          classifyStoreOrderPostResponse({
+            status: caught.status,
+            payload,
+            wasRetry: false,
+          }),
         );
+      } else {
+        applyPostOutcome(classifyStoreOrderNetworkFailure(false));
       }
-      markStoreOrderAttemptUnknown(actorUserId);
     } finally {
       submitInFlight.current = false;
       setSubmitting(false);
@@ -322,6 +371,8 @@ export function MiniAppScanReceive({
     certCode,
     branchId,
     receiving,
+    applyPostOutcome,
+    orderUncertain,
   ]);
 
   if (phase === "success") {
@@ -446,6 +497,16 @@ export function MiniAppScanReceive({
               </p>
             ) : null}
           </div>
+        ) : null}
+        {orderUncertain ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-order-uncertain">
+            {UNCERTAIN_ORDER_DETAIL}
+          </p>
+        ) : null}
+        {orderConflict ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-order-conflict">
+            {ATTEMPT_CONFLICT_MESSAGE}
+          </p>
         ) : null}
         {submitError ? (
           <p className={styles.scanBad} role="alert">
