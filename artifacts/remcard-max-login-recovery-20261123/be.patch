@@ -1,6 +1,6 @@
 diff --git a/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
 new file mode 100644
-index 0000000..77d6e01
+index 0000000..f801fd8
 --- /dev/null
 +++ b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
 @@ -0,0 +1,121 @@
@@ -118,11 +118,118 @@ index 0000000..77d6e01
 +      }),
 +    );
 +    expect(res.status).toBe(200);
-+    expect(mockVerify).toHaveBeenCalledWith('123456', 'prof');
++    expect(mockVerify).toHaveBeenCalledWith('123456', 777);
 +    expect(mockApplyCookies).toHaveBeenCalledWith(
 +      expect.anything(),
 +      expect.objectContaining({ embedded: true, messengerUserId: 777, userId: 'user-1' }),
 +    );
++  });
++});
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/__tests__/miniAppCertificateOptions.embedded.test.ts b/src/app/api/pro/mini-app/__tests__/miniAppCertificateOptions.embedded.test.ts
+new file mode 100644
+index 0000000..d197d2e
+--- /dev/null
++++ b/src/app/api/pro/mini-app/__tests__/miniAppCertificateOptions.embedded.test.ts
+@@ -0,0 +1,100 @@
++import { readFileSync } from 'node:fs';
++import path from 'node:path';
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import { NextRequest, NextResponse } from 'next/server';
++import type { User } from '@prisma/client';
++
++const mockBuildPartners = vi.fn();
++const mockCabinetUser = vi.fn();
++const mockSessionGuard = vi.fn();
++const mockProCtx = vi.fn();
++const mockRole = vi.fn();
++const mockGuard = vi.fn();
++const mockClientSlice = vi.fn();
++const mockBranchCatalog = vi.fn();
++
++const validatedUser = {
++  id: 'mini-user-42',
++  publicId: 'pub-42',
++  role: 'PRO',
++  isBlocked: false,
++} as User;
++
++vi.mock('@/lib/storeCertificateAvailablePartners', () => ({
++  buildStoreCertificateAvailablePartners: (...args: unknown[]) => mockBuildPartners(...args),
++}));
++
++vi.mock('@/lib/profMiniAppConfig', () => ({
++  isProfMiniAppEnabled: () => true,
++  isProfMiniAppPilotOpenForUser: () => true,
++}));
++
++vi.mock('@/lib/miniAppCabinetAuth', () => ({
++  getProfCabinetUserForMiniApp: (...args: unknown[]) => mockCabinetUser(...args),
++}));
++
++vi.mock('@/lib/miniAppSessionCookie', () => ({
++  assertMiniAppAccess: (...args: unknown[]) => mockSessionGuard(...args),
++}));
++
++vi.mock('@/lib/proContextRequest', () => ({
++  getProContextForRequest: (...args: unknown[]) => mockProCtx(...args),
++}));
++
++vi.mock('@/lib/miniAppBootstrap', () => ({
++  resolveMiniAppRoleForUser: (...args: unknown[]) => mockRole(...args),
++}));
++
++vi.mock('@/lib/miniAppRouteGuards', () => ({
++  guardMiniAppCertificateOptions: (...args: unknown[]) => mockGuard(...args),
++}));
++
++vi.mock('@/lib/miniAppCertificateOptions', () => ({
++  resolveMiniAppCertificateClientOptions: (...args: unknown[]) => mockClientSlice(...args),
++}));
++
++vi.mock('@/lib/miniAppPilotEligibility', () => ({
++  resolveMiniAppWorkplaceBranchCatalog: (...args: unknown[]) => mockBranchCatalog(...args),
++  validateMiniAppExplicitBranch: vi.fn(),
++}));
++
++describe('mini-app certificate/options embedded auth', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockCabinetUser.mockResolvedValue(validatedUser);
++    mockSessionGuard.mockResolvedValue({ ok: true });
++    mockProCtx.mockResolvedValue({});
++    mockRole.mockResolvedValue('pro');
++    mockGuard.mockResolvedValue({ ok: true });
++    mockBranchCatalog.mockResolvedValue([]);
++    mockClientSlice.mockResolvedValue({
++      ok: true,
++      clients: [],
++      needsClient: false,
++      needsBranch: false,
++    });
++    mockBuildPartners.mockResolvedValue(
++      NextResponse.json({ partners: [], blockedPartners: [] }, { status: 200 }),
++    );
++  });
++
++  it('does not import store available-partners route GET', () => {
++    const routePath = path.join(__dirname, '../certificate/options/route.ts');
++    const src = readFileSync(routePath, 'utf8');
++    expect(src).not.toMatch(/available-partners\/route/);
++    expect(src).toContain('buildStoreCertificateAvailablePartners');
++  });
++
++  it('delegates to buildStoreCertificateAvailablePartners with validated mini-app user', async () => {
++    const { GET } = await import('../certificate/options/route');
++    const req = new NextRequest('https://prof.remcard.ru/api/pro/mini-app/certificate/options?host=max', {
++      headers: { 'x-remcard-mini-app-platform': 'max' },
++    });
++
++    const res = await GET(req);
++    expect(res.status).toBe(200);
++    expect(mockBuildPartners).toHaveBeenCalledTimes(1);
++    expect(mockBuildPartners).toHaveBeenCalledWith(validatedUser, req);
++    expect(mockCabinetUser).toHaveBeenCalledWith(req, 'max');
 +  });
 +});
 \ No newline at end of file
@@ -198,10 +305,10 @@ index 0000000..536b711
 \ No newline at end of file
 diff --git a/src/app/api/pro/mini-app/auth/verify-code/route.ts b/src/app/api/pro/mini-app/auth/verify-code/route.ts
 new file mode 100644
-index 0000000..9148d19
+index 0000000..b4e1740
 --- /dev/null
 +++ b/src/app/api/pro/mini-app/auth/verify-code/route.ts
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,124 @@
 +import { NextRequest, NextResponse } from 'next/server';
 +import { createToken } from '@/lib/auth';
 +import { apiError } from '@/lib/api/error';
@@ -249,7 +356,10 @@ index 0000000..9148d19
 +  const platform =
 +    parseHostPlatform(typeof body.platform === 'string' ? body.platform : null) ??
 +    parseHostPlatform(req.headers.get('x-remcard-mini-app-platform'));
-+  const entrySite = parseVerifyEntrySite(body.entrySite) ?? 'prof';
++  const parsedEntrySite = parseVerifyEntrySite(body.entrySite);
++  if (parsedEntrySite === 'client') {
++    return apiError('BAD_REQUEST', 'Код входа мини-кабинета доступен только для кабинета партнёра (prof)');
++  }
 +
 +  if (platform !== 'max') {
 +    return apiError('BAD_REQUEST', 'Код входа мини-приложения доступен только для MAX');
@@ -270,7 +380,7 @@ index 0000000..9148d19
 +  }
 +
 +  const messengerUserId = validated.data.user.id;
-+  const verified = await verifyMaxProfLoginCodeForMiniApp(code, entrySite, messengerUserId);
++  const verified = await verifyMaxProfLoginCodeForMiniApp(code, messengerUserId);
 +  if (!verified.ok) {
 +    const codeStr =
 +      verified.status === 401 && verified.error.includes('просроч')
@@ -356,10 +466,10 @@ index faee6f8..d035595 100644
      return NextResponse.json(
        { error: sessionGuard.message, code: sessionGuard.code },
 diff --git a/src/app/api/pro/mini-app/certificate/options/route.ts b/src/app/api/pro/mini-app/certificate/options/route.ts
-index 78adff5..b8d24b3 100644
+index 78adff5..2627e4d 100644
 --- a/src/app/api/pro/mini-app/certificate/options/route.ts
 +++ b/src/app/api/pro/mini-app/certificate/options/route.ts
-@@ -1,9 +1,9 @@
+@@ -1,15 +1,15 @@
  import { NextRequest, NextResponse } from 'next/server';
  import { apiError } from '@/lib/api/error';
 -import { getProfCabinetUser } from '@/lib/proAuth';
@@ -371,6 +481,13 @@ index 78adff5..b8d24b3 100644
  import { resolveMiniAppCertificateClientOptions } from '@/lib/miniAppCertificateOptions';
  import { resolveMiniAppRoleForUser } from '@/lib/miniAppBootstrap';
  import { guardMiniAppCertificateOptions } from '@/lib/miniAppRouteGuards';
+ import { resolveMiniAppWorkplaceBranchCatalog, validateMiniAppExplicitBranch } from '@/lib/miniAppPilotEligibility';
+ import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
+-import { GET as availablePartnersGet } from '@/app/api/store/certificate/available-partners/route';
++import { buildStoreCertificateAvailablePartners } from '@/lib/storeCertificateAvailablePartners';
+ 
+ export const dynamic = miniAppApiDynamic.dynamic;
+ export const fetchCache = miniAppApiDynamic.fetchCache;
 @@ -39,13 +39,13 @@ export async function GET(req: NextRequest) {
      return apiError('BAD_REQUEST', 'Укажите платформу хоста');
    }
@@ -387,6 +504,15 @@ index 78adff5..b8d24b3 100644
    if (!sessionGuard.ok) {
      return privateNoStore(
        NextResponse.json(
+@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
+     );
+   }
+ 
+-  const partnersRes = await availablePartnersGet(req);
++  const partnersRes = await buildStoreCertificateAvailablePartners(user, req);
+   const partnersBody = (await partnersRes.json()) as Record<string, unknown>;
+ 
+   if (!partnersRes.ok) {
 diff --git a/src/app/api/pro/mini-app/scan/route.ts b/src/app/api/pro/mini-app/scan/route.ts
 index f772d1b..4ad2ec9 100644
 --- a/src/app/api/pro/mini-app/scan/route.ts
@@ -476,6 +602,631 @@ index 8150b22..952efb6 100644
    });
    return response;
  }
+\ No newline at end of file
+diff --git a/src/app/api/store/certificate/available-partners/route.ts b/src/app/api/store/certificate/available-partners/route.ts
+index f40af27..9f88d0d 100644
+--- a/src/app/api/store/certificate/available-partners/route.ts
++++ b/src/app/api/store/certificate/available-partners/route.ts
+@@ -1,554 +1,9 @@
+ import { NextRequest, NextResponse } from 'next/server';
+-import { PartnershipStatus, UserRole } from '@prisma/client';
+-import { prisma } from '@/lib/prisma';
+ import { getAuthenticatedUser } from '@/lib/proAuth';
+-import { getProContext } from '@/lib/proBranchContext';
+-import { PRO_BRANCH_CONTEXT_COOKIE } from '@/lib/proContextRequest';
+-import {
+-  resolveCertificateStaffIssuer,
+-  selectStaffIssuerBranch,
+-} from '@/lib/store/certificateStaffIssuer';
+-import { getCategoryLabel } from '@/lib/categoryLabels';
+-import {
+-  getCertificatePartnerPublicProfileStatus,
+-  getPartnershipSideCertificateProgramStatus,
+-  type CertificatePartnerPublicProfileMissingField,
+-} from '@/lib/certificatePartnerPublicProfile';
+-import { partnerCardLabel } from '@/lib/proDisplayName';
+-import {
+-  resolveUserOrganization,
+-  selfScanCategoryKeysForCertificate,
+-  storeProfileInputForCertificateGate,
+-} from '@/lib/userOrganization';
+-import {
+-  certificateRecommendationIssuerUserSelect,
+-  recommendationIssuerInputFromUserAndOrg,
+-  resolveCertificateRecommendationIssuerReadiness,
+-} from '@/lib/certificateRecommendationIssuerReadiness';
+-import { loadEffectiveReceivingPolicyForPreview } from '@/lib/certificateReceivingPolicy/effectiveAtIssuance';
+-import { certificatePolicyExpiryIso } from '@/lib/certificateReceivingPolicy/moscowExpiry';
+-import {
+-  canReceiveOnDirection,
+-  DIRECTION_BLOCK_MESSAGES,
+-  resolvePartnershipDirection,
+-  type DirectionBlockNextStep,
+-  type DirectionBlockReason,
+-} from '@/lib/partnershipDirection';
+-
+-type SelfBranchSummary = {
+-  id: string;
+-  name: string;
+-  city: string;
+-  address: string;
+-  catalogStatus: string;
+-  isActive: boolean;
+-};
+-
+-// Extended select: include photoUrl + logoUrl so the wizard can render avatars in catalog parity.
+-const partnerSideSelect = {
+-  id: true,
+-  city: true,
+-  displayName: true,
+-  photoUrl: true,
+-  partnerType: true,
+-  partnerActivities: true,
+-  role: true,
+-  isBlocked: true,
+-  storeCategories: true,
+-  specializations: true,
+-  organizationsOwned: {
+-    take: 1,
+-    orderBy: { createdAt: 'asc' as const },
+-    select: {
+-      name: true,
+-      logoUrl: true,
+-      branches: {
+-        orderBy: { name: 'asc' as const },
+-        select: {
+-          id: true,
+-          name: true,
+-          city: true,
+-          address: true,
+-          catalogStatus: true,
+-          isActive: true,
+-        },
+-      },
+-    },
+-  },
+-} as const;
+-
+-type AvailablePartnerRecipientPolicyPreview = {
+-  validityDays: number;
+-  purchaseLimit: number;
+-  minimumPurchaseAmount: number | null;
+-  promotionsCompatible: boolean;
+-  exclusionsText: string | null;
+-  policySource: 'general' | 'individual';
+-  validUntil: string | null;
+-};
+-
+-async function previewRecipientPolicyForPartner(input: {
+-  receiverUserId: string;
+-  issuerUserId: string;
+-  partnershipId: string | null;
+-  isSelfScan: boolean;
+-}): Promise<AvailablePartnerRecipientPolicyPreview | undefined> {
+-  try {
+-    const terms = await loadEffectiveReceivingPolicyForPreview(input);
+-    let validUntil: string | null = null;
+-    try {
+-      validUntil = certificatePolicyExpiryIso(terms.validityDays, new Date());
+-    } catch {
+-      // fail closed: preview without a trusted expiry
+-    }
+-    return {
+-      validityDays: terms.validityDays,
+-      purchaseLimit: terms.purchaseLimit,
+-      minimumPurchaseAmount: terms.minimumPurchaseAmount,
+-      promotionsCompatible: terms.promotionsCompatible,
+-      exclusionsText: terms.exclusionsText,
+-      policySource: terms.policySource,
+-      validUntil,
+-    };
+-  } catch {
+-    return undefined;
+-  }
+-}
++import { buildStoreCertificateAvailablePartners } from '@/lib/storeCertificateAvailablePartners';
+ 
+ export async function GET(req: NextRequest) {
+   const user = await getAuthenticatedUser(req);
+   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+-
+-  const proCtx = await getProContext(user.id);
+-  const staffResolution = await resolveCertificateStaffIssuer({ userId: user.id, proCtx, userRole: user.role });
+-  if (staffResolution.kind === 'deny') {
+-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+-  }
+-  // Branch employees are CLIENT accounts: only a verified issuing employee passes without the PRO role.
+-  if (user.role !== UserRole.PRO && staffResolution.kind !== 'ok') {
+-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+-  }
+-  const staff = staffResolution.kind === 'ok' ? staffResolution.staff : null;
+-  /** Branch staff issue on behalf of the organization owner: partners and self-scan are the owner's. */
+-  const principalUserId = staff?.ownerUserId ?? user.id;
+-
+-  const { organization: userOrg } = await resolveUserOrganization(user.id);
+-  const partnershipUserId = staff ? staff.ownerUserId : (userOrg?.ownerId ?? user.id);
+-
+-  const currentUser = await prisma.user.findUnique({
+-    where: { id: principalUserId },
+-    select: {
+-      ...certificateRecommendationIssuerUserSelect,
+-      id: true,
+-      role: true,
+-      isBlocked: true,
+-      organizationsOwned: {
+-        take: 1,
+-        orderBy: { createdAt: 'asc' },
+-        select: {
+-          name: true,
+-          branches: {
+-            orderBy: { name: 'asc' },
+-            select: {
+-              id: true,
+-              name: true,
+-              city: true,
+-              address: true,
+-              catalogStatus: true,
+-              isActive: true,
+-            },
+-          },
+-        },
+-      },
+-    },
+-  });
+-
+-  const issuerReadiness = currentUser
+-    ? resolveCertificateRecommendationIssuerReadiness(
+-        recommendationIssuerInputFromUserAndOrg(currentUser, userOrg),
+-      )
+-    : {
+-        ready: false,
+-        missingFields: [],
+-        isAgentIssuer: false,
+-      };
+-
+-  const partnerships = await prisma.partnership.findMany({
+-    where: {
+-      status: {
+-        in: [
+-          PartnershipStatus.ACTIVE,
+-          PartnershipStatus.PAUSED,
+-          PartnershipStatus.INVITED,
+-          PartnershipStatus.PENDING,
+-        ],
+-      },
+-      OR: [{ storeUserId: partnershipUserId }, { proUserId: partnershipUserId }],
+-    },
+-    include: {
+-      terms: true,
+-      storeUser: { select: partnerSideSelect },
+-      proUser: { select: partnerSideSelect },
+-    },
+-  });
+-
+-  type CatRow = {
+-    category: string;
+-    categoryLabel: string;
+-    poolPercent: number;
+-    /** false when the partner agreed the category at 0%: kept in terms, but nothing can be issued. */
+-    issuable: boolean;
+-    discountPercent: number;
+-    issuerPercent: number;
+-    /** @deprecated Используйте issuerPercent. */
+-    proBonusPercent: number;
+-    /** @deprecated Используйте poolPercent. */
+-    maxDiscount: number;
+-    /** @deprecated Используйте poolPercent. */
+-    maxBonus: number;
+-    /** @deprecated Используйте poolPercent. */
+-    maxTotal: number;
+-  };
+-
+-  const partnersOut: Array<{
+-    partnershipId: string | null;
+-    storeUserId: string;
+-    storeName: string;
+-    displayName: string | null;
+-    photoUrl: string | null;
+-    logoUrl: string | null;
+-    partnerType: string | null;
+-    partnerCategories: string[];
+-    city: string | null;
+-    isSelfScan: boolean;
+-    direction?: 'outgoing';
+-    categories: CatRow[];
+-    branches: Array<{ id: string; name: string; city: string; address: string }>;
+-    programReady: boolean;
+-    programMissing: CertificatePartnerPublicProfileMissingField[];
+-    recipientPolicy?: AvailablePartnerRecipientPolicyPreview;
+-  }> = [];
+-
+-  type BlockedPartner = {
+-    partnerUserId: string;
+-    partnershipId: string | null;
+-    reversePartnershipId: string | null;
+-    storeName: string;
+-    partnerType: string | null;
+-    reason: DirectionBlockReason;
+-    nextStep: DirectionBlockNextStep;
+-    message: string;
+-    status: PartnershipStatus | null;
+-  };
+-  const blockedPartners: BlockedPartner[] = [];
+-  const outgoingCounterparties = new Set<string>();
+-  const incomingRows: Array<(typeof partnerships)[number]> = [];
+-
+-  const labelFor = (u: (typeof partnerships)[number]['storeUser']) =>
+-    partnerCardLabel({
+-      displayName: u.displayName,
+-      partnerType: u.partnerType,
+-      organizationName: u.organizationsOwned[0]?.name?.trim() || null,
+-    }) || 'Партнёр';
+-
+-  for (const partnership of partnerships) {
+-    const resolved = resolvePartnershipDirection(
+-      partnership,
+-      partnership.storeUser,
+-      partnership.proUser,
+-    );
+-    if (resolved.issuerUserId !== partnershipUserId) {
+-      incomingRows.push(partnership);
+-      continue;
+-    }
+-    const partner =
+-      resolved.receiverUserId === partnership.storeUserId ? partnership.storeUser : partnership.proUser;
+-    outgoingCounterparties.add(partner.id);
+-
+-    if (partnership.status !== PartnershipStatus.ACTIVE) {
+-      const reason: DirectionBlockReason =
+-        partnership.status === PartnershipStatus.PAUSED ? 'DIRECTION_PAUSED' : 'DIRECTION_PENDING';
+-      blockedPartners.push({
+-        partnerUserId: partner.id,
+-        partnershipId: partnership.id,
+-        reversePartnershipId: null,
+-        storeName: labelFor(partner),
+-        partnerType: partner.partnerType,
+-        reason,
+-        nextStep: reason === 'DIRECTION_PAUSED' ? 'resume_partnership' : 'review_pending',
+-        message: DIRECTION_BLOCK_MESSAGES[reason],
+-        status: partnership.status,
+-      });
+-      continue;
+-    }
+-    const gate = getPartnershipSideCertificateProgramStatus({
+-      partnerUser: {
+-        city: partner.city,
+-        displayName: partner.displayName,
+-        organizationsOwned: partner.organizationsOwned,
+-        storeCategories: partner.storeCategories,
+-        specializations: partner.specializations,
+-        partnerType: partner.partnerType,
+-      },
+-      terms: partnership.terms,
+-    });
+-
+-    const orgName = partner.organizationsOwned[0]?.name?.trim() || '';
+-    // p123-BS: use partnerCardLabel parity so MASTER without org gets displayName,
+-    // COMPANY/STORE get organization name. Never default to bland 'Партнёр'.
+-    const storeName =
+-      partnerCardLabel({
+-        displayName: partner.displayName,
+-        partnerType: partner.partnerType,
+-        organizationName: orgName || null,
+-      }) || 'Партнёр';
+-
+-    const categories: CatRow[] = partnership.terms
+-      .filter((term) => !term.isExcluded)
+-      .map((term) => ({
+-        category: term.category,
+-        categoryLabel: term.categoryLabel?.trim() || getCategoryLabel(term.category),
+-        poolPercent: term.storePercent,
+-        issuable: term.storePercent > 0,
+-        discountPercent: term.storePercent,
+-        issuerPercent: 0,
+-        proBonusPercent: 0,
+-        maxDiscount: term.storePercent,
+-        maxBonus: term.storePercent,
+-        maxTotal: term.storePercent,
+-      }));
+-
+-    if (categories.length > 0 && categories.every((c) => !c.issuable)) {
+-      blockedPartners.push({
+-        partnerUserId: partner.id,
+-        partnershipId: partnership.id,
+-        reversePartnershipId: null,
+-        storeName,
+-        partnerType: partner.partnerType,
+-        reason: 'NO_ISSUABLE_CATEGORIES',
+-        nextStep: 'review_terms',
+-        message: DIRECTION_BLOCK_MESSAGES.NO_ISSUABLE_CATEGORIES,
+-        status: partnership.status,
+-      });
+-    }
+-
+-    const branchRows = partner.organizationsOwned[0]?.branches ?? [];
+-    // For STORE — only storeCategories. For MASTER — only specializations.
+-    // For COMPANY (mixed retail + services) — merge both so cert wizard
+-    // shows the full catalog (e.g. 'Сам' has paint/decor/tools + L1-9).
+-    let partnerCats: string[];
+-    if (partner.partnerType === 'STORE') {
+-      partnerCats = partner.storeCategories ?? [];
+-    } else if (partner.partnerType === 'MASTER') {
+-      partnerCats = partner.specializations ?? [];
+-    } else {
+-      // COMPANY — merge, dedupe, preserve order (store catalog first)
+-      const merged = [
+-        ...(partner.storeCategories ?? []),
+-        ...(partner.specializations ?? []),
+-      ];
+-      partnerCats = Array.from(new Set(merged));
+-    }
+-
+-    partnersOut.push({
+-      partnershipId: partnership.id,
+-      storeUserId: partner.id,
+-      storeName,
+-      displayName: partner.displayName,
+-      photoUrl: partner.photoUrl,
+-      logoUrl: partner.organizationsOwned[0]?.logoUrl ?? null,
+-      partnerType: partner.partnerType,
+-      partnerCategories: partnerCats,
+-      city: partner.city,
+-      isSelfScan: false,
+-      direction: 'outgoing',
+-      categories,
+-      branches: branchRows.map((b) => ({
+-        id: b.id,
+-        name: b.name,
+-        city: b.city,
+-        address: b.address,
+-      })),
+-      programReady: gate.ready,
+-      programMissing: gate.missingFields ?? [],
+-    });
+-  }
+-
+-  for (const row of incomingRows) {
+-    if (row.status !== PartnershipStatus.ACTIVE) continue;
+-    const resolved = resolvePartnershipDirection(row, row.storeUser, row.proUser);
+-    const counterparty =
+-      resolved.issuerUserId === row.storeUserId ? row.storeUser : row.proUser;
+-    if (outgoingCounterparties.has(counterparty.id)) continue;
+-    if (!canReceiveOnDirection(counterparty)) continue;
+-    blockedPartners.push({
+-      partnerUserId: counterparty.id,
+-      partnershipId: null,
+-      reversePartnershipId: row.id,
+-      storeName: labelFor(counterparty),
+-      partnerType: counterparty.partnerType,
+-      reason: 'DIRECTION_NOT_AGREED',
+-      nextStep: 'invite_reciprocal',
+-      message: DIRECTION_BLOCK_MESSAGES.DIRECTION_NOT_AGREED,
+-      status: null,
+-    });
+-  }
+-
+-  let selfPartner: (typeof partnersOut)[number] | null = null;
+-  let certificateProgramSelfMissing: CertificatePartnerPublicProfileMissingField[] = [];
+-  let selfBranches: SelfBranchSummary[] = [];
+-
+-  if (currentUser) {
+-    if (userOrg) {
+-      const allOrgBranches = await prisma.branch.findMany({
+-        where: { organizationId: userOrg.id },
+-        orderBy: { name: 'asc' },
+-        select: {
+-          id: true,
+-          name: true,
+-          city: true,
+-          address: true,
+-          catalogStatus: true,
+-          isActive: true,
+-        },
+-      });
+-      selfBranches = allOrgBranches
+-        .filter((b) => !staff || (staff.kind === 'branch' && staff.writableBranchIds.includes(b.id)))
+-        .map((b) => ({
+-          id: b.id,
+-          name: b.name,
+-          city: b.city,
+-          address: b.address,
+-          catalogStatus: String(b.catalogStatus),
+-          isActive: b.isActive,
+-        }));
+-    } else {
+-      const owned = currentUser.organizationsOwned[0];
+-      selfBranches = (owned?.branches ?? []).map((b) => ({
+-        id: b.id,
+-        name: b.name,
+-        city: b.city,
+-        address: b.address,
+-        catalogStatus: String(b.catalogStatus),
+-        isActive: b.isActive,
+-      }));
+-    }
+-
+-    const profileInput = storeProfileInputForCertificateGate(currentUser, userOrg);
+-    const selfGate = getCertificatePartnerPublicProfileStatus(profileInput);
+-    if (!selfGate.ready) {
+-      certificateProgramSelfMissing = selfGate.missingFields ?? [];
+-    }
+-    // A pure agent issues but never receives: it is not a self-scan business, whatever its profile holds.
+-    const selfCanReceive = canReceiveOnDirection({
+-      partnerActivities: currentUser.partnerActivities ?? [],
+-      partnerType: currentUser.partnerType ?? null,
+-      role: staff ? currentUser.role : user.role,
+-      isBlocked: staff ? Boolean(currentUser.isBlocked) : Boolean(user.isBlocked),
+-    });
+-    if (selfGate.ready && selfCanReceive) {
+-      const selfOrgName =
+-        userOrg?.name?.trim() ||
+-        currentUser.organizationsOwned[0]?.name?.trim() ||
+-        (currentUser.displayName?.trim() && currentUser.displayName !== 'Пользователь'
+-          ? currentUser.displayName.trim()
+-          : '');
+-      const branchRows = (userOrg?.branches ?? currentUser.organizationsOwned[0]?.branches ?? []).filter(
+-        (b) => !staff || (staff.kind === 'branch' && b.id != null && staff.writableBranchIds.includes(b.id)),
+-      );
+-      const selfCategories = selfScanCategoryKeysForCertificate(currentUser, userOrg);
+-      selfPartner = {
+-        partnershipId: null,
+-        storeUserId: currentUser.id,
+-        storeName: selfOrgName || 'Я сам',
+-        displayName: currentUser.displayName ?? null,
+-        photoUrl: null,
+-        logoUrl: null,
+-        partnerType: currentUser.partnerType ?? null,
+-        // p123-BS: surface own categories so the wizard renders chips for 'Я сам' too.
+-        partnerCategories: selfCategories,
+-        city: userOrg?.city ?? currentUser.city,
+-        isSelfScan: true,
+-        branches: branchRows.map((b) => ({
+-          id: b.id,
+-          name: b.name,
+-          city: b.city,
+-          address: b.address,
+-        })),
+-        categories: selfCategories.map((category: string) => ({
+-          category,
+-          categoryLabel: getCategoryLabel(category),
+-          poolPercent: 100,
+-          issuable: true,
+-          discountPercent: 10,
+-          issuerPercent: 0,
+-          proBonusPercent: 0,
+-          maxDiscount: 100,
+-          maxBonus: 0,
+-          maxTotal: 100,
+-        })),
+-        programReady: true,
+-        programMissing: [],
+-      };
+-    }
+-  }
+-
+-  const partnersOutWithPolicy = await Promise.all(
+-    partnersOut.map(async (row) => {
+-      const recipientPolicy = await previewRecipientPolicyForPartner({
+-        receiverUserId: row.storeUserId,
+-        issuerUserId: partnershipUserId,
+-        partnershipId: row.partnershipId,
+-        isSelfScan: false,
+-      });
+-      return recipientPolicy ? { ...row, recipientPolicy } : row;
+-    }),
+-  );
+-
+-  let selfPartnerFinal = selfPartner;
+-  if (selfPartner) {
+-    const recipientPolicy = await previewRecipientPolicyForPartner({
+-      receiverUserId: selfPartner.storeUserId,
+-      issuerUserId: partnershipUserId,
+-      partnershipId: null,
+-      isSelfScan: true,
+-    });
+-    selfPartnerFinal = recipientPolicy ? { ...selfPartner, recipientPolicy } : selfPartner;
+-  }
+-
+-  const partnersList = selfPartnerFinal
+-    ? [selfPartnerFinal, ...partnersOutWithPolicy]
+-    : partnersOutWithPolicy;
+-
+-  const staffDefaultBranch = staff?.kind === 'branch'
+-    ? selectStaffIssuerBranch({
+-        staff,
+-        explicitBranchId: req.nextUrl.searchParams.get('branchId')?.trim() || null,
+-        cookieBranchId: req.cookies?.get(PRO_BRANCH_CONTEXT_COOKIE)?.value?.trim() || null,
+-      })
+-    : { ok: false as const };
+-
+-  return NextResponse.json({
+-    partners: partnersList,
+-    blockedPartners,
+-    certificateProgramSelfReady: selfPartner != null,
+-    certificateProgramSelfMissing:
+-      selfPartner != null ? [] : certificateProgramSelfMissing,
+-    certificateRecommendationIssuerReady: issuerReadiness.ready,
+-    certificateRecommendationIssuerMissing: issuerReadiness.missingFields,
+-    isAgentRecommender: issuerReadiness.isAgentIssuer,
+-    selfBranches,
+-    ...(staff?.kind === 'branch'
+-      ? {
+-          staffIssuer: {
+-            branchIds: staff.writableBranchIds,
+-            defaultBranchId: staffDefaultBranch.ok ? staffDefaultBranch.branchId : null,
+-          },
+-        }
+-      : {}),
+-    certificateProgramHint:
+-      selfPartner == null && currentUser && !issuerReadiness.isAgentIssuer
+-        ? 'Чтобы участвовать в программе сертификатов, заполните публичные данные, которые увидит клиент: название организации, город и категории со скидками.'
+-        : undefined,
+-  });
++  return buildStoreCertificateAvailablePartners(user, req);
+ }
+\ No newline at end of file
+diff --git a/src/lib/__tests__/messengerAuthIdentity.bind.test.ts b/src/lib/__tests__/messengerAuthIdentity.bind.test.ts
+new file mode 100644
+index 0000000..b3b8f75
+--- /dev/null
++++ b/src/lib/__tests__/messengerAuthIdentity.bind.test.ts
+@@ -0,0 +1,56 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++
++const mockFindMany = vi.fn();
++const mockUpdateMany = vi.fn();
++
++vi.mock('@/lib/prisma', () => ({
++  prisma: {
++    $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
++      fn({
++        botLoginCode: {
++          findMany: mockFindMany,
++          updateMany: mockUpdateMany,
++        },
++        authAccount: { findUnique: vi.fn() },
++        user: { findFirst: vi.fn(), findUnique: vi.fn() },
++        auditLog: { findFirst: vi.fn() },
++      }),
++  },
++}));
++
++vi.mock('@/lib/partnerAuthIdentityLineage', () => ({ recordPartnerAuthIdentityLineage: vi.fn() }));
++vi.mock('@/lib/oauthAccount', () => ({ linkOAuthAccount: vi.fn() }));
++vi.mock('@/lib/publicId', () => ({ generateUniquePublicId: vi.fn().mockResolvedValue('pub') }));
++
++describe('verifyMessengerBotLoginCode requireIdentifier', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockUpdateMany.mockResolvedValue({ count: 0 });
++  });
++
++  it('uses identifier filter in lookup and does not claim on mismatch', async () => {
++    mockFindMany.mockResolvedValue([]);
++    const { verifyMessengerBotLoginCode } = await import('@/lib/messengerAuthIdentity');
++    const res = await verifyMessengerBotLoginCode('123456', 'prof', {
++      requireIdentifier: 'max:1:prof',
++    });
++    expect(res.ok).toBe(false);
++    expect(mockFindMany).toHaveBeenCalledWith(
++      expect.objectContaining({
++        where: expect.objectContaining({ identifier: 'max:1:prof', code: '123456' }),
++      }),
++    );
++    expect(mockUpdateMany).not.toHaveBeenCalled();
++  });
++
++  it('legacy calls lookup without identifier filter', async () => {
++    mockFindMany.mockResolvedValue([]);
++    const { verifyMessengerBotLoginCode } = await import('@/lib/messengerAuthIdentity');
++    await verifyMessengerBotLoginCode('123456', 'prof');
++    expect(mockFindMany).toHaveBeenCalledWith(
++      expect.objectContaining({
++        where: expect.not.objectContaining({ identifier: expect.anything() }),
++      }),
++    );
++  });
++});
 \ No newline at end of file
 diff --git a/src/lib/__tests__/miniAppCabinetAuth.test.ts b/src/lib/__tests__/miniAppCabinetAuth.test.ts
 new file mode 100644
@@ -634,60 +1385,30 @@ index 0000000..176cc65
 \ No newline at end of file
 diff --git a/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts b/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts
 new file mode 100644
-index 0000000..64ace85
+index 0000000..48e60eb
 --- /dev/null
 +++ b/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,22 @@
 +import { beforeEach, describe, expect, it, vi } from 'vitest';
 +
-+const mockTxFind = vi.fn();
-+const mockVerifyCore = vi.fn();
-+
-+vi.mock('@/lib/prisma', () => ({
-+  prisma: {
-+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
-+      fn({
-+        botLoginCode: { findMany: mockTxFind },
-+      }),
-+  },
-+}));
++const mockVerify = vi.fn();
 +
 +vi.mock('@/lib/messengerAuthIdentity', () => ({
-+  verifyMessengerBotLoginCode: (...args: unknown[]) => mockVerifyCore(...args),
++  verifyMessengerBotLoginCode: (...args: unknown[]) => mockVerify(...args),
 +}));
 +
 +describe('verifyMaxProfLoginCodeForMiniApp', () => {
 +  beforeEach(() => {
 +    vi.clearAllMocks();
-+    process.env.JWT_SECRET = 'test';
++    mockVerify.mockResolvedValue({ ok: true, user: { id: 'u1' }, created: false, entrySite: 'prof' });
 +  });
 +
-+  it('rejects when no OTP row matches messenger-bound identifier', async () => {
-+    mockTxFind.mockResolvedValue([]);
++  it('delegates to shared verify with prof-bound identifier', async () => {
 +    const { verifyMaxProfLoginCodeForMiniApp } = await import('@/lib/miniAppMessengerOtpVerify');
-+    const res = await verifyMaxProfLoginCodeForMiniApp('123456', 'prof', 777);
-+    expect(res.ok).toBe(false);
-+    expect(mockVerifyCore).not.toHaveBeenCalled();
-+  });
-+
-+  it('calls core verify when identifier gate passes', async () => {
-+    mockTxFind.mockResolvedValue([
-+      {
-+        id: 'c1',
-+        identifier: 'max:777:prof',
-+        createdAt: new Date(),
-+      },
-+    ]);
-+    mockVerifyCore.mockResolvedValue({
-+      ok: true,
-+      user: { id: 'user-1' },
-+      created: false,
-+      entrySite: 'prof',
++    await verifyMaxProfLoginCodeForMiniApp('123456', 777);
++    expect(mockVerify).toHaveBeenCalledWith('123456', 'prof', {
++      requireIdentifier: 'max:777:prof',
 +    });
-+    const { verifyMaxProfLoginCodeForMiniApp } = await import('@/lib/miniAppMessengerOtpVerify');
-+    const res = await verifyMaxProfLoginCodeForMiniApp('123456', 'prof', 777);
-+    expect(res.ok).toBe(true);
-+    expect(mockVerifyCore).toHaveBeenCalledWith('123456', 'prof');
 +  });
 +});
 \ No newline at end of file
@@ -794,6 +1515,63 @@ index 0000000..01c2954
 +  };
 +}
 \ No newline at end of file
+diff --git a/src/lib/messengerAuthIdentity.ts b/src/lib/messengerAuthIdentity.ts
+index e44ceb5..04cf09f 100644
+--- a/src/lib/messengerAuthIdentity.ts
++++ b/src/lib/messengerAuthIdentity.ts
+@@ -246,6 +246,8 @@ export type VerifyMessengerLoginResult =
+   | { ok: true; user: User; created: boolean; entrySite: AuthEntrySite | null }
+   | { ok: false; status: number; error: string };
+ 
++export type VerifyMessengerLoginOptions = { requireIdentifier?: string };
++
+ const VERIFY_TX_MAX_ATTEMPTS = 5;
+ 
+ function isRetryableVerifyTransactionError(error: unknown): boolean {
+@@ -412,14 +414,21 @@ async function resolveSessionAfterClaim(
+ export async function verifyMessengerBotLoginCode(
+   code: string,
+   requestEntrySite?: AuthEntrySite | null,
++  options?: VerifyMessengerLoginOptions,
+ ): Promise<VerifyMessengerLoginResult> {
+   for (let attempt = 0; attempt < VERIFY_TX_MAX_ATTEMPTS; attempt++) {
+     try {
+       const outcome = await prisma.$transaction(
+         async (tx) => {
+           const now = new Date();
++          const codeWhere: Prisma.BotLoginCodeWhereInput = {
++            code,
++            used: false,
++            expiresAt: { gt: now },
++          };
++          if (options?.requireIdentifier) codeWhere.identifier = options.requireIdentifier;
+           const candidates = await tx.botLoginCode.findMany({
+-            where: { code, used: false, expiresAt: { gt: now } },
++            where: codeWhere,
+             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+             take: 2,
+           });
+@@ -427,6 +436,12 @@ export async function verifyMessengerBotLoginCode(
+             throw new VerifyAbort(401, 'Неверный или просроченный код');
+           }
+           const loginCode = candidates[0]!;
++          if (
++            options?.requireIdentifier &&
++            loginCode.identifier !== options.requireIdentifier
++          ) {
++            throw new VerifyAbort(403, 'Код не совпадает с аккаунтом MAX в мини-приложении');
++          }
+           const bind = validateEntrySiteBinding(loginCode.identifier, requestEntrySite);
+           if (!bind.ok) {
+             throw new VerifyAbort(bind.status, bind.error);
+@@ -442,6 +457,7 @@ export async function verifyMessengerBotLoginCode(
+               code,
+               used: false,
+               expiresAt: { gt: now },
++              ...(options?.requireIdentifier ? { identifier: options.requireIdentifier } : {}),
+             },
+             data: { used: true },
+           });
 diff --git a/src/lib/miniAppCabinetAuth.ts b/src/lib/miniAppCabinetAuth.ts
 new file mode 100644
 index 0000000..4786c95
@@ -940,109 +1718,21 @@ index 0000000..e08a4a7
 \ No newline at end of file
 diff --git a/src/lib/miniAppMessengerOtpVerify.ts b/src/lib/miniAppMessengerOtpVerify.ts
 new file mode 100644
-index 0000000..eb247ef
+index 0000000..1a96714
 --- /dev/null
 +++ b/src/lib/miniAppMessengerOtpVerify.ts
-@@ -0,0 +1,100 @@
-+import { Prisma as PrismaNs } from '@prisma/client';
-+import { prisma } from '@/lib/prisma';
-+import {
-+  buildBotLoginIdentifier,
-+  parseBotLoginIdentifier,
-+  validateEntrySiteBinding,
-+  type AuthEntrySite,
-+} from '@/lib/authEntryContext';
+@@ -0,0 +1,12 @@
++import { buildBotLoginIdentifier } from '@/lib/authEntryContext';
 +import type { VerifyMessengerLoginResult } from '@/lib/messengerAuthIdentity';
 +import { verifyMessengerBotLoginCode } from '@/lib/messengerAuthIdentity';
 +
-+const VERIFY_TX_MAX_ATTEMPTS = 5;
-+
-+class IdentifierGateAbort extends Error {
-+  constructor(
-+    public status: number,
-+    public code: string,
-+    message: string,
-+  ) {
-+    super(message);
-+    this.name = 'IdentifierGateAbort';
-+  }
-+}
-+
-+function isRetryable(error: unknown): boolean {
-+  if (error instanceof PrismaNs.PrismaClientKnownRequestError) {
-+    return error.code === 'P2034' || error.code === 'P2002';
-+  }
-+  const msg = error instanceof Error ? error.message.toLowerCase() : '';
-+  return msg.includes('deadlock') || msg.includes('serialize');
-+}
-+
-+/**
-+ * Bind signed MAX launch to BotLoginCode.identifier before calling the shared
-+ * serializable verify transaction (no OTP consumption on mismatch).
-+ */
++/** Mini-app MAX verify: PROF site only, OTP bound to signed launch user id in one shared transaction. */
 +export async function verifyMaxProfLoginCodeForMiniApp(
 +  code: string,
-+  entrySite: AuthEntrySite,
 +  maxMessengerUserId: number,
 +): Promise<VerifyMessengerLoginResult> {
-+  const requireIdentifier = buildBotLoginIdentifier('max', String(maxMessengerUserId), entrySite);
-+
-+  for (let attempt = 0; attempt < VERIFY_TX_MAX_ATTEMPTS; attempt++) {
-+    try {
-+      await prisma.$transaction(
-+        async (tx) => {
-+          const now = new Date();
-+          const candidates = await tx.botLoginCode.findMany({
-+            where: {
-+              code,
-+              used: false,
-+              expiresAt: { gt: now },
-+              identifier: requireIdentifier,
-+            },
-+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-+            take: 2,
-+          });
-+          if (candidates.length !== 1) {
-+            throw new IdentifierGateAbort(
-+              401,
-+              'INVALID_CODE',
-+              'Неверный или просроченный код',
-+            );
-+          }
-+          const loginCode = candidates[0]!;
-+          const bind = validateEntrySiteBinding(loginCode.identifier, entrySite);
-+          if (!bind.ok) {
-+            throw new IdentifierGateAbort(bind.status, 'INVALID_CODE', bind.error);
-+          }
-+          const parsed = parseBotLoginIdentifier(loginCode.identifier);
-+          if (!parsed || parsed.provider !== 'max' || parsed.externalId !== String(maxMessengerUserId)) {
-+            throw new IdentifierGateAbort(
-+              403,
-+              'MAX_MISMATCH',
-+              'Код не совпадает с аккаунтом MAX в мини-приложении',
-+            );
-+          }
-+        },
-+        { isolationLevel: PrismaNs.TransactionIsolationLevel.Serializable },
-+      );
-+      break;
-+    } catch (e) {
-+      if (e instanceof IdentifierGateAbort) {
-+        return { ok: false, status: e.status, error: e.message };
-+      }
-+      if (isRetryable(e) && attempt < VERIFY_TX_MAX_ATTEMPTS - 1) continue;
-+      if (isRetryable(e)) {
-+        return {
-+          ok: false,
-+          status: 503,
-+          error: 'Временная ошибка входа. Попробуйте ещё раз через несколько секунд.',
-+        };
-+      }
-+      throw e;
-+    }
-+  }
-+
-+  return verifyMessengerBotLoginCode(code, entrySite);
++  const requireIdentifier = buildBotLoginIdentifier('max', String(maxMessengerUserId), 'prof');
++  return verifyMessengerBotLoginCode(code, 'prof', { requireIdentifier });
 +}
 \ No newline at end of file
 diff --git a/src/lib/miniAppSessionCookie.ts b/src/lib/miniAppSessionCookie.ts
@@ -1284,4 +1974,562 @@ index e7bcd76..08600ed 100644
 +    );
 +  }
  }
+\ No newline at end of file
+diff --git a/src/lib/storeCertificateAvailablePartners.ts b/src/lib/storeCertificateAvailablePartners.ts
+new file mode 100644
+index 0000000..c80963e
+--- /dev/null
++++ b/src/lib/storeCertificateAvailablePartners.ts
+@@ -0,0 +1,551 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { PartnershipStatus, UserRole, type User } from '@prisma/client';
++import { prisma } from '@/lib/prisma';
++import { getProContext } from '@/lib/proBranchContext';
++import { PRO_BRANCH_CONTEXT_COOKIE } from '@/lib/proContextRequest';
++import {
++  resolveCertificateStaffIssuer,
++  selectStaffIssuerBranch,
++} from '@/lib/store/certificateStaffIssuer';
++import { getCategoryLabel } from '@/lib/categoryLabels';
++import {
++  getCertificatePartnerPublicProfileStatus,
++  getPartnershipSideCertificateProgramStatus,
++  type CertificatePartnerPublicProfileMissingField,
++} from '@/lib/certificatePartnerPublicProfile';
++import { partnerCardLabel } from '@/lib/proDisplayName';
++import {
++  resolveUserOrganization,
++  selfScanCategoryKeysForCertificate,
++  storeProfileInputForCertificateGate,
++} from '@/lib/userOrganization';
++import {
++  certificateRecommendationIssuerUserSelect,
++  recommendationIssuerInputFromUserAndOrg,
++  resolveCertificateRecommendationIssuerReadiness,
++} from '@/lib/certificateRecommendationIssuerReadiness';
++import { loadEffectiveReceivingPolicyForPreview } from '@/lib/certificateReceivingPolicy/effectiveAtIssuance';
++import { certificatePolicyExpiryIso } from '@/lib/certificateReceivingPolicy/moscowExpiry';
++import {
++  canReceiveOnDirection,
++  DIRECTION_BLOCK_MESSAGES,
++  resolvePartnershipDirection,
++  type DirectionBlockNextStep,
++  type DirectionBlockReason,
++} from '@/lib/partnershipDirection';
++
++type SelfBranchSummary = {
++  id: string;
++  name: string;
++  city: string;
++  address: string;
++  catalogStatus: string;
++  isActive: boolean;
++};
++
++// Extended select: include photoUrl + logoUrl so the wizard can render avatars in catalog parity.
++const partnerSideSelect = {
++  id: true,
++  city: true,
++  displayName: true,
++  photoUrl: true,
++  partnerType: true,
++  partnerActivities: true,
++  role: true,
++  isBlocked: true,
++  storeCategories: true,
++  specializations: true,
++  organizationsOwned: {
++    take: 1,
++    orderBy: { createdAt: 'asc' as const },
++    select: {
++      name: true,
++      logoUrl: true,
++      branches: {
++        orderBy: { name: 'asc' as const },
++        select: {
++          id: true,
++          name: true,
++          city: true,
++          address: true,
++          catalogStatus: true,
++          isActive: true,
++        },
++      },
++    },
++  },
++} as const;
++
++type AvailablePartnerRecipientPolicyPreview = {
++  validityDays: number;
++  purchaseLimit: number;
++  minimumPurchaseAmount: number | null;
++  promotionsCompatible: boolean;
++  exclusionsText: string | null;
++  policySource: 'general' | 'individual';
++  validUntil: string | null;
++};
++
++async function previewRecipientPolicyForPartner(input: {
++  receiverUserId: string;
++  issuerUserId: string;
++  partnershipId: string | null;
++  isSelfScan: boolean;
++}): Promise<AvailablePartnerRecipientPolicyPreview | undefined> {
++  try {
++    const terms = await loadEffectiveReceivingPolicyForPreview(input);
++    let validUntil: string | null = null;
++    try {
++      validUntil = certificatePolicyExpiryIso(terms.validityDays, new Date());
++    } catch {
++      // fail closed: preview without a trusted expiry
++    }
++    return {
++      validityDays: terms.validityDays,
++      purchaseLimit: terms.purchaseLimit,
++      minimumPurchaseAmount: terms.minimumPurchaseAmount,
++      promotionsCompatible: terms.promotionsCompatible,
++      exclusionsText: terms.exclusionsText,
++      policySource: terms.policySource,
++      validUntil,
++    };
++  } catch {
++    return undefined;
++  }
++}
++
++export async function buildStoreCertificateAvailablePartners(user: User, req: NextRequest): Promise<NextResponse> {
++
++  const proCtx = await getProContext(user.id);
++  const staffResolution = await resolveCertificateStaffIssuer({ userId: user.id, proCtx, userRole: user.role });
++  if (staffResolution.kind === 'deny') {
++    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
++  }
++  // Branch employees are CLIENT accounts: only a verified issuing employee passes without the PRO role.
++  if (user.role !== UserRole.PRO && staffResolution.kind !== 'ok') {
++    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
++  }
++  const staff = staffResolution.kind === 'ok' ? staffResolution.staff : null;
++  /** Branch staff issue on behalf of the organization owner: partners and self-scan are the owner's. */
++  const principalUserId = staff?.ownerUserId ?? user.id;
++
++  const { organization: userOrg } = await resolveUserOrganization(user.id);
++  const partnershipUserId = staff ? staff.ownerUserId : (userOrg?.ownerId ?? user.id);
++
++  const currentUser = await prisma.user.findUnique({
++    where: { id: principalUserId },
++    select: {
++      ...certificateRecommendationIssuerUserSelect,
++      id: true,
++      role: true,
++      isBlocked: true,
++      organizationsOwned: {
++        take: 1,
++        orderBy: { createdAt: 'asc' },
++        select: {
++          name: true,
++          branches: {
++            orderBy: { name: 'asc' },
++            select: {
++              id: true,
++              name: true,
++              city: true,
++              address: true,
++              catalogStatus: true,
++              isActive: true,
++            },
++          },
++        },
++      },
++    },
++  });
++
++  const issuerReadiness = currentUser
++    ? resolveCertificateRecommendationIssuerReadiness(
++        recommendationIssuerInputFromUserAndOrg(currentUser, userOrg),
++      )
++    : {
++        ready: false,
++        missingFields: [],
++        isAgentIssuer: false,
++      };
++
++  const partnerships = await prisma.partnership.findMany({
++    where: {
++      status: {
++        in: [
++          PartnershipStatus.ACTIVE,
++          PartnershipStatus.PAUSED,
++          PartnershipStatus.INVITED,
++          PartnershipStatus.PENDING,
++        ],
++      },
++      OR: [{ storeUserId: partnershipUserId }, { proUserId: partnershipUserId }],
++    },
++    include: {
++      terms: true,
++      storeUser: { select: partnerSideSelect },
++      proUser: { select: partnerSideSelect },
++    },
++  });
++
++  type CatRow = {
++    category: string;
++    categoryLabel: string;
++    poolPercent: number;
++    /** false when the partner agreed the category at 0%: kept in terms, but nothing can be issued. */
++    issuable: boolean;
++    discountPercent: number;
++    issuerPercent: number;
++    /** @deprecated Используйте issuerPercent. */
++    proBonusPercent: number;
++    /** @deprecated Используйте poolPercent. */
++    maxDiscount: number;
++    /** @deprecated Используйте poolPercent. */
++    maxBonus: number;
++    /** @deprecated Используйте poolPercent. */
++    maxTotal: number;
++  };
++
++  const partnersOut: Array<{
++    partnershipId: string | null;
++    storeUserId: string;
++    storeName: string;
++    displayName: string | null;
++    photoUrl: string | null;
++    logoUrl: string | null;
++    partnerType: string | null;
++    partnerCategories: string[];
++    city: string | null;
++    isSelfScan: boolean;
++    direction?: 'outgoing';
++    categories: CatRow[];
++    branches: Array<{ id: string; name: string; city: string; address: string }>;
++    programReady: boolean;
++    programMissing: CertificatePartnerPublicProfileMissingField[];
++    recipientPolicy?: AvailablePartnerRecipientPolicyPreview;
++  }> = [];
++
++  type BlockedPartner = {
++    partnerUserId: string;
++    partnershipId: string | null;
++    reversePartnershipId: string | null;
++    storeName: string;
++    partnerType: string | null;
++    reason: DirectionBlockReason;
++    nextStep: DirectionBlockNextStep;
++    message: string;
++    status: PartnershipStatus | null;
++  };
++  const blockedPartners: BlockedPartner[] = [];
++  const outgoingCounterparties = new Set<string>();
++  const incomingRows: Array<(typeof partnerships)[number]> = [];
++
++  const labelFor = (u: (typeof partnerships)[number]['storeUser']) =>
++    partnerCardLabel({
++      displayName: u.displayName,
++      partnerType: u.partnerType,
++      organizationName: u.organizationsOwned[0]?.name?.trim() || null,
++    }) || 'Партнёр';
++
++  for (const partnership of partnerships) {
++    const resolved = resolvePartnershipDirection(
++      partnership,
++      partnership.storeUser,
++      partnership.proUser,
++    );
++    if (resolved.issuerUserId !== partnershipUserId) {
++      incomingRows.push(partnership);
++      continue;
++    }
++    const partner =
++      resolved.receiverUserId === partnership.storeUserId ? partnership.storeUser : partnership.proUser;
++    outgoingCounterparties.add(partner.id);
++
++    if (partnership.status !== PartnershipStatus.ACTIVE) {
++      const reason: DirectionBlockReason =
++        partnership.status === PartnershipStatus.PAUSED ? 'DIRECTION_PAUSED' : 'DIRECTION_PENDING';
++      blockedPartners.push({
++        partnerUserId: partner.id,
++        partnershipId: partnership.id,
++        reversePartnershipId: null,
++        storeName: labelFor(partner),
++        partnerType: partner.partnerType,
++        reason,
++        nextStep: reason === 'DIRECTION_PAUSED' ? 'resume_partnership' : 'review_pending',
++        message: DIRECTION_BLOCK_MESSAGES[reason],
++        status: partnership.status,
++      });
++      continue;
++    }
++    const gate = getPartnershipSideCertificateProgramStatus({
++      partnerUser: {
++        city: partner.city,
++        displayName: partner.displayName,
++        organizationsOwned: partner.organizationsOwned,
++        storeCategories: partner.storeCategories,
++        specializations: partner.specializations,
++        partnerType: partner.partnerType,
++      },
++      terms: partnership.terms,
++    });
++
++    const orgName = partner.organizationsOwned[0]?.name?.trim() || '';
++    // p123-BS: use partnerCardLabel parity so MASTER without org gets displayName,
++    // COMPANY/STORE get organization name. Never default to bland 'Партнёр'.
++    const storeName =
++      partnerCardLabel({
++        displayName: partner.displayName,
++        partnerType: partner.partnerType,
++        organizationName: orgName || null,
++      }) || 'Партнёр';
++
++    const categories: CatRow[] = partnership.terms
++      .filter((term) => !term.isExcluded)
++      .map((term) => ({
++        category: term.category,
++        categoryLabel: term.categoryLabel?.trim() || getCategoryLabel(term.category),
++        poolPercent: term.storePercent,
++        issuable: term.storePercent > 0,
++        discountPercent: term.storePercent,
++        issuerPercent: 0,
++        proBonusPercent: 0,
++        maxDiscount: term.storePercent,
++        maxBonus: term.storePercent,
++        maxTotal: term.storePercent,
++      }));
++
++    if (categories.length > 0 && categories.every((c) => !c.issuable)) {
++      blockedPartners.push({
++        partnerUserId: partner.id,
++        partnershipId: partnership.id,
++        reversePartnershipId: null,
++        storeName,
++        partnerType: partner.partnerType,
++        reason: 'NO_ISSUABLE_CATEGORIES',
++        nextStep: 'review_terms',
++        message: DIRECTION_BLOCK_MESSAGES.NO_ISSUABLE_CATEGORIES,
++        status: partnership.status,
++      });
++    }
++
++    const branchRows = partner.organizationsOwned[0]?.branches ?? [];
++    // For STORE — only storeCategories. For MASTER — only specializations.
++    // For COMPANY (mixed retail + services) — merge both so cert wizard
++    // shows the full catalog (e.g. 'Сам' has paint/decor/tools + L1-9).
++    let partnerCats: string[];
++    if (partner.partnerType === 'STORE') {
++      partnerCats = partner.storeCategories ?? [];
++    } else if (partner.partnerType === 'MASTER') {
++      partnerCats = partner.specializations ?? [];
++    } else {
++      // COMPANY — merge, dedupe, preserve order (store catalog first)
++      const merged = [
++        ...(partner.storeCategories ?? []),
++        ...(partner.specializations ?? []),
++      ];
++      partnerCats = Array.from(new Set(merged));
++    }
++
++    partnersOut.push({
++      partnershipId: partnership.id,
++      storeUserId: partner.id,
++      storeName,
++      displayName: partner.displayName,
++      photoUrl: partner.photoUrl,
++      logoUrl: partner.organizationsOwned[0]?.logoUrl ?? null,
++      partnerType: partner.partnerType,
++      partnerCategories: partnerCats,
++      city: partner.city,
++      isSelfScan: false,
++      direction: 'outgoing',
++      categories,
++      branches: branchRows.map((b) => ({
++        id: b.id,
++        name: b.name,
++        city: b.city,
++        address: b.address,
++      })),
++      programReady: gate.ready,
++      programMissing: gate.missingFields ?? [],
++    });
++  }
++
++  for (const row of incomingRows) {
++    if (row.status !== PartnershipStatus.ACTIVE) continue;
++    const resolved = resolvePartnershipDirection(row, row.storeUser, row.proUser);
++    const counterparty =
++      resolved.issuerUserId === row.storeUserId ? row.storeUser : row.proUser;
++    if (outgoingCounterparties.has(counterparty.id)) continue;
++    if (!canReceiveOnDirection(counterparty)) continue;
++    blockedPartners.push({
++      partnerUserId: counterparty.id,
++      partnershipId: null,
++      reversePartnershipId: row.id,
++      storeName: labelFor(counterparty),
++      partnerType: counterparty.partnerType,
++      reason: 'DIRECTION_NOT_AGREED',
++      nextStep: 'invite_reciprocal',
++      message: DIRECTION_BLOCK_MESSAGES.DIRECTION_NOT_AGREED,
++      status: null,
++    });
++  }
++
++  let selfPartner: (typeof partnersOut)[number] | null = null;
++  let certificateProgramSelfMissing: CertificatePartnerPublicProfileMissingField[] = [];
++  let selfBranches: SelfBranchSummary[] = [];
++
++  if (currentUser) {
++    if (userOrg) {
++      const allOrgBranches = await prisma.branch.findMany({
++        where: { organizationId: userOrg.id },
++        orderBy: { name: 'asc' },
++        select: {
++          id: true,
++          name: true,
++          city: true,
++          address: true,
++          catalogStatus: true,
++          isActive: true,
++        },
++      });
++      selfBranches = allOrgBranches
++        .filter((b) => !staff || (staff.kind === 'branch' && staff.writableBranchIds.includes(b.id)))
++        .map((b) => ({
++          id: b.id,
++          name: b.name,
++          city: b.city,
++          address: b.address,
++          catalogStatus: String(b.catalogStatus),
++          isActive: b.isActive,
++        }));
++    } else {
++      const owned = currentUser.organizationsOwned[0];
++      selfBranches = (owned?.branches ?? []).map((b) => ({
++        id: b.id,
++        name: b.name,
++        city: b.city,
++        address: b.address,
++        catalogStatus: String(b.catalogStatus),
++        isActive: b.isActive,
++      }));
++    }
++
++    const profileInput = storeProfileInputForCertificateGate(currentUser, userOrg);
++    const selfGate = getCertificatePartnerPublicProfileStatus(profileInput);
++    if (!selfGate.ready) {
++      certificateProgramSelfMissing = selfGate.missingFields ?? [];
++    }
++    // A pure agent issues but never receives: it is not a self-scan business, whatever its profile holds.
++    const selfCanReceive = canReceiveOnDirection({
++      partnerActivities: currentUser.partnerActivities ?? [],
++      partnerType: currentUser.partnerType ?? null,
++      role: staff ? currentUser.role : user.role,
++      isBlocked: staff ? Boolean(currentUser.isBlocked) : Boolean(user.isBlocked),
++    });
++    if (selfGate.ready && selfCanReceive) {
++      const selfOrgName =
++        userOrg?.name?.trim() ||
++        currentUser.organizationsOwned[0]?.name?.trim() ||
++        (currentUser.displayName?.trim() && currentUser.displayName !== 'Пользователь'
++          ? currentUser.displayName.trim()
++          : '');
++      const branchRows = (userOrg?.branches ?? currentUser.organizationsOwned[0]?.branches ?? []).filter(
++        (b) => !staff || (staff.kind === 'branch' && b.id != null && staff.writableBranchIds.includes(b.id)),
++      );
++      const selfCategories = selfScanCategoryKeysForCertificate(currentUser, userOrg);
++      selfPartner = {
++        partnershipId: null,
++        storeUserId: currentUser.id,
++        storeName: selfOrgName || 'Я сам',
++        displayName: currentUser.displayName ?? null,
++        photoUrl: null,
++        logoUrl: null,
++        partnerType: currentUser.partnerType ?? null,
++        // p123-BS: surface own categories so the wizard renders chips for 'Я сам' too.
++        partnerCategories: selfCategories,
++        city: userOrg?.city ?? currentUser.city,
++        isSelfScan: true,
++        branches: branchRows.map((b) => ({
++          id: b.id,
++          name: b.name,
++          city: b.city,
++          address: b.address,
++        })),
++        categories: selfCategories.map((category: string) => ({
++          category,
++          categoryLabel: getCategoryLabel(category),
++          poolPercent: 100,
++          issuable: true,
++          discountPercent: 10,
++          issuerPercent: 0,
++          proBonusPercent: 0,
++          maxDiscount: 100,
++          maxBonus: 0,
++          maxTotal: 100,
++        })),
++        programReady: true,
++        programMissing: [],
++      };
++    }
++  }
++
++  const partnersOutWithPolicy = await Promise.all(
++    partnersOut.map(async (row) => {
++      const recipientPolicy = await previewRecipientPolicyForPartner({
++        receiverUserId: row.storeUserId,
++        issuerUserId: partnershipUserId,
++        partnershipId: row.partnershipId,
++        isSelfScan: false,
++      });
++      return recipientPolicy ? { ...row, recipientPolicy } : row;
++    }),
++  );
++
++  let selfPartnerFinal = selfPartner;
++  if (selfPartner) {
++    const recipientPolicy = await previewRecipientPolicyForPartner({
++      receiverUserId: selfPartner.storeUserId,
++      issuerUserId: partnershipUserId,
++      partnershipId: null,
++      isSelfScan: true,
++    });
++    selfPartnerFinal = recipientPolicy ? { ...selfPartner, recipientPolicy } : selfPartner;
++  }
++
++  const partnersList = selfPartnerFinal
++    ? [selfPartnerFinal, ...partnersOutWithPolicy]
++    : partnersOutWithPolicy;
++
++  const staffDefaultBranch = staff?.kind === 'branch'
++    ? selectStaffIssuerBranch({
++        staff,
++        explicitBranchId: req.nextUrl.searchParams.get('branchId')?.trim() || null,
++        cookieBranchId: req.cookies?.get(PRO_BRANCH_CONTEXT_COOKIE)?.value?.trim() || null,
++      })
++    : { ok: false as const };
++
++  return NextResponse.json({
++    partners: partnersList,
++    blockedPartners,
++    certificateProgramSelfReady: selfPartner != null,
++    certificateProgramSelfMissing:
++      selfPartner != null ? [] : certificateProgramSelfMissing,
++    certificateRecommendationIssuerReady: issuerReadiness.ready,
++    certificateRecommendationIssuerMissing: issuerReadiness.missingFields,
++    isAgentRecommender: issuerReadiness.isAgentIssuer,
++    selfBranches,
++    ...(staff?.kind === 'branch'
++      ? {
++          staffIssuer: {
++            branchIds: staff.writableBranchIds,
++            defaultBranchId: staffDefaultBranch.ok ? staffDefaultBranch.branchId : null,
++          },
++        }
++      : {}),
++    certificateProgramHint:
++      selfPartner == null && currentUser && !issuerReadiness.isAgentIssuer
++        ? 'Чтобы участвовать в программе сертификатов, заполните публичные данные, которые увидит клиент: название организации, город и категории со скидками.'
++        : undefined,
++  });
++}
 \ No newline at end of file

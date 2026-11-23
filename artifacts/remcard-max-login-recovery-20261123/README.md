@@ -25,9 +25,13 @@ Touched paths under `remcard-navigator` (no DB migrations, no prod flags, no bot
 - `src/app/api/pro/mini-app/bootstrap/route.ts`
 - `src/app/api/pro/mini-app/scan/route.ts`
 - `src/app/api/pro/mini-app/certificate/options/route.ts`
+- `src/app/api/store/certificate/available-partners/route.ts` (thin GET wrapper)
+- `src/lib/storeCertificateAvailablePartners.ts` (shared certificate partner catalog builder)
 - `src/app/api/pro/mini-app/__tests__/auth.routes.test.ts`
+- `src/app/api/pro/mini-app/__tests__/miniAppCertificateOptions.embedded.test.ts`
 - `src/lib/miniAppSessionCookie.ts`, `miniAppEmbeddedAuth.ts`, `miniAppCabinetAuth.ts`
 - `src/lib/bots/miniAppLoginDispatch.ts`
+- `src/lib/messengerAuthIdentity.ts` (optional `requireIdentifier` on verify)
 - `src/lib/miniAppMessengerOtpVerify.ts`
 - `src/lib/__tests__/miniAppEmbeddedAuth.test.ts`, `miniAppCabinetAuth.test.ts`, `miniAppMessengerOtpVerify.test.ts`
 
