@@ -57,7 +57,7 @@ function initialContext(param: ScannerAppealParam): ReceivingAppealScannerContex
   return { status: "idle" };
 }
 
-const LINK_SCOPE_LOST_MESSAGE =
+export const LINK_SCOPE_LOST_MESSAGE =
   "Покупка создана, но привязка к обращению недоступна: нет доверенного контекста исходной попытки (повтор проверки или смена обращения).";
 
 const SCANNER_BINDING_REVISION_CONFLICT =
@@ -434,9 +434,38 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
   );
 
   const persistOrdinaryAppealBinding = useCallback(
-    (userId: string, idempotencyKey: string): boolean => {
-      const binding = adoptedBindingRef.current;
+    (
+      userId: string,
+      idempotencyKey: string,
+      meta?: { certCode: string; branchId?: string },
+    ): boolean => {
       const ctx = contextRef.current;
+      if (param.mode === "scoped") {
+        const appealId = urlAppealId;
+        if (!appealId || ctx.status !== "ready" || ctx.appealId !== appealId || ctx.orderAlreadyLinked) {
+          return false;
+        }
+        const certCode = meta?.certCode?.trim() ?? "";
+        if (!certCode) {
+          return false;
+        }
+        const branchKey = meta?.branchId?.trim() ?? "";
+        const payload: ScannerOrdinaryAppealBindingV1 = {
+          v: 1,
+          userId,
+          idempotencyKey,
+          appealId,
+          certCode,
+          branchId: branchKey,
+          revision: revisionRef.current,
+        };
+        const saved = saveScannerOrdinaryAppealBinding(payload);
+        if (saved) {
+          hydrateFrozenSubmitScope(payload);
+        }
+        return saved;
+      }
+      const binding = adoptedBindingRef.current;
       if (!binding || crmWriteCapable !== true || ctx.status !== "ready") {
         return false;
       }
@@ -462,8 +491,15 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       }
       return saved;
     },
-    [crmWriteCapable, hydrateFrozenSubmitScope],
+    [crmWriteCapable, hydrateFrozenSubmitScope, param.mode, urlAppealId],
   );
+
+  const isSubmitLinkScopeReady = useCallback((idempotencyKey: string): boolean => {
+    if (!scopeRef.current) {
+      return true;
+    }
+    return frozenSubmitByKeyRef.current.has(idempotencyKey);
+  }, []);
 
   const discardOrdinarySession = useCallback(() => {
     certEntryGen.current += 1;
@@ -575,7 +611,12 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       return;
     }
     const ctx = contextRef.current;
-    if (ctx.status !== "ready" || ctx.appealId !== frozen.appealId || ctx.orderAlreadyLinked) {
+    const appealKnown =
+      (ctx.status === "ready" &&
+        ctx.appealId === frozen.appealId &&
+        !ctx.orderAlreadyLinked) ||
+      (ctx.status === "loading" && ctx.appealId === frozen.appealId);
+    if (!appealKnown) {
       setLinkPhase("failed");
       setLinkError(LINK_SCOPE_LOST_MESSAGE);
       return;
@@ -652,8 +693,17 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     if (!scope || scope.orderId !== pendingOrderId || scope.linkGen !== linkGen.current) {
       return;
     }
+    if (scopeRef.current !== scope.appealId) {
+      setLinkPhase("failed");
+      setLinkError(LINK_SCOPE_LOST_MESSAGE);
+      return;
+    }
+    const ctx = contextRef.current;
+    if (ctx.status !== "ready" || ctx.appealId !== scope.appealId || ctx.orderAlreadyLinked) {
+      return;
+    }
     void runOrderLink(pendingOrderId);
-  }, [linkPhase, pendingOrderId, runOrderLink]);
+  }, [linkPhase, pendingOrderId, runOrderLink, context]);
 
   const retryOrderLinkOnly = useCallback(() => {
     if (linkInFlight.current) {
@@ -683,6 +733,7 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
 
   const appealScoped = param.mode === "scoped" || Boolean(adoptedAppealId);
   const appealInvalid = param.mode === "invalid";
+  const appealSubmitBindingRequired = param.mode === "scoped";
   const allowsNewStoreOrder =
     !appealScoped || (context.status === "ready" && !context.orderAlreadyLinked);
   const requiresAppealReady = appealScoped && context.status !== "ready";
@@ -702,8 +753,10 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       ordinaryAppealRequired,
       blocksOrdinaryCheckout,
       ordinaryAppealIntegrationRequired,
+      appealSubmitBindingRequired,
       crmWriteCapable,
       allowsNewStoreOrder,
+      isSubmitLinkScopeReady,
       requiresAppealReady,
       certEntryError,
       certEntryPending,
@@ -726,6 +779,7 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
     [
       appealInvalid,
       appealScoped,
+      appealSubmitBindingRequired,
       allowsNewStoreOrder,
       assertPreviewAllowed,
       beginOrderLinkAfterSuccess,
@@ -740,6 +794,7 @@ export function useReceivingAppealScannerHandoff(input: ScannerAppealParam | str
       effectiveAppealId,
       ensureOrdinaryAppealContext,
       freezeSubmitScopeOnce,
+      isSubmitLinkScopeReady,
       linkError,
       linkPhase,
       crmWriteCapable,

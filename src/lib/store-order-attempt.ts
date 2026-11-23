@@ -268,6 +268,19 @@ export function releaseStoreOrderAttemptForEdit(): void {
   clearStoreOrderAttempt();
 }
 
+/** Drop a just-created attempt that never left the client (storage status still in_flight). */
+export function releaseFreshInFlightStoreOrderAttempt(userId: string, idempotencyKey: string): boolean {
+  const record = readRawAttempt();
+  if (!record || record.userId !== userId) {
+    return false;
+  }
+  if (record.idempotencyKey !== idempotencyKey || record.status !== "in_flight") {
+    return false;
+  }
+  clearStoreOrderAttempt();
+  return true;
+}
+
 export function isRestorableAttempt(record: StoreOrderAttemptRecord | null): boolean {
   return record?.status === "unknown";
 }

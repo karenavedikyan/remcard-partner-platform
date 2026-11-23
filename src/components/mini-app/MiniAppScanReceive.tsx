@@ -43,6 +43,7 @@ import {
   NEW_PURCHASE_WARNING,
   prepareStoreOrderRetry,
   releaseStoreOrderAttemptForEdit,
+  releaseFreshInFlightStoreOrderAttempt,
   STORAGE_SAVE_FAILED_MESSAGE,
   storeOrderAttemptBodiesEqual,
   type OrderPostOutcome,
@@ -56,7 +57,10 @@ import {
   type RewardConfirmationDraft,
 } from "@/lib/reward-confirmation";
 import { RewardConfirmationFields } from "@/components/scanner/RewardConfirmationFields";
-import { useReceivingAppealScannerHandoff } from "@/components/scanner/useReceivingAppealScannerHandoff";
+import {
+  LINK_SCOPE_LOST_MESSAGE,
+  useReceivingAppealScannerHandoff,
+} from "@/components/scanner/useReceivingAppealScannerHandoff";
 import styles from "./mini-app.module.css";
 
 type Phase = "scan" | "purchase" | "success" | "recovery";
@@ -246,6 +250,21 @@ export function MiniAppScanReceive({
     }
   }, [actorUserId, fixturePreview, receiving, isBranchScopedCheckout]);
 
+  useEffect(() => {
+    const attempt = storedAttempt;
+    if (!attempt || !receiving.appealScoped || !isStoreOrderAttemptLocked(attempt)) {
+      return;
+    }
+    if (receiving.context?.status !== "ready") {
+      return;
+    }
+    receiving.prepareOrderAttemptScope(attempt.idempotencyKey, true, {
+      userId: actorUserId,
+      certCode: attempt.body.certificateCode,
+      branchId: attempt.branchId,
+    });
+  }, [actorUserId, receiving, storedAttempt]);
+
   const awaitAppealRestoreIfNeeded = useCallback(async (): Promise<boolean> => {
     if (!receiving.ordinaryAppealRequired) {
       return true;
@@ -308,6 +327,17 @@ export function MiniAppScanReceive({
     return !amounts.ok;
   }, [preview, amountDrafts, discountFieldErrors, orderUncertain, orderConflict]);
 
+  const rollbackFreshNeverSentAttempt = useCallback(
+    (attempt: StoreOrderAttemptRecord) => {
+      if (releaseFreshInFlightStoreOrderAttempt(actorUserId, attempt.idempotencyKey)) {
+        setStoredAttempt(null);
+        setOrderUncertain(false);
+        setOrderConflict(false);
+      }
+    },
+    [actorUserId],
+  );
+
   const applyPostOutcome = useCallback((outcome: OrderPostOutcome) => {
     switch (outcome.kind) {
       case "success":
@@ -361,7 +391,7 @@ export function MiniAppScanReceive({
     }
   }, [actorUserId, syncStoredAttempt]);
 
-  const postStoreOrder = useCallback(
+  const executePostStoreOrder = useCallback(
     async (attemptRecord: StoreOrderAttemptRecord, wasRetry: boolean) => {
       if (wasRetry) {
         if (isBranchScopedCheckout && !attemptRecord.branchId?.trim()) {
@@ -379,10 +409,20 @@ export function MiniAppScanReceive({
         certCode: attemptRecord.body.certificateCode,
         branchId: attemptRecord.branchId,
       });
+      if (
+        receiving.appealScoped &&
+        !receiving.isSubmitLinkScopeReady(attemptRecord.idempotencyKey)
+      ) {
+        setSubmitError(
+          wasRetry
+            ? LINK_SCOPE_LOST_MESSAGE
+            : "Нет доверенного контекста обращения для оформления. Обновите mini-app и повторите.",
+        );
+        return;
+      }
       const operationBranchId = wasRetry
         ? attemptRecord.branchId?.trim() || undefined
         : attemptRecord.branchId?.trim() || branchId?.trim() || undefined;
-      submitInFlight.current = true;
       setSubmitting(true);
       setSubmitError("");
       markStoreOrderAttemptInFlight(actorUserId);
@@ -414,7 +454,6 @@ export function MiniAppScanReceive({
           applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
         }
       } finally {
-        submitInFlight.current = false;
         setSubmitting(false);
         syncStoredAttempt();
       }
@@ -429,6 +468,21 @@ export function MiniAppScanReceive({
       receiving,
       syncStoredAttempt,
     ],
+  );
+
+  const postStoreOrder = useCallback(
+    async (attemptRecord: StoreOrderAttemptRecord, wasRetry: boolean) => {
+      if (submitInFlight.current) {
+        return;
+      }
+      submitInFlight.current = true;
+      try {
+        await executePostStoreOrder(attemptRecord, wasRetry);
+      } finally {
+        submitInFlight.current = false;
+      }
+    },
+    [executePostStoreOrder],
   );
 
   const checkStoredAttempt = useCallback(async () => {
@@ -568,80 +622,99 @@ export function MiniAppScanReceive({
 
   const submitOrder = useCallback(async () => {
     if (!preview || submitInFlight.current || submitting) return;
-    const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
-    if (!amounts.ok) {
-      setSubmitError(amounts.message);
+    if (receiving.requiresAppealReady) {
+      setSubmitError("Загружаем обращение. Повторите после готовности контекста.");
       setConfirmOpen(false);
       return;
     }
-    const discountValidation = validateOrderDiscountDrafts(
-      preview.availableCategories,
-      amountDrafts,
-      discountDrafts,
-    );
-    if (!discountValidation.ok) {
-      setSubmitError(discountValidation.message);
-      setConfirmOpen(false);
-      return;
-    }
-    const items = buildOrderItems(preview.availableCategories, amountDrafts, discountDrafts).map((item) =>
-      preview.partner.isSelfScan
-        ? item
-        : {
-            ...item,
-            rewardConfirmation: rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft),
-          },
-    );
-    const body = { certificateCode: certCode, items };
-    const pending = loadStoreOrderAttempt(actorUserId);
-    const wasRetry = Boolean(pending && isStoreOrderAttemptLocked(pending) && isRestorableAttempt(pending));
-    let attemptRecord: StoreOrderAttemptRecord;
-    if (wasRetry) {
-      const prepared = prepareStoreOrderRetry(actorUserId);
-      if (!prepared.ok) {
-        setSubmitError(
-          prepared.reason === "conflict" ? ATTEMPT_CONFLICT_MESSAGE : UNCERTAIN_ORDER_DETAIL,
-        );
+    submitInFlight.current = true;
+    try {
+      const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
+      if (!amounts.ok) {
+        setSubmitError(amounts.message);
+        setConfirmOpen(false);
         return;
       }
-      if (!storeOrderAttemptBodiesEqual(prepared.record.body, body)) {
-        setSubmitError(ATTEMPT_BODY_MISMATCH_MESSAGE);
+      const discountValidation = validateOrderDiscountDrafts(
+        preview.availableCategories,
+        amountDrafts,
+        discountDrafts,
+      );
+      if (!discountValidation.ok) {
+        setSubmitError(discountValidation.message);
+        setConfirmOpen(false);
         return;
       }
-      attemptRecord = prepared.record;
-    } else {
-      const created = createStoreOrderAttempt({
-        userId: actorUserId,
-        body,
+      const items = buildOrderItems(preview.availableCategories, amountDrafts, discountDrafts).map((item) =>
+        preview.partner.isSelfScan
+          ? item
+          : {
+              ...item,
+              rewardConfirmation: rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft),
+            },
+      );
+      const body = { certificateCode: certCode, items };
+      const pending = loadStoreOrderAttempt(actorUserId);
+      const wasRetry = Boolean(pending && isStoreOrderAttemptLocked(pending) && isRestorableAttempt(pending));
+      let attemptRecord: StoreOrderAttemptRecord;
+      const bindingMeta = {
+        certCode: body.certificateCode,
         branchId: branchId ?? undefined,
-      });
-      if (!created.ok) {
-        const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
-        setSubmitError(
-          created.reason === "body_mismatch"
-            ? ATTEMPT_BODY_MISMATCH_MESSAGE
-            : created.reason === "blocked"
-              ? locked && orderUncertain
-                ? UNCERTAIN_ORDER_DETAIL
-                : ATTEMPT_CONFLICT_MESSAGE
-              : "Не удалось сохранить попытку оформления",
-        );
+      };
+      const appealBindingRequired =
+        receiving.ordinaryAppealIntegrationRequired || receiving.appealSubmitBindingRequired;
+      if (wasRetry) {
+        const prepared = prepareStoreOrderRetry(actorUserId);
+        if (!prepared.ok) {
+          setSubmitError(
+            prepared.reason === "conflict" ? ATTEMPT_CONFLICT_MESSAGE : UNCERTAIN_ORDER_DETAIL,
+          );
+          return;
+        }
+        if (!storeOrderAttemptBodiesEqual(prepared.record.body, body)) {
+          setSubmitError(ATTEMPT_BODY_MISMATCH_MESSAGE);
+          return;
+        }
+        attemptRecord = prepared.record;
+      } else {
+        const created = createStoreOrderAttempt({
+          userId: actorUserId,
+          body,
+          branchId: branchId ?? undefined,
+        });
+        if (!created.ok) {
+          const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
+          setSubmitError(
+            created.reason === "body_mismatch"
+              ? ATTEMPT_BODY_MISMATCH_MESSAGE
+              : created.reason === "blocked"
+                ? locked && orderUncertain
+                  ? UNCERTAIN_ORDER_DETAIL
+                  : ATTEMPT_CONFLICT_MESSAGE
+                : "Не удалось сохранить попытку оформления",
+          );
+          return;
+        }
+        attemptRecord = created.record;
+        if (
+          appealBindingRequired &&
+          !receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey, bindingMeta)
+        ) {
+          rollbackFreshNeverSentAttempt(created.record);
+          syncStoredAttempt();
+          setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
+          setConfirmOpen(false);
+          return;
+        }
+      }
+      if (wasRetry && isBranchScopedCheckout && !attemptRecord.branchId?.trim()) {
+        setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
         return;
       }
-      attemptRecord = created.record;
-      if (
-        receiving.ordinaryAppealIntegrationRequired &&
-        !receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey)
-      ) {
-        setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
-        return;
-      }
+      await executePostStoreOrder(attemptRecord, wasRetry);
+    } finally {
+      submitInFlight.current = false;
     }
-    if (wasRetry && isBranchScopedCheckout && !attemptRecord.branchId?.trim()) {
-      setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
-      return;
-    }
-    await postStoreOrder(attemptRecord, wasRetry);
   }, [
     preview,
     submitting,
@@ -654,7 +727,9 @@ export function MiniAppScanReceive({
     isBranchScopedCheckout,
     receiving,
     orderUncertain,
-    postStoreOrder,
+    executePostStoreOrder,
+    rollbackFreshNeverSentAttempt,
+    syncStoredAttempt,
   ]);
 
   if (phase === "recovery" && storedAttempt) {

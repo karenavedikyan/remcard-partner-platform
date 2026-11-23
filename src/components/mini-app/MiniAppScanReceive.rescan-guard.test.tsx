@@ -18,6 +18,10 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
   useReceivingAppealScannerHandoff: () => ({
     ordinaryAppealRequired: false,
     ordinaryAppealIntegrationRequired: false,
+    appealSubmitBindingRequired: false,
+    appealScoped: false,
+    requiresAppealReady: false,
+    context: { status: "idle" },
     crmReadOnlyNotice: null,
     appealId: null,
     linkPhase: "idle",
@@ -29,6 +33,7 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
     retryOrderLinkOnly: () => undefined,
     persistOrdinaryAppealBinding: () => true,
     prepareOrderAttemptScope: () => undefined,
+    isSubmitLinkScopeReady: () => true,
   }),
 }));
 
