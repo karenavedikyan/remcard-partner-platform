@@ -206,10 +206,10 @@ index e5dc415d..ac71ee50 100644
      platform: input.platform,
 diff --git a/src/lib/store/__tests__/orderCreate.pool-validation.test.ts b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
 new file mode 100644
-index 00000000..6198a071
+index 00000000..97b0deda
 --- /dev/null
 +++ b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
-@@ -0,0 +1,204 @@
+@@ -0,0 +1,215 @@
 +import { describe, expect, it } from 'vitest';
 +import {
 +  prepareStoreOrderItems,
@@ -224,8 +224,6 @@ index 00000000..6198a071
 +  return {
 +    id: 'cat-1',
 +    certificatePartnerId: 'cp-1',
-+    category: overrides.category,
-+    categoryLabel: overrides.categoryLabel,
 +    discountPercent: 10,
 +    issuerPercent: 5,
 +    proBonusPercent: 5,
@@ -371,6 +369,19 @@ index 00000000..6198a071
 +      expect('error' in out).toBe(true);
 +    });
 +
++    it('missing live term keeps frozen 15 cap on preflight (not for PROF)', () => {
++      const ctxMissing: PrepareStoreOrderItemsContext = {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map(),
++      };
++      const out = prepareStoreOrderItems(
++        [{ category: 'doors', categoryLabel: 'Двери', amount: 50_000, discountPercent: 15 }],
++        map,
++        ctxMissing,
++      );
++      expect('error' in out).toBe(false);
++    });
++
 +    it('live 8: accepts corrected 8%', () => {
 +      const ctx8: PrepareStoreOrderItemsContext = {
 +        limitMode: 'live_partnership',
@@ -417,13 +428,15 @@ index 00000000..6198a071
 \ No newline at end of file
 diff --git a/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts b/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts
 new file mode 100644
-index 00000000..11e02cc4
+index 00000000..64a74e3d
 --- /dev/null
 +++ b/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,56 @@
 +import { describe, expect, it } from 'vitest';
++import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
 +import {
 +  frozenCategoryPoolPercent,
++  partnershipAccrualPoolPercent,
 +  resolveEffectiveClientDiscountMaxPercent,
 +  resolveStoreOrderCategoryLimitMode,
 +} from '@/lib/store/storeOrderCategoryLimit';
@@ -467,6 +480,12 @@ index 00000000..11e02cc4
 +
 +  it('legacy partner selects frozen mode', () => {
 +    expect(resolveStoreOrderCategoryLimitMode({ policySnapshotJson: null })).toBe('frozen_certificate');
++  });
++
++  it('missing/excluded partnership term → accrual pool 0 and PROF 0', () => {
++    expect(partnershipAccrualPoolPercent(undefined)).toBe(0);
++    expect(issuerBonusPercentFromFrozenDiscount(10, partnershipAccrualPoolPercent(undefined))).toBe(0);
++    expect(issuerBonusPercentFromFrozenDiscount(10, partnershipAccrualPoolPercent(20))).toBe(10);
 +  });
 +});
 \ No newline at end of file
@@ -623,7 +642,7 @@ index 00000000..6af612d4
 +});
 \ No newline at end of file
 diff --git a/src/lib/store/orderCreate.ts b/src/lib/store/orderCreate.ts
-index 9a0da27d..6a51d225 100644
+index 9a0da27d..92173544 100644
 --- a/src/lib/store/orderCreate.ts
 +++ b/src/lib/store/orderCreate.ts
 @@ -21,17 +21,27 @@ import {
@@ -649,7 +668,7 @@ index 9a0da27d..6a51d225 100644
 +} from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
 +import { normalizePercent } from '@/lib/certificatePool';
 +import {
-+  frozenCategoryPoolPercent,
++  partnershipAccrualPoolPercent,
 +  resolveEffectiveClientDiscountMaxPercent,
 +  type StoreOrderCategoryLimitMode,
 +} from '@/lib/store/storeOrderCategoryLimit';
@@ -690,23 +709,14 @@ index 9a0da27d..6a51d225 100644
      const discountAmount = Math.round((amount * applied.value) / 100);
      const issuerPct = issuerBonusPercentFromFrozenDiscount(applied.value, pool);
      const issuerLine = Math.round((amount * issuerPct) / 100);
-@@ -244,10 +268,22 @@ async function recomputeIssuerBonusForSnapshotPartner(
-     select: { category: true, storePercent: true },
-   });
-   const poolByCategory = new Map(terms.map((t) => [t.category, Number(t.storePercent)]));
-+  const categoryByKey = new Map(
-+    certPartner.categories.filter((c) => !c.isExcluded).map((c) => [c.category, c]),
-+  );
+@@ -247,7 +271,13 @@ async function recomputeIssuerBonusForSnapshotPartner(
    let totalIssuerBonus = 0;
    for (const line of prepared.orderItems) {
      const appliedDiscount = line.discountPercent;
 -    const pool = poolByCategory.get(line.category) ?? 0;
-+    const categoryConfig = categoryByKey.get(line.category);
 +    const liveStore = poolByCategory.get(line.category);
-+    const pool = categoryConfig
-+      ? resolveEffectiveClientDiscountMaxPercent('live_partnership', categoryConfig, liveStore)
-+      : liveStore ?? 0;
-+    if (clientDiscountExceedsCategoryPool(appliedDiscount, pool)) {
++    const pool = partnershipAccrualPoolPercent(liveStore);
++    if (liveStore !== undefined && clientDiscountExceedsCategoryPool(appliedDiscount, pool)) {
 +      throw new StoreOrderDiscountPoolError(
 +        `Скидка клиента ${appliedDiscount}% по "${line.categoryLabel}" превышает максимум по категории ${pool}%`,
 +      );
@@ -734,11 +744,13 @@ index d4d64f30..17027395 100644
    constructor(public readonly message: string) {
 diff --git a/src/lib/store/storeOrderCategoryLimit.ts b/src/lib/store/storeOrderCategoryLimit.ts
 new file mode 100644
-index 00000000..a98c0c53
+index 00000000..c359260e
 --- /dev/null
 +++ b/src/lib/store/storeOrderCategoryLimit.ts
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,84 @@
++import { Prisma } from '@prisma/client';
 +import { categoryIssuerPercent, normalizePercent } from '@/lib/certificatePool';
++import { prisma } from '@/lib/prisma';
 +import { partnerHasRecipientPolicySnapshot } from '@/lib/store/recipientPolicyUsage';
 +
 +export type CategoryPoolRow = {
@@ -752,8 +764,9 @@ index 00000000..a98c0c53
 +/**
 + * Category client-discount limits at store order PREVIEW + POST:
 + *
-+ * - **Snapshot recipient** (`policySnapshotJson`): max = live `PartnershipTerm.storePercent` when the
-+ *   category is on the partnership; otherwise frozen certificate pool. Transaction re-reads terms under lock.
++ * - **Snapshot recipient** (`policySnapshotJson`): preview/POST max = live `storePercent` when the category
++ *   is on the partnership (`isExcluded: false`); otherwise frozen certificate pool for cap display only.
++ *   Transaction PROF accrual uses `poolByCategory.get(category) ?? 0` — no frozen fallback (missing/excluded → PROF 0).
 + * - **Legacy / self-scan without snapshot**: max = frozen offered + issuer percents on the certificate line only.
 + * - Issuer bonus at purchase: `max(pool − appliedClient, 0)` on the same pool base (gross before discount).
 + * - Own-certificate self-scan does not accrue PROF (unchanged order path).
@@ -800,9 +813,17 @@ index 00000000..a98c0c53
 +  return new Map(terms.map((t) => [t.category, normalizePercent(Number(t.storePercent))]));
 +}
 +
++/** Live partnership pool for PROF accrual (transaction). Missing/excluded active term → 0. */
++export function partnershipAccrualPoolPercent(liveStorePercent: number | undefined): number {
++  if (liveStorePercent === undefined || !Number.isFinite(liveStorePercent)) {
++    return 0;
++  }
++  return normalizePercent(liveStorePercent);
++}
++
 +export async function loadLivePartnershipPoolByCategory(
 +  partnershipId: string | null | undefined,
-+  db: { partnershipTerm: { findMany: (args: unknown) => Promise<Array<{ category: string; storePercent: number }>> } },
++  db: Prisma.TransactionClient | typeof prisma = prisma,
 +): Promise<Map<string, number>> {
 +  if (!partnershipId) return new Map();
 +  const terms = await db.partnershipTerm.findMany({

@@ -1,3 +1,129 @@
+diff --git a/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md b/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md
+new file mode 100644
+index 00000000..a579e493
+--- /dev/null
++++ b/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md
+@@ -0,0 +1,57 @@
++# RemCard mini-app parity — отчёт (изолированная ветка)
++
++## Базовые SHA (Timeweb, проверены локально)
++
++| Слой | Репозиторий | Базовый commit |
++|------|-------------|----------------|
++| FE | `remcard-partner-platform` | `c457512f4051166d5f9a74201666736c4e15dbac` |
++| BE | `remcard-navigator` | `5f11f3cc964158cff4a276476702c2d51ff4626c` |
++
++Рабочая ветка (оба репозитория): `cursor/remcard-mini-app-telegram-max-parity-d461`.
++
++Исходный пилот: `artifacts/mini-app-pilot-20261122/ACCEPTANCE.md` @ FE `c457512f`.
++
++## Что сделано в этой итерации
++
++| Область | Было (пилот) | Стало |
++|---------|--------------|-------|
++| Сканер mini-app | Только read-only verify (`MiniAppScanVerify` + `GET /api/pro/mini-app/scan`) | `MiniAppScanReceive`: verify → CRM certificate-entry (как full cabinet) → preview/order → привязка order-link |
++| Скидки / пул | FE без жёсткого пула; BE допускал client % выше пула (PROF=0) | Отказ при превышении пула на 0,01 п.п.; FE «Максимум по категории»; BE `prepareStoreOrderItems` + live pool в транзакции |
++| Сертификат готов | QR + код | + клиентский просмотр, share, PDF, ссылка, условия, срок |
++| Кошелёк | Суммы без PAN | Показ `cardIdentifier`; retry bootstrap; ссылка на settlements |
++| Филиал | scan без branch-pick | `scan_qr` как create — выбор точки при нескольких филиалах |
++
++## Не проверено / остаётся
++
++- E2E Telegram/MAX WebView, живая камера, staging DB
++- Пиксель-перфект с master preview `8894510b-c1a4-4683-be6c-b68683915743` (без доступа к canvas в этом прогоне)
++- Полный UI весовых скриншотов 320/390/1440 — запуск `mini-app-visual-capture.mjs` после `npm run dev`
++- Агент по-прежнему без scan (серверный `canScanQr`)
++
++## Тесты
++
++- BE: `vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts src/lib/store/__tests__/storeOrderCategoryLimit.test.ts src/lib/store/__tests__/storeOrderPreviewPostParity.test.ts src/lib/store/__tests__/storeOrderPreviewCategories.test.ts src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts`
++- FE: `vitest run src/lib/order-totals.test.ts src/lib/mini-app/mini-app-scan-receive-policy.test.ts src/components/mini-app/MiniAppScanReceive.discount.test.tsx src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx` (18 cases)
++
++## Скидки (итерация приёмки)
++
++- Сброс по blur → unset → UI снова % сертификата; payload без `discountPercent`
++- Явный `0` сохраняется и уходит в заказ
++- Ошибка у поля и блок «К подтверждению» до клика при отрицательной скидке и +0,01 п.п. над пулом
++
++## PREVIEW ↔ POST лимит категории (итерация)
++
++- Единый `resolveEffectiveClientDiscountMaxPercent` (BE): snapshot → live `storePercent`, legacy/self-scan → frozen offered+issuer
++- Preview отдаёт `maxClientDiscountPercent`; FE `categoryPoolPercent` использует его (совместимость: без поля — старый расчёт)
++- POST preflight грузит те же live terms; транзакция повторно проверяет под lock (без двойного legacy-отказа у snapshot)
++- Сценарии: frozen 15 → live 20 (UI+POST 20, 20.01 отказ); live 12 / live 8 при offered 10
++
++## Повтор после HTTP 400 (приёмка)
++
++- `validation_failed` (в т.ч. 400 лимит скидки): `releaseStoreOrderAttemptForEdit`, сообщение сервера, второй POST с новым `Idempotency-Key`
++- `uncertain` / сеть: попытка в `unknown`, новая покупка заблокирована (без автоповтора)
++- `409`: `conflict`, отдельно от validation
++
++## Экспорт патчей
++
++См. `artifacts/mini-app-pilot-20261122/patches/` — `fe.patch`, `be.patch`, `checksums.txt`.
+\ No newline at end of file
+diff --git a/artifacts/mini-app-pilot-20261122/SMOKE_TELEGRAM_MAX.md b/artifacts/mini-app-pilot-20261122/SMOKE_TELEGRAM_MAX.md
+new file mode 100644
+index 00000000..5d95d6b7
+--- /dev/null
++++ b/artifacts/mini-app-pilot-20261122/SMOKE_TELEGRAM_MAX.md
+@@ -0,0 +1,55 @@
++# Изолированный smoke mini-app (Telegram / MAX), без production
++
++## Предусловия
++
++- Локально: `npm run dev` в **remcard-partner-platform** и API **remcard-navigator** (или fixture proxy).
++- Ветка: `cursor/remcard-mini-app-telegram-max-parity-d461`.
++- **Не** подключать production БД, Timeweb, ботов с боевыми токенами; **не** слать реальные сообщения пользователям.
++
++## Fixture mini-app (без мессенджера)
++
++```bash
++cd remcard-partner-platform
++npm run dev
++# Открыть /dev/mini-app-fixture?scenario=scan-receive
++```
++
++Сценарии в `src/app/dev/mini-app-fixture/fixtures-data.ts`: скан → CRM → preview → скидка → подтверждение.
++
++Проверить вручную:
++
++1. «Максимум по категории» совпадает с `maxClientDiscountPercent` из preview.
++2. После искусственного 400 по лимиту — правка скидки и **второй** POST (validation-retry).
++3. При offered > max (live 8, сертификат 10%) — блок до исправления.
++
++## Telegram / MAX WebView (mock auth)
++
++Использовать dev bootstrap endpoint с **тестовым** `actorUserId` и локальным JWT, как в существующих integration-фикстурах mini-app (без invite/payout flows).
++
++```bash
++# Пример: только проверка маршрута bootstrap (curl к localhost)
++curl -sS -X POST http://127.0.0.1:3000/api/pro/mini-app/bootstrap \
++  -H 'Content-Type: application/json' \
++  -d '{"platform":"telegram-dev-fixture"}' | jq .
++```
++
++Далее открыть URL mini-app из ответа в WebView эмуляторе (Browser devtools mobile) — **не** публиковать в боевой бот.
++
++## Негативные проверки
++
++- Сеть offline после confirm → uncertain, без дубля заказа (см. `MiniAppScanReceive.validation-retry.test.tsx`).
++- POST с `discountPercent` выше live max → 400, без записи order/bonus (BE route mock / vitest).
++
++## Автоматика перед smoke
++
++```bash
++# FE
++npm exec vitest run src/lib/order-totals.test.ts \
++  src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx \
++  src/components/mini-app/MiniAppScanReceive.discount.test.tsx
++
++# BE
++cd ../remcard-navigator
++npm exec vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts \
++  src/lib/store/__tests__/storeOrderCategoryLimit.test.ts
++```
+\ No newline at end of file
 diff --git a/src/app/dev/mini-app-fixture/fixtures-data.ts b/src/app/dev/mini-app-fixture/fixtures-data.ts
 index e65f348d..abac557b 100644
 --- a/src/app/dev/mini-app-fixture/fixtures-data.ts
