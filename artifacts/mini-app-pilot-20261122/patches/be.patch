@@ -1,5 +1,127 @@
+diff --git a/src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts b/src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts
+new file mode 100644
+index 00000000..4767ebd2
+--- /dev/null
++++ b/src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts
+@@ -0,0 +1,115 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import { NextRequest } from 'next/server';
++import { CertificateStatus, UserRole } from '@prisma/client';
++
++const mockGetUser = vi.fn();
++const mockGetProContext = vi.fn();
++const mockCertFindFirst = vi.fn();
++const mockOrderCreate = vi.fn();
++const mockPartnershipTerms = vi.fn();
++
++vi.mock('@/lib/proAuth', () => ({
++  getAuthenticatedUser: (req: NextRequest) => mockGetUser(req),
++}));
++
++vi.mock('@/lib/proBranchContext', () => ({
++  getProContext: (userId: string) => mockGetProContext(userId),
++}));
++
++vi.mock('@/lib/proContextRequest', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('@/lib/proContextRequest')>();
++  return {
++    ...actual,
++    getProContextForRequest: (_req: NextRequest, userId: string) => mockGetProContext(userId),
++    preferredBranchIdFromRequest: () => null,
++  };
++});
++
++vi.mock('@/lib/cabinetAccess', () => ({
++  assertCabinetProfAccess: vi.fn().mockResolvedValue({ ok: true }),
++}));
++
++vi.mock('@/lib/prisma', () => ({
++  prisma: {
++    certificate: {
++      findFirst: (...a: unknown[]) => mockCertFindFirst(...a),
++    },
++    partnershipTerm: {
++      findMany: (...a: unknown[]) => mockPartnershipTerms(...a),
++    },
++    $transaction: async () => {
++      throw new Error('transaction should not run on validation failure');
++    },
++  },
++}));
++
++const partnerRow = {
++  id: 'cp-snap',
++  storeUserId: 'store-1',
++  branchId: null,
++  storeName: 'Магазин',
++  isSelfScan: false,
++  partnershipId: 'part-1',
++  policySnapshotJson: { purchaseLimit: 5, categoryRates: [] },
++  policyValidUntil: new Date('2099-01-01'),
++  policyConsumedUses: 0,
++  categories: [
++    {
++      category: 'doors',
++      categoryLabel: 'Двери',
++      discountPercent: 10,
++      issuerPercent: 5,
++      proBonusPercent: 5,
++      isExcluded: false,
++    },
++  ],
++};
++
++describe('POST /api/store/order — live pool preflight (mocked)', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockGetUser.mockResolvedValue({ id: 'store-1', role: UserRole.PRO, partnerType: 'STORE' });
++    mockGetProContext.mockResolvedValue({
++      role: 'SOLO_PARTNER',
++      organization: null,
++      branches: [],
++      activeBranch: null,
++      branchRole: null,
++      employer: null,
++      employeeRole: null,
++    });
++    mockPartnershipTerms.mockResolvedValue([{ category: 'doors', storePercent: 15 }]);
++    mockCertFindFirst.mockResolvedValue({
++      id: 'cert-1',
++      proUserId: 'pro-1',
++      promoCode: 'RC-TEST',
++      qrCode: 'qr',
++      issuerKindSnapshot: 'SPECIALIST',
++      status: CertificateStatus.ACTIVE,
++      validUntil: null,
++      usageCount: 0,
++      maxUsages: 3,
++      branchId: null,
++      partners: [partnerRow],
++      proUser: { companyKind: null, partnerActivities: [] },
++    });
++  });
++
++  it('returns 400 above live pool without opening transaction', async () => {
++    const { POST } = await import('../route');
++    const res = await POST(
++      new NextRequest('https://x/api/store/order', {
++        method: 'POST',
++        body: JSON.stringify({
++          certificateCode: 'RC-TEST',
++          items: [{ category: 'doors', categoryLabel: 'Двери', amount: 10_000, discountPercent: 15.01 }],
++        }),
++      }),
++    );
++    expect(res.status).toBe(400);
++    expect(mockOrderCreate).not.toHaveBeenCalled();
++    const json = await res.json();
++    expect(json.error).toMatch(/превышает максимум/i);
++  });
++
++});
+\ No newline at end of file
 diff --git a/src/app/api/store/order/route.ts b/src/app/api/store/order/route.ts
-index 49e67bf8..03ba3f83 100644
+index 49e67bf8..c84699ef 100644
 --- a/src/app/api/store/order/route.ts
 +++ b/src/app/api/store/order/route.ts
 @@ -11,6 +11,7 @@ import {
@@ -10,7 +132,29 @@ index 49e67bf8..03ba3f83 100644
    StoreOrderPayloadConflictError,
    StoreOrderUsageLimitError,
    type CreateOrderItemInput,
-@@ -176,6 +177,9 @@ export async function POST(req: NextRequest) {
+@@ -28,6 +29,10 @@ import {
+ } from '@/lib/store/recipientPolicyUsage';
+ import { certificateConsumableForStoreRead } from '@/lib/store/certificateConsumableGate';
+ import { partnerHasRecipientPolicySnapshot } from '@/lib/store/recipientPolicyUsage';
++import {
++  loadLivePartnershipPoolByCategory,
++  resolveStoreOrderCategoryLimitMode,
++} from '@/lib/store/storeOrderCategoryLimit';
+ 
+ function error(message: string, status = 400) {
+   return NextResponse.json({ error: message }, { status });
+@@ -123,7 +128,9 @@ export async function POST(req: NextRequest) {
+       .map((category) => [category.category, category])
+   );
+ 
+-  const prepared = prepareStoreOrderItems(items, categoryMap);
++  const limitMode = resolveStoreOrderCategoryLimitMode(certPartner);
++  const livePoolByCategory = await loadLivePartnershipPoolByCategory(certPartner.partnershipId, prisma);
++  const prepared = prepareStoreOrderItems(items, categoryMap, { limitMode, livePoolByCategory });
+   if ('error' in prepared) {
+     return error(prepared.error);
+   }
+@@ -176,6 +183,9 @@ export async function POST(req: NextRequest) {
      if (caught instanceof StoreOrderCertificateUnavailableError) {
        return error(caught.message);
      }
@@ -62,12 +206,16 @@ index e5dc415d..ac71ee50 100644
      platform: input.platform,
 diff --git a/src/lib/store/__tests__/orderCreate.pool-validation.test.ts b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
 new file mode 100644
-index 00000000..90a2d3c8
+index 00000000..6198a071
 --- /dev/null
 +++ b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,204 @@
 +import { describe, expect, it } from 'vitest';
-+import { prepareStoreOrderItems, type CreateOrderItemInput } from '@/lib/store/orderCreate';
++import {
++  prepareStoreOrderItems,
++  type CreateOrderItemInput,
++  type PrepareStoreOrderItemsContext,
++} from '@/lib/store/orderCreate';
 +import type { CertificatePartnerCategory } from '@prisma/client';
 +
 +function categoryRow(
@@ -168,6 +316,75 @@ index 00000000..90a2d3c8
 +    }
 +  });
 +
++  describe('live partnership pool (snapshot semantics)', () => {
++    const liveCtx: PrepareStoreOrderItemsContext = {
++      limitMode: 'live_partnership',
++      livePoolByCategory: new Map([['doors', 20]]),
++    };
++
++    it('frozen 15 -> live 20: accepts 20% with PROF 0', () => {
++      const items: CreateOrderItemInput[] = [
++        { category: 'doors', categoryLabel: 'Двери', amount: 100_000, discountPercent: 20 },
++      ];
++      const out = prepareStoreOrderItems(items, map, liveCtx);
++      expect('error' in out).toBe(false);
++      if (!('error' in out)) {
++        expect(out.orderItems[0]?.issuerPercent).toBe(0);
++      }
++    });
++
++    it('frozen 15 -> live 20: rejects 20.01%', () => {
++      const items: CreateOrderItemInput[] = [
++        { category: 'doors', categoryLabel: 'Двери', amount: 100_000, discountPercent: 20.01 },
++      ];
++      const out = prepareStoreOrderItems(items, map, liveCtx);
++      expect('error' in out).toBe(true);
++    });
++
++    it('live 12: accepts 12, rejects 12.01', () => {
++      const ctx12: PrepareStoreOrderItemsContext = {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map([['doors', 12]]),
++      };
++      expect('error' in prepareStoreOrderItems(
++        [{ category: 'doors', categoryLabel: 'Двери', amount: 50_000, discountPercent: 12 }],
++        map,
++        ctx12,
++      )).toBe(false);
++      expect('error' in prepareStoreOrderItems(
++        [{ category: 'doors', categoryLabel: 'Двери', amount: 50_000, discountPercent: 12.01 }],
++        map,
++        ctx12,
++      )).toBe(true);
++    });
++
++    it('live 8 with offered 10: rejects default 10 without edit', () => {
++      const ctx8: PrepareStoreOrderItemsContext = {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map([['doors', 8]]),
++      };
++      const out = prepareStoreOrderItems(
++        [{ category: 'doors', categoryLabel: 'Двери', amount: 50_000 }],
++        map,
++        ctx8,
++      );
++      expect('error' in out).toBe(true);
++    });
++
++    it('live 8: accepts corrected 8%', () => {
++      const ctx8: PrepareStoreOrderItemsContext = {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map([['doors', 8]]),
++      };
++      const out = prepareStoreOrderItems(
++        [{ category: 'doors', categoryLabel: 'Двери', amount: 50_000, discountPercent: 8 }],
++        map,
++        ctx8,
++      );
++      expect('error' in out).toBe(false);
++    });
++  });
++
 +  it('rejects only offending line in multi-category basket without prepared lines', () => {
 +    const multi = new Map([
 +      [
@@ -198,11 +415,218 @@ index 00000000..90a2d3c8
 +  });
 +});
 \ No newline at end of file
+diff --git a/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts b/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts
+new file mode 100644
+index 00000000..11e02cc4
+--- /dev/null
++++ b/src/lib/store/__tests__/storeOrderCategoryLimit.test.ts
+@@ -0,0 +1,48 @@
++import { describe, expect, it } from 'vitest';
++import {
++  frozenCategoryPoolPercent,
++  resolveEffectiveClientDiscountMaxPercent,
++  resolveStoreOrderCategoryLimitMode,
++} from '@/lib/store/storeOrderCategoryLimit';
++
++const row = {
++  category: 'doors',
++  discountPercent: 10,
++  issuerPercent: 5,
++};
++
++describe('storeOrderCategoryLimit', () => {
++  it('frozen pool is offered + issuer (15 for 10+5)', () => {
++    expect(frozenCategoryPoolPercent(row)).toBe(15);
++  });
++
++  it('live_partnership uses storePercent when present (20 over frozen 15)', () => {
++    expect(resolveEffectiveClientDiscountMaxPercent('live_partnership', row, 20)).toBe(20);
++  });
++
++  it('live_partnership falls back to frozen when term missing', () => {
++    expect(resolveEffectiveClientDiscountMaxPercent('live_partnership', row, undefined)).toBe(15);
++  });
++
++  it('frozen_certificate ignores live term', () => {
++    expect(resolveEffectiveClientDiscountMaxPercent('frozen_certificate', row, 20)).toBe(15);
++  });
++
++  it('live pool below offered still returns live cap (12 with offered 10)', () => {
++    expect(resolveEffectiveClientDiscountMaxPercent('live_partnership', row, 12)).toBe(12);
++  });
++
++  it('live pool 8 below offered 10', () => {
++    expect(resolveEffectiveClientDiscountMaxPercent('live_partnership', row, 8)).toBe(8);
++  });
++
++  it('snapshot partner selects live mode', () => {
++    expect(resolveStoreOrderCategoryLimitMode({ policySnapshotJson: { purchaseLimit: 1 } })).toBe(
++      'live_partnership',
++    );
++  });
++
++  it('legacy partner selects frozen mode', () => {
++    expect(resolveStoreOrderCategoryLimitMode({ policySnapshotJson: null })).toBe('frozen_certificate');
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts b/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts
+new file mode 100644
+index 00000000..498b459a
+--- /dev/null
++++ b/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts
+@@ -0,0 +1,81 @@
++import { describe, expect, it } from 'vitest';
++import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
++import { buildStoreOrderPreviewCategories } from '@/lib/store/storeOrderPreviewCategories';
++
++describe('buildStoreOrderPreviewCategories', () => {
++  it('uses live pool minus frozen discount for issuerPercent', async () => {
++    const categories = await buildStoreOrderPreviewCategories(
++      {
++        partnershipId: 'p1',
++        policySnapshotJson: { purchaseLimit: 3 },
++        categories: [
++          {
++            category: 'doors',
++            categoryLabel: 'Двери',
++            discountPercent: 7,
++            issuerPercent: 8,
++            isExcluded: false,
++          },
++        ],
++      },
++      {
++        partnershipTerm: {
++          findMany: async () => [{ category: 'doors', storePercent: 10 }],
++        },
++      } as never,
++    );
++    expect(categories[0]!.maxClientDiscountPercent).toBe(10);
++    expect(categories[0]!.issuerPercent).toBe(3);
++    expect(issuerBonusPercentFromFrozenDiscount(7, 5)).toBe(0);
++  });
++
++  it('exposes live max 20 when frozen pool is 15 (offered 10 + issuer 5)', async () => {
++    const categories = await buildStoreOrderPreviewCategories(
++      {
++        partnershipId: 'p1',
++        policySnapshotJson: { purchaseLimit: 1 },
++        categories: [
++          {
++            category: 'doors',
++            categoryLabel: 'Двери',
++            discountPercent: 10,
++            issuerPercent: 5,
++            isExcluded: false,
++          },
++        ],
++      },
++      {
++        partnershipTerm: {
++          findMany: async () => [{ category: 'doors', storePercent: 20 }],
++        },
++      } as never,
++    );
++    expect(categories[0]!.maxClientDiscountPercent).toBe(20);
++    expect(categories[0]!.issuerPercent).toBe(10);
++  });
++
++  it('when live pool 12, max is 12 not offered+max(0)', async () => {
++    const categories = await buildStoreOrderPreviewCategories(
++      {
++        partnershipId: 'p1',
++        policySnapshotJson: {},
++        categories: [
++          {
++            category: 'doors',
++            categoryLabel: 'Двери',
++            discountPercent: 10,
++            issuerPercent: 5,
++            isExcluded: false,
++          },
++        ],
++      },
++      {
++        partnershipTerm: {
++          findMany: async () => [{ category: 'doors', storePercent: 12 }],
++        },
++      } as never,
++    );
++    expect(categories[0]!.maxClientDiscountPercent).toBe(12);
++    expect(categories[0]!.issuerPercent).toBe(2);
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/store/__tests__/storeOrderPreviewPostParity.test.ts b/src/lib/store/__tests__/storeOrderPreviewPostParity.test.ts
+new file mode 100644
+index 00000000..6af612d4
+--- /dev/null
++++ b/src/lib/store/__tests__/storeOrderPreviewPostParity.test.ts
+@@ -0,0 +1,57 @@
++import { describe, expect, it } from 'vitest';
++import { buildStoreOrderPreviewCategories } from '@/lib/store/storeOrderPreviewCategories';
++import { prepareStoreOrderItems } from '@/lib/store/orderCreate';
++
++const mockDb = (storePercent: number) =>
++  ({
++    partnershipTerm: {
++      findMany: async () => [{ category: 'doors', storePercent }],
++    },
++  }) as never;
++
++const certPartnerBase = {
++  partnershipId: 'p1',
++  policySnapshotJson: { purchaseLimit: 5 },
++  categories: [
++    {
++      category: 'doors',
++      categoryLabel: 'Двери',
++      discountPercent: 10,
++      issuerPercent: 5,
++      isExcluded: false,
++    },
++  ],
++};
++
++describe('store order preview vs POST preflight parity', () => {
++  it('live 20: preview max 20 and POST accepts 20', async () => {
++    const preview = await buildStoreOrderPreviewCategories(certPartnerBase, mockDb(20));
++    expect(preview[0]!.maxClientDiscountPercent).toBe(20);
++    const post = prepareStoreOrderItems(
++      [{ category: 'doors', categoryLabel: 'Двери', amount: 10_000, discountPercent: 20 }],
++      new Map([['doors', certPartnerBase.categories[0] as never]]),
++      {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map([['doors', 20]]),
++      },
++    );
++    expect('error' in post).toBe(false);
++    if (!('error' in post)) {
++      expect(post.orderItems[0]?.issuerPercent).toBe(0);
++    }
++  });
++
++  it('live 12: preview max 12, POST rejects 12.01', async () => {
++    const preview = await buildStoreOrderPreviewCategories(certPartnerBase, mockDb(12));
++    expect(preview[0]!.maxClientDiscountPercent).toBe(12);
++    const bad = prepareStoreOrderItems(
++      [{ category: 'doors', categoryLabel: 'Двери', amount: 10_000, discountPercent: 12.01 }],
++      new Map([['doors', certPartnerBase.categories[0] as never]]),
++      {
++        limitMode: 'live_partnership',
++        livePoolByCategory: new Map([['doors', 12]]),
++      },
++    );
++    expect('error' in bad).toBe(true);
++  });
++});
+\ No newline at end of file
 diff --git a/src/lib/store/orderCreate.ts b/src/lib/store/orderCreate.ts
-index 9a0da27d..581bc3c9 100644
+index 9a0da27d..6a51d225 100644
 --- a/src/lib/store/orderCreate.ts
 +++ b/src/lib/store/orderCreate.ts
-@@ -21,16 +21,21 @@ import {
+@@ -21,17 +21,27 @@ import {
    StoreOrderPayloadConflictError,
    StoreOrderUsageLimitError,
    StoreOrderCertificateUnavailableError,
@@ -218,17 +642,46 @@ index 9a0da27d..581bc3c9 100644
  import { incrementCertificateUsageOrThrow } from '@/lib/store/certificateUsageIncrement';
  import { assertRecipientPolicyMinimumPurchaseOrThrow } from '@/lib/certificateReceivingPolicy/orderMinimum';
 -import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
+-import { categoryIssuerPercent, normalizePercent } from '@/lib/certificatePool';
 +import {
 +  clientDiscountExceedsCategoryPool,
 +  issuerBonusPercentFromFrozenDiscount,
 +} from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
- import { categoryIssuerPercent, normalizePercent } from '@/lib/certificatePool';
++import { normalizePercent } from '@/lib/certificatePool';
++import {
++  frozenCategoryPoolPercent,
++  resolveEffectiveClientDiscountMaxPercent,
++  type StoreOrderCategoryLimitMode,
++} from '@/lib/store/storeOrderCategoryLimit';
  import {
    STORE_ORDER_ENDPOINT,
-@@ -134,6 +139,11 @@ export function prepareStoreOrderItems(
+   computeStoreOrderRequestFingerprint,
+@@ -106,10 +116,18 @@ function resolveAppliedClientDiscountPercent(
+   return { ok: true, value };
+ }
+ 
++export type PrepareStoreOrderItemsContext = {
++  limitMode: StoreOrderCategoryLimitMode;
++  livePoolByCategory?: Map<string, number>;
++};
++
+ export function prepareStoreOrderItems(
+   items: CreateOrderItemInput[],
+   categoryMap: Map<string, CertificatePartnerCategory>,
++  context?: PrepareStoreOrderItemsContext,
+ ): PreparedStoreOrder | { error: string } {
++  const limitMode = context?.limitMode ?? 'frozen_certificate';
++  const livePoolByCategory = context?.livePoolByCategory;
+   const orderItems: PreparedOrderItem[] = [];
+   let totalAmount = 0;
+   let totalDiscount = 0;
+@@ -133,7 +151,13 @@ export function prepareStoreOrderItems(
+     const applied = resolveAppliedClientDiscountPercent(item.discountPercent, offeredDiscount);
      if (!applied.ok) return { error: applied.error };
  
-     const pool = normalizePercent(offeredDiscount + categoryIssuerPercent(categoryConfig));
+-    const pool = normalizePercent(offeredDiscount + categoryIssuerPercent(categoryConfig));
++    const liveStore = livePoolByCategory?.get(category);
++    const pool = resolveEffectiveClientDiscountMaxPercent(limitMode, categoryConfig, liveStore);
 +    if (clientDiscountExceedsCategoryPool(applied.value, pool)) {
 +      return {
 +        error: `Скидка клиента ${applied.value}% по "${categoryConfig.categoryLabel}" превышает максимум по категории ${pool}%`,
@@ -237,10 +690,22 @@ index 9a0da27d..581bc3c9 100644
      const discountAmount = Math.round((amount * applied.value) / 100);
      const issuerPct = issuerBonusPercentFromFrozenDiscount(applied.value, pool);
      const issuerLine = Math.round((amount * issuerPct) / 100);
-@@ -248,6 +258,11 @@ async function recomputeIssuerBonusForSnapshotPartner(
+@@ -244,10 +268,22 @@ async function recomputeIssuerBonusForSnapshotPartner(
+     select: { category: true, storePercent: true },
+   });
+   const poolByCategory = new Map(terms.map((t) => [t.category, Number(t.storePercent)]));
++  const categoryByKey = new Map(
++    certPartner.categories.filter((c) => !c.isExcluded).map((c) => [c.category, c]),
++  );
+   let totalIssuerBonus = 0;
    for (const line of prepared.orderItems) {
      const appliedDiscount = line.discountPercent;
-     const pool = poolByCategory.get(line.category) ?? 0;
+-    const pool = poolByCategory.get(line.category) ?? 0;
++    const categoryConfig = categoryByKey.get(line.category);
++    const liveStore = poolByCategory.get(line.category);
++    const pool = categoryConfig
++      ? resolveEffectiveClientDiscountMaxPercent('live_partnership', categoryConfig, liveStore)
++      : liveStore ?? 0;
 +    if (clientDiscountExceedsCategoryPool(appliedDiscount, pool)) {
 +      throw new StoreOrderDiscountPoolError(
 +        `Скидка клиента ${appliedDiscount}% по "${line.categoryLabel}" превышает максимум по категории ${pool}%`,
@@ -267,3 +732,211 @@ index d4d64f30..17027395 100644
  export class StoreOrderCertificateUnavailableError extends Error {
    readonly name = 'StoreOrderCertificateUnavailableError';
    constructor(public readonly message: string) {
+diff --git a/src/lib/store/storeOrderCategoryLimit.ts b/src/lib/store/storeOrderCategoryLimit.ts
+new file mode 100644
+index 00000000..a98c0c53
+--- /dev/null
++++ b/src/lib/store/storeOrderCategoryLimit.ts
+@@ -0,0 +1,73 @@
++import { categoryIssuerPercent, normalizePercent } from '@/lib/certificatePool';
++import { partnerHasRecipientPolicySnapshot } from '@/lib/store/recipientPolicyUsage';
++
++export type CategoryPoolRow = {
++  category: string;
++  discountPercent?: number | null;
++  issuerPercent?: number | null;
++  proBonusPercent?: number | null;
++  agentBonusPercent?: number | null;
++};
++
++/**
++ * Category client-discount limits at store order PREVIEW + POST:
++ *
++ * - **Snapshot recipient** (`policySnapshotJson`): max = live `PartnershipTerm.storePercent` when the
++ *   category is on the partnership; otherwise frozen certificate pool. Transaction re-reads terms under lock.
++ * - **Legacy / self-scan without snapshot**: max = frozen offered + issuer percents on the certificate line only.
++ * - Issuer bonus at purchase: `max(pool − appliedClient, 0)` on the same pool base (gross before discount).
++ * - Own-certificate self-scan does not accrue PROF (unchanged order path).
++ */
++
++/** Legacy / self-scan: frozen certificate line (offered client % + frozen issuer %). */
++export function frozenCategoryPoolPercent(category: CategoryPoolRow): number {
++  const offered = normalizePercent(Number(category.discountPercent ?? 0));
++  return normalizePercent(offered + categoryIssuerPercent(category));
++}
++
++export type StoreOrderCategoryLimitMode = 'live_partnership' | 'frozen_certificate';
++
++/**
++ * Snapshot recipients use live partnership `storePercent` when terms exist (transaction recomputes PROF).
++ * Legacy consumption and self-scan without snapshot use frozen certificate pools only.
++ */
++export function resolveStoreOrderCategoryLimitMode(partner: {
++  policySnapshotJson?: unknown | null;
++}): StoreOrderCategoryLimitMode {
++  return partnerHasRecipientPolicySnapshot(partner) ? 'live_partnership' : 'frozen_certificate';
++}
++
++/**
++ * Maximum client discount % allowed at purchase for this category (PREVIEW + POST preflight + tx authority).
++ */
++export function resolveEffectiveClientDiscountMaxPercent(
++  mode: StoreOrderCategoryLimitMode,
++  category: CategoryPoolRow,
++  liveStorePercent: number | undefined,
++): number {
++  if (mode === 'live_partnership') {
++    if (liveStorePercent !== undefined && Number.isFinite(liveStorePercent)) {
++      return normalizePercent(liveStorePercent);
++    }
++    return frozenCategoryPoolPercent(category);
++  }
++  return frozenCategoryPoolPercent(category);
++}
++
++export function buildLivePartnershipPoolMap(
++  terms: Array<{ category: string; storePercent: number }>,
++): Map<string, number> {
++  return new Map(terms.map((t) => [t.category, normalizePercent(Number(t.storePercent))]));
++}
++
++export async function loadLivePartnershipPoolByCategory(
++  partnershipId: string | null | undefined,
++  db: { partnershipTerm: { findMany: (args: unknown) => Promise<Array<{ category: string; storePercent: number }>> } },
++): Promise<Map<string, number>> {
++  if (!partnershipId) return new Map();
++  const terms = await db.partnershipTerm.findMany({
++    where: { partnershipId, isExcluded: false },
++    select: { category: true, storePercent: true },
++  });
++  return buildLivePartnershipPoolMap(terms);
++}
+\ No newline at end of file
+diff --git a/src/lib/store/storeOrderPreviewCategories.ts b/src/lib/store/storeOrderPreviewCategories.ts
+index 512a1491..af652065 100644
+--- a/src/lib/store/storeOrderPreviewCategories.ts
++++ b/src/lib/store/storeOrderPreviewCategories.ts
+@@ -1,7 +1,11 @@
+ import { Prisma } from '@prisma/client';
+ import { prisma } from '@/lib/prisma';
+ import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
+-import { categoryIssuerPercent } from '@/lib/certificatePool';
++import {
++  loadLivePartnershipPoolByCategory,
++  resolveEffectiveClientDiscountMaxPercent,
++  resolveStoreOrderCategoryLimitMode,
++} from '@/lib/store/storeOrderCategoryLimit';
+ 
+ type PartnerCategoryRow = {
+   category: string;
+@@ -18,6 +22,8 @@ export type StoreOrderPreviewCategory = {
+   discountPercent: number;
+   issuerPercent: number;
+   proBonusPercent: number;
++  /** Authoritative max client discount % (live partnership or frozen pool). */
++  maxClientDiscountPercent: number;
+ };
+ 
+ /**
+@@ -27,33 +33,31 @@ export type StoreOrderPreviewCategory = {
+ export async function buildStoreOrderPreviewCategories(
+   certPartner: {
+     partnershipId: string | null;
++    policySnapshotJson?: unknown | null;
+     categories: PartnerCategoryRow[];
+   },
+   db: Prisma.TransactionClient | typeof prisma = prisma,
+ ): Promise<StoreOrderPreviewCategory[]> {
+   const active = certPartner.categories.filter((c) => !c.isExcluded);
+-  let poolByCategory = new Map<string, number>();
+-
+-  if (certPartner.partnershipId) {
+-    const terms = await db.partnershipTerm.findMany({
+-      where: { partnershipId: certPartner.partnershipId, isExcluded: false },
+-      select: { category: true, storePercent: true },
+-    });
+-    poolByCategory = new Map(terms.map((t) => [t.category, Number(t.storePercent)]));
+-  }
++  const limitMode = resolveStoreOrderCategoryLimitMode(certPartner);
++  const poolByCategory = await loadLivePartnershipPoolByCategory(certPartner.partnershipId, db);
+ 
+   return active.map((category) => {
+     const frozenDiscount = Number(category.discountPercent ?? 0);
+-    const pool =
+-      poolByCategory.get(category.category) ??
+-      frozenDiscount + Number(categoryIssuerPercent(category));
+-    const issuerPercent = issuerBonusPercentFromFrozenDiscount(frozenDiscount, pool);
++    const liveStore = poolByCategory.get(category.category);
++    const maxClientDiscountPercent = resolveEffectiveClientDiscountMaxPercent(
++      limitMode,
++      category,
++      liveStore,
++    );
++    const issuerPercent = issuerBonusPercentFromFrozenDiscount(frozenDiscount, maxClientDiscountPercent);
+     return {
+       category: category.category,
+       categoryLabel: category.categoryLabel,
+       discountPercent: frozenDiscount,
+       issuerPercent,
+       proBonusPercent: issuerPercent,
++      maxClientDiscountPercent,
+     };
+   });
+ }
+diff --git a/tests/unit/prepareStoreOrderFlexible.test.ts b/tests/unit/prepareStoreOrderFlexible.test.ts
+index 985c9b30..d0d09596 100644
+--- a/tests/unit/prepareStoreOrderFlexible.test.ts
++++ b/tests/unit/prepareStoreOrderFlexible.test.ts
+@@ -18,15 +18,12 @@ describe('prepareStoreOrderItems flexible client discount', () => {
+     ],
+   ]);
+ 
+-  it('applies explicit 12% even when above frozen category pool (7+3)', () => {
++  it('rejects explicit 12% above frozen category pool (7+3)', () => {
+     const prepared = prepareStoreOrderItems(
+       [{ category: 'doors', categoryLabel: 'Двери', amount: 10_000, discountPercent: 12 }],
+       categoryMap as never,
+     );
+-    assert.ok(!('error' in prepared));
+-    assert.equal(prepared.orderItems[0]?.discountPercent, 12);
+-    assert.equal(prepared.orderItems[0]?.discountAmount, 1200);
+-    assert.equal(prepared.orderItems[0]?.issuerPercent, 0);
++    assert.ok('error' in prepared);
+   });
+ 
+   it('defaults to offered 7% when override omitted', () => {
+diff --git a/tests/unit/storeOrderPreviewCategories.test.ts b/tests/unit/storeOrderPreviewCategories.test.ts
+deleted file mode 100644
+index d05a55eb..00000000
+--- a/tests/unit/storeOrderPreviewCategories.test.ts
++++ /dev/null
+@@ -1,29 +0,0 @@
+-import { describe, expect, it } from "vitest";
+-import { issuerBonusPercentFromFrozenDiscount } from "@/lib/certificateReceivingPolicy/purchaseIssuerBonus";
+-import { buildStoreOrderPreviewCategories } from "@/lib/store/storeOrderPreviewCategories";
+-
+-describe("buildStoreOrderPreviewCategories", () => {
+-  it("uses live pool minus frozen discount for issuerPercent", async () => {
+-    const categories = await buildStoreOrderPreviewCategories(
+-      {
+-        partnershipId: "p1",
+-        categories: [
+-          {
+-            category: "doors",
+-            categoryLabel: "Двери",
+-            discountPercent: 7,
+-            issuerPercent: 8,
+-            isExcluded: false,
+-          },
+-        ],
+-      },
+-      {
+-        partnershipTerm: {
+-          findMany: async () => [{ category: "doors", storePercent: 10 }],
+-        },
+-      } as never,
+-    );
+-    expect(categories[0]!.issuerPercent).toBe(3);
+-    expect(issuerBonusPercentFromFrozenDiscount(7, 5)).toBe(0);
+-  });
+-});

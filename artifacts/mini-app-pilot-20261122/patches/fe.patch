@@ -1284,10 +1284,10 @@ index a4507596..f5920dd3 100644
    roleLabel: string;
    platform: MiniAppPlatform;
 diff --git a/src/lib/order-totals.test.ts b/src/lib/order-totals.test.ts
-index 97bd4e32..14c61117 100644
+index 97bd4e32..ebd6a300 100644
 --- a/src/lib/order-totals.test.ts
 +++ b/src/lib/order-totals.test.ts
-@@ -30,8 +30,13 @@ describe("order-totals flexible client discount", () => {
+@@ -30,8 +30,51 @@ describe("order-totals flexible client discount", () => {
      expect(result.ok).toBe(false);
    });
  
@@ -1301,13 +1301,64 @@ index 97bd4e32..14c61117 100644
 +    const result = validateOrderDiscountDrafts([doors], { doors: "10000" }, { doors: "10.02" });
      expect(result.ok).toBe(false);
    });
++
++  it("uses maxClientDiscountPercent 20 when frozen line shows 10+5", () => {
++    const cat: PreviewCategory = {
++      category: "doors",
++      categoryLabel: "Двери",
++      discountPercent: 10,
++      issuerPercent: 10,
++      maxClientDiscountPercent: 20,
++    };
++    const ok = validateOrderDiscountDrafts([cat], { doors: "10000" }, { doors: "20" });
++    expect(ok.ok).toBe(true);
++    const bad = validateOrderDiscountDrafts([cat], { doors: "10000" }, { doors: "20.01" });
++    expect(bad.ok).toBe(false);
++  });
++
++  it("blocks submit when offered exceeds live max without explicit edit", () => {
++    const cat: PreviewCategory = {
++      category: "doors",
++      categoryLabel: "Двери",
++      discountPercent: 10,
++      issuerPercent: 2,
++      maxClientDiscountPercent: 8,
++    };
++    const result = validateOrderDiscountDrafts([cat], { doors: "10000" });
++    expect(result.ok).toBe(false);
++  });
++
++  it("live max 12 accepts 12 rejects 12.01", () => {
++    const cat: PreviewCategory = {
++      category: "doors",
++      categoryLabel: "Двери",
++      discountPercent: 10,
++      issuerPercent: 2,
++      maxClientDiscountPercent: 12,
++    };
++    expect(validateOrderDiscountDrafts([cat], { doors: "1" }, { doors: "12" }).ok).toBe(true);
++    expect(validateOrderDiscountDrafts([cat], { doors: "1" }, { doors: "12.01" }).ok).toBe(false);
++  });
  });
 \ No newline at end of file
 diff --git a/src/lib/order-totals.ts b/src/lib/order-totals.ts
-index 20cfd9c1..ca927e41 100644
+index 20cfd9c1..81003167 100644
 --- a/src/lib/order-totals.ts
 +++ b/src/lib/order-totals.ts
-@@ -27,7 +27,30 @@ export function hasExplicitClientDiscountDraft(
+@@ -19,6 +19,12 @@ export function lineDiscountRub(amount: number, discountPercent: number): number
+ }
+ 
+ function previewPoolPercent(category: PreviewCategory): number {
++  if (
++    category.maxClientDiscountPercent != null &&
++    Number.isFinite(category.maxClientDiscountPercent)
++  ) {
++    return category.maxClientDiscountPercent;
++  }
+   return category.discountPercent + category.issuerPercent;
+ }
+ 
+@@ -27,7 +33,30 @@ export function hasExplicitClientDiscountDraft(
    discountDrafts?: CategoryDiscountDraft,
  ): boolean {
    const raw = discountDrafts?.[category.category];
@@ -1339,7 +1390,7 @@ index 20cfd9c1..ca927e41 100644
  }
  
  /** Call only after `validateOrderDiscountDrafts` passes for active lines. */
-@@ -40,21 +63,76 @@ export function appliedClientDiscountPercent(
+@@ -40,21 +69,84 @@ export function appliedClientDiscountPercent(
    return Number(raw);
  }
  
@@ -1365,9 +1416,17 @@ index 20cfd9c1..ca927e41 100644
 +    ? Number(discountDrafts![category.category]!.trim())
 +    : category.discountPercent;
 +
-+  if (!explicit) return { ok: true };
++    if (!explicit) {
++      if (parsed - pool > CLIENT_DISCOUNT_POOL_TOLERANCE_PP - 1e-9) {
++        return {
++          ok: false,
++          message: `Сертификат даёт ${category.discountPercent}%, максимум сейчас ${pool}% — исправьте ставку`,
++        };
++      }
++      return { ok: true };
++    }
 +
-+  if (!Number.isFinite(parsed)) {
++    if (!Number.isFinite(parsed)) {
 +    return { ok: false, message: "Укажите число" };
 +  }
 +  if (parsed < 0) {
@@ -1419,3 +1478,16 @@ index 20cfd9c1..ca927e41 100644
    }
    return { ok: true };
  }
+diff --git a/src/lib/order-types.ts b/src/lib/order-types.ts
+index 8148da74..e30adba5 100644
+--- a/src/lib/order-types.ts
++++ b/src/lib/order-types.ts
+@@ -6,6 +6,8 @@ export type PreviewCategory = {
+   discountPercent: number;
+   issuerPercent: number;
+   proBonusPercent?: number;
++  /** Server-authoritative max client discount % when present (live partnership or frozen pool). */
++  maxClientDiscountPercent?: number;
+ };
+ 
+ /** Creator/recommender (certificate proUser), not issuer org or redeeming store. */
