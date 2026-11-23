@@ -429,10 +429,10 @@ index 9c841041..c8611d37 100644
  }
 diff --git a/src/components/mini-app/MiniAppScanReceive.discount.test.tsx b/src/components/mini-app/MiniAppScanReceive.discount.test.tsx
 new file mode 100644
-index 00000000..218e7762
+index 00000000..76838bd5
 --- /dev/null
 +++ b/src/components/mini-app/MiniAppScanReceive.discount.test.tsx
-@@ -0,0 +1,153 @@
+@@ -0,0 +1,155 @@
 +import { describe, expect, it, vi, beforeEach } from "vitest";
 +import { render, screen, waitFor } from "@testing-library/react";
 +import userEvent from "@testing-library/user-event";
@@ -450,9 +450,11 @@ index 00000000..218e7762
 +    linkPhase: "idle",
 +    linkError: "",
 +    ensureOrdinaryAppealContext: async () => ({ ok: true as const }),
++    restoreOrdinaryAppealForStoredAttempt: async () => ({ ok: true as const }),
 +    assertPreviewAllowed: () => null,
 +    beginOrderLinkAfterSuccess: () => undefined,
 +    retryOrderLinkOnly: () => undefined,
++    persistOrdinaryAppealBinding: () => true,
 +  }),
 +}));
 +
@@ -587,12 +589,180 @@ index 00000000..218e7762
 +  });
 +});
 \ No newline at end of file
+diff --git a/src/components/mini-app/MiniAppScanReceive.recovery-remount.test.tsx b/src/components/mini-app/MiniAppScanReceive.recovery-remount.test.tsx
+new file mode 100644
+index 00000000..9c5863e2
+--- /dev/null
++++ b/src/components/mini-app/MiniAppScanReceive.recovery-remount.test.tsx
+@@ -0,0 +1,161 @@
++import { describe, expect, it, vi, beforeEach } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { MiniAppScanReceive } from "./MiniAppScanReceive";
++import type { MiniAppBootstrap } from "@/lib/mini-app/types";
++import {
++  STORE_ORDER_ATTEMPT_STORAGE_KEY,
++  STORE_ORDER_ATTEMPT_FORMAT_VERSION,
++} from "@/lib/store-order-attempt";
++import { remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
++
++vi.mock("./QrScanner", () => ({ QrScanner: () => null }));
++
++const ensureOrdinaryAppealContext = vi.fn();
++const restoreOrdinaryAppealForStoredAttempt = vi.fn();
++const submitReceivingCertificateEntry = vi.fn();
++
++vi.mock("@/lib/mini-app/api", () => ({
++  miniAppStoreScanLookup: vi.fn().mockResolvedValue({ state: "valid" }),
++}));
++
++vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
++  useReceivingAppealScannerHandoff: () => ({
++    ordinaryAppealRequired: true,
++    crmReadOnlyNotice: null,
++    appealId: null,
++    linkPhase: "idle",
++    linkError: "",
++    ensureOrdinaryAppealContext,
++    restoreOrdinaryAppealForStoredAttempt,
++    assertPreviewAllowed: () => null,
++    beginOrderLinkAfterSuccess: () => undefined,
++    retryOrderLinkOnly: () => undefined,
++    persistOrdinaryAppealBinding: () => true,
++  }),
++}));
++
++vi.mock("@/lib/clients-parity/receiving-appeals-api", () => ({
++  submitReceivingCertificateEntry,
++  resolveReceivingScannerCertificateEntryGate: vi.fn(),
++}));
++
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return {
++    ...actual,
++    remcardFetch: vi.fn(),
++    remcardFetchWithMeta: vi.fn(),
++  };
++});
++
++const bootstrap: MiniAppBootstrap = {
++  actorUserId: "user-recovery-remount",
++  role: "store",
++  roleLabel: "Магазин",
++  platform: "telegram",
++  displayName: "Тест",
++  entityLine: null,
++  cabinetTitle: "Кабинет",
++  workplaceLabel: null,
++  actions: [],
++  branches: [],
++  activeBranchId: "b-other",
++  workplaceForbidden: false,
++  workplaceForbiddenMessage: null,
++  wallet: { status: "ok", confirmedUnpaidRub: 0, awaitingRub: 0, loadError: false },
++  presentation: { cardIdentifier: null, historyHref: "/settlements", cardExplainer: "" },
++  fullCabinetUrl: "https://prof.test/",
++  partnersUrl: "https://prof.test/partners",
++};
++
++const storedAttempt = {
++  version: STORE_ORDER_ATTEMPT_FORMAT_VERSION,
++  userId: bootstrap.actorUserId,
++  idempotencyKey: "idem-branch-original",
++  status: "unknown" as const,
++  branchId: "b-original",
++  body: {
++    certificateCode: "RC-REMOUNT",
++    items: [{ category: "doors", categoryLabel: "Двери", amount: 10000, discountPercent: 7 }],
++  },
++};
++
++describe("MiniAppScanReceive recovery remount", () => {
++  beforeEach(() => {
++    sessionStorage.clear();
++    vi.clearAllMocks();
++    ensureOrdinaryAppealContext.mockReset();
++    restoreOrdinaryAppealForStoredAttempt.mockResolvedValue({ ok: true });
++    submitReceivingCertificateEntry.mockReset();
++    vi.mocked(remcardFetch).mockResolvedValue({
++      allowed: true,
++      certificate: {
++        id: "c1",
++        promoCode: "RC-REMOUNT",
++        status: "ACTIVE",
++        validUntil: null,
++        usageCount: 0,
++        maxUsages: 1,
++        userAlias: "Клиент",
++        issuer: { label: "PROF", name: "Org" },
++      },
++      partner: { id: "p1", storeUserId: "s1", storeName: "Store", isSelfScan: true },
++      availableCategories: [{ category: "doors", categoryLabel: "Двери", discountPercent: 7, issuerPercent: 3 }],
++    });
++    vi.mocked(remcardFetchWithMeta).mockResolvedValue({
++      payload: { order: { id: "ord-1" }, summary: { totalAmount: 10000, discountAmount: 700, isSelfScan: true } },
++      meta: { idempotentReplayed: false },
++    });
++    sessionStorage.setItem(STORE_ORDER_ATTEMPT_STORAGE_KEY, JSON.stringify(storedAttempt));
++  });
++
++  it("opens recovery UI without CRM create on remount", async () => {
++    render(
++      <MiniAppScanReceive platform="telegram" bootstrap={bootstrap} branchId="b-other" onDone={() => undefined} />,
++    );
++
++    expect(await screen.findByTestId("mini-scan-recovery")).toBeInTheDocument();
++    expect(ensureOrdinaryAppealContext).not.toHaveBeenCalled();
++    expect(submitReceivingCertificateEntry).not.toHaveBeenCalled();
++    expect(restoreOrdinaryAppealForStoredAttempt).toHaveBeenCalledTimes(1);
++    expect(screen.getByTestId("mini-branch-mismatch")).toBeInTheDocument();
++    expect(screen.queryByTestId("mini-check-order-result")).not.toBeInTheDocument();
++  });
++
++  it("retry POST uses stored branch and idempotency key when branch matches", async () => {
++    const user = userEvent.setup();
++    const keys: string[] = [];
++    const branches: string[] = [];
++    vi.mocked(remcardFetchWithMeta).mockImplementation(async (_path, init) => {
++      if (init?.idempotencyKey) keys.push(init.idempotencyKey);
++      const sp = init?.searchParams as { branchId?: string } | undefined;
++      if (sp?.branchId) branches.push(sp.branchId);
++      return {
++        payload: { order: { id: "ord-1" }, summary: { totalAmount: 10000, discountAmount: 700, isSelfScan: true } },
++        meta: { idempotentReplayed: false },
++      };
++    });
++
++    render(
++      <MiniAppScanReceive
++        platform="telegram"
++        bootstrap={bootstrap}
++        branchId="b-original"
++        onDone={() => undefined}
++      />,
++    );
++
++    await screen.findByTestId("mini-scan-recovery");
++    await user.click(screen.getByTestId("mini-check-order-result"));
++
++    await waitFor(() => expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1));
++    expect(keys).toEqual(["idem-branch-original"]);
++    expect(branches).toEqual(["b-original"]);
++    expect(createFreshKeyGuard(keys)).toBe(true);
++  });
++});
++
++function createFreshKeyGuard(keys: string[]) {
++  return keys.length === 1 && keys[0] === "idem-branch-original";
++}
+\ No newline at end of file
 diff --git a/src/components/mini-app/MiniAppScanReceive.rescan-guard.test.tsx b/src/components/mini-app/MiniAppScanReceive.rescan-guard.test.tsx
 new file mode 100644
-index 00000000..273068ae
+index 00000000..9d1bf5ce
 --- /dev/null
 +++ b/src/components/mini-app/MiniAppScanReceive.rescan-guard.test.tsx
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,216 @@
 +import { describe, expect, it, vi, beforeEach } from "vitest";
 +import { render, screen, waitFor } from "@testing-library/react";
 +import userEvent from "@testing-library/user-event";
@@ -617,9 +787,11 @@ index 00000000..273068ae
 +    linkPhase: "idle",
 +    linkError: "",
 +    ensureOrdinaryAppealContext: async () => ({ ok: true as const }),
++    restoreOrdinaryAppealForStoredAttempt: async () => ({ ok: true as const }),
 +    assertPreviewAllowed: () => null,
 +    beginOrderLinkAfterSuccess: () => undefined,
 +    retryOrderLinkOnly: () => undefined,
++    persistOrdinaryAppealBinding: () => true,
 +  }),
 +}));
 +
@@ -810,10 +982,10 @@ index 00000000..273068ae
 \ No newline at end of file
 diff --git a/src/components/mini-app/MiniAppScanReceive.tsx b/src/components/mini-app/MiniAppScanReceive.tsx
 new file mode 100644
-index 00000000..6fc17e11
+index 00000000..763fe764
 --- /dev/null
 +++ b/src/components/mini-app/MiniAppScanReceive.tsx
-@@ -0,0 +1,710 @@
+@@ -0,0 +1,837 @@
 +"use client";
 +
 +import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -842,6 +1014,8 @@ index 00000000..6fc17e11
 +  ATTEMPT_BODY_MISMATCH_MESSAGE,
 +  ATTEMPT_CONFLICT_MESSAGE,
 +  UNCERTAIN_ORDER_DETAIL,
++  UNCERTAIN_ORDER_HEADING,
++  formatAttemptItemsSummary,
 +  classifyStoreOrderNetworkFailure,
 +  classifyStoreOrderPostResponse,
 +  clearStoreOrderAttempt,
@@ -871,7 +1045,24 @@ index 00000000..6fc17e11
 +import { useReceivingAppealScannerHandoff } from "@/components/scanner/useReceivingAppealScannerHandoff";
 +import styles from "./mini-app.module.css";
 +
-+type Phase = "scan" | "purchase" | "success";
++type Phase = "scan" | "purchase" | "success" | "recovery";
++
++function amountDraftsFromAttempt(record: StoreOrderAttemptRecord): CategoryAmountDraft {
++  return Object.fromEntries(record.body.items.map((item) => [item.category, String(item.amount)]));
++}
++
++function discountDraftsFromAttempt(record: StoreOrderAttemptRecord): CategoryDiscountDraft {
++  const drafts: CategoryDiscountDraft = {};
++  for (const item of record.body.items) {
++    if (item.discountPercent !== undefined && Number.isFinite(item.discountPercent)) {
++      drafts[item.category] = String(item.discountPercent);
++    }
++  }
++  return drafts;
++}
++
++const BRANCH_ATTEMPT_MISMATCH_MESSAGE =
++  "Филиал не совпадает с сохранённой попыткой. Откройте mini-app с тем же филиалом, что при оформлении.";
 +
 +type Props = {
 +  platform: MiniAppPlatform;
@@ -955,10 +1146,16 @@ index 00000000..6fc17e11
 +  const lastIdempotencyKey = useRef<string | null>(null);
 +  const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
 +  const attemptRestoreDone = useRef(false);
++  const recoveryPreviewGen = useRef(0);
 +
 +  const syncStoredAttempt = useCallback(() => {
 +    setStoredAttempt(loadStoreOrderAttempt(actorUserId));
 +  }, [actorUserId]);
++
++  const branchAttemptMismatch = useMemo(() => {
++    if (!storedAttempt?.branchId?.trim() || !branchId?.trim()) return false;
++    return storedAttempt.branchId.trim() !== branchId.trim();
++  }, [storedAttempt?.branchId, branchId]);
 +
 +  useEffect(() => {
 +    if (attemptRestoreDone.current) {
@@ -973,10 +1170,37 @@ index 00000000..6fc17e11
 +    setOrderUncertain(isRestorableAttempt(attempt));
 +    setOrderConflict(isConflictAttempt(attempt));
 +    setCertCode(attempt.body.certificateCode);
-+    if (!fixturePreview) {
-+      setPhase((current) => (current === "scan" ? "purchase" : current));
++    setAmountDrafts(amountDraftsFromAttempt(attempt));
++    setDiscountDrafts(discountDraftsFromAttempt(attempt));
++    if (isStoreOrderAttemptLocked(attempt)) {
++      if (!fixturePreview) {
++        setPhase("recovery");
++        if (receiving.ordinaryAppealRequired) {
++          void receiving.restoreOrdinaryAppealForStoredAttempt({
++            userId: actorUserId,
++            record: attempt,
++            isStale: () => false,
++          });
++        }
++        const gen = ++recoveryPreviewGen.current;
++        const searchParams = attempt.branchId?.trim() ? { branchId: attempt.branchId.trim() } : undefined;
++        void remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
++          method: "POST",
++          body: { certificateCode: attempt.body.certificateCode },
++          searchParams,
++        })
++          .then((data) => {
++            if (gen !== recoveryPreviewGen.current) return;
++            if ("allowed" in data && data.allowed) {
++              setPreview(data);
++            }
++          })
++          .catch(() => undefined);
++      }
++    } else if (!fixturePreview) {
++      setPhase("purchase");
 +    }
-+  }, [actorUserId, fixturePreview]);
++  }, [actorUserId, fixturePreview, receiving]);
 +
 +  const purchaseDraftLocked = useMemo(
 +    () =>
@@ -1076,24 +1300,78 @@ index 00000000..6fc17e11
 +    }
 +  }, [actorUserId, syncStoredAttempt]);
 +
++  const postStoreOrder = useCallback(
++    async (attemptRecord: StoreOrderAttemptRecord, wasRetry: boolean) => {
++      const operationBranchId = attemptRecord.branchId?.trim() || branchId?.trim() || undefined;
++      submitInFlight.current = true;
++      setSubmitting(true);
++      setSubmitError("");
++      markStoreOrderAttemptInFlight(actorUserId);
++      syncStoredAttempt();
++      try {
++        const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
++          method: "POST",
++          body: attemptRecord.body,
++          idempotencyKey: attemptRecord.idempotencyKey,
++          searchParams: operationBranchId ? { branchId: operationBranchId } : undefined,
++        });
++        const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
++        applyPostOutcome(outcome);
++        if (outcome.kind === "success") {
++          lastIdempotencyKey.current = attemptRecord.idempotencyKey;
++          receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, attemptRecord.idempotencyKey);
++        }
++      } catch (caught) {
++        if (caught instanceof RemcardApiError) {
++          const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
++          applyPostOutcome(
++            classifyStoreOrderPostResponse({
++              status: caught.status,
++              payload,
++              wasRetry,
++            }),
++          );
++        } else {
++          applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
++        }
++      } finally {
++        submitInFlight.current = false;
++        setSubmitting(false);
++        syncStoredAttempt();
++      }
++    },
++    [actorUserId, applyPostOutcome, branchId, receiving, syncStoredAttempt],
++  );
++
++  const checkStoredAttempt = useCallback(async () => {
++    if (submitInFlight.current || submitting || orderConflict || branchAttemptMismatch) return;
++    const prepared = prepareStoreOrderRetry(actorUserId);
++    if (!prepared.ok) {
++      setSubmitError(
++        prepared.reason === "conflict" ? ATTEMPT_CONFLICT_MESSAGE : UNCERTAIN_ORDER_DETAIL,
++      );
++      return;
++    }
++    await postStoreOrder(prepared.record, true);
++  }, [actorUserId, branchAttemptMismatch, orderConflict, postStoreOrder, submitting]);
++
 +  const beginPurchase = useCallback(
 +    async (raw: string) => {
-+      const parsed = parseCertificateCode(raw);
++      const parsedEarly = parseCertificateCode(raw);
++      const pending = loadStoreOrderAttempt(actorUserId);
++      if (pending && isStoreOrderAttemptLocked(pending)) {
++        if (parsedEarly.ok && pending.body.certificateCode !== parsedEarly.code) {
++          setGateError(LOCKED_ATTEMPT_OTHER_CODE_MESSAGE);
++        } else {
++          setGateError(UNCERTAIN_ORDER_DETAIL);
++        }
++        setPhase("recovery");
++        return;
++      }
++      const parsed = parsedEarly;
 +      if (!parsed.ok) {
 +        setGateError(parsed.error);
 +        return;
-+      }
-+      const pending = loadStoreOrderAttempt(actorUserId);
-+      if (pending && isStoreOrderAttemptLocked(pending)) {
-+        if (pending.body.certificateCode !== parsed.code) {
-+          setGateError(LOCKED_ATTEMPT_OTHER_CODE_MESSAGE);
-+          return;
-+        }
-+        setGateError("");
-+        setCertCode(parsed.code);
-+        setStoredAttempt(pending);
-+        setOrderUncertain(isRestorableAttempt(pending));
-+        setOrderConflict(isConflictAttempt(pending));
 +      }
 +      setLoading(true);
 +      setGateError("");
@@ -1149,7 +1427,7 @@ index 00000000..6fc17e11
 +        setLoading(false);
 +      }
 +    },
-+    [platform, branchId, receiving, actorUserId, preview, syncStoredAttempt],
++    [platform, branchId, receiving, actorUserId, syncStoredAttempt],
 +  );
 +
 +  const openConfirm = useCallback(() => {
@@ -1245,43 +1523,11 @@ index 00000000..6fc17e11
 +        return;
 +      }
 +      attemptRecord = created.record;
-+    }
-+    submitInFlight.current = true;
-+    setSubmitting(true);
-+    setSubmitError("");
-+    markStoreOrderAttemptInFlight(actorUserId);
-+    syncStoredAttempt();
-+    try {
-+      const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
-+        method: "POST",
-+        body: attemptRecord.body,
-+        idempotencyKey: attemptRecord.idempotencyKey,
-+        searchParams: branchId ? { branchId } : undefined,
-+      });
-+      const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
-+      applyPostOutcome(outcome);
-+      if (outcome.kind === "success") {
-+        lastIdempotencyKey.current = attemptRecord.idempotencyKey;
-+        receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, attemptRecord.idempotencyKey);
++      if (!receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey)) {
++        // binding optional when CRM read-only
 +      }
-+    } catch (caught) {
-+      if (caught instanceof RemcardApiError) {
-+        const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
-+        applyPostOutcome(
-+          classifyStoreOrderPostResponse({
-+            status: caught.status,
-+            payload,
-+            wasRetry,
-+          }),
-+        );
-+      } else {
-+        applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
-+      }
-+    } finally {
-+      submitInFlight.current = false;
-+      setSubmitting(false);
-+      syncStoredAttempt();
 +    }
++    await postStoreOrder(attemptRecord, wasRetry);
 +  }, [
 +    preview,
 +    submitting,
@@ -1292,10 +1538,55 @@ index 00000000..6fc17e11
 +    certCode,
 +    branchId,
 +    receiving,
-+    applyPostOutcome,
 +    orderUncertain,
-+    syncStoredAttempt,
++    postStoreOrder,
 +  ]);
++
++  if (phase === "recovery" && storedAttempt) {
++    return (
++      <section className={styles.scanPanel} data-testid="mini-scan-recovery">
++        <p className={styles.scanLead}>Сохранённая попытка покупки</p>
++        {storedAttempt.branchId ? (
++          <p className={styles.scanNotice}>Филиал (зафиксирован): {storedAttempt.branchId}</p>
++        ) : null}
++        <p className={styles.scanNotice}>Документ: {storedAttempt.body.certificateCode}</p>
++        <p className={styles.scanNotice}>{formatAttemptItemsSummary(storedAttempt.body)}</p>
++        {branchAttemptMismatch ? (
++          <p className={styles.scanBad} role="alert" data-testid="mini-branch-mismatch">
++            {BRANCH_ATTEMPT_MISMATCH_MESSAGE}
++          </p>
++        ) : null}
++        {orderConflict ? (
++          <p className={styles.scanBad} role="alert" data-testid="mini-order-conflict">
++            {ATTEMPT_CONFLICT_MESSAGE}
++          </p>
++        ) : (
++          <>
++            <p className={styles.scanLead}>{UNCERTAIN_ORDER_HEADING}</p>
++            <p className={styles.scanNotice} data-testid="mini-order-uncertain">
++              {UNCERTAIN_ORDER_DETAIL}
++            </p>
++          </>
++        )}
++        {submitError ? (
++          <p className={styles.scanBad} role="alert">
++            {submitError}
++          </p>
++        ) : null}
++        {!orderConflict && !branchAttemptMismatch ? (
++          <button
++            type="button"
++            className={styles.primaryBtn}
++            data-testid="mini-check-order-result"
++            disabled={submitting}
++            onClick={() => void checkStoredAttempt()}
++          >
++            {submitting ? "Проверка…" : "Проверить результат"}
++          </button>
++        ) : null}
++      </section>
++    );
++  }
 +
 +  if (phase === "success") {
 +    const appealTarget = receiving.appealId;
@@ -1425,13 +1716,13 @@ index 00000000..6fc17e11
 +            {UNCERTAIN_ORDER_DETAIL}
 +          </p>
 +        ) : null}
-+        {orderUncertain ? (
++        {orderUncertain && !branchAttemptMismatch ? (
 +          <button
 +            type="button"
 +            className={styles.secondaryBtn}
 +            data-testid="mini-check-order-result"
 +            disabled={submitting}
-+            onClick={() => void submitOrder()}
++            onClick={() => void checkStoredAttempt()}
 +          >
 +            Проверить результат
 +          </button>
@@ -1493,6 +1784,14 @@ index 00000000..6fc17e11
 +    );
 +  }
 +
++  if (storedAttempt && isStoreOrderAttemptLocked(storedAttempt)) {
++    return (
++      <section className={styles.scanPanel} data-testid="mini-scan-recovery">
++        <p className={styles.scanNotice}>{UNCERTAIN_ORDER_DETAIL}</p>
++      </section>
++    );
++  }
++
 +  return (
 +    <section className={styles.scanPanel} data-testid="mini-scan-gate">
 +      <p className={styles.scanLead}>
@@ -1527,10 +1826,10 @@ index 00000000..6fc17e11
 \ No newline at end of file
 diff --git a/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx b/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx
 new file mode 100644
-index 00000000..3d5e9247
+index 00000000..5e4d99dc
 --- /dev/null
 +++ b/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,148 @@
 +import { describe, expect, it, vi, beforeEach } from "vitest";
 +import { render, screen, waitFor } from "@testing-library/react";
 +import userEvent from "@testing-library/user-event";
@@ -1548,9 +1847,11 @@ index 00000000..3d5e9247
 +    linkPhase: "idle",
 +    linkError: "",
 +    ensureOrdinaryAppealContext: async () => ({ ok: true as const }),
++    restoreOrdinaryAppealForStoredAttempt: async () => ({ ok: true as const }),
 +    assertPreviewAllowed: () => null,
 +    beginOrderLinkAfterSuccess: () => undefined,
 +    retryOrderLinkOnly: () => undefined,
++    persistOrdinaryAppealBinding: () => true,
 +  }),
 +}));
 +
