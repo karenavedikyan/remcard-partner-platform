@@ -69,6 +69,22 @@ export function MiniIconExternal() {
   );
 }
 
+export function MiniIconLock({ className }: { className?: string }) {
+  return (
+    <IconBox className={className}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect x="6" y="10" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
+        <path
+          d="M9 10V8a3 3 0 016 0v2"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+    </IconBox>
+  );
+}
+
 export function MiniIconPin() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>

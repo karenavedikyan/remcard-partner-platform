@@ -15,9 +15,13 @@ const ensureOrdinaryAppealContext = vi.fn();
 const restoreOrdinaryAppealForStoredAttempt = vi.fn();
 const submitReceivingCertificateEntry = vi.fn();
 
-vi.mock("@/lib/mini-app/api", () => ({
-  miniAppStoreScanLookup: vi.fn().mockResolvedValue({ state: "valid" }),
-}));
+vi.mock("@/lib/mini-app/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/mini-app/api")>();
+  return {
+    ...actual,
+    miniAppStoreScanLookup: vi.fn().mockResolvedValue({ state: "valid" }),
+  };
+});
 
 vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
   useReceivingAppealScannerHandoff: () => ({

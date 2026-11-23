@@ -5,7 +5,12 @@ import { QrScanner } from "@/components/scanner/QrScanner";
 import { TextField } from "@/components/ui/FormField";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
-import { miniAppStoreScanLookup } from "@/lib/mini-app/api";
+import {
+  miniAppStoreOrderPreview,
+  miniAppStoreOrderSubmitWithMeta,
+  miniAppStoreScanLookup,
+} from "@/lib/mini-app/api";
+import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   buildOrderItems,
@@ -92,6 +97,7 @@ type Props = {
   /** Synthetic tests only: skip scan gate. */
   fixturePreview?: OrderPreviewAllowed;
   fixtureCertCode?: string;
+  embeddedContext?: MiniAppEmbeddedContext;
 };
 
 const LOCKED_ATTEMPT_OTHER_CODE_MESSAGE =
@@ -137,6 +143,7 @@ export function MiniAppScanReceive({
   onClientsDeepLink,
   fixturePreview,
   fixtureCertCode = "RC-FIXTURE",
+  embeddedContext = "default",
 }: Props) {
   const actorUserId = bootstrap.actorUserId;
   const receiving = useReceivingAppealScannerHandoff(appealId?.trim() || null);
@@ -232,11 +239,11 @@ export function MiniAppScanReceive({
         }
         const gen = ++recoveryPreviewGen.current;
         const searchParams = attempt.branchId?.trim() ? { branchId: attempt.branchId.trim() } : undefined;
-        void remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
-          method: "POST",
-          body: { certificateCode: attempt.body.certificateCode },
-          searchParams,
-        })
+        void miniAppStoreOrderPreview(
+          platform,
+          { certificateCode: attempt.body.certificateCode },
+          { branchId: attempt.branchId?.trim() || undefined, embeddedContext },
+        )
           .then((data) => {
             if (gen !== recoveryPreviewGen.current) return;
             if ("allowed" in data && data.allowed) {
@@ -248,7 +255,7 @@ export function MiniAppScanReceive({
     } else if (!fixturePreview) {
       setPhase("purchase");
     }
-  }, [actorUserId, fixturePreview, receiving, isBranchScopedCheckout]);
+  }, [actorUserId, embeddedContext, fixturePreview, platform, receiving, isBranchScopedCheckout]);
 
   useEffect(() => {
     const attempt = storedAttempt;
@@ -428,12 +435,12 @@ export function MiniAppScanReceive({
       markStoreOrderAttemptInFlight(actorUserId);
       syncStoredAttempt();
       try {
-        const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
-          method: "POST",
-          body: attemptRecord.body,
-          idempotencyKey: attemptRecord.idempotencyKey,
-          searchParams: operationBranchId ? { branchId: operationBranchId } : undefined,
-        });
+        const { payload } = await miniAppStoreOrderSubmitWithMeta(
+          platform,
+          attemptRecord.body,
+          attemptRecord.idempotencyKey,
+          { branchId: operationBranchId, embeddedContext },
+        );
         const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
         applyPostOutcome(outcome);
         if (outcome.kind === "success") {
@@ -464,7 +471,9 @@ export function MiniAppScanReceive({
       applyPostOutcome,
       awaitAppealRestoreIfNeeded,
       branchId,
+      embeddedContext,
       isBranchScopedCheckout,
+      platform,
       receiving,
       syncStoredAttempt,
     ],
@@ -536,7 +545,7 @@ export function MiniAppScanReceive({
       setLoading(true);
       setGateError("");
       try {
-        const gate = await miniAppStoreScanLookup(platform, parsed.code, branchId);
+        const gate = await miniAppStoreScanLookup(platform, parsed.code, { branchId, embeddedContext });
         if (gate.state !== "valid") {
           setGateError(gate.message || "Сертификат недоступен.");
           return;
@@ -553,11 +562,11 @@ export function MiniAppScanReceive({
             return;
           }
         }
-        const data = await remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
-          method: "POST",
-          body: { certificateCode: parsed.code },
-          searchParams: branchId ? { branchId } : undefined,
-        });
+        const data = await miniAppStoreOrderPreview(
+          platform,
+          { certificateCode: parsed.code },
+          { branchId, embeddedContext },
+        );
         if (!("allowed" in data) || !data.allowed) {
           setGateError("message" in data ? data.message : "Покупка по этому документу недоступна.");
           return;
@@ -587,7 +596,7 @@ export function MiniAppScanReceive({
         setLoading(false);
       }
     },
-    [platform, branchId, receiving, actorUserId, syncStoredAttempt],
+    [platform, branchId, embeddedContext, receiving, actorUserId, syncStoredAttempt],
   );
 
   const openConfirm = useCallback(() => {
