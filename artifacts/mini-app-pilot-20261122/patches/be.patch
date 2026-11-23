@@ -1,3 +1,21 @@
+diff --git a/.env.example b/.env.example
+index ec54470a..aacba3c2 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,9 +1,11 @@
+ DATABASE_URL="postgresql://..."
+ TELEGRAM_BOT_TOKEN="..."
+-# Closed pilot: Telegram/MAX mini cabinet (default off)
++# Closed pilot: Telegram/MAX mini cabinet (master kill switch, default off)
+ PROF_MINI_APP_ENABLED=
+-# Comma-separated internal user ids or publicIds allowed in the closed pilot (required when enabled).
++# Comma-separated internal user ids or publicIds allowed in the closed pilot (required when enabled and public beta is off).
+ PROF_MINI_APP_PILOT_USER_IDS=
++# Public beta (default off): when true with PROF_MINI_APP_ENABLED, bypasses PROF_MINI_APP_PILOT_USER_IDS only.
++PROF_MINI_APP_PUBLIC_BETA_ENABLED=
+ MAX_BOT_TOKEN="your_max_bot_token_here"
+ MAX_WEBHOOK_SECRET="your_secret_here"
+ NEXT_PUBLIC_MAX_BOT_URL="https://max.ru/id230808706225_bot?start=login"
 diff --git a/src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts b/src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts
 new file mode 100644
 index 00000000..4767ebd2
@@ -164,6 +182,74 @@ index 49e67bf8..c84699ef 100644
      throw caught;
    }
  }
+diff --git a/src/lib/__tests__/profMiniAppPublicBetaGate.test.ts b/src/lib/__tests__/profMiniAppPublicBetaGate.test.ts
+new file mode 100644
+index 00000000..0c419a27
+--- /dev/null
++++ b/src/lib/__tests__/profMiniAppPublicBetaGate.test.ts
+@@ -0,0 +1,61 @@
++import { describe, expect, it, beforeEach, afterEach } from 'vitest';
++import {
++  isProfMiniAppEnabled,
++  isProfMiniAppPublicBetaEnabled,
++  isProfMiniAppPilotOpenForUser,
++} from '@/lib/profMiniAppConfig';
++
++describe('profMiniAppConfig public beta gate matrix', () => {
++  const env = process.env;
++
++  beforeEach(() => {
++    process.env = { ...env };
++    delete process.env.PROF_MINI_APP_ENABLED;
++    delete process.env.PROF_MINI_APP_PUBLIC_BETA_ENABLED;
++    delete process.env.PROF_MINI_APP_PILOT_USER_IDS;
++  });
++
++  afterEach(() => {
++    process.env = env;
++  });
++
++  it('master kill switch off keeps pilot and beta closed', () => {
++    process.env.PROF_MINI_APP_PUBLIC_BETA_ENABLED = 'true';
++    process.env.PROF_MINI_APP_PILOT_USER_IDS = 'u-pilot';
++    expect(isProfMiniAppEnabled()).toBe(false);
++    expect(isProfMiniAppPublicBetaEnabled()).toBe(false);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u-pilot', publicId: 'RC-1' })).toBe(false);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u-other', publicId: 'RC-9' })).toBe(false);
++  });
++
++  it('closed pilot: allowlist empty denies even when master on', () => {
++    process.env.PROF_MINI_APP_ENABLED = 'true';
++    expect(isProfMiniAppPublicBetaEnabled()).toBe(false);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u1', publicId: 'RC-1' })).toBe(false);
++  });
++
++  it('closed pilot: only allowlisted user id or publicId passes allowlist gate', () => {
++    process.env.PROF_MINI_APP_ENABLED = '1';
++    process.env.PROF_MINI_APP_PILOT_USER_IDS = 'u1, RC-PILOT';
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u1', publicId: 'x' })).toBe(true);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u2', publicId: 'RC-PILOT' })).toBe(true);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u2', publicId: 'other' })).toBe(false);
++  });
++
++  it('public beta: master on + beta on opens allowlist gate for non-listed eligible users', () => {
++    process.env.PROF_MINI_APP_ENABLED = 'true';
++    process.env.PROF_MINI_APP_PUBLIC_BETA_ENABLED = 'true';
++    process.env.PROF_MINI_APP_PILOT_USER_IDS = 'only-pilot';
++    expect(isProfMiniAppPublicBetaEnabled()).toBe(true);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'eligible-u', publicId: 'RC-NEW' })).toBe(true);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'only-pilot', publicId: 'RC-1' })).toBe(true);
++  });
++
++  it('public beta false retains exact closed pilot dependency on allowlist', () => {
++    process.env.PROF_MINI_APP_ENABLED = 'true';
++    process.env.PROF_MINI_APP_PUBLIC_BETA_ENABLED = 'false';
++    process.env.PROF_MINI_APP_PILOT_USER_IDS = 'u1';
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'eligible-outside', publicId: 'RC-X' })).toBe(false);
++    expect(isProfMiniAppPilotOpenForUser({ userId: 'u1', publicId: 'RC-X' })).toBe(true);
++  });
++});
+\ No newline at end of file
 diff --git a/src/lib/certificateReceivingPolicy/purchaseIssuerBonus.ts b/src/lib/certificateReceivingPolicy/purchaseIssuerBonus.ts
 index 2ca817c7..255655b2 100644
 --- a/src/lib/certificateReceivingPolicy/purchaseIssuerBonus.ts
@@ -204,6 +290,46 @@ index e5dc415d..ac71ee50 100644
      role,
      roleLabel: ROLE_LABEL[role],
      platform: input.platform,
+diff --git a/src/lib/profMiniAppConfig.ts b/src/lib/profMiniAppConfig.ts
+index 8d262dfd..09bdd010 100644
+--- a/src/lib/profMiniAppConfig.ts
++++ b/src/lib/profMiniAppConfig.ts
+@@ -1,9 +1,16 @@
+-/** Closed pilot: RemCard PROF mini cabinet in Telegram / MAX. Default off. */
++/** Master kill switch: RemCard PROF mini cabinet in Telegram / MAX. Default off. */
+ export function isProfMiniAppEnabled(): boolean {
+   const raw = process.env.PROF_MINI_APP_ENABLED?.trim().toLowerCase();
+   return raw === '1' || raw === 'true' || raw === 'yes';
+ }
+ 
++/** Public beta opt-in: bypass closed-pilot user allowlist only. Default off; requires master switch. */
++export function isProfMiniAppPublicBetaEnabled(): boolean {
++  if (!isProfMiniAppEnabled()) return false;
++  const raw = process.env.PROF_MINI_APP_PUBLIC_BETA_ENABLED?.trim().toLowerCase();
++  return raw === '1' || raw === 'true' || raw === 'yes';
++}
++
+ function pilotUserAllowlist(): Set<string> {
+   const raw = process.env.PROF_MINI_APP_PILOT_USER_IDS?.trim();
+   if (!raw) return new Set();
+@@ -16,13 +23,16 @@ function pilotUserAllowlist(): Set<string> {
+ }
+ 
+ /**
+- * Feature flag alone does not open the pilot: an explicit allowlist of user ids / publicIds is required.
++ * Closed pilot: master on + non-empty allowlist match (user id or publicId).
++ * Public beta: master on + PROF_MINI_APP_PUBLIC_BETA_ENABLED bypasses allowlist only;
++ * messenger initData, link consent, session cookie, role/org/branch and CRM rules stay in route guards.
+  */
+ export function isProfMiniAppPilotOpenForUser(input: {
+   userId: string;
+   publicId?: string | null;
+ }): boolean {
+   if (!isProfMiniAppEnabled()) return false;
++  if (isProfMiniAppPublicBetaEnabled()) return true;
+   const allow = pilotUserAllowlist();
+   if (allow.size === 0) return false;
+   if (allow.has(input.userId)) return true;
 diff --git a/src/lib/store/__tests__/orderCreate.pool-validation.test.ts b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
 new file mode 100644
 index 00000000..97b0deda
