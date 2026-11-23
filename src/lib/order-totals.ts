@@ -19,6 +19,12 @@ export function lineDiscountRub(amount: number, discountPercent: number): number
 }
 
 function previewPoolPercent(category: PreviewCategory): number {
+  if (
+    category.maxClientDiscountPercent != null &&
+    Number.isFinite(category.maxClientDiscountPercent)
+  ) {
+    return category.maxClientDiscountPercent;
+  }
   return category.discountPercent + category.issuerPercent;
 }
 
@@ -85,9 +91,17 @@ export function validateCategoryDiscountField(
     ? Number(discountDrafts![category.category]!.trim())
     : category.discountPercent;
 
-  if (!explicit) return { ok: true };
+    if (!explicit) {
+      if (parsed - pool > CLIENT_DISCOUNT_POOL_TOLERANCE_PP - 1e-9) {
+        return {
+          ok: false,
+          message: `Сертификат даёт ${category.discountPercent}%, максимум сейчас ${pool}% — исправьте ставку`,
+        };
+      }
+      return { ok: true };
+    }
 
-  if (!Number.isFinite(parsed)) {
+    if (!Number.isFinite(parsed)) {
     return { ok: false, message: "Укажите число" };
   }
   if (parsed < 0) {

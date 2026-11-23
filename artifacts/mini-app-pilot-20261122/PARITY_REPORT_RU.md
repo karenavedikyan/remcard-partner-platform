@@ -30,14 +30,21 @@
 
 ## Тесты
 
-- BE: `vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts` (6 cases)
-- FE: `vitest run src/lib/order-totals.test.ts src/lib/mini-app/mini-app-scan-receive-policy.test.ts src/components/mini-app/MiniAppScanReceive.discount.test.tsx src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx` (15 cases)
+- BE: `vitest run src/lib/store/__tests__/orderCreate.pool-validation.test.ts src/lib/store/__tests__/storeOrderCategoryLimit.test.ts src/lib/store/__tests__/storeOrderPreviewPostParity.test.ts src/lib/store/__tests__/storeOrderPreviewCategories.test.ts src/app/api/store/order/__tests__/route.pool-limit.mocked.test.ts`
+- FE: `vitest run src/lib/order-totals.test.ts src/lib/mini-app/mini-app-scan-receive-policy.test.ts src/components/mini-app/MiniAppScanReceive.discount.test.tsx src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx` (18 cases)
 
 ## Скидки (итерация приёмки)
 
 - Сброс по blur → unset → UI снова % сертификата; payload без `discountPercent`
 - Явный `0` сохраняется и уходит в заказ
 - Ошибка у поля и блок «К подтверждению» до клика при отрицательной скидке и +0,01 п.п. над пулом
+
+## PREVIEW ↔ POST лимит категории (итерация)
+
+- Единый `resolveEffectiveClientDiscountMaxPercent` (BE): snapshot → live `storePercent`, legacy/self-scan → frozen offered+issuer
+- Preview отдаёт `maxClientDiscountPercent`; FE `categoryPoolPercent` использует его (совместимость: без поля — старый расчёт)
+- POST preflight грузит те же live terms; транзакция повторно проверяет под lock (без двойного legacy-отказа у snapshot)
+- Сценарии: frozen 15 → live 20 (UI+POST 20, 20.01 отказ); live 12 / live 8 при offered 10
 
 ## Повтор после HTTP 400 (приёмка)
 

@@ -39,4 +39,42 @@ describe("order-totals flexible client discount", () => {
     const result = validateOrderDiscountDrafts([doors], { doors: "10000" }, { doors: "10.02" });
     expect(result.ok).toBe(false);
   });
+
+  it("uses maxClientDiscountPercent 20 when frozen line shows 10+5", () => {
+    const cat: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 10,
+      issuerPercent: 10,
+      maxClientDiscountPercent: 20,
+    };
+    const ok = validateOrderDiscountDrafts([cat], { doors: "10000" }, { doors: "20" });
+    expect(ok.ok).toBe(true);
+    const bad = validateOrderDiscountDrafts([cat], { doors: "10000" }, { doors: "20.01" });
+    expect(bad.ok).toBe(false);
+  });
+
+  it("blocks submit when offered exceeds live max without explicit edit", () => {
+    const cat: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 10,
+      issuerPercent: 2,
+      maxClientDiscountPercent: 8,
+    };
+    const result = validateOrderDiscountDrafts([cat], { doors: "10000" });
+    expect(result.ok).toBe(false);
+  });
+
+  it("live max 12 accepts 12 rejects 12.01", () => {
+    const cat: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 10,
+      issuerPercent: 2,
+      maxClientDiscountPercent: 12,
+    };
+    expect(validateOrderDiscountDrafts([cat], { doors: "1" }, { doors: "12" }).ok).toBe(true);
+    expect(validateOrderDiscountDrafts([cat], { doors: "1" }, { doors: "12.01" }).ok).toBe(false);
+  });
 });
