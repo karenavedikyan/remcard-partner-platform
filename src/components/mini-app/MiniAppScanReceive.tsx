@@ -12,6 +12,10 @@ import {
   categoryPoolPercent,
   computeOrderTotals,
   validateOrderAmounts,
+  appliedClientDiscountPercent,
+  commitDiscountDraftOnBlur,
+  discountDraftInputValue,
+  validateCategoryDiscountField,
   validateOrderDiscountDrafts,
   type CategoryAmountDraft,
   type CategoryDiscountDraft,
@@ -46,6 +50,9 @@ type Props = {
   appealId?: string | null;
   onDone: () => void;
   onClientsDeepLink?: (appealId: string) => void;
+  /** Synthetic tests only: skip scan gate. */
+  fixturePreview?: OrderPreviewAllowed;
+  fixtureCertCode?: string;
 };
 
 function formatRub(value: number) {
@@ -66,8 +73,7 @@ function weightedPoolSummary(
     const amount = Number(raw);
     if (!Number.isFinite(amount) || amount <= 0) continue;
     const pool = categoryPoolPercent(cat);
-    const explicit = discountDrafts[cat.category]?.trim();
-    const clientPct = explicit ? Number(explicit) : cat.discountPercent;
+    const clientPct = appliedClientDiscountPercent(cat, discountDrafts);
     if (!Number.isFinite(clientPct)) continue;
     sumAmount += amount;
     weightedClient += amount * clientPct;
@@ -87,18 +93,23 @@ export function MiniAppScanReceive({
   appealId,
   onDone,
   onClientsDeepLink,
+  fixturePreview,
+  fixtureCertCode = "RC-FIXTURE",
 }: Props) {
   const actorUserId = bootstrap.actorUserId;
   const receiving = useReceivingAppealScannerHandoff(appealId?.trim() || null);
 
-  const [phase, setPhase] = useState<Phase>("scan");
+  const [phase, setPhase] = useState<Phase>(fixturePreview ? "purchase" : "scan");
   const [manual, setManual] = useState("");
   const [loading, setLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [gateError, setGateError] = useState("");
-  const [certCode, setCertCode] = useState("");
-  const [preview, setPreview] = useState<OrderPreviewAllowed | null>(null);
-  const [amountDrafts, setAmountDrafts] = useState<CategoryAmountDraft>({});
+  const [certCode, setCertCode] = useState(fixtureCertCode);
+  const [preview, setPreview] = useState<OrderPreviewAllowed | null>(fixturePreview ?? null);
+  const [amountDrafts, setAmountDrafts] = useState<CategoryAmountDraft>(() => {
+    if (!fixturePreview) return {};
+    return Object.fromEntries(fixturePreview.availableCategories.map((c) => [c.category, "10000"]));
+  });
   const [discountDrafts, setDiscountDrafts] = useState<CategoryDiscountDraft>({});
   const [rewardDrafts, setRewardDrafts] = useState<Record<string, RewardConfirmationDraft>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +128,25 @@ export function MiniAppScanReceive({
     if (!preview) return null;
     return weightedPoolSummary(preview.availableCategories, amountDrafts, discountDrafts);
   }, [preview, amountDrafts, discountDrafts]);
+
+  const discountFieldErrors = useMemo(() => {
+    if (!preview) return {} as Record<string, string>;
+    const errors: Record<string, string> = {};
+    for (const category of preview.availableCategories) {
+      const result = validateCategoryDiscountField(category, amountDrafts, discountDrafts);
+      if (!result.ok) {
+        errors[category.category] = result.message;
+      }
+    }
+    return errors;
+  }, [preview, amountDrafts, discountDrafts]);
+
+  const purchaseStepBlocked = useMemo(() => {
+    if (!preview) return true;
+    if (Object.keys(discountFieldErrors).length > 0) return true;
+    const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
+    return !amounts.ok;
+  }, [preview, amountDrafts, discountFieldErrors]);
 
   const beginPurchase = useCallback(
     async (raw: string) => {
@@ -166,7 +196,6 @@ export function MiniAppScanReceive({
         const rewards: Record<string, RewardConfirmationDraft> = {};
         for (const cat of data.availableCategories) {
           drafts[cat.category] = "";
-          discounts[cat.category] = String(cat.discountPercent);
           rewards[cat.category] = defaultRewardDraft;
         }
         setAmountDrafts(drafts);
@@ -356,16 +385,36 @@ export function MiniAppScanReceive({
                 }
               />
               <TextField
+                id={`mini-discount-${category.category}`}
                 label="Скидка клиенту, %"
                 type="number"
                 min={0}
                 inputMode="decimal"
-                value={discountDrafts[category.category] ?? String(category.discountPercent)}
+                data-testid={`mini-discount-input-${category.category}`}
+                value={discountDraftInputValue(category, discountDrafts)}
                 disabled={submitting}
                 onChange={(e) =>
                   setDiscountDrafts((prev) => ({ ...prev, [category.category]: e.target.value }))
                 }
+                onBlur={(e) => {
+                  const commit = commitDiscountDraftOnBlur(category.category, e.target.value);
+                  setDiscountDrafts((prev) => {
+                    const next = { ...prev };
+                    if (commit.action === "unset") {
+                      delete next[category.category];
+                    } else {
+                      next[category.category] = commit.value;
+                    }
+                    return next;
+                  });
+                }}
+                aria-invalid={Boolean(discountFieldErrors[category.category])}
               />
+              {discountFieldErrors[category.category] ? (
+                <p className={styles.scanBad} role="alert" data-testid={`mini-discount-error-${category.category}`}>
+                  {discountFieldErrors[category.category]}
+                </p>
+              ) : null}
               {!preview.partner.isSelfScan ? (
                 <RewardConfirmationFields
                   category={category.category}
@@ -414,7 +463,13 @@ export function MiniAppScanReceive({
             </button>
           </div>
         ) : (
-          <button type="button" className={styles.primaryBtn} disabled={submitting} onClick={openConfirm}>
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={submitting || purchaseStepBlocked}
+            data-testid="mini-scan-confirm-step"
+            onClick={openConfirm}
+          >
             К подтверждению
           </button>
         )}

@@ -27,7 +27,30 @@ export function hasExplicitClientDiscountDraft(
   discountDrafts?: CategoryDiscountDraft,
 ): boolean {
   const raw = discountDrafts?.[category.category];
-  return raw !== undefined && raw.trim() !== "";
+  if (raw === undefined) return false;
+  return raw.trim() !== "";
+}
+
+/** Input display: unset → certificate %; explicit draft (including empty while editing) → raw string. */
+export function discountDraftInputValue(
+  category: PreviewCategory,
+  discountDrafts?: CategoryDiscountDraft,
+): string {
+  if (!discountDrafts || !(category.category in discountDrafts)) {
+    return String(category.discountPercent);
+  }
+  return discountDrafts[category.category] ?? "";
+}
+
+/** After blur on discount field: empty → unset (revert to certificate default). */
+export function commitDiscountDraftOnBlur(
+  categoryKey: string,
+  rawValue: string,
+): { action: "unset" } | { action: "set"; value: string } {
+  if (rawValue.trim() === "") {
+    return { action: "unset" };
+  }
+  return { action: "set", value: rawValue };
 }
 
 /** Call only after `validateOrderDiscountDrafts` passes for active lines. */
@@ -44,6 +67,42 @@ export const CLIENT_DISCOUNT_POOL_TOLERANCE_PP = 0.01;
 
 export function categoryPoolPercent(category: PreviewCategory): number {
   return previewPoolPercent(category);
+}
+
+export function validateCategoryDiscountField(
+  category: PreviewCategory,
+  amountDrafts: CategoryAmountDraft,
+  discountDrafts?: CategoryDiscountDraft,
+): { ok: true } | { ok: false; message: string } {
+  const amountRaw = amountDrafts[category.category]?.trim() ?? "";
+  if (!amountRaw) return { ok: true };
+  const amount = Number(amountRaw);
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: true };
+
+  const pool = categoryPoolPercent(category);
+  const explicit = hasExplicitClientDiscountDraft(category, discountDrafts);
+  const parsed = explicit
+    ? Number(discountDrafts![category.category]!.trim())
+    : category.discountPercent;
+
+  if (!explicit) return { ok: true };
+
+  if (!Number.isFinite(parsed)) {
+    return { ok: false, message: "Укажите число" };
+  }
+  if (parsed < 0) {
+    return { ok: false, message: "Скидка не может быть отрицательной" };
+  }
+  if (parsed > 100) {
+    return { ok: false, message: "Укажите значение от 0 до 100%" };
+  }
+  if (parsed - pool > CLIENT_DISCOUNT_POOL_TOLERANCE_PP - 1e-9) {
+    return {
+      ok: false,
+      message: `Превышает максимум ${pool}%`,
+    };
+  }
+  return { ok: true };
 }
 
 export function validateOrderDiscountDrafts(
