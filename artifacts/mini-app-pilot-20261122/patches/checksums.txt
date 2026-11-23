@@ -1,9 +1,12 @@
 FE_BASE=c457512f4051166d5f9a74201666736c4e15dbac
 BE_BASE=5f11f3cc964158cff4a276476702c2d51ff4626c
-FE_HEAD=2f3a3e55dbd7c70d1403f29610a904dcf3f7812f
+FE_HEAD=4458353ec2321177670ab82b245c2b13e6df3686
 BE_HEAD=5e43a37e547f7d5387e858200b1a26490a491f38
 FE_PATCH_SHA256=30a615af8c31f87921b59fb22179043c01d7b10073edc406ec6191f5afeaf7ce
 BE_PATCH_SHA256=43e6ff5561e87bafcc3b36dca0ed2436b2edb83de31ab163b343f136b0aaf0f1
+FE_PATCH_GIT_APPLY_CHECK=OK
+BE_PATCH_GIT_APPLY_CHECK=OK
+FE_TREE_PARITY=OK (excl. artifacts export, tsbuildinfo)
 --- FE changed files (excluding export artifacts) ---
 src/app/dev/mini-app-fixture/fixtures-data.ts
 src/components/mini-app/MiniAppCertificateReady.tsx
