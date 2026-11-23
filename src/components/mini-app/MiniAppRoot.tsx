@@ -465,6 +465,9 @@ export function MiniAppRoot({
     return (
       <div className={styles.shell}>
         <MiniAppInvitePartner
+          platform={platform}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
           partnersSearchUrl={bootstrap.partnersUrl}
           fixtureInviteLink={fixtureInviteLink}
           onBack={() => setScreen("home")}

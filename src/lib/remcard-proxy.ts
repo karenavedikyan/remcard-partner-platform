@@ -42,6 +42,9 @@ const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
   "/api/pro/mini-app/certificate/options",
   "/api/pro/mini-app/store/order",
   "/api/pro/mini-app/store/order/preview",
+  "/api/pro/mini-app/partnership/invite-context",
+  "/api/pro/mini-app/partnership/link-invite",
+  "/api/pro/mini-app/partnership/discussion-invite",
   "/api/pro/mini-app/auth/send-code",
   "/api/pro/mini-app/auth/verify-code",
 ]);
@@ -331,6 +334,9 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/certificate\/options$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/store\/order\/preview$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/store\/order$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/partnership\/invite-context$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/partnership\/link-invite$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/partnership\/discussion-invite$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/store\/scan$/ },
     {
       methods: new Set(["GET", "POST"]),

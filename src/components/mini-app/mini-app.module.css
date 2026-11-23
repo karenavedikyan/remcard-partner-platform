@@ -759,3 +759,151 @@
   cursor: pointer;
   align-self: center;
 }
+
+.inviteSteps {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 4px;
+}
+
+.inviteSteps li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: #8a7a83;
+  text-align: center;
+}
+
+.inviteSteps li span:first-child {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid #e5d5dc;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.inviteSteps li[data-done="true"] span:first-child,
+.inviteSteps li[aria-current="step"] span:first-child {
+  background: #9f1239;
+  border-color: #9f1239;
+  color: #fff;
+}
+
+.inviteEyebrow {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: #8a7a83;
+}
+
+.inviteH2 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  color: #35252f;
+}
+
+.inviteChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inviteChip {
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  color: #3a2f35;
+  cursor: pointer;
+}
+
+.inviteChip[aria-pressed="true"] {
+  border-color: #9f1239;
+  box-shadow: 0 0 0 1px #9f1239;
+}
+
+.inviteCounter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inviteReview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inviteReview strong {
+  font-size: 1rem;
+  color: #35252f;
+}
+
+.inviteReviewNote {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  color: #3a2f35;
+}
+
+.inviteEditLink {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: #9f1239;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.inviteTermRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.inviteTermRow label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.inviteTermPercent {
+  width: 4.5rem;
+}
+
+.inviteStatus {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #35684b;
+}
+
+.inviteStatusBad {
+  color: #9f1239;
+}
+
+.inviteDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #35252f;
+}
+
+.invitePlainList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  color: #3a2f35;
+}

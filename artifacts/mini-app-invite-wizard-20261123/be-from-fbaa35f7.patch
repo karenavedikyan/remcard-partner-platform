@@ -1,0 +1,508 @@
+diff --git a/src/app/api/partnership/link-invite/__tests__/route.org-staff.test.ts b/src/app/api/partnership/link-invite/__tests__/route.org-staff.test.ts
+index 02695c9d..9f0cb816 100644
+--- a/src/app/api/partnership/link-invite/__tests__/route.org-staff.test.ts
++++ b/src/app/api/partnership/link-invite/__tests__/route.org-staff.test.ts
+@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
+   auth: vi.fn(),
+   context: vi.fn(),
+   mode: vi.fn(),
+-  list: vi.fn(),
++  listLegacy: vi.fn(),
++  listV2: vi.fn(),
+   create: vi.fn(),
+   branchFindMany: vi.fn(),
+   branchEmployeeFindMany: vi.fn(),
+@@ -20,7 +21,8 @@ vi.mock('@/lib/profTestPartnershipScope', () => ({
+   rejectPartnershipTestRealMismatch: vi.fn(async () => null),
+ }));
+ vi.mock('@/lib/partnershipLinkInvite', () => ({
+-  listPartnershipLinkInvites: mocks.list,
++  listPartnershipLinkInvitesLegacy: mocks.listLegacy,
++  listPartnershipLinkInvitesV2: mocks.listV2,
+   createPartnershipLinkInvite: mocks.create,
+ }));
+ vi.mock('@/lib/prisma', () => ({
+@@ -88,7 +90,15 @@ describe('link-invite org staff principal', () => {
+     mocks.mode.mockResolvedValue('live');
+     mocks.branchFindMany.mockResolvedValue([{ id: 'b1' }]);
+     mocks.branchEmployeeFindMany.mockResolvedValue([partnershipGrant('b1')]);
+-    mocks.list.mockResolvedValue([{ id: 'inv-1' }]);
++    mocks.listLegacy.mockResolvedValue({ invites: [{ id: 'inv-1' }] });
++    mocks.listV2.mockResolvedValue({
++      ok: true,
++      data: {
++        listVersion: 2,
++        active: { items: [{ id: 'inv-1' }], nextCursor: null },
++        archive: { items: [], nextCursor: null },
++      },
++    });
+     mocks.create.mockResolvedValue({
+       ok: true,
+       inviteId: 'inv-new',
+@@ -101,11 +111,26 @@ describe('link-invite org staff principal', () => {
+   it('GET lists invites for organization owner principal, not the employee session user', async () => {
+     const res = await GET(new NextRequest('http://127.0.0.1/api/partnership/link-invite'));
+     expect(res.status).toBe(200);
+-    expect(mocks.list).toHaveBeenCalledWith('owner-pro');
++    expect(mocks.listLegacy).toHaveBeenCalledWith('owner-pro');
++    expect(mocks.listV2).not.toHaveBeenCalled();
+     const body = await res.json();
+     expect(body.inviterBusinessSide?.tradeTermCategories).toContain('doors');
+   });
+ 
++  it('GET listVersion=2 uses v2 list for organization owner principal', async () => {
++    const res = await GET(
++      new NextRequest('http://127.0.0.1/api/partnership/link-invite?listVersion=2'),
++    );
++    expect(res.status).toBe(200);
++    expect(mocks.listV2).toHaveBeenCalledWith(
++      'owner-pro',
++      expect.objectContaining({ viewingActorUserId: 'client-employee' }),
++    );
++    expect(mocks.listLegacy).not.toHaveBeenCalled();
++    const body = await res.json();
++    expect(body.active.items).toEqual([{ id: 'inv-1' }]);
++  });
++
+   it('POST creates invite with organization owner as inviter', async () => {
+     const res = await POST(
+       new NextRequest('http://127.0.0.1/api/partnership/link-invite', {
+@@ -143,6 +168,7 @@ describe('link-invite org staff principal', () => {
+     ]);
+     const res = await GET(new NextRequest('http://127.0.0.1/api/partnership/link-invite'));
+     expect(res.status).toBe(403);
+-    expect(mocks.list).not.toHaveBeenCalled();
++    expect(mocks.listLegacy).not.toHaveBeenCalled();
++    expect(mocks.listV2).not.toHaveBeenCalled();
+   });
+ });
+diff --git a/src/app/api/pro/mini-app/__tests__/routes.dynamic.test.ts b/src/app/api/pro/mini-app/__tests__/routes.dynamic.test.ts
+index e0f54c08..e5ad1a44 100644
+--- a/src/app/api/pro/mini-app/__tests__/routes.dynamic.test.ts
++++ b/src/app/api/pro/mini-app/__tests__/routes.dynamic.test.ts
+@@ -4,10 +4,22 @@ import * as scanRoute from '@/app/api/pro/mini-app/scan/route';
+ import * as optionsRoute from '@/app/api/pro/mini-app/certificate/options/route';
+ import * as certificateRoute from '@/app/api/pro/mini-app/certificate/route';
+ import * as sessionRoute from '@/app/api/pro/mini-app/session/route';
++import * as inviteContextRoute from '@/app/api/pro/mini-app/partnership/invite-context/route';
++import * as miniLinkInviteRoute from '@/app/api/pro/mini-app/partnership/link-invite/route';
++import * as miniDiscussionInviteRoute from '@/app/api/pro/mini-app/partnership/discussion-invite/route';
+ 
+ describe('mini-app API route segment config', () => {
+   it('marks pilot routes force-dynamic (no build-time static 404)', () => {
+-    for (const mod of [bootstrapRoute, scanRoute, optionsRoute, certificateRoute, sessionRoute]) {
++    for (const mod of [
++      bootstrapRoute,
++      scanRoute,
++      optionsRoute,
++      certificateRoute,
++      sessionRoute,
++      inviteContextRoute,
++      miniLinkInviteRoute,
++      miniDiscussionInviteRoute,
++    ]) {
+       expect(mod.dynamic).toBe('force-dynamic');
+       expect(mod.fetchCache).toBe('force-no-store');
+       expect(mod.revalidate).toBe(0);
+diff --git a/src/app/api/pro/mini-app/partnership/discussion-invite/route.ts b/src/app/api/pro/mini-app/partnership/discussion-invite/route.ts
+new file mode 100644
+index 00000000..4f19300d
+--- /dev/null
++++ b/src/app/api/pro/mini-app/partnership/discussion-invite/route.ts
+@@ -0,0 +1,42 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { createPartnershipDiscussionInvite } from '@/lib/partnershipDiscussionInvite';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++import { guardMiniAppPartnershipRoute, privateNoStore } from '@/lib/miniAppPartnershipInviteRoute';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++export async function POST(req: NextRequest) {
++  const guard = await guardMiniAppPartnershipRoute(req);
++  if (!guard.ok) return guard.response;
++
++  if (guard.role !== 'agent') {
++    return privateNoStore(
++      NextResponse.json(
++        { error: 'Для этого профиля используйте приглашение с условиями', code: 'WRONG_INVITE_KIND' },
++        { status: 403 },
++      ),
++    );
++  }
++
++  const body = await req.json().catch(() => ({}));
++  const result = await createPartnershipDiscussionInvite({
++    inviterId: guard.user.id,
++    recipientLabel: body.recipientLabel,
++    cooperationSubject: body.cooperationSubject,
++  });
++
++  if (!result.ok) {
++    return privateNoStore(NextResponse.json({ error: result.error }, { status: result.status }));
++  }
++
++  return privateNoStore(
++    NextResponse.json({
++      inviteId: result.inviteId,
++      token: result.token,
++      expiresAt: result.expiresAt.toISOString(),
++      previewPath: result.previewPath,
++    }),
++  );
++}
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/partnership/invite-context/route.ts b/src/app/api/pro/mini-app/partnership/invite-context/route.ts
+new file mode 100644
+index 00000000..1e45a0d8
+--- /dev/null
++++ b/src/app/api/pro/mini-app/partnership/invite-context/route.ts
+@@ -0,0 +1,31 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++import {
++  buildMiniAppPartnershipInviteContext,
++  guardMiniAppPartnershipRoute,
++  privateNoStore,
++} from '@/lib/miniAppPartnershipInviteRoute';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++export async function GET(req: NextRequest) {
++  const guard = await guardMiniAppPartnershipRoute(req);
++  if (!guard.ok) return guard.response;
++
++  const ctx = await buildMiniAppPartnershipInviteContext(guard.user, guard.role, req);
++  if (!ctx.ok) {
++    return privateNoStore(NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status }));
++  }
++
++  return privateNoStore(
++    NextResponse.json({
++      kind: ctx.kind,
++      nameMaxLength: ctx.nameMaxLength,
++      noteMaxLength: ctx.noteMaxLength,
++      inviterBusinessSide: ctx.inviterBusinessSide,
++      categoryPlan: ctx.categoryPlan,
++    }),
++  );
++}
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/partnership/link-invite/route.ts b/src/app/api/pro/mini-app/partnership/link-invite/route.ts
+new file mode 100644
+index 00000000..09ceba4b
+--- /dev/null
++++ b/src/app/api/pro/mini-app/partnership/link-invite/route.ts
+@@ -0,0 +1,82 @@
++import { UserRole } from '@prisma/client';
++import { NextRequest, NextResponse } from 'next/server';
++import { createPartnershipLinkInvite } from '@/lib/partnershipLinkInvite';
++import { partnershipLinkJsonResponse } from '@/lib/partnershipLinkInviteHttp';
++import { parseLinkInvitePartnerType } from '@/lib/partnershipLinkInviteRecipient';
++import {
++  inviterBusinessSideSnapshot,
++  resolvePartnershipManageContext,
++} from '@/lib/employeeWorkspace/partnershipRouteAuth';
++import { logPartnershipDelegatedAction } from '@/lib/employeeWorkspace/partnershipDelegatedAudit';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++import { guardMiniAppPartnershipRoute, privateNoStore } from '@/lib/miniAppPartnershipInviteRoute';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++function jsonFromPartnershipResponse(res: Response): NextResponse {
++  return privateNoStore(new NextResponse(res.body, { status: res.status, headers: res.headers }));
++}
++
++export async function POST(req: NextRequest) {
++  const guard = await guardMiniAppPartnershipRoute(req);
++  if (!guard.ok) return guard.response;
++
++  if (guard.role === 'agent') {
++    return privateNoStore(
++      NextResponse.json(
++        { error: 'Для агента используйте приглашение к обсуждению', code: 'WRONG_INVITE_KIND' },
++        { status: 403 },
++      ),
++    );
++  }
++
++  const manage = await resolvePartnershipManageContext(
++    { id: guard.user.id, role: UserRole.PRO, isProfTestUser: guard.user.isProfTestUser },
++    req,
++  );
++  if (!manage.ok) {
++    return jsonFromPartnershipResponse(partnershipLinkJsonResponse({ error: manage.error }, { status: manage.status }));
++  }
++
++  const body = await req.json().catch(() => ({}));
++  const terms = Array.isArray(body.terms) ? body.terms : [];
++  const note = body.note != null ? String(body.note) : null;
++  const intendedPartnerType = parseLinkInvitePartnerType(body.intendedPartnerType);
++  if (body.intendedPartnerType != null && !intendedPartnerType) {
++    return jsonFromPartnershipResponse(
++      partnershipLinkJsonResponse({ error: 'Неизвестный тип партнёра' }, { status: 400 }),
++    );
++  }
++
++  const result = await createPartnershipLinkInvite({
++    inviterId: manage.principalUserId,
++    createdByUserId: manage.actorUserId,
++    intendedPartnerType,
++    terms,
++    note,
++    recipientLabel: body.recipientLabel,
++  });
++
++  if (!result.ok) {
++    return jsonFromPartnershipResponse(partnershipLinkJsonResponse({ error: result.error }, { status: result.status }));
++  }
++
++  await logPartnershipDelegatedAction({
++    actorUserId: manage.actorUserId,
++    principalUserId: manage.principalUserId,
++    op: 'link_invite_create',
++    entityId: result.inviteId,
++  });
++
++  return jsonFromPartnershipResponse(
++    partnershipLinkJsonResponse({
++      inviteId: result.inviteId,
++      token: result.token,
++      expiresAt: result.expiresAt.toISOString(),
++      previewPath: result.previewPath,
++      inviterBusinessSide: inviterBusinessSideSnapshot(manage.principal),
++    }),
++  );
++}
+\ No newline at end of file
+diff --git a/src/lib/__tests__/miniAppPartnershipInviteRoute.test.ts b/src/lib/__tests__/miniAppPartnershipInviteRoute.test.ts
+new file mode 100644
+index 00000000..d0733e93
+--- /dev/null
++++ b/src/lib/__tests__/miniAppPartnershipInviteRoute.test.ts
+@@ -0,0 +1,13 @@
++import { describe, expect, it } from 'vitest';
++import { MINI_APP_LINK_INVITE_NOTE_MAX } from '@/lib/miniAppPartnershipInviteRoute';
++import { DISCUSSION_RECIPIENT_LABEL_MAX, DISCUSSION_SUBJECT_MAX } from '@/lib/partnershipDiscussionInvite';
++import { LINK_INVITE_RECIPIENT_LABEL_MAX } from '@/lib/partnershipLinkInviteAuthorLabels';
++
++describe('miniAppPartnershipInviteRoute limits', () => {
++  it('uses discussion caps for agent flow and link caps for terms flow', () => {
++    expect(DISCUSSION_RECIPIENT_LABEL_MAX).toBe(120);
++    expect(DISCUSSION_SUBJECT_MAX).toBe(500);
++    expect(LINK_INVITE_RECIPIENT_LABEL_MAX).toBe(120);
++    expect(MINI_APP_LINK_INVITE_NOTE_MAX).toBe(400);
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/miniAppPartnershipInviteRoute.ts b/src/lib/miniAppPartnershipInviteRoute.ts
+new file mode 100644
+index 00000000..04fa53cf
+--- /dev/null
++++ b/src/lib/miniAppPartnershipInviteRoute.ts
+@@ -0,0 +1,199 @@
++import { CatalogStatus, UserRole } from '@prisma/client';
++import type { NextRequest, NextResponse } from 'next/server';
++import { apiError } from '@/lib/api/error';
++import { getProContextForRequest } from '@/lib/proContextRequest';
++import { isProfMiniAppEnabled, isProfMiniAppPilotOpenForUser } from '@/lib/profMiniAppConfig';
++import { assertMiniAppAccess } from '@/lib/miniAppSessionCookie';
++import { getProfCabinetUserForMiniApp } from '@/lib/miniAppCabinetAuth';
++import type { User } from '@prisma/client';
++import { resolveMiniAppRoleForUser, type MiniAppRole } from '@/lib/miniAppBootstrap';
++import {
++  inviterBusinessSideSnapshot,
++  resolvePartnershipManageContext,
++} from '@/lib/employeeWorkspace/partnershipRouteAuth';
++import {
++  categoriesForLinkInviteCreate,
++  GENERAL_PARTNERSHIP_CATEGORY,
++} from '@/lib/partnershipLinkInviteShared';
++import { userIsStoreOwner } from '@/lib/partnershipLinkInviteShared';
++import { DISCUSSION_RECIPIENT_LABEL_MAX, DISCUSSION_SUBJECT_MAX } from '@/lib/partnershipDiscussionInvite';
++import { LINK_INVITE_RECIPIENT_LABEL_MAX } from '@/lib/partnershipLinkInviteAuthorLabels';
++import { prisma } from '@/lib/prisma';
++
++export const MINI_APP_LINK_INVITE_NOTE_MAX = 400;
++
++export type MiniAppPartnershipInviteKind = 'discussion' | 'terms';
++
++export type MiniAppPartnershipInviteContext =
++  | {
++      ok: true;
++      kind: MiniAppPartnershipInviteKind;
++      nameMaxLength: number;
++      noteMaxLength: number;
++      inviterBusinessSide: ReturnType<typeof inviterBusinessSideSnapshot> | null;
++      categoryPlan: { categories: string[]; requiresIntendedType: boolean; error?: string };
++    }
++  | { ok: false; status: number; error: string; code?: string };
++
++function parseHostPlatform(raw: string | null): 'telegram' | 'max' | null {
++  const v = raw?.trim().toLowerCase();
++  if (v === 'telegram' || v === 'tg') return 'telegram';
++  if (v === 'max') return 'max';
++  return null;
++}
++
++export function privateNoStore(res: NextResponse): NextResponse {
++  res.headers.set('Cache-Control', 'private, no-store');
++  return res;
++}
++
++export type MiniAppPartnershipRouteGuard =
++  | {
++      ok: true;
++      platform: 'telegram' | 'max';
++      user: User;
++      role: MiniAppRole;
++      proCtx: Awaited<ReturnType<typeof getProContextForRequest>>;
++    }
++  | { ok: false; response: NextResponse };
++
++export async function guardMiniAppPartnershipRoute(req: NextRequest): Promise<MiniAppPartnershipRouteGuard> {
++  if (!isProfMiniAppEnabled()) {
++    return { ok: false, response: apiError('NOT_FOUND') };
++  }
++
++  const platform =
++    parseHostPlatform(req.headers.get('x-remcard-mini-app-platform')) ??
++    parseHostPlatform(req.nextUrl.searchParams.get('host'));
++  if (!platform) {
++    return { ok: false, response: apiError('BAD_REQUEST', 'Укажите платформу хоста') };
++  }
++
++  const user = await getProfCabinetUserForMiniApp(req, platform);
++  if (!user) {
++    return { ok: false, response: apiError('UNAUTHORIZED') };
++  }
++  if (!isProfMiniAppPilotOpenForUser({ userId: user.id, publicId: user.publicId })) {
++    return { ok: false, response: apiError('NOT_FOUND') };
++  }
++
++  const sessionGuard = await assertMiniAppAccess(req, platform, user.id);
++  if (!sessionGuard.ok) {
++    return {
++      ok: false,
++      response: privateNoStore(
++        new NextResponse(
++          JSON.stringify({ error: sessionGuard.message, code: sessionGuard.code }),
++          { status: sessionGuard.status, headers: { 'Content-Type': 'application/json' } },
++        ),
++      ),
++    };
++  }
++
++  const proCtx = await getProContextForRequest(req, user.id);
++  const role = await resolveMiniAppRoleForUser(user.id, proCtx);
++  if (!role) {
++    return {
++      ok: false,
++      response: privateNoStore(
++        new NextResponse(
++          JSON.stringify({
++            error: 'Мини-кабинет недоступен для этого аккаунта',
++            code: 'ROLE_UNSUPPORTED',
++          }),
++          { status: 403, headers: { 'Content-Type': 'application/json' } },
++        ),
++      ),
++    };
++  }
++
++  return { ok: true, platform, user, role, proCtx };
++}
++
++async function discussionCreateBlocked(userId: string): Promise<string | null> {
++  const user = await prisma.user.findUnique({
++    where: { id: userId },
++    select: { role: true, isBlocked: true, staffRole: true },
++  });
++  if (!user || user.role !== UserRole.PRO || user.isBlocked) {
++    return 'Недостаточно прав для создания приглашения';
++  }
++  if (user.staffRole) {
++    return 'Сотрудник не может создавать приглашение от имени владельца';
++  }
++  return null;
++}
++
++export async function buildMiniAppPartnershipInviteContext(
++  user: User,
++  role: MiniAppRole,
++  req: NextRequest,
++): Promise<MiniAppPartnershipInviteContext> {
++  if (role === 'agent') {
++    const blocked = await discussionCreateBlocked(user.id);
++    if (blocked) {
++      return { ok: false, status: 403, error: blocked };
++    }
++    return {
++      ok: true,
++      kind: 'discussion',
++      nameMaxLength: DISCUSSION_RECIPIENT_LABEL_MAX,
++      noteMaxLength: DISCUSSION_SUBJECT_MAX,
++      inviterBusinessSide: null,
++      categoryPlan: { categories: [], requiresIntendedType: false },
++    };
++  }
++
++  const manage = await resolvePartnershipManageContext(
++    {
++      id: user.id,
++      role: UserRole.PRO,
++      isProfTestUser: user.isProfTestUser,
++    },
++    req,
++  );
++  if (!manage.ok) {
++    return { ok: false, status: manage.status, error: manage.error };
++  }
++
++  const inviterIsStore = await userIsStoreOwner(manage.principalUserId, prisma);
++  const categoryPlan = categoriesForLinkInviteCreate(
++    {
++      id: manage.principal.id,
++      role: manage.principal.role,
++      partnerType: manage.principal.partnerType,
++      partnerActivities: manage.principal.partnerActivities,
++      storeCategories: manage.principal.storeCategories,
++      specializations: manage.principal.specializations,
++      catalogStatus: CatalogStatus.APPROVED,
++    },
++    inviterIsStore,
++    null,
++  );
++
++  let categories = [...categoryPlan.categories];
++  const requiresIntendedType =
++    (manage.principal.partnerType === 'MASTER' || manage.principal.partnerType === 'COMPANY') &&
++    categories.length > 0;
++
++  let planError = categoryPlan.error;
++  if (requiresIntendedType && planError?.includes('предполагаемый тип')) {
++    planError = undefined;
++  }
++  if (categories.length === 0 && !planError) {
++    categories.push(GENERAL_PARTNERSHIP_CATEGORY);
++  }
++
++  return {
++    ok: true,
++    kind: 'terms',
++    nameMaxLength: LINK_INVITE_RECIPIENT_LABEL_MAX,
++    noteMaxLength: MINI_APP_LINK_INVITE_NOTE_MAX,
++    inviterBusinessSide: inviterBusinessSideSnapshot(manage.principal),
++    categoryPlan: {
++      categories,
++      requiresIntendedType,
++      error: planError,
++    },
++  };
++}
+\ No newline at end of file
