@@ -1,0 +1,1072 @@
+diff --git a/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
+new file mode 100644
+index 0000000..d19c21d
+--- /dev/null
++++ b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
+@@ -0,0 +1,125 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import { NextRequest } from 'next/server';
++
++const mockDispatch = vi.fn();
++const mockVerify = vi.fn();
++const mockValidateInit = vi.fn();
++const mockPilotOpen = vi.fn();
++const mockCabinet = vi.fn();
++const mockApplyCookies = vi.fn();
++
++vi.mock('@/lib/bots/miniAppLoginDispatch', () => ({
++  dispatchMaxProfLoginCode: (...args: unknown[]) => mockDispatch(...args),
++}));
++
++vi.mock('@/lib/messengerAuthIdentity', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('@/lib/messengerAuthIdentity')>();
++  return {
++    ...actual,
++    verifyMessengerBotLoginCode: (...args: unknown[]) => mockVerify(...args),
++  };
++});
++
++vi.mock('@/lib/messengerWebAppInitData', () => ({
++  validateMessengerWebAppInitData: (...args: unknown[]) => mockValidateInit(...args),
++}));
++
++vi.mock('@/lib/profMiniAppConfig', () => ({
++  isProfMiniAppEnabled: () => true,
++  isProfMiniAppPilotOpenForUser: (...args: unknown[]) => mockPilotOpen(...args),
++  profMiniAppMaxBotToken: () => 'max-token',
++  profMiniAppTelegramBotToken: () => 'tg-token',
++}));
++
++vi.mock('@/lib/cabinetAccess', () => ({
++  assertCabinetProfAccess: (...args: unknown[]) => mockCabinet(...args),
++}));
++
++vi.mock('@/lib/withRateLimit', () => ({
++  withRateLimit: async () => null,
++}));
++
++vi.mock('@/lib/miniAppSessionCookie', () => ({
++  applyMiniAppSessionCookies: (...args: unknown[]) => mockApplyCookies(...args),
++}));
++
++vi.mock('@/lib/prisma', () => ({
++  prisma: {
++    user: {
++      findUnique: vi.fn().mockResolvedValue({
++        id: 'user-1',
++        publicId: 'p1',
++        tokenVersion: 1,
++        maxId: BigInt(777),
++        displayName: 'Test',
++      }),
++    },
++    authAccount: {
++      findUnique: vi.fn().mockResolvedValue({ userId: 'user-1' }),
++    },
++  },
++}));
++
++vi.mock('@/lib/auth', () => ({
++  createToken: () => 'jwt-token',
++}));
++
++describe('mini-app auth routes', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockValidateInit.mockReturnValue({ ok: true, data: { user: { id: 777 }, authDate: 1 } });
++    mockPilotOpen.mockReturnValue(true);
++    mockCabinet.mockResolvedValue({ ok: true });
++  });
++
++  it('POST send-code dispatches max prof login OTP', async () => {
++    mockDispatch.mockResolvedValue({
++      ok: true,
++      expiresAt: new Date('2099-01-01T00:00:00.000Z'),
++      resendAfterSec: 60,
++      botLoginCodeId: 'c1',
++    });
++    const { POST } = await import('../auth/send-code/route');
++    const res = await POST(
++      new NextRequest('https://x/api/pro/mini-app/auth/send-code', {
++        method: 'POST',
++        headers: { 'x-remcard-mini-app-platform': 'max' },
++        body: JSON.stringify({ platform: 'max', initData: 'stub' }),
++      }),
++    );
++    expect(res.status).toBe(200);
++    expect(mockDispatch).toHaveBeenCalledWith(777);
++    const json = await res.json();
++    expect(json.status).toBe('ok');
++    expect(json.resendAfterSec).toBe(60);
++  });
++
++  it('POST verify-code sets embedded session cookies on success', async () => {
++    mockVerify.mockResolvedValue({
++      ok: true,
++      user: { id: 'user-1', tokenVersion: 1, publicId: 'p1', maxId: BigInt(777) },
++      created: false,
++      entrySite: 'prof',
++    });
++    const { POST } = await import('../auth/verify-code/route');
++    const res = await POST(
++      new NextRequest('https://x/api/pro/mini-app/auth/verify-code', {
++        method: 'POST',
++        headers: { 'x-remcard-mini-app-platform': 'max' },
++        body: JSON.stringify({
++          platform: 'max',
++          initData: 'stub',
++          code: '123456',
++          embedded: true,
++          entrySite: 'prof',
++        }),
++      }),
++    );
++    expect(res.status).toBe(200);
++    expect(mockVerify).toHaveBeenCalledWith('123456', 'prof');
++    expect(mockApplyCookies).toHaveBeenCalledWith(
++      expect.anything(),
++      expect.objectContaining({ embedded: true, messengerUserId: 777, userId: 'user-1' }),
++    );
++  });
++});
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/auth/send-code/route.ts b/src/app/api/pro/mini-app/auth/send-code/route.ts
+new file mode 100644
+index 0000000..536b711
+--- /dev/null
++++ b/src/app/api/pro/mini-app/auth/send-code/route.ts
+@@ -0,0 +1,63 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { apiError } from '@/lib/api/error';
++import { validateMessengerWebAppInitData } from '@/lib/messengerWebAppInitData';
++import { isProfMiniAppEnabled, profMiniAppMaxBotToken } from '@/lib/profMiniAppConfig';
++import { withRateLimit } from '@/lib/withRateLimit';
++import { dispatchMaxProfLoginCode } from '@/lib/bots/miniAppLoginDispatch';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++function parseHostPlatform(raw: string | null): 'max' | null {
++  const v = raw?.trim().toLowerCase();
++  if (v === 'max') return 'max';
++  return null;
++}
++
++export async function POST(req: NextRequest) {
++  if (!isProfMiniAppEnabled()) {
++    return apiError('NOT_FOUND');
++  }
++
++  const rateLimited = await withRateLimit(req, 'auth:verify-code');
++  if (rateLimited) return rateLimited;
++
++  const body = await req.json().catch(() => ({}));
++  const initData = typeof body.initData === 'string' ? body.initData.trim() : '';
++  const platform =
++    parseHostPlatform(typeof body.platform === 'string' ? body.platform : null) ??
++    parseHostPlatform(req.headers.get('x-remcard-mini-app-platform'));
++  if (platform !== 'max') {
++    return apiError('BAD_REQUEST', 'Код входа мини-приложения доступен только для MAX');
++  }
++  if (!initData) {
++    return apiError('BAD_REQUEST', 'Нет данных входа мессенджера');
++  }
++
++  const validated = validateMessengerWebAppInitData(initData, profMiniAppMaxBotToken());
++  if (!validated.ok) {
++    if (validated.code === 'EXPIRED') {
++      return apiError('FORBIDDEN', 'Срок входа истёк. Закройте и снова откройте мини-приложение.');
++    }
++    if (validated.code === 'NO_BOT_TOKEN') {
++      return apiError('NOT_FOUND');
++    }
++    return apiError('FORBIDDEN', 'Не удалось проверить вход мессенджера');
++  }
++
++  const dispatch = await dispatchMaxProfLoginCode(validated.data.user.id);
++  if (!dispatch.ok) {
++    return NextResponse.json(
++      { error: dispatch.message, code: dispatch.code ?? 'SEND_FAILED' },
++      { status: dispatch.status },
++    );
++  }
++
++  return NextResponse.json({
++    status: 'ok',
++    expiresAt: dispatch.expiresAt.toISOString(),
++    resendAfterSec: dispatch.resendAfterSec,
++  });
++}
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/auth/verify-code/route.ts b/src/app/api/pro/mini-app/auth/verify-code/route.ts
+new file mode 100644
+index 0000000..c7cfdce
+--- /dev/null
++++ b/src/app/api/pro/mini-app/auth/verify-code/route.ts
+@@ -0,0 +1,123 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { createToken } from '@/lib/auth';
++import { apiError } from '@/lib/api/error';
++import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
++import { validateMessengerWebAppInitData } from '@/lib/messengerWebAppInitData';
++import { verifyMessengerBotLoginCode } from '@/lib/messengerAuthIdentity';
++import { parseVerifyEntrySite } from '@/lib/authEntryContext';
++import {
++  isProfMiniAppEnabled,
++  isProfMiniAppPilotOpenForUser,
++  profMiniAppMaxBotToken,
++} from '@/lib/profMiniAppConfig';
++import { withRateLimit } from '@/lib/withRateLimit';
++import { applyMiniAppSessionCookies } from '@/lib/miniAppSessionCookie';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++function parseHostPlatform(raw: string | null): 'max' | null {
++  const v = raw?.trim().toLowerCase();
++  if (v === 'max') return 'max';
++  return null;
++}
++
++function normalizeCode(raw: unknown): string | null {
++  if (typeof raw !== 'string') return null;
++  const c = raw.trim();
++  return /^\d{6}$/.test(c) ? c : null;
++}
++
++export async function POST(req: NextRequest) {
++  if (!isProfMiniAppEnabled()) {
++    return apiError('NOT_FOUND');
++  }
++
++  const rateLimited = await withRateLimit(req, 'auth:verify-code');
++  if (rateLimited) return rateLimited;
++
++  const body = await req.json().catch(() => ({}));
++  const initData = typeof body.initData === 'string' ? body.initData.trim() : '';
++  const code = normalizeCode(body.code);
++  const embedded = body.embedded === true;
++  const platform =
++    parseHostPlatform(typeof body.platform === 'string' ? body.platform : null) ??
++    parseHostPlatform(req.headers.get('x-remcard-mini-app-platform'));
++  const entrySite = parseVerifyEntrySite(body.entrySite) ?? 'prof';
++
++  if (platform !== 'max') {
++    return apiError('BAD_REQUEST', 'Код входа мини-приложения доступен только для MAX');
++  }
++  if (!initData) {
++    return apiError('BAD_REQUEST', 'Нет данных входа мессенджера');
++  }
++  if (!code) {
++    return apiError('BAD_REQUEST', 'Укажите шестизначный код');
++  }
++
++  const validated = validateMessengerWebAppInitData(initData, profMiniAppMaxBotToken());
++  if (!validated.ok) {
++    if (validated.code === 'EXPIRED') {
++      return apiError('FORBIDDEN', 'Срок входа истёк. Закройте и снова откройте мини-приложение.');
++    }
++    return apiError('FORBIDDEN', 'Не удалось проверить вход мессенджера');
++  }
++
++  const verified = await verifyMessengerBotLoginCode(code, entrySite);
++  if (!verified.ok) {
++    const codeStr =
++      verified.status === 401 && verified.error.includes('просроч')
++        ? 'EXPIRED_CODE'
++        : verified.status === 401
++          ? 'INVALID_CODE'
++          : 'VERIFY_FAILED';
++    return NextResponse.json({ error: verified.error, code: codeStr }, { status: verified.status });
++  }
++
++  const messengerUserId = validated.data.user.id;
++  const { prisma } = await import('@/lib/prisma');
++  const fullUser = await prisma.user.findUnique({ where: { id: verified.user.id } });
++  if (!fullUser) return apiError('NOT_FOUND');
++
++  const ownsMax =
++    fullUser.maxId?.toString() === String(messengerUserId) ||
++    (await prisma.authAccount.findUnique({
++      where: { provider_externalId: { provider: 'MAX', externalId: String(messengerUserId) } },
++      select: { userId: true },
++    }))?.userId === fullUser.id;
++  if (!ownsMax) {
++    return apiError('FORBIDDEN', 'Код не совпадает с аккаунтом MAX в мини-приложении');
++  }
++
++  const cabinet = await assertCabinetProfAccess(fullUser);
++  if (!cabinet.ok) {
++    return NextResponse.json(
++      {
++        status: 'cabinet_blocked',
++        code: cabinet.errorCode,
++        nextStep: cabinet.nextStep,
++        missingConsents: cabinet.missingConsents,
++      },
++      { status: cabinet.status },
++    );
++  }
++
++  if (!isProfMiniAppPilotOpenForUser({ userId: fullUser.id, publicId: fullUser.publicId })) {
++    return apiError('FORBIDDEN', 'Доступ к пилоту мини-кабинета недоступен', 403, {
++      code: 'PROF_ACCESS_DENIED',
++    });
++  }
++
++  const token = createToken(fullUser.id, fullUser.tokenVersion);
++  const response = NextResponse.json({ status: 'ok', platform });
++  applyMiniAppSessionCookies(response, {
++    platform,
++    messengerUserId,
++    userId: fullUser.id,
++    authToken: token,
++    embedded,
++  });
++  return response;
++}
+\ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/bootstrap/route.ts b/src/app/api/pro/mini-app/bootstrap/route.ts
+index f17a162..1f3b2f2 100644
+--- a/src/app/api/pro/mini-app/bootstrap/route.ts
++++ b/src/app/api/pro/mini-app/bootstrap/route.ts
+@@ -1,11 +1,11 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { apiError } from '@/lib/api/error';
+-import { getProfCabinetUser } from '@/lib/proAuth';
+ import { getProContextForRequest } from '@/lib/proContextRequest';
+ import { buildMiniAppBootstrap } from '@/lib/miniAppBootstrap';
+ import { isProfMiniAppEnabled, isProfMiniAppPilotOpenForUser } from '@/lib/profMiniAppConfig';
+ import { prisma } from '@/lib/prisma';
+-import { assertMiniAppSession } from '@/lib/miniAppSessionCookie';
++import { assertMiniAppAccess } from '@/lib/miniAppSessionCookie';
++import { getProfCabinetUserForMiniApp } from '@/lib/miniAppCabinetAuth';
+ import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
+ 
+ export const dynamic = miniAppApiDynamic.dynamic;
+@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
+     return apiError('BAD_REQUEST', 'Укажите платформу хоста');
+   }
+ 
+-  const user = await getProfCabinetUser(req);
++  const user = await getProfCabinetUserForMiniApp(req, platform);
+   if (!user) return apiError('UNAUTHORIZED');
+ 
+-  const sessionGuard = assertMiniAppSession(req, platform, user.id);
++  const sessionGuard = await assertMiniAppAccess(req, platform, user.id);
+   if (!sessionGuard.ok) {
+     return NextResponse.json(
+       { error: sessionGuard.message, code: sessionGuard.code },
+diff --git a/src/app/api/pro/mini-app/certificate/options/route.ts b/src/app/api/pro/mini-app/certificate/options/route.ts
+index d63b90e..b8d24b3 100644
+--- a/src/app/api/pro/mini-app/certificate/options/route.ts
++++ b/src/app/api/pro/mini-app/certificate/options/route.ts
+@@ -1,10 +1,9 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { apiError } from '@/lib/api/error';
+-import { getProfCabinetUser } from '@/lib/proAuth';
+ import { getProContextForRequest } from '@/lib/proContextRequest';
+ import { isProfMiniAppEnabled, isProfMiniAppPilotOpenForUser } from '@/lib/profMiniAppConfig';
+-import { assertMiniAppSession } from '@/lib/miniAppSessionCookie';
+-import { getProfCabinetUser } from '@/lib/miniAppCabinetAuth';
++import { assertMiniAppAccess } from '@/lib/miniAppSessionCookie';
++import { getProfCabinetUserForMiniApp } from '@/lib/miniAppCabinetAuth';
+ import { resolveMiniAppCertificateClientOptions } from '@/lib/miniAppCertificateOptions';
+ import { resolveMiniAppRoleForUser } from '@/lib/miniAppBootstrap';
+ import { guardMiniAppCertificateOptions } from '@/lib/miniAppRouteGuards';
+@@ -40,13 +39,13 @@ export async function GET(req: NextRequest) {
+     return apiError('BAD_REQUEST', 'Укажите платформу хоста');
+   }
+ 
+-  const user = await getProfCabinetUser(req, platform);
++  const user = await getProfCabinetUserForMiniApp(req, platform);
+   if (!user) return apiError('UNAUTHORIZED');
+   if (!isProfMiniAppPilotOpenForUser({ userId: user.id, publicId: user.publicId })) {
+     return apiError('NOT_FOUND');
+   }
+ 
+-  const sessionGuard = assertMiniAppSession(req, platform, user.id);
++  const sessionGuard = await assertMiniAppAccess(req, platform, user.id);
+   if (!sessionGuard.ok) {
+     return privateNoStore(
+       NextResponse.json(
+diff --git a/src/app/api/pro/mini-app/scan/route.ts b/src/app/api/pro/mini-app/scan/route.ts
+index f772d1b..4ad2ec9 100644
+--- a/src/app/api/pro/mini-app/scan/route.ts
++++ b/src/app/api/pro/mini-app/scan/route.ts
+@@ -1,8 +1,8 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { apiError } from '@/lib/api/error';
+-import { getProfCabinetUser } from '@/lib/proAuth';
+ import { isProfMiniAppEnabled, isProfMiniAppPilotOpenForUser } from '@/lib/profMiniAppConfig';
+-import { assertMiniAppSession } from '@/lib/miniAppSessionCookie';
++import { assertMiniAppAccess } from '@/lib/miniAppSessionCookie';
++import { getProfCabinetUserForMiniApp } from '@/lib/miniAppCabinetAuth';
+ import { miniAppReadOnlyCertificateScan } from '@/lib/miniAppCertificateScan';
+ import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
+ 
+@@ -29,13 +29,13 @@ export async function GET(req: NextRequest) {
+     return apiError('BAD_REQUEST', 'Укажите платформу хоста');
+   }
+ 
+-  const user = await getProfCabinetUser(req);
++  const user = await getProfCabinetUserForMiniApp(req, platform);
+   if (!user) return apiError('UNAUTHORIZED');
+   if (!isProfMiniAppPilotOpenForUser({ userId: user.id, publicId: user.publicId })) {
+     return apiError('NOT_FOUND');
+   }
+ 
+-  const sessionGuard = assertMiniAppSession(req, platform, user.id);
++  const sessionGuard = await assertMiniAppAccess(req, platform, user.id);
+   if (!sessionGuard.ok) {
+     return NextResponse.json(
+       { state: 'forbidden', message: sessionGuard.message, code: sessionGuard.code },
+diff --git a/src/app/api/pro/mini-app/session/route.ts b/src/app/api/pro/mini-app/session/route.ts
+index 8150b22..9b6c5ec 100644
+--- a/src/app/api/pro/mini-app/session/route.ts
++++ b/src/app/api/pro/mini-app/session/route.ts
+@@ -13,7 +13,7 @@ import {
+ import { prisma } from '@/lib/prisma';
+ import { withRateLimit } from '@/lib/withRateLimit';
+ import type { MessengerProvider } from '@/lib/messengerAuthIdentity';
+-import { setMiniAppSessionCookie } from '@/lib/miniAppSessionCookie';
++import { applyMiniAppSessionCookies } from '@/lib/miniAppSessionCookie';
+ import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
+ 
+ export const dynamic = miniAppApiDynamic.dynamic;
+@@ -31,6 +31,8 @@ function providerFor(platform: 'telegram' | 'max'): MessengerProvider {
+   return platform === 'telegram' ? 'TELEGRAM' : 'MAX';
+ }
+ 
++export { applyMiniAppSessionCookies };
++
+ export async function POST(req: NextRequest) {
+   if (!isProfMiniAppEnabled()) {
+     return apiError('NOT_FOUND');
+@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
+ 
+   const body = await req.json().catch(() => ({}));
+   const initData = typeof body.initData === 'string' ? body.initData.trim() : '';
++  const embedded = body.embedded === true;
+   const platform = parseHostPlatform(typeof body.platform === 'string' ? body.platform : null);
+   if (!platform) {
+     return apiError('BAD_REQUEST', 'Укажите platform: telegram или max');
+@@ -109,17 +112,12 @@ export async function POST(req: NextRequest) {
+       displayName: fullUser.displayName,
+     },
+   });
+-  response.cookies.set('remcard-token', token, {
+-    httpOnly: true,
+-    secure: process.env.NODE_ENV === 'production',
+-    sameSite: 'lax',
+-    maxAge: 30 * 24 * 60 * 60,
+-    path: '/',
+-  });
+-  setMiniAppSessionCookie(response, {
++  applyMiniAppSessionCookies(response, {
+     platform,
+     messengerUserId: validated.data.user.id,
+     userId: fullUser.id,
++    authToken: token,
++    embedded,
+   });
+   return response;
+ }
+\ No newline at end of file
+diff --git a/src/lib/__tests__/miniAppEmbeddedAuth.test.ts b/src/lib/__tests__/miniAppEmbeddedAuth.test.ts
+new file mode 100644
+index 0000000..176cc65
+--- /dev/null
++++ b/src/lib/__tests__/miniAppEmbeddedAuth.test.ts
+@@ -0,0 +1,89 @@
++import { createHmac } from 'node:crypto';
++import { describe, expect, it, beforeEach } from 'vitest';
++import { NextRequest, NextResponse } from 'next/server';
++import {
++  MINI_APP_EMBEDDED_BIND_COOKIE,
++  MINI_APP_EMBEDDED_HEADER,
++  MINI_APP_LAUNCH_HEADER,
++  miniAppEmbeddedCookieOptions,
++  readMiniAppLaunchInitData,
++} from '@/lib/miniAppEmbeddedAuth';
++import {
++  readEmbeddedBindCookie,
++  setEmbeddedBindCookie,
++  setMiniAppSessionCookie,
++} from '@/lib/miniAppSessionCookie';
++
++describe('miniAppEmbeddedAuth', () => {
++  beforeEach(() => {
++    process.env.JWT_SECRET = 'test-secret';
++    process.env.MAX_BOT_TOKEN = 'max-token';
++  });
++
++  it('reads launch header', () => {
++    const req = new NextRequest('http://localhost', {
++      headers: { [MINI_APP_LAUNCH_HEADER]: 'user=1&auth_date=1' },
++    });
++    expect(readMiniAppLaunchInitData(req)).toBe('user=1&auth_date=1');
++  });
++
++  it('uses partitioned SameSite=None options only in production', () => {
++    const prev = process.env.NODE_ENV;
++    process.env.NODE_ENV = 'production';
++    const prod = miniAppEmbeddedCookieOptions(60);
++    expect(prod.sameSite).toBe('none');
++    expect(prod.secure).toBe(true);
++    expect(prod.partitioned).toBe(true);
++    process.env.NODE_ENV = 'development';
++    const dev = miniAppEmbeddedCookieOptions(60);
++    expect(dev.sameSite).toBe('lax');
++    expect(dev.partitioned).toBeUndefined();
++    process.env.NODE_ENV = prev;
++  });
++
++  it('round-trips embedded bind cookie', () => {
++    const res = NextResponse.json({ ok: true });
++    setEmbeddedBindCookie(res, { platform: 'max', messengerUserId: 42, userId: 'user-1' }, true);
++    const bind = res.cookies.get(MINI_APP_EMBEDDED_BIND_COOKIE)?.value;
++    expect(bind).toBeTruthy();
++    const req = new NextRequest('http://localhost', {
++      headers: {
++        cookie: `${MINI_APP_EMBEDDED_BIND_COOKIE}=${bind}`,
++        [MINI_APP_EMBEDDED_HEADER]: '1',
++      },
++    });
++    const session = readEmbeddedBindCookie(req);
++    expect(session?.userId).toBe('user-1');
++    expect(session?.platform).toBe('max');
++  });
++
++  it('keeps lax mini session independent from embedded bind', () => {
++    const res = NextResponse.json({ ok: true });
++    setMiniAppSessionCookie(res, { platform: 'telegram', messengerUserId: 9, userId: 'u' });
++    const lax = res.cookies.get('remcard-mini-app-session');
++    expect(lax?.sameSite).toBe('lax');
++    expect(lax?.secure).toBe(false);
++  });
++
++  it('rejects tampered embedded bind payload', () => {
++    const body = Buffer.from(
++      JSON.stringify({
++        v: 1,
++        platform: 'max',
++        messengerUserId: '1',
++        userId: 'u',
++        exp: 9_999_999_999,
++      }),
++      'utf8',
++    ).toString('base64url');
++    const sig = createHmac('sha256', 'test-secret').update(body).digest('base64url');
++    const req = new NextRequest('http://localhost', {
++      headers: { cookie: `${MINI_APP_EMBEDDED_BIND_COOKIE}=${body}.deadbeef` },
++    });
++    expect(readEmbeddedBindCookie(req)).toBeNull();
++    const req2 = new NextRequest('http://localhost', {
++      headers: { cookie: `${MINI_APP_EMBEDDED_BIND_COOKIE}=${body}.${sig}` },
++    });
++    expect(readEmbeddedBindCookie(req2)?.platform).toBe('max');
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/bots/miniAppLoginDispatch.ts b/src/lib/bots/miniAppLoginDispatch.ts
+new file mode 100644
+index 0000000..88857ef
+--- /dev/null
++++ b/src/lib/bots/miniAppLoginDispatch.ts
+@@ -0,0 +1,95 @@
++import { prisma } from '@/lib/prisma';
++import { BOT_MSG_SEND_FAILED, prepareMessengerBotLogin } from '@/lib/messengerAuthIdentity';
++import {
++  buildBotLoginIdentifier,
++  buildLoginCodeDigitsOnlyMessage,
++  buildMaxLoginCodeMessage,
++} from '@/lib/authEntryContext';
++import { sendMaxMessage } from '@/lib/maxNotify';
++
++const CODE_TTL_MS = 10 * 60 * 1000;
++const RESEND_AFTER_SEC = 60;
++
++export type DispatchMaxProfLoginCodeResult =
++  | { ok: true; expiresAt: Date; resendAfterSec: number; botLoginCodeId: string }
++  | { ok: false; status: number; message: string; code?: string };
++
++function generateCode(): string {
++  return Math.floor(100000 + Math.random() * 900000).toString();
++}
++
++/**
++ * Send PROF-scoped MAX login OTP for mini-app embedded recovery (same rules as handleLoginMax).
++ * Does not mutate bot webhook paths in commands.ts.
++ */
++export async function dispatchMaxProfLoginCode(
++  messengerUserId: number | string | bigint,
++): Promise<DispatchMaxProfLoginCodeResult> {
++  const maxUserId = BigInt(messengerUserId);
++  const ext = String(maxUserId);
++  const prep = await prepareMessengerBotLogin('MAX', ext);
++  if (!prep.ok) {
++    return { ok: false, status: 409, message: prep.userMessage, code: prep.reason };
++  }
++
++  const site = 'prof' as const;
++  const recent = await prisma.botLoginCode.findFirst({
++    where: {
++      identifier: buildBotLoginIdentifier('max', ext, site),
++      used: false,
++      expiresAt: { gt: new Date() },
++      createdAt: { gt: new Date(Date.now() - RESEND_AFTER_SEC * 1000) },
++    },
++    orderBy: { createdAt: 'desc' },
++  });
++  if (recent) {
++    return {
++      ok: true,
++      expiresAt: recent.expiresAt,
++      resendAfterSec: RESEND_AFTER_SEC,
++      botLoginCodeId: recent.id,
++    };
++  }
++
++  const code = generateCode();
++  const expiresAt = new Date(Date.now() + CODE_TTL_MS);
++  const identifier = buildBotLoginIdentifier('max', ext, site);
++  const created = await prisma.botLoginCode.create({
++    data: { identifier, code, expiresAt },
++  });
++
++  const recipient = String(maxUserId);
++  const explain = buildMaxLoginCodeMessage(site, code);
++  let sendRes: Awaited<ReturnType<typeof sendMaxMessage>>;
++  try {
++    sendRes = await sendMaxMessage(recipient, explain);
++  } catch {
++    sendRes = { ok: false, reason: 'network', status: 502 };
++  }
++  if (!sendRes.ok) {
++    await prisma.botLoginCode.delete({ where: { id: created.id } }).catch(() => undefined);
++    await sendMaxMessage(recipient, BOT_MSG_SEND_FAILED).catch(() => undefined);
++    return {
++      ok: false,
++      status: sendRes.status ?? 502,
++      message: BOT_MSG_SEND_FAILED,
++      code: 'SEND_FAILED',
++    };
++  }
++
++  try {
++    const digitsRes = await sendMaxMessage(recipient, buildLoginCodeDigitsOnlyMessage(code));
++    if (!digitsRes.ok) {
++      console.warn('[mini-app-login] digits-only follow-up failed', { reason: digitsRes.reason });
++    }
++  } catch {
++    console.warn('[mini-app-login] digits-only follow-up failed', { reason: 'send_throw' });
++  }
++
++  return {
++    ok: true,
++    expiresAt,
++    resendAfterSec: RESEND_AFTER_SEC,
++    botLoginCodeId: created.id,
++  };
++}
+\ No newline at end of file
+diff --git a/src/lib/miniAppCabinetAuth.ts b/src/lib/miniAppCabinetAuth.ts
+new file mode 100644
+index 0000000..27be237
+--- /dev/null
++++ b/src/lib/miniAppCabinetAuth.ts
+@@ -0,0 +1,39 @@
++import type { NextRequest } from 'next/server';
++import type { User } from '@prisma/client';
++import { getProfCabinetUser } from '@/lib/proAuth';
++import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
++import { prisma } from '@/lib/prisma';
++import type { MiniAppPlatform } from '@/lib/miniAppSessionCookie';
++import {
++  resolveProfUserFromEmbeddedToken,
++  resolveProfUserFromLaunchHeader,
++} from '@/lib/miniAppEmbeddedAuth';
++
++async function loadProfCabinetCandidate(userId: string): Promise<User | null> {
++  const user = await prisma.user.findUnique({ where: { id: userId } });
++  if (!user || user.deletedAt || user.isBlocked) return null;
++  const access = await assertCabinetProfAccess(user);
++  if (!access.ok) return null;
++  return user;
++}
++
++/** Mini-app auth: first-party session, then partitioned embedded token, then launch-bound profile. */
++export async function getProfCabinetUserForMiniApp(
++  req: NextRequest,
++  platform: MiniAppPlatform,
++): Promise<User | null> {
++  const sessionUser = await getProfCabinetUser(req);
++  if (sessionUser) return sessionUser;
++
++  const embeddedUser = await resolveProfUserFromEmbeddedToken(req);
++  if (embeddedUser) {
++    return loadProfCabinetCandidate(embeddedUser.id);
++  }
++
++  const launchUser = await resolveProfUserFromLaunchHeader(req, platform);
++  if (launchUser) {
++    return loadProfCabinetCandidate(launchUser.id);
++  }
++
++  return null;
++}
+\ No newline at end of file
+diff --git a/src/lib/miniAppEmbeddedAuth.ts b/src/lib/miniAppEmbeddedAuth.ts
+new file mode 100644
+index 0000000..f76b060
+--- /dev/null
++++ b/src/lib/miniAppEmbeddedAuth.ts
+@@ -0,0 +1,104 @@
++import type { NextRequest, NextResponse } from 'next/server';
++import { verifyToken } from '@/lib/auth';
++import { validateMessengerWebAppInitData } from '@/lib/messengerWebAppInitData';
++import { resolveMiniAppLinkedProfUser } from '@/lib/miniAppSession';
++import { profMiniAppMaxBotToken, profMiniAppTelegramBotToken } from '@/lib/profMiniAppConfig';
++import type { MessengerProvider } from '@/lib/messengerAuthIdentity';
++import type { MiniAppPlatform } from '@/lib/miniAppSessionCookie';
++
++export const MINI_APP_LAUNCH_HEADER = 'x-remcard-mini-app-launch';
++export const MINI_APP_EMBEDDED_HEADER = 'x-remcard-mini-app-embedded';
++export const MINI_APP_EMBEDDED_TOKEN_COOKIE = 'remcard-mini-app-embedded-token';
++export const MINI_APP_EMBEDDED_BIND_COOKIE = 'remcard-mini-app-embedded-bind';
++
++function providerFor(platform: MiniAppPlatform): MessengerProvider {
++  return platform === 'telegram' ? 'TELEGRAM' : 'MAX';
++}
++
++export function isMiniAppEmbeddedRequest(req: NextRequest): boolean {
++  return req.headers.get(MINI_APP_EMBEDDED_HEADER)?.trim() === '1';
++}
++
++export function readMiniAppLaunchInitData(req: NextRequest): string | null {
++  const raw = req.headers.get(MINI_APP_LAUNCH_HEADER)?.trim();
++  return raw || null;
++}
++
++export type EmbeddedCookieOption = {
++  httpOnly: boolean;
++  secure: boolean;
++  sameSite: 'lax' | 'none';
++  path: string;
++  maxAge: number;
++  partitioned?: boolean;
++};
++
++export function miniAppEmbeddedCookieOptions(maxAge: number): EmbeddedCookieOption {
++  const prod = process.env.NODE_ENV === 'production';
++  return {
++    httpOnly: true,
++    secure: prod,
++    sameSite: prod ? 'none' : 'lax',
++    path: '/',
++    maxAge,
++    ...(prod ? { partitioned: true } : {}),
++  };
++}
++
++export function setMiniAppEmbeddedTokenCookie(res: NextResponse, token: string, maxAge: number): void {
++  res.cookies.set(MINI_APP_EMBEDDED_TOKEN_COOKIE, token, miniAppEmbeddedCookieOptions(maxAge));
++}
++
++export type LaunchInitValidation =
++  | { ok: true; messengerUserId: number }
++  | { ok: false; code: string; message: string };
++
++export function validateMiniAppLaunchInitData(
++  req: NextRequest,
++  platform: MiniAppPlatform,
++): LaunchInitValidation {
++  const initData = readMiniAppLaunchInitData(req);
++  if (!initData) {
++    return { ok: false, code: 'LAUNCH_MISSING', message: 'Нет данных запуска мини-приложения' };
++  }
++  const botToken = platform === 'telegram' ? profMiniAppTelegramBotToken() : profMiniAppMaxBotToken();
++  const validated = validateMessengerWebAppInitData(initData, botToken);
++  if (!validated.ok) {
++    if (validated.code === 'EXPIRED') {
++      return { ok: false, code: 'EXPIRED', message: 'Срок входа истёк. Закройте и снова откройте мини-приложение.' };
++    }
++    return { ok: false, code: 'INVALID_LAUNCH', message: 'Не удалось проверить вход мессенджера' };
++  }
++  return { ok: true, messengerUserId: validated.data.user.id };
++}
++
++export async function resolveProfUserFromLaunchHeader(
++  req: NextRequest,
++  platform: MiniAppPlatform,
++) {
++  const launch = validateMiniAppLaunchInitData(req, platform);
++  if (!launch.ok) return null;
++  const linked = await resolveMiniAppLinkedProfUser(providerFor(platform), launch.messengerUserId);
++  if (linked.status !== 'linked') return null;
++  return linked.user;
++}
++
++export function readEmbeddedAuthToken(req: NextRequest): string | null {
++  return req.cookies.get(MINI_APP_EMBEDDED_TOKEN_COOKIE)?.value?.trim() || null;
++}
++
++export async function resolveProfUserFromEmbeddedToken(req: NextRequest) {
++  const raw = readEmbeddedAuthToken(req);
++  if (!raw) return null;
++  const payload = verifyToken(raw);
++  if (!payload?.userId) return null;
++  const { prisma } = await import('@/lib/prisma');
++  const user = await prisma.user.findUnique({
++    where: { id: payload.userId },
++    select: { id: true, deletedAt: true, isBlocked: true, tokenVersion: true, role: true, displayName: true, publicId: true },
++  });
++  if (!user || user.deletedAt || user.isBlocked) return null;
++  const { tokenVersionsMatch } = await import('@/lib/tokenVersion');
++  if (!tokenVersionsMatch(payload.v, user.tokenVersion)) return null;
++  return user;
++}
+\ No newline at end of file
+diff --git a/src/lib/miniAppSessionCookie.ts b/src/lib/miniAppSessionCookie.ts
+index b30fff4..1802531 100644
+--- a/src/lib/miniAppSessionCookie.ts
++++ b/src/lib/miniAppSessionCookie.ts
+@@ -1,8 +1,19 @@
+ import { createHmac, timingSafeEqual } from 'node:crypto';
+ import type { NextRequest, NextResponse } from 'next/server';
++import {
++  MINI_APP_EMBEDDED_BIND_COOKIE,
++  MINI_APP_EMBEDDED_HEADER,
++  setMiniAppEmbeddedTokenCookie,
++  validateMiniAppLaunchInitData,
++  type EmbeddedCookieOption,
++  miniAppEmbeddedCookieOptions,
++} from '@/lib/miniAppEmbeddedAuth';
++import { resolveMiniAppLinkedProfUser } from '@/lib/miniAppSession';
++import type { MessengerProvider } from '@/lib/messengerAuthIdentity';
+ 
+ const COOKIE_NAME = 'remcard-mini-app-session';
+ const TTL_SECONDS = 30 * 24 * 60 * 60;
++const AUTH_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
+ 
+ export type MiniAppPlatform = 'telegram' | 'max';
+ 
+@@ -45,6 +56,22 @@ function decode(raw: string): SessionPayload | null {
+   }
+ }
+ 
++function defaultSessionCookieOptions(): {
++  httpOnly: boolean;
++  secure: boolean;
++  sameSite: 'lax';
++  path: string;
++  maxAge: number;
++} {
++  return {
++    httpOnly: true,
++    secure: process.env.NODE_ENV === 'production',
++    sameSite: 'lax',
++    path: '/',
++    maxAge: TTL_SECONDS,
++  };
++}
++
+ export function setMiniAppSessionCookie(
+   res: NextResponse,
+   input: { platform: MiniAppPlatform; messengerUserId: number; userId: string },
+@@ -57,17 +84,31 @@ export function setMiniAppSessionCookie(
+     userId: input.userId,
+     exp,
+   });
+-  res.cookies.set(COOKIE_NAME, token, {
+-    httpOnly: true,
+-    secure: process.env.NODE_ENV === 'production',
+-    sameSite: 'lax',
+-    path: '/',
+-    maxAge: TTL_SECONDS,
++  res.cookies.set(COOKIE_NAME, token, defaultSessionCookieOptions());
++}
++
++export function setEmbeddedBindCookie(
++  res: NextResponse,
++  input: { platform: MiniAppPlatform; messengerUserId: number; userId: string },
++  embedded: boolean,
++): void {
++  const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
++  const token = encode({
++    v: 1,
++    platform: input.platform,
++    messengerUserId: String(input.messengerUserId),
++    userId: input.userId,
++    exp,
+   });
++  const opts: EmbeddedCookieOption = embedded
++    ? miniAppEmbeddedCookieOptions(TTL_SECONDS)
++    : defaultSessionCookieOptions();
++  res.cookies.set(MINI_APP_EMBEDDED_BIND_COOKIE, token, opts);
+ }
+ 
+ export function clearMiniAppSessionCookie(res: NextResponse): void {
+   res.cookies.set(COOKIE_NAME, '', { httpOnly: true, path: '/', maxAge: 0 });
++  res.cookies.set(MINI_APP_EMBEDDED_BIND_COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
+ }
+ 
+ export function readMiniAppSession(req: NextRequest): SessionPayload | null {
+@@ -76,24 +117,26 @@ export function readMiniAppSession(req: NextRequest): SessionPayload | null {
+   return decode(raw);
+ }
+ 
++export function readEmbeddedBindCookie(req: NextRequest): SessionPayload | null {
++  const raw = req.cookies.get(MINI_APP_EMBEDDED_BIND_COOKIE)?.value;
++  if (!raw) return null;
++  return decode(raw);
++}
++
+ export type MiniAppSessionGuardResult =
+-  | { ok: true; session: SessionPayload }
++  | { ok: true; session: SessionPayload; via: 'session' | 'embedded_bind' | 'launch_header' }
+   | { ok: false; status: number; code: string; message: string };
+ 
+-export function assertMiniAppSession(
+-  req: NextRequest,
++function providerFor(platform: MiniAppPlatform): MessengerProvider {
++  return platform === 'telegram' ? 'TELEGRAM' : 'MAX';
++}
++
++function guardSessionPayload(
++  session: SessionPayload,
+   platform: MiniAppPlatform,
+   userId: string,
++  via: MiniAppSessionGuardResult extends { ok: true; via: infer V } ? V : never,
+ ): MiniAppSessionGuardResult {
+-  const session = readMiniAppSession(req);
+-  if (!session) {
+-    return {
+-      ok: false,
+-      status: 401,
+-      code: 'MINI_SESSION_MISSING',
+-      message: 'Вход мини-приложения не подтверждён',
+-    };
+-  }
+   if (session.platform !== platform) {
+     return {
+       ok: false,
+@@ -110,5 +153,111 @@ export function assertMiniAppSession(
+       message: 'Сессия мини-приложения недействительна',
+     };
+   }
+-  return { ok: true, session };
++  return { ok: true, session, via };
++}
++
++export function assertMiniAppSession(
++  req: NextRequest,
++  platform: MiniAppPlatform,
++  userId: string,
++): MiniAppSessionGuardResult {
++  const session = readMiniAppSession(req);
++  if (!session) {
++    return {
++      ok: false,
++      status: 401,
++      code: 'MINI_SESSION_MISSING',
++      message: 'Вход мини-приложения не подтверждён',
++    };
++  }
++  return guardSessionPayload(session, platform, userId, 'session');
+ }
++
++export async function assertMiniAppAccess(
++  req: NextRequest,
++  platform: MiniAppPlatform,
++  userId: string,
++): Promise<MiniAppSessionGuardResult> {
++  const session = readMiniAppSession(req);
++  if (session) {
++    return guardSessionPayload(session, platform, userId, 'session');
++  }
++
++  const bind = readEmbeddedBindCookie(req);
++  if (bind) {
++    return guardSessionPayload(bind, platform, userId, 'embedded_bind');
++  }
++
++  const embedded = req.headers.get(MINI_APP_EMBEDDED_HEADER)?.trim() === '1';
++  const launch = validateMiniAppLaunchInitData(req, platform);
++  if (embedded) {
++    if (!launch.ok) {
++      return {
++        ok: false,
++        status: 401,
++        code: 'MINI_EMBEDDED_SESSION_REQUIRED',
++        message: launch.message,
++      };
++    }
++    const linked = await resolveMiniAppLinkedProfUser(providerFor(platform), launch.messengerUserId);
++    if (linked.status !== 'linked' || linked.user.id !== userId) {
++      return {
++        ok: false,
++        status: 401,
++        code: 'MINI_EMBEDDED_SESSION_REQUIRED',
++        message: 'Вход мини-приложения не подтверждён',
++      };
++    }
++    return {
++      ok: true,
++      session: {
++        v: 1,
++        platform,
++        messengerUserId: String(launch.messengerUserId),
++        userId,
++        exp: Math.floor(Date.now() / 1000) + 3600,
++      },
++      via: 'launch_header',
++    };
++  }
++
++  return {
++    ok: false,
++    status: 401,
++    code: 'MINI_SESSION_MISSING',
++    message: 'Вход мини-приложения не подтверждён',
++  };
++}
++
++export function applyMiniAppSessionCookies(
++  res: NextResponse,
++  input: {
++    platform: MiniAppPlatform;
++    messengerUserId: number;
++    userId: string;
++    authToken: string;
++    embedded?: boolean;
++  },
++): void {
++  res.cookies.set('remcard-token', input.authToken, {
++    ...defaultSessionCookieOptions(),
++    maxAge: AUTH_COOKIE_MAX_AGE,
++  });
++  setMiniAppSessionCookie(res, {
++    platform: input.platform,
++    messengerUserId: input.messengerUserId,
++    userId: input.userId,
++  });
++  if (input.embedded) {
++    setMiniAppEmbeddedTokenCookie(res, input.authToken, AUTH_COOKIE_MAX_AGE);
++    setEmbeddedBindCookie(
++      res,
++      {
++        platform: input.platform,
++        messengerUserId: input.messengerUserId,
++        userId: input.userId,
++      },
++      true,
++    );
++  }
++}
+\ No newline at end of file
