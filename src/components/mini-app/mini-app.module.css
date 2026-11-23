@@ -760,6 +760,29 @@
   align-self: center;
 }
 
+.mwScopeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mwScopeBtn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6f5f68;
+  cursor: pointer;
+}
+
+.mwScopeBtnActive {
+  border-color: #c9a3b0;
+  background: #fff7f9;
+  color: #35252f;
+}
+
 .mwDirTabs {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,5 +1,7 @@
 FE_BASE=1ef028e9706cf9ad2c756f07587dadc4be2c1933
 BE_BASE=fbaa35f7b646e3b82c630af0753725e8cb379e59
-BE_PATCH_SHA256=e6529f3946374fdf98982b4311cdfef7eed0ca1b19f6c0395fc5eeba9b29f6c8
+BE_HEAD=76a321b014885234311d2be279c260a854bec0cc
+BE_BRANCH=cursor/remcard-mini-app-wallet-20261123
+BE_PATCH_SHA256=3ef289880051329570b9f1fd05062bf19f4826f34a98889736e83baa572d1955
 BE_PATCH_PATH=artifacts/remcard-mini-app-wallet-20261123/be.patch
-NOTE=remcard-navigator clone unavailable; patch is hand-crafted read-only mini-app wallet route at BE_BASE
+BE_GIT_APPLY_CHECK=OK_on_fresh_fbaa35f7

@@ -10,6 +10,12 @@ import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import { computeMiniWalletCalc, type MiniWalletFilter, miniWalletIncomingOnly } from "@/lib/mini-app/wallet/calc";
 import { miniWalletFixtureForRole } from "@/lib/mini-app/wallet/fixtures";
+import {
+  canUseAllBranchesWalletScope,
+  miniWalletSettlementsSearchParams,
+  profWalletCabinetHref,
+  type MiniWalletLedgerScope,
+} from "@/lib/mini-app/wallet/scope";
 import type { SettlementsResponse } from "@/lib/settlements-types";
 import { MiniAppSubpage } from "./MiniAppSubpage";
 import styles from "./mini-app.module.css";
@@ -45,7 +51,19 @@ export function MiniAppWallet({
   const [direction, setDirection] = useState<WalletDirection>("in");
   const [filter, setFilter] = useState<MiniWalletFilter>("all");
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
+  const [ledgerScope, setLedgerScope] = useState<MiniWalletLedgerScope>(() =>
+    bootstrap.role === "store" || bootstrap.role === "company" ? "branch" : "all",
+  );
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
+
+  const walletReadScope =
+    loadState.status === "ok" ? loadState.data.walletReadScope : undefined;
+
+  const showLedgerScopeToggle =
+    !fixtureMode &&
+    canUseAllBranchesWalletScope(walletReadScope, bootstrap) &&
+    (bootstrap.role === "store" || bootstrap.role === "company") &&
+    Boolean(branchId);
 
   const loadWallet = useCallback(async () => {
     setLoadState({ status: "loading" });
@@ -54,9 +72,15 @@ export function MiniAppWallet({
       return;
     }
     try {
-      const data = await miniAppFetchWalletSettlements(platform, {
+      const settlementsSearchParams = miniWalletSettlementsSearchParams({
+        bootstrap,
+        ledgerScope,
         branchId,
+        walletReadScope,
+      });
+      const data = await miniAppFetchWalletSettlements(platform, {
         embeddedContext,
+        settlementsSearchParams,
       });
       setLoadState({ status: "ok", data });
     } catch (err) {
@@ -73,7 +97,7 @@ export function MiniAppWallet({
         retryable: true,
       });
     }
-  }, [bootstrap.role, branchId, embeddedContext, fixtureMode, platform]);
+  }, [bootstrap, branchId, embeddedContext, fixtureMode, ledgerScope, platform]);
 
   useEffect(() => {
     void loadWallet();
@@ -93,7 +117,7 @@ export function MiniAppWallet({
       ? "Подтверждённые суммы, ещё не полученные"
       : "Подтверждённые обязательства к перечислению";
 
-  const settlementsUrl = `${bootstrap.fullCabinetUrl.replace(/\/+$/, "")}${bootstrap.presentation.historyHref}`;
+  const settlementsUrl = profWalletCabinetHref(bootstrap);
 
   const filterChips: Array<{ id: MiniWalletFilter; label: string; count: number }> = totals
     ? [
@@ -119,6 +143,27 @@ export function MiniAppWallet({
         <p className={styles.workplacePin} data-testid="mini-wallet-workplace">
           {bootstrap.workplaceLabel}
         </p>
+      ) : null}
+
+      {showLedgerScopeToggle ? (
+        <div className={styles.mwScopeRow} role="group" aria-label="Охват филиалов">
+          <button
+            type="button"
+            className={`${styles.mwScopeBtn} ${ledgerScope === "branch" ? styles.mwScopeBtnActive : ""}`}
+            data-testid="mini-wallet-scope-branch"
+            onClick={() => setLedgerScope("branch")}
+          >
+            Рабочий филиал
+          </button>
+          <button
+            type="button"
+            className={`${styles.mwScopeBtn} ${ledgerScope === "all" ? styles.mwScopeBtnActive : ""}`}
+            data-testid="mini-wallet-scope-all"
+            onClick={() => setLedgerScope("all")}
+          >
+            Все доступные
+          </button>
+        </div>
       ) : null}
 
       {loadState.status === "loading" ? (

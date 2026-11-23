@@ -226,13 +226,17 @@ export async function miniAppFetchBootstrap(
   });
 }
 
+export type MiniAppWalletFetchOptions = MiniAppCallOptions & {
+  /** Branch / ledger scope query params — omit branchId to read all authorized branches when allowed. */
+  settlementsSearchParams?: Record<string, string>;
+};
+
 /** Read-only settlements alias for mini-app wallet — same contract as /api/pro/wallet/settlements, sans payout tokens. */
 export async function miniAppFetchWalletSettlements(
   platform: MiniAppPlatform,
-  opts?: MiniAppCallOptions,
+  opts?: MiniAppWalletFetchOptions,
 ): Promise<SettlementsResponse> {
-  const params: Record<string, string> = { host: platform };
-  if (opts?.branchId) params.branchId = opts.branchId;
+  const params: Record<string, string> = { host: platform, ...(opts?.settlementsSearchParams ?? {}) };
   return remcardFetch<SettlementsResponse>("/api/pro/mini-app/wallet/settlements", {
     searchParams: params,
     extraHeaders: miniHeaders(platform, opts),
