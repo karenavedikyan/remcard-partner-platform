@@ -1,5 +1,4 @@
 import type { SettlementObligation } from "@/lib/settlements-types";
-import { groupObligationsByCounterparty } from "@/lib/settlements-mappers";
 import {
   addKopecks,
   confirmedUnpaidKopecks,
@@ -223,12 +222,4 @@ export function computeMiniWalletCalc(
         }
       : directionCalc(data, "out", activeFilter, incomingOnly),
   };
-}
-
-/** Open obligations grouped for a direction without history expansion (stable counterparty ids). */
-export function miniWalletOpenPartnerGroups(
-  data: WalletAccrualsData,
-  direction: WalletDirection,
-): ReturnType<typeof groupObligationsByCounterparty> {
-  return groupObligationsByCounterparty(direction === "in" ? data.receivable : data.payable);
 }
