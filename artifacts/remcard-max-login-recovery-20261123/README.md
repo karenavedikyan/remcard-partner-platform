@@ -25,8 +25,16 @@ Touched paths under `remcard-navigator` (no DB migrations, no prod flags, no bot
 - `src/app/api/pro/mini-app/bootstrap/route.ts`
 - `src/app/api/pro/mini-app/scan/route.ts`
 - `src/app/api/pro/mini-app/certificate/options/route.ts`
+- `src/app/api/pro/mini-app/certificate/route.ts` (POST → store handler; embedded user via pathname)
+- `src/app/api/pro/mini-app/store/order/preview/route.ts`
+- `src/app/api/pro/mini-app/store/order/route.ts`
+- `src/app/api/store/certificate/route.ts` (POST: `resolveStoreRouteUser`)
+- `src/app/api/store/order/route.ts`, `src/app/api/store/order/preview/route.ts` (POST: `resolveStoreRouteUser`)
 - `src/app/api/store/certificate/available-partners/route.ts` (thin GET wrapper)
 - `src/lib/storeCertificateAvailablePartners.ts` (shared certificate partner catalog builder)
+- `src/lib/miniAppStoreRouteAuth.ts` (exact mini-app store/certificate POST aliases: feature flag, pilot, platform, cabinet + `assertMiniAppAccess`; first-party `/api/store/*` unchanged)
+- `src/lib/__tests__/miniAppStoreRouteAuth.test.ts`
+- `src/app/api/store/certificate/__tests__/route.mini-app-owner-limits.test.ts` (mocks `assertMiniAppAccess` + cabinet user for mini-app POST alias)
 - `src/app/api/pro/mini-app/__tests__/auth.routes.test.ts`
 - `src/app/api/pro/mini-app/__tests__/miniAppCertificateOptions.embedded.test.ts`
 - `src/lib/miniAppSessionCookie.ts`, `miniAppEmbeddedAuth.ts`, `miniAppCabinetAuth.ts`

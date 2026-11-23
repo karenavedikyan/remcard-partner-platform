@@ -1,4 +1,4 @@
-import { RemcardApiError, remcardFetch } from "@/lib/api-client";
+import { RemcardApiError, remcardFetch, remcardFetchWithMeta } from "@/lib/api-client";
 import type {
   MiniAppAuthSendCodeResult,
   MiniAppAuthVerifyResult,
@@ -270,5 +270,33 @@ export async function miniAppCreateCertificate(
       ...miniHeaders(platform, opts),
       "Idempotency-Key": idempotencyKey,
     },
+  });
+}
+
+export async function miniAppStoreOrderPreview(
+  platform: MiniAppPlatform,
+  body: { certificateCode: string },
+  opts?: MiniAppCallOptions,
+): Promise<import("@/lib/order-types").OrderPreviewResponse> {
+  return remcardFetch("/api/pro/mini-app/store/order/preview", {
+    method: "POST",
+    body,
+    searchParams: opts?.branchId ? { branchId: opts.branchId } : undefined,
+    extraHeaders: miniHeaders(platform, opts),
+  });
+}
+
+export async function miniAppStoreOrderSubmitWithMeta(
+  platform: MiniAppPlatform,
+  body: Record<string, unknown>,
+  idempotencyKey: string,
+  opts?: MiniAppCallOptions,
+) {
+  return remcardFetchWithMeta<unknown>("/api/pro/mini-app/store/order", {
+    method: "POST",
+    body,
+    idempotencyKey,
+    searchParams: opts?.branchId ? { branchId: opts.branchId } : undefined,
+    extraHeaders: miniHeaders(platform, opts),
   });
 }

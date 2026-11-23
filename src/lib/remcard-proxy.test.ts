@@ -430,6 +430,8 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/bootstrap"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/certificate"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order/preview"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order/preview"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order"), true);

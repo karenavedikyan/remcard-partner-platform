@@ -19,7 +19,7 @@ function readProxyIdempotencyKey(request: NextRequest, pathname: string): string
     request.headers.get("idempotency-key") ??
     request.headers.get("x-idempotency-key");
 
-  if (pathname === "/api/store/order") {
+  if (pathname === "/api/store/order" || pathname === "/api/pro/mini-app/store/order") {
     return request.headers.get("Idempotency-Key");
   }
   if (

@@ -6,12 +6,14 @@ import { QrScanner } from "@/components/scanner/QrScanner";
 import { TextField } from "@/components/ui/FormField";
 import { parseCertificateCode } from "@/lib/certificate-code";
 import { miniAppStoreScanLookup, type MiniAppScanState } from "@/lib/mini-app/api";
+import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import type { MiniAppPlatform } from "@/lib/mini-app/types";
 import styles from "./mini-app.module.css";
 
 type Props = {
   platform: MiniAppPlatform;
   branchId: string | null;
+  embeddedContext?: MiniAppEmbeddedContext;
   onDone: () => void;
   embed?: boolean;
 };
@@ -24,7 +26,13 @@ const STATE_LABEL: Partial<Record<MiniAppScanState, string>> = {
   invalid_input: "Введите код сертификата",
 };
 
-export function MiniAppScanVerify({ platform, branchId, onDone, embed = false }: Props) {
+export function MiniAppScanVerify({
+  platform,
+  branchId,
+  embeddedContext = "default",
+  onDone,
+  embed = false,
+}: Props) {
   const [manual, setManual] = useState("");
   const [loading, setLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -46,7 +54,7 @@ export function MiniAppScanVerify({ platform, branchId, onDone, embed = false }:
       setLoading(true);
       setResult({ kind: "idle" });
       try {
-        const res = await miniAppStoreScanLookup(platform, code, branchId);
+        const res = await miniAppStoreScanLookup(platform, code, { branchId, embeddedContext });
         if (res.state === "valid") {
           const usage =
             res.maxUsages && res.maxUsages > 0
@@ -69,7 +77,7 @@ export function MiniAppScanVerify({ platform, branchId, onDone, embed = false }:
         setLoading(false);
       }
     },
-    [platform, branchId],
+    [platform, branchId, embeddedContext],
   );
 
   return (

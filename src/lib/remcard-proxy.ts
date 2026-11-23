@@ -40,6 +40,8 @@ const MINI_APP_SESSION_COOKIE_UPSTREAM_PATHS = new Set([
   "/api/pro/mini-app/scan",
   "/api/pro/mini-app/certificate",
   "/api/pro/mini-app/certificate/options",
+  "/api/pro/mini-app/store/order",
+  "/api/pro/mini-app/store/order/preview",
   "/api/pro/mini-app/auth/send-code",
   "/api/pro/mini-app/auth/verify-code",
 ]);
@@ -618,7 +620,11 @@ export function resolveStoreOrderIdempotencyKey(
     return { ok: true, key: parsed.key };
   }
 
-  if (upper !== "POST" || pathname !== STORE_ORDER_PATH) {
+  const MINI_APP_STORE_ORDER_PATH = "/api/pro/mini-app/store/order";
+  if (
+    upper !== "POST" ||
+    (pathname !== STORE_ORDER_PATH && pathname !== MINI_APP_STORE_ORDER_PATH)
+  ) {
     return { ok: true, key: null };
   }
 
