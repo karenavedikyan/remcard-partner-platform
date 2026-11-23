@@ -603,8 +603,36 @@ index 8150b22..952efb6 100644
    return response;
  }
 \ No newline at end of file
+diff --git a/src/app/api/pro/mini-app/store/order/preview/route.ts b/src/app/api/pro/mini-app/store/order/preview/route.ts
+new file mode 100644
+index 0000000..bfc4282
+--- /dev/null
++++ b/src/app/api/pro/mini-app/store/order/preview/route.ts
+@@ -0,0 +1,8 @@
++import { POST as storeOrderPreviewPost } from '@/app/api/store/order/preview/route';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++export const POST = storeOrderPreviewPost;
+diff --git a/src/app/api/pro/mini-app/store/order/route.ts b/src/app/api/pro/mini-app/store/order/route.ts
+new file mode 100644
+index 0000000..d7f741f
+--- /dev/null
++++ b/src/app/api/pro/mini-app/store/order/route.ts
+@@ -0,0 +1,8 @@
++import { POST as storeOrderPost } from '@/app/api/store/order/route';
++import { miniAppApiDynamic } from '@/lib/miniAppRouteSegment';
++
++export const dynamic = miniAppApiDynamic.dynamic;
++export const fetchCache = miniAppApiDynamic.fetchCache;
++export const revalidate = miniAppApiDynamic.revalidate;
++
++export const POST = storeOrderPost;
 diff --git a/src/app/api/store/certificate/available-partners/route.ts b/src/app/api/store/certificate/available-partners/route.ts
-index f40af27..9f88d0d 100644
+index 64039f8..143b0af 100644
 --- a/src/app/api/store/certificate/available-partners/route.ts
 +++ b/src/app/api/store/certificate/available-partners/route.ts
 @@ -1,554 +1,9 @@
@@ -806,18 +834,18 @@ index f40af27..9f88d0d 100644
 -  type CatRow = {
 -    category: string;
 -    categoryLabel: string;
--    poolPercent: number;
+-  poolPercent: number;
 -    /** false when the partner agreed the category at 0%: kept in terms, but nothing can be issued. */
 -    issuable: boolean;
 -    discountPercent: number;
--    issuerPercent: number;
--    /** @deprecated Используйте issuerPercent. */
+-  issuerPercent: number;
+-  /** @deprecated Используйте issuerPercent. */
 -    proBonusPercent: number;
--    /** @deprecated Используйте poolPercent. */
+-  /** @deprecated Используйте poolPercent. */
 -    maxDiscount: number;
--    /** @deprecated Используйте poolPercent. */
+-  /** @deprecated Используйте poolPercent. */
 -    maxBonus: number;
--    /** @deprecated Используйте poolPercent. */
+-  /** @deprecated Используйте poolPercent. */
 -    maxTotal: number;
 -  };
 -
@@ -1164,7 +1192,89 @@ index f40af27..9f88d0d 100644
 -  });
 +  return buildStoreCertificateAvailablePartners(user, req);
  }
-\ No newline at end of file
+diff --git a/src/app/api/store/certificate/route.ts b/src/app/api/store/certificate/route.ts
+index f063fd6..663fcbb 100644
+--- a/src/app/api/store/certificate/route.ts
++++ b/src/app/api/store/certificate/route.ts
+@@ -5,6 +5,7 @@ import { loadPartnerBusinessLabel, loadPartnerCardLabel } from '@/lib/loadPartne
+ import { notifyLimitOverrideRequestToOwner } from '@/lib/partnerNotifications';
+ import { prisma } from '@/lib/prisma';
+ import { getAuthenticatedUser } from '@/lib/proAuth';
++import { resolveStoreRouteUser } from '@/lib/miniAppStoreRouteAuth';
+ import { effectivePartnerUserId, getProContext } from '@/lib/proBranchContext';
+ import { PRO_BRANCH_CONTEXT_COOKIE } from '@/lib/proContextRequest';
+ import {
+@@ -201,7 +202,7 @@ export async function GET(req: NextRequest) {
+ }
+ 
+ export async function POST(req: NextRequest) {
+-  const user = await getAuthenticatedUser(req);
++  const user = await resolveStoreRouteUser(req);
+   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+ 
+   const proCtx = await getProContext(user.id);
+@@ -239,7 +240,7 @@ export async function POST(req: NextRequest) {
+     pathname === '/api/pro/mini-app/certificate';
+   if (forceMiniAppCreate) {
+     const { isProfMiniAppEnabled, isProfMiniAppPilotOpenForUser } = await import('@/lib/profMiniAppConfig');
+-    const { assertMiniAppSession } = await import('@/lib/miniAppSessionCookie');
++    const { assertMiniAppAccess } = await import('@/lib/miniAppSessionCookie');
+     if (!isProfMiniAppEnabled()) {
+       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+     }
+@@ -256,7 +257,7 @@ export async function POST(req: NextRequest) {
+     if (!platform) {
+       return NextResponse.json({ error: 'Укажите платформу мини-приложения' }, { status: 400 });
+     }
+-    const guard = assertMiniAppSession(req, platform, user.id);
++    const guard = await assertMiniAppAccess(req, platform, user.id);
+     if (!guard.ok) {
+       return NextResponse.json({ error: guard.message, code: guard.code }, { status: guard.status });
+     }
+diff --git a/src/app/api/store/order/preview/route.ts b/src/app/api/store/order/preview/route.ts
+index 87a58e3..0968a40 100644
+--- a/src/app/api/store/order/preview/route.ts
++++ b/src/app/api/store/order/preview/route.ts
+@@ -1,7 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { UserRole } from '@prisma/client';
+ import { prisma } from '@/lib/prisma';
+-import { getAuthenticatedUser } from '@/lib/proAuth';
++import { resolveStoreRouteUser } from '@/lib/miniAppStoreRouteAuth';
+ import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
+ import { findCertificateForPublic } from '@/lib/certificatePublicPayload';
+ import { buildPartnerCardModelsForCertificate } from '@/lib/certificatePartnerCardsMapper';
+@@ -20,7 +20,7 @@ function error(message: string, status = 400) {
+ }
+ 
+ export async function POST(req: NextRequest) {
+-  const user = await getAuthenticatedUser(req);
++  const user = await resolveStoreRouteUser(req);
+   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+   const cabinetAccess = await assertCabinetProfAccess(user);
+   if (!cabinetAccess.ok) {
+diff --git a/src/app/api/store/order/route.ts b/src/app/api/store/order/route.ts
+index c84699e..60c0280 100644
+--- a/src/app/api/store/order/route.ts
++++ b/src/app/api/store/order/route.ts
+@@ -1,7 +1,7 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { CertificateStatus, UserRole } from '@prisma/client';
+ import { prisma } from '@/lib/prisma';
+-import { getAuthenticatedUser } from '@/lib/proAuth';
++import { resolveStoreRouteUser } from '@/lib/miniAppStoreRouteAuth';
+ import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
+ import {
+   buildIdempotencyLookup,
+@@ -46,7 +46,7 @@ function idempotencyConflictResponse() {
+ }
+ 
+ export async function POST(req: NextRequest) {
+-  const user = await getAuthenticatedUser(req);
++  const user = await resolveStoreRouteUser(req);
+   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+   const cabinetAccess = await assertCabinetProfAccess(user);
+   if (!cabinetAccess.ok) {
 diff --git a/src/lib/__tests__/messengerAuthIdentity.bind.test.ts b/src/lib/__tests__/messengerAuthIdentity.bind.test.ts
 new file mode 100644
 index 0000000..b3b8f75
@@ -1516,7 +1626,7 @@ index 0000000..01c2954
 +}
 \ No newline at end of file
 diff --git a/src/lib/messengerAuthIdentity.ts b/src/lib/messengerAuthIdentity.ts
-index e44ceb5..04cf09f 100644
+index 15bd576..04cf09f 100644
 --- a/src/lib/messengerAuthIdentity.ts
 +++ b/src/lib/messengerAuthIdentity.ts
 @@ -246,6 +246,8 @@ export type VerifyMessengerLoginResult =
@@ -1572,6 +1682,558 @@ index e44ceb5..04cf09f 100644
              },
              data: { used: true },
            });
+@@ -536,4 +552,4 @@ async function classifyMessengerIdentityInTx(
+     return { kind: 'identity_unavailable', userMessage: BOT_MSG_UNAVAILABLE };
+   }
+   return { kind: 'eligible_deleted_reregistration', userId: primary.id };
+-}
++}
+\ No newline at end of file
+diff --git a/src/lib/messengerAuthIdentity.ts.bak-base b/src/lib/messengerAuthIdentity.ts.bak-base
+new file mode 100644
+index 0000000..15bd576
+--- /dev/null
++++ b/src/lib/messengerAuthIdentity.ts.bak-base
+@@ -0,0 +1,539 @@
++import type { AuthProvider, Prisma, User } from '@prisma/client';
++import { Prisma as PrismaNs } from '@prisma/client';
++import { prisma } from '@/lib/prisma';
++import { recordPartnerAuthIdentityLineage } from '@/lib/partnerAuthIdentityLineage';
++import { linkOAuthAccount } from '@/lib/oauthAccount';
++import { generateUniquePublicId } from '@/lib/publicId';
++import {
++  parseBotLoginIdentifier,
++  validateEntrySiteBinding,
++  type AuthEntrySite,
++} from '@/lib/authEntryContext';
++
++/** Operator-approved partner soft delete (identities may remain on deleted row). */
++export const OPERATOR_APPROVED_SOFT_DELETE_PARTNER = 'OPERATOR_APPROVED_SOFT_DELETE_PARTNER';
++
++export type MessengerProvider = Extract<AuthProvider, 'TELEGRAM' | 'MAX'>;
++
++export type MessengerIdentityKind =
++  | 'active'
++  | 'blocked'
++  | 'fresh'
++  | 'eligible_deleted_reregistration'
++  | 'identity_unavailable';
++
++export type MessengerIdentityClassification = {
++  kind: MessengerIdentityKind;
++  /** Primary user row when kind is active, blocked, or eligible_deleted_reregistration */
++  userId?: string;
++  /** Human-safe bot reply; no PII */
++  userMessage?: string;
++};
++
++export const BOT_MSG_BLOCKED =
++  'Вход с этого аккаунта мессенджера временно недоступен. Если считаете, что это ошибка — обратитесь в поддержку RemCard.';
++
++export const BOT_MSG_UNAVAILABLE =
++  'Сейчас нельзя продолжить регистрацию с этого аккаунта мессенджера. Попробуйте позже или обратитесь в поддержку RemCard.';
++
++export const BOT_MSG_SEND_FAILED =
++  'Не удалось отправить код. Попробуйте ещё раз через минуту или повторите вход на сайте.';
++
++const USER_SNIPPET = {
++  id: true,
++  deletedAt: true,
++  isBlocked: true,
++  role: true,
++  staffRole: true,
++  publicId: true,
++} as const;
++
++type HolderUser = Pick<User, keyof typeof USER_SNIPPET>;
++
++function legacyWhere(provider: MessengerProvider, externalId: string): Prisma.UserWhereInput {
++  if (provider === 'TELEGRAM') {
++    return { telegramId: BigInt(externalId) };
++  }
++  return { maxId: BigInt(externalId) };
++}
++
++function legacyClearField(provider: MessengerProvider): 'telegramId' | 'maxId' {
++  return provider === 'TELEGRAM' ? 'telegramId' : 'maxId';
++}
++
++/** Trusted deletion provenance for messenger re-registration (fail closed otherwise). */
++export async function isEligibleDeletedForMessengerReregistration(
++  tx: Prisma.TransactionClient | typeof prisma,
++  userId: string,
++): Promise<boolean> {
++  const user = await tx.user.findUnique({
++    where: { id: userId },
++    select: { deletedAt: true },
++  });
++  if (!user?.deletedAt) return false;
++
++  const audit = await tx.auditLog.findFirst({
++    where: { userId, action: 'USER_DATA_DELETED' },
++    orderBy: { createdAt: 'desc' },
++    select: { meta: true },
++  });
++  const meta = (audit?.meta ?? null) as Record<string, unknown> | null;
++  if (!meta) return false;
++
++  if (
++    meta.operation === OPERATOR_APPROVED_SOFT_DELETE_PARTNER &&
++    meta.physicalDeletion === false
++  ) {
++    return true;
++  }
++
++  return false;
++}
++
++async function loadHolders(
++  tx: Prisma.TransactionClient | typeof prisma,
++  provider: MessengerProvider,
++  externalId: string,
++): Promise<{ authUser: HolderUser | null; legacyUser: HolderUser | null }> {
++  const authRow = await tx.authAccount.findUnique({
++    where: { provider_externalId: { provider, externalId } },
++    select: { user: { select: USER_SNIPPET } },
++  });
++  const legacyUser = await tx.user.findFirst({
++    where: legacyWhere(provider, externalId),
++    select: USER_SNIPPET,
++  });
++  return { authUser: authRow?.user ?? null, legacyUser };
++}
++
++/**
++ * Classify MAX/Telegram identity across AuthAccount and legacy User columns.
++ * Never throws for expected policy outcomes — use kind + userMessage.
++ */
++export async function classifyMessengerIdentity(
++  provider: MessengerProvider,
++  externalId: string,
++): Promise<MessengerIdentityClassification> {
++  const { authUser, legacyUser } = await loadHolders(prisma, provider, externalId);
++
++  if (authUser && legacyUser && authUser.id !== legacyUser.id) {
++    return { kind: 'identity_unavailable', userMessage: BOT_MSG_UNAVAILABLE };
++  }
++
++  const primary = authUser ?? legacyUser;
++  if (!primary) {
++    return { kind: 'fresh' };
++  }
++
++  if (primary.deletedAt == null) {
++    if (primary.isBlocked) {
++      return { kind: 'blocked', userId: primary.id, userMessage: BOT_MSG_BLOCKED };
++    }
++    return { kind: 'active', userId: primary.id };
++  }
++
++  const eligible = await isEligibleDeletedForMessengerReregistration(prisma, primary.id);
++  if (!eligible) {
++    return { kind: 'identity_unavailable', userMessage: BOT_MSG_UNAVAILABLE };
++  }
++
++  return { kind: 'eligible_deleted_reregistration', userId: primary.id };
++}
++
++export function botLoginIdentifier(provider: MessengerProvider, externalId: string): string {
++  return provider === 'TELEGRAM' ? `tg:${externalId}` : `max:${externalId}`;
++}
++
++function generateReferralCode(): string {
++  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
++  let code = '';
++  for (let i = 0; i < 6; i++) {
++    code += chars[Math.floor(Math.random() * chars.length)]!;
++  }
++  return code;
++}
++
++export type BotLoginCodePrepareResult =
++  | { ok: true; code: string; expiresAt: Date }
++  | { ok: false; userMessage: string; reason: string };
++
++/**
++ * Decide whether a login code may be issued and whether a User row must exist before verify.
++ * Does not persist BotLoginCode — caller sends message then creates row, or creates before send with rollback.
++ */
++export async function prepareMessengerBotLogin(
++  provider: MessengerProvider,
++  externalId: string,
++): Promise<
++  | { ok: true; classification: MessengerIdentityClassification; ensureUserBeforeCode: boolean }
++  | { ok: false; userMessage: string; reason: string }
++> {
++  const classification = await classifyMessengerIdentity(provider, externalId);
++  if (classification.kind === 'blocked' || classification.kind === 'identity_unavailable') {
++    return {
++      ok: false,
++      userMessage: classification.userMessage ?? BOT_MSG_UNAVAILABLE,
++      reason: classification.kind,
++    };
++  }
++
++  if (classification.kind === 'active') {
++    await prisma.$transaction(async (tx) => {
++      await tx.user.update({
++        where: { id: classification.userId! },
++        data: { updatedAt: new Date() },
++      });
++      await linkOAuthAccount(tx, {
++        userId: classification.userId!,
++        provider,
++        externalId,
++      });
++    });
++    return { ok: true, classification, ensureUserBeforeCode: true };
++  }
++
++  return { ok: true, classification, ensureUserBeforeCode: false };
++}
++
++export async function touchActiveUserOAuth(
++  tx: Prisma.TransactionClient,
++  userId: string,
++  provider: MessengerProvider,
++  externalId: string,
++): Promise<void> {
++  await tx.user.update({ where: { id: userId }, data: { updatedAt: new Date() } });
++  await linkOAuthAccount(tx, { userId, provider, externalId });
++}
++
++async function invalidateOutstandingLoginCodes(
++  tx: Prisma.TransactionClient,
++  identifier: string,
++  exceptId?: string,
++): Promise<void> {
++  await tx.botLoginCode.updateMany({
++    where: {
++      identifier,
++      used: false,
++      ...(exceptId ? { id: { not: exceptId } } : {}),
++    },
++    data: { used: true },
++  });
++}
++
++async function auditMessengerIdentityTransfer(
++  tx: Prisma.TransactionClient,
++  params: {
++    fromUserId: string;
++    toUserId: string;
++    provider: MessengerProvider;
++  },
++): Promise<void> {
++  await tx.auditLog.create({
++    data: {
++      action: 'AUTH_LOGIN_SUCCESS',
++      userId: params.toUserId,
++      actorId: null,
++      meta: {
++        operation: 'MESSENGER_IDENTITY_REREGISTERED',
++        provider: params.provider,
++        priorUserId: params.fromUserId,
++      },
++    },
++  });
++}
++
++export type VerifyMessengerLoginResult =
++  | { ok: true; user: User; created: boolean; entrySite: AuthEntrySite | null }
++  | { ok: false; status: number; error: string };
++
++const VERIFY_TX_MAX_ATTEMPTS = 5;
++
++function isRetryableVerifyTransactionError(error: unknown): boolean {
++  if (error instanceof PrismaNs.PrismaClientKnownRequestError) {
++    return error.code === 'P2034' || error.code === 'P2002';
++  }
++  if (error instanceof PrismaNs.PrismaClientUnknownRequestError) {
++    const msg = error.message.toLowerCase();
++    return (
++      msg.includes('40p01') ||
++      msg.includes('deadlock') ||
++      msg.includes('could not serialize access') ||
++      msg.includes('serialization failure')
++    );
++  }
++  return false;
++}
++
++function parseIdentifier(identifier: string): { provider: MessengerProvider; externalId: string } | null {
++  const parsed = parseBotLoginIdentifier(identifier);
++  if (!parsed) return null;
++  return {
++    provider: parsed.provider === 'tg' ? 'TELEGRAM' : 'MAX',
++    externalId: parsed.externalId,
++  };
++}
++
++async function getDeletionChallengeAt(
++  tx: Prisma.TransactionClient,
++  deletedUserId: string,
++): Promise<Date | null> {
++  const audit = await tx.auditLog.findFirst({
++    where: { userId: deletedUserId, action: 'USER_DATA_DELETED' },
++    orderBy: { createdAt: 'desc' },
++    select: { createdAt: true, meta: true },
++  });
++  const meta = (audit?.meta ?? null) as Record<string, unknown> | null;
++  if (
++    meta?.operation === OPERATOR_APPROVED_SOFT_DELETE_PARTNER &&
++    meta.physicalDeletion === false &&
++    audit?.createdAt
++  ) {
++    return audit.createdAt;
++  }
++  const user = await tx.user.findUnique({
++    where: { id: deletedUserId },
++    select: { deletedAt: true },
++  });
++  return user?.deletedAt ?? null;
++}
++
++async function assertLoginCodeChallengeFresh(
++  tx: Prisma.TransactionClient,
++  loginCode: { id: string; createdAt: Date; identifier: string },
++  classification: MessengerIdentityClassification,
++): Promise<void> {
++  if (classification.kind !== 'eligible_deleted_reregistration' || !classification.userId) {
++    return;
++  }
++  const challengeAt = await getDeletionChallengeAt(tx, classification.userId);
++  if (challengeAt && loginCode.createdAt < challengeAt) {
++    throw new VerifyAbort(401, 'Неверный или просроченный код');
++  }
++}
++
++async function resolveSessionAfterClaim(
++  tx: Prisma.TransactionClient,
++  params: {
++    provider: MessengerProvider;
++    externalId: string;
++    loginCodeId: string;
++    identifier: string;
++    classification: MessengerIdentityClassification;
++  },
++): Promise<User> {
++  const { provider, externalId, loginCodeId, identifier, classification } = params;
++
++  if (classification.kind === 'blocked') {
++    throw new VerifyAbort(403, 'Аккаунт заблокирован');
++  }
++  if (classification.kind === 'identity_unavailable') {
++    throw new VerifyAbort(403, BOT_MSG_UNAVAILABLE);
++  }
++
++  await invalidateOutstandingLoginCodes(tx, identifier, loginCodeId);
++
++  if (classification.kind === 'active') {
++    const row = await tx.user.findUnique({ where: { id: classification.userId! } });
++    if (!row || row.deletedAt || row.isBlocked) {
++      throw new VerifyAbort(403, 'Аккаунт недоступен');
++    }
++    await touchActiveUserOAuth(tx, row.id, provider, externalId);
++    return row;
++  }
++
++  if (classification.kind === 'fresh') {
++    const field = legacyClearField(provider);
++    const publicId = await generateUniquePublicId(tx);
++    const created = await tx.user.create({
++      data: {
++        publicId,
++        displayName: 'Пользователь',
++        photoUrl: null,
++        referralCode: generateReferralCode(),
++        ...(field === 'telegramId'
++          ? { telegramId: BigInt(externalId) }
++          : { maxId: BigInt(externalId) }),
++      },
++    });
++    await linkOAuthAccount(tx, { userId: created.id, provider, externalId });
++    return created;
++  }
++
++  const deletedId = classification.userId!;
++  const deletedRow = await tx.user.findUnique({
++    where: { id: deletedId },
++    select: { id: true, deletedAt: true },
++  });
++  if (!deletedRow?.deletedAt || !(await isEligibleDeletedForMessengerReregistration(tx, deletedId))) {
++    throw new VerifyAbort(403, BOT_MSG_UNAVAILABLE);
++  }
++
++  await tx.user.update({
++    where: { id: deletedId },
++    data: { [legacyClearField(provider)]: null },
++  });
++  await tx.authAccount.deleteMany({ where: { provider, externalId } });
++
++  const field = legacyClearField(provider);
++  const publicId = await generateUniquePublicId(tx);
++  const created = await tx.user.create({
++    data: {
++      publicId,
++      displayName: 'Пользователь',
++      photoUrl: null,
++      referralCode: generateReferralCode(),
++      role: 'CLIENT',
++      ...(field === 'telegramId'
++        ? { telegramId: BigInt(externalId) }
++        : { maxId: BigInt(externalId) }),
++    },
++  });
++  await linkOAuthAccount(tx, { userId: created.id, provider, externalId });
++  await recordPartnerAuthIdentityLineage(
++    {
++      liveUserId: created.id,
++      demoUserId: deletedId,
++      provider,
++      externalId,
++    },
++    tx,
++  );
++  await auditMessengerIdentityTransfer(tx, {
++    fromUserId: deletedId,
++    toUserId: created.id,
++    provider,
++  });
++  return created;
++}
++
++/**
++ * Atomically claim OTP and resolve MAX/TG session (login, fresh register, or eligible transfer).
++ */
++export async function verifyMessengerBotLoginCode(
++  code: string,
++  requestEntrySite?: AuthEntrySite | null,
++): Promise<VerifyMessengerLoginResult> {
++  for (let attempt = 0; attempt < VERIFY_TX_MAX_ATTEMPTS; attempt++) {
++    try {
++      const outcome = await prisma.$transaction(
++        async (tx) => {
++          const now = new Date();
++          const candidates = await tx.botLoginCode.findMany({
++            where: { code, used: false, expiresAt: { gt: now } },
++            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
++            take: 2,
++          });
++          if (candidates.length !== 1) {
++            throw new VerifyAbort(401, 'Неверный или просроченный код');
++          }
++          const loginCode = candidates[0]!;
++          const bind = validateEntrySiteBinding(loginCode.identifier, requestEntrySite);
++          if (!bind.ok) {
++            throw new VerifyAbort(bind.status, bind.error);
++          }
++          const parsed = parseIdentifier(loginCode.identifier);
++          if (!parsed) {
++            throw new VerifyAbort(401, 'Неверный или просроченный код');
++          }
++
++          const claimed = await tx.botLoginCode.updateMany({
++            where: {
++              id: loginCode.id,
++              code,
++              used: false,
++              expiresAt: { gt: now },
++            },
++            data: { used: true },
++          });
++          if (claimed.count !== 1) {
++            throw new VerifyAbort(401, 'Неверный или просроченный код');
++          }
++
++          const classification = await classifyMessengerIdentityInTx(
++            tx,
++            parsed.provider,
++            parsed.externalId,
++          );
++          await assertLoginCodeChallengeFresh(tx, loginCode, classification);
++
++          const user = await resolveSessionAfterClaim(tx, {
++            provider: parsed.provider,
++            externalId: parsed.externalId,
++            loginCodeId: loginCode.id,
++            identifier: loginCode.identifier,
++            classification,
++          });
++          const created =
++            classification.kind === 'fresh' ||
++            classification.kind === 'eligible_deleted_reregistration';
++          // Prefer consumed challenge identifier site (not request body alone).
++          const idParsed = parseBotLoginIdentifier(loginCode.identifier);
++          const entrySite = idParsed?.site ?? null;
++          return { user, created, entrySite };
++        },
++        { isolationLevel: PrismaNs.TransactionIsolationLevel.Serializable },
++      );
++      return {
++        ok: true,
++        user: outcome.user,
++        created: outcome.created,
++        entrySite: outcome.entrySite,
++      };
++    } catch (e) {
++      if (e instanceof VerifyAbort) {
++        return { ok: false, status: e.status, error: e.message };
++      }
++      if (isRetryableVerifyTransactionError(e) && attempt < VERIFY_TX_MAX_ATTEMPTS - 1) {
++        continue;
++      }
++      if (isRetryableVerifyTransactionError(e)) {
++        return {
++          ok: false,
++          status: 503,
++          error: 'Временная ошибка входа. Попробуйте ещё раз через несколько секунд.',
++        };
++      }
++      throw e;
++    }
++  }
++  return {
++    ok: false,
++    status: 503,
++    error: 'Временная ошибка входа. Попробуйте ещё раз через несколько секунд.',
++  };
++}
++
++class VerifyAbort extends Error {
++  constructor(
++    public status: number,
++    message: string,
++  ) {
++    super(message);
++    this.name = 'VerifyAbort';
++  }
++}
++
++/** Same as classifyMessengerIdentity but intended inside an open transaction (re-read holders). */
++async function classifyMessengerIdentityInTx(
++  tx: Prisma.TransactionClient,
++  provider: MessengerProvider,
++  externalId: string,
++): Promise<MessengerIdentityClassification> {
++  const { authUser, legacyUser } = await loadHolders(tx, provider, externalId);
++  if (authUser && legacyUser && authUser.id !== legacyUser.id) {
++    return { kind: 'identity_unavailable', userMessage: BOT_MSG_UNAVAILABLE };
++  }
++  const primary = authUser ?? legacyUser;
++  if (!primary) return { kind: 'fresh' };
++  if (primary.deletedAt == null) {
++    if (primary.isBlocked) {
++      return { kind: 'blocked', userId: primary.id, userMessage: BOT_MSG_BLOCKED };
++    }
++    return { kind: 'active', userId: primary.id };
++  }
++  const eligible = await isEligibleDeletedForMessengerReregistration(tx, primary.id);
++  if (!eligible) {
++    return { kind: 'identity_unavailable', userMessage: BOT_MSG_UNAVAILABLE };
++  }
++  return { kind: 'eligible_deleted_reregistration', userId: primary.id };
++}
 diff --git a/src/lib/miniAppCabinetAuth.ts b/src/lib/miniAppCabinetAuth.ts
 new file mode 100644
 index 0000000..4786c95
@@ -1975,12 +2637,59 @@ index e7bcd76..08600ed 100644
 +  }
  }
 \ No newline at end of file
+diff --git a/src/lib/miniAppStoreRouteAuth.ts b/src/lib/miniAppStoreRouteAuth.ts
+new file mode 100644
+index 0000000..6a16fb8
+--- /dev/null
++++ b/src/lib/miniAppStoreRouteAuth.ts
+@@ -0,0 +1,40 @@
++import type { NextRequest } from 'next/server';
++import type { User } from '@prisma/client';
++import { getAuthenticatedUser } from '@/lib/proAuth';
++import { getProfCabinetUserForMiniApp } from '@/lib/miniAppCabinetAuth';
++import { assertMiniAppAccess, type MiniAppPlatform } from '@/lib/miniAppSessionCookie';
++
++function parseHostPlatform(raw: string | null): MiniAppPlatform | null {
++  const v = raw?.trim().toLowerCase();
++  if (v === 'telegram' || v === 'tg') return 'telegram';
++  if (v === 'max') return 'max';
++  return null;
++}
++
++export function parseMiniAppHostPlatform(req: NextRequest): MiniAppPlatform | null {
++  return (
++    parseHostPlatform(req.headers.get('x-remcard-mini-app-platform')) ??
++    parseHostPlatform(req.nextUrl.searchParams.get('host'))
++  );
++}
++
++/** Trusted mini-app store/certificate handlers: first-party session, else embedded cabinet user. */
++export async function resolveStoreRouteUser(req: NextRequest): Promise<User | null> {
++  const sessionUser = await getAuthenticatedUser(req);
++  if (sessionUser) return sessionUser;
++
++  if (!req.nextUrl.pathname.startsWith('/api/pro/mini-app/')) {
++    return null;
++  }
++
++  const platform = parseMiniAppHostPlatform(req);
++  if (!platform) return null;
++
++  const user = await getProfCabinetUserForMiniApp(req, platform);
++  if (!user) return null;
++
++  const guard = await assertMiniAppAccess(req, platform, user.id);
++  if (!guard.ok) return null;
++
++  return user;
++}
+\ No newline at end of file
 diff --git a/src/lib/storeCertificateAvailablePartners.ts b/src/lib/storeCertificateAvailablePartners.ts
 new file mode 100644
-index 0000000..c80963e
+index 0000000..ba69276
 --- /dev/null
 +++ b/src/lib/storeCertificateAvailablePartners.ts
-@@ -0,0 +1,551 @@
+@@ -0,0 +1,552 @@
 +import { NextRequest, NextResponse } from 'next/server';
 +import { PartnershipStatus, UserRole, type User } from '@prisma/client';
 +import { prisma } from '@/lib/prisma';
@@ -2097,6 +2806,7 @@ index 0000000..c80963e
 +  }
 +}
 +
++
 +export async function buildStoreCertificateAvailablePartners(user: User, req: NextRequest): Promise<NextResponse> {
 +
 +  const proCtx = await getProContext(user.id);
@@ -2175,18 +2885,18 @@ index 0000000..c80963e
 +  type CatRow = {
 +    category: string;
 +    categoryLabel: string;
-+    poolPercent: number;
++  poolPercent: number;
 +    /** false when the partner agreed the category at 0%: kept in terms, but nothing can be issued. */
 +    issuable: boolean;
 +    discountPercent: number;
-+    issuerPercent: number;
-+    /** @deprecated Используйте issuerPercent. */
++  issuerPercent: number;
++  /** @deprecated Используйте issuerPercent. */
 +    proBonusPercent: number;
-+    /** @deprecated Используйте poolPercent. */
++  /** @deprecated Используйте poolPercent. */
 +    maxDiscount: number;
-+    /** @deprecated Используйте poolPercent. */
++  /** @deprecated Используйте poolPercent. */
 +    maxBonus: number;
-+    /** @deprecated Используйте poolPercent. */
++  /** @deprecated Используйте poolPercent. */
 +    maxTotal: number;
 +  };
 +
@@ -2532,4 +3242,3 @@ index 0000000..c80963e
 +        : undefined,
 +  });
 +}
-\ No newline at end of file
