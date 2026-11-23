@@ -29,7 +29,7 @@ describe("MiniAppCertificateReady QR", () => {
     const code = getCertificateCodeForApi(cert);
     expect(await screen.findByTestId("mini-cert-code")).toHaveTextContent(code);
 
-    const img = await screen.findByTestId("mini-cert-qr", {}, { timeout: 15_000 });
+    const img = await screen.findByTestId("specialist-certificate-preview-qr", {}, { timeout: 15_000 });
     await waitFor(
       () => {
         const src = img.getAttribute("src") ?? "";

@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
+import { useMemo, useState } from "react";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import {
   clientVisibleDiscountSummary,
   getCertificateCodeForApi,
   isTestCertificateUrl,
   resolveCertificatePageUrl,
+  storeCertificateDisplayCode,
 } from "@/lib/certificate-url";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { RemcardApiError, remcardFetchBlob } from "@/lib/api-client";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
+import { buildIssuedCertificatePreview } from "@/lib/certificate-issued-preview";
+import { PartnerClientCertificateCard } from "@/components/recommendations/PartnerClientCertificateCard";
+import { CertificateResultIssuedRecipientPolicies } from "@/components/recommendations/CertificateResultIssuedRecipientPolicies";
 import { MiniAppSubpage } from "./MiniAppSubpage";
 import { MiniIconCopy } from "./MiniAppIcons";
 import styles from "./mini-app.module.css";
@@ -21,50 +24,32 @@ type Props = {
   onBack: () => void;
 };
 
-function formatValidUntil(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("ru-RU");
+function collectOfferLines(certificate: StoreCertificate) {
+  return (certificate.partners ?? []).flatMap((partner) =>
+    partner.categories.map((cat) => ({
+      key: `${partner.storeUserId}-${cat.category}`,
+      partnerName: partner.storeName,
+      categoryLabel: displayCategoryLabel(cat.category, cat.categoryLabel),
+      discountPercent: cat.discountPercent,
+    })),
+  );
 }
 
 export function MiniAppCertificateReady({ certificate, onBack }: Props) {
   const pageUrl = useMemo(() => resolveCertificatePageUrl(certificate), [certificate]);
-  const code = certificate.promoCode?.trim() || getCertificateCodeForApi(certificate) || "";
-  const program =
-    certificate.partners?.[0]?.categories?.[0]?.categoryLabel ||
-    displayCategoryLabel(
-      certificate.partners?.[0]?.categories?.[0]?.category ?? "",
-      certificate.partners?.[0]?.categories?.[0]?.categoryLabel,
-    );
-  const clientName =
-    certificate.clientUser?.displayName?.trim() ||
-    (certificate as StoreCertificate & { agentClient?: { displayName?: string | null } }).agentClient
-      ?.displayName?.trim() ||
-    "";
-  const programTitle = program?.trim() || "Программа";
+  const shownCode = storeCertificateDisplayCode(certificate);
   const discountSummary = clientVisibleDiscountSummary(certificate);
-  const validUntilLabel = formatValidUntil(certificate.validUntil);
+  const offerLines = useMemo(() => collectOfferLines(certificate), [certificate]);
 
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const issuedPreview = useMemo(
+    () => buildIssuedCertificatePreview(certificate, shownCode, pageUrl),
+    [certificate, shownCode, pageUrl],
+  );
+
   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [linkCopyState, setLinkCopyState] = useState<"idle" | "ok" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void QRCode.toDataURL(pageUrl, { margin: 4, width: 200, color: { dark: "#1b1f1a", light: "#ffffff" } })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [pageUrl]);
 
   function openExternal(url: string) {
     const host = detectMiniAppHost();
@@ -134,67 +119,79 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
   }
 
   return (
-    <MiniAppSubpage
-      title="Сертификат готов"
-      lead="Покажите QR-код или поделитесь ссылкой с клиентом."
-      onBack={onBack}
-    >
-      <div className={styles.certResultCard}>
-        {qrDataUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={qrDataUrl}
-            alt=""
-            className={styles.certQr}
-            width={200}
-            height={200}
-            data-testid="mini-cert-qr"
-          />
-        ) : (
-          <p className={styles.scanNotice}>QR недоступен</p>
-        )}
+    <MiniAppSubpage title="Сертификат готов" lead="Покажите QR-код или поделитесь ссылкой с клиентом." onBack={onBack}>
+      <div className={styles.lkCertWrap} data-testid="recommendation-create-success">
+        <div className={styles.lkCertBanner}>Готово — документ создан</div>
+        <div data-testid="mini-cert-ready-card">
+          {issuedPreview.kind === "policy-dark" ? (
+            <PartnerClientCertificateCard
+              model={issuedPreview.model}
+              policyRows={issuedPreview.rows}
+            />
+          ) : (
+            <>
+              <PartnerClientCertificateCard model={issuedPreview.model} />
+              <CertificateResultIssuedRecipientPolicies certificate={certificate} />
+            </>
+          )}
+        </div>
+        {pageUrl ? (
+          <button
+            type="button"
+            className={styles.lkCertPublicLink}
+            data-testid="certificate-public-view"
+            data-cert-action="preview"
+            onClick={() => openExternal(pageUrl)}
+          >
+            Посмотреть как клиент
+          </button>
+        ) : null}
+        <details className={styles.lkCertDetails}>
+          <summary>Условия приёма</summary>
+          {offerLines.length > 0 ? (
+            <ul className={styles.lkCertOfferList}>
+              {offerLines.map((line) => (
+                <li key={line.key}>
+                  {line.partnerName} · {line.categoryLabel}: скидка {line.discountPercent}%
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.scanNotice}>{discountSummary}</p>
+          )}
+        </details>
         <p className={styles.certCode} data-testid="mini-cert-code">
-          {code}
+          {shownCode}
         </p>
-        <p className={styles.certMetaTitle}>{programTitle}</p>
-        {clientName ? <p className={styles.certMetaClient}>{clientName}</p> : null}
-        <p className={styles.scanNotice}>{discountSummary}</p>
-        {validUntilLabel ? <p className={styles.scanNotice}>Действует до {validUntilLabel}</p> : null}
+        <div className={styles.lkCertActions}>
+          <button type="button" className={styles.primaryBtn} onClick={() => void copyText(shownCode, "code")}>
+            <MiniIconCopy />
+            {copyState === "ok" ? "Скопировано" : "Скопировать код"}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            disabled={!pageUrl}
+            onClick={() => void copyText(pageUrl, "link")}
+          >
+            {linkCopyState === "ok" ? "Ссылка скопирована" : "Скопировать ссылку"}
+          </button>
+          <button type="button" className={styles.secondaryBtn} disabled={!pageUrl} onClick={() => void shareLink()}>
+            Поделиться
+          </button>
+          <button type="button" className={styles.secondaryBtn} disabled={pdfLoading} onClick={() => void downloadPdf()}>
+            {pdfLoading ? "Загрузка PDF…" : "Скачать PDF"}
+          </button>
+        </div>
+        {pdfError ? (
+          <p className={styles.scanBad} role="alert">
+            {pdfError}
+          </p>
+        ) : null}
+        {isTestCertificateUrl(pageUrl) ? (
+          <p className={styles.scanNotice}>Тестовый контур — не для реальных клиентов.</p>
+        ) : null}
       </div>
-      {pageUrl ? (
-        <button type="button" className={styles.secondaryBtn} onClick={() => openExternal(pageUrl)}>
-          Посмотреть как клиент
-        </button>
-      ) : null}
-      <button type="button" className={styles.primaryBtn} onClick={() => void copyText(code, "code")}>
-        <MiniIconCopy />
-        {copyState === "ok" ? "Скопировано" : "Скопировать код"}
-      </button>
-      <button
-        type="button"
-        className={styles.secondaryBtn}
-        disabled={!pageUrl}
-        onClick={() => void copyText(pageUrl, "link")}
-      >
-        {linkCopyState === "ok" ? "Ссылка скопирована" : "Скопировать ссылку"}
-      </button>
-      <button type="button" className={styles.secondaryBtn} disabled={!pageUrl} onClick={() => void shareLink()}>
-        Поделиться
-      </button>
-      <button type="button" className={styles.secondaryBtn} disabled={pdfLoading} onClick={() => void downloadPdf()}>
-        {pdfLoading ? "Загрузка PDF…" : "Скачать PDF"}
-      </button>
-      {pdfError ? (
-        <p className={styles.scanBad} role="alert">
-          {pdfError}
-        </p>
-      ) : null}
-      {isTestCertificateUrl(pageUrl) ? (
-        <p className={styles.scanNotice}>Тестовый контур — не для реальных клиентов.</p>
-      ) : null}
-      <button type="button" className={styles.secondaryBtn} onClick={onBack}>
-        Вернуться в кабинет
-      </button>
     </MiniAppSubpage>
   );
 }

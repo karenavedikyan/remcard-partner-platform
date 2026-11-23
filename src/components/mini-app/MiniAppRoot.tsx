@@ -412,26 +412,19 @@ export function MiniAppRoot({
   if (screen === "create") {
     return (
       <div className={styles.shell}>
-        <MiniAppSubpage
-          title="Новый сертификат"
-          lead="Выберите программу и клиента из доступных в вашем кабинете."
+        <MiniAppCertificateCreate
+          platform={platform}
+          bootstrap={bootstrap}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
+          fixtureCreateSeed={fixtureCreateSeed}
+          fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
           onBack={() => setScreen("home")}
-        >
-          <div className={styles.createWrap}>
-            <MiniAppCertificateCreate
-              platform={platform}
-              bootstrap={bootstrap}
-              branchId={branchId}
-              embeddedContext={embeddedContext}
-              fixtureCreateSeed={fixtureCreateSeed}
-              fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
-              onCreated={(cert) => {
-                setCreatedCertificate(cert);
-                setScreen("certificate-ready");
-              }}
-            />
-          </div>
-        </MiniAppSubpage>
+          onCreated={(cert) => {
+            setCreatedCertificate(cert);
+            setScreen("certificate-ready");
+          }}
+        />
       </div>
     );
   }

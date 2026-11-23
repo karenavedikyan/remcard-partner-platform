@@ -1,0 +1,11 @@
+Branch: cursor/remcard-mini-cert-prof-20261123
+Base: release/clients-qa-fixes-20261121 @ 1ef028e9706cf9ad2c756f07587dadc4be2c1933
+BE: no navigator changes (reuse existing GET/POST mini-app certificate endpoints at acceptance SHA fbaa35f7)
+
+npx vitest run \
+  src/components/mini-app/MiniAppCertificateCreate.test.tsx \
+  src/lib/mini-app/mini-certificate-wizard.test.ts \
+  src/lib/mini-app/mini-certificate-create-draft.test.ts \
+  src/components/mini-app/MiniAppCertificateReady.qr.test.tsx
+
+Result: 4 files, 12 tests passed (2026-11-23)
