@@ -329,6 +329,8 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/scan$/ },
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/certificate$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/mini-app\/certificate\/options$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/store\/order\/preview$/ },
+    { methods: new Set(["POST"]), pattern: /^\/api\/pro\/mini-app\/store\/order$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/store\/scan$/ },
     {
       methods: new Set(["GET", "POST"]),
