@@ -117,7 +117,20 @@ export const MINI_WALLET_FIXTURES: Record<MiniAppBootstrap["role"], SettlementsR
   },
   company: {
     coverageNote: "Синтетические данные приёмки.",
-    receivable: [],
+    receivable: [
+      {
+        ...baseRow,
+        id: "mw-co-in-1",
+        orderId: "ord-co-in-1",
+        counterpartyId: "store-demo-2",
+        counterpartyName: "СтройДвор",
+        amount: 12_480,
+        pendingAmount: 3_200,
+        basis: "Вознаграждение компании",
+        status: "CONFIRMED",
+        createdAt: "2026-10-06T10:00:00.000Z",
+      },
+    ],
     payable: [
       {
         ...baseRow,
@@ -125,14 +138,23 @@ export const MINI_WALLET_FIXTURES: Record<MiniAppBootstrap["role"], SettlementsR
         orderId: "ord-co-out-1",
         counterpartyId: "store-demo-1",
         counterpartyName: "Магазин «Маяк»",
-        amount: 9_600,
+        amount: 11_200,
+        pendingAmount: 5_500,
         basis: "Вознаграждение магазина",
         status: "CONFIRMED",
         createdAt: "2026-10-07T10:00:00.000Z",
       },
     ],
     completed: [],
+    canSwitchBranchLedgerScope: true,
   },
+};
+
+export const MINI_WALLET_EMPTY_FIXTURE: SettlementsResponse = {
+  receivable: [],
+  payable: [],
+  completed: [],
+  coverageNote: "",
 };
 
 export function miniWalletFixtureForRole(role: MiniAppBootstrap["role"]): SettlementsResponse {

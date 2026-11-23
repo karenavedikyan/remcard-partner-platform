@@ -189,6 +189,108 @@
   pointer-events: none;
 }
 
+.walletCardInteractive {
+  box-sizing: border-box;
+  min-height: 188px;
+  padding: 0;
+  cursor: default;
+}
+
+.walletCardInteractive .walletBody {
+  padding-bottom: 0;
+}
+
+.walletCardInteractive .walletNotice {
+  color: #d6d8dd;
+}
+
+.walletCardBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+}
+
+.walletHomeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: #ffffff1a;
+}
+
+.walletHomeSwitch button,
+.walletRetryBtn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #e1e2e6;
+  padding: 0 clamp(5px, 2.8vw, 12px);
+  min-height: 28px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.walletHomeSwitch button[aria-pressed="true"] {
+  background: #fff;
+  color: #1b1e24;
+}
+
+.walletRetryBtn {
+  min-height: 34px;
+  background: #ffffff1a;
+}
+
+.walletCardInteractive .walletCardFab {
+  position: static;
+  flex: 0 0 34px;
+  margin-left: auto;
+  border: 0;
+  pointer-events: auto;
+}
+
+.walletCardSingle {
+  min-height: 176px;
+  padding-bottom: 36px;
+}
+
+.walletCardSingle .walletCardBar {
+  display: contents;
+}
+
+.walletCardSingle .walletCardFab {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.walletCardSingle .walletCardFab span {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+
+.walletCardInteractive button {
+  cursor: pointer;
+}
+
+.walletCardInteractive button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+
 .miniCreateForm {
   display: flex;
   flex-direction: column;
@@ -268,6 +370,221 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.branchButtonLeft svg,
+.branchButtonRight {
+  flex-shrink: 0;
+}
+
+.branchButtonEmpty {
+  border-color: #9f1239;
+  background: #fdf3f5;
+  color: #9f1239;
+  text-align: left;
+}
+
+.branchButtonText {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.branchButtonText small {
+  color: #6f5f68;
+}
+
+.branchButtonRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9f1239;
+  font-size: 0.8rem;
+}
+
+.mwWorkplaceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 4px 8px;
+  padding: 10px 12px;
+  border: 1px solid #e8dde4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.mwWorkplaceSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: #9f1239;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mwEmptyRoot {
+  display: grid;
+  gap: 14px;
+}
+
+.mwEmptyHero {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e8dde4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.mwEmptyCard {
+  border-radius: 14px;
+  background: linear-gradient(145deg, #1f2228, #2a2d35);
+  color: #f2f3f5;
+  padding: 14px;
+}
+
+.mwEmptyCardBrand {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.mwEmptyCardSum {
+  margin-top: 18px;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.mwEmptyCardFoot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 0.72rem;
+  color: #c5c8ce;
+}
+
+.mwEmptyHeroText {
+  display: grid;
+  gap: 8px;
+}
+
+.mwEmptyKicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9f1239;
+}
+
+.mwEmptyTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #35252f;
+}
+
+.mwEmptyLead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #6f5f68;
+}
+
+.mwEmptySteps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.mwEmptyStep {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f7f2f4;
+  border: 1px solid #efe6ea;
+}
+
+.mwEmptyStepNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6f5f68;
+}
+
+.mwEmptyStepIco {
+  width: 22px;
+  height: 22px;
+  color: #9f1239;
+}
+
+.mwEmptyStepBody {
+  display: grid;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: #5c4d56;
+}
+
+.mwEmptyStepBody strong {
+  color: #35252f;
+}
+
+.mwEmptyFoot,
+.mwEmptyDisclaimer {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #6f5f68;
+}
+
+.mwBranchDenied {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mwBranchDeniedTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #35252f;
+}
+
+.mwBranchDeniedLead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #5c4d56;
+}
+
+.mwBranchDeniedCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.mwBranchDeniedIcon {
+  font-size: 1.25rem;
 }
 
 .quickSection {
@@ -1321,45 +1638,95 @@
 
 @media (prefers-color-scheme: dark) {
   .shell {
-    background: #1a1719;
-    color: #f2ecef;
+    background: #171a17;
+    color: #f0f1ec;
   }
 
+  .profBrandText,
+  .listNavItem,
+  .backBtn,
   .heroTitle,
   .subpageTitle,
   .mwSummaryHeroValue,
   .mwDirTabSum,
   .mwPartnerName,
-  .mwStatValue {
-    color: #f7f2f4;
+  .mwStatValue,
+  .mwEmptyTitle {
+    color: #f0f1ec;
   }
 
   .heroIntro,
+  .quickLabel,
+  .branchButtonText small,
+  .workplacePin,
   .mwStatLabel,
   .mwStatNote,
   .mwDirTabLabel,
+  .mwSummaryHeroLabel,
   .mwSummaryHeroHint,
   .mwPartnerMeta,
-  .scanNotice {
-    color: #b9aab2;
+  .scanNotice,
+  .mwEmptyLead,
+  .mwEmptyFoot,
+  .mwEmptyDisclaimer {
+    color: #b5bdb3;
   }
 
   .mwDirTab,
+  .mwScopeBtn,
   .mwSummary,
   .mwChip,
   .mwPartnerGroup,
   .mwScheduleRow,
   .branchButton,
-  .secondaryBtn {
-    background: #2a2528;
-    border-color: #443b41;
-    color: #f2ecef;
+  .branchOption,
+  .actionTileSecondary,
+  .secondaryBtn,
+  .mwWorkplaceRow,
+  .mwEmptyHero,
+  .mwEmptyStep,
+  .mwBranchDeniedCard {
+    background: #202520;
+    border-color: #394038;
+    color: #f0f1ec;
   }
 
   .mwDirTabActive,
+  .mwScopeBtnActive,
   .mwChipActive {
-    background: #352a30;
+    background: #343a34;
     border-color: #7a4a58;
+  }
+
+  .listNav,
+  .listNavItem {
+    border-color: #394038;
+  }
+
+  .actionTilePrimary,
+  .actionRowPrimary {
+    background: #a83c38;
+  }
+
+  .actionIconSecondary {
+    background: #4b2633;
+    color: #ffb6c7;
+  }
+
+  .branchButtonRight,
+  .mwWorkplaceSwitch {
+    color: #ffb6c7;
+  }
+
+  .branchButtonEmpty {
+    border-color: #9b5f69;
+    background: #382827;
+    color: #ffb6c7;
+  }
+
+  .branchOptionActive {
+    border-color: #d08091;
+    box-shadow: 0 0 0 1px #d08091;
   }
 
   .blockedPanel {

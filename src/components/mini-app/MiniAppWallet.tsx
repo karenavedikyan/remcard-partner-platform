@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { RemcardApiError } from "@/lib/api-client";
+import { useEffect, useMemo, useState } from "react";
 import { formatHistoryTotalParts, formatIsoShort } from "@/lib/wallet-accruals/format";
 import { formatMoneyRub } from "@/lib/history-format";
 import { scheduleBadgeExtra } from "@/lib/wallet-accruals/detail-buckets";
 import { miniAppFetchWalletSettlements } from "@/lib/mini-app/api";
-import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
+import type { MiniAppActionId, MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
+import { classifyMiniWalletFailure, miniWalletFailureMessage, type MiniWalletFailure } from "@/lib/mini-app/wallet/access-errors";
 import { computeMiniWalletCalc, type MiniWalletFilter, miniWalletIncomingOnly } from "@/lib/mini-app/wallet/calc";
+import { miniWalletEmptyAction, miniWalletShowsGlobalEmptyState } from "@/lib/mini-app/wallet/empty";
 import { miniWalletFixtureForRole } from "@/lib/mini-app/wallet/fixtures";
 import {
   miniWalletSettlementsSearchParams,
@@ -16,16 +17,17 @@ import {
   type MiniWalletLedgerScope,
 } from "@/lib/mini-app/wallet/scope";
 import type { SettlementsResponse } from "@/lib/settlements-types";
+import type { WalletDirection } from "@/lib/wallet-accruals/types";
 import { MiniAppSubpage } from "./MiniAppSubpage";
+import { MiniAppWalletEmpty } from "./MiniAppWalletEmpty";
+import { MiniAppWalletBranchDenied } from "./MiniAppWalletBranchDenied";
+import { MiniIconChevron, MiniIconPin } from "./MiniAppIcons";
 import styles from "./mini-app.module.css";
-
-type WalletDirection = "in" | "out";
 
 type LoadState =
   | { status: "loading" }
   | { status: "ok"; data: SettlementsResponse }
-  | { status: "forbidden"; message: string }
-  | { status: "error"; message: string; retryable: true };
+  | { status: MiniWalletFailure };
 
 type Props = {
   platform: MiniAppPlatform;
@@ -33,8 +35,14 @@ type Props = {
   branchId: string | null;
   embeddedContext: MiniAppEmbeddedContext;
   fixtureMode?: boolean;
+  fixtureWalletData?: SettlementsResponse | null;
+  initialDirection?: WalletDirection;
+  initialData?: SettlementsResponse | null;
+  onDirectionChange?: (direction: WalletDirection) => void;
   onBack: () => void;
   onOpenProfSettlements: (href: string) => void;
+  onOpenBranchPicker?: () => void;
+  onWalletAction?: (action: MiniAppActionId) => void;
 };
 
 export function MiniAppWallet({
@@ -43,61 +51,87 @@ export function MiniAppWallet({
   branchId,
   embeddedContext,
   fixtureMode = false,
+  fixtureWalletData = null,
+  initialDirection = "in",
+  initialData = null,
+  onDirectionChange,
   onBack,
   onOpenProfSettlements,
+  onOpenBranchPicker,
+  onWalletAction,
 }: Props) {
   const incomingOnly = miniWalletIncomingOnly(bootstrap.role);
-  const [direction, setDirection] = useState<WalletDirection>("in");
+  const [direction, setDirection] = useState<WalletDirection>(incomingOnly ? "in" : initialDirection);
+  function selectDirection(next: WalletDirection) {
+    setDirection(next);
+    setExpandedPartner(null);
+    onDirectionChange?.(next);
+  }
   const [filter, setFilter] = useState<MiniWalletFilter>("all");
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [ledgerScope, setLedgerScope] = useState<MiniWalletLedgerScope>(() =>
     bootstrap.role === "store" || bootstrap.role === "company" ? "branch" : "all",
   );
-  const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
+  const [loadState, setLoadState] = useState<LoadState>(() =>
+    initialData ? { status: "ok", data: initialData } : { status: "loading" },
+  );
+  const [attempt, setAttempt] = useState(0);
+  const [canSwitchLedger, setCanSwitchLedger] = useState(Boolean(initialData?.canSwitchBranchLedgerScope));
+
+  function selectLedgerScope(next: MiniWalletLedgerScope) {
+    if (next === ledgerScope) return;
+    setLoadState({ status: "loading" });
+    setExpandedPartner(null);
+    setLedgerScope(next);
+    setAttempt((n) => n + 1); // The home snapshot is only valid for the initial hand-off.
+  }
+
+  const canSwitchBranch =
+    (bootstrap.role === "store" || bootstrap.role === "company") &&
+    bootstrap.branches.length > 1 &&
+    Boolean(onOpenBranchPicker);
 
   const showLedgerScopeToggle =
     !fixtureMode &&
-    loadState.status === "ok" &&
-    loadState.data.canSwitchBranchLedgerScope &&
+    canSwitchLedger &&
     (bootstrap.role === "store" || bootstrap.role === "company") &&
     Boolean(branchId);
 
-  const loadWallet = useCallback(async () => {
-    setLoadState({ status: "loading" });
-    if (fixtureMode) {
-      setLoadState({ status: "ok", data: miniWalletFixtureForRole(bootstrap.role) });
+  useEffect(() => {
+    const defaultScope = bootstrap.role === "store" || bootstrap.role === "company" ? "branch" : "all";
+    if (initialData && ledgerScope === defaultScope && attempt === 0) {
+      setLoadState({ status: "ok", data: initialData });
       return;
     }
-    try {
-      const settlementsSearchParams = miniWalletSettlementsSearchParams({
-        bootstrap,
-        ledgerScope,
-        branchId,
-      });
-      const data = await miniAppFetchWalletSettlements(platform, {
-        embeddedContext,
-        settlementsSearchParams,
-      });
-      setLoadState({ status: "ok", data });
-    } catch (err) {
-      if (err instanceof RemcardApiError && (err.status === 403 || err.status === 404)) {
-        setLoadState({
-          status: "forbidden",
-          message: err.message || "Нет доступа к кошельку в этом филиале.",
-        });
-        return;
-      }
+    if (fixtureMode) {
       setLoadState({
-        status: "error",
-        message: err instanceof Error ? err.message : "Не удалось загрузить кошелёк",
-        retryable: true,
+        status: "ok",
+        data: fixtureWalletData ?? miniWalletFixtureForRole(bootstrap.role),
       });
+      return;
     }
-  }, [bootstrap, branchId, embeddedContext, fixtureMode, ledgerScope, platform]);
-
-  useEffect(() => {
-    void loadWallet();
-  }, [loadWallet]);
+    let active = true;
+    setLoadState({ status: "loading" });
+    void (async () => {
+      try {
+        const settlementsSearchParams = miniWalletSettlementsSearchParams({ bootstrap, ledgerScope, branchId });
+        const data = await miniAppFetchWalletSettlements(platform, { embeddedContext, settlementsSearchParams });
+        if (active) {
+          setCanSwitchLedger(Boolean(data.canSwitchBranchLedgerScope));
+          setLoadState({ status: "ok", data });
+        }
+      } catch (err) {
+        if (active) {
+          const status = classifyMiniWalletFailure(err);
+          if (status === "forbidden" || status === "session_expired") setCanSwitchLedger(false);
+          setLoadState({ status });
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [attempt, bootstrap, branchId, embeddedContext, fixtureMode, fixtureWalletData, initialData, ledgerScope, platform]);
 
   const calc = useMemo(() => {
     if (loadState.status !== "ok") return null;
@@ -107,13 +141,19 @@ export function MiniAppWallet({
   const dirCalc = calc ? (direction === "in" ? calc.in : calc.out) : null;
   const totals = dirCalc?.totals;
   const paidLabel = direction === "in" ? "Получено" : "Выплачено";
-  const heroLabel = direction === "in" ? "К получению" : "К оплате";
+  const heroLabel = direction === "in" ? "Начислено к получению" : "Начислено к оплате";
   const heroHint =
     direction === "in"
-      ? "Подтверждённые суммы, ещё не полученные"
-      : "Подтверждённые обязательства к перечислению";
+      ? "Подтверждённые обязательства партнёров перед вами"
+      : "Подтверждённые обязательства перед вашими партнёрами";
 
   const settlementsUrl = profWalletCabinetHref(bootstrap);
+  const profLinkLabel = incomingOnly
+    ? "Выплаты и реестр в полном кабинете"
+    : "Открыть выплаты в полном кабинете";
+
+  const showGlobalEmpty =
+    loadState.status === "ok" && miniWalletShowsGlobalEmptyState(filter, loadState.data);
 
   const filterChips: Array<{ id: MiniWalletFilter; label: string; count: number }> = totals
     ? [
@@ -130,13 +170,41 @@ export function MiniAppWallet({
       ]
     : [];
 
+  const entityLine =
+    bootstrap.entityLine ??
+    (bootstrap.displayName && bootstrap.role !== "store" && bootstrap.role !== "company"
+      ? bootstrap.displayName
+      : null);
+
   return (
-    <MiniAppSubpage title="Кошелёк" onBack={onBack}>
+    <MiniAppSubpage
+      title="Кошелёк"
+      onBack={onBack}
+      lead={
+        incomingOnly
+          ? "Вознаграждения от партнёров по подтверждённым покупкам."
+          : "Взаиморасчёты с партнёрами по подтверждённым покупкам."
+      }
+    >
+      {entityLine ? <p className={styles.heroIntro}>{entityLine}</p> : null}
       {bootstrap.presentation.cardIdentifier ? (
         <p className={styles.scanNotice}>{bootstrap.presentation.cardIdentifier}</p>
       ) : null}
-      {bootstrap.workplaceLabel ? (
+
+      {canSwitchBranch ? (
+        <div className={styles.mwWorkplaceRow} data-testid="mini-wallet-workplace">
+          <span className={styles.workplacePin}>
+            <MiniIconPin />
+            {bootstrap.workplaceLabel ?? "Сейчас филиал не выбран"}
+          </span>
+          <button type="button" className={styles.mwWorkplaceSwitch} onClick={onOpenBranchPicker}>
+            {bootstrap.workplaceLabel ? "Сменить точку" : "Выбрать точку"}
+            <MiniIconChevron />
+          </button>
+        </div>
+      ) : bootstrap.workplaceLabel ? (
         <p className={styles.workplacePin} data-testid="mini-wallet-workplace">
+          <MiniIconPin />
           {bootstrap.workplaceLabel}
         </p>
       ) : null}
@@ -147,17 +215,19 @@ export function MiniAppWallet({
             type="button"
             className={`${styles.mwScopeBtn} ${ledgerScope === "branch" ? styles.mwScopeBtnActive : ""}`}
             data-testid="mini-wallet-scope-branch"
-            onClick={() => setLedgerScope("branch")}
+            aria-pressed={ledgerScope === "branch"}
+            onClick={() => selectLedgerScope("branch")}
           >
-            Рабочий филиал
+            По точке: {bootstrap.workplaceLabel ?? "филиал"}
           </button>
           <button
             type="button"
             className={`${styles.mwScopeBtn} ${ledgerScope === "all" ? styles.mwScopeBtnActive : ""}`}
             data-testid="mini-wallet-scope-all"
-            onClick={() => setLedgerScope("all")}
+            aria-pressed={ledgerScope === "all"}
+            onClick={() => selectLedgerScope("all")}
           >
-            Все доступные
+            Все филиалы ({bootstrap.branches.length})
           </button>
         </div>
       ) : null}
@@ -168,9 +238,17 @@ export function MiniAppWallet({
         </p>
       ) : null}
 
+      {loadState.status === "branch_denied" ? (
+        <MiniAppWalletBranchDenied
+          branchLabel={bootstrap.workplaceLabel ?? "Выбранный филиал"}
+          canPickOtherBranch={canSwitchBranch}
+          onPickOtherBranch={onOpenBranchPicker}
+        />
+      ) : null}
+
       {loadState.status === "forbidden" ? (
         <div className={styles.blockedPanel} role="alert" data-testid="mini-wallet-forbidden">
-          <p>{loadState.message}</p>
+          <p>{miniWalletFailureMessage.forbidden}</p>
           <button
             type="button"
             className={styles.secondaryBtn}
@@ -181,18 +259,32 @@ export function MiniAppWallet({
         </div>
       ) : null}
 
-      {loadState.status === "error" ? (
-        <div className={styles.blockedPanel} role="alert" data-testid="mini-wallet-error">
-          <p>{loadState.message}</p>
-          {loadState.retryable ? (
-            <button type="button" className={styles.secondaryBtn} onClick={() => void loadWallet()}>
+      {loadState.status === "error" || loadState.status === "session_expired" || loadState.status === "branch_required" ? (
+        <div className={styles.blockedPanel} role="alert" data-testid={`mini-wallet-${loadState.status}`}>
+          <p>{miniWalletFailureMessage[loadState.status]}</p>
+          {loadState.status === "error" ? (
+            <button type="button" className={styles.secondaryBtn} onClick={() => setAttempt((n) => n + 1)}>
               Повторить загрузку
             </button>
+          ) : null}
+          {loadState.status === "branch_required" && onOpenBranchPicker ? (
+            <button type="button" className={styles.secondaryBtn} onClick={onOpenBranchPicker}>Выбрать филиал</button>
           ) : null}
         </div>
       ) : null}
 
-      {calc && totals ? (
+      {showGlobalEmpty && loadState.status === "ok" ? (
+        <MiniAppWalletEmpty
+          role={bootstrap.role}
+          identifierLine={bootstrap.presentation.cardIdentifier}
+          primaryActionId={miniWalletEmptyAction(bootstrap, loadState.data.walletReadScope)}
+          onPrimaryAction={onWalletAction}
+          onOpenProfSettlements={() => onOpenProfSettlements(settlementsUrl)}
+          profLinkLabel={profLinkLabel}
+        />
+      ) : null}
+
+      {calc && totals && !showGlobalEmpty ? (
         <>
           {!calc.incomingOnly ? (
             <div
@@ -207,7 +299,7 @@ export function MiniAppWallet({
                 aria-selected={direction === "in"}
                 className={`${styles.mwDirTab} ${direction === "in" ? styles.mwDirTabActive : ""}`}
                 data-testid="mini-wallet-tab-in"
-                onClick={() => setDirection("in")}
+                onClick={() => selectDirection("in")}
               >
                 <span className={styles.mwDirTabLabel}>Мне должны</span>
                 <span className={styles.mwDirTabSum}>
@@ -221,7 +313,7 @@ export function MiniAppWallet({
                 aria-selected={direction === "out"}
                 className={`${styles.mwDirTab} ${direction === "out" ? styles.mwDirTabActive : ""}`}
                 data-testid="mini-wallet-tab-out"
-                onClick={() => setDirection("out")}
+                onClick={() => selectDirection("out")}
               >
                 <span className={styles.mwDirTabLabel}>Я должен</span>
                 <span className={styles.mwDirTabSum}>
@@ -282,6 +374,7 @@ export function MiniAppWallet({
                 type="button"
                 className={`${styles.mwChip} ${filter === chip.id ? styles.mwChipActive : ""}`}
                 data-testid={`mini-wallet-filter-${chip.id}`}
+                aria-pressed={filter === chip.id}
                 onClick={() => {
                   setFilter(chip.id);
                   setExpandedPartner(null);
@@ -321,7 +414,7 @@ export function MiniAppWallet({
           ) : (
             <section className={styles.mwPartners} aria-label="Контрагенты">
               {dirCalc?.partnerGroups.length === 0 ? (
-                <p className={styles.scanNotice} data-testid="mini-wallet-empty">
+                <p className={styles.scanNotice} data-testid="mini-wallet-filter-empty">
                   {totals.confirmedRub === 0 &&
                   totals.waitingRub === 0 &&
                   totals.suspendedRub === 0 &&
@@ -375,9 +468,7 @@ export function MiniAppWallet({
             data-testid="mini-wallet-full-cabinet"
             onClick={() => onOpenProfSettlements(settlementsUrl)}
           >
-            {incomingOnly
-              ? "Выплаты и реестр в полном кабинете"
-              : "Открыть выплаты в полном кабинете"}
+            {profLinkLabel}
           </button>
         </>
       ) : null}

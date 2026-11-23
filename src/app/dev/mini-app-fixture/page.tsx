@@ -13,7 +13,12 @@ function MiniAppFixtureInner() {
   if (!row) notFound();
   return (
     <div data-mini-app-synthetic-fixture="1">
-      <MiniAppRoot fixtureBootstrap={row.bootstrap} fixturePlatform={row.platform} />
+      <MiniAppRoot
+        fixtureBootstrap={row.bootstrap}
+        fixturePlatform={row.platform}
+        initialScreen={row.initialScreen}
+        fixtureWalletData={row.fixtureWalletData}
+      />
     </div>
   );
 }
