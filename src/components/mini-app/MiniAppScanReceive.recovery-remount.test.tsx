@@ -22,6 +22,7 @@ vi.mock("@/lib/mini-app/api", () => ({
 vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
   useReceivingAppealScannerHandoff: () => ({
     ordinaryAppealRequired: true,
+    ordinaryAppealIntegrationRequired: true,
     crmReadOnlyNotice: null,
     appealId: null,
     linkPhase: "idle",
@@ -32,6 +33,7 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
     beginOrderLinkAfterSuccess: () => undefined,
     retryOrderLinkOnly: () => undefined,
     persistOrdinaryAppealBinding: () => true,
+    prepareOrderAttemptScope: () => undefined,
   }),
 }));
 

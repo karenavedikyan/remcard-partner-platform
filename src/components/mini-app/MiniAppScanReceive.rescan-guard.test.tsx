@@ -17,6 +17,7 @@ vi.mock("@/lib/mini-app/api", () => ({
 vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
   useReceivingAppealScannerHandoff: () => ({
     ordinaryAppealRequired: false,
+    ordinaryAppealIntegrationRequired: false,
     crmReadOnlyNotice: null,
     appealId: null,
     linkPhase: "idle",
@@ -27,6 +28,7 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
     beginOrderLinkAfterSuccess: () => undefined,
     retryOrderLinkOnly: () => undefined,
     persistOrdinaryAppealBinding: () => true,
+    prepareOrderAttemptScope: () => undefined,
   }),
 }));
 
@@ -150,6 +152,7 @@ describe("MiniAppScanReceive rescan guard", () => {
         userId: bootstrap.actorUserId,
         idempotencyKey: "idem-remount",
         status: "unknown",
+        branchId: "b1",
         body: {
           certificateCode: "RC-FIXTURE",
           items: [{ category: "doors", categoryLabel: "Двери", amount: 10000 }],
@@ -181,6 +184,7 @@ describe("MiniAppScanReceive rescan guard", () => {
         userId: bootstrap.actorUserId,
         idempotencyKey: "idem-check",
         status: "unknown",
+        branchId: "b1",
         body: {
           certificateCode: "RC-FIXTURE",
           items: [{ category: "doors", categoryLabel: "Двери", amount: 10000 }],

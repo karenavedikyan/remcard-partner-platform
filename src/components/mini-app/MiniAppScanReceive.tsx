@@ -43,10 +43,12 @@ import {
   NEW_PURCHASE_WARNING,
   prepareStoreOrderRetry,
   releaseStoreOrderAttemptForEdit,
+  STORAGE_SAVE_FAILED_MESSAGE,
   storeOrderAttemptBodiesEqual,
   type OrderPostOutcome,
   type StoreOrderAttemptRecord,
 } from "@/lib/store-order-attempt";
+import { SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE } from "@/lib/scanner-branch-context";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
   defaultRewardDraft,
@@ -159,6 +161,23 @@ export function MiniAppScanReceive({
   const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
   const attemptRestoreDone = useRef(false);
   const recoveryPreviewGen = useRef(0);
+  const [appealRestoreBlocked, setAppealRestoreBlocked] = useState(false);
+  const [appealRestoreError, setAppealRestoreError] = useState("");
+  const [appealRestorePending, setAppealRestorePending] = useState(false);
+  const appealRestoreRef = useRef<Promise<{ ok: true } | { ok: false; message: string }> | null>(
+    null,
+  );
+
+  const isBranchScopedCheckout =
+    bootstrap.branches.length > 1 || Boolean(branchId?.trim());
+
+  const legacyBranchAttempt =
+    isBranchScopedCheckout &&
+    storedAttempt != null &&
+    !storedAttempt.branchId?.trim() &&
+    (storedAttempt.status === "unknown" ||
+      storedAttempt.status === "in_flight" ||
+      storedAttempt.status === "conflict");
 
   const syncStoredAttempt = useCallback(() => {
     setStoredAttempt(loadStoreOrderAttempt(actorUserId));
@@ -188,11 +207,24 @@ export function MiniAppScanReceive({
       if (!fixturePreview) {
         setPhase("recovery");
         if (receiving.ordinaryAppealRequired) {
-          void receiving.restoreOrdinaryAppealForStoredAttempt({
-            userId: actorUserId,
-            record: attempt,
-            isStale: () => false,
-          });
+          setAppealRestorePending(true);
+          appealRestoreRef.current = receiving
+            .restoreOrdinaryAppealForStoredAttempt({
+              userId: actorUserId,
+              record: attempt,
+              isStale: () => false,
+            })
+            .then((restored) => {
+              setAppealRestorePending(false);
+              if (!restored.ok) {
+                setAppealRestoreBlocked(true);
+                setAppealRestoreError(restored.message);
+              }
+              return restored;
+            });
+        }
+        if (!attempt.branchId?.trim() && isBranchScopedCheckout) {
+          return;
         }
         const gen = ++recoveryPreviewGen.current;
         const searchParams = attempt.branchId?.trim() ? { branchId: attempt.branchId.trim() } : undefined;
@@ -212,7 +244,24 @@ export function MiniAppScanReceive({
     } else if (!fixturePreview) {
       setPhase("purchase");
     }
-  }, [actorUserId, fixturePreview, receiving]);
+  }, [actorUserId, fixturePreview, receiving, isBranchScopedCheckout]);
+
+  const awaitAppealRestoreIfNeeded = useCallback(async (): Promise<boolean> => {
+    if (!receiving.ordinaryAppealRequired) {
+      return true;
+    }
+    const pending = appealRestoreRef.current;
+    if (!pending) {
+      return !appealRestoreBlocked;
+    }
+    const restored = await pending;
+    if (!restored.ok) {
+      setAppealRestoreBlocked(true);
+      setAppealRestoreError(restored.message);
+      return false;
+    }
+    return true;
+  }, [appealRestoreBlocked, receiving.ordinaryAppealRequired]);
 
   const purchaseDraftLocked = useMemo(
     () =>
@@ -314,7 +363,25 @@ export function MiniAppScanReceive({
 
   const postStoreOrder = useCallback(
     async (attemptRecord: StoreOrderAttemptRecord, wasRetry: boolean) => {
-      const operationBranchId = attemptRecord.branchId?.trim() || branchId?.trim() || undefined;
+      if (wasRetry) {
+        if (isBranchScopedCheckout && !attemptRecord.branchId?.trim()) {
+          setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
+          return;
+        }
+        const restoreReady = await awaitAppealRestoreIfNeeded();
+        if (!restoreReady) {
+          setSubmitError(appealRestoreError || "Не удалось восстановить контекст CRM для повторной отправки.");
+          return;
+        }
+      }
+      receiving.prepareOrderAttemptScope(attemptRecord.idempotencyKey, wasRetry, {
+        userId: actorUserId,
+        certCode: attemptRecord.body.certificateCode,
+        branchId: attemptRecord.branchId,
+      });
+      const operationBranchId = wasRetry
+        ? attemptRecord.branchId?.trim() || undefined
+        : attemptRecord.branchId?.trim() || branchId?.trim() || undefined;
       submitInFlight.current = true;
       setSubmitting(true);
       setSubmitError("");
@@ -352,11 +419,26 @@ export function MiniAppScanReceive({
         syncStoredAttempt();
       }
     },
-    [actorUserId, applyPostOutcome, branchId, receiving, syncStoredAttempt],
+    [
+      actorUserId,
+      appealRestoreError,
+      applyPostOutcome,
+      awaitAppealRestoreIfNeeded,
+      branchId,
+      isBranchScopedCheckout,
+      receiving,
+      syncStoredAttempt,
+    ],
   );
 
   const checkStoredAttempt = useCallback(async () => {
-    if (submitInFlight.current || submitting || orderConflict || branchAttemptMismatch) return;
+    if (submitInFlight.current || submitting || orderConflict || branchAttemptMismatch) {
+      return;
+    }
+    if (legacyBranchAttempt) {
+      setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
+      return;
+    }
     const prepared = prepareStoreOrderRetry(actorUserId);
     if (!prepared.ok) {
       setSubmitError(
@@ -364,8 +446,20 @@ export function MiniAppScanReceive({
       );
       return;
     }
+    if (isBranchScopedCheckout && !prepared.record.branchId?.trim()) {
+      setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
+      return;
+    }
     await postStoreOrder(prepared.record, true);
-  }, [actorUserId, branchAttemptMismatch, orderConflict, postStoreOrder, submitting]);
+  }, [
+    actorUserId,
+    branchAttemptMismatch,
+    isBranchScopedCheckout,
+    legacyBranchAttempt,
+    orderConflict,
+    postStoreOrder,
+    submitting,
+  ]);
 
   const beginPurchase = useCallback(
     async (raw: string) => {
@@ -535,9 +629,17 @@ export function MiniAppScanReceive({
         return;
       }
       attemptRecord = created.record;
-      if (!receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey)) {
-        // binding optional when CRM read-only
+      if (
+        receiving.ordinaryAppealIntegrationRequired &&
+        !receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey)
+      ) {
+        setSubmitError(STORAGE_SAVE_FAILED_MESSAGE);
+        return;
       }
+    }
+    if (wasRetry && isBranchScopedCheckout && !attemptRecord.branchId?.trim()) {
+      setSubmitError(SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE);
+      return;
     }
     await postStoreOrder(attemptRecord, wasRetry);
   }, [
@@ -549,6 +651,7 @@ export function MiniAppScanReceive({
     actorUserId,
     certCode,
     branchId,
+    isBranchScopedCheckout,
     receiving,
     orderUncertain,
     postStoreOrder,
@@ -563,9 +666,19 @@ export function MiniAppScanReceive({
         ) : null}
         <p className={styles.scanNotice}>Документ: {storedAttempt.body.certificateCode}</p>
         <p className={styles.scanNotice}>{formatAttemptItemsSummary(storedAttempt.body)}</p>
+        {legacyBranchAttempt ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-legacy-branch-attempt">
+            {SCANNER_LEGACY_ATTEMPT_BRANCH_MESSAGE}
+          </p>
+        ) : null}
         {branchAttemptMismatch ? (
           <p className={styles.scanBad} role="alert" data-testid="mini-branch-mismatch">
             {BRANCH_ATTEMPT_MISMATCH_MESSAGE}
+          </p>
+        ) : null}
+        {appealRestoreBlocked ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-appeal-restore-blocked">
+            {appealRestoreError}
           </p>
         ) : null}
         {orderConflict ? (
@@ -585,12 +698,12 @@ export function MiniAppScanReceive({
             {submitError}
           </p>
         ) : null}
-        {!orderConflict && !branchAttemptMismatch ? (
+        {!orderConflict && !branchAttemptMismatch && !legacyBranchAttempt && !appealRestoreBlocked ? (
           <button
             type="button"
             className={styles.primaryBtn}
             data-testid="mini-check-order-result"
-            disabled={submitting}
+            disabled={submitting || appealRestorePending}
             onClick={() => void checkStoredAttempt()}
           >
             {submitting ? "Проверка…" : "Проверить результат"}

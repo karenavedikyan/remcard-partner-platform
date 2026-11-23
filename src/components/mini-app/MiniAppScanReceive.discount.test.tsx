@@ -10,6 +10,7 @@ vi.mock("./QrScanner", () => ({ QrScanner: () => null }));
 vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
   useReceivingAppealScannerHandoff: () => ({
     ordinaryAppealRequired: false,
+    ordinaryAppealIntegrationRequired: false,
     crmReadOnlyNotice: null,
     appealId: null,
     linkPhase: "idle",
@@ -20,6 +21,7 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
     beginOrderLinkAfterSuccess: () => undefined,
     retryOrderLinkOnly: () => undefined,
     persistOrdinaryAppealBinding: () => true,
+    prepareOrderAttemptScope: () => undefined,
   }),
 }));
 
