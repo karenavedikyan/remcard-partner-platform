@@ -1,5 +1,5 @@
-838c0bcab265cc6b1a762a44470b070742f50a1e76d049bf9d6f3e57f80e4154  /agent/repos/remcard-partner-platform/artifacts/mini-app-invite-wizard-20261123/be-from-fbaa35f7.patch
+000b32908d6afebf3041dbc8647427514b0225d7b880a02e68a95f0defafe96c  be-from-fbaa35f7.patch
 BE_BASE=fbaa35f7b646e3b82c630af0753725e8cb379e59
-BE_HEAD=d88742b9133588aeaa7ae0a8e4def9a348c379c6
+BE_HEAD=07c411e4561229b0958a33c133486e8a0c14d9f4
 FE_BASE=1ef028e9706cf9ad2c756f07587dadc4be2c1933
-FE_HEAD=fa165327
+FE_HEAD=ff7a80b2

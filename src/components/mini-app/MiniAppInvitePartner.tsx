@@ -21,9 +21,7 @@ import {
   DEFAULT_GENERAL_PERCENT,
   GENERAL_PARTNERSHIP_CATEGORY,
   inviteRowsToTerms,
-  resolveLinkInviteCreateCategories,
   validateInviteRows,
-  type PartnerSideProfile,
 } from "@/lib/partnership-rules";
 import {
   miniAppCreateDiscussionInvite,
@@ -36,11 +34,15 @@ import type { MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   buildInviteShareText,
   DISCUSSION_MESSAGE_TEMPLATES,
+  clearMiniInviteDraft,
   draftIsDirty,
   formatInviteExpiry,
   INTENDED_PARTNER_OPTIONS,
+  miniInviteDraftKey,
+  readMiniInviteDraft,
   stepFieldErrors,
   termsTemplateText,
+  writeMiniInviteDraft,
   type IntendedPartnerType,
   type MiniInviteCreateResult,
 } from "@/lib/mini-app/invite-wizard";
@@ -87,19 +89,6 @@ function inviteFormReducer(state: InviteFormSnapshot, action: InviteFormAction):
     default:
       return state;
   }
-}
-
-function partnerSideFromBusinessSide(dto: NonNullable<MiniAppInviteContextResponse["inviterBusinessSide"]>): PartnerSideProfile {
-  const partnerType = dto.partnerType?.trim() || null;
-  return {
-    id: dto.principalUserId,
-    partnerType,
-    partnerActivities:
-      partnerType === "STORE" ? ["STORE"] : partnerType === "COMPANY" ? ["COMPANY"] : partnerType ? [partnerType] : [],
-    storeCategories: [...(dto.storeCategories ?? [])],
-    specializations: [...(dto.specializations ?? [])],
-    isStoreOwner: partnerType === "STORE",
-  };
 }
 
 function transportErrorMessage(err: unknown, fallback: string): { message: string; unknownOutcome: boolean } {
@@ -151,24 +140,22 @@ export function MiniAppInvitePartner({
   const nameMax = inviteContext?.nameMaxLength ?? 120;
   const noteMax = inviteContext?.noteMaxLength ?? 400;
 
-  const inviterSide = useMemo(() => {
-    if (!inviteContext?.inviterBusinessSide) return null;
-    return partnerSideFromBusinessSide(inviteContext.inviterBusinessSide);
-  }, [inviteContext]);
+  const serverPlan = inviteContext?.categoryPlan;
+  const draftKey = miniInviteDraftKey(platform, branchId);
 
-  const resolvedCategories = useMemo(() => {
-    if (!inviterSide || kind !== "terms") {
-      return { categories: [] as string[], error: undefined as string | undefined };
-    }
-    return resolveLinkInviteCreateCategories(inviterSide, intendedType);
-  }, [inviterSide, intendedType, kind]);
-
-  const formTargetKey = `mini:link:${resolvedCategories.error ? "blocked" : "ready"}`;
-  const resetKey = buildInviteFormResetKey(formTargetKey, resolvedCategories.categories);
+  const formTargetKey = `mini:link:${intendedType || "none"}:${(serverPlan?.categories ?? []).join("\0")}`;
+  const resetKey = buildInviteFormResetKey(
+    formTargetKey,
+    serverPlan?.categories ?? [],
+  );
 
   const [form, dispatch] = useReducer(
     inviteFormReducer,
-    { resetKey, categories: resolvedCategories.categories, blockedReason: resolvedCategories.error },
+    {
+      resetKey,
+      categories: serverPlan?.categories ?? [],
+      blockedReason: serverPlan?.error,
+    },
     (initial) =>
       createInitialInviteFormState(initial.resetKey, initial.categories, initial.blockedReason),
   );
@@ -178,9 +165,9 @@ export function MiniAppInvitePartner({
       type: "sync",
       resetKey,
       categories: categoriesFromResetKey(resetKey, formTargetKey),
-      blockedReason: resolvedCategories.error,
+      blockedReason: serverPlan?.error,
     });
-  }, [resetKey, resolvedCategories.error, formTargetKey]);
+  }, [resetKey, serverPlan?.error, formTargetKey]);
 
   useEffect(() => {
     if (fixtureInviteLink) {
@@ -212,6 +199,22 @@ export function MiniAppInvitePartner({
           setContextBlocked(ctx.categoryPlan.error);
         }
         setInviteContext(ctx);
+        const stored = readMiniInviteDraft(draftKey);
+        if (stored) {
+          setStep(Math.min(3, Math.max(1, stored.step)) as Step);
+          setPartnerName(stored.partnerName);
+          setIntendedType(stored.intendedType);
+          setTemplateId(stored.templateId);
+          dispatch({ type: "set_note", note: stored.note });
+          if (stored.generalConfirmed) {
+            dispatch({ type: "set_general_confirmed", generalConfirmed: true });
+          }
+          for (let i = 0; i < stored.rows.length; i += 1) {
+            const row = stored.rows[i]!;
+            dispatch({ type: "set_percent", index: i, percent: row.percent });
+            dispatch({ type: "set_excluded", index: i, excluded: row.excluded });
+          }
+        }
       } catch (caught) {
         if (!cancelled) {
           const err = transportErrorMessage(caught, "Не удалось открыть мастер приглашения");
@@ -228,7 +231,59 @@ export function MiniAppInvitePartner({
     return () => {
       cancelled = true;
     };
-  }, [apiOpts, fixtureInviteLink, platform]);
+  }, [apiOpts, draftKey, fixtureInviteLink, platform]);
+
+  useEffect(() => {
+    if (fixtureInviteLink || kind !== "terms" || !intendedType) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const ctx = await miniAppFetchInviteContext(platform, {
+          ...apiOpts,
+          intendedPartnerType: intendedType,
+        });
+        if (!cancelled) setInviteContext(ctx);
+      } catch {
+        // keep previous server plan on refetch failure
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiOpts, fixtureInviteLink, intendedType, kind, platform]);
+
+  useEffect(() => {
+    if (fixtureInviteLink || created || !inviteContext) return;
+    if (!draftIsDirty({ ready: false, step, name: partnerName, note: form.note, intendedType })) {
+      return;
+    }
+    writeMiniInviteDraft(draftKey, {
+      v: 1,
+      step,
+      partnerName,
+      intendedType,
+      templateId,
+      note: form.note,
+      generalConfirmed: form.generalConfirmed,
+      rows: form.rows.map((row) => ({
+        category: row.category,
+        percent: row.percent,
+        excluded: row.excluded,
+      })),
+    });
+  }, [
+    created,
+    draftKey,
+    fixtureInviteLink,
+    form.generalConfirmed,
+    form.note,
+    form.rows,
+    intendedType,
+    inviteContext,
+    partnerName,
+    step,
+    templateId,
+  ]);
 
   const dirty = draftIsDirty({
     ready: Boolean(created),
@@ -239,12 +294,15 @@ export function MiniAppInvitePartner({
   });
 
   const requestBack = useCallback(() => {
+    if (creating) return;
     if (dirty) {
-      const ok = window.confirm("Выйти без сохранения? Введённые данные останутся при возврате на этот экран.");
+      const ok = window.confirm(
+        "Выйти из мастера? Черновик сохранится в этом сеансе, пока вкладка мини-кабинета открыта.",
+      );
       if (!ok) return;
     }
     onBack();
-  }, [dirty, onBack]);
+  }, [creating, dirty, onBack]);
 
   function applyTemplate(nextId: string) {
     setTemplateId(nextId);
@@ -257,8 +315,9 @@ export function MiniAppInvitePartner({
   }
 
   function gotoStep(next: Step) {
+    if (creating) return;
     setFieldErrors({});
-    setCreateError("");
+    if (!unknownOutcome) setCreateError("");
     setStep(next);
   }
 
@@ -274,8 +333,8 @@ export function MiniAppInvitePartner({
       noteMax,
     });
     if (target === 3 && kind === "terms") {
-      if (resolvedCategories.error) {
-        errors.terms = resolvedCategories.error;
+      if (serverPlan?.error) {
+        errors.terms = serverPlan.error;
       } else {
         const active = activeInviteRows(form);
         const validation = validateInviteRows(active);
@@ -310,6 +369,7 @@ export function MiniAppInvitePartner({
           apiOpts,
         );
         const url = `${getAppUrl()}${result.previewPath}`;
+        clearMiniInviteDraft(draftKey);
         setCreated({
           url,
           previewPath: result.previewPath,
@@ -337,6 +397,7 @@ export function MiniAppInvitePartner({
           apiOpts,
         );
         const url = `${getAppUrl()}${result.previewPath}`;
+        clearMiniInviteDraft(draftKey);
         setCreated({
           url,
           previewPath: result.previewPath,
@@ -379,7 +440,7 @@ export function MiniAppInvitePartner({
 
   if (contextLoading) {
     return (
-      <MiniAppSubpage title="Пригласить партнёра" onBack={requestBack}>
+      <MiniAppSubpage title="Пригласить партнёра" onBack={requestBack} backDisabled={creating}>
         <p>Загрузка…</p>
       </MiniAppSubpage>
     );
@@ -421,7 +482,11 @@ export function MiniAppInvitePartner({
         onBack={requestBack}
       >
         <div data-testid="invite-ready">
-          <motionlessInfoCard title="Пригласительное сообщение" body={created.note} />
+          <MotionlessInfoCard
+            testId="invite-ready-message"
+            title="Пригласительное сообщение"
+            body={created.note}
+          />
           {created.kind === "terms" && created.termsSummary.length > 0 ? (
             <details className={`${styles.infoCard} ${styles.inviteDetails}`}>
               <summary>Посмотреть условия приглашения</summary>
@@ -491,11 +556,12 @@ export function MiniAppInvitePartner({
   }
 
   return (
-    <MiniAppSubpage
-      title="Пригласить партнёра"
-      lead={kind === "terms" ? "Ссылка на сотрудничество с условиями" : "Ссылка к обсуждению сотрудничества"}
-      onBack={requestBack}
-    >
+      <MiniAppSubpage
+        title="Пригласить партнёра"
+        lead={kind === "terms" ? "Ссылка на сотрудничество с условиями" : "Ссылка к обсуждению сотрудничества"}
+        onBack={requestBack}
+        backDisabled={creating}
+      >
       <div data-testid="mini-invite-wizard" data-step={step}>
         <ol className={styles.inviteSteps} aria-label="Шаги">
           {STEP_LABELS.map((label, index) => {
@@ -661,7 +727,8 @@ export function MiniAppInvitePartner({
         {step === 3 ? (
           <>
             <h2 className={styles.inviteH2}>Проверьте приглашение</h2>
-            <motionlessInfoCard
+            <MotionlessInfoCard
+              testId="invite-review-partner"
               title="Кого приглашаете"
               body={partnerName.trim()}
               extra={
@@ -672,7 +739,8 @@ export function MiniAppInvitePartner({
               editLabel="Изменить имя партнёра"
               onEdit={() => gotoStep(1)}
             />
-            <motionlessInfoCard
+            <MotionlessInfoCard
+              testId="invite-review-message"
               title="Пригласительное сообщение"
               body={form.note.trim()}
               editLabel="Изменить сообщение"
@@ -681,9 +749,9 @@ export function MiniAppInvitePartner({
             {kind === "terms" ? (
               <div className={styles.infoCard}>
                 <p className={styles.infoCardTitle}>Условия сотрудничества</p>
-                {resolvedCategories.error || contextBlocked ? (
+                {serverPlan?.error || contextBlocked ? (
                   <p className={styles.scanBad} role="alert" data-testid="mini-invite-terms-blocked">
-                    {resolvedCategories.error || contextBlocked}
+                    {serverPlan?.error || contextBlocked}
                   </p>
                 ) : form.useGeneralFallback ? (
                   <label className={styles.inviteTermRow}>
@@ -735,23 +803,8 @@ export function MiniAppInvitePartner({
             {createError ? (
               <p className={styles.scanBad} role="alert" data-testid="mini-invite-create-error">
                 {createError}
-                {unknownOutcome ? (
-                  <>
-                    {" "}
-                    Исход запроса неизвестен — безопасный повтор не гарантирован.
-                  </>
-                ) : null}
+                {unknownOutcome ? " Исход запроса неизвестен." : null}
               </p>
-            ) : null}
-            {!unknownOutcome && createError ? (
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={creating}
-                onClick={() => void submitInvite()}
-              >
-                Повторить
-              </button>
             ) : null}
             <button
               type="button"
@@ -764,7 +817,7 @@ export function MiniAppInvitePartner({
             <button
               type="button"
               className={styles.primaryBtn}
-              disabled={creating || Boolean(kind === "terms" && (resolvedCategories.error || contextBlocked))}
+              disabled={creating || Boolean(kind === "terms" && (serverPlan?.error || contextBlocked))}
               data-testid="mini-invite-create"
               onClick={() => void submitInvite()}
             >
@@ -778,7 +831,8 @@ export function MiniAppInvitePartner({
   );
 }
 
-function motionlessInfoCard(props: {
+function MotionlessInfoCard(props: {
+  testId?: string;
   title: string;
   body: string;
   extra?: string;
@@ -786,7 +840,10 @@ function motionlessInfoCard(props: {
   onEdit?: () => void;
 }) {
   return (
-    <div className={`${styles.infoCard} ${styles.inviteReview}`}>
+    <div
+      className={`${styles.infoCard} ${styles.inviteReview}`}
+      data-testid={props.testId}
+    >
       <p className={styles.fieldLabel}>{props.title}</p>
       <strong>{props.body}</strong>
       {props.extra ? <p className={styles.infoCardText}>{props.extra}</p> : null}

@@ -188,6 +188,54 @@ describe("MiniAppInvitePartner wizard", () => {
     });
   });
 
+  it("shows review blocks and edit shortcuts return to steps", async () => {
+    vi.mocked(api.miniAppFetchInviteContext).mockResolvedValue({
+      kind: "discussion",
+      nameMaxLength: 120,
+      noteMaxLength: 500,
+      inviterBusinessSide: null,
+      categoryPlan: { categories: [], requiresIntendedType: false },
+    });
+    const user = userEvent.setup();
+    render(<MiniAppInvitePartner {...baseProps} />);
+    await screen.findByTestId("mini-invite-wizard");
+    await user.type(screen.getByTestId("mini-invite-name"), "Видимый партнёр");
+    await user.click(screen.getByTestId("mini-invite-next-1"));
+    fireEvent.change(screen.getByTestId("mini-invite-note"), {
+      target: { value: "Видимый текст приглашения" },
+    });
+    await user.click(screen.getByTestId("mini-invite-next-2"));
+    expect(screen.getByTestId("invite-review-partner")).toHaveTextContent("Видимый партнёр");
+    expect(screen.getByTestId("invite-review-message")).toHaveTextContent("Видимый текст приглашения");
+    await user.click(screen.getByRole("button", { name: "Изменить сообщение" }));
+    expect(screen.getByTestId("mini-invite-wizard")).toHaveAttribute("data-step", "2");
+    await user.click(screen.getByTestId("mini-invite-next-2"));
+    await user.click(screen.getByRole("button", { name: "Изменить имя партнёра" }));
+    expect(screen.getByTestId("mini-invite-wizard")).toHaveAttribute("data-step", "1");
+  });
+
+  it("keeps create enabled on unknown transport error without repeat button", async () => {
+    vi.mocked(api.miniAppFetchInviteContext).mockResolvedValue({
+      kind: "discussion",
+      nameMaxLength: 120,
+      noteMaxLength: 500,
+      inviterBusinessSide: null,
+      categoryPlan: { categories: [], requiresIntendedType: false },
+    });
+    vi.mocked(api.miniAppCreateDiscussionInvite).mockRejectedValue(new RemcardApiError(0, "Сеть"));
+    const user = userEvent.setup();
+    render(<MiniAppInvitePartner {...baseProps} />);
+    await screen.findByTestId("mini-invite-wizard");
+    await user.type(screen.getByTestId("mini-invite-name"), "B");
+    await user.click(screen.getByTestId("mini-invite-next-1"));
+    await user.click(screen.getByRole("button", { name: "Коротко" }));
+    await user.click(screen.getByTestId("mini-invite-next-2"));
+    await user.click(screen.getByTestId("mini-invite-create"));
+    await screen.findByTestId("mini-invite-create-error");
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+    expect(screen.getByTestId("mini-invite-create")).not.toBeDisabled();
+  });
+
   it("distinguishes transport failure from API rejection", async () => {
     vi.mocked(api.miniAppFetchInviteContext).mockResolvedValue({
       kind: "discussion",
@@ -208,5 +256,7 @@ describe("MiniAppInvitePartner wizard", () => {
     const err = await screen.findByTestId("mini-invite-create-error");
     expect(err).toHaveTextContent("Отклонено");
     expect(err).not.toHaveTextContent("безопасный повтор");
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+    expect(screen.getByTestId("mini-invite-create")).not.toBeDisabled();
   });
 });

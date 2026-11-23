@@ -109,6 +109,51 @@ export function stepFieldErrors(input: {
   return errors;
 }
 
+export type MiniInviteDraftV1 = {
+  v: 1;
+  step: number;
+  partnerName: string;
+  intendedType: IntendedPartnerType;
+  templateId: string;
+  note: string;
+  generalConfirmed: boolean;
+  rows: Array<{ category: string; percent: string; excluded: boolean }>;
+};
+
+export function miniInviteDraftKey(platform: string, branchId: string | null): string {
+  return `remcard.mini-invite.v1.${platform}.${branchId ?? "none"}`;
+}
+
+export function readMiniInviteDraft(key: string): MiniInviteDraftV1 | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as MiniInviteDraftV1;
+    return parsed?.v === 1 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeMiniInviteDraft(key: string, draft: MiniInviteDraftV1): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(draft));
+  } catch {
+    // quota / private mode — best effort
+  }
+}
+
+export function clearMiniInviteDraft(key: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
 export function draftIsDirty(input: {
   ready: boolean;
   step: number;

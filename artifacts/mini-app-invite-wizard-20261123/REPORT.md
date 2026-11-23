@@ -7,56 +7,81 @@
 | remcard-partner-platform | FE | `1ef028e9706cf9ad2c756f07587dadc4be2c1933` |
 | remcard-navigator | BE | `fbaa35f7b646e3b82c630af0753725e8cb379e59` |
 
-## Branches
+## Branches (post QA pass)
 
-- FE: `cursor/mini-app-partner-invite-wizard`
-- BE: `cursor/mini-app-partner-invite-wizard` @ `d88742b9133588aeaa7ae0a8e4def9a348c379c6`
+- FE: `cursor/mini-app-partner-invite-wizard` — see `FE_HEAD` in `CHECKSUMS.txt`
+- BE: `cursor/mini-app-partner-invite-wizard` — see `BE_HEAD` in `CHECKSUMS.txt`
+
+## Independent QA (user machine, local PostgreSQL)
+
+Synthetic embedded MAX/Telegram sessions:
+
+- Terms + discussion create per host — persistence OK
+- Unauthenticated / wrong-kind — rejected
+- Public preview API — **PENDING** (not in scope here)
+- Not full host/visual QA
+
+Targeted automated suites (user): **59** FE mini-app, **36** proxy, **33** BE — pass before this fix round.
+
+## FE blocker fixed: `MotionlessInfoCard`
+
+Review/ready blocks were rendered as lowercase custom element `<motionlessInfoCard>` (invalid in DOM), so React ignored `onEdit` and body text was not visible in tests or browsers.
+
+Fix: PascalCase function component `MotionlessInfoCard` with `data-testid` on review partner/message and ready message. Tests assert visible review copy and working edit shortcuts (step 1 / 2). Unknown transport errors: no «Повторить», «Создать» stays enabled.
+
+## Backend fix: `NextResponse` runtime
+
+`miniAppPartnershipInviteRoute.ts` used `import type { NextResponse }` but constructs `new NextResponse` in session/role guards — corrected to value import (401 mini-session test was failing).
+
+Invite-only role: `resolveMiniAppPartnershipInviteRole` lets org staff (`UserRole.CLIENT` + manage) into terms flow without widening other mini-app bootstrap roles.
+
+## Tests run on agent VM (after fixes)
+
+| Suite | Result |
+|-------|--------|
+| FE mini-app vitest (`src/components/mini-app`, `src/lib/mini-app`) | **61 passed** |
+| FE `MiniAppInvitePartner.test.tsx` + `invite-wizard.test.ts` | **12 passed** |
+| BE mini-app partnership routes + `miniAppPartnershipInviteRoute` + role + org-staff | **21 passed** (7 route + unit files) |
+
+## TypeScript release gate
+
+| Repo | `tsc --noEmit` |
+|------|----------------|
+| **remcard-partner-platform** | **PASS** (clean) |
+| **remcard-navigator** | **FAIL** (pre-existing repo-wide errors: wallet accrual types, bigint in `test/user-deletion.test.ts`, etc.). **No errors** in `miniAppPartnershipInviteRoute.ts` or new partnership invite route tests after `NextResponse` fix. |
 
 ## Backend patch
 
 ```bash
 git apply --check artifacts/mini-app-invite-wizard-20261123/be-from-fbaa35f7.patch
 # from remcard-navigator at fbaa35f7:
-git apply artifacts/mini-app-invite-wizard-20261123/be-from-fbaa35f7.patch
+git apply ../remcard-partner-platform/artifacts/mini-app-invite-wizard-20261123/be-from-fbaa35f7.patch
 ```
 
-SHA-256: see `CHECKSUMS.txt` (`be-from-fbaa35f7.patch`).
+SHA-256: `CHECKSUMS.txt`.
 
-## New BE routes (mini-app session + pilot gates)
+## New BE routes (mini session + pilot gates)
 
-- `GET /api/pro/mini-app/partnership/invite-context` — `kind` `discussion` (agent) vs `terms`, limits, `inviterBusinessSide`, `categoryPlan`
-- `POST /api/pro/mini-app/partnership/discussion-invite` — agent only, reuses `createPartnershipDiscussionInvite`
-- `POST /api/pro/mini-app/partnership/link-invite` — specialist/store/company/staff delegation, reuses `createPartnershipLinkInvite` + audit
+- `GET /api/pro/mini-app/partnership/invite-context`
+- `POST /api/pro/mini-app/partnership/discussion-invite`
+- `POST /api/pro/mini-app/partnership/link-invite`
 
-Runtime `GET /api/partnership/link-invite` unchanged. Test fix: `route.org-staff.test.ts` mocks `listPartnershipLinkInvitesLegacy` / `listPartnershipLinkInvitesV2`.
+Runtime full-cabinet `GET /api/partnership/link-invite` unchanged.
 
-## FE changes
+## FE summary
 
-- `MiniAppInvitePartner`: 3-step wizard (Партнёр / Сообщение / Проверка), ready screen with copy (text+URL), manual fallback, double-submit guard, transport vs API errors
-- BFF allowlist + mini session cookies for three routes above
-- No change to full-cabinet partnership routes semantics
+- `MiniAppInvitePartner`: 3-step wizard, server `categoryPlan`, ready + copy, double-submit lock, `backDisabled` while creating
+- BFF allowlist + mini cookies for the three routes above
 
 ## vs prototype spec
 
-- No demo URLs or fake percentages in runtime; `previewPath`/`expiresAt` from API
-- Terms note max **400** (full cabinet wizard); discussion subject max **500** (server)
-- Agent flow has no «предполагаемый тип»; terms flow requires type when inviter is specialist/company
-- Ready screen omits prototype footnote about demonstration links
-- Staff without `canManagePartnerships`: blocked at invite-context (same as cabinet)
-
-## Tests run in this environment
-
-| Suite | Result |
-|-------|--------|
-| BE `src/app/api/pro/mini-app/__tests__` + `miniAppPartnershipInviteRoute` + `route.org-staff` | **11 passed** |
-| FE `invite-wizard.test.ts` + `MiniAppInvitePartner.test.tsx` | **10 passed** (this VM) |
-| Isolated DB invite create + public page | **NOT_RUN** (no PG harness here) |
-| MAX/Telegram browser | **NOT_RUN** on this agent VM |
-
-User-reported: FE 50/50 + 4 browser checkout scenarios on their machine.
+- Terms note max **400**; discussion subject max **500**
+- Agent flow: no intended partner type; terms: type when required by server plan
+- Staff without manage: blocked at invite-context (cabinet parity)
+- Agent discussion for pure CLIENT staff without PRO principal — still blocked by design
 
 ## Changed files (summary)
 
-**BE:** `miniAppPartnershipInviteRoute.ts`, three route handlers, tests, `route.org-staff.test.ts` mock fix.
+**BE:** `miniAppPartnershipInviteRoute.ts`, three route handlers, `partnershipInvite.routes.test.ts`, `miniAppPartnershipInviteRole.test.ts`, org-staff mock fix.
 
-**FE:** `MiniAppInvitePartner.tsx`, `MiniAppRoot.tsx`, `mini-app/api.ts`, `invite-wizard.ts`, `remcard-proxy.ts`, styles, tests.
+**FE:** `MiniAppInvitePartner.tsx`, tests, `MiniAppSubpage.tsx`, `api.ts`, `invite-wizard.ts`, proxy allowlist.

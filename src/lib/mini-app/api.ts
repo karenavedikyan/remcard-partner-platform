@@ -321,10 +321,11 @@ export type MiniAppInviteContextResponse = {
 
 export async function miniAppFetchInviteContext(
   platform: MiniAppPlatform,
-  opts?: MiniAppCallOptions,
+  opts?: MiniAppCallOptions & { intendedPartnerType?: string | null },
 ): Promise<MiniAppInviteContextResponse> {
   const params: Record<string, string> = { host: platform };
   if (opts?.branchId) params.branchId = opts.branchId;
+  if (opts?.intendedPartnerType) params.intendedPartnerType = opts.intendedPartnerType;
   return remcardFetch<MiniAppInviteContextResponse>("/api/pro/mini-app/partnership/invite-context", {
     searchParams: params,
     extraHeaders: miniHeaders(platform, opts),
