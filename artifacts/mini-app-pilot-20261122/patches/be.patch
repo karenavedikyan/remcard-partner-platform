@@ -60,6 +60,144 @@ index e5dc415d..ac71ee50 100644
      role,
      roleLabel: ROLE_LABEL[role],
      platform: input.platform,
+diff --git a/src/lib/store/__tests__/orderCreate.pool-validation.test.ts b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
+new file mode 100644
+index 00000000..90a2d3c8
+--- /dev/null
++++ b/src/lib/store/__tests__/orderCreate.pool-validation.test.ts
+@@ -0,0 +1,131 @@
++import { describe, expect, it } from 'vitest';
++import { prepareStoreOrderItems, type CreateOrderItemInput } from '@/lib/store/orderCreate';
++import type { CertificatePartnerCategory } from '@prisma/client';
++
++function categoryRow(
++  overrides: Partial<CertificatePartnerCategory> & Pick<CertificatePartnerCategory, 'category' | 'categoryLabel'>,
++): CertificatePartnerCategory {
++  return {
++    id: 'cat-1',
++    certificatePartnerId: 'cp-1',
++    category: overrides.category,
++    categoryLabel: overrides.categoryLabel,
++    discountPercent: 10,
++    issuerPercent: 5,
++    proBonusPercent: 5,
++    agentBonusPercent: null,
++    isExcluded: false,
++    createdAt: new Date(),
++    updatedAt: new Date(),
++    ...overrides,
++  } as CertificatePartnerCategory;
++}
++
++describe('prepareStoreOrderItems pool guard', () => {
++  const map = new Map([
++    [
++      'doors',
++      categoryRow({
++        category: 'doors',
++        categoryLabel: 'Двери',
++        discountPercent: 10,
++        issuerPercent: 5,
++      }),
++    ],
++  ]);
++
++  it('accepts client discount equal to pool (PROF remainder zero)', () => {
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 120_000, discountPercent: 10 },
++    ];
++    const row = categoryRow({
++      category: 'doors',
++      categoryLabel: 'Двери',
++      discountPercent: 10,
++      issuerPercent: 5,
++    });
++    const localMap = new Map([['doors', row]]);
++    const out = prepareStoreOrderItems(items, localMap);
++    expect('error' in out).toBe(false);
++    if (!('error' in out)) {
++      expect(out.orderItems[0]?.discountPercent).toBe(10);
++      expect(out.orderItems[0]?.issuerPercent).toBe(5);
++      expect(out.totalDiscount).toBe(12_000);
++      expect(out.totalAmount - out.totalDiscount).toBe(108_000);
++    }
++  });
++
++  it('rejects discount 0.01pp above frozen pool without returning order lines', () => {
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 120_000, discountPercent: 15.01 },
++    ];
++    const out = prepareStoreOrderItems(items, map);
++    expect('error' in out).toBe(true);
++    if ('error' in out) {
++      expect(out.error).toMatch(/превышает максимум/);
++    }
++  });
++
++  it('rejects 16% when pool is 15%', () => {
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 100_000, discountPercent: 16 },
++    ];
++    const out = prepareStoreOrderItems(items, map);
++    expect('error' in out).toBe(true);
++  });
++
++  it('accepts exact maximum pool with PROF issuer 0', () => {
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 120_000, discountPercent: 15 },
++    ];
++    const out = prepareStoreOrderItems(items, map);
++    expect('error' in out).toBe(false);
++    if (!('error' in out)) {
++      expect(out.orderItems[0]?.discountPercent).toBe(15);
++      expect(out.orderItems[0]?.issuerPercent).toBe(0);
++      expect(out.orderItems[0]?.issuerAmount).toBe(0);
++    }
++  });
++
++  it('accepts explicit 0% client discount', () => {
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 50_000, discountPercent: 0 },
++    ];
++    const out = prepareStoreOrderItems(items, map);
++    expect('error' in out).toBe(false);
++    if (!('error' in out)) {
++      expect(out.orderItems[0]?.discountPercent).toBe(0);
++      expect(out.orderItems[0]?.discountAmount).toBe(0);
++      expect(out.orderItems[0]?.issuerPercent).toBe(15);
++    }
++  });
++
++  it('rejects only offending line in multi-category basket without prepared lines', () => {
++    const multi = new Map([
++      [
++        'doors',
++        categoryRow({
++          category: 'doors',
++          categoryLabel: 'Двери',
++          discountPercent: 10,
++          issuerPercent: 5,
++        }),
++      ],
++      [
++        'floor',
++        categoryRow({
++          category: 'floor',
++          categoryLabel: 'Пол',
++          discountPercent: 8,
++          issuerPercent: 4,
++        }),
++      ],
++    ]);
++    const items: CreateOrderItemInput[] = [
++      { category: 'doors', categoryLabel: 'Двери', amount: 20_000, discountPercent: 12 },
++      { category: 'floor', categoryLabel: 'Пол', amount: 30_000, discountPercent: 12.01 },
++    ];
++    const out = prepareStoreOrderItems(items, multi);
++    expect('error' in out).toBe(true);
++  });
++});
+\ No newline at end of file
 diff --git a/src/lib/store/orderCreate.ts b/src/lib/store/orderCreate.ts
 index 9a0da27d..581bc3c9 100644
 --- a/src/lib/store/orderCreate.ts

@@ -1,18 +1,25 @@
 FE_BASE=c457512f4051166d5f9a74201666736c4e15dbac
 BE_BASE=5f11f3cc964158cff4a276476702c2d51ff4626c
-FE_PATCH_SHA256=be8753138515323ae305c7823a9e535dbdff8fd3d5917b2502f13348a1ad6187
-BE_PATCH_SHA256=74cfdbbc9b659ea7146eff4b6871085bb6a7577e5300b3dbe49111ddfdd37e77
+FE_HEAD=2f3a3e55dbd7c70d1403f29610a904dcf3f7812f
+BE_HEAD=5e43a37e547f7d5387e858200b1a26490a491f38
+FE_PATCH_SHA256=30a615af8c31f87921b59fb22179043c01d7b10073edc406ec6191f5afeaf7ce
+BE_PATCH_SHA256=43e6ff5561e87bafcc3b36dca0ed2436b2edb83de31ab163b343f136b0aaf0f1
+--- FE changed files (excluding export artifacts) ---
 src/app/dev/mini-app-fixture/fixtures-data.ts
 src/components/mini-app/MiniAppCertificateReady.tsx
 src/components/mini-app/MiniAppRoot.tsx
+src/components/mini-app/MiniAppScanReceive.discount.test.tsx
+src/components/mini-app/MiniAppScanReceive.tsx
 src/components/mini-app/MiniAppWalletCard.tsx
 src/lib/mini-app/mini-app-bootstrap-path.test.tsx
+src/lib/mini-app/mini-app-scan-receive-policy.test.ts
 src/lib/mini-app/types.ts
 src/lib/order-totals.test.ts
 src/lib/order-totals.ts
----
+--- BE changed files ---
 src/app/api/store/order/route.ts
 src/lib/certificateReceivingPolicy/purchaseIssuerBonus.ts
 src/lib/miniAppBootstrap.ts
+src/lib/store/__tests__/orderCreate.pool-validation.test.ts
 src/lib/store/orderCreate.ts
 src/lib/store/orderCreateErrors.ts
