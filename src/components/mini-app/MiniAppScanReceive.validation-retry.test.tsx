@@ -15,9 +15,11 @@ vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
     linkPhase: "idle",
     linkError: "",
     ensureOrdinaryAppealContext: async () => ({ ok: true as const }),
+    restoreOrdinaryAppealForStoredAttempt: async () => ({ ok: true as const }),
     assertPreviewAllowed: () => null,
     beginOrderLinkAfterSuccess: () => undefined,
     retryOrderLinkOnly: () => undefined,
+    persistOrdinaryAppealBinding: () => true,
   }),
 }));
 

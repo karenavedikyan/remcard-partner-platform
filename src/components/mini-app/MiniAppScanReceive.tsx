@@ -26,6 +26,8 @@ import {
   ATTEMPT_BODY_MISMATCH_MESSAGE,
   ATTEMPT_CONFLICT_MESSAGE,
   UNCERTAIN_ORDER_DETAIL,
+  UNCERTAIN_ORDER_HEADING,
+  formatAttemptItemsSummary,
   classifyStoreOrderNetworkFailure,
   classifyStoreOrderPostResponse,
   clearStoreOrderAttempt,
@@ -55,7 +57,24 @@ import { RewardConfirmationFields } from "@/components/scanner/RewardConfirmatio
 import { useReceivingAppealScannerHandoff } from "@/components/scanner/useReceivingAppealScannerHandoff";
 import styles from "./mini-app.module.css";
 
-type Phase = "scan" | "purchase" | "success";
+type Phase = "scan" | "purchase" | "success" | "recovery";
+
+function amountDraftsFromAttempt(record: StoreOrderAttemptRecord): CategoryAmountDraft {
+  return Object.fromEntries(record.body.items.map((item) => [item.category, String(item.amount)]));
+}
+
+function discountDraftsFromAttempt(record: StoreOrderAttemptRecord): CategoryDiscountDraft {
+  const drafts: CategoryDiscountDraft = {};
+  for (const item of record.body.items) {
+    if (item.discountPercent !== undefined && Number.isFinite(item.discountPercent)) {
+      drafts[item.category] = String(item.discountPercent);
+    }
+  }
+  return drafts;
+}
+
+const BRANCH_ATTEMPT_MISMATCH_MESSAGE =
+  "Филиал не совпадает с сохранённой попыткой. Откройте mini-app с тем же филиалом, что при оформлении.";
 
 type Props = {
   platform: MiniAppPlatform;
@@ -139,10 +158,16 @@ export function MiniAppScanReceive({
   const lastIdempotencyKey = useRef<string | null>(null);
   const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
   const attemptRestoreDone = useRef(false);
+  const recoveryPreviewGen = useRef(0);
 
   const syncStoredAttempt = useCallback(() => {
     setStoredAttempt(loadStoreOrderAttempt(actorUserId));
   }, [actorUserId]);
+
+  const branchAttemptMismatch = useMemo(() => {
+    if (!storedAttempt?.branchId?.trim() || !branchId?.trim()) return false;
+    return storedAttempt.branchId.trim() !== branchId.trim();
+  }, [storedAttempt?.branchId, branchId]);
 
   useEffect(() => {
     if (attemptRestoreDone.current) {
@@ -157,10 +182,37 @@ export function MiniAppScanReceive({
     setOrderUncertain(isRestorableAttempt(attempt));
     setOrderConflict(isConflictAttempt(attempt));
     setCertCode(attempt.body.certificateCode);
-    if (!fixturePreview) {
-      setPhase((current) => (current === "scan" ? "purchase" : current));
+    setAmountDrafts(amountDraftsFromAttempt(attempt));
+    setDiscountDrafts(discountDraftsFromAttempt(attempt));
+    if (isStoreOrderAttemptLocked(attempt)) {
+      if (!fixturePreview) {
+        setPhase("recovery");
+        if (receiving.ordinaryAppealRequired) {
+          void receiving.restoreOrdinaryAppealForStoredAttempt({
+            userId: actorUserId,
+            record: attempt,
+            isStale: () => false,
+          });
+        }
+        const gen = ++recoveryPreviewGen.current;
+        const searchParams = attempt.branchId?.trim() ? { branchId: attempt.branchId.trim() } : undefined;
+        void remcardFetch<OrderPreviewResponse>("/api/store/order/preview", {
+          method: "POST",
+          body: { certificateCode: attempt.body.certificateCode },
+          searchParams,
+        })
+          .then((data) => {
+            if (gen !== recoveryPreviewGen.current) return;
+            if ("allowed" in data && data.allowed) {
+              setPreview(data);
+            }
+          })
+          .catch(() => undefined);
+      }
+    } else if (!fixturePreview) {
+      setPhase("purchase");
     }
-  }, [actorUserId, fixturePreview]);
+  }, [actorUserId, fixturePreview, receiving]);
 
   const purchaseDraftLocked = useMemo(
     () =>
@@ -260,24 +312,78 @@ export function MiniAppScanReceive({
     }
   }, [actorUserId, syncStoredAttempt]);
 
+  const postStoreOrder = useCallback(
+    async (attemptRecord: StoreOrderAttemptRecord, wasRetry: boolean) => {
+      const operationBranchId = attemptRecord.branchId?.trim() || branchId?.trim() || undefined;
+      submitInFlight.current = true;
+      setSubmitting(true);
+      setSubmitError("");
+      markStoreOrderAttemptInFlight(actorUserId);
+      syncStoredAttempt();
+      try {
+        const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
+          method: "POST",
+          body: attemptRecord.body,
+          idempotencyKey: attemptRecord.idempotencyKey,
+          searchParams: operationBranchId ? { branchId: operationBranchId } : undefined,
+        });
+        const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
+        applyPostOutcome(outcome);
+        if (outcome.kind === "success") {
+          lastIdempotencyKey.current = attemptRecord.idempotencyKey;
+          receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, attemptRecord.idempotencyKey);
+        }
+      } catch (caught) {
+        if (caught instanceof RemcardApiError) {
+          const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
+          applyPostOutcome(
+            classifyStoreOrderPostResponse({
+              status: caught.status,
+              payload,
+              wasRetry,
+            }),
+          );
+        } else {
+          applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
+        }
+      } finally {
+        submitInFlight.current = false;
+        setSubmitting(false);
+        syncStoredAttempt();
+      }
+    },
+    [actorUserId, applyPostOutcome, branchId, receiving, syncStoredAttempt],
+  );
+
+  const checkStoredAttempt = useCallback(async () => {
+    if (submitInFlight.current || submitting || orderConflict || branchAttemptMismatch) return;
+    const prepared = prepareStoreOrderRetry(actorUserId);
+    if (!prepared.ok) {
+      setSubmitError(
+        prepared.reason === "conflict" ? ATTEMPT_CONFLICT_MESSAGE : UNCERTAIN_ORDER_DETAIL,
+      );
+      return;
+    }
+    await postStoreOrder(prepared.record, true);
+  }, [actorUserId, branchAttemptMismatch, orderConflict, postStoreOrder, submitting]);
+
   const beginPurchase = useCallback(
     async (raw: string) => {
-      const parsed = parseCertificateCode(raw);
+      const parsedEarly = parseCertificateCode(raw);
+      const pending = loadStoreOrderAttempt(actorUserId);
+      if (pending && isStoreOrderAttemptLocked(pending)) {
+        if (parsedEarly.ok && pending.body.certificateCode !== parsedEarly.code) {
+          setGateError(LOCKED_ATTEMPT_OTHER_CODE_MESSAGE);
+        } else {
+          setGateError(UNCERTAIN_ORDER_DETAIL);
+        }
+        setPhase("recovery");
+        return;
+      }
+      const parsed = parsedEarly;
       if (!parsed.ok) {
         setGateError(parsed.error);
         return;
-      }
-      const pending = loadStoreOrderAttempt(actorUserId);
-      if (pending && isStoreOrderAttemptLocked(pending)) {
-        if (pending.body.certificateCode !== parsed.code) {
-          setGateError(LOCKED_ATTEMPT_OTHER_CODE_MESSAGE);
-          return;
-        }
-        setGateError("");
-        setCertCode(parsed.code);
-        setStoredAttempt(pending);
-        setOrderUncertain(isRestorableAttempt(pending));
-        setOrderConflict(isConflictAttempt(pending));
       }
       setLoading(true);
       setGateError("");
@@ -333,7 +439,7 @@ export function MiniAppScanReceive({
         setLoading(false);
       }
     },
-    [platform, branchId, receiving, actorUserId, preview, syncStoredAttempt],
+    [platform, branchId, receiving, actorUserId, syncStoredAttempt],
   );
 
   const openConfirm = useCallback(() => {
@@ -429,43 +535,11 @@ export function MiniAppScanReceive({
         return;
       }
       attemptRecord = created.record;
-    }
-    submitInFlight.current = true;
-    setSubmitting(true);
-    setSubmitError("");
-    markStoreOrderAttemptInFlight(actorUserId);
-    syncStoredAttempt();
-    try {
-      const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
-        method: "POST",
-        body: attemptRecord.body,
-        idempotencyKey: attemptRecord.idempotencyKey,
-        searchParams: branchId ? { branchId } : undefined,
-      });
-      const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
-      applyPostOutcome(outcome);
-      if (outcome.kind === "success") {
-        lastIdempotencyKey.current = attemptRecord.idempotencyKey;
-        receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, attemptRecord.idempotencyKey);
+      if (!receiving.persistOrdinaryAppealBinding(actorUserId, created.record.idempotencyKey)) {
+        // binding optional when CRM read-only
       }
-    } catch (caught) {
-      if (caught instanceof RemcardApiError) {
-        const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
-        applyPostOutcome(
-          classifyStoreOrderPostResponse({
-            status: caught.status,
-            payload,
-            wasRetry,
-          }),
-        );
-      } else {
-        applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
-      }
-    } finally {
-      submitInFlight.current = false;
-      setSubmitting(false);
-      syncStoredAttempt();
     }
+    await postStoreOrder(attemptRecord, wasRetry);
   }, [
     preview,
     submitting,
@@ -476,10 +550,55 @@ export function MiniAppScanReceive({
     certCode,
     branchId,
     receiving,
-    applyPostOutcome,
     orderUncertain,
-    syncStoredAttempt,
+    postStoreOrder,
   ]);
+
+  if (phase === "recovery" && storedAttempt) {
+    return (
+      <section className={styles.scanPanel} data-testid="mini-scan-recovery">
+        <p className={styles.scanLead}>Сохранённая попытка покупки</p>
+        {storedAttempt.branchId ? (
+          <p className={styles.scanNotice}>Филиал (зафиксирован): {storedAttempt.branchId}</p>
+        ) : null}
+        <p className={styles.scanNotice}>Документ: {storedAttempt.body.certificateCode}</p>
+        <p className={styles.scanNotice}>{formatAttemptItemsSummary(storedAttempt.body)}</p>
+        {branchAttemptMismatch ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-branch-mismatch">
+            {BRANCH_ATTEMPT_MISMATCH_MESSAGE}
+          </p>
+        ) : null}
+        {orderConflict ? (
+          <p className={styles.scanBad} role="alert" data-testid="mini-order-conflict">
+            {ATTEMPT_CONFLICT_MESSAGE}
+          </p>
+        ) : (
+          <>
+            <p className={styles.scanLead}>{UNCERTAIN_ORDER_HEADING}</p>
+            <p className={styles.scanNotice} data-testid="mini-order-uncertain">
+              {UNCERTAIN_ORDER_DETAIL}
+            </p>
+          </>
+        )}
+        {submitError ? (
+          <p className={styles.scanBad} role="alert">
+            {submitError}
+          </p>
+        ) : null}
+        {!orderConflict && !branchAttemptMismatch ? (
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            data-testid="mini-check-order-result"
+            disabled={submitting}
+            onClick={() => void checkStoredAttempt()}
+          >
+            {submitting ? "Проверка…" : "Проверить результат"}
+          </button>
+        ) : null}
+      </section>
+    );
+  }
 
   if (phase === "success") {
     const appealTarget = receiving.appealId;
@@ -609,13 +728,13 @@ export function MiniAppScanReceive({
             {UNCERTAIN_ORDER_DETAIL}
           </p>
         ) : null}
-        {orderUncertain ? (
+        {orderUncertain && !branchAttemptMismatch ? (
           <button
             type="button"
             className={styles.secondaryBtn}
             data-testid="mini-check-order-result"
             disabled={submitting}
-            onClick={() => void submitOrder()}
+            onClick={() => void checkStoredAttempt()}
           >
             Проверить результат
           </button>
@@ -673,6 +792,14 @@ export function MiniAppScanReceive({
         >
           Сканировать другой код
         </button>
+      </section>
+    );
+  }
+
+  if (storedAttempt && isStoreOrderAttemptLocked(storedAttempt)) {
+    return (
+      <section className={styles.scanPanel} data-testid="mini-scan-recovery">
+        <p className={styles.scanNotice}>{UNCERTAIN_ORDER_DETAIL}</p>
       </section>
     );
   }
