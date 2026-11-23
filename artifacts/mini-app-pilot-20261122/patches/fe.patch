@@ -1,9 +1,9 @@
 diff --git a/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md b/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md
 new file mode 100644
-index 00000000..a579e493
+index 00000000..b4b06ffc
 --- /dev/null
 +++ b/artifacts/mini-app-pilot-20261122/PARITY_REPORT_RU.md
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,64 @@
 +# RemCard mini-app parity — отчёт (изолированная ветка)
 +
 +## Базовые SHA (Timeweb, проверены локально)
@@ -57,6 +57,13 @@ index 00000000..a579e493
 +- `validation_failed` (в т.ч. 400 лимит скидки): `releaseStoreOrderAttemptForEdit`, сообщение сервера, второй POST с новым `Idempotency-Key`
 +- `uncertain` / сеть: попытка в `unknown`, новая покупка заблокирована (без автоповтора)
 +- `409`: `conflict`, отдельно от validation
++
++## Release blockers (итерация)
++
++- BE: `loadLivePartnershipPoolByCategory` — тип `Prisma.TransactionClient | typeof prisma` (TS2345 снят)
++- BE: PROF при отсутствии/исключённом term — `partnershipAccrualPoolPercent` → 0 (без frozen fallback)
++- BE: `npm run typecheck` — без новых ошибок в store-order слоях (baseline-ошибки вне diff сохранены)
++- Smoke: `artifacts/mini-app-pilot-20261122/SMOKE_TELEGRAM_MAX.md`
 +
 +## Экспорт патчей
 +
