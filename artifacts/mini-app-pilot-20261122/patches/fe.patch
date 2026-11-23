@@ -451,10 +451,10 @@ index 00000000..218e7762
 \ No newline at end of file
 diff --git a/src/components/mini-app/MiniAppScanReceive.tsx b/src/components/mini-app/MiniAppScanReceive.tsx
 new file mode 100644
-index 00000000..e3205997
+index 00000000..cfd992db
 --- /dev/null
 +++ b/src/components/mini-app/MiniAppScanReceive.tsx
-@@ -0,0 +1,521 @@
+@@ -0,0 +1,582 @@
 +"use client";
 +
 +import { useCallback, useMemo, useRef, useState } from "react";
@@ -479,14 +479,21 @@ index 00000000..e3205997
 +} from "@/lib/order-totals";
 +import type { OrderPreviewAllowed, OrderPreviewResponse } from "@/lib/order-types";
 +import {
++  ATTEMPT_BODY_MISMATCH_MESSAGE,
 +  ATTEMPT_CONFLICT_MESSAGE,
++  UNCERTAIN_ORDER_DETAIL,
 +  classifyStoreOrderNetworkFailure,
 +  classifyStoreOrderPostResponse,
 +  clearStoreOrderAttempt,
 +  createStoreOrderAttempt,
++  isStoreOrderAttemptLocked,
++  loadStoreOrderAttempt,
++  markStoreOrderAttemptConflict,
 +  markStoreOrderAttemptInFlight,
 +  markStoreOrderAttemptSucceeded,
 +  markStoreOrderAttemptUnknown,
++  releaseStoreOrderAttemptForEdit,
++  type OrderPostOutcome,
 +} from "@/lib/store-order-attempt";
 +import { displayCategoryLabel } from "@/lib/category-display";
 +import {
@@ -571,6 +578,8 @@ index 00000000..e3205997
 +  const [rewardDrafts, setRewardDrafts] = useState<Record<string, RewardConfirmationDraft>>({});
 +  const [submitting, setSubmitting] = useState(false);
 +  const [submitError, setSubmitError] = useState("");
++  const [orderUncertain, setOrderUncertain] = useState(false);
++  const [orderConflict, setOrderConflict] = useState(false);
 +  const [confirmOpen, setConfirmOpen] = useState(false);
 +  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
 +  const submitInFlight = useRef(false);
@@ -600,10 +609,59 @@ index 00000000..e3205997
 +
 +  const purchaseStepBlocked = useMemo(() => {
 +    if (!preview) return true;
++    if (orderUncertain || orderConflict) return true;
 +    if (Object.keys(discountFieldErrors).length > 0) return true;
 +    const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
 +    return !amounts.ok;
-+  }, [preview, amountDrafts, discountFieldErrors]);
++  }, [preview, amountDrafts, discountFieldErrors, orderUncertain, orderConflict]);
++
++  const applyPostOutcome = useCallback((outcome: OrderPostOutcome) => {
++    switch (outcome.kind) {
++      case "success":
++        markStoreOrderAttemptSucceeded(actorUserId, outcome.data.order.id);
++        setSuccessOrderId(outcome.data.order.id);
++        setConfirmOpen(false);
++        setPhase("success");
++        clearStoreOrderAttempt();
++        setOrderUncertain(false);
++        setOrderConflict(false);
++        break;
++      case "conflict":
++        markStoreOrderAttemptConflict(actorUserId);
++        setOrderConflict(true);
++        setOrderUncertain(false);
++        setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
++        setConfirmOpen(false);
++        break;
++      case "uncertain":
++        markStoreOrderAttemptUnknown(actorUserId);
++        setOrderUncertain(true);
++        setOrderConflict(false);
++        setSubmitError(UNCERTAIN_ORDER_DETAIL);
++        setConfirmOpen(false);
++        break;
++      case "unknown_persist":
++        markStoreOrderAttemptUnknown(actorUserId);
++        setOrderUncertain(true);
++        setOrderConflict(false);
++        setSubmitError(outcome.message ?? UNCERTAIN_ORDER_DETAIL);
++        setConfirmOpen(false);
++        break;
++      case "auth_required":
++        setSubmitError(outcome.message);
++        setConfirmOpen(false);
++        break;
++      case "validation_failed":
++        releaseStoreOrderAttemptForEdit();
++        setOrderUncertain(false);
++        setOrderConflict(false);
++        setSubmitError(outcome.message);
++        setConfirmOpen(false);
++        break;
++      default:
++        break;
++    }
++  }, [actorUserId]);
 +
 +  const beginPurchase = useCallback(
 +    async (raw: string) => {
@@ -714,10 +772,15 @@ index 00000000..e3205997
 +      branchId: branchId ?? undefined,
 +    });
 +    if (!created.ok) {
++      const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
 +      setSubmitError(
-+        created.reason === "body_mismatch" || created.reason === "blocked"
-+          ? ATTEMPT_CONFLICT_MESSAGE
-+          : "Не удалось сохранить попытку оформления",
++        created.reason === "body_mismatch"
++          ? ATTEMPT_BODY_MISMATCH_MESSAGE
++          : created.reason === "blocked"
++            ? locked && orderUncertain
++              ? UNCERTAIN_ORDER_DETAIL
++              : ATTEMPT_CONFLICT_MESSAGE
++            : "Не удалось сохранить попытку оформления",
 +      );
 +      return;
 +    }
@@ -733,38 +796,24 @@ index 00000000..e3205997
 +        searchParams: branchId ? { branchId } : undefined,
 +      });
 +      const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry: false });
++      applyPostOutcome(outcome);
 +      if (outcome.kind === "success") {
-+        markStoreOrderAttemptSucceeded(actorUserId, outcome.data.order.id);
-+        setSuccessOrderId(outcome.data.order.id);
-+        setConfirmOpen(false);
-+        setPhase("success");
 +        lastIdempotencyKey.current = created.record.idempotencyKey;
 +        receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, created.record.idempotencyKey);
-+      } else if (outcome.kind === "validation_failed" || outcome.kind === "auth_required") {
-+        setSubmitError(outcome.message);
-+        markStoreOrderAttemptUnknown(actorUserId);
-+      } else if (outcome.kind === "unknown_persist") {
-+        setSubmitError(outcome.message ?? "Статус заказа неизвестен. Проверьте историю в кабинете.");
-+        markStoreOrderAttemptUnknown(actorUserId);
-+      } else if (outcome.kind === "conflict") {
-+        setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
-+        markStoreOrderAttemptUnknown(actorUserId);
-+      } else {
-+        setSubmitError("Не удалось завершить оформление. Проверьте сеть.");
-+        markStoreOrderAttemptUnknown(actorUserId);
 +      }
 +    } catch (caught) {
 +      if (caught instanceof RemcardApiError) {
-+        setSubmitError(caught.message);
-+      } else {
-+        const net = classifyStoreOrderNetworkFailure(false);
-+        setSubmitError(
-+          net.kind === "validation_failed" || net.kind === "auth_required" || net.kind === "unknown_persist"
-+            ? (net.message ?? "Сетевая ошибка")
-+            : "Сетевая ошибка",
++        const payload = caught.body ?? (caught.message ? { error: caught.message } : null);
++        applyPostOutcome(
++          classifyStoreOrderPostResponse({
++            status: caught.status,
++            payload,
++            wasRetry: false,
++          }),
 +        );
++      } else {
++        applyPostOutcome(classifyStoreOrderNetworkFailure(false));
 +      }
-+      markStoreOrderAttemptUnknown(actorUserId);
 +    } finally {
 +      submitInFlight.current = false;
 +      setSubmitting(false);
@@ -779,6 +828,8 @@ index 00000000..e3205997
 +    certCode,
 +    branchId,
 +    receiving,
++    applyPostOutcome,
++    orderUncertain,
 +  ]);
 +
 +  if (phase === "success") {
@@ -904,6 +955,16 @@ index 00000000..e3205997
 +            ) : null}
 +          </div>
 +        ) : null}
++        {orderUncertain ? (
++          <p className={styles.scanBad} role="alert" data-testid="mini-order-uncertain">
++            {UNCERTAIN_ORDER_DETAIL}
++          </p>
++        ) : null}
++        {orderConflict ? (
++          <p className={styles.scanBad} role="alert" data-testid="mini-order-conflict">
++            {ATTEMPT_CONFLICT_MESSAGE}
++          </p>
++        ) : null}
 +        {submitError ? (
 +          <p className={styles.scanBad} role="alert">
 +            {submitError}
@@ -976,6 +1037,159 @@ index 00000000..e3205997
 +    </section>
 +  );
 +}
+\ No newline at end of file
+diff --git a/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx b/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx
+new file mode 100644
+index 00000000..250ca4d0
+--- /dev/null
++++ b/src/components/mini-app/MiniAppScanReceive.validation-retry.test.tsx
+@@ -0,0 +1,146 @@
++import { describe, expect, it, vi, beforeEach } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { MiniAppScanReceive } from "./MiniAppScanReceive";
++import type { MiniAppBootstrap } from "@/lib/mini-app/types";
++import type { OrderPreviewAllowed } from "@/lib/order-types";
++import { RemcardApiError, remcardFetchWithMeta } from "@/lib/api-client";
++
++vi.mock("./QrScanner", () => ({ QrScanner: () => null }));
++vi.mock("@/components/scanner/useReceivingAppealScannerHandoff", () => ({
++  useReceivingAppealScannerHandoff: () => ({
++    ordinaryAppealRequired: false,
++    crmReadOnlyNotice: null,
++    appealId: null,
++    linkPhase: "idle",
++    linkError: "",
++    ensureOrdinaryAppealContext: async () => ({ ok: true as const }),
++    assertPreviewAllowed: () => null,
++    beginOrderLinkAfterSuccess: () => undefined,
++    retryOrderLinkOnly: () => undefined,
++  }),
++}));
++
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return { ...actual, remcardFetchWithMeta: vi.fn() };
++});
++
++const bootstrap: MiniAppBootstrap = {
++  actorUserId: "user-retry-test",
++  role: "store",
++  roleLabel: "Магазин",
++  platform: "telegram",
++  displayName: "Тест",
++  entityLine: null,
++  cabinetTitle: "Кабинет",
++  workplaceLabel: null,
++  actions: [],
++  branches: [],
++  activeBranchId: "b1",
++  workplaceForbidden: false,
++  workplaceForbiddenMessage: null,
++  wallet: { status: "ok", confirmedUnpaidRub: 0, awaitingRub: 0, loadError: false },
++  presentation: { cardIdentifier: null, historyHref: "/settlements", cardExplainer: "" },
++  fullCabinetUrl: "https://prof.test/",
++  partnersUrl: "https://prof.test/partners",
++};
++
++const preview: OrderPreviewAllowed = {
++  allowed: true,
++  certificate: {
++    id: "c1",
++    promoCode: "RC-R",
++    status: "ACTIVE",
++    validUntil: null,
++    usageCount: 0,
++    maxUsages: 1,
++    userAlias: "Клиент",
++    issuer: { label: "PROF", name: "Org" },
++  },
++  partner: { id: "p1", storeUserId: "s1", storeName: "Store", isSelfScan: true },
++  availableCategories: [{ category: "doors", categoryLabel: "Двери", discountPercent: 7, issuerPercent: 3 }],
++};
++
++const successPayload = {
++  order: { id: "order-ok-2" },
++  summary: { totalAmount: 10000, discountAmount: 700, isSelfScan: true },
++};
++
++describe("MiniAppScanReceive validation retry", () => {
++  beforeEach(() => {
++    sessionStorage.clear();
++    vi.mocked(remcardFetchWithMeta).mockReset();
++    let id = 0;
++    vi.stubGlobal("crypto", { randomUUID: () => `idempotency-${++id}` });
++  });
++
++  it("after HTTP 400 releases attempt so second POST uses new idempotency key", async () => {
++    const user = userEvent.setup();
++    const keys: string[] = [];
++    vi.mocked(remcardFetchWithMeta)
++      .mockImplementation(async (path, init) => {
++        if (init?.idempotencyKey) keys.push(init.idempotencyKey);
++        if (keys.length === 1) {
++          throw new RemcardApiError(400, "Скидка клиента 10% превышает максимум", {
++            error: "Скидка клиента 10% превышает максимум по категории",
++          });
++        }
++        return { payload: successPayload, meta: {} };
++      });
++
++    render(
++      <MiniAppScanReceive
++        platform="telegram"
++        bootstrap={bootstrap}
++        branchId="b1"
++        onDone={() => undefined}
++        fixturePreview={preview}
++      />,
++    );
++
++    await user.clear(screen.getByTestId("mini-discount-input-doors"));
++    await user.type(screen.getByTestId("mini-discount-input-doors"), "10");
++    await user.click(screen.getByTestId("mini-scan-confirm-step"));
++    await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
++
++    await waitFor(() => expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1));
++    expect(screen.getByText(/превышает максимум/i)).toBeInTheDocument();
++
++    await user.clear(screen.getByTestId("mini-discount-input-doors"));
++    await user.type(screen.getByTestId("mini-discount-input-doors"), "7");
++    await user.click(screen.getByTestId("mini-scan-confirm-step"));
++    await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
++
++    await waitFor(() => expect(remcardFetchWithMeta).toHaveBeenCalledTimes(2));
++    expect(keys).toHaveLength(2);
++    expect(keys[0]).not.toBe(keys[1]);
++    await waitFor(() => expect(screen.getByTestId("mini-scan-success")).toBeInTheDocument());
++  });
++
++  it("blocks a fresh purchase after uncertain network without a second POST", async () => {
++    const user = userEvent.setup();
++    vi.mocked(remcardFetchWithMeta).mockRejectedValueOnce(new TypeError("network down"));
++
++    render(
++      <MiniAppScanReceive
++        platform="telegram"
++        bootstrap={bootstrap}
++        branchId="b1"
++        onDone={() => undefined}
++        fixturePreview={preview}
++      />,
++    );
++
++    await user.click(screen.getByTestId("mini-scan-confirm-step"));
++    await user.click(screen.getByRole("button", { name: /подтвердить покупку/i }));
++
++    await waitFor(() => expect(screen.getByTestId("mini-order-uncertain")).toBeInTheDocument());
++    expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1);
++
++    await user.clear(screen.getByTestId("mini-discount-input-doors"));
++    await user.type(screen.getByTestId("mini-discount-input-doors"), "5");
++    expect(screen.getByTestId("mini-scan-confirm-step")).toBeDisabled();
++    expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1);
++  });
++});
 \ No newline at end of file
 diff --git a/src/components/mini-app/MiniAppWalletCard.tsx b/src/components/mini-app/MiniAppWalletCard.tsx
 index cc2604e0..5dab73ee 100644
