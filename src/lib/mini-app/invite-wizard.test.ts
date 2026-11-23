@@ -1,8 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
+import { RemcardApiError } from "@/lib/api-client";
 import {
+  armMiniInviteRecoveryGuard,
   buildInviteShareText,
+  clearMiniInviteRecoveryGuard,
   discussionTemplateText,
   draftIsDirty,
+  isInviteCreateUnknownOutcome,
+  miniInviteRecoveryKey,
+  readMiniInviteRecoveryPending,
   stepFieldErrors,
   termsTemplateText,
 } from "./invite-wizard";
@@ -66,5 +72,39 @@ describe("mini-app invite wizard helpers", () => {
     expect(termsTemplateText("short", "Магазин")).toMatch(/Магазин/);
     expect(discussionTemplateText("business")).toMatch(/RemCard/);
     expect(discussionTemplateText("business")).not.toMatch(/demo/i);
+  });
+
+  describe("create recovery guard", () => {
+    const key = miniInviteRecoveryKey({
+      embeddedContext: "default",
+      platform: "telegram",
+      branchId: null,
+      kind: "discussion",
+    });
+
+    beforeEach(() => {
+      sessionStorage.clear();
+      clearMiniInviteRecoveryGuard(key);
+    });
+
+    it("arms and reads pending per scope", () => {
+      expect(readMiniInviteRecoveryPending(key)).toBe(false);
+      armMiniInviteRecoveryGuard(key);
+      expect(readMiniInviteRecoveryPending(key)).toBe(true);
+      clearMiniInviteRecoveryGuard(key);
+      expect(readMiniInviteRecoveryPending(key)).toBe(false);
+    });
+
+    it("classifies unknown vs confirmed create errors", () => {
+      expect(isInviteCreateUnknownOutcome(new RemcardApiError(0, "Сеть"))).toBe(true);
+      expect(isInviteCreateUnknownOutcome(new RemcardApiError(500, "Ошибка"))).toBe(true);
+      expect(isInviteCreateUnknownOutcome(new RemcardApiError(503, "Busy"))).toBe(true);
+      expect(
+        isInviteCreateUnknownOutcome(new RemcardApiError(502, "Некорректный ответ сервера")),
+      ).toBe(true);
+      expect(isInviteCreateUnknownOutcome(new RemcardApiError(400, "Отклонено"))).toBe(false);
+      expect(isInviteCreateUnknownOutcome(new RemcardApiError(403, "Нет доступа"))).toBe(false);
+      expect(isInviteCreateUnknownOutcome(new Error("boom"))).toBe(true);
+    });
   });
 });

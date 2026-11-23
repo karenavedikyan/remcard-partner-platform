@@ -73,6 +73,10 @@ Runtime full-cabinet `GET /api/partnership/link-invite` unchanged.
 - `MiniAppInvitePartner`: 3-step wizard, server `categoryPlan`, ready + copy, double-submit lock, `backDisabled` while creating
 - BFF allowlist + mini cookies for the three routes above
 
+## Unknown outcome recovery (FE `cursor/mini-app-invite-unknown-recovery`)
+
+Before each create POST, `armMiniInviteRecoveryGuard` runs synchronously in `sessionStorage` keyed by `embeddedContext + platform + branchId + kind` (browser session scopes the actor). On transport / 5xx / malformed response the guard stays armed: **no further POST**, create button disabled after back/remount/reload, copy points user to full cabinet «Партнёры». Confirmed 4xx clears the guard — safe retry. No idempotency keys. Test: attempt → network lost → one POST only across click + remount.
+
 ## vs prototype spec
 
 - Terms note max **400**; discussion subject max **500**

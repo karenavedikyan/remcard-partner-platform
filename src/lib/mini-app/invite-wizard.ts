@@ -2,6 +2,7 @@ import {
   AGENT_DISCUSSION_INVITE_TEMPLATES,
   type AgentDiscussionInviteTemplateKey,
 } from "@/components/partners/AgentDiscussionInviteWizard";
+import { RemcardApiError } from "@/lib/api-client";
 
 export type MiniInviteKind = "discussion" | "terms";
 
@@ -168,4 +169,57 @@ export function draftIsDirty(input: {
     Boolean(input.note.trim()) ||
     Boolean(input.intendedType)
   );
+}
+
+/** Scoped to embedded session + platform + branch + invite flow kind (one in-flight create). */
+export type MiniInviteRecoveryScope = {
+  embeddedContext: string;
+  platform: string;
+  branchId: string | null;
+  kind: MiniInviteKind;
+};
+
+export const MINI_INVITE_UNKNOWN_OUTCOME_HINT =
+  "Не отправляйте ещё одно приглашение из мини-кабинета. Откройте полный кабинет RemCard, раздел «Партнёры», и проверьте, не создано ли приглашение уже. Повторная отправка из мини-кабинета недоступна, пока вы это не проверите.";
+
+export function miniInviteRecoveryKey(scope: MiniInviteRecoveryScope): string {
+  return `remcard.mini-invite.recovery.v1.${scope.embeddedContext}.${scope.platform}.${scope.branchId ?? "none"}.${scope.kind}`;
+}
+
+export function readMiniInviteRecoveryPending(key: string): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    return sessionStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Call synchronously immediately before the create POST (no idempotency). */
+export function armMiniInviteRecoveryGuard(key: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(key, "1");
+  } catch {
+    // private mode — in-memory state in component still applies for this mount
+  }
+}
+
+export function clearMiniInviteRecoveryGuard(key: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+export function isInviteCreateUnknownOutcome(err: unknown): boolean {
+  if (err instanceof RemcardApiError) {
+    if (err.status === 0) return true;
+    if (err.status >= 500) return true;
+    if (err.message === "Некорректный ответ сервера") return true;
+    return false;
+  }
+  return true;
 }

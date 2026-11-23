@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
 import * as api from "@/lib/mini-app/api";
 import { RemcardApiError } from "@/lib/api-client";
+import {
+  clearMiniInviteRecoveryGuard,
+  miniInviteRecoveryKey,
+} from "@/lib/mini-app/invite-wizard";
 
 vi.mock("@/lib/config", () => ({ getAppUrl: () => "https://prof.remcard.ru" }));
 
@@ -30,6 +34,15 @@ function mockClipboard(writeText: ReturnType<typeof vi.fn>) {
 
 describe("MiniAppInvitePartner wizard", () => {
   beforeEach(() => {
+    sessionStorage.clear();
+    clearMiniInviteRecoveryGuard(
+      miniInviteRecoveryKey({
+        embeddedContext: baseProps.embeddedContext,
+        platform: baseProps.platform,
+        branchId: baseProps.branchId,
+        kind: "discussion",
+      }),
+    );
     vi.mocked(api.miniAppFetchInviteContext).mockReset();
     vi.mocked(api.miniAppCreateDiscussionInvite).mockReset();
     vi.mocked(api.miniAppCreateLinkInvite).mockReset();
@@ -214,7 +227,7 @@ describe("MiniAppInvitePartner wizard", () => {
     expect(screen.getByTestId("mini-invite-wizard")).toHaveAttribute("data-step", "1");
   });
 
-  it("keeps create enabled on unknown transport error without repeat button", async () => {
+  it("blocks repeat POST after unknown transport on click and remount", async () => {
     vi.mocked(api.miniAppFetchInviteContext).mockResolvedValue({
       kind: "discussion",
       nameMaxLength: 120,
@@ -224,7 +237,7 @@ describe("MiniAppInvitePartner wizard", () => {
     });
     vi.mocked(api.miniAppCreateDiscussionInvite).mockRejectedValue(new RemcardApiError(0, "Сеть"));
     const user = userEvent.setup();
-    render(<MiniAppInvitePartner {...baseProps} />);
+    const { unmount } = render(<MiniAppInvitePartner {...baseProps} />);
     await screen.findByTestId("mini-invite-wizard");
     await user.type(screen.getByTestId("mini-invite-name"), "B");
     await user.click(screen.getByTestId("mini-invite-next-1"));
@@ -232,8 +245,20 @@ describe("MiniAppInvitePartner wizard", () => {
     await user.click(screen.getByTestId("mini-invite-next-2"));
     await user.click(screen.getByTestId("mini-invite-create"));
     await screen.findByTestId("mini-invite-create-error");
+    expect(api.miniAppCreateDiscussionInvite).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("mini-invite-create")).toBeDisabled();
+    expect(screen.getByTestId("mini-invite-create-error")).toHaveTextContent(/полный кабинет/i);
     expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
-    expect(screen.getByTestId("mini-invite-create")).not.toBeDisabled();
+    await user.click(screen.getByTestId("mini-invite-create"));
+    expect(api.miniAppCreateDiscussionInvite).toHaveBeenCalledTimes(1);
+
+    unmount();
+    render(<MiniAppInvitePartner {...baseProps} />);
+    await screen.findByTestId("mini-invite-wizard");
+    expect(screen.getByTestId("mini-invite-wizard")).toHaveAttribute("data-step", "3");
+    await user.click(screen.getByTestId("mini-invite-create"));
+    expect(api.miniAppCreateDiscussionInvite).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("mini-invite-create")).toBeDisabled();
   });
 
   it("distinguishes transport failure from API rejection", async () => {
@@ -255,8 +280,10 @@ describe("MiniAppInvitePartner wizard", () => {
     await user.click(screen.getByTestId("mini-invite-create"));
     const err = await screen.findByTestId("mini-invite-create-error");
     expect(err).toHaveTextContent("Отклонено");
-    expect(err).not.toHaveTextContent("безопасный повтор");
+    expect(err).not.toHaveTextContent(/полный кабинет/i);
     expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
     expect(screen.getByTestId("mini-invite-create")).not.toBeDisabled();
+    await user.click(screen.getByTestId("mini-invite-create"));
+    expect(api.miniAppCreateDiscussionInvite).toHaveBeenCalledTimes(2);
   });
 });

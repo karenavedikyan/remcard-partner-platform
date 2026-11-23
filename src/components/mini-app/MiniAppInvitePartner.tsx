@@ -34,12 +34,18 @@ import type { MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   buildInviteShareText,
   DISCUSSION_MESSAGE_TEMPLATES,
+  armMiniInviteRecoveryGuard,
   clearMiniInviteDraft,
+  clearMiniInviteRecoveryGuard,
   draftIsDirty,
   formatInviteExpiry,
   INTENDED_PARTNER_OPTIONS,
+  isInviteCreateUnknownOutcome,
+  MINI_INVITE_UNKNOWN_OUTCOME_HINT,
   miniInviteDraftKey,
+  miniInviteRecoveryKey,
   readMiniInviteDraft,
+  readMiniInviteRecoveryPending,
   stepFieldErrors,
   termsTemplateText,
   writeMiniInviteDraft,
@@ -92,16 +98,14 @@ function inviteFormReducer(state: InviteFormSnapshot, action: InviteFormAction):
 }
 
 function transportErrorMessage(err: unknown, fallback: string): { message: string; unknownOutcome: boolean } {
+  const unknownOutcome = isInviteCreateUnknownOutcome(err);
+  if (unknownOutcome) {
+    return { message: MINI_INVITE_UNKNOWN_OUTCOME_HINT, unknownOutcome: true };
+  }
   if (err instanceof RemcardApiError) {
-    if (err.status === 0) {
-      return {
-        message: "Не удалось связаться с сервером. Проверьте сеть и попробуйте ещё раз.",
-        unknownOutcome: true,
-      };
-    }
     return { message: err.message || fallback, unknownOutcome: false };
   }
-  return { message: fallback, unknownOutcome: true };
+  return { message: fallback, unknownOutcome: false };
 }
 
 export function MiniAppInvitePartner({
@@ -142,6 +146,19 @@ export function MiniAppInvitePartner({
 
   const serverPlan = inviteContext?.categoryPlan;
   const draftKey = miniInviteDraftKey(platform, branchId);
+  const recoveryKey = useMemo(
+    () =>
+      miniInviteRecoveryKey({
+        embeddedContext,
+        platform,
+        branchId,
+        kind,
+      }),
+    [embeddedContext, platform, branchId, kind],
+  );
+  const [createRecoveryBlocked, setCreateRecoveryBlocked] = useState(() =>
+    readMiniInviteRecoveryPending(recoveryKey),
+  );
 
   const formTargetKey = `mini:link:${intendedType || "none"}:${(serverPlan?.categories ?? []).join("\0")}`;
   const resetKey = buildInviteFormResetKey(
@@ -168,6 +185,15 @@ export function MiniAppInvitePartner({
       blockedReason: serverPlan?.error,
     });
   }, [resetKey, serverPlan?.error, formTargetKey]);
+
+  useEffect(() => {
+    const pending = readMiniInviteRecoveryPending(recoveryKey);
+    setCreateRecoveryBlocked(pending);
+    if (pending) {
+      setUnknownOutcome(true);
+      setCreateError(MINI_INVITE_UNKNOWN_OUTCOME_HINT);
+    }
+  }, [recoveryKey]);
 
   useEffect(() => {
     if (fixtureInviteLink) {
@@ -317,7 +343,7 @@ export function MiniAppInvitePartner({
   function gotoStep(next: Step) {
     if (creating) return;
     setFieldErrors({});
-    if (!unknownOutcome) setCreateError("");
+    if (!unknownOutcome && !createRecoveryBlocked) setCreateError("");
     setStep(next);
   }
 
@@ -351,11 +377,14 @@ export function MiniAppInvitePartner({
 
   async function submitInvite() {
     if (createInFlight.current || creating) return;
+    if (createRecoveryBlocked || readMiniInviteRecoveryPending(recoveryKey)) return;
     if (!validateCurrentStep(3)) return;
     setCreateError("");
     setUnknownOutcome(false);
     setStatusText("");
     setStatusBad(false);
+    armMiniInviteRecoveryGuard(recoveryKey);
+    setCreateRecoveryBlocked(true);
     createInFlight.current = true;
     setCreating(true);
     const trimmedName = partnerName.trim();
@@ -370,6 +399,8 @@ export function MiniAppInvitePartner({
         );
         const url = `${getAppUrl()}${result.previewPath}`;
         clearMiniInviteDraft(draftKey);
+        clearMiniInviteRecoveryGuard(recoveryKey);
+        setCreateRecoveryBlocked(false);
         setCreated({
           url,
           previewPath: result.previewPath,
@@ -398,6 +429,8 @@ export function MiniAppInvitePartner({
         );
         const url = `${getAppUrl()}${result.previewPath}`;
         clearMiniInviteDraft(draftKey);
+        clearMiniInviteRecoveryGuard(recoveryKey);
+        setCreateRecoveryBlocked(false);
         setCreated({
           url,
           previewPath: result.previewPath,
@@ -417,6 +450,10 @@ export function MiniAppInvitePartner({
       const err = transportErrorMessage(caught, "Не удалось создать приглашение");
       setCreateError(err.message);
       setUnknownOutcome(err.unknownOutcome);
+      if (!err.unknownOutcome) {
+        clearMiniInviteRecoveryGuard(recoveryKey);
+        setCreateRecoveryBlocked(false);
+      }
     } finally {
       createInFlight.current = false;
       setCreating(false);
@@ -803,7 +840,11 @@ export function MiniAppInvitePartner({
             {createError ? (
               <p className={styles.scanBad} role="alert" data-testid="mini-invite-create-error">
                 {createError}
-                {unknownOutcome ? " Исход запроса неизвестен." : null}
+              </p>
+            ) : null}
+            {createRecoveryBlocked ? (
+              <p className={styles.footnote} data-testid="mini-invite-recovery-blocked">
+                Создание из мини-кабинета заблокировано до проверки в полном кабинете.
               </p>
             ) : null}
             <button
@@ -817,11 +858,19 @@ export function MiniAppInvitePartner({
             <button
               type="button"
               className={styles.primaryBtn}
-              disabled={creating || Boolean(kind === "terms" && (serverPlan?.error || contextBlocked))}
+              disabled={
+                creating ||
+                createRecoveryBlocked ||
+                Boolean(kind === "terms" && (serverPlan?.error || contextBlocked))
+              }
               data-testid="mini-invite-create"
               onClick={() => void submitInvite()}
             >
-              {creating ? "Создаём…" : "Создать приглашение"}
+              {creating
+                ? "Создаём…"
+                : createRecoveryBlocked
+                  ? "Создание заблокировано"
+                  : "Создать приглашение"}
             </button>
           </>
         ) : null}
