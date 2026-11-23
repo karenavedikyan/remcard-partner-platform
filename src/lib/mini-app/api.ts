@@ -6,6 +6,7 @@ import type {
   MiniAppPlatform,
   MiniAppSessionResult,
 } from "./types";
+import type { SettlementsResponse } from "@/lib/settlements-types";
 import type { MiniAppEmbeddedContext } from "./embedded-context";
 import { buildMiniAppExtraHeaders } from "./mini-app-request-headers";
 import { miniAppUsesEmbeddedSession } from "./embedded-context";
@@ -225,6 +226,23 @@ export async function miniAppFetchBootstrap(
   });
 }
 
+export type MiniAppWalletFetchOptions = MiniAppCallOptions & {
+  /** Branch / ledger scope query params — omit branchId to read all authorized branches when allowed. */
+  settlementsSearchParams?: Record<string, string>;
+};
+
+/** Read-only settlements alias for mini-app wallet — same contract as /api/pro/wallet/settlements, sans payout tokens. */
+export async function miniAppFetchWalletSettlements(
+  platform: MiniAppPlatform,
+  opts?: MiniAppWalletFetchOptions,
+): Promise<SettlementsResponse> {
+  const params: Record<string, string> = { host: platform, ...(opts?.settlementsSearchParams ?? {}) };
+  return remcardFetch<SettlementsResponse>("/api/pro/mini-app/wallet/settlements", {
+    searchParams: params,
+    extraHeaders: miniHeaders(platform, opts),
+  });
+}
+
 export type MiniAppScanState =
   | "valid"
   | "used"
@@ -296,6 +314,80 @@ export async function miniAppStoreOrderSubmitWithMeta(
     method: "POST",
     body,
     idempotencyKey,
+    searchParams: opts?.branchId ? { branchId: opts.branchId } : undefined,
+    extraHeaders: miniHeaders(platform, opts),
+  });
+}
+
+export type MiniAppInviteContextResponse = {
+  kind: "discussion" | "terms";
+  nameMaxLength: number;
+  noteMaxLength: number;
+  inviterBusinessSide: {
+    principalUserId: string;
+    partnerType: string | null;
+    storeCategories: string[];
+    specializations: string[];
+    tradeTermCategories: string[];
+  } | null;
+  categoryPlan: {
+    categories: string[];
+    requiresIntendedType: boolean;
+    error?: string;
+  };
+};
+
+export async function miniAppFetchInviteContext(
+  platform: MiniAppPlatform,
+  opts?: MiniAppCallOptions & { intendedPartnerType?: string | null },
+): Promise<MiniAppInviteContextResponse> {
+  const params: Record<string, string> = { host: platform };
+  if (opts?.branchId) params.branchId = opts.branchId;
+  if (opts?.intendedPartnerType) params.intendedPartnerType = opts.intendedPartnerType;
+  return remcardFetch<MiniAppInviteContextResponse>("/api/pro/mini-app/partnership/invite-context", {
+    searchParams: params,
+    extraHeaders: miniHeaders(platform, opts),
+  });
+}
+
+export type MiniAppDiscussionInviteCreateResponse = {
+  inviteId: string;
+  token: string;
+  expiresAt: string;
+  previewPath: string;
+};
+
+export async function miniAppCreateDiscussionInvite(
+  platform: MiniAppPlatform,
+  body: { recipientLabel: string; cooperationSubject: string },
+  opts?: MiniAppCallOptions,
+): Promise<MiniAppDiscussionInviteCreateResponse> {
+  return remcardFetch<MiniAppDiscussionInviteCreateResponse>(
+    "/api/pro/mini-app/partnership/discussion-invite",
+    {
+      method: "POST",
+      body,
+      searchParams: opts?.branchId ? { branchId: opts.branchId } : undefined,
+      extraHeaders: miniHeaders(platform, opts),
+    },
+  );
+}
+
+export type MiniAppLinkInviteCreateResponse = {
+  inviteId: string;
+  token: string;
+  expiresAt: string;
+  previewPath: string;
+};
+
+export async function miniAppCreateLinkInvite(
+  platform: MiniAppPlatform,
+  body: Record<string, unknown>,
+  opts?: MiniAppCallOptions,
+): Promise<MiniAppLinkInviteCreateResponse> {
+  return remcardFetch<MiniAppLinkInviteCreateResponse>("/api/pro/mini-app/partnership/link-invite", {
+    method: "POST",
+    body,
     searchParams: opts?.branchId ? { branchId: opts.branchId } : undefined,
     extraHeaders: miniHeaders(platform, opts),
   });

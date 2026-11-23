@@ -437,10 +437,14 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/auth/send-code"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/auth/verify-code"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/bootstrap"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/wallet/settlements"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/certificate"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order/preview"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/partnership/invite-context"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/partnership/link-invite"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/partnership/discussion-invite"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/store/order/preview"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order/extra"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/scan"), true);
@@ -535,6 +539,11 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join"), false);
     assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
+  });
+
+  it("allows mini-app wallet settlements on session cookie path", () => {
+    const allow = extraAllowedCookieNamesForProxyRequest("/api/pro/mini-app/wallet/settlements");
+    assert.ok(allow?.has("remcard-mini-app-session"));
   });
 
   it("scopes mini-app session cookie to mini upstream routes only", () => {

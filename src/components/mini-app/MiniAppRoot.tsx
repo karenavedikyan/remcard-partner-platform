@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 import { MiniAppWalletCard } from "./MiniAppWalletCard";
+import { MiniAppWallet } from "./MiniAppWallet";
 import { MiniAppScanReceive } from "./MiniAppScanReceive";
 import { MiniAppProfBrand } from "./MiniAppProfBrand";
 import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
@@ -43,7 +44,7 @@ type Screen =
   | "home"
   | "create"
   | "scan"
-  | "card-info"
+  | "wallet"
   | "invite"
   | "full-cabinet"
   | "certificate-ready"
@@ -412,26 +413,19 @@ export function MiniAppRoot({
   if (screen === "create") {
     return (
       <div className={styles.shell}>
-        <MiniAppSubpage
-          title="Новый сертификат"
-          lead="Выберите программу и клиента из доступных в вашем кабинете."
+        <MiniAppCertificateCreate
+          platform={platform}
+          bootstrap={bootstrap}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
+          fixtureCreateSeed={fixtureCreateSeed}
+          fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
           onBack={() => setScreen("home")}
-        >
-          <div className={styles.createWrap}>
-            <MiniAppCertificateCreate
-              platform={platform}
-              bootstrap={bootstrap}
-              branchId={branchId}
-              embeddedContext={embeddedContext}
-              fixtureCreateSeed={fixtureCreateSeed}
-              fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
-              onCreated={(cert) => {
-                setCreatedCertificate(cert);
-                setScreen("certificate-ready");
-              }}
-            />
-          </div>
-        </MiniAppSubpage>
+          onCreated={(cert) => {
+            setCreatedCertificate(cert);
+            setScreen("certificate-ready");
+          }}
+        />
       </div>
     );
   }
@@ -465,6 +459,10 @@ export function MiniAppRoot({
     return (
       <div className={styles.shell}>
         <MiniAppInvitePartner
+          actorUserId={bootstrap.actorUserId}
+          platform={platform}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
           partnersSearchUrl={bootstrap.partnersUrl}
           fixtureInviteLink={fixtureInviteLink}
           onBack={() => setScreen("home")}
@@ -514,31 +512,18 @@ export function MiniAppRoot({
     );
   }
 
-  if (screen === "card-info") {
+  if (screen === "wallet") {
     return (
-      <div className={styles.shell}>
-        <MiniAppSubpage title="Кошелёк" onBack={() => setScreen("home")}>
-          {bootstrap.presentation.cardIdentifier ? (
-            <p className={styles.scanNotice}>{bootstrap.presentation.cardIdentifier}</p>
-          ) : null}
-          <p>{bootstrap.presentation.cardExplainer}</p>
-          {bootstrap.wallet.status === "error" ? (
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() => void loadBootstrap(platform, branchId)}
-            >
-              Повторить загрузку
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={() => openProfLink(`${bootstrap.fullCabinetUrl.replace(/\/+$/, "")}${bootstrap.presentation.historyHref}`)}
-          >
-            История и «Мне должны / Я должен» в кабинете
-          </button>
-        </MiniAppSubpage>
+      <div className={styles.shell} data-testid="mini-app-wallet">
+        <MiniAppWallet
+          platform={platform}
+          bootstrap={bootstrap}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
+          fixtureMode={Boolean(fixtureBootstrap)}
+          onBack={() => setScreen("home")}
+          onOpenProfSettlements={openProfLink}
+        />
       </div>
     );
   }
@@ -563,7 +548,7 @@ export function MiniAppRoot({
         <p className={styles.scanNotice}>{bootstrap.workplaceForbiddenMessage}</p>
       ) : null}
 
-      <MiniAppWalletCard bootstrap={bootstrap} onCardClick={() => setScreen("card-info")} />
+      <MiniAppWalletCard bootstrap={bootstrap} onCardClick={() => setScreen("wallet")} />
 
       {(bootstrap.role === "company" || bootstrap.role === "store") && bootstrap.branches.length > 1 ? (
         <button
