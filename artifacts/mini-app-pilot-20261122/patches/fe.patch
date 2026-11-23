@@ -1,0 +1,397 @@
+diff --git a/src/app/dev/mini-app-fixture/fixtures-data.ts b/src/app/dev/mini-app-fixture/fixtures-data.ts
+index e65f348d..abac557b 100644
+--- a/src/app/dev/mini-app-fixture/fixtures-data.ts
++++ b/src/app/dev/mini-app-fixture/fixtures-data.ts
+@@ -75,6 +75,7 @@ export function buildMiniAppFixture(
+           ? "Алексей Романов"
+           : "Мария Орлова";
+   return {
++    actorUserId: `fixture-${role}`,
+     role,
+     roleLabel: labels[role],
+     platform,
+diff --git a/src/components/mini-app/MiniAppCertificateReady.tsx b/src/components/mini-app/MiniAppCertificateReady.tsx
+index 78a13fe2..e6678a5f 100644
+--- a/src/components/mini-app/MiniAppCertificateReady.tsx
++++ b/src/components/mini-app/MiniAppCertificateReady.tsx
+@@ -4,10 +4,14 @@ import { useEffect, useMemo, useState } from "react";
+ import QRCode from "qrcode";
+ import type { StoreCertificate } from "@/lib/certificate-types";
+ import {
++  clientVisibleDiscountSummary,
+   getCertificateCodeForApi,
++  isTestCertificateUrl,
+   resolveCertificatePageUrl,
+ } from "@/lib/certificate-url";
+ import { displayCategoryLabel } from "@/lib/category-display";
++import { RemcardApiError, remcardFetchBlob } from "@/lib/api-client";
++import { detectMiniAppHost } from "@/lib/mini-app/host";
+ import { MiniAppSubpage } from "./MiniAppSubpage";
+ import { MiniIconCopy } from "./MiniAppIcons";
+ import styles from "./mini-app.module.css";
+@@ -17,6 +21,13 @@ type Props = {
+   onBack: () => void;
+ };
+ 
++function formatValidUntil(iso: string | null | undefined): string | null {
++  if (!iso) return null;
++  const d = new Date(iso);
++  if (Number.isNaN(d.getTime())) return null;
++  return d.toLocaleDateString("ru-RU");
++}
++
+ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
+   const pageUrl = useMemo(() => resolveCertificatePageUrl(certificate), [certificate]);
+   const code = certificate.promoCode?.trim() || getCertificateCodeForApi(certificate) || "";
+@@ -32,9 +43,14 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
+       ?.displayName?.trim() ||
+     "";
+   const programTitle = program?.trim() || "Программа";
++  const discountSummary = clientVisibleDiscountSummary(certificate);
++  const validUntilLabel = formatValidUntil(certificate.validUntil);
+ 
+   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+   const [copyState, setCopyState] = useState<"idle" | "ok" | "error">("idle");
++  const [linkCopyState, setLinkCopyState] = useState<"idle" | "ok" | "error">("idle");
++  const [pdfError, setPdfError] = useState("");
++  const [pdfLoading, setPdfLoading] = useState(false);
+ 
+   useEffect(() => {
+     let cancelled = false;
+@@ -50,23 +66,77 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
+     };
+   }, [pageUrl]);
+ 
+-  async function copyCode() {
+-    if (!code) {
+-      setCopyState("error");
++  function openExternal(url: string) {
++    const host = detectMiniAppHost();
++    if (host) host.openExternalLink(url);
++    else window.open(url, "_blank", "noopener,noreferrer");
++  }
++
++  async function copyText(value: string, kind: "code" | "link") {
++    const setState = kind === "code" ? setCopyState : setLinkCopyState;
++    if (!value.trim()) {
++      setState("error");
+       return;
+     }
+     try {
+-      await navigator.clipboard.writeText(code);
+-      setCopyState("ok");
++      await navigator.clipboard.writeText(value);
++      setState("ok");
+     } catch {
+-      setCopyState("error");
++      setState("error");
++    }
++  }
++
++  async function shareLink() {
++    if (!pageUrl) return;
++    if (navigator.share) {
++      try {
++        await navigator.share({
++          title: "Ваша рекомендация RemCard",
++          text: "Скидка по рекомендации RemCard",
++          url: pageUrl,
++        });
++        return;
++      } catch (error) {
++        if (error instanceof DOMException && error.name === "AbortError") return;
++      }
++    }
++    await copyText(pageUrl, "link");
++  }
++
++  async function downloadPdf() {
++    setPdfError("");
++    setPdfLoading(true);
++    try {
++      const lookup = getCertificateCodeForApi(certificate);
++      if (!lookup) throw new Error("Не удалось определить код документа");
++      const { blob, filename } = await remcardFetchBlob(
++        `/api/certificate/${encodeURIComponent(lookup)}/pdf`,
++      );
++      if (blob.type && !blob.type.includes("pdf")) {
++        throw new Error("Ответ сервера не является PDF");
++      }
++      const url = URL.createObjectURL(blob);
++      const anchor = document.createElement("a");
++      anchor.href = url;
++      anchor.download =
++        filename ?? `remcard-${certificate.promoCode || certificate.qrCode || "certificate"}.pdf`;
++      anchor.click();
++      URL.revokeObjectURL(url);
++    } catch (caught) {
++      if (caught instanceof RemcardApiError) {
++        setPdfError(caught.message);
++      } else {
++        setPdfError("Не удалось скачать PDF. Откройте клиентскую ссылку в браузере.");
++      }
++    } finally {
++      setPdfLoading(false);
+     }
+   }
+ 
+   return (
+     <MiniAppSubpage
+       title="Сертификат готов"
+-      lead="Покажите QR-код или поделитесь кодом с клиентом."
++      lead="Покажите QR-код или поделитесь ссылкой с клиентом."
+       onBack={onBack}
+     >
+       <div className={styles.certResultCard}>
+@@ -88,14 +158,43 @@ export function MiniAppCertificateReady({ certificate, onBack }: Props) {
+         </p>
+         <p className={styles.certMetaTitle}>{programTitle}</p>
+         {clientName ? <p className={styles.certMetaClient}>{clientName}</p> : null}
++        <p className={styles.scanNotice}>{discountSummary}</p>
++        {validUntilLabel ? <p className={styles.scanNotice}>Действует до {validUntilLabel}</p> : null}
+       </div>
+-      <button type="button" className={styles.primaryBtn} onClick={() => void copyCode()}>
++      {pageUrl ? (
++        <button type="button" className={styles.secondaryBtn} onClick={() => openExternal(pageUrl)}>
++          Посмотреть как клиент
++        </button>
++      ) : null}
++      <button type="button" className={styles.primaryBtn} onClick={() => void copyText(code, "code")}>
+         <MiniIconCopy />
+         {copyState === "ok" ? "Скопировано" : "Скопировать код"}
+       </button>
++      <button
++        type="button"
++        className={styles.secondaryBtn}
++        disabled={!pageUrl}
++        onClick={() => void copyText(pageUrl, "link")}
++      >
++        {linkCopyState === "ok" ? "Ссылка скопирована" : "Скопировать ссылку"}
++      </button>
++      <button type="button" className={styles.secondaryBtn} disabled={!pageUrl} onClick={() => void shareLink()}>
++        Поделиться
++      </button>
++      <button type="button" className={styles.secondaryBtn} disabled={pdfLoading} onClick={() => void downloadPdf()}>
++        {pdfLoading ? "Загрузка PDF…" : "Скачать PDF"}
++      </button>
++      {pdfError ? (
++        <p className={styles.scanBad} role="alert">
++          {pdfError}
++        </p>
++      ) : null}
++      {isTestCertificateUrl(pageUrl) ? (
++        <p className={styles.scanNotice}>Тестовый контур — не для реальных клиентов.</p>
++      ) : null}
+       <button type="button" className={styles.secondaryBtn} onClick={onBack}>
+         Вернуться в кабинет
+       </button>
+     </MiniAppSubpage>
+   );
+-}
++}
+\ No newline at end of file
+diff --git a/src/components/mini-app/MiniAppRoot.tsx b/src/components/mini-app/MiniAppRoot.tsx
+index 9c841041..c8611d37 100644
+--- a/src/components/mini-app/MiniAppRoot.tsx
++++ b/src/components/mini-app/MiniAppRoot.tsx
+@@ -1,10 +1,11 @@
+ "use client";
+ 
+ import { useCallback, useEffect, useState } from "react";
++import { useSearchParams } from "next/navigation";
+ import type { StoreCertificate } from "@/lib/certificate-types";
+ import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
+ import { MiniAppWalletCard } from "./MiniAppWalletCard";
+-import { MiniAppScanVerify } from "./MiniAppScanVerify";
++import { MiniAppScanReceive } from "./MiniAppScanReceive";
+ import { MiniAppProfBrand } from "./MiniAppProfBrand";
+ import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
+ import { MiniAppFullCabinet } from "./MiniAppFullCabinet";
+@@ -52,6 +53,8 @@ export function MiniAppRoot({
+   fixtureCreateSeed,
+   fixtureInviteLink,
+ }: PilotProps = {}) {
++  const searchParams = useSearchParams();
++  const appealIdFromUrl = searchParams?.get("appealId");
+   const [screen, setScreen] = useState<Screen>(initialScreen);
+   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
+   const [bootstrap, setBootstrap] = useState<MiniAppBootstrap | null>(fixtureBootstrap ?? null);
+@@ -234,11 +237,21 @@ export function MiniAppRoot({
+     return (
+       <div className={styles.shell}>
+         <MiniAppSubpage
+-          title="Проверка QR"
+-          lead="Проверка не активирует и не списывает сертификат."
++          title="Сканер"
++          lead="Проверка QR и приём документа с оформлением покупки."
+           onBack={() => setScreen("home")}
+         >
+-          <MiniAppScanVerify platform={platform} branchId={branchId} onDone={() => setScreen("home")} embed />
++          <MiniAppScanReceive
++            platform={platform}
++            bootstrap={bootstrap}
++            branchId={branchId}
++            appealId={appealIdFromUrl}
++            onDone={() => setScreen("home")}
++            onClientsDeepLink={(appealId) => {
++              const base = bootstrap.fullCabinetUrl.replace(/\/+$/, "");
++              openProfLink(`${base}/clients?appealId=${encodeURIComponent(appealId)}`);
++            }}
++          />
+         </MiniAppSubpage>
+       </div>
+     );
+@@ -301,13 +314,25 @@ export function MiniAppRoot({
+     return (
+       <div className={styles.shell}>
+         <MiniAppSubpage title="Кошелёк" onBack={() => setScreen("home")}>
++          {bootstrap.presentation.cardIdentifier ? (
++            <p className={styles.scanNotice}>{bootstrap.presentation.cardIdentifier}</p>
++          ) : null}
+           <p>{bootstrap.presentation.cardExplainer}</p>
++          {bootstrap.wallet.status === "error" ? (
++            <button
++              type="button"
++              className={styles.secondaryBtn}
++              onClick={() => void loadBootstrap(platform, branchId)}
++            >
++              Повторить загрузку
++            </button>
++          ) : null}
+           <button
+             type="button"
+             className={styles.secondaryBtn}
+-            onClick={() => openProfLink(bootstrap.presentation.historyHref)}
++            onClick={() => openProfLink(`${bootstrap.fullCabinetUrl.replace(/\/+$/, "")}${bootstrap.presentation.historyHref}`)}
+           >
+-            История начислений в кабинете
++            История и «Мне должны / Я должен» в кабинете
+           </button>
+         </MiniAppSubpage>
+       </div>
+@@ -451,7 +476,18 @@ function dispatchAction(
+     setScreen("create");
+     return;
+   }
+-  else if (id === "scan_qr") setScreen("scan");
++  else if (id === "scan_qr") {
++    if (
++      bootstrap &&
++      (bootstrap.role === "store" || bootstrap.role === "company") &&
++      !branchId &&
++      bootstrap.branches.length > 1
++    ) {
++      setScreen("branch-pick");
++      return;
++    }
++    setScreen("scan");
++  }
+   else if (id === "invite_partner") setScreen("invite");
+   else if (id === "open_full_cabinet") setScreen("full-cabinet");
+ }
+diff --git a/src/components/mini-app/MiniAppWalletCard.tsx b/src/components/mini-app/MiniAppWalletCard.tsx
+index cc2604e0..5dab73ee 100644
+--- a/src/components/mini-app/MiniAppWalletCard.tsx
++++ b/src/components/mini-app/MiniAppWalletCard.tsx
+@@ -39,6 +39,9 @@ export function MiniAppWalletCard({ bootstrap, onCardClick }: Props) {
+           →
+         </span>
+         <div className={styles.walletBody}>
++          {bootstrap.presentation.cardIdentifier ? (
++            <p className={styles.walletLabel}>{bootstrap.presentation.cardIdentifier}</p>
++          ) : null}
+           <p className={styles.walletLabel}>Начислено к получению</p>
+           <div className={styles.walletHero}>
+             <strong className={styles.walletAmount}>
+diff --git a/src/lib/mini-app/mini-app-bootstrap-path.test.tsx b/src/lib/mini-app/mini-app-bootstrap-path.test.tsx
+index a495cd9a..e55a920e 100644
+--- a/src/lib/mini-app/mini-app-bootstrap-path.test.tsx
++++ b/src/lib/mini-app/mini-app-bootstrap-path.test.tsx
+@@ -40,6 +40,7 @@ describe("/mini-app bootstrap path", () => {
+       activeBranchId: null,
+       workplaceForbidden: false,
+       workplaceForbiddenMessage: null,
++      actorUserId: "test-user",
+       wallet: { status: "ok", confirmedUnpaidRub: 0, awaitingRub: 0, loadError: false },
+       presentation: { cardIdentifier: null, historyHref: "/settlements", cardExplainer: "" },
+       fullCabinetUrl: "https://prof.remcard.ru/",
+diff --git a/src/lib/mini-app/types.ts b/src/lib/mini-app/types.ts
+index a4507596..f5920dd3 100644
+--- a/src/lib/mini-app/types.ts
++++ b/src/lib/mini-app/types.ts
+@@ -7,6 +7,7 @@ export type MiniAppActionId =
+   | "open_full_cabinet";
+ 
+ export type MiniAppBootstrap = {
++  actorUserId: string;
+   role: "agent" | "specialist" | "store" | "company";
+   roleLabel: string;
+   platform: MiniAppPlatform;
+diff --git a/src/lib/order-totals.test.ts b/src/lib/order-totals.test.ts
+index 97bd4e32..14c61117 100644
+--- a/src/lib/order-totals.test.ts
++++ b/src/lib/order-totals.test.ts
+@@ -30,8 +30,13 @@ describe("order-totals flexible client discount", () => {
+     expect(result.ok).toBe(false);
+   });
+ 
+-  it("blocks invalid discount on empty amount line", () => {
++  it("ignores discount draft when line amount is empty", () => {
+     const result = validateOrderDiscountDrafts([doors], { doors: "" }, { doors: "101" });
++    expect(result.ok).toBe(true);
++  });
++
++  it("rejects discount above category pool", () => {
++    const result = validateOrderDiscountDrafts([doors], { doors: "10000" }, { doors: "10.02" });
+     expect(result.ok).toBe(false);
+   });
+ });
+\ No newline at end of file
+diff --git a/src/lib/order-totals.ts b/src/lib/order-totals.ts
+index 20cfd9c1..1061065a 100644
+--- a/src/lib/order-totals.ts
++++ b/src/lib/order-totals.ts
+@@ -40,21 +40,40 @@ export function appliedClientDiscountPercent(
+   return Number(raw);
+ }
+ 
++export const CLIENT_DISCOUNT_POOL_TOLERANCE_PP = 0.01;
++
++export function categoryPoolPercent(category: PreviewCategory): number {
++  return previewPoolPercent(category);
++}
++
+ export function validateOrderDiscountDrafts(
+   categories: PreviewCategory[],
+   amountDrafts: CategoryAmountDraft,
+   discountDrafts?: CategoryDiscountDraft,
+ ): { ok: true } | { ok: false; message: string } {
+   for (const category of categories) {
+-    if (!hasExplicitClientDiscountDraft(category, discountDrafts)) continue;
+-    const discountRaw = discountDrafts![category.category]!.trim();
+-    const parsed = Number(discountRaw);
++    const amountRaw = amountDrafts[category.category]?.trim() ?? "";
++    if (!amountRaw) continue;
++    const amount = Number(amountRaw);
++    if (!Number.isFinite(amount) || amount <= 0) continue;
++
++    const pool = categoryPoolPercent(category);
++    const explicit = hasExplicitClientDiscountDraft(category, discountDrafts);
++    const parsed = explicit
++      ? Number(discountDrafts![category.category]!.trim())
++      : category.discountPercent;
+     if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+       return {
+         ok: false,
+         message: `Некорректная скидка клиенту для ${category.categoryLabel} (укажите 0–100%)`,
+       };
+     }
++    if (parsed - pool > CLIENT_DISCOUNT_POOL_TOLERANCE_PP - 1e-9) {
++      return {
++        ok: false,
++        message: `Скидка ${parsed}% по «${category.categoryLabel}» превышает максимум по категории: ${pool}%`,
++      };
++    }
+   }
+   return { ok: true };
+ }

@@ -40,19 +40,38 @@ export function appliedClientDiscountPercent(
   return Number(raw);
 }
 
+export const CLIENT_DISCOUNT_POOL_TOLERANCE_PP = 0.01;
+
+export function categoryPoolPercent(category: PreviewCategory): number {
+  return previewPoolPercent(category);
+}
+
 export function validateOrderDiscountDrafts(
   categories: PreviewCategory[],
   amountDrafts: CategoryAmountDraft,
   discountDrafts?: CategoryDiscountDraft,
 ): { ok: true } | { ok: false; message: string } {
   for (const category of categories) {
-    if (!hasExplicitClientDiscountDraft(category, discountDrafts)) continue;
-    const discountRaw = discountDrafts![category.category]!.trim();
-    const parsed = Number(discountRaw);
+    const amountRaw = amountDrafts[category.category]?.trim() ?? "";
+    if (!amountRaw) continue;
+    const amount = Number(amountRaw);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+
+    const pool = categoryPoolPercent(category);
+    const explicit = hasExplicitClientDiscountDraft(category, discountDrafts);
+    const parsed = explicit
+      ? Number(discountDrafts![category.category]!.trim())
+      : category.discountPercent;
     if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
       return {
         ok: false,
         message: `Некорректная скидка клиенту для ${category.categoryLabel} (укажите 0–100%)`,
+      };
+    }
+    if (parsed - pool > CLIENT_DISCOUNT_POOL_TOLERANCE_PP - 1e-9) {
+      return {
+        ok: false,
+        message: `Скидка ${parsed}% по «${category.categoryLabel}» превышает максимум по категории: ${pool}%`,
       };
     }
   }

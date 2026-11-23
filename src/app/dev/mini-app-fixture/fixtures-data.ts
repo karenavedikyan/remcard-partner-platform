@@ -75,6 +75,7 @@ export function buildMiniAppFixture(
           ? "Алексей Романов"
           : "Мария Орлова";
   return {
+    actorUserId: `fixture-${role}`,
     role,
     roleLabel: labels[role],
     platform,

@@ -7,6 +7,7 @@ export type MiniAppActionId =
   | "open_full_cabinet";
 
 export type MiniAppBootstrap = {
+  actorUserId: string;
   role: "agent" | "specialist" | "store" | "company";
   roleLabel: string;
   platform: MiniAppPlatform;

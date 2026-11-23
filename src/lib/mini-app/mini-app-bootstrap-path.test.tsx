@@ -40,6 +40,7 @@ describe("/mini-app bootstrap path", () => {
       activeBranchId: null,
       workplaceForbidden: false,
       workplaceForbiddenMessage: null,
+      actorUserId: "test-user",
       wallet: { status: "ok", confirmedUnpaidRub: 0, awaitingRub: 0, loadError: false },
       presentation: { cardIdentifier: null, historyHref: "/settlements", cardExplainer: "" },
       fullCabinetUrl: "https://prof.remcard.ru/",

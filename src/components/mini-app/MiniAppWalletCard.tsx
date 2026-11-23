@@ -39,6 +39,9 @@ export function MiniAppWalletCard({ bootstrap, onCardClick }: Props) {
           →
         </span>
         <div className={styles.walletBody}>
+          {bootstrap.presentation.cardIdentifier ? (
+            <p className={styles.walletLabel}>{bootstrap.presentation.cardIdentifier}</p>
+          ) : null}
           <p className={styles.walletLabel}>Начислено к получению</p>
           <div className={styles.walletHero}>
             <strong className={styles.walletAmount}>

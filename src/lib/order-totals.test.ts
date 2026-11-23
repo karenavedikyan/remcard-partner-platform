@@ -30,8 +30,13 @@ describe("order-totals flexible client discount", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("blocks invalid discount on empty amount line", () => {
+  it("ignores discount draft when line amount is empty", () => {
     const result = validateOrderDiscountDrafts([doors], { doors: "" }, { doors: "101" });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects discount above category pool", () => {
+    const result = validateOrderDiscountDrafts([doors], { doors: "10000" }, { doors: "10.02" });
     expect(result.ok).toBe(false);
   });
 });

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { StoreCertificate } from "@/lib/certificate-types";
 import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 import { MiniAppWalletCard } from "./MiniAppWalletCard";
-import { MiniAppScanVerify } from "./MiniAppScanVerify";
+import { MiniAppScanReceive } from "./MiniAppScanReceive";
 import { MiniAppProfBrand } from "./MiniAppProfBrand";
 import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
 import { MiniAppFullCabinet } from "./MiniAppFullCabinet";
@@ -52,6 +53,8 @@ export function MiniAppRoot({
   fixtureCreateSeed,
   fixtureInviteLink,
 }: PilotProps = {}) {
+  const searchParams = useSearchParams();
+  const appealIdFromUrl = searchParams?.get("appealId");
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
   const [bootstrap, setBootstrap] = useState<MiniAppBootstrap | null>(fixtureBootstrap ?? null);
@@ -234,11 +237,21 @@ export function MiniAppRoot({
     return (
       <div className={styles.shell}>
         <MiniAppSubpage
-          title="Проверка QR"
-          lead="Проверка не активирует и не списывает сертификат."
+          title="Сканер"
+          lead="Проверка QR и приём документа с оформлением покупки."
           onBack={() => setScreen("home")}
         >
-          <MiniAppScanVerify platform={platform} branchId={branchId} onDone={() => setScreen("home")} embed />
+          <MiniAppScanReceive
+            platform={platform}
+            bootstrap={bootstrap}
+            branchId={branchId}
+            appealId={appealIdFromUrl}
+            onDone={() => setScreen("home")}
+            onClientsDeepLink={(appealId) => {
+              const base = bootstrap.fullCabinetUrl.replace(/\/+$/, "");
+              openProfLink(`${base}/clients?appealId=${encodeURIComponent(appealId)}`);
+            }}
+          />
         </MiniAppSubpage>
       </div>
     );
@@ -301,13 +314,25 @@ export function MiniAppRoot({
     return (
       <div className={styles.shell}>
         <MiniAppSubpage title="Кошелёк" onBack={() => setScreen("home")}>
+          {bootstrap.presentation.cardIdentifier ? (
+            <p className={styles.scanNotice}>{bootstrap.presentation.cardIdentifier}</p>
+          ) : null}
           <p>{bootstrap.presentation.cardExplainer}</p>
+          {bootstrap.wallet.status === "error" ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => void loadBootstrap(platform, branchId)}
+            >
+              Повторить загрузку
+            </button>
+          ) : null}
           <button
             type="button"
             className={styles.secondaryBtn}
-            onClick={() => openProfLink(bootstrap.presentation.historyHref)}
+            onClick={() => openProfLink(`${bootstrap.fullCabinetUrl.replace(/\/+$/, "")}${bootstrap.presentation.historyHref}`)}
           >
-            История начислений в кабинете
+            История и «Мне должны / Я должен» в кабинете
           </button>
         </MiniAppSubpage>
       </div>
@@ -451,7 +476,18 @@ function dispatchAction(
     setScreen("create");
     return;
   }
-  else if (id === "scan_qr") setScreen("scan");
+  else if (id === "scan_qr") {
+    if (
+      bootstrap &&
+      (bootstrap.role === "store" || bootstrap.role === "company") &&
+      !branchId &&
+      bootstrap.branches.length > 1
+    ) {
+      setScreen("branch-pick");
+      return;
+    }
+    setScreen("scan");
+  }
   else if (id === "invite_partner") setScreen("invite");
   else if (id === "open_full_cabinet") setScreen("full-cabinet");
 }
