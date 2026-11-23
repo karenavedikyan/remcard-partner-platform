@@ -1,9 +1,9 @@
 diff --git a/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
 new file mode 100644
-index 0000000..d19c21d
+index 0000000..77d6e01
 --- /dev/null
 +++ b/src/app/api/pro/mini-app/__tests__/auth.routes.test.ts
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,121 @@
 +import { beforeEach, describe, expect, it, vi } from 'vitest';
 +import { NextRequest } from 'next/server';
 +
@@ -18,13 +18,9 @@ index 0000000..d19c21d
 +  dispatchMaxProfLoginCode: (...args: unknown[]) => mockDispatch(...args),
 +}));
 +
-+vi.mock('@/lib/messengerAuthIdentity', async (importOriginal) => {
-+  const actual = await importOriginal<typeof import('@/lib/messengerAuthIdentity')>();
-+  return {
-+    ...actual,
-+    verifyMessengerBotLoginCode: (...args: unknown[]) => mockVerify(...args),
-+  };
-+});
++vi.mock('@/lib/miniAppMessengerOtpVerify', () => ({
++  verifyMaxProfLoginCodeForMiniApp: (...args: unknown[]) => mockVerify(...args),
++}));
 +
 +vi.mock('@/lib/messengerWebAppInitData', () => ({
 +  validateMessengerWebAppInitData: (...args: unknown[]) => mockValidateInit(...args),
@@ -202,16 +198,16 @@ index 0000000..536b711
 \ No newline at end of file
 diff --git a/src/app/api/pro/mini-app/auth/verify-code/route.ts b/src/app/api/pro/mini-app/auth/verify-code/route.ts
 new file mode 100644
-index 0000000..0e4e593
+index 0000000..9148d19
 --- /dev/null
 +++ b/src/app/api/pro/mini-app/auth/verify-code/route.ts
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,121 @@
 +import { NextRequest, NextResponse } from 'next/server';
 +import { createToken } from '@/lib/auth';
 +import { apiError } from '@/lib/api/error';
 +import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
 +import { validateMessengerWebAppInitData } from '@/lib/messengerWebAppInitData';
-+import { verifyMessengerBotLoginCode } from '@/lib/messengerAuthIdentity';
++import { verifyMaxProfLoginCodeForMiniApp } from '@/lib/miniAppMessengerOtpVerify';
 +import { parseVerifyEntrySite } from '@/lib/authEntryContext';
 +import {
 +  isProfMiniAppEnabled,
@@ -273,37 +269,35 @@ index 0000000..0e4e593
 +    return apiError('FORBIDDEN', 'Не удалось проверить вход мессенджера');
 +  }
 +
-+  const verified = await verifyMessengerBotLoginCode(code, entrySite);
++  const messengerUserId = validated.data.user.id;
++  const verified = await verifyMaxProfLoginCodeForMiniApp(code, entrySite, messengerUserId);
 +  if (!verified.ok) {
 +    const codeStr =
 +      verified.status === 401 && verified.error.includes('просроч')
 +        ? 'EXPIRED_CODE'
 +        : verified.status === 401
 +          ? 'INVALID_CODE'
-+          : 'VERIFY_FAILED';
++          : verified.status === 403 && verified.error.includes('не совпадает')
++            ? 'MAX_MISMATCH'
++            : 'VERIFY_FAILED';
 +    return NextResponse.json({ error: verified.error, code: codeStr }, { status: verified.status });
 +  }
 +
-+  const messengerUserId = validated.data.user.id;
 +  const { prisma } = await import('@/lib/prisma');
 +  const fullUser = await prisma.user.findUnique({ where: { id: verified.user.id } });
 +  if (!fullUser) return apiError('NOT_FOUND');
 +
-+  const ownsMax =
-+    fullUser.maxId?.toString() === String(messengerUserId) ||
-+    (await prisma.authAccount.findUnique({
-+      where: { provider_externalId: { provider: 'MAX', externalId: String(messengerUserId) } },
-+      select: { userId: true },
-+    }))?.userId === fullUser.id;
-+  if (!ownsMax) {
-+    return apiError('FORBIDDEN', 'Код не совпадает с аккаунтом MAX в мини-приложении');
-+  }
-+
 +  const cabinet = await assertCabinetProfAccess(fullUser);
 +  if (!cabinet.ok) {
++    const message =
++      cabinet.nextStep === 'profile'
++        ? 'Завершите профиль партнёра на сайте PROF.'
++        : 'Примите обязательные согласия на сайте PROF.';
 +    return NextResponse.json(
 +      {
 +        status: 'cabinet_blocked',
++        error: message,
++        message,
 +        code: cabinet.errorCode,
 +        nextStep: cabinet.nextStep,
 +        missingConsents: cabinet.missingConsents,
@@ -425,7 +419,7 @@ index f772d1b..4ad2ec9 100644
      return NextResponse.json(
        { state: 'forbidden', message: sessionGuard.message, code: sessionGuard.code },
 diff --git a/src/app/api/pro/mini-app/session/route.ts b/src/app/api/pro/mini-app/session/route.ts
-index 8150b22..dba10b7 100644
+index 8150b22..952efb6 100644
 --- a/src/app/api/pro/mini-app/session/route.ts
 +++ b/src/app/api/pro/mini-app/session/route.ts
 @@ -13,7 +13,7 @@ import {
@@ -445,7 +439,23 @@ index 8150b22..dba10b7 100644
    const platform = parseHostPlatform(typeof body.platform === 'string' ? body.platform : null);
    if (!platform) {
      return apiError('BAD_REQUEST', 'Укажите platform: telegram или max');
-@@ -109,17 +110,12 @@ export async function POST(req: NextRequest) {
+@@ -88,9 +89,15 @@ export async function POST(req: NextRequest) {
+ 
+   const cabinet = await assertCabinetProfAccess(fullUser);
+   if (!cabinet.ok) {
++    const message =
++      cabinet.nextStep === 'profile'
++        ? 'Завершите профиль партнёра на сайте PROF.'
++        : 'Примите обязательные согласия на сайте PROF.';
+     return NextResponse.json(
+       {
+         status: 'cabinet_blocked',
++        error: message,
++        message,
+         code: cabinet.errorCode,
+         nextStep: cabinet.nextStep,
+         missingConsents: cabinet.missingConsents,
+@@ -109,17 +116,12 @@ export async function POST(req: NextRequest) {
        displayName: fullUser.displayName,
      },
    });
@@ -622,12 +632,72 @@ index 0000000..176cc65
 +  });
 +});
 \ No newline at end of file
+diff --git a/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts b/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts
+new file mode 100644
+index 0000000..64ace85
+--- /dev/null
++++ b/src/lib/__tests__/miniAppMessengerOtpVerify.test.ts
+@@ -0,0 +1,52 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++
++const mockTxFind = vi.fn();
++const mockVerifyCore = vi.fn();
++
++vi.mock('@/lib/prisma', () => ({
++  prisma: {
++    $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
++      fn({
++        botLoginCode: { findMany: mockTxFind },
++      }),
++  },
++}));
++
++vi.mock('@/lib/messengerAuthIdentity', () => ({
++  verifyMessengerBotLoginCode: (...args: unknown[]) => mockVerifyCore(...args),
++}));
++
++describe('verifyMaxProfLoginCodeForMiniApp', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    process.env.JWT_SECRET = 'test';
++  });
++
++  it('rejects when no OTP row matches messenger-bound identifier', async () => {
++    mockTxFind.mockResolvedValue([]);
++    const { verifyMaxProfLoginCodeForMiniApp } = await import('@/lib/miniAppMessengerOtpVerify');
++    const res = await verifyMaxProfLoginCodeForMiniApp('123456', 'prof', 777);
++    expect(res.ok).toBe(false);
++    expect(mockVerifyCore).not.toHaveBeenCalled();
++  });
++
++  it('calls core verify when identifier gate passes', async () => {
++    mockTxFind.mockResolvedValue([
++      {
++        id: 'c1',
++        identifier: 'max:777:prof',
++        createdAt: new Date(),
++      },
++    ]);
++    mockVerifyCore.mockResolvedValue({
++      ok: true,
++      user: { id: 'user-1' },
++      created: false,
++      entrySite: 'prof',
++    });
++    const { verifyMaxProfLoginCodeForMiniApp } = await import('@/lib/miniAppMessengerOtpVerify');
++    const res = await verifyMaxProfLoginCodeForMiniApp('123456', 'prof', 777);
++    expect(res.ok).toBe(true);
++    expect(mockVerifyCore).toHaveBeenCalledWith('123456', 'prof');
++  });
++});
+\ No newline at end of file
 diff --git a/src/lib/bots/miniAppLoginDispatch.ts b/src/lib/bots/miniAppLoginDispatch.ts
 new file mode 100644
-index 0000000..88857ef
+index 0000000..01c2954
 --- /dev/null
 +++ b/src/lib/bots/miniAppLoginDispatch.ts
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,96 @@
++import { randomInt } from 'node:crypto';
 +import { prisma } from '@/lib/prisma';
 +import { BOT_MSG_SEND_FAILED, prepareMessengerBotLogin } from '@/lib/messengerAuthIdentity';
 +import {
@@ -645,7 +715,7 @@ index 0000000..88857ef
 +  | { ok: false; status: number; message: string; code?: string };
 +
 +function generateCode(): string {
-+  return Math.floor(100000 + Math.random() * 900000).toString();
++  return String(randomInt(100_000, 1_000_000));
 +}
 +
 +/**
@@ -866,6 +936,113 @@ index 0000000..e08a4a7
 +  const testAccess = await enforceProfTestPrincipalAccess(req, user, payload);
 +  if (testAccess === 'deny') return null;
 +  return user;
++}
+\ No newline at end of file
+diff --git a/src/lib/miniAppMessengerOtpVerify.ts b/src/lib/miniAppMessengerOtpVerify.ts
+new file mode 100644
+index 0000000..eb247ef
+--- /dev/null
++++ b/src/lib/miniAppMessengerOtpVerify.ts
+@@ -0,0 +1,100 @@
++import { Prisma as PrismaNs } from '@prisma/client';
++import { prisma } from '@/lib/prisma';
++import {
++  buildBotLoginIdentifier,
++  parseBotLoginIdentifier,
++  validateEntrySiteBinding,
++  type AuthEntrySite,
++} from '@/lib/authEntryContext';
++import type { VerifyMessengerLoginResult } from '@/lib/messengerAuthIdentity';
++import { verifyMessengerBotLoginCode } from '@/lib/messengerAuthIdentity';
++
++const VERIFY_TX_MAX_ATTEMPTS = 5;
++
++class IdentifierGateAbort extends Error {
++  constructor(
++    public status: number,
++    public code: string,
++    message: string,
++  ) {
++    super(message);
++    this.name = 'IdentifierGateAbort';
++  }
++}
++
++function isRetryable(error: unknown): boolean {
++  if (error instanceof PrismaNs.PrismaClientKnownRequestError) {
++    return error.code === 'P2034' || error.code === 'P2002';
++  }
++  const msg = error instanceof Error ? error.message.toLowerCase() : '';
++  return msg.includes('deadlock') || msg.includes('serialize');
++}
++
++/**
++ * Bind signed MAX launch to BotLoginCode.identifier before calling the shared
++ * serializable verify transaction (no OTP consumption on mismatch).
++ */
++export async function verifyMaxProfLoginCodeForMiniApp(
++  code: string,
++  entrySite: AuthEntrySite,
++  maxMessengerUserId: number,
++): Promise<VerifyMessengerLoginResult> {
++  const requireIdentifier = buildBotLoginIdentifier('max', String(maxMessengerUserId), entrySite);
++
++  for (let attempt = 0; attempt < VERIFY_TX_MAX_ATTEMPTS; attempt++) {
++    try {
++      await prisma.$transaction(
++        async (tx) => {
++          const now = new Date();
++          const candidates = await tx.botLoginCode.findMany({
++            where: {
++              code,
++              used: false,
++              expiresAt: { gt: now },
++              identifier: requireIdentifier,
++            },
++            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
++            take: 2,
++          });
++          if (candidates.length !== 1) {
++            throw new IdentifierGateAbort(
++              401,
++              'INVALID_CODE',
++              'Неверный или просроченный код',
++            );
++          }
++          const loginCode = candidates[0]!;
++          const bind = validateEntrySiteBinding(loginCode.identifier, entrySite);
++          if (!bind.ok) {
++            throw new IdentifierGateAbort(bind.status, 'INVALID_CODE', bind.error);
++          }
++          const parsed = parseBotLoginIdentifier(loginCode.identifier);
++          if (!parsed || parsed.provider !== 'max' || parsed.externalId !== String(maxMessengerUserId)) {
++            throw new IdentifierGateAbort(
++              403,
++              'MAX_MISMATCH',
++              'Код не совпадает с аккаунтом MAX в мини-приложении',
++            );
++          }
++        },
++        { isolationLevel: PrismaNs.TransactionIsolationLevel.Serializable },
++      );
++      break;
++    } catch (e) {
++      if (e instanceof IdentifierGateAbort) {
++        return { ok: false, status: e.status, error: e.message };
++      }
++      if (isRetryable(e) && attempt < VERIFY_TX_MAX_ATTEMPTS - 1) continue;
++      if (isRetryable(e)) {
++        return {
++          ok: false,
++          status: 503,
++          error: 'Временная ошибка входа. Попробуйте ещё раз через несколько секунд.',
++        };
++      }
++      throw e;
++    }
++  }
++
++  return verifyMessengerBotLoginCode(code, entrySite);
 +}
 \ No newline at end of file
 diff --git a/src/lib/miniAppSessionCookie.ts b/src/lib/miniAppSessionCookie.ts

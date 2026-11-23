@@ -9,6 +9,8 @@ import type {
 import type { MiniAppEmbeddedContext } from "./embedded-context";
 import { buildMiniAppExtraHeaders } from "./mini-app-request-headers";
 import { miniAppUsesEmbeddedSession } from "./embedded-context";
+import { isLaunchContextError, miniAppCabinetBlockedMessage } from "./auth-copy";
+import { parseCabinetBlockedBody } from "./parse-auth-errors";
 
 type MiniAppCallOptions = {
   embeddedContext?: MiniAppEmbeddedContext;
@@ -46,16 +48,20 @@ export async function miniAppExchangeSession(
   } catch (err) {
     if (err instanceof RemcardApiError) {
       const code = err.body && typeof err.body === "object" ? (err.body as { code?: string }).code : undefined;
-      if (code === "MESSENGER_UNLINKED") {
+      const bodyRec = err.body && typeof err.body === "object" ? (err.body as Record<string, unknown>) : null;
+      if (code === "MESSENGER_UNLINKED" || bodyRec?.status === "unlinked") {
         const profLoginUrl =
-          err.body && typeof err.body === "object"
-            ? String((err.body as { profLoginUrl?: string }).profLoginUrl ?? "/login")
+          bodyRec && typeof bodyRec.profLoginUrl === "string"
+            ? bodyRec.profLoginUrl
             : "/login";
-        return {
-          status: "unlinked",
-          message: err.message,
-          profLoginUrl,
-        };
+        const message =
+          (typeof bodyRec?.message === "string" ? bodyRec.message : null) ||
+          err.message ||
+          "Аккаунт мессенджера не привязан к RemCard PROF.";
+        return { status: "unlinked", message, profLoginUrl };
+      }
+      if (isLaunchContextError(err.message)) {
+        return { status: "launch_invalid", message: err.message };
       }
       if (code === "MINI_SESSION_MISSING" || code === "MINI_EMBEDDED_SESSION_REQUIRED") {
         return {
@@ -70,18 +76,43 @@ export async function miniAppExchangeSession(
       if (err.status === 404) {
         return { status: "error", message: "Пилот мини-кабинета отключён." };
       }
-      const blocked = err.body as { status?: string; nextStep?: string } | null;
-      if (blocked?.status === "cabinet_blocked") {
+      const blocked = parseCabinetBlockedBody(err.body, err.message);
+      if (blocked) {
         return {
           status: "cabinet_blocked",
           nextStep: blocked.nextStep,
-          message: err.message,
+          message: blocked.message,
+        };
+      }
+      if (err.status === 0) {
+        return {
+          status: "session_missing",
+          message: "Сетевая ошибка при входе",
+          retryable: true,
         };
       }
       return { status: "error", message: err.message };
     }
     return { status: "error", message: "Сетевая ошибка" };
   }
+}
+
+export function classifyMiniAppBootstrapFailure(err: unknown): MiniAppSessionResult | null {
+  if (!(err instanceof RemcardApiError)) {
+    return { status: "session_missing", message: "Сетевая ошибка при открытии кабинета", retryable: true };
+  }
+  const code = err.body && typeof err.body === "object" ? (err.body as { code?: string }).code : undefined;
+  if (code === "MINI_SESSION_MISSING" || code === "MINI_EMBEDDED_SESSION_REQUIRED") {
+    return { status: "session_missing", message: err.message, retryable: true };
+  }
+  const blocked = parseCabinetBlockedBody(err.body, err.message);
+  if (blocked) {
+    return { status: "cabinet_blocked", message: blocked.message, nextStep: blocked.nextStep };
+  }
+  if (code === "PROF_ACCESS_DENIED") {
+    return { status: "no_access", message: err.message };
+  }
+  return null;
 }
 
 export async function miniAppSendLoginCode(
@@ -146,13 +177,16 @@ export async function miniAppVerifyLoginCode(
       if (codeStr === "PROF_ACCESS_DENIED") {
         return { status: "no_prof_access", message: err.message };
       }
-      const blocked = err.body as { status?: string; nextStep?: string } | null;
-      if (blocked?.status === "cabinet_blocked") {
+      const blocked = parseCabinetBlockedBody(err.body, err.message);
+      if (blocked) {
         return {
           status: "cabinet_blocked",
-          message: err.message,
+          message: blocked.message,
           nextStep: blocked.nextStep,
         };
+      }
+      if (codeStr === "MAX_MISMATCH") {
+        return { status: "invalid_code", message: err.message };
       }
       return { status: "error", message: err.message };
     }

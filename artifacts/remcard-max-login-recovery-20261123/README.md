@@ -28,7 +28,8 @@ Touched paths under `remcard-navigator` (no DB migrations, no prod flags, no bot
 - `src/app/api/pro/mini-app/__tests__/auth.routes.test.ts`
 - `src/lib/miniAppSessionCookie.ts`, `miniAppEmbeddedAuth.ts`, `miniAppCabinetAuth.ts`
 - `src/lib/bots/miniAppLoginDispatch.ts`
-- `src/lib/__tests__/miniAppEmbeddedAuth.test.ts`, `miniAppCabinetAuth.test.ts`
+- `src/lib/miniAppMessengerOtpVerify.ts`
+- `src/lib/__tests__/miniAppEmbeddedAuth.test.ts`, `miniAppCabinetAuth.test.ts`, `miniAppMessengerOtpVerify.test.ts`
 
 ## Manual verification
 
@@ -42,7 +43,10 @@ npx vitest run \
   src/components/mini-app/MiniAppMaxEntry.test.tsx \
   src/lib/mini-app/mini-app-bootstrap-path.test.tsx \
   src/components/mini-app/MiniAppRoot.branch-switch.test.tsx \
-  src/components/mini-app/MiniAppRoot.max-otp.test.tsx
+  src/components/mini-app/MiniAppRoot.max-otp.test.tsx \
+  src/components/mini-app/MiniAppRoot.max-recovery.test.tsx \
+  src/components/mini-app/MiniAppRoot.max-unlinked.test.tsx \
+  src/lib/mini-app/parse-auth-errors.test.ts
 ```
 
 Cross-site shell (Playwright, без prod):

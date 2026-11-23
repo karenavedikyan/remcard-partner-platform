@@ -45,8 +45,9 @@ export type MiniAppBootstrap = {
 export type MiniAppSessionResult =
   | { status: "ok"; platform: MiniAppPlatform }
   | { status: "unlinked"; message: string; profLoginUrl: string }
-  | { status: "cabinet_blocked"; nextStep?: string; message?: string }
+  | { status: "cabinet_blocked"; nextStep?: string; message: string }
   | { status: "session_missing"; message: string; retryable: boolean }
+  | { status: "launch_invalid"; message: string }
   | { status: "no_access"; message: string }
   | { status: "error"; message: string };
 
@@ -61,4 +62,5 @@ export type MiniAppAuthVerifyResult =
   | { status: "expired_code"; message: string }
   | { status: "no_prof_access"; message: string }
   | { status: "cabinet_blocked"; message: string; nextStep?: string }
+  | { status: "blocked"; message: string }
   | { status: "error"; message: string };

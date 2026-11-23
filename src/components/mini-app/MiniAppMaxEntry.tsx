@@ -19,6 +19,7 @@ type Props = {
   profLoginUrl: string;
   onAuthenticated: () => void;
   onOpenExternal: (url: string) => void;
+  onCabinetBlocked?: (payload: { message: string; nextStep?: string }) => void;
 };
 
 export function MiniAppMaxEntry({
@@ -29,6 +30,7 @@ export function MiniAppMaxEntry({
   profLoginUrl,
   onAuthenticated,
   onOpenExternal,
+  onCabinetBlocked,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("landing");
   const [code, setCode] = useState("");
@@ -71,6 +73,14 @@ export function MiniAppMaxEntry({
       if (r.status === "ok") {
         setPhase("success");
         onAuthenticated();
+        return;
+      }
+      if (r.status === "cabinet_blocked" && onCabinetBlocked) {
+        onCabinetBlocked({ message: r.message, nextStep: r.nextStep });
+        return;
+      }
+      if (r.status === "blocked") {
+        setError(r.message);
         return;
       }
       setError(r.message);

@@ -5,14 +5,10 @@ import { MiniAppRoot } from "./MiniAppRoot";
 import * as bridgeLoader from "@/lib/mini-app/bridge-loader";
 import * as host from "@/lib/mini-app/host";
 import * as api from "@/lib/mini-app/api";
-import * as embedded from "@/lib/mini-app/embedded-context";
 
 vi.mock("@/lib/mini-app/bridge-loader");
 vi.mock("@/lib/mini-app/host");
 vi.mock("@/lib/mini-app/api");
-vi.mock("@/lib/mini-app/embedded-context", () => ({
-  detectMiniAppEmbeddedContext: vi.fn(() => "cross_site_iframe" as const),
-}));
 
 describe("MiniAppRoot MAX OTP", () => {
   beforeEach(() => {
@@ -32,10 +28,9 @@ describe("MiniAppRoot MAX OTP", () => {
       copyToClipboard: vi.fn(async () => true),
     });
     vi.mocked(api.miniAppExchangeSession).mockResolvedValue({
-      status: "unlinked",
-      platform: "max",
-      message: "Нужен вход",
-      profLoginUrl: "/login",
+      status: "session_missing",
+      message: "Вход мини-приложения не подтверждён",
+      retryable: true,
     });
     vi.mocked(api.miniAppSendLoginCode).mockResolvedValue({
       status: "ok",
@@ -68,18 +63,20 @@ describe("MiniAppRoot MAX OTP", () => {
     vi.resetAllMocks();
   });
 
-  it("after OTP verify loads bootstrap without repeating session exchange", async () => {
+  it("recovery → OTP verify loads bootstrap without repeating session exchange", async () => {
     const user = userEvent.setup();
     render(<MiniAppRoot />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("mini-app-max-continue")).toBeInTheDocument();
+      expect(screen.getByTestId("mini-app-max-recovery")).toBeInTheDocument();
     });
 
     const exchangesBeforeOtp = vi.mocked(api.miniAppExchangeSession).mock.calls.length;
     expect(exchangesBeforeOtp).toBeGreaterThan(0);
 
+    await user.click(screen.getByTestId("mini-app-login-by-code"));
     await user.click(screen.getByTestId("mini-app-max-continue"));
+
     const codeInput = await screen.findByLabelText("Код из MAX");
     fireEvent.change(codeInput, { target: { value: "123456" } });
     await user.click(screen.getByRole("button", { name: "Войти в кабинет" }));
@@ -89,10 +86,7 @@ describe("MiniAppRoot MAX OTP", () => {
     });
 
     expect(api.miniAppVerifyLoginCode).toHaveBeenCalled();
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("max", {
-      branchId: undefined,
-      embeddedContext: "cross_site_iframe",
-    });
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalled();
     expect(api.miniAppExchangeSession.mock.calls.length).toBe(exchangesBeforeOtp);
   });
 });

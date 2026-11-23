@@ -1,1 +1,1 @@
-9d72511d4562996c6a05d13b205c9e5165aef44c1fc9a4d7aa16dcb3f21a6e4c  /agent/repos/remcard-partner-platform/staging/nav-be-regen/../../artifacts/remcard-max-login-recovery-20261123/be.patch
+6d4732fd9f29193ef0dfcfbb8b48878e526e12b5dfd6dad85d318c9937857419  /agent/repos/remcard-partner-platform/staging/nav-be-regen/../../artifacts/remcard-max-login-recovery-20261123/be.patch

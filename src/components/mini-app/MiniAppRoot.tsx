@@ -22,7 +22,7 @@ import {
 import { ensureMiniAppBridgeReady } from "@/lib/mini-app/bridge-loader";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
 import { RemcardApiError } from "@/lib/api-client";
-import { miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
+import { classifyMiniAppBootstrapFailure, miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
 import {
   detectMiniAppEmbeddedContext,
   type MiniAppEmbeddedContext,
@@ -31,6 +31,12 @@ import { setMiniAppLaunchPayload, clearMiniAppLaunchPayload } from "@/lib/mini-a
 import { MiniAppSessionProvider } from "@/lib/mini-app/MiniAppSessionContext";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import { MiniAppMaxEntry } from "./MiniAppMaxEntry";
+import {
+  MiniAppCabinetBlockedScreen,
+  MiniAppLaunchInvalidScreen,
+  MiniAppMaxRecoveryScreen,
+  MiniAppMaxUnlinkedScreen,
+} from "./MiniAppAuthGateScreens";
 import styles from "./mini-app.module.css";
 
 type Screen =
@@ -43,7 +49,7 @@ type Screen =
   | "certificate-ready"
   | "branch-pick";
 
-type AuthGate = "none" | "max_login" | "session_retry";
+type AuthGate = "none" | "max_unlinked" | "max_recovery" | "max_login" | "launch_invalid" | "cabinet_blocked";
 
 type PilotProps = {
   fixtureBootstrap?: MiniAppBootstrap;
@@ -70,6 +76,7 @@ export function MiniAppRoot({
   const [loading, setLoading] = useState(!fixtureBootstrap);
   const [error, setError] = useState<string | null>(null);
   const [unlinked, setUnlinked] = useState<{ message: string; url: string } | null>(null);
+  const [cabinetBlocked, setCabinetBlocked] = useState<{ message: string; nextStep?: string } | null>(null);
   const [branchId, setBranchId] = useState<string | null>(fixtureBootstrap?.activeBranchId ?? null);
   const [branchPickError, setBranchPickError] = useState<string | null>(null);
   const [branchSwitching, setBranchSwitching] = useState(false);
@@ -80,6 +87,7 @@ export function MiniAppRoot({
   const [authGate, setAuthGate] = useState<AuthGate>("none");
   const [hostInitData, setHostInitData] = useState<string>("");
   const [profUrls, setProfUrls] = useState({ login: "/login", register: "/join" });
+  const [maxUnlinkedMessage, setMaxUnlinkedMessage] = useState<string | null>(null);
 
   const loadBootstrap = useCallback(
     async (hostPlatform: MiniAppPlatform, activeBranch?: string | null, ctx?: MiniAppEmbeddedContext) => {
@@ -102,18 +110,29 @@ export function MiniAppRoot({
       const session = await miniAppExchangeSession(host.platform, host.initData, { embeddedContext: ctx });
       if (session.status === "unlinked") {
         if (host.platform === "max") {
-          setAuthGate("max_login");
+          setAuthGate("max_unlinked");
+          setMaxUnlinkedMessage(session.message);
           setProfUrls({
             login: session.profLoginUrl,
             register: "/join",
           });
+          setError(null);
           return;
         }
         setUnlinked({ message: session.message, url: session.profLoginUrl });
         return;
       }
+      if (session.status === "launch_invalid") {
+        setAuthGate("launch_invalid");
+        setError(null);
+        return;
+      }
       if (session.status === "session_missing") {
-        setAuthGate("session_retry");
+        if (host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
         setError(session.message);
         return;
       }
@@ -122,10 +141,17 @@ export function MiniAppRoot({
         return;
       }
       if (session.status === "cabinet_blocked") {
-        setError(session.message ?? "Кабинет ещё не готов. Продолжите на сайте PROF.");
+        setCabinetBlocked({ message: session.message, nextStep: session.nextStep });
+        setAuthGate("cabinet_blocked");
+        setError(null);
         return;
       }
       if (session.status === "error") {
+        if (host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(session.message);
+          return;
+        }
         setError(session.message);
         return;
       }
@@ -133,7 +159,23 @@ export function MiniAppRoot({
         return;
       }
       setAuthGate("none");
-      await loadBootstrap(host.platform, undefined, ctx);
+      try {
+        await loadBootstrap(host.platform, undefined, ctx);
+      } catch (e) {
+        const classified = classifyMiniAppBootstrapFailure(e);
+        if (classified?.status === "session_missing" && host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
+        if (classified?.status === "cabinet_blocked") {
+          setCabinetBlocked({ message: classified.message, nextStep: classified.nextStep });
+          setAuthGate("cabinet_blocked");
+          setError(null);
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
+      }
     },
     [loadBootstrap],
   );
@@ -217,6 +259,77 @@ export function MiniAppRoot({
     );
   }
 
+  function finishOtpBootstrap() {
+    setLoading(true);
+    setError(null);
+    setAuthGate("none");
+    void (async () => {
+      try {
+        await loadBootstrap("max", undefined, embeddedContext);
+      } catch (e) {
+        const classified = classifyMiniAppBootstrapFailure(e);
+        if (classified?.status === "cabinet_blocked") {
+          setCabinetBlocked({ message: classified.message, nextStep: classified.nextStep });
+          setAuthGate("cabinet_blocked");
+          setError(null);
+          return;
+        }
+        if (classified?.status === "session_missing") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
+
+  if (authGate === "launch_invalid") {
+    return <MiniAppLaunchInvalidScreen />;
+  }
+
+  if (authGate === "cabinet_blocked" && cabinetBlocked) {
+    return (
+      <MiniAppCabinetBlockedScreen
+        nextStep={cabinetBlocked.nextStep}
+        message={cabinetBlocked.message}
+        onOpenExternal={openProfLink}
+      />
+    );
+  }
+
+  if (authGate === "max_unlinked" && platform === "max" && hostInitData) {
+    return (
+      <MiniAppMaxUnlinkedScreen
+        message={
+          maxUnlinkedMessage ??
+          "Этот MAX ещё не привязан к RemCard PROF. Зарегистрируйтесь или войдите на сайте, либо подтвердите вход одноразовым кодом."
+        }
+        profLoginUrl={profUrls.login}
+        profRegisterUrl={profUrls.register}
+        onOpenExternal={openProfLink}
+        onLoginByCode={() => setAuthGate("max_login")}
+      />
+    );
+  }
+
+  if (authGate === "max_recovery" && platform === "max" && hostInitData) {
+    const host = detectMiniAppHost(platform);
+    return (
+      <MiniAppMaxRecoveryScreen
+        busy={loading}
+        onRetrySession={() => {
+          if (!host) return;
+          setLoading(true);
+          void completeSession(host, embeddedContext).finally(() => setLoading(false));
+        }}
+        onLoginByCode={() => setAuthGate("max_login")}
+      />
+    );
+  }
+
   if (authGate === "max_login" && platform === "max" && hostInitData) {
     return (
       <MiniAppMaxEntry
@@ -226,20 +339,11 @@ export function MiniAppRoot({
         profLoginUrl={profUrls.login}
         profRegisterUrl={profUrls.register}
         onOpenExternal={openProfLink}
-        onAuthenticated={() => {
-          setLoading(true);
-          setError(null);
-          setAuthGate("none");
-          void (async () => {
-            try {
-              await loadBootstrap("max", undefined, embeddedContext);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
-            } finally {
-              setLoading(false);
-            }
-          })();
+        onCabinetBlocked={(payload) => {
+          setCabinetBlocked(payload);
+          setAuthGate("cabinet_blocked");
         }}
+        onAuthenticated={finishOtpBootstrap}
       />
     );
   }
@@ -263,20 +367,14 @@ export function MiniAppRoot({
       <div className={styles.shell} data-testid="mini-app-error">
         <MiniAppProfBrand />
         <p role="alert">{error ?? "Нет данных"}</p>
-        {authGate === "session_retry" || error?.includes("сесс") ? (
+        {platform === "max" && host ? (
           <button
             type="button"
             className={styles.primaryBtn}
-            data-testid="mini-app-retry-login"
-            onClick={() => {
-              setError(null);
-              if (host) {
-                setLoading(true);
-                void completeSession(host, embeddedContext).finally(() => setLoading(false));
-              }
-            }}
+            data-testid="mini-app-login-by-code"
+            onClick={() => setAuthGate("max_recovery")}
           >
-            Повторить вход
+            Войти по коду
           </button>
         ) : null}
         {bootstrap?.fullCabinetUrl || platform ? (
