@@ -995,7 +995,7 @@ export function MiniAppScanReceive({
   return (
     <section className={styles.scanPanel} data-testid="mini-scan-gate">
       <p className={styles.scanLead}>
-        Сначала проверка по пилотным правилам, затем приём документа и оформление покупки.
+        Сначала проверка доступа, затем приём документа и оформление покупки.
       </p>
       <QrScanner onCode={(raw) => void beginPurchase(raw)} onError={(message) => setCameraError(message)} />
       {cameraError ? (
