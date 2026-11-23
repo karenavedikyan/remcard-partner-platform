@@ -52,6 +52,13 @@
 - `uncertain` / сеть: попытка в `unknown`, новая покупка заблокирована (без автоповтора)
 - `409`: `conflict`, отдельно от validation
 
+## Release blockers (итерация)
+
+- BE: `loadLivePartnershipPoolByCategory` — тип `Prisma.TransactionClient | typeof prisma` (TS2345 снят)
+- BE: PROF при отсутствии/исключённом term — `partnershipAccrualPoolPercent` → 0 (без frozen fallback)
+- BE: `npm run typecheck` — без новых ошибок в store-order слоях (baseline-ошибки вне diff сохранены)
+- Smoke: `artifacts/mini-app-pilot-20261122/SMOKE_TELEGRAM_MAX.md`
+
 ## Экспорт патчей
 
 См. `artifacts/mini-app-pilot-20261122/patches/` — `fe.patch`, `be.patch`, `checksums.txt`.
