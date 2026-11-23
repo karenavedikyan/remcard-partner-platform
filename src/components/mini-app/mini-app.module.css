@@ -906,7 +906,8 @@
   gap: 8px;
 }
 
-.branchOption {
+.branchOption,
+.branchCheck {
   text-align: left;
   padding: 12px;
   border-radius: 10px;
@@ -914,6 +915,25 @@
   background: #fff;
   cursor: pointer;
   color: #3a2f35;
+}
+
+.branchCheck {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.branchCheck input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #9f1239;
+}
+
+.branchCheck:focus-within {
+  outline: 2px solid #b74f70;
+  outline-offset: 2px;
 }
 
 .branchOptionActive {
@@ -1077,59 +1097,100 @@
   align-self: center;
 }
 
+.inviteFlow {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 22.375rem;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.inviteFlow :is(.readOnlyField, .miniSelect) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.inviteFlow .miniSelect {
+  min-height: 49px;
+}
+
+.inviteTextarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
 .inviteSteps {
   display: flex;
   gap: 6px;
   list-style: none;
   padding: 0;
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 .inviteSteps li {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  color: #8a7a83;
-  text-align: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #6f5f68;
 }
 
 .inviteSteps li span:first-child {
-  width: 26px;
-  height: 26px;
+  flex: none;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
-  border: 1px solid #e5d5dc;
   display: grid;
   place-items: center;
-  font-weight: 600;
+  background: #f1e8ec;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.inviteSteps li[data-done="true"] span:first-child,
+.inviteSteps li[data-done="true"] span:first-child {
+  background: #f8eef1;
+  color: #9f1239;
+}
+
+.inviteSteps li[aria-current="step"] {
+  color: #9f1239;
+  font-weight: 700;
+}
+
 .inviteSteps li[aria-current="step"] span:first-child {
   background: #9f1239;
-  border-color: #9f1239;
   color: #fff;
 }
 
 .inviteEyebrow {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 0.78rem;
-  color: #8a7a83;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6f5f68;
 }
 
 .inviteH2 {
-  margin: 0 0 10px;
-  font-size: 1.2rem;
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.3;
   color: #35252f;
 }
 
 .inviteChips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
 }
 
 .inviteChip {
@@ -1157,7 +1218,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 10px;
+  overflow-wrap: anywhere;
 }
 
 .inviteReview strong {
@@ -1198,31 +1259,22 @@
   font-size: 0.85rem;
 }
 
-.inviteTermPercent {
-  width: 4.5rem;
+.inviteFlow .inviteTermPercent {
+  width: 72px;
+  padding: 8px 10px;
+  text-align: right;
 }
 
-.inviteStatus {
-  margin: 8px 0 0;
-  font-size: 0.85rem;
-  color: #35684b;
-}
+@media (max-width: 349px) {
+  .inviteSteps li {
+    font-size: 0.72rem;
+    gap: 4px;
+  }
 
-.inviteStatusBad {
-  color: #9f1239;
-}
-
-.inviteDetails summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: #35252f;
-}
-
-.invitePlainList {
-  margin: 8px 0 0;
-  padding-left: 18px;
-  font-size: 0.88rem;
-  color: #3a2f35;
+  .inviteSteps li span:first-child {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .mwScopeRow {
@@ -1680,6 +1732,7 @@
   .mwScheduleRow,
   .branchButton,
   .branchOption,
+  .branchCheck,
   .actionTileSecondary,
   .secondaryBtn,
   .mwWorkplaceRow,
@@ -1741,6 +1794,7 @@
   .subpageLead,
   .inviteEyebrow,
   .inviteSteps li,
+  .inviteFlow .miniFieldLabel,
   .footnote,
   .fieldLabel {
     color: #c9b9c2;
@@ -1764,6 +1818,20 @@
 
   .inviteEditLink {
     color: #ff9fb5;
+  }
+
+  .inviteSteps li[aria-current="step"],
+  .inviteSteps li[data-done="true"] span:first-child {
+    color: #ffb6c7;
+  }
+
+  .inviteSteps li:not([aria-current="step"]) span:first-child {
+    background: #42363e;
+  }
+
+  .inviteFlow .readOnlyField::placeholder {
+    color: #c9b9c2;
+    opacity: 1;
   }
 
   .partnerOption,

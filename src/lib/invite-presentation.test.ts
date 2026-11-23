@@ -75,6 +75,24 @@ describe("invite presentation", () => {
     assert.doesNotMatch(String(meta.description), /вознагражден/i);
   });
 
+  it("uses the same branded chat card for discussion invites without private details", () => {
+    const ogImageUrl = "https://prof.example/invite/opengraph-image";
+    const pageUrl = "https://prof.example/invite/discussion/abc";
+    const meta = buildInviteLinkMetadata({
+      kind: "discussion",
+      preview: pendingPreview({ note: "Не публиковать" }),
+      pageUrl,
+      ogImageUrl,
+    });
+    assert.equal(meta.openGraph?.title, "ОПТОВИК приглашает вас к сотрудничеству");
+    assert.equal(meta.openGraph?.url, pageUrl);
+    assert.equal(meta.openGraph?.images?.[0]?.url, ogImageUrl);
+    assert.deepEqual(meta.twitter?.images, [ogImageUrl]);
+    assert.doesNotMatch(JSON.stringify(meta), /Не публиковать|doors|Краснодар/);
+    const used = buildInviteLinkMetadata({ kind: "discussion", preview: { status: "JOINED" }, pageUrl, ogImageUrl });
+    assert.equal(used.openGraph?.title, "Приглашение уже принято");
+  });
+
   it("builds share message with inviter name and optional benefit line", () => {
     const url = "https://prof.example/invite/tok";
     const storeMsg = buildInviteShareMessage({

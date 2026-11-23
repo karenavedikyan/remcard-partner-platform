@@ -16,6 +16,7 @@ export type AgentDiscussionInviteCreatedSnapshot = {
 
 export type AgentDiscussionInviteResultProps = {
   snapshot: AgentDiscussionInviteCreatedSnapshot;
+  compact?: boolean;
   shareOpen: boolean;
   status: string;
   /**
@@ -40,11 +41,12 @@ export type AgentDiscussionInviteResultProps = {
 export function buildDiscussionInviteShareText(snapshot: AgentDiscussionInviteCreatedSnapshot): string {
   const message = snapshot.cooperationSubject.trim();
   const url = snapshot.url.trim();
-  return `${message}\n\n${url}`;
+  return message ? `${message}\n\n${url}` : url;
 }
 
 export function AgentDiscussionInviteResult({
   snapshot,
+  compact = false,
   shareOpen,
   status,
   proposedTerms = null,
@@ -93,7 +95,7 @@ export function AgentDiscussionInviteResult({
 
   return (
     <section
-      className={styles.result}
+      className={`${styles.result} ${compact ? styles.compact : ""}`}
       data-testid={inviteKind === "terms" ? "partner-link-invite-ready" : "agent-discussion-invite-ready"}
       data-ready-composition="r1"
       aria-labelledby="agent-discussion-invite-ready-title"
@@ -188,13 +190,25 @@ export function AgentDiscussionInviteResult({
             value={shareText}
             data-testid="agent-discussion-invite-share-text"
           />
-          <TextField
-            label="Ссылка"
-            value={snapshot.url}
-            readOnly
-            data-testid={inviteKind === "terms" ? "link-invite-created-url" : "discussion-invite-created-url"}
-          />
-          <p className={styles.expiry}>Действует до {formatExpiry(snapshot.expiresAt)}</p>
+          {compact ? (
+            <>
+              <label className={styles.shareLabel} htmlFor={`${shareTextId}-url`}>Ссылка</label>
+              <textarea id={`${shareTextId}-url`} className={`${styles.shareTextarea} ${styles.shareUrl}`}
+                value={snapshot.url} readOnly rows={2} />
+            </>
+          ) : (
+            <TextField
+              label="Ссылка"
+              value={snapshot.url}
+              readOnly
+              data-testid={inviteKind === "terms" ? "link-invite-created-url" : "discussion-invite-created-url"}
+            />
+          )}
+          <p className={styles.expiry}>
+            {compact && inviteKind === "terms" && snapshot.expiresAt.startsWith("2099")
+              ? "Активна до принятия или отзыва"
+              : `Действует до ${formatExpiry(snapshot.expiresAt)}`}
+          </p>
           <div className={styles.shareActions}>
             <Button
               type="button"

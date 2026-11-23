@@ -1,10 +1,11 @@
 const PARTNERS_BASE = "/partners";
 
-/** Preserve partnership deep-link query for login returnTo (PartnersHub reads `terms`). */
+/** Preserve supported partners deep links through login. */
 export function partnersPageReturnPath(
-  searchParams: { terms?: string; partnershipId?: string } | null | undefined,
+  searchParams: { terms?: string; partnershipId?: string; invites?: string } | null | undefined,
 ): string {
-  const terms = searchParams?.terms?.trim() || searchParams?.partnershipId?.trim();
-  if (!terms) return PARTNERS_BASE;
-  return `${PARTNERS_BASE}?terms=${encodeURIComponent(terms)}`;
+  const terms = typeof searchParams?.terms === "string" ? searchParams.terms.trim() : "";
+  const legacy = typeof searchParams?.partnershipId === "string" ? searchParams.partnershipId.trim() : "";
+  if (terms || legacy) return `${PARTNERS_BASE}?terms=${encodeURIComponent(terms || legacy)}`;
+  return searchParams?.invites === "1" ? `${PARTNERS_BASE}?invites=1` : PARTNERS_BASE;
 }

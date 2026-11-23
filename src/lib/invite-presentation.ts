@@ -24,6 +24,10 @@ const INACTIVE_METADATA: Record<
     title: "Приглашение уже принято",
     description: "Эта ссылка больше недоступна для новых участников.",
   },
+  JOINED: {
+    title: "Приглашение уже принято",
+    description: "Эта ссылка больше недоступна для новых участников.",
+  },
   REVOKED: {
     title: "Приглашение отозвано",
     description: "Отправитель отменил предложение. Запросите новую ссылку.",
@@ -216,9 +220,10 @@ export function buildInviteShareMessage(options: {
 }
 
 export function buildInviteLinkMetadata(input: {
-  preview: LinkInvitePublicPreview | null;
+  preview: Pick<LinkInvitePublicPreview, "status" | "inviter" | "intendedPartnerType"> | null;
   pageUrl: string;
   ogImageUrl: string;
+  kind?: "terms" | "discussion";
 }): Metadata {
   const { pageUrl, ogImageUrl } = input;
   const preview = input.preview;
@@ -242,7 +247,7 @@ export function buildInviteLinkMetadata(input: {
         pageUrl,
         ogImageUrl,
       }),
-      twitter: buildTwitter({ title: inactive.title, description: inactive.description }),
+      twitter: buildTwitter({ title: inactive.title, description: inactive.description, ogImageUrl }),
     };
   }
 
@@ -258,13 +263,13 @@ export function buildInviteLinkMetadata(input: {
         pageUrl,
         ogImageUrl,
       }),
-      twitter: buildTwitter({ title: inactive.title, description: inactive.description }),
+      twitter: buildTwitter({ title: inactive.title, description: inactive.description, ogImageUrl }),
     };
   }
 
   const name = inviterDisplayName(preview);
   const title = `${name} приглашает вас к сотрудничеству`;
-  const description = inviteOgDescription(
+  const description = input.kind === "discussion" ? NEUTRAL_OG_DESCRIPTION : inviteOgDescription(
     preview.inviter?.partnerType ?? null,
     preview.intendedPartnerType ?? null,
   );
@@ -274,7 +279,7 @@ export function buildInviteLinkMetadata(input: {
     title: `${title} · ${SITE_NAME}`,
     description,
     openGraph: buildOpenGraph({ title, description, pageUrl, ogImageUrl }),
-    twitter: buildTwitter({ title, description }),
+    twitter: buildTwitter({ title, description, ogImageUrl }),
   };
 }
 
@@ -305,11 +310,13 @@ function buildOpenGraph(input: {
 function buildTwitter(input: {
   title: string;
   description: string;
+  ogImageUrl: string;
 }): NonNullable<Metadata["twitter"]> {
   return {
     card: "summary_large_image",
     title: input.title,
     description: input.description,
+    images: [input.ogImageUrl],
   };
 }
 

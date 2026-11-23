@@ -38,7 +38,7 @@ export const MINI_APP_FIXTURE_CREATE_SEED = {
 
 /** Dev-only invite URL for flow screenshots — not a live invite. */
 export const MINI_APP_FIXTURE_INVITE_LINK =
-  "https://prof.remcard.ru/partners/invite/dev-fixture-demo-link";
+  "https://prof.remcard.ru/invite/dev-fixture-demo-link-not-a-live-token";
 
 const CABINET_TITLE: Record<MiniAppBootstrap["role"], string> = {
   agent: "Кабинет агента",
@@ -86,10 +86,12 @@ export function buildMiniAppFixture(
     cabinetTitle: CABINET_TITLE[role],
     workplaceLabel: role === "store" || role === "company" ? "Центральная точка" : null,
     actions,
+    canChooseWalletBranches: withBranches && (role === "store" || role === "company"),
     branches: withBranches
       ? [
           { id: "b1", label: "Центральный", active: true },
           { id: "b2", label: "пр. Демо, Казань", active: false },
+          { id: "b3", label: "Северный", active: false },
         ]
       : [],
     activeBranchId: withBranches ? "b1" : null,

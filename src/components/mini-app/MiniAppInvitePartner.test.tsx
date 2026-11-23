@@ -24,6 +24,7 @@ const baseProps = {
   embeddedContext: "default" as const,
   partnersSearchUrl: "https://prof.remcard.ru/partners",
   onBack: vi.fn(),
+  onOpenLink: vi.fn(),
 };
 
 function mockClipboard(writeText: ReturnType<typeof vi.fn>) {
@@ -49,6 +50,7 @@ describe("MiniAppInvitePartner wizard", () => {
     vi.mocked(api.miniAppCreateDiscussionInvite).mockReset();
     vi.mocked(api.miniAppCreateLinkInvite).mockReset();
     baseProps.onBack.mockReset();
+    baseProps.onOpenLink.mockReset();
     vi.stubGlobal("confirm", () => true);
     mockClipboard(vi.fn().mockRejectedValue(new Error("no clipboard")));
   });
@@ -97,15 +99,20 @@ describe("MiniAppInvitePartner wizard", () => {
       }),
       expect.any(Object),
     );
-    expect(screen.getByTestId("invite-url")).toHaveValue("https://prof.remcard.ru/invite/discussion/tok");
-    await user.click(screen.getByTestId("invite-copy-btn"));
-    await waitFor(() => {
-      if (writeText.mock.calls.length > 0) {
-        expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/invite/discussion/tok"));
-      } else {
-        expect(screen.getByRole("status")).toHaveTextContent(/скопирован/i);
-      }
-    });
+    const inviteUrl = "https://prof.remcard.ru/invite/discussion/tok";
+    expect(screen.getByRole("heading", { name: "Приглашение создано" })).toBeInTheDocument();
+    expect(screen.getByText("Что будет после передачи приглашения")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Открыть карточку приглашения" }));
+    expect(baseProps.onOpenLink).toHaveBeenCalledWith(inviteUrl);
+    await user.click(screen.getByRole("button", { name: "Поделиться приглашением" }));
+    expect(screen.getByRole("textbox", { name: "Ссылка" })).toHaveValue(inviteUrl);
+    mockClipboard(writeText);
+    await user.click(screen.getByRole("button", { name: "Скопировать ссылку", exact: true }));
+    expect(writeText).toHaveBeenLastCalledWith(inviteUrl);
+    expect(screen.getByRole("status")).toHaveTextContent("Ссылка скопирована");
+    await user.click(screen.getByRole("button", { name: "Скопировать текст" }));
+    expect(writeText).toHaveBeenLastCalledWith(expect.stringMatching(/^.+\n\nhttps:\/\/prof\.remcard\.ru\/invite\/discussion\/tok$/s));
+    expect(screen.getByRole("status")).toHaveTextContent("Текст приглашения скопирован");
   });
 
   it("preserves the message when the terms arrive after opening the review step", async () => {
@@ -193,8 +200,8 @@ describe("MiniAppInvitePartner wizard", () => {
   });
 
   it("shows manual share field when clipboard fails", async () => {
-    mockClipboard(vi.fn().mockRejectedValue(new Error("denied")));
     const user = userEvent.setup();
+    mockClipboard(vi.fn().mockRejectedValue(new Error("denied")));
     render(
       <MiniAppInvitePartner
         {...baseProps}
@@ -202,15 +209,19 @@ describe("MiniAppInvitePartner wizard", () => {
       />,
     );
     expect(await screen.findByTestId("invite-ready")).toBeInTheDocument();
-    await user.click(screen.getByTestId("invite-copy-btn"));
-    await waitFor(() => {
-      const manual = screen.queryByTestId("invite-share-manual");
-      const status = screen.getByRole("status");
-      expect(manual ?? status).toBeTruthy();
-      if (!manual) {
-        expect(status).toHaveTextContent(/вручную|скопир/i);
-      }
-    });
+    await user.click(screen.getByRole("button", { name: "Поделиться приглашением" }));
+    await user.click(screen.getByRole("button", { name: "Скопировать текст" }));
+    expect(screen.getByRole("status")).toHaveTextContent(/вручную/);
+    expect((screen.getByRole("textbox", { name: "Готовый текст" }) as HTMLTextAreaElement).value)
+      .toContain("/invite/discussion/fixture");
+  });
+
+  it("shows terms and opens the existing full-cabinet gallery for offer links", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppInvitePartner {...baseProps} fixtureInviteLink="https://prof.remcard.ru/invite/fixture" />);
+    expect(await screen.findByTestId("partner-link-invite-ready-terms")).toHaveTextContent("12%");
+    await user.click(screen.getByRole("button", { name: "Ваши ссылки-приглашения" }));
+    expect(baseProps.onOpenLink).toHaveBeenCalledWith("https://prof.remcard.ru/partners?invites=1");
   });
 
   it("shows review blocks and edit shortcuts return to steps", async () => {

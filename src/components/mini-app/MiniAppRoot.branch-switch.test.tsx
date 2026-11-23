@@ -144,4 +144,34 @@ describe("MiniAppRoot branch pick", () => {
     await user.click(screen.getByTestId("mini-branch-option-b1"));
     expect(await screen.findByRole("heading", { name: "Сканер" })).toBeInTheDocument();
   });
+
+  it("applies an owner subset or all branches without changing the working point", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppRoot fixtureBootstrap={companyBootstrap} fixturePlatform="telegram" />);
+    await user.click(screen.getByTestId("mini-app-branch-select"));
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    expect(screen.getByRole("checkbox", { name: "Центральный" })).toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: "Северный" }));
+    await user.click(screen.getByRole("button", { name: "Применить" }));
+    expect(screen.getByTestId("mini-wallet-card-scope")).toHaveTextContent("Выбрано филиалов: 2");
+    expect(screen.getByTestId("mini-app-branch-select")).toHaveTextContent("Центральная точка");
+    await user.click(screen.getByTestId("mini-wallet-card-open"));
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    await user.click(screen.getByRole("checkbox", { name: "Все филиалы (3)" }));
+    await user.click(screen.getByRole("button", { name: "Применить" }));
+    expect(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" })).toHaveTextContent("Все филиалы (3)");
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    await user.click(screen.getByRole("checkbox", { name: "Все филиалы (3)" }));
+    expect(screen.getByRole("button", { name: "Применить" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "← Назад" }));
+    expect(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" })).toHaveTextContent("Все филиалы (3)");
+    expect(api.miniAppFetchBootstrap).not.toHaveBeenCalled();
+  });
+
+  it("does not offer wallet branch selection without the owner capability", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppRoot fixtureBootstrap={{ ...companyBootstrap, canChooseWalletBranches: false }} fixturePlatform="telegram" />);
+    await user.click(screen.getByTestId("mini-app-branch-select"));
+    expect(screen.queryByRole("button", { name: "Выбрать филиалы для кошелька" })).not.toBeInTheDocument();
+  });
 });

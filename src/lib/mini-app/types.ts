@@ -21,6 +21,7 @@ export type MiniAppBootstrap = {
     prominence: "primary" | "secondary" | "tertiary";
   }>;
   branches: Array<{ id: string; label: string; active: boolean }>;
+  canChooseWalletBranches?: boolean;
   activeBranchId: string | null;
   workplaceForbidden: boolean;
   workplaceForbiddenMessage: string | null;

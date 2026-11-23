@@ -24,6 +24,7 @@ export type PartnersCabinetPageProps = {
   initialProfile: ProProfileResponse;
   proContext: ProContextSnapshot | null;
   proContextReady: boolean;
+  showInviteGalleryInitially?: boolean;
 };
 
 function PartnersPageHeading({ presentation }: { presentation: PartnersHubPresentation }) {
@@ -41,7 +42,7 @@ function PartnersPageHeading({ presentation }: { presentation: PartnersHubPresen
 }
 
 export function PartnersCabinetPage(props: PartnersCabinetPageProps) {
-  const linkInviteGallery = useLinkInviteGalleryController();
+  const linkInviteGallery = useLinkInviteGalleryController(props.showInviteGalleryInitially);
   const hubGalleryBindings = linkInviteGalleryBindingsFromController(linkInviteGallery);
   const hubCommon = {
     meId: props.meId,

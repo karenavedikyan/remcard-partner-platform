@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { AgentDiscussionInviteResult } from "@/components/partners/AgentDiscussionInviteResult";
 import { RemcardApiError } from "@/lib/api-client";
 import { getAppUrl } from "@/lib/config";
 import { categoryLabel } from "@/lib/partnership-labels";
@@ -53,7 +54,6 @@ import {
   type MiniInviteCreateResult,
 } from "@/lib/mini-app/invite-wizard";
 import { MiniAppSubpage } from "./MiniAppSubpage";
-import { MiniIconCopy } from "./MiniAppIcons";
 import styles from "./mini-app.module.css";
 
 type Props = {
@@ -63,6 +63,7 @@ type Props = {
   embeddedContext: MiniAppEmbeddedContext;
   partnersSearchUrl: string;
   onBack: () => void;
+  onOpenLink?: (url: string) => void;
   /** Dev fixture: skip network and open ready screen */
   fixtureInviteLink?: string | null;
 };
@@ -119,6 +120,7 @@ export function MiniAppInvitePartner({
   embeddedContext,
   partnersSearchUrl,
   onBack,
+  onOpenLink = (url) => { window.open(url, "_blank", "noopener,noreferrer"); },
   fixtureInviteLink,
 }: Props) {
   const apiOpts = useMemo(
@@ -148,8 +150,7 @@ export function MiniAppInvitePartner({
   const draftToRestore = useRef<ReturnType<typeof readMiniInviteDraft>>(null);
   const [created, setCreated] = useState<MiniInviteCreateResult | null>(null);
   const [statusText, setStatusText] = useState("");
-  const [statusBad, setStatusBad] = useState(false);
-  const [manualShare, setManualShare] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const kind = inviteContext?.kind ?? "terms";
   const nameMax = inviteContext?.nameMaxLength ?? 120;
@@ -215,15 +216,17 @@ export function MiniAppInvitePartner({
 
   useEffect(() => {
     if (fixtureInviteLink) {
+      const previewPath = new URL(fixtureInviteLink, getAppUrl()).pathname;
+      const isDiscussion = previewPath.startsWith("/invite/discussion/");
       setCreated({
         url: fixtureInviteLink,
-        previewPath: new URL(fixtureInviteLink, getAppUrl()).pathname,
-        expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+        previewPath,
+        expiresAt: isDiscussion ? "2027-01-15T12:00:00.000Z" : "2099-01-01T00:00:00.000Z",
         recipientLabel: "Партнёр (fixture)",
         note: "Текст приглашения из фикстуры",
-        kind: "discussion",
+        kind: isDiscussion ? "discussion" : "terms",
         intendedType: "",
-        termsSummary: [],
+        termsSummary: isDiscussion ? [] : [{ category: "doors", excluded: false, percent: 12 }],
       });
       return;
     }
@@ -409,7 +412,7 @@ export function MiniAppInvitePartner({
     setCreateError("");
     setUnknownOutcome(false);
     setStatusText("");
-    setStatusBad(false);
+    setShareOpen(false);
     if (!armMiniInviteRecoveryGuard(recoveryKey)) {
       setCreateError("Не удалось сохранить состояние отправки. Создайте приглашение в полном кабинете.");
       return;
@@ -490,18 +493,15 @@ export function MiniAppInvitePartner({
     }
   }
 
-  async function copyInvitation() {
+  async function copyInvitation(mode: "message" | "link") {
     if (!created) return;
-    const text = buildInviteShareText(created);
     try {
-      await navigator.clipboard.writeText(text);
-      setManualShare(false);
-      setStatusBad(false);
-      setStatusText("Текст приглашения скопирован");
+      await navigator.clipboard.writeText(mode === "link" ? created.url : buildInviteShareText(created));
+      setStatusText(mode === "link" ? "Ссылка скопирована" : "Текст приглашения скопирован");
     } catch {
-      setManualShare(true);
-      setStatusBad(true);
-      setStatusText("Не удалось скопировать. Выделите текст вручную.");
+      setStatusText(mode === "link"
+        ? "Скопируйте ссылку вручную из поля «Ссылка»."
+        : "Не удалось скопировать. Выделите текст вручную.");
     }
   }
 
@@ -541,82 +541,40 @@ export function MiniAppInvitePartner({
   }
 
   if (created) {
-    const shareText = buildInviteShareText(created);
-  return (
+    const terms = created.termsSummary.filter(({ excluded }) => !excluded).map(({ category, percent }) =>
+      `${categoryLabel(category)}: ${percent}%`,
+    ).join("\n");
+    const galleryUrl = new URL(partnersSearchUrl, getAppUrl());
+    galleryUrl.searchParams.set("invites", "1");
+    return (
       <MiniAppSubpage
-        title="Теперь передайте приглашение"
-        lead={`Для «${created.recipientLabel}» всё подготовлено. Скопируйте текст и передайте знакомому.`}
+        title="Приглашение создано"
         onBack={requestBack}
       >
-        <div data-testid="invite-ready">
-          <MotionlessInfoCard
-            testId="invite-ready-message"
-            title="Пригласительное сообщение"
-            body={created.note}
+        <div className={styles.inviteFlow} data-testid="invite-ready">
+          <AgentDiscussionInviteResult
+            compact
+            snapshot={{
+              recipientLabel: created.recipientLabel,
+              cooperationSubject: created.note,
+              url: created.url,
+              expiresAt: created.expiresAt,
+            }}
+            inviteKind={created.kind}
+            proposedTerms={terms}
+            shareOpen={shareOpen}
+            status={statusText}
+            onToggleShare={() => setShareOpen((open) => !open)}
+            onCopyUrl={() => void copyInvitation("link")}
+            onCopyMessageAndUrl={() => void copyInvitation("message")}
+            onOpenInviteCard={() => onOpenLink(created.url)}
+            formatExpiry={formatInviteExpiry}
           />
-          {created.kind === "terms" && created.termsSummary.length > 0 ? (
-            <details className={`${styles.infoCard} ${styles.inviteDetails}`}>
-              <summary>Посмотреть условия приглашения</summary>
-              <ul className={styles.invitePlainList}>
-                {created.termsSummary.map((row) => (
-                  <li key={row.category}>
-                    {categoryLabel(row.category)}:{" "}
-                    {row.excluded ? "не участвует" : `${row.percent}%`}
-                  </li>
-                ))}
-              </ul>
-              <p className={styles.footnote}>Условия зафиксированы на момент создания ссылки.</p>
-            </details>
+          {created.kind === "terms" ? (
+            <button type="button" className={styles.secondaryBtn} onClick={() => onOpenLink(galleryUrl.toString())}>
+              Ваши ссылки-приглашения
+            </button>
           ) : null}
-          <label className={styles.fieldLabel} htmlFor="mini-invite-url">
-            Ссылка
-          </label>
-          <input
-            id="mini-invite-url"
-            className={styles.readOnlyField}
-            readOnly
-            value={created.url}
-            data-testid="invite-url"
-          />
-          <p className={styles.footnote}>
-            {created.kind === "terms"
-              ? "Активна до принятия или отзыва"
-              : `Действует до ${formatInviteExpiry(created.expiresAt)}`}
-          </p>
-          <button
-            type="button"
-            className={styles.primaryBtn}
-            data-testid="invite-copy-btn"
-            onClick={() => void copyInvitation()}
-          >
-            <MiniIconCopy />
-            Скопировать приглашение
-          </button>
-          <p
-            className={`${styles.inviteStatus} ${statusBad ? styles.inviteStatusBad : ""}`}
-            role="status"
-            aria-live="polite"
-          >
-            {statusText}
-          </p>
-          {manualShare ? (
-            <label className={styles.fieldLabel} htmlFor="mini-invite-share-text">
-              Готовый текст
-            </label>
-          ) : null}
-          {manualShare ? (
-            <textarea
-              id="mini-invite-share-text"
-              className={styles.readOnlyField}
-              readOnly
-              rows={7}
-              value={shareText}
-              data-testid="invite-share-manual"
-            />
-          ) : null}
-          <p className={styles.footnote}>
-            Сообщение автоматически не отправляется — передайте его сами.
-          </p>
         </div>
       </MiniAppSubpage>
     );
@@ -629,7 +587,7 @@ export function MiniAppInvitePartner({
         onBack={requestBack}
         backDisabled={creating}
       >
-      <div data-testid="mini-invite-wizard" data-step={step}>
+      <div className={styles.inviteFlow} data-testid="mini-invite-wizard" data-step={step}>
         <ol className={styles.inviteSteps} aria-label="Шаги">
           {STEP_LABELS.map((label, index) => {
             const n = index + 1;
@@ -651,20 +609,20 @@ export function MiniAppInvitePartner({
                 ? "Укажите, кому отправите ссылку на сотрудничество. Контакты пока не нужны."
                 : "Укажите, кому отправите ссылку к обсуждению сотрудничества."}
             </p>
-            <label className={styles.fieldLabel} htmlFor="mini-invite-name">
-              Имя или название партнёра
+            <label className={styles.miniField}>
+              <span className={styles.miniFieldLabel}>Имя или название партнёра</span>
+              <input
+                id="mini-invite-name"
+                className={styles.readOnlyField}
+                maxLength={nameMax}
+                value={partnerName}
+                placeholder="Например, «Дом материалов»"
+                autoComplete="off"
+                aria-invalid={Boolean(fieldErrors.name)}
+                data-testid="mini-invite-name"
+                onChange={(e) => setPartnerName(e.target.value)}
+              />
             </label>
-            <input
-              id="mini-invite-name"
-              className={styles.readOnlyField}
-              maxLength={nameMax}
-              value={partnerName}
-              placeholder="Например, «Дом материалов»"
-              autoComplete="off"
-              aria-invalid={Boolean(fieldErrors.name)}
-              data-testid="mini-invite-name"
-              onChange={(e) => setPartnerName(e.target.value)}
-            />
             {kind === "discussion" ? (
               <p className={styles.footnote}>Название магазина, компании или имя. Контакты пока не нужны.</p>
             ) : null}
@@ -675,26 +633,26 @@ export function MiniAppInvitePartner({
             ) : null}
             {kind === "terms" ? (
               <>
-                <label className={styles.fieldLabel} htmlFor="mini-invite-type">
-                  Предполагаемый тип партнёра
+                <label className={styles.miniField}>
+                  <span className={styles.miniFieldLabel}>Предполагаемый тип партнёра</span>
+                  <select
+                    id="mini-invite-type"
+                    className={styles.miniSelect}
+                    value={intendedType}
+                    data-testid="mini-invite-type"
+                    onChange={(e) => {
+                      setPlanResult(null);
+                      setIntendedType(e.target.value as IntendedPartnerType);
+                    }}
+                  >
+                    <option value="">Выберите тип</option>
+                    {INTENDED_PARTNER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-                <select
-                  id="mini-invite-type"
-                  className={styles.miniSelect}
-                  value={intendedType}
-                  data-testid="mini-invite-type"
-                  onChange={(e) => {
-                    setPlanResult(null);
-                    setIntendedType(e.target.value as IntendedPartnerType);
-                  }}
-                >
-                  <option value="">Выберите тип</option>
-                  {INTENDED_PARTNER_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
                 {fieldErrors.type ? (
                   <p className={styles.scanBad} role="alert">
                     {fieldErrors.type}
@@ -746,19 +704,19 @@ export function MiniAppInvitePartner({
                 </button>
               ))}
             </div>
-            <label className={styles.fieldLabel} htmlFor="mini-invite-note">
-              Текст приглашения
+            <label className={styles.miniField}>
+              <span className={styles.miniFieldLabel}>Текст приглашения</span>
+              <textarea
+                id="mini-invite-note"
+                className={`${styles.readOnlyField} ${styles.inviteTextarea}`}
+                rows={6}
+                maxLength={noteMax}
+                value={form.note}
+                data-testid="mini-invite-note"
+                aria-invalid={Boolean(fieldErrors.note)}
+                onChange={(e) => dispatch({ type: "set_note", note: e.target.value })}
+              />
             </label>
-            <textarea
-              id="mini-invite-note"
-              className={styles.readOnlyField}
-              rows={6}
-              maxLength={noteMax}
-              value={form.note}
-              data-testid="mini-invite-note"
-              aria-invalid={Boolean(fieldErrors.note)}
-              onChange={(e) => dispatch({ type: "set_note", note: e.target.value })}
-            />
             <p className={`${styles.footnote} ${styles.inviteCounter}`}>
               <span>
                 {kind === "discussion"

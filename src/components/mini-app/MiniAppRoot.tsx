@@ -41,6 +41,7 @@ import {
   MiniAppMaxUnlinkedScreen,
 } from "./MiniAppAuthGateScreens";
 import styles from "./mini-app.module.css";
+import type { MiniWalletBranchSelection } from "@/lib/mini-app/wallet/scope";
 
 type Screen =
   | "home"
@@ -50,7 +51,8 @@ type Screen =
   | "invite"
   | "full-cabinet"
   | "certificate-ready"
-  | "branch-pick";
+  | "branch-pick"
+  | "wallet-branch-pick";
 
 type AuthGate = "none" | "max_unlinked" | "max_recovery" | "max_login" | "launch_invalid" | "cabinet_blocked";
 
@@ -78,6 +80,13 @@ export function MiniAppRoot({
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [walletDirection, setWalletDirection] = useState<WalletDirection>("in");
   const [walletSnapshot, setWalletSnapshot] = useState<{ scope: string; data: SettlementsResponse } | null>(null);
+  const [walletBranchSelection, setWalletBranchSelection] = useState<MiniWalletBranchSelection>(null);
+  const [walletBranchDraft, setWalletBranchDraft] = useState<string[]>([]);
+  const [walletPickerBack, setWalletPickerBack] = useState<"wallet" | "branch-pick">("branch-pick");
+  const changeWalletBranchSelection = useCallback((next: MiniWalletBranchSelection) => {
+    setWalletSnapshot(null);
+    setWalletBranchSelection(next);
+  }, []);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
   const [bootstrap, setBootstrap] = useState<MiniAppBootstrap | null>(fixtureBootstrap ?? null);
   const [loading, setLoading] = useState(!fixtureBootstrap);
@@ -105,8 +114,9 @@ export function MiniAppRoot({
       });
       setBootstrap(data);
       setBranchId(data.activeBranchId);
+      changeWalletBranchSelection(null);
     },
-    [embeddedContext],
+    [changeWalletBranchSelection, embeddedContext],
   );
 
   const completeSession = useCallback(
@@ -222,12 +232,16 @@ export function MiniAppRoot({
     const host = detectMiniAppHost();
     if (!host) return;
     const back = () => {
+      if (screen === "wallet-branch-pick") {
+        setScreen(walletPickerBack);
+        return;
+      }
       if (screen !== "home" && !(screen === "branch-pick" && branchSwitching)) setScreen("home");
     };
     if (screen !== "home") host.onBack(back);
     else host.offBack(back);
     return () => host.offBack(back);
-  }, [branchSwitching, screen]);
+  }, [branchSwitching, screen, walletPickerBack]);
 
   function openProfLink(url: string) {
     const host = detectMiniAppHost(platform);
@@ -245,6 +259,7 @@ export function MiniAppRoot({
   async function onBranchChange(id: string) {
     if (!platform) return;
     if (id === branchId) {
+      if (branchNext === "home" || branchNext === "wallet") changeWalletBranchSelection(null);
       setScreen(branchNext);
       return;
     }
@@ -259,6 +274,7 @@ export function MiniAppRoot({
       setBootstrap(data);
       setBranchId(id);
       setWalletSnapshot(null);
+      if (branchNext === "home" || branchNext === "wallet") changeWalletBranchSelection(null);
       const requiredAction =
         branchNext === "create" ? "create_certificate" : branchNext === "scan" ? "scan_qr" : null;
       setScreen(
@@ -273,6 +289,17 @@ export function MiniAppRoot({
     } finally {
       setBranchSwitching(false);
     }
+  }
+
+  function openWalletBranchPicker(next: "home" | "wallet") {
+    if (!bootstrap?.canChooseWalletBranches) return;
+    setBranchNext(next);
+    setWalletPickerBack(screen === "branch-pick" ? "branch-pick" : "wallet");
+    setWalletBranchDraft(
+      walletBranchSelection === "all" ? bootstrap.branches.map(({ id }) => id) :
+        walletBranchSelection ? [...walletBranchSelection] : branchId ? [branchId] : [],
+    );
+    setScreen("wallet-branch-pick");
   }
 
   if (loading) {
@@ -488,6 +515,7 @@ export function MiniAppRoot({
           embeddedContext={embeddedContext}
           partnersSearchUrl={bootstrap.partnersUrl}
           fixtureInviteLink={fixtureInviteLink}
+          onOpenLink={openProfLink}
           onBack={() => setScreen("home")}
         />
       </div>
@@ -506,6 +534,58 @@ export function MiniAppRoot({
     );
   }
 
+  if (screen === "wallet-branch-pick" && bootstrap.canChooseWalletBranches) {
+    const allIds = bootstrap.branches.map(({ id }) => id);
+    const selectedIds = allIds.filter((id) => walletBranchDraft.includes(id));
+    const allSelected = selectedIds.length === allIds.length;
+    const tooMany = !allSelected && selectedIds.length > 200;
+    return (
+      <div className={styles.shell} data-testid="mini-wallet-branch-picker">
+        <MiniAppSubpage
+          title="Филиалы для кошелька"
+          lead="Выберите филиалы для просмотра баланса. Рабочая точка для операций не изменится."
+          backLabel="← Назад"
+          onBack={() => setScreen(walletPickerBack)}
+        >
+          <div className={styles.branchSheet} role="group" aria-label="Филиалы для кошелька">
+            <label className={styles.branchCheck}>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => setWalletBranchDraft(e.target.checked ? allIds : [])}
+              />
+              <strong>Все филиалы ({allIds.length})</strong>
+            </label>
+            {bootstrap.branches.map(({ id, label }) => (
+              <label key={id} className={styles.branchCheck}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(id)}
+                  onChange={(e) => setWalletBranchDraft(e.target.checked
+                    ? [...selectedIds, id]
+                    : selectedIds.filter((value) => value !== id))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {tooMany ? <p className={styles.scanBad}>Выберите до 200 филиалов или все сразу.</p> : null}
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={selectedIds.length === 0 || tooMany}
+            onClick={() => {
+              changeWalletBranchSelection(allSelected ? "all" : selectedIds);
+              setScreen(branchNext === "wallet" ? "wallet" : "home");
+            }}
+          >
+            Применить
+          </button>
+        </MiniAppSubpage>
+      </div>
+    );
+  }
+
   if (screen === "branch-pick") {
     return (
       <div className={styles.shell} data-testid="mini-app-branch-pick">
@@ -520,6 +600,16 @@ export function MiniAppRoot({
             <p className={styles.scanBad} role="alert" data-testid="mini-branch-pick-error">
               {branchPickError}
             </p>
+          ) : null}
+          {bootstrap.canChooseWalletBranches && (branchNext === "home" || branchNext === "wallet") ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={branchSwitching}
+              onClick={() => openWalletBranchPicker(branchNext)}
+            >
+              Выбрать филиалы для кошелька
+            </button>
           ) : null}
           <div className={styles.branchSheet}>
             {bootstrap.branches.map((b) => (
@@ -546,6 +636,7 @@ export function MiniAppRoot({
     platform,
     embeddedContext,
     branchId,
+    walletBranchSelection,
   ]);
   if (screen === "wallet") {
     return (
@@ -555,6 +646,7 @@ export function MiniAppRoot({
           platform={platform}
           bootstrap={bootstrap}
           branchId={branchId}
+          branchSelection={walletBranchSelection}
           embeddedContext={embeddedContext}
           fixtureMode={Boolean(fixtureBootstrap)}
           fixtureWalletData={fixtureWalletData}
@@ -566,6 +658,8 @@ export function MiniAppRoot({
             setScreen("home");
           }}
           onOpenProfSettlements={openProfLink}
+          onChooseWalletBranches={bootstrap.canChooseWalletBranches ? () => openWalletBranchPicker("wallet") : undefined}
+          onWalletBranchSelectionChange={bootstrap.canChooseWalletBranches ? changeWalletBranchSelection : undefined}
           onOpenBranchPicker={
             (bootstrap.role === "company" || bootstrap.role === "store") && bootstrap.branches.length > 1
               ? () => openBranchPicker("wallet")
@@ -598,6 +692,7 @@ export function MiniAppRoot({
         bootstrap={bootstrap}
         platform={platform}
         branchId={branchId}
+        branchSelection={walletBranchSelection}
         embeddedContext={embeddedContext}
         fixtureMode={Boolean(fixtureBootstrap)}
         fixtureWalletData={fixtureWalletData}

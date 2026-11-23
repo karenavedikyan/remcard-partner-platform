@@ -31,4 +31,11 @@ describe("mini-app wallet scope", () => {
     });
     assert.match(href, /\/settlements$/);
   });
+
+  it("serializes an explicit subset separately from the operational branch and all branches", () => {
+    const bootstrap = buildMiniAppFixture("company", "max", { canCreate: true, canScan: true }, true);
+    const input = { bootstrap, ledgerScope: "branch" as const, branchId: "b3" };
+    assert.deepEqual(miniWalletSettlementsSearchParams({ ...input, branchSelection: ["b1", "b2"] }), { branchIds: "b1,b2" });
+    assert.equal(miniWalletSettlementsSearchParams({ ...input, branchSelection: "all" }), undefined);
+  });
 });

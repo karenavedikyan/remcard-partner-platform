@@ -6,7 +6,7 @@ import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import { computeMiniWalletCalc, miniWalletIncomingOnly, type MiniWalletCalc } from "@/lib/mini-app/wallet/calc";
 import { miniWalletFixtureForRole } from "@/lib/mini-app/wallet/fixtures";
-import { miniWalletSettlementsSearchParams } from "@/lib/mini-app/wallet/scope";
+import { miniWalletBranchSelectionLabel, miniWalletSettlementsSearchParams, type MiniWalletBranchSelection } from "@/lib/mini-app/wallet/scope";
 import { classifyMiniWalletFailure, miniWalletFailureMessage, type MiniWalletFailure } from "@/lib/mini-app/wallet/access-errors";
 import type { SettlementsResponse } from "@/lib/settlements-types";
 import { formatHistoryTotalParts } from "@/lib/wallet-accruals/format";
@@ -17,6 +17,7 @@ type Props = {
   bootstrap: MiniAppBootstrap;
   platform: MiniAppPlatform;
   branchId: string | null;
+  branchSelection?: MiniWalletBranchSelection;
   embeddedContext: MiniAppEmbeddedContext;
   fixtureMode: boolean;
   fixtureWalletData?: SettlementsResponse;
@@ -34,6 +35,7 @@ export function MiniAppWalletCard({
   bootstrap,
   platform,
   branchId,
+  branchSelection = null,
   embeddedContext,
   fixtureMode,
   fixtureWalletData,
@@ -53,7 +55,7 @@ export function MiniAppWalletCard({
   useEffect(() => {
     if (fixtureMode) return;
     let active = true;
-    const settlementsSearchParams = miniWalletSettlementsSearchParams({ bootstrap, branchId, ledgerScope: "branch" });
+    const settlementsSearchParams = miniWalletSettlementsSearchParams({ bootstrap, branchId, branchSelection, ledgerScope: "branch" });
     void (async () => {
       try {
         const data = await miniAppFetchWalletSettlements(platform, { embeddedContext, settlementsSearchParams });
@@ -65,11 +67,12 @@ export function MiniAppWalletCard({
     return () => {
       active = false;
     };
-  }, [attempt, bootstrap, branchId, embeddedContext, fixtureMode, platform]);
+  }, [attempt, bootstrap, branchId, branchSelection, embeddedContext, fixtureMode, platform]);
 
   const totals = balance.status === "ok" ? balance.calc[side].totals : null;
   const confirmed = totals ? formatHistoryTotalParts(totals.confirmedRub) : null;
   const waiting = totals ? formatHistoryTotalParts(totals.waitingRub) : null;
+  const scopeLabel = miniWalletBranchSelectionLabel(branchSelection, bootstrap);
 
   return (
     <div className={styles.cardWrap}>
@@ -85,6 +88,7 @@ export function MiniAppWalletCard({
           </span>
         </div>
         <div className={styles.walletBody}>
+          {scopeLabel ? <p className={styles.walletNotice} data-testid="mini-wallet-card-scope">{scopeLabel}</p> : null}
           {balance.status === "ok" ? (
             <>
               <p className={styles.walletLabel}>
