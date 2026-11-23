@@ -491,10 +491,10 @@ index 00000000..64a74e3d
 \ No newline at end of file
 diff --git a/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts b/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts
 new file mode 100644
-index 00000000..498b459a
+index 00000000..efd659da
 --- /dev/null
 +++ b/src/lib/store/__tests__/storeOrderPreviewCategories.test.ts
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,107 @@
 +import { describe, expect, it } from 'vitest';
 +import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
 +import { buildStoreOrderPreviewCategories } from '@/lib/store/storeOrderPreviewCategories';
@@ -549,6 +549,32 @@ index 00000000..498b459a
 +    );
 +    expect(categories[0]!.maxClientDiscountPercent).toBe(20);
 +    expect(categories[0]!.issuerPercent).toBe(10);
++  });
++
++  it('missing live term: cap uses frozen pool, PROF payout pool 0', async () => {
++    const categories = await buildStoreOrderPreviewCategories(
++      {
++        partnershipId: 'p1',
++        policySnapshotJson: {},
++        categories: [
++          {
++            category: 'doors',
++            categoryLabel: 'Двери',
++            discountPercent: 10,
++            issuerPercent: 5,
++            isExcluded: false,
++          },
++        ],
++      },
++      {
++        partnershipTerm: {
++          findMany: async () => [],
++        },
++      } as never,
++    );
++    expect(categories[0]!.maxClientDiscountPercent).toBe(15);
++    expect(categories[0]!.issuerPayoutPoolPercent).toBe(0);
++    expect(categories[0]!.issuerPercent).toBe(0);
 +  });
 +
 +  it('when live pool 12, max is 12 not offered+max(0)', async () => {
@@ -834,32 +860,35 @@ index 00000000..c359260e
 +}
 \ No newline at end of file
 diff --git a/src/lib/store/storeOrderPreviewCategories.ts b/src/lib/store/storeOrderPreviewCategories.ts
-index 512a1491..af652065 100644
+index 512a1491..3c778c50 100644
 --- a/src/lib/store/storeOrderPreviewCategories.ts
 +++ b/src/lib/store/storeOrderPreviewCategories.ts
-@@ -1,7 +1,11 @@
+@@ -1,7 +1,12 @@
  import { Prisma } from '@prisma/client';
  import { prisma } from '@/lib/prisma';
  import { issuerBonusPercentFromFrozenDiscount } from '@/lib/certificateReceivingPolicy/purchaseIssuerBonus';
 -import { categoryIssuerPercent } from '@/lib/certificatePool';
 +import {
 +  loadLivePartnershipPoolByCategory,
++  partnershipAccrualPoolPercent,
 +  resolveEffectiveClientDiscountMaxPercent,
 +  resolveStoreOrderCategoryLimitMode,
 +} from '@/lib/store/storeOrderCategoryLimit';
  
  type PartnerCategoryRow = {
    category: string;
-@@ -18,6 +22,8 @@ export type StoreOrderPreviewCategory = {
+@@ -18,6 +23,10 @@ export type StoreOrderPreviewCategory = {
    discountPercent: number;
    issuerPercent: number;
    proBonusPercent: number;
 +  /** Authoritative max client discount % (live partnership or frozen pool). */
 +  maxClientDiscountPercent: number;
++  /** PROF accrual pool (live term only); 0 when term missing — distinct from discount cap. */
++  issuerPayoutPoolPercent: number;
  };
  
  /**
-@@ -27,33 +33,31 @@ export type StoreOrderPreviewCategory = {
+@@ -27,33 +36,33 @@ export type StoreOrderPreviewCategory = {
  export async function buildStoreOrderPreviewCategories(
    certPartner: {
      partnershipId: string | null;
@@ -893,7 +922,8 @@ index 512a1491..af652065 100644
 +      category,
 +      liveStore,
 +    );
-+    const issuerPercent = issuerBonusPercentFromFrozenDiscount(frozenDiscount, maxClientDiscountPercent);
++    const issuerPayoutPoolPercent = partnershipAccrualPoolPercent(liveStore);
++    const issuerPercent = issuerBonusPercentFromFrozenDiscount(frozenDiscount, issuerPayoutPoolPercent);
      return {
        category: category.category,
        categoryLabel: category.categoryLabel,
@@ -901,6 +931,7 @@ index 512a1491..af652065 100644
        issuerPercent,
        proBonusPercent: issuerPercent,
 +      maxClientDiscountPercent,
++      issuerPayoutPoolPercent,
      };
    });
  }
