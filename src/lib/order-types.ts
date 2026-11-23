@@ -8,6 +8,8 @@ export type PreviewCategory = {
   proBonusPercent?: number;
   /** Server-authoritative max client discount % when present (live partnership or frozen pool). */
   maxClientDiscountPercent?: number;
+  /** PROF payout pool from live partnership term; 0 if term missing (optional for older API). */
+  issuerPayoutPoolPercent?: number;
 };
 
 /** Creator/recommender (certificate proUser), not issuer org or redeeming store. */

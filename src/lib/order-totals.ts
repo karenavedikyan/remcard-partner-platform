@@ -18,12 +18,23 @@ export function lineDiscountRub(amount: number, discountPercent: number): number
   return Math.round((amount * discountPercent) / 100);
 }
 
-function previewPoolPercent(category: PreviewCategory): number {
+function previewDiscountCapPercent(category: PreviewCategory): number {
   if (
     category.maxClientDiscountPercent != null &&
     Number.isFinite(category.maxClientDiscountPercent)
   ) {
     return category.maxClientDiscountPercent;
+  }
+  return category.discountPercent + category.issuerPercent;
+}
+
+/** Pool base for PROF preview (applied vs live payout pool, not client discount cap). */
+export function categoryIssuerPayoutPoolPercent(category: PreviewCategory): number {
+  if (
+    category.issuerPayoutPoolPercent != null &&
+    Number.isFinite(category.issuerPayoutPoolPercent)
+  ) {
+    return category.issuerPayoutPoolPercent;
   }
   return category.discountPercent + category.issuerPercent;
 }
@@ -72,7 +83,7 @@ export function appliedClientDiscountPercent(
 export const CLIENT_DISCOUNT_POOL_TOLERANCE_PP = 0.01;
 
 export function categoryPoolPercent(category: PreviewCategory): number {
-  return previewPoolPercent(category);
+  return previewDiscountCapPercent(category);
 }
 
 export function validateCategoryDiscountField(
@@ -152,7 +163,7 @@ export function validateOrderDiscountDrafts(
 }
 
 function previewIssuerPercent(category: PreviewCategory, appliedDiscount: number): number {
-  const pool = previewPoolPercent(category);
+  const pool = categoryIssuerPayoutPoolPercent(category);
   const raw = pool - appliedDiscount;
   return raw <= 0 ? 0 : Math.round(raw * 100) / 100;
 }

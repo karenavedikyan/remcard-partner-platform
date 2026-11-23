@@ -66,6 +66,43 @@ describe("order-totals flexible client discount", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("issuerPayoutPool 0 with cap 15 shows zero PROF for default offered", () => {
+    const cat: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 10,
+      issuerPercent: 5,
+      maxClientDiscountPercent: 15,
+      issuerPayoutPoolPercent: 0,
+    };
+    const totals = computeOrderTotals([cat], { doors: "10000" });
+    expect(totals.totalIssuerBonus).toBe(0);
+    expect(validateOrderDiscountDrafts([cat], { doors: "10000" }).ok).toBe(true);
+  });
+
+  it("edited discount below default uses payout pool for PROF", () => {
+    const cat: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 10,
+      issuerPercent: 2,
+      maxClientDiscountPercent: 12,
+      issuerPayoutPoolPercent: 12,
+    };
+    const totals = computeOrderTotals([cat], { doors: "10000" }, { doors: "8" });
+    expect(totals.totalIssuerBonus).toBe(400);
+  });
+
+  it("BE-before-FE without issuerPayoutPool falls back to legacy issuer math", () => {
+    const legacy: PreviewCategory = {
+      category: "doors",
+      categoryLabel: "Двери",
+      discountPercent: 7,
+      issuerPercent: 3,
+    };
+    expect(computeOrderTotals([legacy], { doors: "1000" }).totalIssuerBonus).toBe(30);
+  });
+
   it("live max 12 accepts 12 rejects 12.01", () => {
     const cat: PreviewCategory = {
       category: "doors",

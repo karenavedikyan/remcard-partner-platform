@@ -138,9 +138,9 @@ describe("MiniAppScanReceive validation retry", () => {
     await waitFor(() => expect(screen.getByTestId("mini-order-uncertain")).toBeInTheDocument());
     expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1);
 
-    await user.clear(screen.getByTestId("mini-discount-input-doors"));
-    await user.type(screen.getByTestId("mini-discount-input-doors"), "5");
+    expect(screen.getByTestId("mini-discount-input-doors")).toBeDisabled();
     expect(screen.getByTestId("mini-scan-confirm-step")).toBeDisabled();
+    expect(screen.getByTestId("mini-scan-another")).toBeDisabled();
     expect(remcardFetchWithMeta).toHaveBeenCalledTimes(1);
   });
 });

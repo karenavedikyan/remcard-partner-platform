@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QrScanner } from "@/components/scanner/QrScanner";
 import { TextField } from "@/components/ui/FormField";
 import { parseCertificateCode } from "@/lib/certificate-code";
@@ -9,6 +9,7 @@ import { miniAppStoreScanLookup } from "@/lib/mini-app/api";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
 import {
   buildOrderItems,
+  categoryIssuerPayoutPoolPercent,
   categoryPoolPercent,
   computeOrderTotals,
   validateOrderAmounts,
@@ -29,14 +30,20 @@ import {
   classifyStoreOrderPostResponse,
   clearStoreOrderAttempt,
   createStoreOrderAttempt,
+  isConflictAttempt,
+  isRestorableAttempt,
   isStoreOrderAttemptLocked,
   loadStoreOrderAttempt,
   markStoreOrderAttemptConflict,
   markStoreOrderAttemptInFlight,
   markStoreOrderAttemptSucceeded,
   markStoreOrderAttemptUnknown,
+  NEW_PURCHASE_WARNING,
+  prepareStoreOrderRetry,
   releaseStoreOrderAttemptForEdit,
+  storeOrderAttemptBodiesEqual,
   type OrderPostOutcome,
+  type StoreOrderAttemptRecord,
 } from "@/lib/store-order-attempt";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
@@ -62,6 +69,9 @@ type Props = {
   fixtureCertCode?: string;
 };
 
+const LOCKED_ATTEMPT_OTHER_CODE_MESSAGE =
+  "Есть незавершённая покупка по другому коду. Сначала проверьте её результат или дождитесь поддержки.";
+
 function formatRub(value: number) {
   return `${Math.round(value).toLocaleString("ru-RU")} ₽`;
 }
@@ -79,7 +89,7 @@ function weightedPoolSummary(
     if (!raw) continue;
     const amount = Number(raw);
     if (!Number.isFinite(amount) || amount <= 0) continue;
-    const pool = categoryPoolPercent(cat);
+    const pool = categoryIssuerPayoutPoolPercent(cat);
     const clientPct = appliedClientDiscountPercent(cat, discountDrafts);
     if (!Number.isFinite(clientPct)) continue;
     sumAmount += amount;
@@ -127,6 +137,45 @@ export function MiniAppScanReceive({
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const submitInFlight = useRef(false);
   const lastIdempotencyKey = useRef<string | null>(null);
+  const [storedAttempt, setStoredAttempt] = useState<StoreOrderAttemptRecord | null>(null);
+  const attemptRestoreDone = useRef(false);
+
+  const syncStoredAttempt = useCallback(() => {
+    setStoredAttempt(loadStoreOrderAttempt(actorUserId));
+  }, [actorUserId]);
+
+  useEffect(() => {
+    if (attemptRestoreDone.current) {
+      return;
+    }
+    attemptRestoreDone.current = true;
+    const attempt = loadStoreOrderAttempt(actorUserId);
+    if (!attempt || attempt.status === "succeeded") {
+      return;
+    }
+    setStoredAttempt(attempt);
+    setOrderUncertain(isRestorableAttempt(attempt));
+    setOrderConflict(isConflictAttempt(attempt));
+    setCertCode(attempt.body.certificateCode);
+    if (!fixturePreview) {
+      setPhase((current) => (current === "scan" ? "purchase" : current));
+    }
+  }, [actorUserId, fixturePreview]);
+
+  const purchaseDraftLocked = useMemo(
+    () =>
+      submitting ||
+      confirmOpen ||
+      orderUncertain ||
+      orderConflict ||
+      isStoreOrderAttemptLocked(storedAttempt),
+    [submitting, confirmOpen, orderUncertain, orderConflict, storedAttempt],
+  );
+
+  const rescanBlocked = useMemo(
+    () => submitting || isStoreOrderAttemptLocked(storedAttempt) || orderUncertain || orderConflict,
+    [submitting, storedAttempt, orderUncertain, orderConflict],
+  );
 
   const totals = useMemo(() => {
     if (!preview) return null;
@@ -162,15 +211,18 @@ export function MiniAppScanReceive({
     switch (outcome.kind) {
       case "success":
         markStoreOrderAttemptSucceeded(actorUserId, outcome.data.order.id);
+        syncStoredAttempt();
         setSuccessOrderId(outcome.data.order.id);
         setConfirmOpen(false);
         setPhase("success");
         clearStoreOrderAttempt();
+        setStoredAttempt(null);
         setOrderUncertain(false);
         setOrderConflict(false);
         break;
       case "conflict":
         markStoreOrderAttemptConflict(actorUserId);
+        syncStoredAttempt();
         setOrderConflict(true);
         setOrderUncertain(false);
         setSubmitError(ATTEMPT_CONFLICT_MESSAGE);
@@ -178,6 +230,7 @@ export function MiniAppScanReceive({
         break;
       case "uncertain":
         markStoreOrderAttemptUnknown(actorUserId);
+        syncStoredAttempt();
         setOrderUncertain(true);
         setOrderConflict(false);
         setSubmitError(UNCERTAIN_ORDER_DETAIL);
@@ -185,6 +238,7 @@ export function MiniAppScanReceive({
         break;
       case "unknown_persist":
         markStoreOrderAttemptUnknown(actorUserId);
+        syncStoredAttempt();
         setOrderUncertain(true);
         setOrderConflict(false);
         setSubmitError(outcome.message ?? UNCERTAIN_ORDER_DETAIL);
@@ -204,7 +258,7 @@ export function MiniAppScanReceive({
       default:
         break;
     }
-  }, [actorUserId]);
+  }, [actorUserId, syncStoredAttempt]);
 
   const beginPurchase = useCallback(
     async (raw: string) => {
@@ -212,6 +266,18 @@ export function MiniAppScanReceive({
       if (!parsed.ok) {
         setGateError(parsed.error);
         return;
+      }
+      const pending = loadStoreOrderAttempt(actorUserId);
+      if (pending && isStoreOrderAttemptLocked(pending)) {
+        if (pending.body.certificateCode !== parsed.code) {
+          setGateError(LOCKED_ATTEMPT_OTHER_CODE_MESSAGE);
+          return;
+        }
+        setGateError("");
+        setCertCode(parsed.code);
+        setStoredAttempt(pending);
+        setOrderUncertain(isRestorableAttempt(pending));
+        setOrderConflict(isConflictAttempt(pending));
       }
       setLoading(true);
       setGateError("");
@@ -260,13 +326,14 @@ export function MiniAppScanReceive({
         setDiscountDrafts(discounts);
         setRewardDrafts(rewards);
         setPhase("purchase");
+        syncStoredAttempt();
       } catch (e) {
         setGateError(e instanceof RemcardApiError ? e.message : "Не удалось открыть приём документа.");
       } finally {
         setLoading(false);
       }
     },
-    [platform, branchId, receiving],
+    [platform, branchId, receiving, actorUserId, preview, syncStoredAttempt],
   );
 
   const openConfirm = useCallback(() => {
@@ -301,6 +368,22 @@ export function MiniAppScanReceive({
 
   const submitOrder = useCallback(async () => {
     if (!preview || submitInFlight.current || submitting) return;
+    const amounts = validateOrderAmounts(preview.availableCategories, amountDrafts);
+    if (!amounts.ok) {
+      setSubmitError(amounts.message);
+      setConfirmOpen(false);
+      return;
+    }
+    const discountValidation = validateOrderDiscountDrafts(
+      preview.availableCategories,
+      amountDrafts,
+      discountDrafts,
+    );
+    if (!discountValidation.ok) {
+      setSubmitError(discountValidation.message);
+      setConfirmOpen(false);
+      return;
+    }
     const items = buildOrderItems(preview.availableCategories, amountDrafts, discountDrafts).map((item) =>
       preview.partner.isSelfScan
         ? item
@@ -309,40 +392,61 @@ export function MiniAppScanReceive({
             rewardConfirmation: rewardDraftToTerms(rewardDrafts[item.category] ?? defaultRewardDraft),
           },
     );
-    const created = createStoreOrderAttempt({
-      userId: actorUserId,
-      body: { certificateCode: certCode, items },
-      branchId: branchId ?? undefined,
-    });
-    if (!created.ok) {
-      const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
-      setSubmitError(
-        created.reason === "body_mismatch"
-          ? ATTEMPT_BODY_MISMATCH_MESSAGE
-          : created.reason === "blocked"
-            ? locked && orderUncertain
-              ? UNCERTAIN_ORDER_DETAIL
-              : ATTEMPT_CONFLICT_MESSAGE
-            : "Не удалось сохранить попытку оформления",
-      );
-      return;
+    const body = { certificateCode: certCode, items };
+    const pending = loadStoreOrderAttempt(actorUserId);
+    const wasRetry = Boolean(pending && isStoreOrderAttemptLocked(pending) && isRestorableAttempt(pending));
+    let attemptRecord: StoreOrderAttemptRecord;
+    if (wasRetry) {
+      const prepared = prepareStoreOrderRetry(actorUserId);
+      if (!prepared.ok) {
+        setSubmitError(
+          prepared.reason === "conflict" ? ATTEMPT_CONFLICT_MESSAGE : UNCERTAIN_ORDER_DETAIL,
+        );
+        return;
+      }
+      if (!storeOrderAttemptBodiesEqual(prepared.record.body, body)) {
+        setSubmitError(ATTEMPT_BODY_MISMATCH_MESSAGE);
+        return;
+      }
+      attemptRecord = prepared.record;
+    } else {
+      const created = createStoreOrderAttempt({
+        userId: actorUserId,
+        body,
+        branchId: branchId ?? undefined,
+      });
+      if (!created.ok) {
+        const locked = isStoreOrderAttemptLocked(loadStoreOrderAttempt(actorUserId));
+        setSubmitError(
+          created.reason === "body_mismatch"
+            ? ATTEMPT_BODY_MISMATCH_MESSAGE
+            : created.reason === "blocked"
+              ? locked && orderUncertain
+                ? UNCERTAIN_ORDER_DETAIL
+                : ATTEMPT_CONFLICT_MESSAGE
+              : "Не удалось сохранить попытку оформления",
+        );
+        return;
+      }
+      attemptRecord = created.record;
     }
     submitInFlight.current = true;
     setSubmitting(true);
     setSubmitError("");
     markStoreOrderAttemptInFlight(actorUserId);
+    syncStoredAttempt();
     try {
       const { payload } = await remcardFetchWithMeta<unknown>("/api/store/order", {
         method: "POST",
-        body: created.record.body,
-        idempotencyKey: created.record.idempotencyKey,
+        body: attemptRecord.body,
+        idempotencyKey: attemptRecord.idempotencyKey,
         searchParams: branchId ? { branchId } : undefined,
       });
-      const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry: false });
+      const outcome = classifyStoreOrderPostResponse({ status: 201, payload, wasRetry });
       applyPostOutcome(outcome);
       if (outcome.kind === "success") {
-        lastIdempotencyKey.current = created.record.idempotencyKey;
-        receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, created.record.idempotencyKey);
+        lastIdempotencyKey.current = attemptRecord.idempotencyKey;
+        receiving.beginOrderLinkAfterSuccess(outcome.data.order.id, attemptRecord.idempotencyKey);
       }
     } catch (caught) {
       if (caught instanceof RemcardApiError) {
@@ -351,15 +455,16 @@ export function MiniAppScanReceive({
           classifyStoreOrderPostResponse({
             status: caught.status,
             payload,
-            wasRetry: false,
+            wasRetry,
           }),
         );
       } else {
-        applyPostOutcome(classifyStoreOrderNetworkFailure(false));
+        applyPostOutcome(classifyStoreOrderNetworkFailure(wasRetry));
       }
     } finally {
       submitInFlight.current = false;
       setSubmitting(false);
+      syncStoredAttempt();
     }
   }, [
     preview,
@@ -373,6 +478,7 @@ export function MiniAppScanReceive({
     receiving,
     applyPostOutcome,
     orderUncertain,
+    syncStoredAttempt,
   ]);
 
   if (phase === "success") {
@@ -430,7 +536,7 @@ export function MiniAppScanReceive({
                 min={0}
                 inputMode="numeric"
                 value={amountDrafts[category.category] ?? ""}
-                disabled={submitting}
+                disabled={purchaseDraftLocked}
                 onChange={(e) =>
                   setAmountDrafts((prev) => ({ ...prev, [category.category]: e.target.value }))
                 }
@@ -443,7 +549,7 @@ export function MiniAppScanReceive({
                 inputMode="decimal"
                 data-testid={`mini-discount-input-${category.category}`}
                 value={discountDraftInputValue(category, discountDrafts)}
-                disabled={submitting}
+                disabled={purchaseDraftLocked}
                 onChange={(e) =>
                   setDiscountDrafts((prev) => ({ ...prev, [category.category]: e.target.value }))
                 }
@@ -470,7 +576,7 @@ export function MiniAppScanReceive({
                 <RewardConfirmationFields
                   category={category.category}
                   draft={rewardDrafts[category.category] ?? defaultRewardDraft}
-                  disabled={submitting}
+                  disabled={purchaseDraftLocked}
                   onChange={(value) =>
                     setRewardDrafts((prev) => ({ ...prev, [category.category]: value }))
                   }
@@ -502,6 +608,17 @@ export function MiniAppScanReceive({
           <p className={styles.scanBad} role="alert" data-testid="mini-order-uncertain">
             {UNCERTAIN_ORDER_DETAIL}
           </p>
+        ) : null}
+        {orderUncertain ? (
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            data-testid="mini-check-order-result"
+            disabled={submitting}
+            onClick={() => void submitOrder()}
+          >
+            Проверить результат
+          </button>
         ) : null}
         {orderConflict ? (
           <p className={styles.scanBad} role="alert" data-testid="mini-order-conflict">
@@ -537,10 +654,21 @@ export function MiniAppScanReceive({
         <button
           type="button"
           className={styles.secondaryBtn}
+          data-testid="mini-scan-another"
+          disabled={rescanBlocked}
+          title={rescanBlocked ? "Завершите или проверьте текущую покупку" : undefined}
           onClick={() => {
-            setPhase("scan");
-            setPreview(null);
+            if (rescanBlocked) return;
+            const pending = loadStoreOrderAttempt(actorUserId);
+            if (pending && !window.confirm(NEW_PURCHASE_WARNING)) return;
+            if (pending && isStoreOrderAttemptLocked(pending)) return;
             clearStoreOrderAttempt();
+            setStoredAttempt(null);
+            setPreview(null);
+            setOrderUncertain(false);
+            setOrderConflict(false);
+            setConfirmOpen(false);
+            setPhase("scan");
           }}
         >
           Сканировать другой код

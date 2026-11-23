@@ -52,6 +52,11 @@
 - `uncertain` / сеть: попытка в `unknown`, новая покупка заблокирована (без автоповтора)
 - `409`: `conflict`, отдельно от validation
 
+## Release blockers (rescan + PROF display)
+
+- Mini-app: rescan не сбрасывает locked attempt; guard при submit/unknown/conflict; restore из sessionStorage; «Проверить результат» с тем же ключом
+- Preview: `issuerPayoutPoolPercent` отдельно от `maxClientDiscountPercent`; FE totals для PROF по payout pool
+
 ## Release blockers (итерация)
 
 - BE: `loadLivePartnershipPoolByCategory` — тип `Prisma.TransactionClient | typeof prisma` (TS2345 снят)
