@@ -123,8 +123,10 @@ export function readEmbeddedBindCookie(req: NextRequest): SessionPayload | null 
   return decode(raw);
 }
 
+export type MiniAppSessionVia = 'session' | 'embedded_bind' | 'launch_header';
+
 export type MiniAppSessionGuardResult =
-  | { ok: true; session: SessionPayload; via: 'session' | 'embedded_bind' | 'launch_header' }
+  | { ok: true; session: SessionPayload; via: MiniAppSessionVia }
   | { ok: false; status: number; code: string; message: string };
 
 function providerFor(platform: MiniAppPlatform): MessengerProvider {
@@ -135,7 +137,7 @@ function guardSessionPayload(
   session: SessionPayload,
   platform: MiniAppPlatform,
   userId: string,
-  via: MiniAppSessionGuardResult extends { ok: true; via: infer V } ? V : never,
+  via: MiniAppSessionVia,
 ): MiniAppSessionGuardResult {
   if (session.platform !== platform) {
     return {

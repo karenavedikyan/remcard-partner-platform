@@ -229,16 +229,12 @@ export function MiniAppRoot({
         onAuthenticated={() => {
           setLoading(true);
           setError(null);
+          setAuthGate("none");
           void (async () => {
             try {
-              const host = detectMiniAppHost("max");
-              if (!host) {
-                setError("Не удалось подключиться к MAX");
-                return;
-              }
-              await completeSession(host, embeddedContext);
+              await loadBootstrap("max", undefined, embeddedContext);
             } catch (e) {
-              setError(e instanceof Error ? e.message : "Не удалось войти");
+              setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
             } finally {
               setLoading(false);
             }

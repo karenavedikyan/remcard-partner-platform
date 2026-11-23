@@ -93,12 +93,15 @@ export async function resolveProfUserFromEmbeddedToken(req: NextRequest) {
   const payload = verifyToken(raw);
   if (!payload?.userId) return null;
   const { prisma } = await import('@/lib/prisma');
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { id: true, deletedAt: true, isBlocked: true, tokenVersion: true, role: true, displayName: true, publicId: true },
-  });
-  if (!user || user.deletedAt || user.isBlocked) return null;
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+  if (!user) return null;
   const { tokenVersionsMatch } = await import('@/lib/tokenVersion');
   if (!tokenVersionsMatch(payload.v, user.tokenVersion)) return null;
+  if (user.deletedAt || user.isBlocked) return null;
+  const { isRequestAuthSessionRevoked } = await import('@/lib/authSessionRevocation');
+  if (await isRequestAuthSessionRevoked(req, payload)) return null;
+  const { enforceProfTestPrincipalAccess } = await import('@/lib/profTestSessionValidator');
+  const testAccess = await enforceProfTestPrincipalAccess(req, user, payload);
+  if (testAccess === 'deny') return null;
   return user;
 }

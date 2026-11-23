@@ -476,6 +476,65 @@ index 8150b22..9b6c5ec 100644
    return response;
  }
 \ No newline at end of file
+diff --git a/src/lib/__tests__/miniAppCabinetAuth.test.ts b/src/lib/__tests__/miniAppCabinetAuth.test.ts
+new file mode 100644
+index 0000000..cae0b5b
+--- /dev/null
++++ b/src/lib/__tests__/miniAppCabinetAuth.test.ts
+@@ -0,0 +1,52 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import { NextRequest } from 'next/server';
++
++const mockProfCabinet = vi.fn();
++const mockEmbedded = vi.fn();
++const mockCabinetAccess = vi.fn();
++
++vi.mock('@/lib/proAuth', () => ({
++  getProfCabinetUser: (...args: unknown[]) => mockProfCabinet(...args),
++}));
++
++vi.mock('@/lib/miniAppEmbeddedAuth', () => ({
++  resolveProfUserFromEmbeddedToken: (...args: unknown[]) => mockEmbedded(...args),
++}));
++
++vi.mock('@/lib/cabinetAccess', () => ({
++  assertCabinetProfAccess: (...args: unknown[]) => mockCabinetAccess(...args),
++}));
++
++describe('getProfCabinetUserForMiniApp', () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockCabinetAccess.mockResolvedValue({ ok: true });
++  });
++
++  it('prefers first-party prof session', async () => {
++    const sessionUser = { id: 'from-session' };
++    mockProfCabinet.mockResolvedValue(sessionUser);
++    const { getProfCabinetUserForMiniApp } = await import('@/lib/miniAppCabinetAuth');
++    const user = await getProfCabinetUserForMiniApp(new NextRequest('http://localhost'), 'max');
++    expect(user).toBe(sessionUser);
++    expect(mockEmbedded).not.toHaveBeenCalled();
++  });
++
++  it('does not accept embedded token without cabinet access', async () => {
++    mockProfCabinet.mockResolvedValue(null);
++    mockEmbedded.mockResolvedValue({ id: 'embedded' });
++    mockCabinetAccess.mockResolvedValue({ ok: false });
++    const { getProfCabinetUserForMiniApp } = await import('@/lib/miniAppCabinetAuth');
++    const user = await getProfCabinetUserForMiniApp(new NextRequest('http://localhost'), 'max');
++    expect(user).toBeNull();
++  });
++
++  it('accepts embedded token when cabinet access passes', async () => {
++    const embeddedUser = { id: 'embedded' };
++    mockProfCabinet.mockResolvedValue(null);
++    mockEmbedded.mockResolvedValue(embeddedUser);
++    const { getProfCabinetUserForMiniApp } = await import('@/lib/miniAppCabinetAuth');
++    const user = await getProfCabinetUserForMiniApp(new NextRequest('http://localhost'), 'max');
++    expect(user).toBe(embeddedUser);
++  });
++});
+\ No newline at end of file
 diff --git a/src/lib/__tests__/miniAppEmbeddedAuth.test.ts b/src/lib/__tests__/miniAppEmbeddedAuth.test.ts
 new file mode 100644
 index 0000000..176cc65
@@ -676,56 +735,40 @@ index 0000000..88857ef
 \ No newline at end of file
 diff --git a/src/lib/miniAppCabinetAuth.ts b/src/lib/miniAppCabinetAuth.ts
 new file mode 100644
-index 0000000..27be237
+index 0000000..4786c95
 --- /dev/null
 +++ b/src/lib/miniAppCabinetAuth.ts
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,23 @@
 +import type { NextRequest } from 'next/server';
 +import type { User } from '@prisma/client';
 +import { getProfCabinetUser } from '@/lib/proAuth';
 +import { assertCabinetProfAccess } from '@/lib/cabinetAccess';
-+import { prisma } from '@/lib/prisma';
 +import type { MiniAppPlatform } from '@/lib/miniAppSessionCookie';
-+import {
-+  resolveProfUserFromEmbeddedToken,
-+  resolveProfUserFromLaunchHeader,
-+} from '@/lib/miniAppEmbeddedAuth';
++import { resolveProfUserFromEmbeddedToken } from '@/lib/miniAppEmbeddedAuth';
 +
-+async function loadProfCabinetCandidate(userId: string): Promise<User | null> {
-+  const user = await prisma.user.findUnique({ where: { id: userId } });
-+  if (!user || user.deletedAt || user.isBlocked) return null;
-+  const access = await assertCabinetProfAccess(user);
-+  if (!access.ok) return null;
-+  return user;
-+}
-+
-+/** Mini-app auth: first-party session, then partitioned embedded token, then launch-bound profile. */
++/** Mini-app auth: first-party session, then partitioned embedded JWT (same checks as getAuthenticatedUser). */
 +export async function getProfCabinetUserForMiniApp(
 +  req: NextRequest,
-+  platform: MiniAppPlatform,
++  _platform: MiniAppPlatform,
 +): Promise<User | null> {
 +  const sessionUser = await getProfCabinetUser(req);
 +  if (sessionUser) return sessionUser;
 +
 +  const embeddedUser = await resolveProfUserFromEmbeddedToken(req);
-+  if (embeddedUser) {
-+    return loadProfCabinetCandidate(embeddedUser.id);
-+  }
++  if (!embeddedUser) return null;
 +
-+  const launchUser = await resolveProfUserFromLaunchHeader(req, platform);
-+  if (launchUser) {
-+    return loadProfCabinetCandidate(launchUser.id);
-+  }
++  const access = await assertCabinetProfAccess(embeddedUser);
++  if (!access.ok) return null;
 +
-+  return null;
++  return embeddedUser;
 +}
 \ No newline at end of file
 diff --git a/src/lib/miniAppEmbeddedAuth.ts b/src/lib/miniAppEmbeddedAuth.ts
 new file mode 100644
-index 0000000..f76b060
+index 0000000..e08a4a7
 --- /dev/null
 +++ b/src/lib/miniAppEmbeddedAuth.ts
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,107 @@
 +import type { NextRequest, NextResponse } from 'next/server';
 +import { verifyToken } from '@/lib/auth';
 +import { validateMessengerWebAppInitData } from '@/lib/messengerWebAppInitData';
@@ -821,18 +864,21 @@ index 0000000..f76b060
 +  const payload = verifyToken(raw);
 +  if (!payload?.userId) return null;
 +  const { prisma } = await import('@/lib/prisma');
-+  const user = await prisma.user.findUnique({
-+    where: { id: payload.userId },
-+    select: { id: true, deletedAt: true, isBlocked: true, tokenVersion: true, role: true, displayName: true, publicId: true },
-+  });
-+  if (!user || user.deletedAt || user.isBlocked) return null;
++  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
++  if (!user) return null;
 +  const { tokenVersionsMatch } = await import('@/lib/tokenVersion');
 +  if (!tokenVersionsMatch(payload.v, user.tokenVersion)) return null;
++  if (user.deletedAt || user.isBlocked) return null;
++  const { isRequestAuthSessionRevoked } = await import('@/lib/authSessionRevocation');
++  if (await isRequestAuthSessionRevoked(req, payload)) return null;
++  const { enforceProfTestPrincipalAccess } = await import('@/lib/profTestSessionValidator');
++  const testAccess = await enforceProfTestPrincipalAccess(req, user, payload);
++  if (testAccess === 'deny') return null;
 +  return user;
 +}
 \ No newline at end of file
 diff --git a/src/lib/miniAppSessionCookie.ts b/src/lib/miniAppSessionCookie.ts
-index e7bcd76..1802531 100644
+index e7bcd76..08600ed 100644
 --- a/src/lib/miniAppSessionCookie.ts
 +++ b/src/lib/miniAppSessionCookie.ts
 @@ -1,8 +1,19 @@
@@ -916,7 +962,7 @@ index e7bcd76..1802531 100644
  }
  
  export function readMiniAppSession(req: NextRequest): SessionPayload | null {
-@@ -76,24 +117,26 @@ export function readMiniAppSession(req: NextRequest): SessionPayload | null {
+@@ -76,24 +117,28 @@ export function readMiniAppSession(req: NextRequest): SessionPayload | null {
    return decode(raw);
  }
  
@@ -926,9 +972,11 @@ index e7bcd76..1802531 100644
 +  return decode(raw);
 +}
 +
++export type MiniAppSessionVia = 'session' | 'embedded_bind' | 'launch_header';
++
  export type MiniAppSessionGuardResult =
 -  | { ok: true; session: SessionPayload }
-+  | { ok: true; session: SessionPayload; via: 'session' | 'embedded_bind' | 'launch_header' }
++  | { ok: true; session: SessionPayload; via: MiniAppSessionVia }
    | { ok: false; status: number; code: string; message: string };
  
 -export function assertMiniAppSession(
@@ -941,7 +989,7 @@ index e7bcd76..1802531 100644
 +  session: SessionPayload,
    platform: MiniAppPlatform,
    userId: string,
-+  via: MiniAppSessionGuardResult extends { ok: true; via: infer V } ? V : never,
++  via: MiniAppSessionVia,
  ): MiniAppSessionGuardResult {
 -  const session = readMiniAppSession(req);
 -  if (!session) {
@@ -955,7 +1003,7 @@ index e7bcd76..1802531 100644
    if (session.platform !== platform) {
      return {
        ok: false,
-@@ -110,5 +153,111 @@ export function assertMiniAppSession(
+@@ -110,5 +155,111 @@ export function assertMiniAppSession(
        message: 'Сессия мини-приложения недействительна',
      };
    }

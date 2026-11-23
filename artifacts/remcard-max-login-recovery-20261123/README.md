@@ -26,7 +26,8 @@ npx vitest run \
   src/lib/mini-app/embedded-context.test.ts \
   src/components/mini-app/MiniAppMaxEntry.test.tsx \
   src/lib/mini-app/mini-app-bootstrap-path.test.tsx \
-  src/components/mini-app/MiniAppRoot.branch-switch.test.tsx
+  src/components/mini-app/MiniAppRoot.branch-switch.test.tsx \
+  src/components/mini-app/MiniAppRoot.max-otp.test.tsx
 ```
 
 Cross-site shell (Playwright, без prod):
