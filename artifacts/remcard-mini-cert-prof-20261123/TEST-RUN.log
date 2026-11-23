@@ -9,3 +9,14 @@ npx vitest run \
   src/components/mini-app/MiniAppCertificateReady.qr.test.tsx
 
 Result: 4 files, 12 tests passed (2026-11-23)
+
+Idempotency persistence (follow-up):
+npx vitest run \
+  src/lib/mini-app/mini-certificate-create-attempt.test.ts \
+  src/components/mini-app/MiniAppCertificateCreate.test.tsx \
+  src/lib/mini-app/mini-certificate-wizard.test.ts \
+  src/lib/mini-app/mini-certificate-create-draft.test.ts
+
+Result: 4 files, 22 tests passed (2026-11-23)
+
+Outstanding QA (not automated here): isolated Postgres multi-partner/category create + public view browser pass.

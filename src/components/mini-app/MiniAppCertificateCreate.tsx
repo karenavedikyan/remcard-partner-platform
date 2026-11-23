@@ -16,10 +16,19 @@ import {
   resolvePoolPercent,
 } from "@/lib/certificate-percent";
 import {
-  hashAgentCreatePayload,
-  resolveCreateIdempotencySession,
-  type CreateIdempotencySession,
-} from "@/lib/agent-r03/create-idempotency";
+  beginMiniCertificateCreateAttempt,
+  classifyMiniCertificateCreateFailure,
+  clearMiniCertificateCreateAttempt,
+  isMiniCertificateCreateAttemptLocked,
+  loadMiniCertificateCreateAttempt,
+  markMiniCertificateCreateAttemptInFlight,
+  markMiniCertificateCreateAttemptUnknown,
+  MINI_CERT_ATTEMPT_BODY_MISMATCH,
+  MINI_CERT_ATTEMPT_STORAGE_FAILED,
+  MINI_CERT_ATTEMPT_USE_RETRY,
+  prepareMiniCertificateCreateRetry,
+  type MiniCertificateCreateAttemptRecord,
+} from "@/lib/mini-app/mini-certificate-create-attempt";
 import { displayCategoryLabel } from "@/lib/category-display";
 import { miniAppCreateCertificate, miniAppFetchCertificateOptions } from "@/lib/mini-app/api";
 import type { MiniAppEmbeddedContext } from "@/lib/mini-app/embedded-context";
@@ -64,13 +73,6 @@ type Props = {
   embeddedContext?: MiniAppEmbeddedContext;
 };
 
-function isUncertainCreateFailure(error: unknown): boolean {
-  if (!(error instanceof RemcardApiError)) return true;
-  if (error.status === 0) return true;
-  if (error.status >= 502 && error.status <= 504) return true;
-  return false;
-}
-
 export function MiniAppCertificateCreate({
   platform,
   bootstrap,
@@ -102,10 +104,11 @@ export function MiniAppCertificateCreate({
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uncertainSubmit, setUncertainSubmit] = useState(false);
+  const [openAttempt, setOpenAttempt] = useState<MiniCertificateCreateAttemptRecord | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [stalePartnersNotice, setStalePartnersNotice] = useState(false);
 
-  const idempotencyRef = useRef<CreateIdempotencySession | null>(null);
+  const submitInFlightRef = useRef(false);
 
   const draftScope = useMemo<MiniCertificateCreateDraftScope>(
     () => ({
@@ -119,6 +122,17 @@ export function MiniAppCertificateCreate({
     () => serializeMiniCertificateCreateDraftScope(draftScope),
     [draftScope],
   );
+
+  const attemptLocked = useMemo(
+    () => isMiniCertificateCreateAttemptLocked(openAttempt),
+    [openAttempt],
+  );
+
+  const refreshOpenAttempt = useCallback(() => {
+    const loaded = loadMiniCertificateCreateAttempt(draftScope);
+    setOpenAttempt(loaded);
+    setUncertainSubmit(loaded?.status === "unknown");
+  }, [draftScope]);
 
   const selectablePartners = useMemo(() => filterSelectablePartners(partners), [partners]);
   const hasWizard = useMemo(
@@ -309,6 +323,7 @@ export function MiniAppCertificateCreate({
 
   useEffect(() => {
     void load();
+    refreshOpenAttempt();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when branch or actor changes
   }, [draftScopeKey]);
 
@@ -384,20 +399,12 @@ export function MiniAppCertificateCreate({
     setWizardStep(2);
   }
 
-  async function submit() {
-    if (fixtureCreateSeed && fixtureSubmitCertificate) {
-      clearMiniCertificateCreateDraft(draftScope);
-      onCreated(fixtureSubmitCertificate);
-      return;
-    }
-    if (submitting) return;
+  function buildSubmitBody():
+    | { ok: true; body: CreateCertificateBody & { agentClientId?: string; branchId?: string } }
+    | { ok: false; message: string; fieldErrors?: Record<string, string> } {
     if (needsClient && !clientId) {
-      setSubmitError("Выберите клиента");
-      return;
+      return { ok: false, message: "Выберите клиента" };
     }
-    setSubmitError("");
-    setFieldErrors({});
-
     const payloadResult = buildCreateCertificatePayload({
       selectedPartners,
       discountDrafts,
@@ -405,34 +412,65 @@ export function MiniAppCertificateCreate({
       requireTenthStep: miniCertificateRequireTenthStep(bootstrap.role),
       maxUsages: issuerLimitsControlledByRecipient ? undefined : 0,
     });
-
     if (!payloadResult.ok) {
-      setSubmitError(payloadResult.formError ?? "Проверьте условия документа");
-      setFieldErrors(payloadResult.fieldErrors);
-      return;
+      return {
+        ok: false,
+        message: payloadResult.formError ?? "Проверьте условия документа",
+        fieldErrors: payloadResult.fieldErrors,
+      };
     }
-
-    setSubmitting(true);
-    setUncertainSubmit(false);
-    try {
-      const body: CreateCertificateBody & { agentClientId?: string; branchId?: string } = {
+    return {
+      ok: true,
+      body: {
         ...payloadResult.body,
         ...(needsClient ? { agentClientId: clientId } : {}),
         ...(branchId && needsBranch ? { branchId } : {}),
-      };
-      const payloadHash = hashAgentCreatePayload(body);
-      const session = resolveCreateIdempotencySession(idempotencyRef.current, payloadHash);
-      idempotencyRef.current = session;
-      const cert = await miniAppCreateCertificate(platform, body, session.key, {
+      },
+    };
+  }
+
+  async function postCertificateAttempt(
+    record: MiniCertificateCreateAttemptRecord,
+    wasRetry: boolean,
+  ) {
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
+    setSubmitting(true);
+    setSubmitError("");
+    markMiniCertificateCreateAttemptInFlight(draftScope, record.idempotencyKey);
+    try {
+      const cert = await miniAppCreateCertificate(platform, record.body, record.idempotencyKey, {
         branchId,
         embeddedContext,
       });
-      idempotencyRef.current = null;
+      clearMiniCertificateCreateAttempt(draftScope);
       clearMiniCertificateCreateDraft(draftScope);
+      setOpenAttempt(null);
+      setUncertainSubmit(false);
       onCreated(cert);
     } catch (err) {
-      const uncertain = isUncertainCreateFailure(err);
-      setUncertainSubmit(uncertain);
+      const outcome = classifyMiniCertificateCreateFailure(err, wasRetry);
+      if (outcome.kind === "success") {
+        return;
+      }
+      if (outcome.kind === "uncertain" || outcome.kind === "unknown_persist") {
+        markMiniCertificateCreateAttemptUnknown(draftScope, record.idempotencyKey);
+        refreshOpenAttempt();
+        setSubmitError(
+          outcome.message ??
+            "Результат выпуска неизвестен. Нажмите «Проверить результат» с тем же ключом Idempotency-Key.",
+        );
+        return;
+      }
+      if (outcome.kind === "conflict") {
+        markMiniCertificateCreateAttemptUnknown(draftScope, record.idempotencyKey);
+        refreshOpenAttempt();
+        setSubmitError(outcome.message ?? MINI_CERT_ATTEMPT_USE_RETRY);
+        return;
+      }
+      clearMiniCertificateCreateAttempt(draftScope);
+      refreshOpenAttempt();
+      setUncertainSubmit(false);
       if (err instanceof RemcardApiError) {
         const code =
           err.body && typeof err.body === "object"
@@ -444,20 +482,67 @@ export function MiniAppCertificateCreate({
               "Превышен лимит пула % для выбранного филиала. Уменьшите условия программы или смените точку.",
           );
         } else {
-          setSubmitError(
-            uncertain
-              ? "Сеть прервала выпуск. Повторите только если документ не появился в кабинете — защита от дублей сохранена."
-              : err.message,
-          );
+          setSubmitError(outcome.message);
         }
       } else {
-        setSubmitError(
-          "Сеть прервала выпуск. Повторите только если документ не появился в кабинете — защита от дублей сохранена.",
-        );
+        setSubmitError(outcome.message);
       }
     } finally {
+      submitInFlightRef.current = false;
       setSubmitting(false);
     }
+  }
+
+  async function submitFresh() {
+    if (fixtureCreateSeed && fixtureSubmitCertificate) {
+      clearMiniCertificateCreateAttempt(draftScope);
+      clearMiniCertificateCreateDraft(draftScope);
+      onCreated(fixtureSubmitCertificate);
+      return;
+    }
+    if (submitInFlightRef.current || submitting) return;
+    if (attemptLocked) {
+      setSubmitError(MINI_CERT_ATTEMPT_USE_RETRY);
+      return;
+    }
+    setSubmitError("");
+    setFieldErrors({});
+    const built = buildSubmitBody();
+    if (!built.ok) {
+      setSubmitError(built.message);
+      if (built.fieldErrors) setFieldErrors(built.fieldErrors);
+      return;
+    }
+    const began = beginMiniCertificateCreateAttempt({ scope: draftScope, body: built.body });
+    if (!began.ok) {
+      if (began.reason === "storage") {
+        setSubmitError(MINI_CERT_ATTEMPT_STORAGE_FAILED);
+        return;
+      }
+      if (began.reason === "body_mismatch") {
+        setSubmitError(MINI_CERT_ATTEMPT_BODY_MISMATCH);
+        refreshOpenAttempt();
+        return;
+      }
+      if (began.reason === "use_retry") {
+        setSubmitError(MINI_CERT_ATTEMPT_USE_RETRY);
+        refreshOpenAttempt();
+        return;
+      }
+    }
+    setOpenAttempt(began.record);
+    await postCertificateAttempt(began.record, false);
+  }
+
+  async function checkResult() {
+    if (submitInFlightRef.current || submitting) return;
+    const prepared = prepareMiniCertificateCreateRetry(draftScope);
+    if (!prepared.ok) {
+      setSubmitError("Нет сохранённой попытки для проверки результата.");
+      refreshOpenAttempt();
+      return;
+    }
+    await postCertificateAttempt(prepared.record, true);
   }
 
   const subpageTitle = discountPage
@@ -473,6 +558,9 @@ export function MiniAppCertificateCreate({
       : "Настройте условия и выпустите документ.";
 
   function handleSubpageBack() {
+    if (submitInFlightRef.current || submitting) {
+      return;
+    }
     if (discountPage) {
       setWizardStep(1);
       return;
@@ -701,36 +789,71 @@ export function MiniAppCertificateCreate({
       ) : null}
       {uncertainSubmit ? (
         <p className={styles.scanNotice} data-testid="mini-cert-uncertain-submit">
-          Ключ идемпотентности сохранён — повторная отправка с теми же условиями не создаст дубль
-          на стороне PROF.
+          Попытка и Idempotency-Key сохранены в сессии браузера. Новый выпуск заблокирован, пока не
+          проверите результат с исходным ключом.
+          {openAttempt?.idempotencyKey ? (
+            <span data-testid="mini-cert-stored-idempotency-key"> {openAttempt.idempotencyKey}</span>
+          ) : null}
         </p>
       ) : null}
 
       {discountPage ? (
         <div className={styles.certButtonRow}>
-          <button type="button" className={styles.secondaryBtn} onClick={() => setWizardStep(1)}>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            disabled={submitting}
+            onClick={() => {
+              if (submitInFlightRef.current || submitting) return;
+              setWizardStep(1);
+            }}
+          >
             Назад
           </button>
+          {uncertainSubmit ? (
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              disabled={submitting}
+              data-testid="mini-cert-check-result"
+              onClick={() => void checkResult()}
+            >
+              {submitting ? "Проверка…" : "Проверить результат"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              disabled={submitting || attemptLocked}
+              data-testid="mini-create-submit"
+              onClick={() => void submitFresh()}
+            >
+              {submitting ? "Выпуск…" : "Выпустить сертификат"}
+            </button>
+          )}
+        </div>
+      ) : !hasWizard ? (
+        uncertainSubmit ? (
           <button
             type="button"
             className={styles.primaryBtn}
             disabled={submitting}
+            data-testid="mini-cert-check-result"
+            onClick={() => void checkResult()}
+          >
+            {submitting ? "Проверка…" : "Проверить результат"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={submitting || attemptLocked || selectedPartners.length === 0}
             data-testid="mini-create-submit"
-            onClick={() => void submit()}
+            onClick={() => void submitFresh()}
           >
             {submitting ? "Выпуск…" : "Выпустить сертификат"}
           </button>
-        </div>
-      ) : !hasWizard ? (
-        <button
-          type="button"
-          className={styles.primaryBtn}
-          disabled={submitting || selectedPartners.length === 0}
-          data-testid="mini-create-submit"
-          onClick={() => void submit()}
-        >
-          {submitting ? "Выпуск…" : "Выпустить сертификат"}
-        </button>
+        )
       ) : null}
     </form>
   );

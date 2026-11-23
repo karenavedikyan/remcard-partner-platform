@@ -5,6 +5,7 @@ import type { AvailablePartner } from "@/lib/certificate-types";
 import type { MiniAppBootstrap } from "@/lib/mini-app/types";
 import { RemcardApiError } from "@/lib/api-client";
 import { miniAppCreateCertificate, miniAppFetchCertificateOptions } from "@/lib/mini-app/api";
+import { loadMiniCertificateCreateAttempt } from "@/lib/mini-app/mini-certificate-create-attempt";
 import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 
 vi.mock("@/lib/mini-app/api", () => ({
@@ -116,8 +117,25 @@ describe("MiniAppCertificateCreate wizard", () => {
     expect(onCreated).toHaveBeenCalled();
   });
 
-  it("reuses idempotency key after uncertain network failure", async () => {
+  async function reachDiscountSubmit(onBack = () => {}) {
     const user = userEvent.setup();
+    const view = render(
+      <MiniAppCertificateCreate
+        platform="telegram"
+        bootstrap={baseBootstrap}
+        branchId="br-1"
+        onBack={onBack}
+        onCreated={() => {}}
+      />,
+    );
+    await waitFor(() => expect(screen.getByTestId("mini-cert-step-partners")).toBeInTheDocument());
+    await user.click(screen.getByTestId("mini-cert-partner-store-1:part-1"));
+    await user.click(screen.getByTestId("mini-cert-next-discounts"));
+    return { user, view };
+  }
+
+  it("check result reuses persisted idempotency key after uncertain failure", async () => {
+    const { user } = await reachDiscountSubmit();
     vi.mocked(miniAppCreateCertificate)
       .mockRejectedValueOnce(new RemcardApiError(0, "network"))
       .mockResolvedValueOnce({
@@ -132,6 +150,49 @@ describe("MiniAppCertificateCreate wizard", () => {
         partners: [],
       });
 
+    await user.click(screen.getByTestId("mini-create-submit"));
+    await waitFor(() => expect(screen.getByTestId("mini-cert-uncertain-submit")).toBeInTheDocument());
+    const storedKey = loadMiniCertificateCreateAttempt({
+      actorUserId: "actor-1",
+      platform: "telegram",
+      branchId: "br-1",
+    })?.idempotencyKey;
+
+    await user.click(screen.getByTestId("mini-cert-check-result"));
+    await waitFor(() => expect(miniAppCreateCertificate).toHaveBeenCalledTimes(2));
+    const firstKey = vi.mocked(miniAppCreateCertificate).mock.calls[0][2];
+    const secondKey = vi.mocked(miniAppCreateCertificate).mock.calls[1][2];
+    expect(firstKey).toBe(secondKey);
+    expect(secondKey).toBe(storedKey);
+  });
+
+  it("remount after uncertain keeps stored key on check result", async () => {
+    vi.mocked(miniAppCreateCertificate).mockRejectedValueOnce(new RemcardApiError(500, "server"));
+
+    const { user, view } = await reachDiscountSubmit();
+    await user.click(screen.getByTestId("mini-create-submit"));
+    await waitFor(() => expect(screen.getByTestId("mini-cert-stored-idempotency-key")).toBeInTheDocument());
+    const storedKey = loadMiniCertificateCreateAttempt({
+      actorUserId: "actor-1",
+      platform: "telegram",
+      branchId: "br-1",
+    })?.idempotencyKey;
+
+    vi.mocked(miniAppCreateCertificate).mockResolvedValueOnce({
+      id: "cert-r",
+      promoCode: "RC-R",
+      qrCode: "RC-R",
+      status: "ACTIVE",
+      validUntil: null,
+      maxUsages: 0,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      partners: [],
+    });
+
+    view.unmount();
+
+    const user2 = userEvent.setup();
     render(
       <MiniAppCertificateCreate
         platform="telegram"
@@ -141,18 +202,136 @@ describe("MiniAppCertificateCreate wizard", () => {
         onCreated={() => {}}
       />,
     );
+    await waitFor(() => expect(screen.getByTestId("mini-cert-uncertain-submit")).toBeInTheDocument());
+    await user2.click(screen.getByTestId("mini-cert-check-result"));
+    await waitFor(() => expect(miniAppCreateCertificate).toHaveBeenCalled());
+    expect(vi.mocked(miniAppCreateCertificate).mock.lastCall?.[2]).toBe(storedKey);
+  });
 
-    await waitFor(() => expect(screen.getByTestId("mini-cert-step-partners")).toBeInTheDocument());
-    await user.click(screen.getByTestId("mini-cert-partner-store-1:part-1"));
-    await user.click(screen.getByTestId("mini-cert-next-discounts"));
+  it("check result ignores edited form and sends stored body", async () => {
+    const { user } = await reachDiscountSubmit();
+    vi.mocked(miniAppCreateCertificate).mockRejectedValueOnce(new RemcardApiError(0, "network"));
     await user.click(screen.getByTestId("mini-create-submit"));
     await waitFor(() => expect(screen.getByTestId("mini-cert-uncertain-submit")).toBeInTheDocument());
 
+    const discountRow = screen.getByTestId("mini-cert-category-store-1::Двери");
+    const input = within(discountRow).getByRole("spinbutton");
+    await user.clear(input);
+    await user.type(input, "7");
+
+    expect(screen.getByTestId("mini-cert-check-result")).toBeInTheDocument();
+    expect(screen.queryByTestId("mini-create-submit")).toBeNull();
+    vi.mocked(miniAppCreateCertificate).mockResolvedValueOnce({
+      id: "c",
+      promoCode: "X",
+      qrCode: "X",
+      status: "ACTIVE",
+      validUntil: null,
+      maxUsages: 0,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      partners: [],
+    });
+    await user.click(screen.getByTestId("mini-cert-check-result"));
+    await waitFor(() => expect(miniAppCreateCertificate).toHaveBeenCalledTimes(2));
+    const retryBody = vi.mocked(miniAppCreateCertificate).mock.calls[1][1] as {
+      partners: Array<{ categories: Array<{ discountPercent: number }> }>;
+    };
+    expect(retryBody.partners[0].categories[0].discountPercent).toBe(5);
+  });
+
+  it("allows new attempt after known 422 rejection", async () => {
+    const { user } = await reachDiscountSubmit();
+    vi.mocked(miniAppCreateCertificate)
+      .mockRejectedValueOnce(new RemcardApiError(422, "bad", { error: "bad" }))
+      .mockResolvedValueOnce({
+        id: "c-ok",
+        promoCode: "X",
+        qrCode: "X",
+        status: "ACTIVE",
+        validUntil: null,
+        maxUsages: 0,
+        usageCount: 0,
+        createdAt: new Date().toISOString(),
+        partners: [],
+      });
+
+    await user.click(screen.getByTestId("mini-create-submit"));
+    await waitFor(() => expect(screen.getByTestId("mini-cert-submit-error")).toBeInTheDocument());
+    expect(loadMiniCertificateCreateAttempt({
+      actorUserId: "actor-1",
+      platform: "telegram",
+      branchId: "br-1",
+    })).toBeNull();
+
     await user.click(screen.getByTestId("mini-create-submit"));
     await waitFor(() => expect(miniAppCreateCertificate).toHaveBeenCalledTimes(2));
-    const firstKey = vi.mocked(miniAppCreateCertificate).mock.calls[0][2];
-    const secondKey = vi.mocked(miniAppCreateCertificate).mock.calls[1][2];
-    expect(firstKey).toBe(secondKey);
+    const keys = vi.mocked(miniAppCreateCertificate).mock.calls.map((c) => c[2]);
+    expect(keys[0]).not.toBe(keys[1]);
+  });
+
+  it("ignores rapid duplicate submit clicks", async () => {
+    const { user } = await reachDiscountSubmit();
+    let resolve!: (v: unknown) => void;
+    const pending = new Promise((r) => {
+      resolve = r;
+    });
+    vi.mocked(miniAppCreateCertificate).mockImplementation(() => pending as Promise<never>);
+
+    const submit = screen.getByTestId("mini-create-submit");
+    await user.click(submit);
+    await user.click(submit);
+    expect(miniAppCreateCertificate).toHaveBeenCalledTimes(1);
+    resolve({
+      id: "done",
+      promoCode: "D",
+      qrCode: "D",
+      status: "ACTIVE",
+      validUntil: null,
+      maxUsages: 0,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      partners: [],
+    });
+  });
+
+  it("blocks back navigation while submit is in flight", async () => {
+    const onBack = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MiniAppCertificateCreate
+        platform="telegram"
+        bootstrap={baseBootstrap}
+        branchId="br-1"
+        onBack={onBack}
+        onCreated={() => {}}
+      />,
+    );
+    await waitFor(() => expect(screen.getByTestId("mini-cert-step-partners")).toBeInTheDocument());
+    await user.click(screen.getByTestId("mini-cert-partner-store-1:part-1"));
+    await user.click(screen.getByTestId("mini-cert-next-discounts"));
+
+    let resolve!: (v: unknown) => void;
+    const pending = new Promise((r) => {
+      resolve = r;
+    });
+    vi.mocked(miniAppCreateCertificate).mockImplementation(() => pending as Promise<never>);
+    void user.click(screen.getByTestId("mini-create-submit"));
+    await waitFor(() => expect(screen.getByTestId("mini-create-submit")).toHaveTextContent(/Выпуск/));
+    await user.click(screen.getByRole("button", { name: "← Назад" }));
+    expect(screen.getByTestId("mini-cert-step-discounts")).toBeInTheDocument();
+    expect(onBack).not.toHaveBeenCalled();
+    resolve({
+      id: "done",
+      promoCode: "D",
+      qrCode: "D",
+      status: "ACTIVE",
+      validUntil: null,
+      maxUsages: 0,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      partners: [],
+    });
   });
 
   it("store role shows branch line and sends branchId", async () => {
@@ -224,24 +403,10 @@ describe("MiniAppCertificateCreate wizard", () => {
   });
 
   it("surfaces server MINI_LIMIT_EXCEEDED", async () => {
-    const user = userEvent.setup();
+    const { user } = await reachDiscountSubmit();
     vi.mocked(miniAppCreateCertificate).mockRejectedValue(
       new RemcardApiError(422, "Лимит пула филиала", { code: "MINI_LIMIT_EXCEEDED", error: "Лимит" }),
     );
-
-    render(
-      <MiniAppCertificateCreate
-        platform="telegram"
-        bootstrap={baseBootstrap}
-        branchId="br-1"
-        onBack={() => {}}
-        onCreated={() => {}}
-      />,
-    );
-
-    await waitFor(() => expect(screen.getByTestId("mini-cert-step-partners")).toBeInTheDocument());
-    await user.click(screen.getByTestId("mini-cert-partner-store-1:part-1"));
-    await user.click(screen.getByTestId("mini-cert-next-discounts"));
     await user.click(screen.getByTestId("mini-create-submit"));
     await waitFor(() =>
       expect(screen.getByTestId("mini-cert-submit-error")).toHaveTextContent(/Лимит пула|пул/i),
