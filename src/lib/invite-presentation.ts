@@ -182,14 +182,130 @@ function quotedName(name: string): string {
   return /[«»"„“”]/.test(name) ? name : `«${name}»`;
 }
 
-function inviterPhrases(name: string, inviterType: PartnerTypeCode) {
+type InviterPhrases = {
+  accusative: string;
+  genitive: string;
+  /** Sender as a direct object: «ОПТОВИК» / магазин Студия «Уют» / партнёра. */
+  advise: string;
+  /** Where clients go: в «ОПТОВИК» / к партнёру. */
+  into: string;
+  /** Where clients buy: в «ОПТОВИК» / у партнёра. */
+  at: string;
+  /** Whose clients, from whom: «ОПТОВИК» / партнёра. */
+  of: string;
+};
+
+function inviterPhrases(name: string, inviterType: PartnerTypeCode): InviterPhrases {
+  const quoted = quotedName(name);
+  // A quoted name stands alone in any case; a name with its own quotes needs a noun to carry the case.
+  const standalone = quoted === name ? null : quoted;
   if (inviterType === "STORE") {
-    return { accusative: `магазин ${quotedName(name)}`, genitive: `магазина ${quotedName(name)}` };
+    return {
+      accusative: `магазин ${quoted}`,
+      genitive: `магазина ${quoted}`,
+      advise: standalone ?? `магазин ${name}`,
+      into: `в ${standalone ?? `магазин ${name}`}`,
+      at: `в ${standalone ?? `магазине ${name}`}`,
+      of: standalone ?? `магазина ${name}`,
+    };
   }
   if (inviterType === "COMPANY") {
-    return { accusative: `компанию ${quotedName(name)}`, genitive: `компании ${quotedName(name)}` };
+    return {
+      accusative: `компанию ${quoted}`,
+      genitive: `компании ${quoted}`,
+      advise: standalone ?? `компанию ${name}`,
+      into: `в ${standalone ?? `компанию ${name}`}`,
+      at: `в ${standalone ?? `компании ${name}`}`,
+      of: standalone ?? `компании ${name}`,
+    };
   }
-  return { accusative: "партнёра", genitive: "партнёра" };
+  return {
+    accusative: "партнёра",
+    genitive: "партнёра",
+    advise: "партнёра",
+    into: "к партнёру",
+    at: "у партнёра",
+    of: "партнёра",
+  };
+}
+
+/** Keeps a dash or a one-letter word from being left alone at a line break in the page title. */
+function tidyHeadline(text: string): string {
+  return text.replace(/ — /g, "\u00a0— ").replace(/(^| )([вискуоВИСКУО]) /g, "$1$2\u00a0");
+}
+
+type RecipientCopy = {
+  /** Null keeps the standard headline with the sender name. */
+  headline: string | null;
+  lead: string;
+  mutualText: string | null;
+  thirdStep: InviteStep;
+};
+
+/**
+ * Wording by who opens the link, for the direction "recipient recommends the sender".
+ * Person names are never put into oblique cases, so a specialist sender is "партнёр" there.
+ */
+function recipientCopy(
+  kind: "agent" | "master" | "company" | "store",
+  name: string,
+  inviterType: PartnerTypeCode,
+  phrases: InviterPhrases,
+): RecipientCopy {
+  const fromStore = inviterType === "STORE";
+  const fromOrganization = fromStore || inviterType === "COMPANY";
+  const advisesYou = `${name} может советовать вас своим ${
+    fromStore ? "покупателям" : "клиентам"
+  }. Укажите процент на свои услуги — и заказы пойдут к вам.`;
+
+  if (kind === "agent") {
+    return {
+      headline: fromOrganization ? `Приводите клиентов ${phrases.into} и получайте процент` : null,
+      lead: "Клиенту — скидка, вам — вознаграждение с каждой его покупки. Ничего продавать не нужно.",
+      mutualText: null,
+      thirdStep: {
+        title: "Отправьте клиенту сертификат",
+        hint: "Он купит — вам придёт вознаграждение.",
+      },
+    };
+  }
+  if (kind === "master") {
+    return {
+      headline: fromStore ? "Ваши клиенты покупают материалы — получайте с этого процент" : null,
+      lead: `Советуйте ${phrases.advise} тем, с кем работаете на объекте: им скидка, вам вознаграждение.`,
+      mutualText: advisesYou,
+      thirdStep: {
+        title: "Назовите свой процент",
+        hint: `Тогда ${name} начнёт приводить вам заказчиков.`,
+      },
+    };
+  }
+  if (kind === "company") {
+    return {
+      headline: `${name} предлагает обмениваться клиентами`,
+      lead: `Ваши заказчики покупают ${phrases.at} со скидкой, компания получает вознаграждение с каждой покупки.`,
+      mutualText: fromStore
+        ? `Покупателям ${phrases.of} нужны подрядчики. Предложите свой процент — и ${name} будет направлять их к вам.`
+        : advisesYou,
+      thirdStep: {
+        title: "Укажите процент на услуги компании",
+        hint: fromOrganization
+          ? `Так вы получите заказчиков от ${phrases.of}.`
+          : `Тогда ${name} начнёт приводить вам заказчиков.`,
+      },
+    };
+  }
+  return {
+    headline: `${name} предлагает обмениваться покупателями`,
+    lead: `Вашим покупателям нужно то, чего нет у вас. Направляйте их ${phrases.into}: им скидка, вам вознаграждение.`,
+    mutualText: `Предложите свой процент — и ${name} будет направлять своих покупателей к вам.`,
+    thirdStep: {
+      title: "Назовите процент на свои товары",
+      hint: fromOrganization
+        ? `Так вы получите покупателей от ${phrases.of}.`
+        : `Тогда ${name} начнёт направлять покупателей к вам.`,
+    },
+  };
 }
 
 export function buildInviteLandingCopy(
@@ -199,7 +315,7 @@ export function buildInviteLandingCopy(
   const name = inviterDisplayName(preview);
   const inviterType = preview.inviter?.partnerType ?? null;
   const intendedType = preview.intendedPartnerType ?? null;
-  const { agentRecipient } = resolveInviteRecipient(intendedType, viewer);
+  const { agentRecipient, recipientType } = resolveInviteRecipient(intendedType, viewer);
   const direction = resolveInviteDirection(inviterType, intendedType, viewer);
   const phrases = inviterPhrases(name, inviterType);
   const city = preview.inviter?.city?.trim() || "";
@@ -242,30 +358,59 @@ export function buildInviteLandingCopy(
     };
   }
 
+  const flow: [string, string, string] = [
+    "Выдаёте клиенту сертификат на скидку",
+    `Клиент покупает у ${phrases.genitive}`,
+    "Вы получаете вознаграждение",
+  ];
+  const termsTitle = `Условия ${phrases.genitive}`;
+  const percentExplainer = "Общий процент — это скидка клиенту и ваше вознаграждение вместе.";
+  const recipientKind = agentRecipient
+    ? "agent"
+    : recipientType === "MASTER"
+      ? "master"
+      : recipientType === "COMPANY"
+        ? "company"
+        : recipientType === "STORE"
+          ? "store"
+          : null;
+
+  if (recipientKind) {
+    const typed = recipientCopy(recipientKind, name, inviterType, phrases);
+    return {
+      ...base,
+      headline: typed.headline ? tidyHeadline(typed.headline) : base.headline,
+      // A benefit-led headline may not name the sender, so the line under it does.
+      senderLine:
+        typed.headline && !typed.headline.includes(name)
+          ? [name, senderLine].filter(Boolean).join(" · ")
+          : senderLine,
+      lead: typed.lead,
+      flow,
+      termsTitle,
+      percentExplainer,
+      mutual: typed.mutualText ? { title: "Можно в обе стороны", text: typed.mutualText } : null,
+      steps: [...firstSteps, typed.thirdStep],
+    };
+  }
+
+  // Recipient type is unknown until login: generic wording.
   return {
     ...base,
     lead: `Рекомендуйте ${phrases.accusative} своим клиентам и получайте вознаграждение с их покупок.`,
-    flow: [
-      "Выдаёте клиенту сертификат на скидку",
-      `Клиент покупает у ${phrases.genitive}`,
-      "Вы получаете вознаграждение",
-    ],
-    termsTitle: `Условия ${phrases.genitive}`,
-    percentExplainer: "Общий процент — это скидка клиенту и ваше вознаграждение вместе.",
-    mutual: agentRecipient
-      ? null
-      : {
-          title: "Можно в обе стороны",
-          text: `${name} тоже сможет приводить клиентов вам. Предложите свой процент на ваши товары и услуги — и рекомендации станут взаимными.`,
-        },
+    flow,
+    termsTitle,
+    percentExplainer,
+    mutual: {
+      title: "Можно в обе стороны",
+      text: `${name} тоже сможет приводить клиентов вам. Предложите свой процент на ваши товары и услуги — и рекомендации станут взаимными.`,
+    },
     steps: [
       ...firstSteps,
-      agentRecipient
-        ? { title: "Выдайте первый сертификат", hint: "Вознаграждение увидите в кошельке." }
-        : {
-            title: "Предложите свои условия",
-            hint: `Тогда ${name} сможет рекомендовать и вас. По желанию — в разделе «Партнёры».`,
-          },
+      {
+        title: "Предложите свои условия",
+        hint: `Тогда ${name} сможет рекомендовать и вас. По желанию — в разделе «Партнёры».`,
+      },
     ],
   };
 }

@@ -153,7 +153,7 @@ describe("InviteLanding presentation", () => {
     expect(screen.getByText("Компания · Краснодар")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Рекомендуйте компанию «ОПТОВИК» своим клиентам и получайте вознаграждение с их покупок.",
+        "Советуйте «ОПТОВИК» тем, с кем работаете на объекте: им скидка, вам вознаграждение.",
       ),
     ).toBeInTheDocument();
 
@@ -178,7 +178,11 @@ describe("InviteLanding presentation", () => {
 
     const mutual = within(screen.getByTestId("invite-mutual"));
     expect(mutual.getByRole("heading", { name: "Можно в обе стороны" })).toBeInTheDocument();
-    expect(mutual.getByText(/ОПТОВИК тоже сможет приводить клиентов вам/)).toBeInTheDocument();
+    expect(
+      mutual.getByText(
+        "ОПТОВИК может советовать вас своим клиентам. Укажите процент на свои услуги — и заказы пойдут к вам.",
+      ),
+    ).toBeInTheDocument();
 
     const note = within(screen.getByTestId("invite-note"));
     expect(note.getByText("Сообщение от компании «ОПТОВИК»")).toBeInTheDocument();
@@ -191,7 +195,8 @@ describe("InviteLanding presentation", () => {
     expect(steps[0]).toHaveTextContent("Войдите или зарегистрируйтесь");
     expect(steps[0]).toHaveAttribute("data-state", "current");
     expect(steps[1]).toHaveTextContent("Примите условия");
-    expect(steps[2]).toHaveTextContent("Предложите свои условия");
+    expect(steps[2]).toHaveTextContent("Назовите свой процент");
+    expect(steps[2]).toHaveTextContent("Тогда ОПТОВИК начнёт приводить вам заказчиков.");
 
     const register = next.getByRole("link", { name: "Зарегистрироваться" });
     expect(register).toHaveAttribute("href", "/join?role=specialist&returnTo=%2Finvite%2Ftest-token");
@@ -245,10 +250,11 @@ describe("InviteLanding presentation", () => {
     });
     const agent = render(<InviteLanding token="test-token" />);
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
-      "ОПТОВИК приглашает вас в партнёры",
+      "Приводите клиентов в «ОПТОВИК» и получайте процент",
     );
+    expect(screen.getByText("Магазин · Краснодар")).toBeInTheDocument();
     expect(screen.queryByTestId("invite-mutual")).not.toBeInTheDocument();
-    expect(screen.getByText("Выдайте первый сертификат")).toBeInTheDocument();
+    expect(screen.getByText("Отправьте клиенту сертификат")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Зарегистрироваться" })).toHaveAttribute(
       "href",
       "/join?role=agent&returnTo=%2Finvite%2Ftest-token",

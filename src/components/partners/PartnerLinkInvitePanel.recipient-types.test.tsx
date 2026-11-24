@@ -115,6 +115,6 @@ describe("all four link-invite audiences", () => {
     } });
     expect(copy.agentRecipient).toBe(true);
     expect(copy.mutual).toBeNull();
-    expect(copy.steps[2].title).toBe("Выдайте первый сертификат");
+    expect(copy.steps[2].title).toBe("Отправьте клиенту сертификат");
   });
 });

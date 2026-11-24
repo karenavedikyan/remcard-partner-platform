@@ -29,6 +29,9 @@ function pendingPreview(
   };
 }
 
+/** Page titles carry non-breaking spaces; the wording is compared without them. */
+const plain = (text: string) => text.replace(/\u00a0/g, " ");
+
 describe("invite presentation", () => {
   it("tells a store's invitee to recommend the store, with the mutual offer", () => {
     assert.equal(resolveInviteAudience("STORE", null), "master");
@@ -60,7 +63,16 @@ describe("invite presentation", () => {
     assert.equal(guest.agentRecipient, true);
     assert.equal(guest.direction, "recipient_recommends");
     assert.equal(guest.mutual, null);
-    assert.equal(guest.steps[2].title, "Выдайте первый сертификат");
+    assert.equal(plain(guest.headline), "Приводите клиентов в «ОПТОВИК» и получайте процент");
+    assert.equal(guest.senderLine, "Магазин · Краснодар");
+    assert.equal(
+      guest.lead,
+      "Клиенту — скидка, вам — вознаграждение с каждой его покупки. Ничего продавать не нужно.",
+    );
+    assert.deepEqual(guest.steps[2], {
+      title: "Отправьте клиенту сертификат",
+      hint: "Он купит — вам придёт вознаграждение.",
+    });
 
     // The real profile wins over the advisory type on the link.
     const agentViewer = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "MASTER" }), {
@@ -129,7 +141,145 @@ describe("invite presentation", () => {
     );
     assert.equal(person.flow[1], "Клиент покупает у партнёра");
     assert.equal(person.senderLine, "Специалист · Сочи");
-    assert.match(person.steps[2].hint, /Иван Петров сможет рекомендовать и вас/);
+    assert.equal(person.headline, "Иван Петров приглашает вас в партнёры");
+    assert.equal(
+      person.lead,
+      "Советуйте партнёра тем, с кем работаете на объекте: им скидка, вам вознаграждение.",
+    );
+    assert.equal(person.steps[2].hint, "Тогда Иван Петров начнёт приводить вам заказчиков.");
+    assert.match(person.mutual?.text ?? "", /^Иван Петров может советовать вас своим клиентам\./);
+    assert.equal(
+      company.lead,
+      "Советуйте компанию ООО «Ромашка» тем, с кем работаете на объекте: им скидка, вам вознаграждение.",
+    );
+  });
+
+  it("words the offer for the recipient's own partner type", () => {
+    const specialist = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "MASTER" }));
+    assert.equal(
+      plain(specialist.headline),
+      "Ваши клиенты покупают материалы — получайте с этого процент",
+    );
+    // No dash or one-letter word is left alone at a line break.
+    assert.equal(
+      specialist.headline,
+      "Ваши клиенты покупают материалы\u00a0— получайте с\u00a0этого процент",
+    );
+    // The headline does not name the sender, so the line under it does.
+    assert.equal(specialist.senderLine, "ОПТОВИК · Магазин · Краснодар");
+    assert.equal(
+      specialist.lead,
+      "Советуйте «ОПТОВИК» тем, с кем работаете на объекте: им скидка, вам вознаграждение.",
+    );
+    assert.equal(
+      specialist.mutual?.text,
+      "ОПТОВИК может советовать вас своим покупателям. Укажите процент на свои услуги — и заказы пойдут к вам.",
+    );
+    assert.deepEqual(specialist.steps[2], {
+      title: "Назовите свой процент",
+      hint: "Тогда ОПТОВИК начнёт приводить вам заказчиков.",
+    });
+
+    const company = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "COMPANY" }));
+    assert.equal(plain(company.headline), "ОПТОВИК предлагает обмениваться клиентами");
+    assert.equal(company.senderLine, "Магазин · Краснодар");
+    assert.equal(
+      company.lead,
+      "Ваши заказчики покупают в «ОПТОВИК» со скидкой, компания получает вознаграждение с каждой покупки.",
+    );
+    assert.equal(
+      company.mutual?.text,
+      "Покупателям «ОПТОВИК» нужны подрядчики. Предложите свой процент — и ОПТОВИК будет направлять их к вам.",
+    );
+    assert.deepEqual(company.steps[2], {
+      title: "Укажите процент на услуги компании",
+      hint: "Так вы получите заказчиков от «ОПТОВИК».",
+    });
+
+    const store = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "STORE" }));
+    assert.equal(plain(store.headline), "ОПТОВИК предлагает обмениваться покупателями");
+    assert.equal(
+      store.lead,
+      "Вашим покупателям нужно то, чего нет у вас. Направляйте их в «ОПТОВИК»: им скидка, вам вознаграждение.",
+    );
+    assert.equal(
+      store.mutual?.text,
+      "Предложите свой процент — и ОПТОВИК будет направлять своих покупателей к вам.",
+    );
+    assert.deepEqual(store.steps[2], {
+      title: "Назовите процент на свои товары",
+      hint: "Так вы получите покупателей от «ОПТОВИК».",
+    });
+
+    // Shared parts do not depend on the recipient type.
+    for (const copy of [specialist, company, store]) {
+      assert.equal(copy.direction, "recipient_recommends");
+      assert.equal(copy.termsTitle, "Условия магазина «ОПТОВИК»");
+      assert.deepEqual(copy.flow, [
+        "Выдаёте клиенту сертификат на скидку",
+        "Клиент покупает у магазина «ОПТОВИК»",
+        "Вы получаете вознаграждение",
+      ]);
+      assert.equal(copy.mutual?.title, "Можно в обе стороны");
+    }
+
+    // The logged-in profile decides, not the advisory type on the link.
+    const viewerCompany = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "MASTER" }), {
+      partnerType: "COMPANY",
+      partnerActivities: ["SERVICE"],
+    });
+    assert.equal(plain(viewerCompany.headline), "ОПТОВИК предлагает обмениваться клиентами");
+  });
+
+  it("adapts the wording when the sender is not a store or carries its own quotes", () => {
+    const fromCompany = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "СтройДом", partnerType: "COMPANY", city: null },
+        intendedPartnerType: "COMPANY",
+      }),
+    );
+    assert.equal(plain(fromCompany.headline), "СтройДом предлагает обмениваться клиентами");
+    assert.equal(
+      fromCompany.mutual?.text,
+      "СтройДом может советовать вас своим клиентам. Укажите процент на свои услуги — и заказы пойдут к вам.",
+    );
+    assert.equal(fromCompany.steps[2].hint, "Так вы получите заказчиков от «СтройДом».");
+
+    const fromPerson = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "Иван Петров", partnerType: "MASTER", city: null },
+        intendedPartnerType: "COMPANY",
+      }),
+    );
+    assert.equal(
+      fromPerson.lead,
+      "Ваши заказчики покупают у партнёра со скидкой, компания получает вознаграждение с каждой покупки.",
+    );
+    assert.equal(fromPerson.steps[2].hint, "Тогда Иван Петров начнёт приводить вам заказчиков.");
+
+    const agentFromPerson = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "Иван Петров", partnerType: "MASTER", city: null },
+        intendedPartnerType: "AGENT",
+      }),
+    );
+    assert.equal(agentFromPerson.headline, "Иван Петров приглашает вас в партнёры");
+
+    const quotedStore = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "Салон «Уют»", partnerType: "STORE", city: null },
+        intendedPartnerType: "AGENT",
+      }),
+    );
+    assert.equal(plain(quotedStore.headline), "Приводите клиентов в магазин Салон «Уют» и получайте процент");
+    const quotedForStore = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "Салон «Уют»", partnerType: "STORE", city: null },
+        intendedPartnerType: "COMPANY",
+      }),
+    );
+    assert.match(quotedForStore.lead, /покупают в магазине Салон «Уют» со скидкой/);
+    assert.match(quotedForStore.mutual?.text ?? "", /^Покупателям магазина Салон «Уют» нужны подрядчики/);
   });
 
   it("uses the agent mechanic for discussion links only when the server marks an agent", () => {
