@@ -82,12 +82,48 @@ describe("invite presentation", () => {
     assert.equal(agentViewer.agentRecipient, true);
     assert.equal(agentViewer.mutual, null);
 
+    // A link made for agents keeps the agent wording for a company that also acts as an agent.
+    const companyViewer = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "ОПТОВИК", partnerType: "COMPANY", city: "Краснодар" },
+        intendedPartnerType: "AGENT",
+      }),
+      { partnerType: "COMPANY", partnerActivities: ["STORE", "AGENT"] },
+    );
+    assert.equal(companyViewer.agentRecipient, true);
+    assert.equal(companyViewer.mutual, null);
+    assert.equal(plain(companyViewer.headline), "Приводите клиентов в «ОПТОВИК» и получайте процент");
+    assert.equal(companyViewer.steps[2].title, "Отправьте клиенту сертификат");
+    assert.doesNotMatch(JSON.stringify(companyViewer), /обмениваться|в обе стороны|процент на услуги/);
+
     const masterViewer = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "AGENT" }), {
       partnerType: "MASTER",
       partnerActivities: ["SERVICE"],
     });
-    assert.equal(masterViewer.agentRecipient, false);
-    assert.notEqual(masterViewer.mutual, null);
+    assert.equal(masterViewer.agentRecipient, true);
+    assert.equal(masterViewer.mutual, null);
+
+    // The same account on a link made for companies still gets the two-way offer.
+    const companyOnCompanyLink = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "ОПТОВИК", partnerType: "COMPANY", city: "Краснодар" },
+        intendedPartnerType: "COMPANY",
+      }),
+      { partnerType: "COMPANY", partnerActivities: ["STORE", "AGENT"] },
+    );
+    assert.equal(companyOnCompanyLink.agentRecipient, false);
+    assert.notEqual(companyOnCompanyLink.mutual, null);
+
+    // A store opening an agent link from a company: the server reverses the sides, so no agent promise.
+    const storeViewer = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "ОПТОВИК", partnerType: "COMPANY", city: "Краснодар" },
+        intendedPartnerType: "AGENT",
+      }),
+      { partnerType: "STORE", partnerActivities: ["STORE"] },
+    );
+    assert.equal(storeViewer.direction, "neutral");
+    assert.equal(storeViewer.agentRecipient, false);
   });
 
   it("never promises a direction the server may reverse on acceptance", () => {

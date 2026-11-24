@@ -315,8 +315,13 @@ export function buildInviteLandingCopy(
   const name = inviterDisplayName(preview);
   const inviterType = preview.inviter?.partnerType ?? null;
   const intendedType = preview.intendedPartnerType ?? null;
-  const { agentRecipient, recipientType } = resolveInviteRecipient(intendedType, viewer);
+  const recipient = resolveInviteRecipient(intendedType, viewer);
+  const { recipientType } = recipient;
   const direction = resolveInviteDirection(inviterType, intendedType, viewer);
+  // A link made for agents keeps the agent wording for any account that opens it,
+  // as long as the server still resolves the recipient as the recommending side.
+  const agentRecipient =
+    recipient.agentRecipient || (intendedType === "AGENT" && direction === "recipient_recommends");
   const phrases = inviterPhrases(name, inviterType);
   const city = preview.inviter?.city?.trim() || "";
   const senderLine =
