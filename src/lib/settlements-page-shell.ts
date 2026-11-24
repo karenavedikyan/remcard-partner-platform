@@ -8,7 +8,7 @@ import type { AuthUser } from "@/lib/types";
 export type SettlementsPageShell = "agent-r05" | "master-wallet" | "hub";
 
 /**
- * MASTER owner always uses the specialist wallet shell, even when R05 agent pilot is eligible.
+ * With legacy payloads a MASTER uses the specialist wallet shell, even when R05 is eligible.
  * Agents and their employees only ever see the incoming-only wallet; there is no generic hub for a partner.
  */
 export function resolveSettlementsPageShell(input: {
@@ -19,7 +19,9 @@ export function resolveSettlementsPageShell(input: {
   workplacePartnerType?: WorkplacePartnerType | null;
   navContext?: ResolveCabinetNavModeOptions;
 }): SettlementsPageShell {
-  if (input.partnerType === "MASTER") return "master-wallet";
+  if (input.navContext?.serverWorkplaceKind === undefined && input.partnerType === "MASTER") {
+    return "master-wallet";
+  }
   const mode = resolveCabinetNavMode(
     {
       partnerType: input.partnerType,
@@ -30,7 +32,9 @@ export function resolveSettlementsPageShell(input: {
   );
   if (mode === "business-store" || mode === "business-company") return "master-wallet";
   if (mode === "master") return "master-wallet";
-  if (mode === "agent" || input.r05Eligible) return "agent-r05";
+  if (mode === "agent" || (input.navContext?.serverWorkplaceKind === undefined && input.r05Eligible)) {
+    return "agent-r05";
+  }
   return "hub";
 }
 

@@ -93,6 +93,31 @@ describe("cabinet presentation: owner and employee of every partner type", () =>
     ).toBe(caption);
   });
 
+  it.each([
+    ["STORE", "business-store"],
+    ["COMPANY", "business-company"],
+    ["MASTER", "master"],
+    ["AGENT", "agent"],
+  ] as const)("uses the authoritative %s type even if the personal fields disagree", (kind, navMode) => {
+    const presentation = presentationFor(
+      { id: "owner", role: "PRO", partnerType: "COMPANY", partnerActivities: ["AGENT"] },
+      { role: "SOLO_PARTNER", partnerCabinet: { kind, source: "personal-profile" } },
+    );
+    expect(presentation.workplaceKind).toBe(kind);
+    expect(presentation.navMode).toBe(navMode);
+    expect(presentation.serverWorkplaceKind).toBe(kind);
+  });
+
+  it("does not guess a type when the server explicitly returns no classification", () => {
+    const presentation = presentationFor(owners[0].user, {
+      role: "SOLO_PARTNER",
+      partnerCabinet: null,
+    });
+    expect(presentation.workplaceKind).toBeNull();
+    expect(presentation.workplacePartnerType).toBeNull();
+    expect(presentation.navMode).toBe("legacy");
+  });
+
   const employees = [
     { name: "STORE employee", ctx: storeOrgEmployeeContext, navMode: "business-store", kind: "STORE", caption: "Магазин" },
     { name: "COMPANY employee", ctx: companyOrgEmployeeContext, navMode: "business-company", kind: "COMPANY", caption: "Компания" },

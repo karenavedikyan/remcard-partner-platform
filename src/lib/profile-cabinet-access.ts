@@ -16,6 +16,11 @@ export type TeamCapabilitiesSnapshot = {
 
 export type ProContextSnapshot = {
   role: string;
+  /** Canonical type shared by the server with MAX and Telegram. Omitted by older servers. */
+  partnerCabinet?: {
+    kind: "AGENT" | "MASTER" | "STORE" | "COMPANY";
+    source: "org-context" | "employer-context" | "personal-profile";
+  } | null;
   branches?: Array<{ id: string; name: string; city: string; address?: string | null }>;
   activeBranch?: { id: string; name: string; city: string; address?: string | null } | null;
   organization?: {

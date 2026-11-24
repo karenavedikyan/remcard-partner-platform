@@ -1,5 +1,6 @@
 import { isPureAgentActivities } from "@/lib/agent-profile/mode";
 import type { AuthUser } from "@/lib/types";
+import type { WorkplaceKind } from "@/lib/cabinet-presentation/types";
 
 export type CabinetNavMode =
   | "legacy"
@@ -9,6 +10,7 @@ export type CabinetNavMode =
   | "business-company";
 
 export type ResolveCabinetNavModeOptions = {
+  serverWorkplaceKind?: WorkplaceKind | null;
   /** Trusted workplace type from GET /api/pro/context (org staff) or owner profile. */
   workplacePartnerType?: "STORE" | "COMPANY" | null;
   /** When true, org workplace nav wins over personal MASTER / pure-agent legacy. */
@@ -24,6 +26,13 @@ export function resolveCabinetNavMode(
   user: Pick<AuthUser, "partnerType" | "role" | "partnerActivities">,
   options?: ResolveCabinetNavModeOptions,
 ): CabinetNavMode {
+  switch (options?.serverWorkplaceKind) {
+    case "STORE": return "business-store";
+    case "COMPANY": return "business-company";
+    case "MASTER": return "master";
+    case "AGENT": return "agent";
+    case null: return "legacy";
+  }
   const workplace = options?.workplacePartnerType ?? null;
   if (options?.workplaceNavFromOrgContext && workplace === "STORE") return "business-store";
   if (options?.workplaceNavFromOrgContext && workplace === "COMPANY") return "business-company";
@@ -32,9 +41,10 @@ export function resolveCabinetNavMode(
   if (employerKind === "MASTER") return "master";
   if (employerKind === "AGENT") return "agent";
 
+  // Keep navigation consistent with the personal workspace type and mini-cabinet.
+  if (user.role === "PRO" && isPureAgentActivities(user.partnerActivities)) return "agent";
   if (user.partnerType === "MASTER") return "master";
   if (user.role === "PRO") {
-    if (isPureAgentActivities(user.partnerActivities)) return "agent";
     if (user.partnerType === "STORE") return "business-store";
     if (user.partnerType === "COMPANY") return "business-company";
   }

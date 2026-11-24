@@ -19,6 +19,8 @@ export type CabinetPresentationSnapshot = {
   /** Optional for hand-built snapshots; always set by `resolveCabinetPresentation`. */
   workplaceKind?: WorkplaceKind | null;
   workplaceKindSource?: WorkplaceKindSource;
+  /** Undefined only if the server did not provide the canonical classification. */
+  serverWorkplaceKind?: WorkplaceKind | null;
   /** Actor (authenticated user) display name — never the org owner impersonation. */
   actorDisplayName: string;
   /** Organization / employer label for workspace chrome. */
