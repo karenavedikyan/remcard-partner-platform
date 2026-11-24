@@ -245,15 +245,15 @@ export function MiniAppCertificateCreate({
         label: c.displayName?.trim() || "Клиент",
       }));
 
-      if (partnersPayload.needsClient) {
-        if (!clientRowsFromApi.length) {
-          setBlockMessage("Нет клиентов для выпуска. Добавьте клиента в кабинете PROF.");
-          setLoadState("blocked");
-          return;
-        }
-        setClients(clientRowsFromApi);
-        if (!clientId) setClientId(clientRowsFromApi[0].id);
+      if (partnersPayload.needsClient && !clientRowsFromApi.length) {
+        setBlockMessage("Нет клиентов для выпуска. Добавьте клиента в кабинете PROF.");
+        setLoadState("blocked");
+        return;
       }
+      setClients(clientRowsFromApi);
+      setClientId((current) => clientRowsFromApi.some((row) => row.id === current)
+        ? current
+        : partnersPayload.needsClient ? clientRowsFromApi[0]?.id ?? "" : "");
 
       if (partnersPayload.needsBranch && !branchId) {
         setBlockMessage("Выберите филиал выпуска на главном экране.");
@@ -306,7 +306,6 @@ export function MiniAppCertificateCreate({
   }, [
     bootstrap.role,
     branchId,
-    clientId,
     draftScope,
     embeddedContext,
     ensurePartnerCategoryDefaults,
@@ -423,7 +422,7 @@ export function MiniAppCertificateCreate({
       ok: true,
       body: {
         ...payloadResult.body,
-        ...(needsClient ? { agentClientId: clientId } : {}),
+        ...(clientId ? { agentClientId: clientId } : {}),
         ...(branchId && needsBranch ? { branchId } : {}),
       },
     };
@@ -577,9 +576,9 @@ export function MiniAppCertificateCreate({
           Филиал выпуска: {branchLine}
         </p>
       ) : null}
-      {needsClient ? (
+      {needsClient || clients.length > 0 ? (
         <label className={styles.miniField}>
-          <span className={styles.miniFieldLabel}>Клиент</span>
+          <span className={styles.miniFieldLabel}>{needsClient ? "Клиент" : "Клиент (необязательно)"}</span>
           <select
             className={styles.miniSelect}
             value={clientId}
@@ -587,6 +586,7 @@ export function MiniAppCertificateCreate({
             disabled={discountPage && hasWizard}
             onChange={(e) => setClientId(e.target.value)}
           >
+            {!needsClient ? <option value="">Без привязки к клиенту</option> : null}
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}

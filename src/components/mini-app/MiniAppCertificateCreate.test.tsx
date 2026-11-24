@@ -117,6 +117,52 @@ describe("MiniAppCertificateCreate wizard", () => {
     expect(onCreated).toHaveBeenCalled();
   });
 
+  it.each([
+    { platform: "max", hasClients: false, attach: false },
+    { platform: "telegram", hasClients: true, attach: false },
+    { platform: "telegram", hasClients: true, attach: true },
+  ] as const)("agent on $platform can issue (clients: $hasClients, attached: $attach)", async ({
+    platform, hasClients, attach,
+  }) => {
+    const user = userEvent.setup();
+    vi.mocked(miniAppFetchCertificateOptions).mockResolvedValue({
+      partners: [apiPartner("1", "ОПТОВИК")],
+      needsClient: false,
+      needsBranch: false,
+      miniOptionsBlocked: null,
+      miniClients: hasClients ? [{ id: "client-1", displayName: "Иван" }] : [],
+      certificateRecommendationIssuerReady: true,
+      certificateRecommendationIssuerMissing: [],
+    });
+    vi.mocked(miniAppCreateCertificate).mockResolvedValue({
+      id: "cert-agent", promoCode: "RC-AGENT", qrCode: "RC-AGENT", status: "ACTIVE",
+      validUntil: null, maxUsages: 0, usageCount: 0, createdAt: new Date().toISOString(), partners: [],
+    });
+    const onCreated = vi.fn();
+    render(<MiniAppCertificateCreate
+      platform={platform}
+      bootstrap={{ ...baseBootstrap, platform, role: "agent", branches: [], activeBranchId: null }}
+      branchId={null}
+      onBack={() => {}}
+      onCreated={onCreated}
+    />);
+    await screen.findByTestId("mini-cert-step-partners");
+    if (hasClients) {
+      const picker = screen.getByTestId("mini-cert-client");
+      expect(picker).toHaveValue("");
+      if (attach) await user.selectOptions(picker, "client-1");
+    } else {
+      expect(screen.queryByTestId("mini-cert-client")).toBeNull();
+    }
+    await user.click(screen.getByTestId("mini-cert-partner-store-1:part-1"));
+    await user.click(screen.getByTestId("mini-cert-next-discounts"));
+    await user.click(screen.getByTestId("mini-create-submit"));
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    const [, body] = vi.mocked(miniAppCreateCertificate).mock.calls[0];
+    if (attach) expect(body).toHaveProperty("agentClientId", "client-1");
+    else expect(body).not.toHaveProperty("agentClientId");
+  });
+
   async function reachDiscountSubmit(onBack = () => {}) {
     const user = userEvent.setup();
     const view = render(
