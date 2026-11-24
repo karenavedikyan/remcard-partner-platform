@@ -8,6 +8,7 @@ import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 import { MiniAppWalletCard } from "./MiniAppWalletCard";
 import { MiniAppWallet } from "./MiniAppWallet";
 import { MiniAppScanReceive } from "./MiniAppScanReceive";
+import { MiniAppLoadingScreen } from "./MiniAppLoadingScreen";
 import { MiniAppProfBrand } from "./MiniAppProfBrand";
 import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
 import { MiniAppFullCabinet } from "./MiniAppFullCabinet";
@@ -303,11 +304,7 @@ export function MiniAppRoot({
   }
 
   if (loading) {
-    return (
-      <div className={styles.shell} data-testid="mini-app-loading">
-        <p>Загрузка…</p>
-      </div>
-    );
+    return <MiniAppLoadingScreen />;
   }
 
   function finishOtpBootstrap() {
