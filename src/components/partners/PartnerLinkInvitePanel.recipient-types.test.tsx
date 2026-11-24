@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PartnerLinkInvitePanel } from "./PartnerLinkInvitePanel";
-import { buildInviteHeroContent, formatInviteAudienceLabel, inviteRegistrationHref } from "@/lib/invite-presentation";
+import { buildInviteLandingCopy, formatInviteAudienceLabel, inviteRegistrationHref } from "@/lib/invite-presentation";
 import type { ProProfileResponse } from "@/lib/types";
 
 const fetchMock = vi.hoisted(() => vi.fn());
@@ -110,10 +110,11 @@ describe("all four link-invite audiences", () => {
   });
   it("does not present an agent invite as a specialist invite from a store", () => {
     expect(formatInviteAudienceLabel("AGENT", "STORE")).toBe("Для агентов");
-    const hero = buildInviteHeroContent({ status: "PENDING", intendedPartnerType: "AGENT", inviter: {
+    const copy = buildInviteLandingCopy({ status: "PENDING", intendedPartnerType: "AGENT", inviter: {
       displayName: "Проверка", partnerType: "STORE", city: null,
     } });
-    expect(hero.lead).toContain("как агент");
-    expect(hero.bullets).toContain("Регистрация не означает принятия предложения");
+    expect(copy.agentRecipient).toBe(true);
+    expect(copy.mutual).toBeNull();
+    expect(copy.steps[2].title).toBe("Выдайте первый сертификат");
   });
 });

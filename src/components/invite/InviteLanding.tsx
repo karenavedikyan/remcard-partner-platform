@@ -14,13 +14,9 @@ import {
 } from "@/lib/auth-flow";
 import { displayCategoryLabel } from "@/lib/category-display";
 import {
-  buildInviteHeroContent,
-  formatInviteAudienceLabel,
-  INVITE_AUDIENCE_HINT,
-  INVITE_GUEST_DISCLAIMER,
-  INVITE_MODERATION_NOTE,
-  INVITE_PERCENT_EXPLAINER,
-  inviterDisplayName,
+  buildInviteLandingCopy,
+  INVITE_ACCEPT_FINE_PRINT,
+  INVITE_GUEST_FINE_PRINT,
   inviteRegistrationHref,
 } from "@/lib/invite-presentation";
 import {
@@ -30,6 +26,7 @@ import {
   LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE,
 } from "@/lib/link-invite-public";
 import { Button } from "@/components/ui/Button";
+import buttonStyles from "@/components/ui/Button.module.css";
 import { BrandMark } from "@/components/layout/BrandMark";
 import {
   buildInviteProfileCompletionHref,
@@ -41,6 +38,7 @@ import {
   sanitizeInternalPath,
 } from "@/lib/invite-profile-completion";
 import { InviteAcceptedProfilePrompt } from "./InviteAcceptedProfilePrompt";
+import { InviteDock, InviteFlow, InviteSteps, useOffscreen } from "./InviteLandingParts";
 import styles from "./InviteLanding.module.css";
 
 type PreviewTerm = {
@@ -140,6 +138,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
   const acceptCompletedRef = useRef(false);
   const mountedRef = useRef(true);
   const routeGeneration = useRef(0);
+  const [actionsRef, actionsOffscreen] = useOffscreen<HTMLDivElement>();
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
@@ -426,8 +425,7 @@ export function InviteLanding({ token }: InviteLandingProps) {
           <section className={styles.card}>
             <h1 className={styles.title}>Вы не приняли предложение</h1>
             <p className={styles.lead}>
-              К нему можно вернуться, пока приглашение действует. Регистрация и вход сами по себе
-              не означают согласия с условиями.
+              Сотрудничество не начато. К условиям можно вернуться, пока ссылка активна.
             </p>
             {preview.expiresAt ? (
               <p className={styles.meta}>Ссылка действует до {formatExpiry(preview.expiresAt)}</p>
@@ -444,221 +442,248 @@ export function InviteLanding({ token }: InviteLandingProps) {
     );
   }
 
-  const inviterName = inviterDisplayName(preview);
-  const hero = buildInviteHeroContent(preview);
-  const audienceLabel = formatInviteAudienceLabel(
-    preview.intendedPartnerType,
-    preview.inviter?.partnerType ?? null,
+  const copy = buildInviteLandingCopy(
+    preview,
+    authUser
+      ? { partnerType: authUser.partnerType, partnerActivities: authUser.partnerActivities }
+      : null,
   );
   const activeTerms = linkInvitePreviewParticipatingRowsForDisplay(preview.terms);
   const excludedTerms = linkInvitePreviewExcludedLabelsForDisplay(preview.terms);
+  const registrationHref = inviteRegistrationHref(preview.intendedPartnerType, returnTo);
+  const profileHref = buildInviteProfileCompletionHref(returnTo);
+  const primaryLinkClass = `${buttonStyles.button} ${buttonStyles.primary} ${styles.fullButton}`;
+  const readyToAccept = hasSession && !needsContinuation && !profileIncomplete;
+  const stage: "guest" | "continuation" | "profile" | "accept" = !hasSession
+    ? "guest"
+    : needsContinuation && readiness
+      ? "continuation"
+      : profileIncomplete
+        ? "profile"
+        : "accept";
 
-  const termsBlock = (
-    <div className={styles.termsSection}>
-      <h2 className={styles.termsSectionTitle}>Условия предложения</h2>
-      <div className={styles.termsScroll}>
-        <table className={styles.termsTable}>
-          <thead>
-            <tr>
-              <th>Категория</th>
-              <th>Общий %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {activeTerms.map((term) => (
-              <tr key={`${term.category}-${term.storePercent}`}>
-                <td>{displayCategoryLabel(term.category, term.categoryLabel)}</td>
-                <td>{term.storePercent}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className={styles.meta}>{INVITE_PERCENT_EXPLAINER}</p>
-      {excludedTerms.length > 0 ? (
-        <p className={styles.meta}>
-          Исключено из предложения:{" "}
-          {excludedTerms
-            .map((term) => displayCategoryLabel(term.category, term.categoryLabel))
-            .join(", ")}
-        </p>
+  const acceptErrorBlock = acceptError ? (
+    <p className={styles.error} role="alert">
+      {acceptError}{" "}
+      {/войдите|сессия/i.test(acceptError) ? (
+        <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
       ) : null}
-      {preview.note ? (
-        <p className={styles.noteBlock}>
-          Комментарий отправителя: {preview.note}
-        </p>
-      ) : null}
-      {preview.expiresAt ? (
-        <p className={styles.meta}>Ссылка действует до {formatExpiry(preview.expiresAt)}</p>
-      ) : null}
-    </div>
+    </p>
+  ) : null;
+
+  const declineAndSwitch = (
+    <p className={styles.altActions}>
+      <span>Не подходит?</span>
+      <button
+        type="button"
+        className={styles.linkAction}
+        disabled={accepting}
+        onClick={() => void handleDecline()}
+      >
+        Отклонить
+      </button>
+      <button
+        type="button"
+        className={styles.linkAction}
+        disabled={switchingAccount || accepting}
+        onClick={() => void handleSwitchAccount()}
+      >
+        {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
+      </button>
+    </p>
   );
 
+  const acceptButton = (
+    <Button
+      className={styles.fullButton}
+      disabled={accepting || !canAccept}
+      onClick={() => void acceptInvite()}
+    >
+      {accepting ? "Принимаем…" : "Принять условия"}
+    </Button>
+  );
+
+  const dockAction =
+    stage === "guest" ? (
+      <Link href={registrationHref} className={primaryLinkClass}>
+        Зарегистрироваться
+      </Link>
+    ) : stage === "continuation" && readiness ? (
+      <Button className={styles.fullButton} onClick={() => handleContinueRegistration()}>
+        {continuationLabel(readiness)}
+      </Button>
+    ) : stage === "profile" ? (
+      <Link href={profileHref} className={primaryLinkClass}>
+        Заполнить профиль
+      </Link>
+    ) : (
+      acceptButton
+    );
+
   return (
-    <main className={styles.page}>
-      <div className={styles.wrap}>
+    <main className={`${styles.page} ${styles.pageWithDock}`}>
+      <div className={styles.wrapWide}>
         <BrandMark />
-        <section className={styles.card} aria-busy={accepting}>
-          <span className={styles.eyebrow}>RemCard PROF</span>
-          <h1 className={styles.title}>{hero.headline}</h1>
-          <p className={styles.inviterLine}>
-            Приглашает: {inviterName}
-            {preview.inviter?.city ? ` · ${preview.inviter.city}` : ""}
-          </p>
-          {audienceLabel ? (
-            <span className={styles.audienceBadge}>{audienceLabel}</span>
-          ) : null}
-          {audienceLabel ? (
-            <p className={styles.audienceHint}>{INVITE_AUDIENCE_HINT}</p>
-          ) : null}
-          <p className={styles.lead}>{hero.lead}</p>
-          <ul className={styles.benefitList}>
-            {hero.bullets.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+        <article
+          className={styles.invitation}
+          aria-busy={accepting}
+          data-testid="invite-landing"
+          data-direction={copy.direction}
+        >
+          <div className={styles.offer}>
+            <p className={styles.kicker}>{copy.kicker}</p>
+            <h1 className={styles.heroTitle}>{copy.headline}</h1>
+            {copy.senderLine ? <p className={styles.sender}>{copy.senderLine}</p> : null}
+            <p className={styles.heroLead}>{copy.lead}</p>
 
-          {!hasSession ? (
-            <div className={styles.ctaGuest}>
-              {acceptError ? (
-                <p className={styles.error} role="alert">
-                  {acceptError}{" "}
-                  {/войдите|сессия/i.test(acceptError) ? (
-                    <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
-                  ) : null}
-                </p>
-              ) : null}
-              <Link href={inviteRegistrationHref(preview.intendedPartnerType, returnTo)}>
-                <Button>Зарегистрироваться и продолжить</Button>
-              </Link>
-              <p className={styles.loginSecondary}>
-                Уже есть аккаунт?{" "}
-                <Link href={loginHref}>Войти</Link>
-              </p>
-              <p className={styles.ctaGuestNote}>{INVITE_GUEST_DISCLAIMER}</p>
-              <p className={styles.ctaGuestNote}>{INVITE_MODERATION_NOTE}</p>
-            </div>
-          ) : null}
+            <InviteFlow title={copy.flowTitle} items={copy.flow} />
 
-          {termsBlock}
+            {activeTerms.length > 0 || excludedTerms.length > 0 ? (
+              <section className={styles.rateSection} data-testid="invite-terms">
+                <div className={styles.rateHead}>
+                  <h2 className={styles.sectionTitle}>{copy.termsTitle}</h2>
+                  <span>{copy.termsColumn}</span>
+                </div>
+                <dl className={styles.rates}>
+                  {activeTerms.map((term) => (
+                    <div key={`${term.category}-${term.storePercent}`}>
+                      <dt>{displayCategoryLabel(term.category, term.categoryLabel)}</dt>
+                      <dd>{term.storePercent}%</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className={styles.explanation}>{copy.percentExplainer}</p>
+                {excludedTerms.length > 0 ? (
+                  <p className={styles.explanation}>
+                    Не участвуют:{" "}
+                    {excludedTerms
+                      .map((term) => displayCategoryLabel(term.category, term.categoryLabel))
+                      .join(", ")}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
 
-          <div className={styles.notice}>
-            <p><strong>Как начать</strong></p>
-            <ol className={styles.steps}>
-              <li>Зарегистрируйтесь или войдите и заполните обязательные данные профиля</li>
-              <li>Примите обязательные соглашения, если система попросит</li>
-              <li>Явно примите или отклоните условия на этой странице</li>
-              <li>Работайте с рекомендациями и покупками в кабинете — публикация в каталоге не обязательна</li>
-            </ol>
+            {copy.mutual ? (
+              <section className={styles.mutual} data-testid="invite-mutual">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 9h15m-4-4 4 4-4 4M20 15H5m4 4-4-4 4-4" />
+                </svg>
+                <div>
+                  <h2>{copy.mutual.title}</h2>
+                  <p>{copy.mutual.text}</p>
+                </div>
+              </section>
+            ) : null}
+
+            {preview.note ? (
+              <figure className={styles.senderNote} data-testid="invite-note">
+                <figcaption>{copy.noteCaption}</figcaption>
+                <blockquote>{preview.note}</blockquote>
+              </figure>
+            ) : null}
           </div>
 
-          {hasSession && needsContinuation && readiness ? (
-            <>
-              <div className={styles.notice}>
-                <p><strong>Завершите обязательные шаги</strong></p>
-                <p>{continuationLead(readiness)}</p>
-              </div>
-              <div className={styles.actions}>
-                <Button onClick={() => handleContinueRegistration()}>
-                  {continuationLabel(readiness)}
-                </Button>
-                <Button variant="secondary" onClick={() => void handleDecline()}>
-                  Не принимать
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={switchingAccount}
-                  onClick={() => void handleSwitchAccount()}
-                >
-                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
-                </Button>
-              </div>
-            </>
-          ) : hasSession && profileIncomplete ? (
-            <>
-              <div className={styles.notice}>
-                <p><strong>Дозаполните профиль для сотрудничества</strong></p>
-                <p>
-                  Укажите имя представителя, город и тип партнёра в кабинете. Публикация в каталоге
-                  RemCard для частного приглашения не нужна — после сохранения вернитесь сюда и
-                  явно примите условия.
-                </p>
-              </div>
-              <div className={styles.actions}>
-                <Link href={buildInviteProfileCompletionHref(returnTo)}>
-                  <Button>Заполнить профиль</Button>
-                </Link>
-                <Button variant="secondary" disabled>
-                  Принять условия
-                </Button>
-                <Button variant="secondary" onClick={() => void handleDecline()}>
-                  Не принимать
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    void loadPreview();
-                    void refreshSession();
-                  }}
-                >
-                  Обновить статус
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={switchingAccount}
-                  onClick={() => void handleSwitchAccount()}
-                >
-                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
-                </Button>
-              </div>
-            </>
-          ) : hasSession ? (
-            <>
-              {!termsAcceptable ? (
-                <div className={styles.notice} role="status">
-                  <p>{LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE}</p>
-                </div>
-              ) : (
-                <p className={styles.lead}>
-                  Проверьте условия. «Принять условия» создаст активное партнёрство. «Не принимать»
-                  закроет предложение без ответа — ссылка останется доступной, пока действует
-                  приглашение.
-                </p>
-              )}
-              {acceptError ? (
-                <p className={styles.error} role="alert">
-                  {acceptError}{" "}
-                  {/войдите|сессия/i.test(acceptError) ? (
-                    <Link href={buildSessionRecoveryLoginHref(returnTo)}>Войти снова</Link>
-                  ) : null}
-                </p>
-              ) : null}
-              {existingPartnershipId ? (
-                <p className={styles.lead}>
-                  <Link href={`/partners?terms=${encodeURIComponent(existingPartnershipId)}`}>
-                    Открыть существующее партнёрство в кабинете
+          <aside className={styles.next} data-testid="invite-next" data-stage={stage}>
+            <h2 className={styles.sectionTitle}>{copy.stepsTitle}</h2>
+            <InviteSteps steps={copy.steps} current={readyToAccept ? 2 : 1} />
+
+            {stage === "guest" ? (
+              <>
+                <div className={styles.nextActions} ref={actionsRef}>
+                  {acceptErrorBlock}
+                  <Link href={registrationHref} className={primaryLinkClass}>
+                    Зарегистрироваться
                   </Link>
+                  <p className={styles.altActions}>
+                    <span>Уже есть аккаунт?</span>
+                    <Link href={loginHref} className={styles.linkAction}>
+                      Войти
+                    </Link>
+                  </p>
+                </div>
+                <p className={styles.fine}>{INVITE_GUEST_FINE_PRINT}</p>
+              </>
+            ) : stage === "continuation" && readiness ? (
+              <>
+                <p className={styles.nextCopy}>
+                  <strong>Завершите обязательные шаги.</strong> {continuationLead(readiness)}
                 </p>
-              ) : null}
-              <div className={styles.actions}>
-                <Button disabled={accepting || !canAccept} onClick={() => void acceptInvite()}>
-                  {accepting ? "Принимаем…" : "Принять условия"}
-                </Button>
-                <Button variant="secondary" disabled={accepting} onClick={() => void handleDecline()}>
-                  Не принимать
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={switchingAccount || accepting}
-                  onClick={() => void handleSwitchAccount()}
-                >
-                  {switchingAccount ? "Выходим…" : "Сменить аккаунт"}
-                </Button>
-              </div>
-            </>
-          ) : null}
-        </section>
+                <div className={styles.nextActions} ref={actionsRef}>
+                  <Button className={styles.fullButton} onClick={() => handleContinueRegistration()}>
+                    {continuationLabel(readiness)}
+                  </Button>
+                  {declineAndSwitch}
+                </div>
+              </>
+            ) : stage === "profile" ? (
+              <>
+                <p className={styles.nextCopy}>
+                  <strong>Дозаполните профиль.</strong> Укажите имя представителя, город и тип
+                  партнёра. Публикация в каталоге не нужна — после сохранения вернитесь сюда и
+                  примите условия.
+                </p>
+                <div className={styles.nextActions} ref={actionsRef}>
+                  <Link href={profileHref} className={primaryLinkClass}>
+                    Заполнить профиль
+                  </Link>
+                  <Button variant="secondary" className={styles.fullButton} disabled>
+                    Принять условия
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className={styles.fullButton}
+                    onClick={() => {
+                      void loadPreview();
+                      void refreshSession();
+                    }}
+                  >
+                    Обновить статус
+                  </Button>
+                  {declineAndSwitch}
+                </div>
+              </>
+            ) : (
+              <>
+                {!termsAcceptable ? (
+                  <p className={styles.nextCopy} role="status">
+                    {LINK_INVITE_TERMS_UNAVAILABLE_MESSAGE}
+                  </p>
+                ) : null}
+                <div className={styles.nextActions} ref={actionsRef}>
+                  {acceptErrorBlock}
+                  {existingPartnershipId ? (
+                    <p className={styles.nextCopy}>
+                      <Link href={`/partners?terms=${encodeURIComponent(existingPartnershipId)}`}>
+                        Открыть существующее партнёрство в кабинете
+                      </Link>
+                    </p>
+                  ) : null}
+                  {acceptButton}
+                  {declineAndSwitch}
+                </div>
+                <p className={styles.fine}>{INVITE_ACCEPT_FINE_PRINT}</p>
+              </>
+            )}
+            {preview.expiresAt ? (
+              <p className={styles.explanation}>
+                Ссылка действует до {formatExpiry(preview.expiresAt)}
+              </p>
+            ) : null}
+          </aside>
+        </article>
       </div>
+      <InviteDock visible={actionsOffscreen}>{dockAction}</InviteDock>
     </main>
   );
 }

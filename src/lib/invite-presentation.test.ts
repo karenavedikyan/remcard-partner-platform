@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  buildInviteHeroContent,
+  buildDiscussionInviteCopy,
+  buildInviteLandingCopy,
   buildInviteLinkMetadata,
   buildInviteShareMessage,
   formatInviteAudienceLabel,
-  INVITE_AUDIENCE_HINT,
   inviteOgDescription,
   inviterDisplayName,
   resolveInviteAudience,
+  resolveInviteDirection,
 } from "./invite-presentation.ts";
 import type { LinkInvitePublicPreview } from "./link-invite-public.ts";
 
@@ -29,25 +30,131 @@ function pendingPreview(
 }
 
 describe("invite presentation", () => {
-  it("resolves store inviter audience as master-facing copy", () => {
+  it("tells a store's invitee to recommend the store, with the mutual offer", () => {
     assert.equal(resolveInviteAudience("STORE", null), "master");
-    const hero = buildInviteHeroContent(pendingPreview());
-    assert.match(hero.headline, /ОПТОВИК/);
-    assert.match(hero.lead, /вознаграждение/);
-    assert.equal(hero.bullets.length, 3);
+    const copy = buildInviteLandingCopy(pendingPreview());
+    assert.equal(copy.direction, "recipient_recommends");
+    assert.equal(copy.headline, "ОПТОВИК приглашает вас в партнёры");
+    assert.equal(copy.senderLine, "Магазин · Краснодар");
+    assert.equal(
+      copy.lead,
+      "Рекомендуйте магазин «ОПТОВИК» своим клиентам и получайте вознаграждение с их покупок.",
+    );
+    assert.deepEqual(copy.flow, [
+      "Выдаёте клиенту сертификат на скидку",
+      "Клиент покупает у магазина «ОПТОВИК»",
+      "Вы получаете вознаграждение",
+    ]);
+    assert.equal(copy.termsTitle, "Условия магазина «ОПТОВИК»");
+    assert.match(copy.percentExplainer, /ваше вознаграждение/);
+    assert.match(copy.mutual?.text ?? "", /ОПТОВИК тоже сможет приводить клиентов вам/);
+    assert.deepEqual(
+      copy.steps.map((step) => step.title),
+      ["Войдите или зарегистрируйтесь", "Примите условия", "Предложите свои условия"],
+    );
     assert.equal(formatInviteAudienceLabel(null, "STORE"), "Для специалистов");
   });
 
-  it("uses store-invitee copy when master invites a store", () => {
-    const hero = buildInviteHeroContent(
+  it("hides the mutual offer and points an agent recipient to the first certificate", () => {
+    const guest = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "AGENT" }));
+    assert.equal(guest.agentRecipient, true);
+    assert.equal(guest.direction, "recipient_recommends");
+    assert.equal(guest.mutual, null);
+    assert.equal(guest.steps[2].title, "Выдайте первый сертификат");
+
+    // The real profile wins over the advisory type on the link.
+    const agentViewer = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "MASTER" }), {
+      partnerType: "STORE",
+      partnerActivities: ["AGENT"],
+    });
+    assert.equal(agentViewer.agentRecipient, true);
+    assert.equal(agentViewer.mutual, null);
+
+    const masterViewer = buildInviteLandingCopy(pendingPreview({ intendedPartnerType: "AGENT" }), {
+      partnerType: "MASTER",
+      partnerActivities: ["SERVICE"],
+    });
+    assert.equal(masterViewer.agentRecipient, false);
+    assert.notEqual(masterViewer.mutual, null);
+  });
+
+  it("never promises a direction the server may reverse on acceptance", () => {
+    // Specialist or company invites a store: the store becomes the selling side.
+    assert.equal(resolveInviteDirection("MASTER", "STORE"), "neutral");
+    assert.equal(resolveInviteDirection("COMPANY", "STORE"), "neutral");
+    // Recipient type unknown until login.
+    assert.equal(resolveInviteDirection("COMPANY", null), "neutral");
+    assert.equal(resolveInviteDirection(null, null), "neutral");
+    // Logged-in store overrides the advisory "MASTER" on the link.
+    assert.equal(
+      resolveInviteDirection("COMPANY", "MASTER", { partnerType: "STORE", partnerActivities: ["STORE"] }),
+      "neutral",
+    );
+    // Cases the server always resolves as "recipient recommends".
+    assert.equal(resolveInviteDirection("STORE", "STORE"), "recipient_recommends");
+    assert.equal(resolveInviteDirection("COMPANY", "MASTER"), "recipient_recommends");
+    assert.equal(resolveInviteDirection("MASTER", "COMPANY"), "recipient_recommends");
+    assert.equal(resolveInviteDirection("MASTER", "AGENT"), "recipient_recommends");
+
+    const copy = buildInviteLandingCopy(
       pendingPreview({
         inviter: { displayName: "Иван", partnerType: "MASTER", city: null },
         intendedPartnerType: "STORE",
       }),
     );
-    assert.match(hero.lead, /рекомендациям специалистов/);
+    assert.equal(copy.direction, "neutral");
+    assert.equal(copy.mutual, null);
+    assert.equal(copy.termsTitle, "Условия предложения");
+    assert.equal(copy.senderLine, "Специалист");
+    const text = [copy.lead, ...copy.flow, copy.percentExplainer].join(" ");
+    assert.doesNotMatch(text, /Вы получаете|ваше вознаграждение|Вы платите/);
     assert.equal(formatInviteAudienceLabel("STORE", "MASTER"), "Для магазинов");
     assert.match(inviteOgDescription("MASTER", "STORE"), /Продажи по рекомендациям/);
+  });
+
+  it("keeps sender names undeclined and does not double quotes", () => {
+    const company = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "ООО «Ромашка»", partnerType: "COMPANY", city: null },
+        intendedPartnerType: "MASTER",
+      }),
+    );
+    assert.equal(company.termsTitle, "Условия компании ООО «Ромашка»");
+    assert.equal(company.noteCaption, "Сообщение от компании ООО «Ромашка»");
+    const person = buildInviteLandingCopy(
+      pendingPreview({
+        inviter: { displayName: "Иван Петров", partnerType: "MASTER", city: "Сочи" },
+        intendedPartnerType: "MASTER",
+      }),
+    );
+    assert.equal(person.flow[1], "Клиент покупает у партнёра");
+    assert.equal(person.senderLine, "Специалист · Сочи");
+    assert.match(person.steps[2].hint, /Иван Петров сможет рекомендовать и вас/);
+  });
+
+  it("uses the agent mechanic for discussion links only when the server marks an agent", () => {
+    const agent = buildDiscussionInviteCopy({
+      inviter: { displayName: "Алексей Романов", partnerType: null, city: "Краснодар", isAgent: true },
+    });
+    assert.equal(agent.headline, "Алексей Романов хочет приводить вам клиентов");
+    assert.equal(agent.senderLine, "Агент · Краснодар");
+    assert.deepEqual(agent.flow, [
+      "Алексей Романов выдаёт клиенту сертификат",
+      "Клиент покупает у вас со скидкой",
+      "Вы платите процент с покупки",
+    ]);
+    assert.equal(agent.steps[1].title, "Присоединитесь к обсуждению");
+    assert.equal(agent.finePrint, "Процент пока не согласован: его предлагаете вы.");
+
+    for (const inviter of [
+      { displayName: "Иван", partnerType: "MASTER", city: null, isAgent: false },
+      { displayName: "Иван", partnerType: "MASTER", city: null },
+    ]) {
+      const neutral = buildDiscussionInviteCopy({ inviter });
+      assert.equal(neutral.fromAgent, false);
+      assert.equal(neutral.headline, "Иван приглашает обсудить сотрудничество");
+      assert.doesNotMatch([neutral.lead, ...neutral.flow].join(" "), /Вы платите|у вас/);
+    }
   });
 
   it("builds active metadata with inviter in title", () => {
@@ -109,8 +216,4 @@ describe("invite presentation", () => {
     assert.equal(inviterDisplayName({ status: "PENDING" }), "Партнёр RemCard");
   });
 
-  it("documents that audience type is advisory for acceptance", () => {
-    assert.match(INVITE_AUDIENCE_HINT, /ориентир/);
-    assert.match(INVITE_AUDIENCE_HINT, /фактическим профилем/);
-  });
 });

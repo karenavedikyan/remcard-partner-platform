@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { InviteLanding } from "./InviteLanding";
@@ -132,17 +132,141 @@ describe("InviteLanding presentation", () => {
     expect(acceptBtn).toBeDisabled();
   });
 
-  it("shows role-aware hero, Russian categories, and guest CTA before terms copy", async () => {
+  it("shows the approved guest page: mechanic, terms, mutual offer and three steps", async () => {
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "COMPANY", city: "Краснодар" },
+      intendedPartnerType: "MASTER",
+      terms: [
+        { category: "flooring", categoryLabel: "flooring", storePercent: 10, isExcluded: false },
+        { category: "doors", categoryLabel: "Двери", storePercent: 15, isExcluded: true },
+      ],
+      note: "Давайте помогать друг другу находить новых клиентов!",
+    });
+
     render(<InviteLanding token="test-token" />);
 
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
-      /Сотрудничайте с ОПТОВИК через RemCard PROF/,
+      "ОПТОВИК приглашает вас в партнёры",
     );
-    expect(screen.getByText(/Для специалистов/)).toBeInTheDocument();
-    expect(screen.getByText(/Напольные покрытия/)).toBeInTheDocument();
+    expect(screen.getByText("Личное приглашение")).toBeInTheDocument();
+    expect(screen.getByText("Компания · Краснодар")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Рекомендуйте компанию «ОПТОВИК» своим клиентам и получайте вознаграждение с их покупок.",
+      ),
+    ).toBeInTheDocument();
+
+    const flow = within(screen.getByTestId("invite-flow"));
+    expect(flow.getByRole("heading", { name: "Как это работает" })).toBeInTheDocument();
+    expect(flow.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Выдаёте клиенту сертификат на скидку",
+      "Клиент покупает у компании «ОПТОВИК»",
+      "Вы получаете вознаграждение",
+    ]);
+
+    const terms = within(screen.getByTestId("invite-terms"));
+    expect(terms.getByRole("heading", { name: "Условия компании «ОПТОВИК»" })).toBeInTheDocument();
+    expect(terms.getByText("Напольные покрытия")).toBeInTheDocument();
+    expect(terms.getByText("10%")).toBeInTheDocument();
+    expect(terms.getByText(/Не участвуют: Двери/)).toBeInTheDocument();
+    expect(
+      terms.getByText("Общий процент — это скидка клиенту и ваше вознаграждение вместе."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("flooring")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Зарегистрироваться и продолжить/ })).toBeInTheDocument();
-    expect(screen.getByText(/Уже есть аккаунт/)).toBeInTheDocument();
     expect(screen.queryByText(/MASTER/)).not.toBeInTheDocument();
+
+    const mutual = within(screen.getByTestId("invite-mutual"));
+    expect(mutual.getByRole("heading", { name: "Можно в обе стороны" })).toBeInTheDocument();
+    expect(mutual.getByText(/ОПТОВИК тоже сможет приводить клиентов вам/)).toBeInTheDocument();
+
+    const note = within(screen.getByTestId("invite-note"));
+    expect(note.getByText("Сообщение от компании «ОПТОВИК»")).toBeInTheDocument();
+    expect(note.getByText("Давайте помогать друг другу находить новых клиентов!")).toBeInTheDocument();
+
+    const next = within(screen.getByTestId("invite-next"));
+    expect(next.getByRole("heading", { name: "Как стать партнёром" })).toBeInTheDocument();
+    const steps = within(screen.getByTestId("invite-steps")).getAllByRole("listitem");
+    expect(steps).toHaveLength(3);
+    expect(steps[0]).toHaveTextContent("Войдите или зарегистрируйтесь");
+    expect(steps[0]).toHaveAttribute("data-state", "current");
+    expect(steps[1]).toHaveTextContent("Примите условия");
+    expect(steps[2]).toHaveTextContent("Предложите свои условия");
+
+    const register = next.getByRole("link", { name: "Зарегистрироваться" });
+    expect(register).toHaveAttribute("href", "/join?role=specialist&returnTo=%2Finvite%2Ftest-token");
+    expect(next.getByRole("link", { name: "Войти" })).toHaveAttribute(
+      "href",
+      "/login?returnTo=%2Finvite%2Ftest-token",
+    );
+    expect(
+      next.getByText("Регистрация — ещё не согласие. Условия вы принимаете отдельно."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Принять условия/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("invite-dock")).not.toBeInTheDocument();
+  });
+
+  it("marks login as done and keeps decline and switch-account actions for a ready session", async () => {
+    readySessionMocks();
+
+    render(<InviteLanding token="test-token" />);
+
+    const accept = await screen.findByRole("button", { name: "Принять условия" });
+    expect(accept).toBeEnabled();
+    const steps = within(screen.getByTestId("invite-steps")).getAllByRole("listitem");
+    expect(steps[0]).toHaveAttribute("data-state", "done");
+    expect(steps[1]).toHaveAttribute("data-state", "current");
+    expect(screen.getByText("Условия зафиксированы в этом приглашении.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Зарегистрироваться" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Отклонить" }));
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
+      "Вы не приняли предложение",
+    );
+    expect(
+      screen.getByText("Сотрудничество не начато. К условиям можно вернуться, пока ссылка активна."),
+    ).toBeInTheDocument();
+    expect(vi.mocked(remcardFetch)).not.toHaveBeenCalledWith(
+      "/api/partnership/link-invite/accept",
+      expect.anything(),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Вернуться к условиям" }));
+    expect(await screen.findByRole("button", { name: "Принять условия" })).toBeInTheDocument();
+  });
+
+  it("hides the mutual offer for an agent and stays neutral when the server may reverse sides", async () => {
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "ОПТОВИК", partnerType: "STORE", city: "Краснодар" },
+      intendedPartnerType: "AGENT",
+      terms: [{ category: "doors", categoryLabel: "Двери", storePercent: 15, isExcluded: false }],
+      note: null,
+    });
+    const agent = render(<InviteLanding token="test-token" />);
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
+      "ОПТОВИК приглашает вас в партнёры",
+    );
+    expect(screen.queryByTestId("invite-mutual")).not.toBeInTheDocument();
+    expect(screen.getByText("Выдайте первый сертификат")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Зарегистрироваться" })).toHaveAttribute(
+      "href",
+      "/join?role=agent&returnTo=%2Finvite%2Ftest-token",
+    );
+    agent.unmount();
+
+    vi.mocked(remcardFetch).mockResolvedValue({
+      status: "PENDING",
+      inviter: { displayName: "Иван", partnerType: "MASTER", city: null },
+      intendedPartnerType: "STORE",
+      terms: [{ category: "doors", categoryLabel: "Двери", storePercent: 15, isExcluded: false }],
+      note: null,
+    });
+    render(<InviteLanding token="test-token" />);
+    expect(await screen.findByTestId("invite-landing")).toHaveAttribute("data-direction", "neutral");
+    expect(screen.queryByTestId("invite-mutual")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Условия предложения" })).toBeInTheDocument();
+    expect(screen.queryByText(/Вы получаете вознаграждение/)).not.toBeInTheDocument();
+    expect(screen.getByText("Откройте раздел «Партнёры»")).toBeInTheDocument();
   });
 });
