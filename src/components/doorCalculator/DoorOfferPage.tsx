@@ -117,6 +117,7 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
         </aside>
       </div>
       <main>
+        <div className="page-scale">
         <article className="page">
           <div className="hd">
             <div className="logo">
@@ -291,6 +292,7 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
             </div>
           </div>
         </article>
+        </div>
       </main>
     </OfferShell>
   );
