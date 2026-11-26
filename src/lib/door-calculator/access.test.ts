@@ -16,71 +16,65 @@ function presentation(
   return { navMode, proContext };
 }
 
+const ORG_DOORS: ProContextSnapshot = {
+  role: "ORG_OWNER",
+  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
+};
+
+const EMPLOYEE_DOORS: ProContextSnapshot = {
+  role: "ORG_EMPLOYEE",
+  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
+};
+
+const EMPLOYEE_NO_DOORS: ProContextSnapshot = {
+  role: "ORG_EMPLOYEE",
+  organization: { id: "1", name: "Shop", partnerType: "STORE", storeCategories: ["flooring"] },
+};
+
+function navHasDoorCalc(p: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">): boolean {
+  return filterBusinessDesktopNav(COMPANY_DESKTOP_NAV, p).some((i) => i.href === DOORS_CALCULATOR_HREF);
+}
+
 describe("door calculator access", () => {
   it("detects doors category on organization", () => {
-    expect(
-      organizationHasDoorsCategory({
-        role: "ORG_OWNER",
-        organization: { id: "1", name: "X", storeCategories: ["doors", "flooring"] },
-      }),
-    ).toBe(true);
-    expect(
-      organizationHasDoorsCategory({
-        role: "ORG_OWNER",
-        organization: { id: "1", name: "X", storeCategories: ["flooring"] },
-      }),
-    ).toBe(false);
+    expect(organizationHasDoorsCategory(ORG_DOORS)).toBe(true);
+    expect(organizationHasDoorsCategory(EMPLOYEE_NO_DOORS)).toBe(false);
   });
 
-  it("company with doors sees feature", () => {
-    const visible = doorCalculatorFeatureVisible(
-      presentation("business-company", {
-        role: "ORG_OWNER",
-        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
-      }),
-    );
-    expect(visible).toBe(true);
+  it("owner with doors sees feature and nav item", () => {
+    const p = presentation("business-company", ORG_DOORS);
+    expect(doorCalculatorFeatureVisible(p)).toBe(true);
+    expect(navHasDoorCalc(p)).toBe(true);
   });
 
-  it("store without doors hides feature", () => {
-    expect(
-      doorCalculatorFeatureVisible(
-        presentation("business-store", {
-          role: "ORG_OWNER",
-          organization: { id: "1", name: "Shop", partnerType: "STORE", storeCategories: ["flooring"] },
-        }),
-      ),
-    ).toBe(false);
+  it("employee with doors sees feature and nav item (same org category)", () => {
+    const p = presentation("business-company", EMPLOYEE_DOORS);
+    expect(doorCalculatorFeatureVisible(p)).toBe(true);
+    expect(navHasDoorCalc(p)).toBe(true);
   });
 
-  it("master nav mode never shows feature", () => {
-    expect(
-      doorCalculatorFeatureVisible(
-        presentation("master", {
-          role: "SOLO_PARTNER",
-          organization: null,
-        }),
-      ),
-    ).toBe(false);
+  it("company/store without doors category hides feature and nav", () => {
+    const p = presentation("business-store", EMPLOYEE_NO_DOORS);
+    expect(doorCalculatorFeatureVisible(p)).toBe(false);
+    expect(navHasDoorCalc(p)).toBe(false);
   });
 
-  it("filters desktop nav item by category", () => {
-    const withDoors = filterBusinessDesktopNav(
-      COMPANY_DESKTOP_NAV,
-      presentation("business-company", {
-        role: "ORG_EMPLOYEE",
-        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
-      }),
-    );
-    expect(withDoors.some((i) => i.href === DOORS_CALCULATOR_HREF)).toBe(true);
+  it("master workplace never shows feature", () => {
+    const p = presentation("master", {
+      role: "SOLO_PARTNER",
+      organization: { id: "1", name: "M", storeCategories: ["doors"] },
+    });
+    expect(doorCalculatorFeatureVisible(p)).toBe(false);
+    expect(navHasDoorCalc(p)).toBe(false);
+  });
 
-    const noDoors = filterBusinessDesktopNav(
-      COMPANY_DESKTOP_NAV,
-      presentation("business-company", {
-        role: "ORG_EMPLOYEE",
-        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: [] },
-      }),
-    );
-    expect(noDoors.some((i) => i.href === DOORS_CALCULATOR_HREF)).toBe(false);
+  it("agent workplace never shows feature", () => {
+    const p = presentation("agent", {
+      role: "SOLO_PARTNER",
+      partnerActivities: ["AGENT"],
+      organization: null,
+    });
+    expect(doorCalculatorFeatureVisible(p)).toBe(false);
+    expect(navHasDoorCalc(p)).toBe(false);
   });
 });

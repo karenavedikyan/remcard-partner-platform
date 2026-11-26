@@ -4,7 +4,6 @@ body{margin:0;font-family:Manrope,system-ui,sans-serif;color:var(--ink);backgrou
 .screen{position:fixed;left:0;top:0;bottom:0;width:300px;background:#fff;border-right:1px solid var(--line);overflow:auto;padding:0 0 24px}
 .screen__bar{display:flex;flex-direction:column;gap:10px;padding:16px;border-bottom:1px solid var(--line)}
 .back{color:var(--brand);font-weight:700;text-decoration:none}
-.demo{font-size:12px;font-weight:700;color:#8a5a12;background:#fbf3e3;padding:5px 11px;border-radius:99px;align-self:flex-start}
 .btn{font:inherit;font-weight:800;border-radius:10px;padding:10px 16px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
 .edit{padding:16px;display:flex;flex-direction:column;gap:10px}
 .edit h2{margin:0;font-size:17px}.note{font-size:12px;color:var(--muted);margin:0}

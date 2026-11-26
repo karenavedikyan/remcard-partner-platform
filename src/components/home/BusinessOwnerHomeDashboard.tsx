@@ -415,6 +415,12 @@ export function BusinessOwnerHomeDashboard({
         )
       ) : null}
 
+      {showDoorCalculatorEntry ? (
+        <section className={styles.panel} data-testid="business-home-door-calculator-block">
+          <BusinessHomeDoorCalculatorEntry />
+        </section>
+      ) : null}
+
       {showEmptyState ? (
         <PartnerHomeEmptyState role={emptyRole} />
       ) : metricsPresentationPending || pendingSupplementalProbe ? (
@@ -484,12 +490,6 @@ export function BusinessOwnerHomeDashboard({
             Обновить показатели
           </Button>
         </div>
-      ) : null}
-
-      {showDoorCalculatorEntry ? (
-        <section className={styles.panel} data-testid="business-home-door-calculator-block">
-          <BusinessHomeDoorCalculatorEntry />
-        </section>
       ) : null}
 
       <div className={styles.twoCol}>

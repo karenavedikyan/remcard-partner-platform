@@ -76,7 +76,6 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
           <Link href={calculatorHref} className="back">
             ← К калькулятору
           </Link>
-          <span className="demo">Макет PDF · RemCard</span>
           <button type="button" className="btn" id="print" onClick={() => window.print()}>
             Сохранить как PDF
           </button>
