@@ -22,6 +22,7 @@ import { emptyDoorModelSource } from '@/lib/doorCalculator/modelSource';
 import { DoorSceneSvg, bladeOptionsForOpening } from './DoorSceneSvg';
 import { DoorCompareSection } from './DoorCompareSection';
 import { DoorMini } from './DoorMini';
+import { clearDoorWizardSession } from '@/lib/doorCalculator/wizardSession';
 import { useDoorWizard } from './useDoorWizard';
 import { WizardBar } from './WizardBar';
 import './door-wizard.css';
@@ -45,7 +46,7 @@ export function DoorCalculatorWizard({
 } = {}) {
   const closeHref = context === 'lk' ? '/' : '/calculators';
   const catalog = catalogProp ?? emptyDoorModelSource.listModels();
-  const w = useDoorWizard(catalog);
+  const w = useDoorWizard(catalog, { persist: context === 'lk' });
   const stageRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -77,8 +78,8 @@ export function DoorCalculatorWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot once on step 4
   }, [w.step, w.variants.length]);
 
-  const go = (step: number) => {
-    if (step === 4) w.saveVariant();
+  const go = (step: number, opts?: { skipSave?: boolean }) => {
+    if (step === 4 && !opts?.skipSave) w.saveVariant();
     w.setStep(step);
   };
 
@@ -122,7 +123,14 @@ export function DoorCalculatorWizard({
           />
         ))}
       </div>
-      <Link href={closeHref} className="iconbtn" aria-label="Закрыть калькулятор">
+      <Link
+        href={closeHref}
+        className="iconbtn"
+        aria-label="Закрыть калькулятор"
+        onClick={() => {
+          if (context === 'lk') clearDoorWizardSession();
+        }}
+      >
         <IcX className="i" />
       </Link>
     </div>
@@ -691,14 +699,18 @@ export function DoorCalculatorWizard({
           disabled={nextDisabledStep3}
           onClick={() => {
             if (w.adding) {
+              const added = w.snap();
+              const prevIdx = w.prevVi;
               w.setVariants((vars) => {
                 const next = [...vars];
-                next[w.vi] = w.snap();
+                next[w.vi] = added;
                 return next;
               });
               w.setAdding(false);
-              w.load(w.variants[w.prevVi] ?? w.snap());
-              go(4);
+              w.setVi(prevIdx);
+              const prev = w.variants[prevIdx];
+              if (prev) w.load(prev);
+              go(4, { skipSave: true });
               return;
             }
             go(4);
