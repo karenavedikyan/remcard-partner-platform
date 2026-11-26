@@ -1,5 +1,5 @@
 aa06f90a5a59f86b31f8eb28b0758c7a5b63ebfe40486d1db6960bc3538bccf8  artifacts/door-calculator-lk-20261126/door-calculator-lk.patch
-8e0065c05c444f3f7985034db63dda4edae76492d84f8591fc367a4342167c9d  artifacts/door-calculator-lk-20261126/REPORT_RU.md
+2d93a323e0201f64a12e930087aefe14054ddd8757370f0f63210b83332ca0ef  artifacts/door-calculator-lk-20261126/REPORT_RU.md
 8dc144453f6fa539ea382567ff6c9f10df7dd634547826593a4b9b86c4aa73c0  artifacts/door-calculator-lk-20261126/app-1440-compare.png
 e514c0ee909215e9ce937eb2167c06f5bdfa52be236470b6a3ddbb594bc6ac66  artifacts/door-calculator-lk-20261126/app-1440-offer.png
 7bc6e6430b380ecaf4109fed51849915fda50ad34c3becb2d6ba2fea1aa5335c  artifacts/door-calculator-lk-20261126/app-1440-step4.png
