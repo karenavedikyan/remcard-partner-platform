@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Коммерческое предложение · макет PDF · RemCard</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./offer.css?v=3">
+</head>
+<body>
+<div class="screen">
+  <div class="screen__bar"><a href="./one.html" class="back">← К калькулятору</a><span class="demo">Макет PDF · демо-данные</span><button class="btn pri" id="print">Сохранить как PDF</button></div>
+  <aside class="edit">
+    <h2>Профиль партнёра</h2>
+    <p class="note">Заполняется один раз в кабинете и подставляется во все предложения. Здесь можно изменить перед выгрузкой.</p>
+    <label>Логотип<input type="file" id="logo" accept="image/*"></label>
+    <label>Название компании<input data-p="company"></label>
+    <label>Менеджер<input data-p="manager"></label>
+    <label>Телефон<input data-p="phone"></label>
+    <label>Мессенджер<input data-p="messenger"></label>
+    <label>E-mail<input data-p="email"></label>
+    <label>Сайт<input data-p="site"></label>
+    <label>Адрес<input data-p="address"></label>
+    <label>Примечание в конце<textarea data-p="note" rows="3"></textarea></label>
+  </aside>
+</div>
+<main><article class="page" id="page"></article></main>
+<script src="./offer.js?v=2"></script>
+</body>
+</html>
