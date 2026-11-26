@@ -4,6 +4,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 .door-wizard{font-family:var(--font);color:var(--ink);line-height:1.5;font-size:1rem;-webkit-font-smoothing:antialiased}
+.door-wizard.ctx-lk.embedded-in-cabinet{background:var(--bg);width:100%;max-width:100%;min-width:0;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}

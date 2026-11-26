@@ -16,24 +16,47 @@ import {
   type ModelVariantSnapshot,
 } from '@/lib/doorCalculator';
 import { buildOfferPayload, encodeOfferPayload } from '@/lib/doorCalculator/offer';
+import {
+  readDoorWizardSession,
+  writeDoorWizardSession,
+  type DoorWizardSessionPayload,
+} from '@/lib/doorCalculator/wizardSession';
 
 let uid = 0;
 
+function bumpUidFromOpenings(ops: DoorOpening[]) {
+  for (const o of ops) {
+    if (o.id > uid) uid = o.id;
+  }
+}
+
 export type WizardObj = { client: string; phone: string; address: string };
 
-export function useDoorWizard(catalog: DoorCatalogModel[]) {
-  const [openings, setOpenings] = useState<DoorOpening[]>(() => [newOpening(++uid)]);
-  const [step, setStep] = useState(1);
-  const [cur, setCur] = useState(0);
-  const [modelId, setModelId] = useState<string | null>(null);
-  const [manual, setManual] = useState({ on: false, name: '', maker: '' });
-  const [prices, setPrices] = useState<DoorPrices>({});
-  const [pricesFor, setPricesFor] = useState<string | null>(null);
-  const [disc, setDisc] = useState('');
-  const [share, setShare] = useState(true);
-  const [obj, setObj] = useState<WizardObj>({ client: '', phone: '', address: '' });
-  const [variants, setVariants] = useState<ModelVariantSnapshot[]>([]);
-  const [vi, setVi] = useState(0);
+type DoorWizardOptions = { persist?: boolean };
+
+function initialFromSession(): DoorWizardSessionPayload | null {
+  if (typeof window === 'undefined') return null;
+  return readDoorWizardSession();
+}
+
+export function useDoorWizard(catalog: DoorCatalogModel[], options?: DoorWizardOptions) {
+  const saved = options?.persist ? initialFromSession() : null;
+  if (saved?.openings?.length) bumpUidFromOpenings(saved.openings);
+
+  const [openings, setOpenings] = useState<DoorOpening[]>(() =>
+    saved?.openings?.length ? saved.openings : [newOpening(++uid)]
+  );
+  const [step, setStep] = useState(() => saved?.step ?? 1);
+  const [cur, setCur] = useState(() => saved?.cur ?? 0);
+  const [modelId, setModelId] = useState<string | null>(() => saved?.modelId ?? null);
+  const [manual, setManual] = useState(() => saved?.manual ?? { on: false, name: '', maker: '' });
+  const [prices, setPrices] = useState<DoorPrices>(() => saved?.prices ?? {});
+  const [pricesFor, setPricesFor] = useState<string | null>(() => saved?.pricesFor ?? null);
+  const [disc, setDisc] = useState(() => saved?.disc ?? '');
+  const [share, setShare] = useState(() => saved?.share ?? true);
+  const [obj, setObj] = useState<WizardObj>(() => saved?.obj ?? { client: '', phone: '', address: '' });
+  const [variants, setVariants] = useState<ModelVariantSnapshot[]>(() => saved?.variants ?? []);
+  const [vi, setVi] = useState(() => saved?.vi ?? 0);
   const [adding, setAdding] = useState(false);
   const [prevVi, setPrevVi] = useState(0);
   const [cmpOpen, setCmpOpen] = useState(
@@ -60,6 +83,39 @@ export function useDoorWizard(catalog: DoorCatalogModel[]) {
     setPricesFor(key);
     setPrices(initPricesFromModel(curModel));
   }, [curModel, pricesFor]);
+
+  useEffect(() => {
+    if (!options?.persist) return;
+    writeDoorWizardSession({
+      v: 1,
+      openings,
+      step,
+      cur,
+      modelId,
+      manual,
+      prices,
+      pricesFor,
+      disc,
+      share,
+      obj,
+      variants,
+      vi,
+    });
+  }, [
+    options?.persist,
+    openings,
+    step,
+    cur,
+    modelId,
+    manual,
+    prices,
+    pricesFor,
+    disc,
+    share,
+    obj,
+    variants,
+    vi,
+  ]);
 
   const calcResult = useMemo(
     () => calcDoors(openings, curModel, share),
