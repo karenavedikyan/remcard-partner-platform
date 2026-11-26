@@ -1436,10 +1436,10 @@ index 00000000..2040861b
 \ No newline at end of file
 diff --git a/src/components/doorCalculator/DoorOfferPage.tsx b/src/components/doorCalculator/DoorOfferPage.tsx
 new file mode 100644
-index 00000000..66d3eb74
+index 00000000..8dc21e9d
 --- /dev/null
 +++ b/src/components/doorCalculator/DoorOfferPage.tsx
-@@ -0,0 +1,320 @@
+@@ -0,0 +1,319 @@
 +'use client';
 +
 +import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -1518,7 +1518,6 @@ index 00000000..66d3eb74
 +          <Link href={calculatorHref} className="back">
 +            ← К калькулятору
 +          </Link>
-+          <span className="demo">Макет PDF · RemCard</span>
 +          <button type="button" className="btn" id="print" onClick={() => window.print()}>
 +            Сохранить как PDF
 +          </button>
@@ -2047,17 +2046,16 @@ index 00000000..f6024259
 \ No newline at end of file
 diff --git a/src/components/doorCalculator/door-offer.css b/src/components/doorCalculator/door-offer.css
 new file mode 100644
-index 00000000..14d8ea78
+index 00000000..a7a79e41
 --- /dev/null
 +++ b/src/components/doorCalculator/door-offer.css
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,46 @@
 +:root{--brand:#c12b2f;--brand-soft:#fbeeee;--ink:#252923;--muted:#6c706a;--line:#e5e5df;--green:#35684b;--green-soft:#edf4ee}
 +*{box-sizing:border-box}
 +body{margin:0;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:#eceae6;font-size:13px;line-height:1.4}
 +.screen{position:fixed;left:0;top:0;bottom:0;width:300px;background:#fff;border-right:1px solid var(--line);overflow:auto;padding:0 0 24px}
 +.screen__bar{display:flex;flex-direction:column;gap:10px;padding:16px;border-bottom:1px solid var(--line)}
 +.back{color:var(--brand);font-weight:700;text-decoration:none}
-+.demo{font-size:12px;font-weight:700;color:#8a5a12;background:#fbf3e3;padding:5px 11px;border-radius:99px;align-self:flex-start}
 +.btn{font:inherit;font-weight:800;border-radius:10px;padding:10px 16px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
 +.edit{padding:16px;display:flex;flex-direction:column;gap:10px}
 +.edit h2{margin:0;font-size:17px}.note{font-size:12px;color:var(--muted);margin:0}
@@ -2827,8 +2825,58 @@ index 00000000..ec87f04a
 +  );
 +}
 \ No newline at end of file
+diff --git a/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx b/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
+index e2cb2366..5e33be7e 100644
+--- a/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
++++ b/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
+@@ -2,9 +2,13 @@ import { render, screen } from "@testing-library/react";
+ import { describe, expect, it, vi } from "vitest";
+ import { BusinessOwnerHomeDashboard } from "./BusinessOwnerHomeDashboard";
+ 
+-vi.mock("@/lib/api-client", () => ({
+-  remcardFetch: vi.fn(),
+-}));
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return {
++    ...actual,
++    remcardFetch: vi.fn(() => Promise.resolve({ partnerships: [] })),
++  };
++});
+ 
+ vi.mock("@/components/profile/ProfileBranchContextSwitcher", () => ({
+   ProfileBranchContextSwitcher: () => <div data-testid="branch-switcher" />,
+@@ -21,6 +25,27 @@ describe("BusinessOwnerHomeDashboard org-staff-view", () => {
+     expect(screen.getByText("С чего начать")).toBeTruthy();
+     expect(screen.getByText("Ничего лишнего на старте")).toBeTruthy();
+     expect(screen.queryByText(/Разделы/i)).toBeNull();
+-    expect(vi.mocked(remcardFetch)).not.toHaveBeenCalled();
++  });
++
++  it("shows door calculator entry for org staff when enabled", () => {
++    render(
++      <BusinessOwnerHomeDashboard
++        partnerType="COMPANY"
++        homeAccessMode="org-staff-view"
++        showDoorCalculatorEntry
++      />,
++    );
++    expect(screen.getByTestId("business-home-door-calculator-block")).toBeTruthy();
++    expect(screen.getByTestId("business-home-door-calculator")).toHaveAttribute(
++      "href",
++      "/doors-calculator",
++    );
++  });
++
++  it("hides door calculator entry without flag", () => {
++    render(
++      <BusinessOwnerHomeDashboard partnerType="STORE" homeAccessMode="org-staff-view" />,
++    );
++    expect(screen.queryByTestId("business-home-door-calculator-block")).toBeNull();
+   });
+ });
 diff --git a/src/components/home/BusinessOwnerHomeDashboard.tsx b/src/components/home/BusinessOwnerHomeDashboard.tsx
-index 8992a336..6c2c0bc8 100644
+index 8992a336..7169ca5a 100644
 --- a/src/components/home/BusinessOwnerHomeDashboard.tsx
 +++ b/src/components/home/BusinessOwnerHomeDashboard.tsx
 @@ -46,6 +46,7 @@ import type { StoreOrdersResponse } from "@/lib/history-types";
@@ -2855,8 +2903,8 @@ index 8992a336..6c2c0bc8 100644
  }: Props) {
    const isStaffView = homeAccessMode === "org-staff-view";
    const copy = businessHomeCopy(partnerType);
-@@ -483,6 +486,12 @@ export function BusinessOwnerHomeDashboard({
-         </div>
+@@ -412,6 +415,12 @@ export function BusinessOwnerHomeDashboard({
+         )
        ) : null}
  
 +      {showDoorCalculatorEntry ? (
@@ -2865,9 +2913,9 @@ index 8992a336..6c2c0bc8 100644
 +        </section>
 +      ) : null}
 +
-       <div className={styles.twoCol}>
-         <section className={styles.panel}>
-           <h2>С чего начать</h2>
+       {showEmptyState ? (
+         <PartnerHomeEmptyState role={emptyRole} />
+       ) : metricsPresentationPending || pendingSupplementalProbe ? (
 diff --git a/src/components/layout/AppShell.tsx b/src/components/layout/AppShell.tsx
 index 6c542c19..22885eba 100644
 --- a/src/components/layout/AppShell.tsx
@@ -2998,10 +3046,10 @@ index 2be9c81b..a2fecc8f 100644
      "/profile": "Профиль",
 diff --git a/src/lib/door-calculator/access.test.ts b/src/lib/door-calculator/access.test.ts
 new file mode 100644
-index 00000000..e358cf01
+index 00000000..fa917eca
 --- /dev/null
 +++ b/src/lib/door-calculator/access.test.ts
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,80 @@
 +import { describe, expect, it } from "vitest";
 +import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 +import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
@@ -3020,72 +3068,66 @@ index 00000000..e358cf01
 +  return { navMode, proContext };
 +}
 +
++const ORG_DOORS: ProContextSnapshot = {
++  role: "ORG_OWNER",
++  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
++};
++
++const EMPLOYEE_DOORS: ProContextSnapshot = {
++  role: "ORG_EMPLOYEE",
++  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
++};
++
++const EMPLOYEE_NO_DOORS: ProContextSnapshot = {
++  role: "ORG_EMPLOYEE",
++  organization: { id: "1", name: "Shop", partnerType: "STORE", storeCategories: ["flooring"] },
++};
++
++function navHasDoorCalc(p: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">): boolean {
++  return filterBusinessDesktopNav(COMPANY_DESKTOP_NAV, p).some((i) => i.href === DOORS_CALCULATOR_HREF);
++}
++
 +describe("door calculator access", () => {
 +  it("detects doors category on organization", () => {
-+    expect(
-+      organizationHasDoorsCategory({
-+        role: "ORG_OWNER",
-+        organization: { id: "1", name: "X", storeCategories: ["doors", "flooring"] },
-+      }),
-+    ).toBe(true);
-+    expect(
-+      organizationHasDoorsCategory({
-+        role: "ORG_OWNER",
-+        organization: { id: "1", name: "X", storeCategories: ["flooring"] },
-+      }),
-+    ).toBe(false);
++    expect(organizationHasDoorsCategory(ORG_DOORS)).toBe(true);
++    expect(organizationHasDoorsCategory(EMPLOYEE_NO_DOORS)).toBe(false);
 +  });
 +
-+  it("company with doors sees feature", () => {
-+    const visible = doorCalculatorFeatureVisible(
-+      presentation("business-company", {
-+        role: "ORG_OWNER",
-+        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
-+      }),
-+    );
-+    expect(visible).toBe(true);
++  it("owner with doors sees feature and nav item", () => {
++    const p = presentation("business-company", ORG_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(true);
++    expect(navHasDoorCalc(p)).toBe(true);
 +  });
 +
-+  it("store without doors hides feature", () => {
-+    expect(
-+      doorCalculatorFeatureVisible(
-+        presentation("business-store", {
-+          role: "ORG_OWNER",
-+          organization: { id: "1", name: "Shop", partnerType: "STORE", storeCategories: ["flooring"] },
-+        }),
-+      ),
-+    ).toBe(false);
++  it("employee with doors sees feature and nav item (same org category)", () => {
++    const p = presentation("business-company", EMPLOYEE_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(true);
++    expect(navHasDoorCalc(p)).toBe(true);
 +  });
 +
-+  it("master nav mode never shows feature", () => {
-+    expect(
-+      doorCalculatorFeatureVisible(
-+        presentation("master", {
-+          role: "SOLO_PARTNER",
-+          organization: null,
-+        }),
-+      ),
-+    ).toBe(false);
++  it("company/store without doors category hides feature and nav", () => {
++    const p = presentation("business-store", EMPLOYEE_NO_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
 +  });
 +
-+  it("filters desktop nav item by category", () => {
-+    const withDoors = filterBusinessDesktopNav(
-+      COMPANY_DESKTOP_NAV,
-+      presentation("business-company", {
-+        role: "ORG_EMPLOYEE",
-+        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
-+      }),
-+    );
-+    expect(withDoors.some((i) => i.href === DOORS_CALCULATOR_HREF)).toBe(true);
++  it("master workplace never shows feature", () => {
++    const p = presentation("master", {
++      role: "SOLO_PARTNER",
++      organization: { id: "1", name: "M", storeCategories: ["doors"] },
++    });
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
++  });
 +
-+    const noDoors = filterBusinessDesktopNav(
-+      COMPANY_DESKTOP_NAV,
-+      presentation("business-company", {
-+        role: "ORG_EMPLOYEE",
-+        organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: [] },
-+      }),
-+    );
-+    expect(noDoors.some((i) => i.href === DOORS_CALCULATOR_HREF)).toBe(false);
++  it("agent workplace never shows feature", () => {
++    const p = presentation("agent", {
++      role: "SOLO_PARTNER",
++      partnerActivities: ["AGENT"],
++      organization: null,
++    });
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
 +  });
 +});
 \ No newline at end of file
