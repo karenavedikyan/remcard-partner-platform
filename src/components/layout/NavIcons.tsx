@@ -73,6 +73,18 @@ export function NavIconWallet(props: IconProps) {
   );
 }
 
+export function NavIconDoors(props: IconProps) {
+  return (
+    <PrototypeNavIcon {...props}>
+      <path d="M14 4h4a2 2 0 0 1 2 2v14" />
+      <path d="M3 20h4" />
+      <path d="M14 20H3" />
+      <path d="M11 12v.01" />
+      <path d="M14 4.6v16.1a1 1 0 0 1-1.2.98L6 20V5.6a2 2 0 0 1 1.5-1.95l3.5-1A2 2 0 0 1 14 4.6Z" />
+    </PrototypeNavIcon>
+  );
+}
+
 export function NavIconScanner(props: IconProps) {
   return (
     <BaseIcon {...props}>
@@ -146,6 +158,7 @@ export const NAV_ICONS = {
   partners: NavIconPartners,
   recommendations: NavIconRecommendations,
   scanner: NavIconScanner,
+  doors: NavIconDoors,
   history: NavIconHistory,
   wallet: NavIconWallet,
   settlements: NavIconSettlements,

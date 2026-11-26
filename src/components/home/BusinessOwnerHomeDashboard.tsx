@@ -46,6 +46,7 @@ import type { StoreOrdersResponse } from "@/lib/history-types";
 import type { PartnershipListResponse } from "@/lib/types";
 import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
 import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
+import { BusinessHomeDoorCalculatorEntry } from "./BusinessHomeDoorCalculatorEntry";
 import styles from "./SpecialistHomeDashboard.module.css";
 
 export type BusinessHomeAccessMode = "owner-operating" | "org-staff-view";
@@ -57,6 +58,7 @@ type Props = {
   homeAccessMode?: BusinessHomeAccessMode;
   /** When false in org-staff-view, company hero CTA stays visible but inactive. */
   teamActionsEnabled?: boolean;
+  showDoorCalculatorEntry?: boolean;
 };
 
 function statHints(
@@ -92,6 +94,7 @@ export function BusinessOwnerHomeDashboard({
   catalogStatus,
   homeAccessMode = "owner-operating",
   teamActionsEnabled = true,
+  showDoorCalculatorEntry = false,
 }: Props) {
   const isStaffView = homeAccessMode === "org-staff-view";
   const copy = businessHomeCopy(partnerType);
@@ -481,6 +484,12 @@ export function BusinessOwnerHomeDashboard({
             Обновить показатели
           </Button>
         </div>
+      ) : null}
+
+      {showDoorCalculatorEntry ? (
+        <section className={styles.panel} data-testid="business-home-door-calculator-block">
+          <BusinessHomeDoorCalculatorEntry />
+        </section>
       ) : null}
 
       <div className={styles.twoCol}>
