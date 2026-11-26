@@ -1,6 +1,6 @@
 # Калькулятор дверей в кабинете партнёра (lk)
 
-**Итоговый коммит:** `8bbbcdda` (ветка `cursor/remcard-ebd7`, база `ref/door-calculator-lk-proto-20261126`, патч от `4fa0c751`).
+**Итоговый коммит:** `06e099af` (`06e099af2c3b6856885e02d3dc2752a0c64ec19e`) (ветка `cursor/remcard-ebd7`, база `ref/door-calculator-lk-proto-20261126`, патч от `4fa0c751`).
 
 ## Что сделано
 
