@@ -156,6 +156,54 @@ const implScenarios = [
       await page.getByTestId("pc-model-view").waitFor({ state: "visible", timeout: 30_000 });
     },
   },
+  {
+    slug: "catalog-owner-table-real3",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(`${implBase}/catalog/dev-fixture?role=owner&branchSet=real3`, {
+        waitUntil: "domcontentloaded",
+        timeout: 120_000,
+      });
+      await waitCatalogList(page);
+    },
+  },
+  {
+    slug: "catalog-owner-model-real3",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=owner&branchSet=real3&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
+      await page.getByTestId("pc-model-branches").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
+  {
+    slug: "catalog-owner-table-real10",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(`${implBase}/catalog/dev-fixture?role=owner&branchSet=real10`, {
+        waitUntil: "domcontentloaded",
+        timeout: 120_000,
+      });
+      await waitCatalogList(page);
+    },
+  },
+  {
+    slug: "catalog-owner-model-real10",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=owner&branchSet=real10&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
+      await page.getByTestId("pc-model-branches").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
 ];
 
 /** @type {{ slug: string; fullPage: boolean; prepare: (page: import('playwright').Page) => Promise<void> }[]} */

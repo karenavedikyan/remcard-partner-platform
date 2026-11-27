@@ -3,11 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { DISCOUNTS } from "@/lib/partner-1c-catalog/constants";
 import {
-  BRANCHES,
-  BRANCH_IDS,
-  DISCOUNTS,
-} from "@/lib/partner-1c-catalog/constants";
+  branchCountCaption,
+  branchesForModelPanel,
+  testIdSuffix,
+  type CatalogBranch,
+} from "@/lib/partner-1c-catalog/branches";
 import {
   branchPrice,
   formatBranchStockLabel,
@@ -38,6 +40,7 @@ import { clonePublication } from "./publication";
 type Props = {
   model: PartnerCatalogModel;
   publication: PublicationState;
+  catalogBranches: CatalogBranch[];
   manage: boolean;
   showCost: boolean;
   priceType: string;
@@ -59,29 +62,30 @@ function signed(n: number) {
 function BranchPriceMeta({
   pub,
   m,
-  branchIndex,
+  branchId,
   here,
   showMarkup,
 }: {
   pub: PublicationState;
   m: PartnerCatalogModel;
-  branchIndex: number;
+  branchId: string;
   here: boolean;
   showMarkup: boolean;
 }) {
-  const own = pub.branchPrice.get(m.id)?.[branchIndex];
-  const pct = pub.branchPct[branchIndex] ?? 0;
-  const effective = branchPrice(pub, m, branchIndex);
+  const suffix = testIdSuffix(branchId);
+  const own = pub.branchPrice.get(m.id)?.[branchId];
+  const pct = pub.branchPct[branchId] ?? 0;
+  const effective = branchPrice(pub, m, branchId);
   const x = markup(effective, m.cost);
   const source =
     own != null ? "своя цена" : pct ? `правило филиала: ${signed(pct)} % к цене 1С` : "как в 1С";
   return (
-    <div className="pc-brmeta" data-testid={`pc-branch-meta-${branchIndex}`}>
-      <span data-testid={`pc-branch-source-${branchIndex}`}>{source}</span>
+    <div className="pc-brmeta" data-testid={`pc-branch-meta-${suffix}`}>
+      <span data-testid={`pc-branch-source-${suffix}`}>{source}</span>
       {showMarkup && here && x ? (
         <span
           className={x.rub < 0 ? "pc-brloss" : undefined}
-          data-testid={`pc-branch-markup-${branchIndex}`}
+          data-testid={`pc-branch-markup-${suffix}`}
         >
           наценка <b className={`pc-mk pc-mk--${mkTone(x)}`}>{mkPct(x)}</b> · {signed(x.rub)} ₽
           {x.rub < 0 ? " · ниже закупки" : ""}
@@ -94,6 +98,7 @@ function BranchPriceMeta({
 export function Partner1cModelDetail({
   model: m,
   publication: pub,
+  catalogBranches,
   manage,
   showCost,
   priceType,
@@ -107,7 +112,12 @@ export function Partner1cModelDetail({
   const issues = modelIssues(m);
   const money = manage && showCost;
   const mk = m.price != null && m.cost != null ? markup(m.price, m.cost) : null;
-  const onBranches = presentIn(pub, m);
+  const panelBranches = useMemo(
+    () => branchesForModelPanel(catalogBranches, m.detailBranches),
+    [catalogBranches, m.detailBranches],
+  );
+  const catalogBranchIds = catalogBranches.map((b) => b.id);
+  const onBranches = presentIn(pub, m, catalogBranchIds);
 
   const fitKeys = useMemo(
     () => new Set(matched(m.item, filter).map((k) => k.key)),
@@ -126,23 +136,23 @@ export function Partner1cModelDetail({
     noprice: `В 1С не задана цена типа «${priceType}». Установите цену — после следующего обмена товар можно будет опубликовать.`,
   };
 
-  const setBranchOn = (i: number, on: boolean) => {
+  const setBranchOn = (branchId: string, on: boolean) => {
     const next = clonePublication(pub);
     const off = new Set(next.branchOff.get(m.id) || []);
-    if (on) off.delete(i);
-    else off.add(i);
-    if (off.size >= BRANCHES.length) return;
+    if (on) off.delete(branchId);
+    else off.add(branchId);
+    if (catalogBranchIds.length > 0 && off.size >= catalogBranchIds.length) return;
     if (off.size) next.branchOff.set(m.id, off);
     else next.branchOff.delete(m.id);
     onPublication(next);
   };
 
-  const setBranchPrice = (i: number, raw: string) => {
+  const setBranchPrice = (branchId: string, raw: string) => {
     const next = clonePublication(pub);
     const prices = { ...(next.branchPrice.get(m.id) || {}) };
     const digits = raw.replace(/[^\d]/g, "").slice(0, 9);
-    if (!digits) delete prices[i];
-    else prices[i] = parseInt(digits, 10);
+    if (!digits) delete prices[branchId];
+    else prices[branchId] = parseInt(digits, 10);
     if (Object.keys(prices).length) next.branchPrice.set(m.id, prices);
     else next.branchPrice.delete(m.id);
     onPublication(next);
@@ -201,9 +211,9 @@ export function Partner1cModelDetail({
               {m.skus.length} {plural(m.skus.length, "вариант", "варианта", "вариантов")}
             </span>
             <span className="pill">
-              {onBranches.length === BRANCHES.length
-                ? "все филиалы"
-                : `${onBranches.length} из ${BRANCHES.length} филиалов`}
+              {catalogBranchIds.length === 0
+                ? "нет филиалов"
+                : branchCountCaption(onBranches.length, catalogBranchIds.length, "list-stock")}
             </span>
           </div>
           <div className="pc-price">
@@ -336,79 +346,84 @@ export function Partner1cModelDetail({
         </section>
       ) : null}
 
-      {manage ? (
-      <section className="panel stack pc-brs" data-testid="pc-model-branches">
-        <div className="row between">
-          <h3>Филиалы и цены</h3>
-          <span className="small">
-            {onBranches.length === BRANCHES.length
-              ? "представлен во всех филиалах"
-              : `представлен в ${onBranches.length} из ${BRANCHES.length} филиалов`}
-          </span>
-        </div>
-        <div className="pc-brlist">
-          {BRANCH_IDS.map((i) => {
-            const here = onBranches.includes(i);
-            const own = pub.branchPrice.get(m.id)?.[i];
-            const rule = rulePrice(pub, m, i);
-            const p = branchPrice(pub, m, i);
-            return (
-              <div
-                key={i}
-                className={`pc-brrow ${here ? "" : "is-off"}`}
-                data-testid={`pc-model-branch-${i}`}
-              >
-                <label className="pc-check">
-                  <input
-                    type="checkbox"
-                    data-testid={`pc-branch-on-${i}`}
-                    checked={here}
-                    disabled={!manage}
-                    onChange={(e) => setBranchOn(i, e.target.checked)}
-                  />
-                  <span>
-                    <strong>{BRANCHES[i]}</strong>
-                    <small>{formatBranchStockLabel(m, here, i)}</small>
-                  </span>
-                </label>
-                {m.price != null && manage ? (
-                  <label className="pc-brprice">
-                    <span>Цена в филиале, ₽</span>
+      {manage && catalogBranchIds.length > 0 ? (
+        <section className="panel stack pc-brs" data-testid="pc-model-branches">
+          <div className="row between">
+            <h3>Филиалы и цены</h3>
+            <span className="small">
+              {branchCountCaption(onBranches.length, catalogBranchIds.length, "detail-part")}
+            </span>
+          </div>
+          <div className="pc-brlist">
+            {panelBranches.map((branch) => {
+              const branchId = branch.id;
+              const suffix = testIdSuffix(branchId);
+              const inCatalog = catalogBranchIds.includes(branchId);
+              const here = inCatalog && onBranches.includes(branchId);
+              const own = pub.branchPrice.get(m.id)?.[branchId];
+              const rule = rulePrice(pub, m, branchId);
+              const p = branchPrice(pub, m, branchId);
+              return (
+                <div
+                  key={branchId}
+                  className={`pc-brrow ${here ? "" : "is-off"}`}
+                  data-testid={`pc-model-branch-${suffix}`}
+                >
+                  <label className="pc-check">
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      data-testid={`pc-branch-price-${i}`}
-                      value={own != null ? own : ""}
-                      placeholder={rule != null ? num(rule) : ""}
-                      disabled={!here}
-                      onChange={(e) => setBranchPrice(i, e.target.value)}
+                      type="checkbox"
+                      data-testid={`pc-branch-on-${suffix}`}
+                      checked={here}
+                      disabled={!manage || !inCatalog}
+                      onChange={(e) => setBranchOn(branchId, e.target.checked)}
                     />
+                    <span>
+                      <strong>{branch.label}</strong>
+                      <small>{formatBranchStockLabel(m, here, branchId)}</small>
+                    </span>
                   </label>
-                ) : m.price != null ? (
-                  <div className="pc-brprice">
-                    <span>Цена в филиале</span>
-                    <strong>{p != null ? rub(p) : "—"}</strong>
-                  </div>
-                ) : null}
-                {m.price != null ? (
-                  <BranchPriceMeta
-                    pub={pub}
-                    m={m}
-                    branchIndex={i}
-                    here={here}
-                    showMarkup={money}
-                  />
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        <p className="small">
-          {manage
-            ? "По умолчанию товар представлен во всех филиалах по цене из 1С. Снимите отметку, если в филиале его нет, или укажите свою цену для филиала — пустое поле означает цену по правилу филиала. Изменения демонстрационные и в 1С не передаются."
-            : "Филиалы и цены настраивает владелец кабинета."}
-        </p>
-      </section>
+                  {m.price != null && manage && inCatalog ? (
+                    <label className="pc-brprice">
+                      <span>Цена в филиале, ₽</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        data-testid={`pc-branch-price-${suffix}`}
+                        value={own != null ? own : ""}
+                        placeholder={rule != null ? num(rule) : ""}
+                        disabled={!here}
+                        onChange={(e) => setBranchPrice(branchId, e.target.value)}
+                      />
+                    </label>
+                  ) : m.price != null ? (
+                    <div className="pc-brprice">
+                      <span>Цена в филиале</span>
+                      <strong>{p != null ? rub(p) : "—"}</strong>
+                    </div>
+                  ) : null}
+                  {m.price != null ? (
+                    <BranchPriceMeta
+                      pub={pub}
+                      m={m}
+                      branchId={branchId}
+                      here={here}
+                      showMarkup={money}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+          <p className="small">
+            {manage
+              ? "По умолчанию товар представлен во всех филиалах по цене из 1С. Снимите отметку, если в филиале его нет, или укажите свою цену для филиала — пустое поле означает цену по правилу филиала. Изменения демонстрационные и в 1С не передаются."
+              : "Филиалы и цены настраивает владелец кабинета."}
+          </p>
+        </section>
+      ) : manage && catalogBranchIds.length === 0 ? (
+        <section className="panel stack pc-brs" data-testid="pc-model-branches-empty">
+          <p className="muted small">Нет филиалов в организации — блок «Филиалы и цены» недоступен.</p>
+        </section>
       ) : null}
 
       <section className="panel stack">

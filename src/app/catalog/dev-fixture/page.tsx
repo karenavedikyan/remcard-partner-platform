@@ -14,9 +14,15 @@ import {
   adaptNavigatorCabinetModelDetail,
   fixtureNavigatorCabinetModelDetailWithApiBranches,
 } from "@/lib/partner-1c-catalog/navigator-model-detail";
+import { catalogBranchesFromNavigator } from "@/lib/partner-1c-catalog/branches";
+import type { NavigatorCabinetBranchOption, NavigatorCabinetModelDetail } from "@/lib/partner-1c-catalog/navigator-types";
+import meta3 from "@/lib/partner-1c-catalog/fixtures/cabinet-meta-branches-real.json";
+import meta10 from "@/lib/partner-1c-catalog/fixtures/cabinet-meta-branches-real-10.json";
+import realDetail3 from "@/lib/partner-1c-catalog/fixtures/cabinet-model-detail-real-3branches.json";
+import realDetail10 from "@/lib/partner-1c-catalog/fixtures/cabinet-model-detail-real-10branches.json";
 
 type Props = {
-  searchParams: Promise<{ role?: string; branchStock?: string; model?: string }>;
+  searchParams: Promise<{ role?: string; branchStock?: string; model?: string; branchSet?: string }>;
 };
 
 export default async function CatalogDevFixturePage({ searchParams }: Props) {
@@ -24,28 +30,48 @@ export default async function CatalogDevFixturePage({ searchParams }: Props) {
     notFound();
   }
 
-  const { role, branchStock, model: modelId } = await searchParams;
+  const { role, branchStock, model: modelId, branchSet } = await searchParams;
   const employee = role === "employee";
   let models = employee
     ? stripCostFromModels(buildPartnerModels(optovikFixtureProducts()))
     : buildPartnerModels(optovikFixtureProducts());
 
+  const baseSnap = fetchPartnerCatalogSnapshot(null);
+  let branches = baseSnap.branches;
+  let publication = baseSnap.publication;
+
+  const realMeta: NavigatorCabinetBranchOption[] | null =
+    branchSet === "real3"
+      ? (meta3 as NavigatorCabinetBranchOption[])
+      : branchSet === "real10"
+        ? (meta10 as NavigatorCabinetBranchOption[])
+        : null;
+  if (realMeta) {
+    branches = catalogBranchesFromNavigator(realMeta);
+    publication = defaultPublicationState(branches.map((b) => b.id));
+  }
+
   const captureBranchStock =
     branchStock === "known" || branchStock === "unknown" ? branchStock : null;
-  if (captureBranchStock) {
+  const openId = modelId?.trim() || "p004";
+  if (branchSet === "real3" || branchSet === "real10") {
+    const dto = (branchSet === "real3" ? realDetail3 : realDetail10) as NavigatorCabinetModelDetail;
+    const detailed = adaptNavigatorCabinetModelDetail(dto, { manage: !employee });
+    models = models.map((m) => (m.id === openId ? detailed : m));
+  } else if (captureBranchStock) {
     const dto = fixtureNavigatorCabinetModelDetailWithApiBranches(captureBranchStock);
     const detailed = adaptNavigatorCabinetModelDetail(dto, { manage: !employee });
-    const openId = modelId?.trim() || "p004";
     models = models.map((m) => (m.id === openId ? detailed : m));
   }
 
   const access = emptyCatalogListUiAccess(employee ? "employee-fixture" : "owner-fixture");
   access.canSeeOwnerEconomics = !employee;
   const snap = snapshotForAudience({
-    ...fetchPartnerCatalogSnapshot(null),
+    ...baseSnap,
     manage: !employee,
     models,
-    publication: defaultPublicationState(),
+    branches,
+    publication,
     access,
   });
 

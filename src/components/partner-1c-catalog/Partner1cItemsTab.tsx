@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { branchCountCaption, type CatalogBranch } from "@/lib/partner-1c-catalog/branches";
 import {
-  BRANCH_IDS,
-  BRANCH_SHORT,
-  BRANCHES,
   FULL_SNAPSHOT,
   LOW_MARKUP,
   MARKS,
@@ -76,6 +74,7 @@ export type ItemsUiState = {
 type Props = {
   models: PartnerCatalogModel[];
   publication: PublicationState;
+  catalogBranches: CatalogBranch[];
   manage: boolean;
   priceType: string;
   access?: CatalogListUiAccess;
@@ -98,18 +97,19 @@ function inScope(
 ): boolean {
   const st = modelStatus(pub, m);
   if (ui.status && st !== ui.status) return false;
-  if (ui.branch !== "" && pub.branchOff.get(m.id)?.has(Number(ui.branch))) return false;
+  if (ui.branch !== "" && pub.branchOff.get(m.id)?.has(ui.branch)) return false;
   if (ui.low && manage && !isLowMarkup(pub, m, ui.branch)) return false;
   return true;
 }
 
-function branchesText(n: number) {
-  return n === BRANCHES.length ? `Все ${n}` : `${n} из ${BRANCHES.length}`;
+function branchesText(n: number, total: number) {
+  return branchCountCaption(n, total, "filter-all");
 }
 
 export function Partner1cItemsTab({
   models: all,
   publication: pub,
+  catalogBranches,
   manage,
   priceType,
   access,
@@ -118,6 +118,12 @@ export function Partner1cItemsTab({
   onPublication,
   onOpenModel,
 }: Props) {
+  const branchTotal = catalogBranches.length;
+  const branchById = useMemo(
+    () => new Map(catalogBranches.map((b) => [b.id, b])),
+    [catalogBranches],
+  );
+  const catalogBranchIds = useMemo(() => catalogBranches.map((b) => b.id), [catalogBranches]);
   const [panelOpen, setPanelOpen] = useState(false);
   const st = filterState(ui);
   const pool = useMemo(
@@ -178,7 +184,10 @@ export function Partner1cItemsTab({
     ...chips(st, "partner"),
     ui.status ? { id: "status", text: `Статус: ${MODEL_STATUS[ui.status]![0]}` } : null,
     ui.branch !== ""
-      ? { id: "branch", text: `Филиал: ${BRANCH_SHORT[Number(ui.branch)]}` }
+      ? {
+          id: "branch",
+          text: `Филиал: ${branchById.get(ui.branch)?.shortLabel ?? ui.branch}`,
+        }
       : null,
     ui.low && manage ? { id: "low", text: `Наценка ниже ${LOW_MARKUP} %` } : null,
     st.sort
@@ -347,9 +356,9 @@ export function Partner1cItemsTab({
               onChange={(e) => setUi({ branch: e.target.value })}
             >
               <option value="">Все филиалы</option>
-              {BRANCH_IDS.map((i) => (
-                <option key={i} value={String(i)}>
-                  {BRANCH_SHORT[i]}
+              {catalogBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.shortLabel}
                 </option>
               ))}
             </select>
@@ -577,7 +586,7 @@ export function Partner1cItemsTab({
             const stock = stockOf(m);
             const mk =
               money && showRetailPrices ? markup(priceIn(pub, m, ui.branch), m.cost) : null;
-            const n = presentIn(pub, m).length;
+            const n = presentIn(pub, m, catalogBranchIds).length;
             return (
               <article
                 key={m.id}
@@ -646,7 +655,9 @@ export function Partner1cItemsTab({
                   {manage ? (
                     <div className="pc-card-br">
                       <PcIconMapPin />
-                      {n === BRANCHES.length ? "во всех филиалах" : `в ${n} из ${BRANCHES.length} филиалов`}
+                      {branchTotal === 0
+                        ? "нет филиалов"
+                        : branchCountCaption(n, branchTotal, "card")}
                     </div>
                   ) : null}
                   <div className="pc-card-foot">
@@ -684,6 +695,8 @@ export function Partner1cItemsTab({
               manage={manage}
               showRetailPrices={showRetailPrices}
               branch={ui.branch}
+              branchTotal={branchTotal}
+              catalogBranchIds={catalogBranchIds}
               note={variantsNote(m)}
               selected={ui.selected.has(m.id)}
               onSelect={(on) => {
@@ -749,6 +762,8 @@ function ModelRow({
   manage,
   showRetailPrices,
   branch,
+  branchTotal,
+  catalogBranchIds,
   note,
   selected,
   onSelect,
@@ -762,6 +777,8 @@ function ModelRow({
   manage: boolean;
   showRetailPrices: boolean;
   branch: string;
+  branchTotal: number;
+  catalogBranchIds: string[];
   note: string;
   selected: boolean;
   onSelect: (on: boolean) => void;
@@ -771,9 +788,9 @@ function ModelRow({
   const code = modelStatus(pub, m);
   const stock = stockOf(m);
   const p = showRetailPrices ? priceIn(pub, m, branch) : null;
-  const range = showRetailPrices && branch === "" ? branchRange(pub, m) : null;
+  const range = showRetailPrices && branch === "" ? branchRange(pub, m, catalogBranchIds) : null;
   const mk = money ? markup(p, m.cost) : null;
-  const n = presentIn(pub, m).length;
+  const n = presentIn(pub, m, catalogBranchIds).length;
 
   return (
     <article className={`pc-row ${selected ? "is-picked" : ""}`} data-testid={`pc-model-${m.id}`}>
@@ -835,16 +852,14 @@ function ModelRow({
         <span>{stock.text}</span>
         <small className="pc-stock-sub">{stock.sub}</small>
         <small className="pc-stock-br">
-          {n === BRANCHES.length
-            ? "все филиалы"
-            : `филиалов: ${n} из ${BRANCHES.length}`}
+          {branchCountCaption(n, branchTotal, "list-stock")}
         </small>
       </span>
       <span className="pc-cell pc-cell--br" data-label="Филиалы">
         {manage ? (
           <button
             type="button"
-            className={`pc-brbtn ${n < BRANCHES.length ? "is-part" : ""}`}
+            className={`pc-brbtn ${branchTotal > 0 && n < branchTotal ? "is-part" : ""}`}
             data-testid={`pc-branches-${m.id}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -852,10 +867,10 @@ function ModelRow({
             }}
           >
             <PcIconMapPin />
-            <span>{branchesText(n)}</span>
+            <span>{branchesText(n, branchTotal)}</span>
           </button>
         ) : (
-          <span>{branchesText(n)}</span>
+          <span>{branchesText(n, branchTotal)}</span>
         )}
       </span>
       <span className="pc-cell pc-cell--status">

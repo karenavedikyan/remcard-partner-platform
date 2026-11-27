@@ -150,6 +150,7 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
         <Partner1cModelDetail
           model={model}
           publication={publication}
+          catalogBranches={snapshot.branches}
           manage={snapshot.manage}
           showCost={ui.showCost}
           priceType={snapshot.priceType}
@@ -164,6 +165,7 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
         <Partner1cItemsTab
           models={models}
           publication={publication}
+          catalogBranches={snapshot.branches}
           manage={snapshot.manage}
           priceType={snapshot.priceType}
           access={snapshot.access}
