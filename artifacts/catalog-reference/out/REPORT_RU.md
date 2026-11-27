@@ -1,7 +1,7 @@
 # Отчёт: кабинет «Каталог → Товары» (этап 1, сборка и снимки)
 
 **Ветка:** `cursor/catalog-stage1-build-shots-bb5c` (база `cursor/catalog-stage1-cabinet-view-2745`, старт `bdc92901`)  
-**HEAD SHA:** *(подставить после push — `git rev-parse HEAD`)*
+**HEAD SHA:** `8cae78cab838a010b505d533b77b94afe26445d9`
 
 ## Пункт / что сделано / как проверено
 
