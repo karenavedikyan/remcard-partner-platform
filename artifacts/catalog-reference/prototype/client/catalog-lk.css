@@ -1,0 +1,58 @@
+/* Панель фильтра каталога продавца «как в ЛК Тандор». Общая для кабинета партнёра и сайта клиента:
+   использует только общие токены обеих тем (surface, offset, ink, muted, line).
+   Строение: шапка · поиск по фильтру · прокручиваемый список групп · закреплённый низ с кнопками. */
+.lkf{--lkf-accent:var(--accent,var(--primary,#c12b2f));--lkf-tint:var(--tint,var(--soft,#fcf0ed));--lkf-pad:1.1rem;display:flex;flex-direction:column;min-height:0;height:100%;color:var(--ink);font-size:.9rem;background:var(--surface)}
+.lkf-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;padding:1rem var(--lkf-pad) .8rem}
+.lkf-head h3{margin:0;font-size:1.25rem;line-height:1.2;letter-spacing:-.01em;max-width:none}
+.lkf-head p{margin:.2rem 0 0;color:var(--muted);font-size:.8rem;line-height:1.4;max-width:none}
+.lkf-close{flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-.25rem -.35rem 0 0;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);cursor:pointer}
+.lkf-close:hover{border-color:var(--ink)}
+.lkf-close svg{width:18px;height:18px}
+.lkf-find{flex:none;position:relative;display:block;margin:0 var(--lkf-pad) .6rem}
+.lkf-find svg{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
+.lkf-find input{width:100%;min-height:44px;margin:0;padding:.45rem .8rem .45rem 2.4rem;border:1px solid var(--line);border-radius:999px;background:var(--offset);color:var(--ink);font:inherit;font-size:.9rem;font-weight:600}
+.lkf-find input::placeholder{color:var(--muted);font-weight:500;opacity:1}
+.lkf-find input:focus{background:var(--surface)}
+.lkf-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:0 calc(var(--lkf-pad) - .35rem) .75rem;border-top:1px solid var(--line)}
+.lkf-g{border-bottom:1px solid var(--line)}
+.lkf-g summary{list-style:none;display:flex;align-items:center;gap:.6rem;min-height:52px;padding:.5rem .35rem;cursor:pointer;border-radius:8px}
+.lkf-g summary::-webkit-details-marker{display:none}
+.lkf-g summary:hover{background:var(--offset)}
+.lkf-gt{flex:1;display:grid;gap:1px;min-width:0}
+.lkf-gt b{font-weight:800;font-size:.95rem;overflow-wrap:anywhere}
+.lkf-gt small{color:var(--lkf-accent);font-size:.78rem;font-weight:700;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lkf-g[open] .lkf-gt small{display:none}
+.lkf-g summary em{flex:none;display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 .4rem;border-radius:999px;background:var(--lkf-accent);color:var(--onaccent,#fff);font-style:normal;font-size:.75rem;font-weight:800;font-variant-numeric:tabular-nums}
+.lkf-g summary svg{flex:none;color:var(--muted);transition:transform .15s}
+.lkf-g[open] summary svg{transform:rotate(180deg)}
+.lkf-gb{display:grid;gap:.1rem;padding:0 0 .8rem}
+.lkf-check{display:flex;align-items:center;gap:.65rem;min-height:42px;margin:0;padding:.3rem .5rem;border-radius:8px;color:var(--ink);font-size:.95rem;font-weight:600;cursor:pointer}
+.lkf-check:hover{background:var(--offset)}
+.lkf-check.is-on{background:var(--lkf-tint)}
+.lkf-check input{flex:none;width:20px;height:20px;min-height:0;margin:0;padding:0;accent-color:var(--lkf-accent);cursor:pointer}
+.lkf-check span{flex:1;min-width:0;overflow-wrap:anywhere}
+.lkf-check small{flex:none;min-width:1.5rem;text-align:right;color:var(--muted);font-size:.78rem;font-weight:700;font-variant-numeric:tabular-nums}
+.lkf-check.is-empty span,.lkf-check.is-empty small{color:var(--muted);opacity:.75}
+.lkf-more{justify-self:start;min-height:40px;margin:.1rem 0 0 .5rem;padding:.3rem .2rem;border:0;background:none;color:var(--lkf-accent);font:inherit;font-size:.85rem;font-weight:800;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.lkf-sub{margin:.6rem .5rem .1rem;color:var(--muted);font-size:.78rem;font-weight:800}
+.lkf-field{display:grid;gap:.35rem;margin:0;padding:0 .35rem;font-size:.78rem;font-weight:800;color:var(--muted)}
+.lkf-field select{width:100%;min-height:46px;margin:0;padding:.5rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;font-weight:600}
+.lkf-range{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:.5rem;padding:0 .35rem}
+.lkf-range label{display:grid;gap:.3rem;margin:0;font-size:.78rem;font-weight:800;color:var(--muted)}
+.lkf-range i{align-self:end;height:46px;display:grid;place-items:center;color:var(--muted);font-style:normal}
+.lkf-range input{width:100%;min-height:46px;margin:0;padding:.5rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;font-weight:600;font-variant-numeric:tabular-nums}
+.lkf-note{margin:.5rem .45rem 0;color:var(--muted);font-size:.78rem;line-height:1.45;max-width:none}
+.lkf-none{margin:1.2rem .45rem;color:var(--muted);font-size:.9rem;line-height:1.5;max-width:none}
+.lkf-divider{display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;padding:.9rem .35rem .5rem;border-bottom:1px solid var(--line)}
+.lkf-divider span{font-weight:800;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lkf-divider small{color:var(--muted);font-size:.78rem;font-weight:600}
+.lkf-foot{flex:none;display:flex;gap:.6rem;align-items:center;padding:.8rem var(--lkf-pad) calc(.9rem + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);box-shadow:0 -8px 20px rgba(0,0,0,.05)}
+.lkf-foot button{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:48px;min-width:0;padding:.6rem .8rem;border-radius:10px;font:inherit;font-weight:800;font-size:.875rem;cursor:pointer;white-space:nowrap}
+.lkf-reset{border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.lkf-reset:hover:not(:disabled){border-color:var(--ink)}
+.lkf-reset:disabled{opacity:.45;cursor:default}
+.lkf-reset{flex:none}
+.lkf-apply{flex:1 1 0;border:1px solid var(--lkf-accent);background:var(--lkf-accent);color:var(--onaccent,#fff)}
+.lkf-apply:hover{filter:brightness(.94)}
+.lkf-g summary:focus-visible,.lkf-foot button:focus-visible,.lkf-close:focus-visible,.lkf-more:focus-visible,.lkf-check input:focus-visible,.lkf-field select:focus-visible,.lkf-range input:focus-visible,.lkf-find input:focus-visible{outline:3px solid var(--lkf-accent);outline-offset:2px}
+@media(max-width:420px){.lkf{--lkf-pad:.9rem}.lkf-foot button{padding:.6rem .7rem;font-size:.85rem}.lkf-reset svg{display:none}}

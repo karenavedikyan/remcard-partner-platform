@@ -1,0 +1,491 @@
+/* «Пригласить партнёра по ссылке» — только то, чего нет в mini.css.
+ * Палитра, радиусы и отступы — как в mini-app.module.css (shell всегда светлый, в т.ч. при data-theme="dark"). Владелец: invite_builder. */
+
+.rc-mini .rcmi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rc-mini .rcmi p,
+.rc-mini .rcmi h2,
+.rc-mini .rcmi h3 {
+  margin: 0;
+}
+
+.rc-mini .rcmi .primaryBtn,
+.rc-mini .rcmi .secondaryBtn {
+  gap: 8px;
+  width: 100%;
+}
+
+.rc-mini .rcmi .primaryBtn svg,
+.rc-mini .rcmi .secondaryBtn svg {
+  flex: none;
+}
+
+.rc-mini .rcmi .rcmi-sm {
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  border-radius: 10px;
+}
+
+.rc-mini .rcmi-stack { display: flex; flex-direction: column; gap: 10px; }
+
+.rc-mini .rcmi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rc-mini .rcmi-row > .rcmi-sm { flex: 1 1 0; }
+.rc-mini .rcmi-row--between { justify-content: space-between; }
+
+.rc-mini .rcmi-h2 {
+  font-size: 1.15rem;
+  line-height: 1.3;
+  color: #35252f;
+}
+
+.rc-mini .rcmi-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a7a83;
+}
+
+.rc-mini .rcmi-caption {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3a2f35;
+}
+
+.rc-mini .rcmi-strong { font-weight: 700; color: #35252f; font-size: 1rem; }
+
+.rc-mini .rcmi-input {
+  font-size: 0.95rem;
+  color: #35252f;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.rc-mini .rcmi-input:focus,
+.rc-mini .rcmi .miniSelect:focus,
+.rc-mini .rcmi .readOnlyField:focus {
+  outline: 2px solid rgba(159, 18, 57, 0.35);
+  outline-offset: 1px;
+  border-color: #9f1239;
+}
+
+.rc-mini .rcmi-input[aria-invalid="true"] { border-color: #9f1239; }
+
+.rc-mini .rcmi-textarea {
+  resize: vertical;
+  min-height: 132px;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+.rc-mini .rcmi-error {
+  font-size: 0.85rem;
+  color: #9f1239;
+}
+
+.rc-mini .rcmi-counter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: -6px;
+}
+
+.rc-mini .rcmi-counter span:last-child { flex: none; font-variant-numeric: tabular-nums; }
+
+/* Поиск */
+.rc-mini .rcmi-search { position: relative; display: flex; align-items: center; }
+.rc-mini .rcmi-search > .rcmi-ico { position: absolute; left: 12px; color: #8a7a83; pointer-events: none; }
+.rc-mini .rcmi-search .rcmi-input { padding-left: 38px; padding-right: 88px; -webkit-appearance: none; appearance: none; }
+.rc-mini .rcmi-search .rcmi-input::-webkit-search-cancel-button { display: none; }
+.rc-mini .rcmi-search .rcmi-clear { position: absolute; right: 10px; }
+
+.rc-mini .rcmi-listHead { min-height: 28px; }
+
+/* Текстовые кнопки-ссылки */
+.rc-mini .rcmi-link {
+  border: none;
+  background: none;
+  padding: 4px 0;
+  color: #9f1239;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  align-self: flex-start;
+}
+
+.rc-mini .rcmi-link:hover { text-decoration: underline; }
+.rc-mini .rcmi-center { align-self: center; text-align: center; }
+
+/* Список и карточки ссылок */
+.rc-mini .rcmi-list { display: flex; flex-direction: column; gap: 10px; }
+
+.rc-mini .rcmi-card {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rc-mini .rcmi-card.is-new { border-color: #9f1239; box-shadow: 0 0 0 1px #9f1239 inset; }
+.rc-mini .rcmi-card.is-picked { background: #fdf7f9; border-color: #d9b8c4; }
+
+.rc-mini .rcmi-cardTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.rc-mini .rcmi-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  background: #f1e8ec;
+  color: #5c4d56;
+}
+
+.rc-mini .rcmi-type[data-type="MASTER"] { background: #eef5ef; color: #35684b; }
+.rc-mini .rcmi-type[data-type="STORE"] { background: #fdf0f3; color: #9f1239; }
+.rc-mini .rcmi-type[data-type="COMPANY"] { background: #eef1f8; color: #3d4f7a; }
+.rc-mini .rcmi-type[data-type="AGENT"] { background: #fbf3e3; color: #865c20; }
+
+.rc-mini .rcmi-cardTitle {
+  margin: 2px 0 0;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: #35252f;
+  overflow-wrap: anywhere;
+}
+
+.rc-mini .rcmi-meta {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #6f5f68;
+  overflow-wrap: anywhere;
+}
+
+.rc-mini .rcmi-meta b { color: #3a2f35; font-weight: 600; }
+.rc-mini .rcmi-meta--warn { color: #865c20; }
+
+.rc-mini .rcmi-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f1eaed;
+}
+
+.rc-mini .rcmi-actionsEnd { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+
+.rc-mini .rcmi-toggle,
+.rc-mini .rcmi-copyBtn,
+.rc-mini .rcmi-iconBtn {
+  min-height: 36px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.rc-mini .rcmi-toggle {
+  padding: 0 6px 0 10px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  color: #3a2f35;
+}
+
+.rc-mini .rcmi-toggle .rcmi-ico { width: 16px; height: 16px; transition: transform 0.15s; }
+.rc-mini .rcmi-toggle[aria-expanded="true"] .rcmi-ico { transform: rotate(180deg); }
+
+.rc-mini .rcmi-copyBtn {
+  padding: 0 10px;
+  border: none;
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .rcmi-copyBtn svg { width: 16px; height: 16px; }
+
+.rc-mini .rcmi-iconBtn {
+  width: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #5c4d56;
+}
+
+.rc-mini .rcmi-iconBtn:hover { background: #f6f0f2; }
+.rc-mini .rcmi-iconBtn--danger:hover { color: #9f1239; }
+
+.rc-mini .rcmi-panel {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rc-mini .rcmi-panelTitle { font-size: 0.9rem; font-weight: 700; color: #35252f; }
+
+.rc-mini .rcmi-note {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #3a2f35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.rc-mini .rcmi-terms {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  color: #3a2f35;
+}
+
+.rc-mini .rcmi-terms th {
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8a7a83;
+  padding: 0 0 4px;
+}
+
+.rc-mini .rcmi-terms td { padding: 6px 0; border-top: 1px solid #f1eaed; vertical-align: top; }
+.rc-mini .rcmi-terms th:last-child,
+.rc-mini .rcmi-terms td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; }
+
+.rc-mini .rcmi-status { font-size: 0.82rem; color: #35684b; min-height: 0; }
+.rc-mini .rcmi-status:empty { display: none; }
+.rc-mini .rcmi-status--bad { color: #9f1239; }
+
+.rc-mini .rcmi-confirm {
+  margin-top: 6px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff6f0;
+  border: 1px solid #efd9c8;
+  color: #5c4033;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rc-mini .rcmi-confirm--danger { background: #fff5f5; border-color: #f1d0d8; color: #5c2a38; }
+.rc-mini .rcmi-confirm b { color: inherit; }
+
+.rc-mini .rcmi-pick input,
+.rc-mini .rcmi-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #9f1239;
+  margin: 0;
+}
+
+.rc-mini .rcmi-pick { display: inline-flex; padding: 4px; cursor: pointer; }
+
+.rc-mini .rcmi-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: #5c4d56;
+  cursor: pointer;
+}
+
+.rc-mini .rcmi-bulk {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+}
+
+.rc-mini .rcmi-empty {
+  padding: 18px 12px;
+  border-radius: 14px;
+  border: 1px dashed #e5d5dc;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #6f5f68;
+}
+
+.rc-mini .rcmi-foot { flex-wrap: wrap; }
+
+.rc-mini .rcmi-sortSelect {
+  border: none;
+  background: transparent;
+  color: #3a2f35;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.rc-mini .rcmi-sort { position: relative; }
+
+.rc-mini .rcmi-visually-hidden {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Мастер */
+.rc-mini .rcmi-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.rc-mini .rcmi-steps li {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #8a7a83;
+  white-space: nowrap;
+}
+
+.rc-mini .rcmi-steps li span {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #f1e8ec;
+  color: #6f5f68;
+}
+
+.rc-mini .rcmi-steps li.is-done span { background: #f8eef1; color: #9f1239; }
+.rc-mini .rcmi-steps li.is-current { color: #9f1239; font-weight: 700; }
+.rc-mini .rcmi-steps li.is-current span { background: #9f1239; color: #fff; }
+
+.rc-mini .rcmi-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.rc-mini .rcmi-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  color: #3a2f35;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rc-mini .rcmi-chip[aria-pressed="true"] { border-color: #9f1239; background: #f8eef1; color: #9f1239; }
+
+.rc-mini .rcmi-review { display: flex; flex-direction: column; gap: 4px; }
+
+.rc-mini .rcmi-details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #35252f;
+  list-style-position: inside;
+}
+
+.rc-mini .rcmi-details[open] > summary { margin-bottom: 8px; }
+.rc-mini .rcmi-details > * + * { margin-top: 8px; }
+
+.rc-mini .rcmi-cats { display: flex; flex-direction: column; gap: 8px; }
+
+.rc-mini .rcmi-cat {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #faf8f5;
+  border: 1px solid #ebe3e7;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #35252f;
+}
+
+.rc-mini .rcmi-pct { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rc-mini .rcmi-pctBox { display: inline-flex; align-items: center; gap: 6px; flex: none; font-weight: 600; color: #3a2f35; }
+.rc-mini .rcmi-pctBox .rcmi-input { width: 72px; padding: 8px 10px; text-align: right; }
+
+.rc-mini .rcmi-cat.is-excluded b { color: #8a7a83; text-decoration: line-through; }
+
+.rc-mini .rcmi-preview {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fcf0ed;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rc-mini .rcmi-preview ul,
+.rc-mini .rcmi-plain {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #3a2f35;
+}
+
+.rc-mini .rcmi-ol li + li { margin-top: 6px; }
+
+/* Что видит получатель (демо) */
+.rc-mini .rcmi-demoNote {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed #d9b8c4;
+  font-size: 0.82rem;
+  color: #6f5f68;
+}
+
+.rc-mini .rcmi-landing { display: flex; flex-direction: column; gap: 10px; }
+.rc-mini .rcmi-subject { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.rc-mini .rcmi-bullets li + li { margin-top: 2px; }
+.rc-mini .rcmi .rcmi-demoBtn { border-style: dashed; }
+
+@media (min-width: 720px) {
+  .rc-mini .rcmi-card { padding: 14px 16px; }
+}
+
+/* Shell мини-кабинета всегда светлый — нативные галочки тоже светлые и при data-theme="dark". */
+.rc-mini .rcmi input[type="checkbox"] { color-scheme: light; }

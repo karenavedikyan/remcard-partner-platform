@@ -1,0 +1,895 @@
+/*
+ * RemCard мини-кабинет — дополнения для кошелька (mini-wallet.css).
+ * Только то, чего нет в mini.css: переключатель на карте главной и компактная вёрстка экрана wallet.
+ * Все правила заскоуплены под .rc-mini и опираются на палитру mini.css (#faf8f5, #fff, #35252f, #6f5f68, #ebe3e7, #9f1239).
+ */
+
+/* --- Главная карта: суммы как на рабочей карте, внизу — выбор направления и переход к деталям --- */
+.rc-mini .walletCard.walletCardDual {
+  padding-bottom: 0;
+  cursor: default;
+}
+
+.rc-mini .walletCard.walletCardDual .walletBody {
+  padding: 7px 14px 0;
+}
+
+.rc-mini .walletCardBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+}
+
+.rc-mini .walletHomeSwitch {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 34px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rc-mini .walletHomeThumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.rc-mini .walletHomeSwitch[data-dir="out"] .walletHomeThumb {
+  transform: translateX(100%);
+}
+
+.rc-mini .walletHomeSwitch button {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Зона нажатия выше видимой кнопки */
+.rc-mini .walletHomeSwitch button::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+
+.rc-mini .walletHomeSwitch button:hover {
+  color: #fff;
+}
+
+.rc-mini .walletHomeSwitch button[aria-pressed="true"] {
+  color: #1b1e24;
+}
+
+.rc-mini .walletHomeSwitch button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.rc-mini .walletCardDual .walletCardFab {
+  position: static;
+  flex: none;
+  border: 0;
+  padding: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.rc-mini .walletCardDual .walletCardFab:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.rc-mini .walletCardDual .walletCardFab:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+/* Плавная смена после нажатия на переключатель */
+.rc-mini .walletCardDual.is-switched .walletHomeSwitch[data-dir="out"] .walletHomeThumb {
+  animation: rcWalletThumbToOut 0.22s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.rc-mini .walletCardDual.is-switched .walletHomeSwitch[data-dir="in"] .walletHomeThumb {
+  animation: rcWalletThumbToIn 0.22s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.rc-mini .walletCardDual.is-switched .walletHomeSwitch button[aria-pressed="true"] {
+  animation: rcWalletInkOn 0.22s ease;
+}
+
+.rc-mini .walletCardDual.is-switched .walletHomeSwitch button[aria-pressed="false"] {
+  animation: rcWalletInkOff 0.22s ease;
+}
+
+.rc-mini .walletCardDual.is-switched .walletBody {
+  animation: rcWalletAmounts 0.24s ease;
+}
+
+@keyframes rcWalletThumbToOut {
+  from { transform: translateX(0); }
+}
+
+@keyframes rcWalletThumbToIn {
+  from { transform: translateX(100%); }
+}
+
+@keyframes rcWalletInkOn {
+  from { color: rgba(255, 255, 255, 0.78); }
+}
+
+@keyframes rcWalletInkOff {
+  from { color: #1b1e24; }
+}
+
+@keyframes rcWalletAmounts {
+  from { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-mini .walletCardDual.is-switched .walletHomeThumb,
+  .rc-mini .walletCardDual.is-switched .walletHomeSwitch button,
+  .rc-mini .walletCardDual.is-switched .walletBody {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .rc-mini .walletHomeThumb {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  .rc-mini .walletHomeSwitch button[aria-pressed="true"] {
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
+}
+
+/* --- Экран wallet --- */
+.rc-mini .mwStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rc-mini .mwIdentityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: #6f5f68;
+}
+
+.rc-mini .mwPanBadge {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #5c4d56;
+  background: #f2ecee;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.76rem;
+}
+
+/* Переключатель филиала / охвата на экране кошелька */
+.rc-mini .mwScopeBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #ebe3e7;
+}
+
+.rc-mini .mwScopeTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rc-mini .mwScopeCurrent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #35252f;
+  min-width: 0;
+}
+
+.rc-mini .mwScopeCurrent span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-mini .mwLinkBtn {
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #9f1239;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rc-mini .mwScopeSeg {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f4eff1;
+}
+
+.rc-mini .mwScopeTab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: transparent;
+  color: #5c4d56;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.rc-mini .mwScopeTabActive {
+  background: #fff;
+  color: #35252f;
+  box-shadow: 0 1px 2px rgba(53, 37, 47, 0.08);
+}
+
+/* Переключатель направлений «Мне должны / Я должен» */
+.rc-mini .mwDirTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #efe8ec;
+  border: 1px solid #e5d5dc;
+}
+
+.rc-mini .mwDirTab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: transparent;
+  color: #5c4d56;
+  text-align: left;
+}
+
+.rc-mini .mwDirTabActive {
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .mwDirTabLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.rc-mini .mwDirTabSum {
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.92;
+}
+
+/* Сводная карточка выбранного направления */
+.rc-mini .mwSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rc-mini .mwSummaryHeroLabel {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6f5f68;
+}
+
+.rc-mini .mwSummaryHeroValue {
+  margin: 2px 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: #35252f;
+}
+
+.rc-mini .mwSummaryHeroHint {
+  margin: 3px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #6f5f68;
+}
+
+.rc-mini .mwStatList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 9px;
+  border-top: 1px solid #ebe3e7;
+}
+
+.rc-mini .mwStatRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rc-mini .mwStatLabelWrap {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.rc-mini .mwStatLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #4b3c45;
+}
+
+.rc-mini .mwStatNote {
+  font-size: 0.74rem;
+  line-height: 1.2;
+  color: #6f5f68;
+}
+
+.rc-mini .mwStatValue {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #35252f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Фильтры корзин статусов */
+.rc-mini .mwFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rc-mini .mwChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  color: #4b3c45;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rc-mini .mwChipActive {
+  background: #35252f;
+  border-color: #35252f;
+  color: #fff;
+}
+
+.rc-mini .mwChipCount {
+  font-size: 0.72rem;
+  opacity: 0.78;
+}
+
+/* Секция контрагентов */
+.rc-mini .mwSectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.rc-mini .mwSectionTitle {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #7d6d76;
+}
+
+.rc-mini .mwSectionMeta {
+  font-size: 0.78rem;
+  color: #6f5f68;
+}
+
+.rc-mini .mwPartnerList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rc-mini .mwPartnerCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.rc-mini .mwPartnerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 13px;
+  background: transparent;
+  color: #35252f;
+  text-align: left;
+}
+
+.rc-mini .mwPartnerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rc-mini .mwPartnerName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #35252f;
+}
+
+.rc-mini .mwPartnerSub {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: #6f5f68;
+}
+
+.rc-mini .mwPartnerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rc-mini .mwPartnerSums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.rc-mini .mwPartnerMainSum {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #35252f;
+}
+
+.rc-mini .mwPartnerExtraSum {
+  font-size: 0.73rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #865c20;
+}
+
+.rc-mini .mwPartnerExtraMuted {
+  color: #6f5f68;
+}
+
+.rc-mini .mwPartnerChevron {
+  display: inline-flex;
+  color: #7d6d76;
+  transition: transform 0.16s ease;
+  margin-top: 2px;
+}
+
+.rc-mini .mwPartnerCardOpen .mwPartnerChevron {
+  transform: rotate(90deg);
+}
+
+/* Список начислений/сделок внутри контрагента */
+.rc-mini .mwRows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #ebe3e7;
+  background: #fcfbfa;
+}
+
+.rc-mini .mwRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 13px;
+  border-bottom: 1px solid #efe9ec;
+}
+
+.rc-mini .mwRow:last-child {
+  border-bottom: 0;
+}
+
+.rc-mini .mwRowTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rc-mini .mwRowBasis {
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #35252f;
+  min-width: 0;
+}
+
+.rc-mini .mwBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rc-mini .mwBadgeConfirmed {
+  background: #eef5ef;
+  color: #35684b;
+}
+
+.rc-mini .mwBadgeWaiting {
+  background: #fbf3e3;
+  color: #865c20;
+}
+
+.rc-mini .mwBadgeSuspended {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.rc-mini .mwBadgePaid {
+  background: #f0ecee;
+  color: #5c4d56;
+}
+
+.rc-mini .mwRowMeta {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #6f5f68;
+}
+
+.rc-mini .mwRowBuckets {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rc-mini .mwBucketLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: #4b3c45;
+}
+
+.rc-mini .mwBucketLine strong {
+  font-weight: 700;
+  color: #35252f;
+  white-space: nowrap;
+}
+
+.rc-mini .mwBucketSubtle {
+  font-size: 0.76rem;
+  color: #6f5f68;
+}
+
+.rc-mini .mwReasonNote {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff6f0;
+  border: 1px solid #efd9c8;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: #5c4033;
+}
+
+/* Раскрытие деталей расчёта и хронологии */
+.rc-mini .mwDetails {
+  font-size: 0.78rem;
+  color: #5c4d56;
+}
+
+.rc-mini .mwDetails > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #6f5f68;
+  padding: 2px 0;
+  user-select: none;
+}
+
+.rc-mini .mwDetailsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #ebe3e7;
+}
+
+.rc-mini .mwDetailPair {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.rc-mini .mwDetailPair span:first-child {
+  color: #6f5f68;
+}
+
+.rc-mini .mwDetailPair span:last-child {
+  font-weight: 600;
+  color: #35252f;
+  text-align: right;
+}
+
+.rc-mini .mwTimeline {
+  margin: 4px 0 0;
+  padding: 4px 0 0 14px;
+  border-top: 1px dashed #e5d5dc;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #5c4d56;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+/* Пустое состояние кошелька (WalletSectionEmptyState.tsx + wallet-empty/copy.ts) */
+.rc-mini .mwEmptyWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rc-mini .mwEmptyMiniCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(152deg, #454a52 0%, #2a2e35 48%, #15171c 100%);
+  color: #f4f5f7;
+}
+
+.rc-mini .mwEmptyMiniTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.rc-mini .mwEmptyMiniChip {
+  width: 22px;
+  height: 15px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rc-mini .mwEmptyMiniSum {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.rc-mini .mwEmptyMiniFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.rc-mini .mwEmptyKicker {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #7d6d76;
+}
+
+.rc-mini .mwEmptySteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rc-mini .mwEmptyStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #faf8f5;
+  border: 1px solid #ebe3e7;
+}
+
+.rc-mini .mwEmptyStepNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #efe8ec;
+  color: #35252f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rc-mini .mwEmptyStepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rc-mini .mwEmptyStepTitle {
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #35252f;
+}
+
+.rc-mini .mwEmptyStepNote {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: #6f5f68;
+}
+
+.rc-mini .mwEmptyFoot {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #6f5f68;
+}
+
+/* Плоский список вкладки «График» (ожидающие подтверждения по дате) */
+.rc-mini .mwScheduleCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Прототип: карта без прав на расчёты — только пояснение, без сумм и прочерков. */
+.rc-mini .walletCard .walletNoticeSolo {
+  margin-top: 6px;
+  max-width: 24ch;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #f6dfb4;
+}
+
+/* Прототип: карта с ошибкой загрузки баланса — что случилось и кнопка повтора вместо прочерков. */
+.rc-mini .walletCard .walletErrorTitle {
+  margin: 6px 0 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.rc-mini .walletCard .walletErrorText {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.rc-mini .walletCardError .walletCardBar {
+  padding: 12px 14px 14px;
+}
+
+.rc-mini .walletRetryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #35252f;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rc-mini .walletRetryBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.rc-mini .walletRetryBtn:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
+.rc-mini .walletRetryBtn.is-loading svg {
+  animation: miniWalletSpin 0.9s linear infinite;
+}
+
+@keyframes miniWalletSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-mini .walletRetryBtn.is-loading svg { animation: none; }
+}

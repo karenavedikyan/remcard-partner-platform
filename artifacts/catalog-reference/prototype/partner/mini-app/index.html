@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="icon" href="data:,">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#c12b2f">
+  <title>RemCard PROF — мини-кабинет</title>
+  <link rel="stylesheet" href="../../prototype-numbering.css?v=168-sup1">
+  <link rel="stylesheet" href="mini.css?v=scan-pool1">
+  <link rel="stylesheet" href="mini-cert.css?v=lk24">
+  <link rel="stylesheet" href="mini-invite.css?v=lk-link">
+  <link rel="stylesheet" href="mini-wallet.css?v=lk24">
+  <style>
+    /* ===== Оболочка макета (не часть мини-кабинета): нейтральная служебная обвязка ===== */
+    html, body { margin: 0; height: 100%; }
+    body.rcm-page {
+      background: #e9eaec;
+      color: #1f2328;
+      font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .rcm-stage {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .rcm-phone {
+      position: relative;
+      flex: 0 0 auto;
+      width: 390px;
+      height: 844px;
+      max-height: calc(100vh - 68px);
+      min-height: 620px;
+      border-radius: 44px;
+      background: #111;
+      padding: 10px;
+      box-sizing: content-box;
+      box-shadow: 0 0 0 1px #2b2b2b, 0 24px 60px rgba(0, 0, 0, 0.18);
+    }
+    .rcm-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 34px;
+      overflow: hidden;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .rcm-viewport { position: relative; flex: 1; min-height: 0; }
+    /* Шапка мессенджера (её рисует сам Telegram/MAX, не мини-кабинет) */
+    .rcm-hostbar {
+      flex: 0 0 auto;
+      height: 52px;
+      padding: 8px 12px 0;
+      display: grid;
+      grid-template-columns: 84px 1fr 84px;
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid #e4e5e7;
+      font: 15px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #1f2328;
+      user-select: none;
+    }
+    .rcm-hostbar-btn {
+      justify-self: start;
+      border: 0;
+      background: none;
+      padding: 6px 4px;
+      font: inherit;
+      color: #2481cc;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .rcm-hostbar-title { text-align: center; min-width: 0; }
+    .rcm-hostbar-title b { display: block; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rcm-hostbar-title span { display: block; font-size: 12px; color: #8a8f98; }
+    .rcm-hostbar-more { justify-self: end; color: #2481cc; font-size: 20px; letter-spacing: 1px; padding: 0 6px; }
+    html[data-rcm-host="max"] .rcm-hostbar { background: #f7f7f8; }
+    html[data-rcm-host="max"] .rcm-hostbar-btn,
+    html[data-rcm-host="max"] .rcm-hostbar-more { color: #5a3cf0; }
+
+    /* Панель «Демо» */
+    .rcm-demo {
+      flex: 0 0 260px;
+      align-self: center;
+      max-height: calc(100vh - 96px);
+      overflow: auto;
+      background: #fff;
+      border: 1px solid #d5d8dc;
+      border-radius: 10px;
+      padding: 14px;
+      box-sizing: border-box;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    .rcm-demo h2 { margin: 0 0 2px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #57606a; }
+    .rcm-demo .rcm-note { margin: 0 0 10px; font-size: 12px; color: #6e7781; }
+    .rcm-group { margin: 0 0 12px; padding: 0; border: 0; }
+    .rcm-group legend, .rcm-group > .rcm-label { display: block; padding: 0; margin: 0 0 5px; font-size: 12px; color: #57606a; font-weight: 600; }
+    .rcm-seg { display: flex; flex-wrap: wrap; gap: 4px; }
+    .rcm-seg button {
+      flex: 1 1 auto;
+      border: 1px solid #d0d7de;
+      background: #f6f8fa;
+      color: #24292f;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font: 500 12.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      cursor: pointer;
+    }
+    .rcm-seg button[aria-pressed="true"] { background: #24292f; border-color: #24292f; color: #fff; }
+    .rcm-demo select {
+      width: 100%;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 5px 6px;
+      background: #fff;
+      color: #24292f;
+      font: 12.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      margin-bottom: 6px;
+    }
+    .rcm-demo .rcm-sub { font-size: 11.5px; color: #6e7781; margin: 0 0 2px; }
+    .rcm-demo .rcm-hint { font-size: 11.5px; line-height: 1.35; color: #57606a; margin: 2px 0 4px; }
+    .rcm-links { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; border-top: 1px solid #eaeef2; padding-top: 10px; }
+    .rcm-links a { color: #0969da; text-decoration: none; font-size: 13px; }
+    .rcm-links a:hover { text-decoration: underline; }
+    .rcm-demo-close { display: none; }
+    .rcm-demo-toggle { display: none; }
+
+    /* Телефон: мини-кабинет на весь экран, «Демо» — за маленькой кнопкой */
+    @media (max-width: 520px) {
+      body.rcm-page { background: #faf8f5; }
+      .rcm-stage { display: block; padding: 0; min-height: 0; height: 100%; }
+      .rcm-phone { width: 100%; height: 100%; max-height: none; min-height: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+      .rcm-screen { border-radius: 0; }
+      .rcm-hostbar { display: none; }
+      .rcm-demo-toggle {
+        display: inline-flex;
+        position: fixed;
+        top: max(8px, env(safe-area-inset-top));
+        right: 8px;
+        z-index: 40;
+        align-items: center;
+        gap: 4px;
+        height: 28px;
+        padding: 0 9px;
+        border: 1px solid rgba(31, 35, 40, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.82);
+        color: #57606a;
+        font: 600 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+      }
+      .rcm-demo {
+        display: none;
+        position: fixed;
+        z-index: 50;
+        left: 8px;
+        right: 8px;
+        top: max(8px, env(safe-area-inset-top));
+        max-height: calc(100% - 68px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      }
+      body.rcm-demo-open .rcm-demo { display: block; }
+      body.rcm-demo-open .rcm-demo-toggle { display: none; }
+      .rcm-demo-close {
+        display: block;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        border: 0;
+        background: #f6f8fa;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font: 600 12px/1.2 system-ui, sans-serif;
+        color: #24292f;
+        cursor: pointer;
+      }
+    }
+    @media (min-width: 521px) and (max-width: 760px) {
+      .rcm-stage { flex-direction: column; align-items: center; }
+      .rcm-demo { align-self: stretch; max-height: none; max-width: 412px; margin: 0 auto; width: 100%; }
+    }
+  </style>
+</head>
+<body class="rcm-page">
+  <div class="rcm-stage">
+    <aside class="rcm-demo" id="rcmDemo" aria-label="Панель демо">
+      <button type="button" class="rcm-demo-close" data-demo-close>Закрыть</button>
+      <h2>Демо</h2>
+      <p class="rcm-note">Прототип на демо-данных. Запросов к сервису, СМС и сообщений нет.</p>
+      <div id="rcmDemoBody"></div>
+      <div class="rcm-links">
+        <a href="../../index.html">← Все кабинеты</a>
+      </div>
+    </aside>
+    <div class="rcm-phone">
+      <div class="rcm-screen">
+        <div class="rcm-hostbar" aria-hidden="false">
+          <button type="button" class="rcm-hostbar-btn" id="rcmHostBack">Закрыть</button>
+          <div class="rcm-hostbar-title"><b>RemCard PROF</b><span id="rcmHostSub">мини-приложение</span></div>
+          <span class="rcm-hostbar-more" aria-hidden="true">⋯</span>
+        </div>
+        <div class="rcm-viewport">
+          <div class="rc-mini mini-app-host" id="app" data-mini-app-root data-theme="light"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button type="button" class="rcm-demo-toggle" data-demo-open aria-controls="rcmDemo">Демо</button>
+
+  <script src="../../preview-memory.js"></script>
+  <script src="mini-core.js?v=lk24"></script>
+  <script src="mini-data.js?v=lk24"></script>
+  <script src="mini-home.js?v=lk24"></script>
+  <script src="mini-scan.js?v=scan-pool1"></script>
+  <script src="mini-cert.js?v=scan-pool1"></script>
+  <script src="mini-invite.js?v=lk-link2"></script>
+  <script src="mini-wallet.js?v=lk24"></script>
+  <script src="mini-boot.js?v=lk24"></script>
+  <script src="../../prototype-numbering.js?v=168-sup1" defer></script>
+</body>
+</html>

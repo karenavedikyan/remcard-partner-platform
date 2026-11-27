@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Макет PDF-сертификата RemCard: лист A4 со скидкой, кодом, сроком и партнёрами. Демонстрация для согласования.">
+  <title>PDF сертификата · RemCard</title>
+  <link rel="stylesheet" href="pdf.css?v=1">
+  <script defer src="pdf.js?v=1"></script>
+</head>
+<body>
+  <header class="top wrap">
+    <a class="wordmark" href="../index.html" aria-label="RemCard, к общему прототипу" data-testid="link-prototype-home">
+      <span class="mark"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M8 17l8-7 8 7v8H8z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span>
+      <span><strong>remcard<span>.</span></strong><small>общий прототип</small></span>
+    </a>
+    <button type="button" class="theme" aria-label="Включить тёмную тему" data-testid="button-theme">
+      <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.9 13.25A9 9 0 0 1 10.75 3.1 9 9 0 1 0 20.9 13.25Z"/></svg>
+      <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19m0-14-1.5 1.5m-11 11L5 19"/></svg>
+    </button>
+  </header>
+
+  <main class="wrap">
+    <div class="intro">
+      <p class="kicker">Сертификат · новый макет на согласование</p>
+      <h1>PDF сертификата</h1>
+      <p class="lead">Файл, который клиент получает по кнопке «Скачать PDF». На листе сразу видно скидку, код, срок и партнёров — входить в кабинет не нужно.</p>
+    </div>
+
+    <div class="bar">
+      <div class="cases" role="group" aria-label="Примеры сертификатов">
+        <button type="button" data-case="one" aria-pressed="true" data-testid="case-one">Один партнёр</button>
+        <button type="button" data-case="org" aria-pressed="false" data-testid="case-org">Сертификат компании</button>
+        <button type="button" data-case="many" aria-pressed="false" data-testid="case-many">8 партнёров</button>
+        <button type="button" data-case="city" aria-pressed="false" data-testid="case-city">Город · 18 партнёров</button>
+      </div>
+      <button type="button" class="zoom" aria-pressed="false" data-testid="button-zoom">Увеличить лист</button>
+    </div>
+
+    <div class="stage">
+      <div class="pages" data-testid="pdf-pages" tabindex="0" aria-label="Страницы PDF-сертификата"></div>
+
+      <aside class="notes" aria-labelledby="notes-title">
+        <h2 id="notes-title">Что видно в файле</h2>
+        <ul>
+          <li>Размер скидки и у кого она действует</li>
+          <li>Код и QR-код: сертификат открывается на телефоне</li>
+          <li>Срок действия и число покупок</li>
+          <li>Партнёры, категории и проценты</li>
+          <li>Контакты партнёра</li>
+          <li>Три шага: как получить скидку</li>
+          <li>Условия мелкой сноской: исключения, кто отвечает за скидку, изменение условий</li>
+          <li>Ссылка для проверки, дата выпуска и номер</li>
+        </ul>
+        <h2>Если партнёров много</h2>
+        <p>Список продолжается на следующих страницах. Скидка, код, срок, шаги и условия всегда остаются на первой.</p>
+        <p class="file" data-testid="text-file"></p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

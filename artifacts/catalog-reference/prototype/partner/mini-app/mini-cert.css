@@ -1,0 +1,518 @@
+.rc-mini .certStack {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rc-mini .certStack :is(h3, p) { margin: 0; }
+
+.rc-mini .certProgress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .82rem;
+  color: #6f5f68;
+}
+
+.rc-mini .certProgress li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 9px;
+}
+
+.rc-mini .certProgress b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ebe3e7;
+}
+
+.rc-mini .certProgress [aria-current="step"] {
+  background: #faeef1;
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.rc-mini .certProgress [aria-current="step"] b {
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .certCheck.certPartner {
+  border: 1px solid #ebe3e7;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  align-items: flex-start;
+}
+
+.rc-mini .certPartner input { margin-top: 4px; }
+.rc-mini .certPartner:has(input:checked) { border-color: #9f1239; }
+.rc-mini .certPartnerStatus { color: #6f5f68; font-size: .75rem; margin-top: 2px; }
+
+.rc-mini .certBranch,
+.rc-mini .certButtonRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rc-mini .certBranch .scanNotice { margin: 0; }
+.rc-mini .certButtonRow > button { flex: 1 1 auto; width: auto; }
+
+.rc-mini .certDisclosure {
+  font-size: .9rem;
+  color: inherit;
+  min-width: 0;
+}
+
+.rc-mini .certDisclosure > summary {
+  color: inherit;
+  font-weight: 650;
+  min-height: 36px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.rc-mini .certDisclosure > summary::marker { color: currentColor; }
+.rc-mini .certDisclosure[open] > summary { margin-bottom: 6px; }
+.rc-mini :is(.certStack, .certDisclosure) .miniSelect { font-family: inherit; }
+.rc-mini .certDisclosure .miniSelect[readonly] { text-overflow: ellipsis; }
+.rc-mini .certStack .miniSelect[aria-invalid="true"] { border-color: #9f1239; }
+.rc-mini .certDisclosure .scanBad { margin: 2px 0 0; }
+.rc-mini .certStack textarea.miniSelect { resize: vertical; }
+
+.rc-mini .certCheck {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.rc-mini .certCheck :is(span, small) { display: block; min-width: 0; }
+.rc-mini .certCheck small { opacity: .75; }
+.rc-mini .certCheck input { accent-color: var(--accent-emphasis); flex: none; margin: 0; }
+.rc-mini .certCheck:has(input:disabled) { opacity: .75; cursor: default; }
+
+.rc-mini .certAllocation {
+  display: grid;
+  gap: 6px;
+  padding-block: 8px;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.rc-mini .certAllocationFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  min-width: 0;
+  gap: 8px;
+}
+
+.rc-mini .certBonus { font-size: .95rem; padding: 10px 0; }
+
+.rc-mini .certTextBtn {
+  justify-self: start;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 4px 0;
+  min-height: 30px;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.rc-mini .certTextBtn:disabled { opacity: .48; cursor: default; }
+.rc-mini :is(.certTextBtn, .certDisclosure > summary):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.rc-mini :is([data-cert-discount-error], [data-cert-ready-status]):empty { display: none; }
+
+/* Прототип: филиалы сертификата — один, несколько или все. */
+.rc-mini .certBranches {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.rc-mini .certBranches > legend { padding: 0; margin-bottom: 8px; }
+
+.rc-mini .certChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rc-mini .certChip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  color: #35252f;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.rc-mini .certChip[aria-pressed="true"] {
+  background: #fbeef1;
+  border-color: #9f1239;
+  color: #9f1239;
+}
+
+.rc-mini .certChip[aria-pressed="true"]::before {
+  content: "";
+  flex: none;
+  width: 11px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.rc-mini .certChip:focus-visible {
+  outline: 2px solid #9f1239;
+  outline-offset: 2px;
+}
+
+.rc-mini .certBranchesHint {
+  margin: 0;
+  font-size: .8rem;
+  color: #6f5f68;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-mini .certChip { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .rc-mini .certChip[aria-pressed="true"] { border-width: 2px; }
+}
+
+/* ---------- Готовый сертификат: красная карта как в ЛК (PartnerClientCertificateCard.module.css) ---------- */
+.rc-mini .lkCertWrap {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  justify-items: stretch;
+}
+
+.rc-mini .lkCertBanner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #eef5ef;
+  color: #35684b;
+  font-weight: 700;
+}
+
+.rc-mini .lkCert {
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #8e1f23 0%, #bb3035 55%, #bf403c 100%);
+  box-shadow: 0 4px 24px rgb(27 31 26 / 12%);
+}
+
+.rc-mini .lkCert p { margin: 0; }
+.rc-mini .lkCert .lkCertPct,
+.rc-mini .lkCert .lkCertSubtitle { color: #fff; }
+
+.rc-mini .lkCertGlowA,
+.rc-mini .lkCertGlowB {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 10%);
+}
+
+.rc-mini .lkCertGlowA { right: -40px; top: -40px; width: 160px; height: 160px; }
+.rc-mini .lkCertGlowB { left: -32px; bottom: -64px; width: 192px; height: 192px; background: rgb(255 255 255 / 7%); }
+
+.rc-mini .lkCertHeader {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rc-mini .lkCertWordmark {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.rc-mini .lkCertWordmarkDot { color: #f28b8d; }
+
+.rc-mini .lkCertPill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(38 14 16 / 72%);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rc-mini .lkCert .lkCertPct {
+  position: relative;
+  margin-top: 16px;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.rc-mini .lkCert .lkCertSubtitle {
+  position: relative;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rc-mini .lkCertQrTile {
+  position: relative;
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff;
+  color: #1b1f1a;
+}
+
+.rc-mini .lkCertQrBox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.rc-mini .lkCertQrBox img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.rc-mini .lkCertQrEmpty {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c635c;
+}
+
+.rc-mini .lkCertCodeCol {
+  display: flex;
+  flex: 1;
+  min-width: min-content;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.rc-mini .lkCertCodeLabel {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5c635c;
+}
+
+.rc-mini .lkCertCodeValue {
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  color: #1b1f1a;
+}
+
+.rc-mini .lkCertFooter {
+  position: relative;
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rc-mini .lkCertStatus { text-align: right; }
+
+.rc-mini .lkCertRows {
+  position: relative;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.rc-mini .lkCertRow {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  background: rgb(38 14 16 / 25%);
+}
+
+.rc-mini .lkCertRowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+
+.rc-mini .lkCertRowName {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.rc-mini .lkCertRowTag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(38 14 16 / 55%);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rc-mini .lkCert .lkCertRowFact,
+.rc-mini .lkCert .lkCertRowFine {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.rc-mini .lkCert .lkCertRowFine {
+  font-size: 12px;
+  color: rgb(255 255 255 / 92%);
+}
+
+/* В ЛК на узком экране (до 390px) QR встаёт над кодом; здесь то же по ширине самой карты. */
+@container (max-width: 318px) {
+  .rc-mini .lkCertQrTile { flex-direction: column; align-items: stretch; }
+  .rc-mini .lkCertQrBox { width: 110px; height: 110px; margin: 0 auto; }
+}
+
+.rc-mini .lkCertAlias {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid #ebe3e7;
+  border-radius: 12px;
+  background: #fff;
+  color: #35252f;
+}
+
+.rc-mini .lkCertAlias span { font-size: 12px; font-weight: 600; color: #6f5f68; }
+.rc-mini .lkCertAlias strong { font-size: 14px; }
+
+.rc-mini .lkCertPublicLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 1px solid #ebe3e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #9f1239;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rc-mini .lkCertPublicLink:focus-visible {
+  outline: 3px solid #9f1239;
+  outline-offset: 2px;
+}
+
+.rc-mini .lkCertDetails {
+  border-top: 1px solid #ebe3e7;
+  padding: 2px 0;
+  font-size: 13px;
+  color: #35252f;
+}
+
+.rc-mini .lkCertDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 0 12px 2px;
+}
+
+.rc-mini .lkCertDetails ul { margin: 0 0 10px; padding-left: 1.25rem; line-height: 1.5; }
+.rc-mini .lkCertDetails p { margin: 0 0 10px; color: #6f5f68; }
+
+.rc-mini .lkCertActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rc-mini .lkCertActions > button {
+  min-height: 44px;
+  margin: 0;
+  padding-inline: 8px;
+  font-size: 0.9rem;
+}

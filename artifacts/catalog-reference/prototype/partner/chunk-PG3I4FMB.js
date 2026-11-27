@@ -1,0 +1,1 @@
+var o='<span class="cert-logo"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M7 15 16 7l9 8v11H7V15Z" stroke="currentColor" stroke-width="2"/><path d="M13 26v-9h6v9" stroke="currentColor" stroke-width="2"/></svg></span><strong>RemCard</strong>';export{o as a};
