@@ -81,6 +81,8 @@ export type NavigatorCabinetModelVariant = {
   properties: Record<string, string>;
 };
 
+export type NavigatorCabinetBranchStockKind = "KNOWN" | "ZERO" | "UNKNOWN";
+
 export type NavigatorCabinetModelBranch = {
   branchId: string;
   name: string;
@@ -91,6 +93,8 @@ export type NavigatorCabinetModelBranch = {
   rulePrice: number | null;
   customPrice: number | null;
   effectivePrice: number | null;
+  stockKind?: NavigatorCabinetBranchStockKind | string;
+  stockQuantity?: number | null;
 };
 
 export type NavigatorCabinetModelDetail = NavigatorCabinetModelRow & {

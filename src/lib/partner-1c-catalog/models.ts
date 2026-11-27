@@ -1,13 +1,15 @@
 import { BRANCH_IDS, BRANCHES, LOW_MARKUP } from "./constants";
 import { itemOf } from "./lk-items";
 import { hash } from "./text";
-import { rub } from "./text";
+import { num, rub } from "./text";
 import type {
+  BranchApiStock,
   CatalogProductRaw,
   ModelStatusCode,
   PartnerCatalogModel,
   PublicCatalogProduct,
 } from "./types";
+import type { NavigatorCabinetModelBranch } from "./navigator-types";
 
 export type PublicationState = {
   hidden: Set<string>;
@@ -151,8 +153,87 @@ export function stockOf(m: PartnerCatalogModel) {
     : { text: "Нет в наличии", sub: "ожидается поступление" };
 }
 
+function parseCabinetBranchIndexFromId(branchId: string): number | null {
+  const match = /(?:^|[-_])(\d+)$/.exec(branchId.trim());
+  if (!match) return null;
+  const idx = Number(match[1]);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= BRANCHES.length) return null;
+  return idx;
+}
+
+function parseCabinetBranchIndexFromAddress(branch: NavigatorCabinetModelBranch): number | null {
+  const addr = (branch.address ?? "").trim().toLowerCase();
+  const city = (branch.city ?? "").trim().toLowerCase();
+  if (!addr && !city) return null;
+  const line = city && addr ? `${city}, ${addr}` : city || addr;
+  for (let i = 0; i < BRANCHES.length; i++) {
+    const cabinet = BRANCHES[i]!.toLowerCase();
+    if (cabinet === line) return i;
+    if (addr && cabinet.includes(addr)) return i;
+  }
+  return null;
+}
+
+export function cabinetBranchIndexFromNavigatorBranch(
+  branch: NavigatorCabinetModelBranch,
+): number | null {
+  return (
+    parseCabinetBranchIndexFromId(branch.branchId) ??
+    parseCabinetBranchIndexFromAddress(branch)
+  );
+}
+
+function emptyCabinetBranchStocks(): BranchApiStock[] {
+  return Array.from({ length: BRANCHES.length }, () => ({
+    stockKind: null,
+    stockQuantity: null,
+    excluded: false,
+  }));
+}
+
+function stockKindFromWire(kind: string | undefined): BranchApiStock["stockKind"] {
+  if (kind === "KNOWN" || kind === "ZERO" || kind === "UNKNOWN") return kind;
+  return null;
+}
+
+/** Map navigator detail branches[] onto fixed cabinet branch order (by branchId, not response order). */
+export function mapNavigatorBranchesToCabinetStock(
+  branches: NavigatorCabinetModelBranch[] | undefined,
+): BranchApiStock[] | null {
+  if (branches === undefined) return null;
+  const out = emptyCabinetBranchStocks();
+  for (const branch of branches) {
+    const idx = cabinetBranchIndexFromNavigatorBranch(branch);
+    if (idx == null) continue;
+    out[idx] = {
+      stockKind: stockKindFromWire(branch.stockKind),
+      stockQuantity: branch.stockQuantity ?? null,
+      excluded: Boolean(branch.excluded),
+    };
+  }
+  return out;
+}
+
+export function branchApiStockAt(
+  m: PartnerCatalogModel,
+  branchIndex: number,
+): BranchApiStock | undefined {
+  return m.branchStocksFromApi?.[branchIndex];
+}
+
+export function usesBranchStockFromApi(m: PartnerCatalogModel): boolean {
+  return m.branchStocksFromApi != null;
+}
+
 /** Branch stock demo: split summed KNOWN variant stock across branches (prototype parity). */
 export function branchStock(m: PartnerCatalogModel, branchIndex: number): number | null {
+  if (usesBranchStockFromApi(m)) {
+    const api = branchApiStockAt(m, branchIndex);
+    if (!api || api.stockKind == null || api.stockKind === "UNKNOWN") return null;
+    if (api.stockKind === "ZERO") return 0;
+    if (api.stockKind === "KNOWN") return api.stockQuantity ?? 0;
+    return null;
+  }
   const known = m.skus.filter((k) => k.stock != null);
   if (!known.length) return null;
   const total = known.reduce((a, k) => a + (k.stock ?? 0), 0);
@@ -161,6 +242,30 @@ export function branchStock(m: PartnerCatalogModel, branchIndex: number): number
   const parts = w.map((x) => Math.floor((total * x) / sum));
   parts[0] += total - parts.reduce((a, b) => a + b, 0);
   return parts[branchIndex] ?? null;
+}
+
+export function formatBranchStockLabel(
+  m: PartnerCatalogModel,
+  here: boolean,
+  branchIndex: number,
+): string {
+  if (usesBranchStockFromApi(m)) {
+    const api = branchApiStockAt(m, branchIndex);
+    if (!here || api?.excluded) return "товар здесь не представлен";
+    if (!api || api.stockKind == null || api.stockKind === "UNKNOWN") return "нет данных";
+    if (api.stockKind === "ZERO") return "нет в наличии";
+    if (api.stockKind === "KNOWN") {
+      const qty = api.stockQuantity ?? 0;
+      return qty > 0 ? `в наличии ${num(qty)} шт` : "нет в наличии";
+    }
+    return "нет данных";
+  }
+  if (!here) return "товар здесь не представлен";
+  if (m.price == null) return "под заказ · остатка в 1С нет";
+  const stock = branchStock(m, branchIndex);
+  if (stock == null) return "под заказ · остатка в 1С нет";
+  if (stock > 0) return `в наличии ${num(stock)} шт`;
+  return "нет в наличии";
 }
 
 /** Client-facing list: published live models only, cost stripped. */

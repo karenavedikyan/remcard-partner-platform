@@ -1,0 +1,80 @@
+[
+  {
+    "branchId": "optovik-branch-0",
+    "name": "Краснодар · Ростовское шоссе, 30/3",
+    "city": "Краснодар",
+    "address": "Ростовское шоссе, 30/3",
+    "excluded": false,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "KNOWN",
+    "stockQuantity": 20
+  },
+  {
+    "branchId": "optovik-branch-1",
+    "name": "Краснодар · ул. 40 лет Победы, 168",
+    "city": "Краснодар",
+    "address": "ул. 40 лет Победы, 168",
+    "excluded": false,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "KNOWN",
+    "stockQuantity": 10
+  },
+  {
+    "branchId": "optovik-branch-2",
+    "name": "Краснодар · ул. Красных Партизан, 235",
+    "city": "Краснодар",
+    "address": "ул. Красных Партизан, 235",
+    "excluded": false,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "ZERO",
+    "stockQuantity": 0
+  },
+  {
+    "branchId": "optovik-branch-3",
+    "name": "Краснодар · ул. Новороссийская, 216/5",
+    "city": "Краснодар",
+    "address": "ул. Новороссийская, 216/5",
+    "excluded": false,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "UNKNOWN",
+    "stockQuantity": null
+  },
+  {
+    "branchId": "optovik-branch-4",
+    "name": "Краснодар · ул. Российская, 414",
+    "city": "Краснодар",
+    "address": "ул. Российская, 414",
+    "excluded": true,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "KNOWN",
+    "stockQuantity": 99
+  },
+  {
+    "branchId": "optovik-branch-5",
+    "name": "Новороссийск · ул. Исаева, 19",
+    "city": "Новороссийск",
+    "address": "ул. Исаева, 19",
+    "excluded": false,
+    "adjustPercent": 0,
+    "rulePrice": 7440,
+    "customPrice": null,
+    "effectivePrice": 7440,
+    "stockKind": "KNOWN",
+    "stockQuantity": 13
+  }
+]

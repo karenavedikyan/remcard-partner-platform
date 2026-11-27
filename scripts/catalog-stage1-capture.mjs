@@ -21,6 +21,7 @@ const implBase = process.env.CATALOG_CAPTURE_BASE ?? "http://127.0.0.1:3000";
 const protoBase = process.env.CATALOG_PROTO_BASE ?? "http://127.0.0.1:8765";
 
 const MODEL_ID = "p001";
+const BRANCH_STOCK_MODEL_ID = "p004";
 
 const viewports = [
   { name: "1386x719", width: 1386, height: 719 },
@@ -100,6 +101,58 @@ const implScenarios = [
       });
       await waitCatalogList(page);
       await openModel(page, MODEL_ID);
+      await page.getByTestId("pc-model-view").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
+  {
+    slug: "catalog-owner-model-branch-known",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=owner&branchStock=known&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
+      await page.getByTestId("pc-model-branches").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
+  {
+    slug: "catalog-owner-model-branch-unknown",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=owner&branchStock=unknown&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
+      await page.getByTestId("pc-model-branches").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
+  {
+    slug: "catalog-employee-model-branch-known",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=employee&branchStock=known&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
+      await page.getByTestId("pc-model-view").waitFor({ state: "visible", timeout: 30_000 });
+    },
+  },
+  {
+    slug: "catalog-employee-model-branch-unknown",
+    fullPage: true,
+    async prepare(page) {
+      await page.goto(
+        `${implBase}/catalog/dev-fixture?role=employee&branchStock=unknown&model=${BRANCH_STOCK_MODEL_ID}`,
+        { waitUntil: "domcontentloaded", timeout: 120_000 },
+      );
+      await waitCatalogList(page);
+      await openModel(page, BRANCH_STOCK_MODEL_ID);
       await page.getByTestId("pc-model-view").waitFor({ state: "visible", timeout: 30_000 });
     },
   },

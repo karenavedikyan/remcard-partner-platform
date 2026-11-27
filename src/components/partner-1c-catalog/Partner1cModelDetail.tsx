@@ -10,7 +10,7 @@ import {
 } from "@/lib/partner-1c-catalog/constants";
 import {
   branchPrice,
-  branchStock,
+  formatBranchStockLabel,
   markup,
   mkPct,
   mkTone,
@@ -54,15 +54,6 @@ function skuCost(m: PartnerCatalogModel, price: number | null) {
 
 function signed(n: number) {
   return `${n < 0 ? "−" : "+"}${num(Math.abs(n))}`;
-}
-
-function branchStockLabel(m: PartnerCatalogModel, here: boolean, branchIndex: number): string {
-  if (!here) return "товар здесь не представлен";
-  if (m.price == null) return "под заказ · остатка в 1С нет";
-  const stock = branchStock(m, branchIndex);
-  if (stock == null) return "под заказ · остатка в 1С нет";
-  if (stock > 0) return `в наличии ${num(stock)} шт`;
-  return "нет в наличии";
 }
 
 function BranchPriceMeta({
@@ -377,7 +368,7 @@ export function Partner1cModelDetail({
                   />
                   <span>
                     <strong>{BRANCHES[i]}</strong>
-                    <small>{branchStockLabel(m, here, i)}</small>
+                    <small>{formatBranchStockLabel(m, here, i)}</small>
                   </span>
                 </label>
                 {m.price != null && manage ? (

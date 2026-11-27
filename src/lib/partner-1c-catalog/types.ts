@@ -22,6 +22,15 @@ export type CatalogProductRaw = {
 
 export type SkuStockState = "in" | "zero" | "unknown";
 
+export type BranchStockKind = "KNOWN" | "ZERO" | "UNKNOWN";
+
+/** Per cabinet branch index when model detail API supplies branches[]. */
+export type BranchApiStock = {
+  stockKind: BranchStockKind | null;
+  stockQuantity: number | null;
+  excluded?: boolean;
+};
+
 export type CatalogSku = {
   key: string;
   name1c: string;
@@ -82,6 +91,8 @@ export type PartnerCatalogModel = {
   item: CatalogItem;
   onSite: boolean;
   supplier: null;
+  /** Set when detail response includes branches[] (fixture stock must not be used). */
+  branchStocksFromApi?: BranchApiStock[] | null;
 };
 
 export type CatalogAudience = "partner" | "client";

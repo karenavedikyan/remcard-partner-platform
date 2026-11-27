@@ -10,9 +10,13 @@ import { buildPartnerModels } from "@/lib/partner-1c-catalog/models";
 import { optovikFixtureProducts } from "@/lib/partner-1c-catalog/fixtures";
 import { partner1cCatalogFeatureEnabled } from "@/lib/partner-1c-catalog/constants";
 import { emptyCatalogListUiAccess } from "@/lib/partner-1c-catalog/catalog-access";
+import {
+  adaptNavigatorCabinetModelDetail,
+  fixtureNavigatorCabinetModelDetailWithApiBranches,
+} from "@/lib/partner-1c-catalog/navigator-model-detail";
 
 type Props = {
-  searchParams: Promise<{ role?: string }>;
+  searchParams: Promise<{ role?: string; branchStock?: string; model?: string }>;
 };
 
 export default async function CatalogDevFixturePage({ searchParams }: Props) {
@@ -20,9 +24,20 @@ export default async function CatalogDevFixturePage({ searchParams }: Props) {
     notFound();
   }
 
-  const { role } = await searchParams;
+  const { role, branchStock, model: modelId } = await searchParams;
   const employee = role === "employee";
-  const models = employee ? stripCostFromModels(buildPartnerModels(optovikFixtureProducts())) : buildPartnerModels(optovikFixtureProducts());
+  let models = employee
+    ? stripCostFromModels(buildPartnerModels(optovikFixtureProducts()))
+    : buildPartnerModels(optovikFixtureProducts());
+
+  const captureBranchStock =
+    branchStock === "known" || branchStock === "unknown" ? branchStock : null;
+  if (captureBranchStock) {
+    const dto = fixtureNavigatorCabinetModelDetailWithApiBranches(captureBranchStock);
+    const detailed = adaptNavigatorCabinetModelDetail(dto, { manage: !employee });
+    const openId = modelId?.trim() || "p004";
+    models = models.map((m) => (m.id === openId ? detailed : m));
+  }
 
   const access = emptyCatalogListUiAccess(employee ? "employee-fixture" : "owner-fixture");
   access.canSeeOwnerEconomics = !employee;

@@ -38,4 +38,13 @@ describe("navigator cabinet model detail adapter", () => {
     expect(model.brand).toBe("Тандор");
     expect(model.item.brand).toBe("Тандор");
   });
+
+  it("stores per-branch stock from non-empty branches[]", () => {
+    const model = adaptNavigatorCabinetModelDetail(
+      { ...sample, branches: [{ branchId: "optovik-branch-0", name: "a", city: "Краснодар", address: "Ростовское шоссе, 30/3", excluded: false, adjustPercent: 0, rulePrice: 1, customPrice: null, effectivePrice: 1, stockKind: "KNOWN", stockQuantity: 3 }] },
+      { manage: true },
+    );
+    expect(model.branchStocksFromApi?.[0]?.stockKind).toBe("KNOWN");
+    expect(model.branchStocksFromApi?.[0]?.stockQuantity).toBe(3);
+  });
 });

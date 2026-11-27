@@ -1,4 +1,4 @@
-import { buildPartnerModels } from "./models";
+import { buildPartnerModels, mapNavigatorBranchesToCabinetStock } from "./models";
 import { optovikFixtureProducts } from "./fixtures";
 import type {
   CatalogProductRaw,
@@ -6,7 +6,10 @@ import type {
   PartnerCatalogModel,
   SkuStockState,
 } from "./types";
+import ownerBranchesFixture from "./fixtures/cabinet-model-detail-owner-branches.json";
+import { BRANCHES } from "./constants";
 import type {
+  NavigatorCabinetModelBranch,
   NavigatorCabinetModelDetail,
   NavigatorCabinetModelVariant,
 } from "./navigator-types";
@@ -114,6 +117,10 @@ export function adaptNavigatorCabinetModelDetail(
       item: { ...model.item, brand },
     };
   }
+  const branchStocksFromApi = mapNavigatorBranchesToCabinetStock(dto.branches);
+  if (branchStocksFromApi) {
+    model = { ...model, branchStocksFromApi };
+  }
   return model;
 }
 
@@ -170,4 +177,98 @@ export function fixtureNavigatorCabinetModelDetailSample(): NavigatorCabinetMode
     ],
     branches: [],
   };
+}
+
+function branchFixtureIndex(branchId: string): number | null {
+  const match = /(?:^|[-_])(\d+)$/.exec(branchId.trim());
+  if (!match) return null;
+  const idx = Number(match[1]);
+  return Number.isInteger(idx) ? idx : null;
+}
+
+function reorderBranches(
+  branches: NavigatorCabinetModelBranch[],
+  order: number[],
+): NavigatorCabinetModelBranch[] {
+  const byIndex = new Map<number, NavigatorCabinetModelBranch>();
+  for (const branch of branches) {
+    const idx = branchFixtureIndex(branch.branchId);
+    if (idx != null) byIndex.set(idx, branch);
+  }
+  return order.map((i) => {
+    const hit = byIndex.get(i);
+    if (!hit) throw new Error(`missing branch fixture for index ${i}`);
+    return hit;
+  });
+}
+
+/** Demo detail with per-branch stock from cabinet API contract (for tests and capture). */
+export function fixtureNavigatorCabinetModelDetailWithApiBranches(
+  mode: "known" | "unknown",
+): NavigatorCabinetModelDetail {
+  const base = fixtureNavigatorCabinetModelDetailSample();
+  const fromFile = ownerBranchesFixture as NavigatorCabinetModelBranch[];
+  let branches: NavigatorCabinetModelBranch[];
+  if (mode === "known") {
+    branches = fromFile;
+  } else {
+    branches = fromFile.map((b) => ({
+      ...b,
+      stockKind: "UNKNOWN" as const,
+      stockQuantity: null,
+      excluded: false,
+    }));
+  }
+  return { ...base, branches };
+}
+
+/** Branches in reverse cabinet order — mapping must use branchId, not array index. */
+export function fixtureNavigatorCabinetModelDetailShuffledBranches(): NavigatorCabinetModelDetail {
+  const base = fixtureNavigatorCabinetModelDetailSample();
+  const branches = reorderBranches(
+    ownerBranchesFixture as NavigatorCabinetModelBranch[],
+    [5, 4, 3, 2, 1, 0],
+  );
+  return { ...base, branches };
+}
+
+export function navigatorBranchStubsForCapture(mode: "known" | "unknown"): NavigatorCabinetModelBranch[] {
+  const price = 11670;
+  return BRANCHES.map((_, i) => {
+    const [city, ...rest] = BRANCHES[i]!.split(", ");
+    const address = rest.join(", ");
+    if (mode === "unknown") {
+      return {
+        branchId: `optovik-branch-${i}`,
+        name: `${city} · ${address}`,
+        city: city!,
+        address,
+        excluded: false,
+        adjustPercent: 0,
+        rulePrice: price,
+        customPrice: null,
+        effectivePrice: price,
+        stockKind: "UNKNOWN",
+        stockQuantity: null,
+      };
+    }
+    const row = (ownerBranchesFixture as NavigatorCabinetModelBranch[]).find((b) =>
+      b.branchId.endsWith(`-${i}`),
+    );
+    return (
+      row ?? {
+        branchId: `optovik-branch-${i}`,
+        name: `${city} · ${address}`,
+        city: city!,
+        address,
+        excluded: false,
+        adjustPercent: 0,
+        rulePrice: price,
+        customPrice: null,
+        effectivePrice: price,
+        stockKind: "KNOWN",
+        stockQuantity: 7,
+      }
+    );
+  });
 }
