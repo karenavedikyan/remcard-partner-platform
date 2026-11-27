@@ -1,7 +1,8 @@
 .catalogScope {
   display: grid;
-  gap: var(--s4, 16px);
+  gap: var(--s5, 20px);
   min-width: 0;
+  overflow-x: clip;
 }
 
 .catalogScope :global(.stack) {
@@ -32,6 +33,13 @@
   border-radius: 10px;
   font-size: var(--text-sm, 0.875rem);
   color: var(--muted);
+}
+
+.catalogScope :global(.notice > svg) {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .catalogScope :global(.notice.accent) {
@@ -256,6 +264,88 @@
   font-weight: 700;
   color: var(--muted);
   background: var(--offset);
+  padding-block: var(--s2, 8px);
+}
+
+.catalogScope :global(.pc-row-main:hover strong) {
+  color: var(--accent);
+}
+
+.catalogScope :global(.pc-row-title) {
+  display: grid;
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-row-title strong),
+.catalogScope :global(.pc-row-title small) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-cell) {
+  display: grid;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-cell small) {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catalogScope :global(.pc-cell--status) {
+  justify-items: start;
+}
+
+.catalogScope :global(.pc-cell--act) {
+  justify-items: end;
+}
+
+.catalogScope :global(.pc-cell--price strong) {
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-status) {
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-status svg) {
+  width: 14px;
+  height: 14px;
+}
+
+.catalogScope :global(.pc-btn-sm) {
+  min-height: 40px;
+  padding: var(--s2, 8px) var(--s3, 12px);
+  font-size: var(--text-xs, 0.75rem);
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-pick) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  min-height: 28px;
+  cursor: pointer;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 700;
+}
+
+.catalogScope :global(.pc-pick input) {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-row.is-picked) {
+  background: var(--tint);
 }
 
 .catalogScope :global(.pc-list--money .pc-row) {
@@ -369,7 +459,7 @@
 
 .catalogScope :global(.pc-toolbar) {
   position: sticky;
-  top: 0;
+  top: var(--pc-sticky-top, 0px);
   z-index: 4;
   display: flex;
   align-items: center;
@@ -379,11 +469,265 @@
   border: 1px solid var(--line);
   border-radius: var(--radius, 12px);
   background: var(--surface);
+  min-width: 0;
 }
 
 .catalogScope :global(.pc-toolbar.is-bulk) {
   border-color: var(--accent);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.catalogScope :global(.pc-bulk) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px);
+}
+
+.catalogScope :global(.pc-bulk .btn svg),
+.catalogScope :global(.pc-full-btn svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.catalogScope :global(.pc-bulk-clear) {
+  min-height: 40px;
+  padding-inline: var(--s2, 8px);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+}
+
+.catalogScope :global(.pc-view) {
+  display: flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.catalogScope :global(.pc-seg) {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--offset);
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-seg button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 var(--s3, 12px);
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-seg button.selected) {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.catalogScope :global(.pc-seg svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.catalogScope :global(.pc-full-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-cost-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-cost-btn svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.catalogScope :global(.pc-cost-btn.is-on) {
+  border-color: var(--ink);
+}
+
+.catalogScope :global(.pc-full-title) {
+  display: none;
+}
+
+.catalogScope :global(.pc-row-var) {
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-brbtn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  white-space: nowrap;
+  justify-self: start;
+}
+
+.catalogScope :global(.pc-brbtn.is-part) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--tint);
+}
+
+.catalogScope :global(.pc-mk) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-row-flag) {
+  display: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.catalogScope :global(.pc-stock-br) {
+  display: none;
+}
+
+.catalogScope :global(.pc-card.is-picked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--tint);
+}
+
+.catalogScope :global(.pc-card > .pc-pick) {
+  position: absolute;
+  top: var(--s2, 8px);
+  left: var(--s2, 8px);
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.catalogScope :global(.pc-card-photo) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  padding: var(--s3, 12px);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-card-photo img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.catalogScope :global(.pc-card-body) {
+  display: grid;
+  align-content: start;
+  gap: var(--s2, 8px);
+  padding: var(--s3, 12px) var(--s4, 16px) var(--s4, 16px);
+}
+
+.catalogScope :global(.pc-card-title) {
+  display: grid;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-card-title strong) {
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.catalogScope :global(.pc-card-title small) {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-card-title:hover strong) {
+  color: var(--accent);
+}
+
+.catalogScope :global(.pc-card-nums) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2, 8px);
+  font-size: var(--text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-card-foot) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px);
+  margin-top: auto;
+}
+
+.catalogScope :global(.pc-found-n) {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-fchips) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px);
+  flex: 1;
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-fchips button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 4px 10px 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
 }
 
 .catalogScope :global(.pc-cards) {
@@ -403,19 +747,162 @@
 }
 
 .catalogScope :global(.pc-section.is-full) {
+  --pc-full-pad: var(--s4, 16px);
   position: fixed;
   inset: 0;
   z-index: 4900;
+  margin: 0;
+  max-width: none;
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--bg);
-  padding: var(--s4, 16px) var(--s5, 20px) 88px;
+  padding: var(--pc-full-pad) var(--s5, 20px) 88px;
+  gap: var(--s3, 12px);
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .catalogScope :global(.pc-section.is-full > .pc-demo),
-.catalogScope :global(.pc-section.is-full > .pc-tabs),
+.catalogScope :global(.pc-section.is-full > .pc-tabrow),
 .catalogScope :global(.pc-section.is-full > .pc-stats),
 .catalogScope :global(.pc-section.is-full > .pc-foot) {
   display: none;
+}
+
+.catalogScope :global(.pc-section.is-full .pc-full-title) {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px) var(--s3, 12px);
+}
+
+.catalogScope :global(.pc-section.is-full .pc-full-title strong) {
+  font-size: var(--text-lg, 1.125rem);
+  letter-spacing: -0.01em;
+}
+
+.catalogScope :global(.pc-section.is-full .pc-full-title span) {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-section.is-full .pc-filters) {
+  padding: var(--s2, 8px) var(--s3, 12px);
+}
+
+.catalogScope :global(.pc-section.is-full .pc-toolbar) {
+  top: 0;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.catalogScope :global(.pc-section.is-full .pc-row) {
+  padding-block: 6px;
+}
+
+.catalogScope :global(.pc-section.is-full .pc-thumb) {
+  width: 34px;
+  height: 46px;
+  border-radius: 6px;
+}
+
+.catalogScope :global(.pc-section.is-full .pc-row .pc-btn-sm) {
+  min-height: 34px;
+  padding-block: 4px;
+}
+
+.catalogScope :global(.pc-section.is-full .pc-cards) {
+  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
+  gap: var(--s3, 12px);
+}
+
+@container pclist (max-width: 1019px) {
+  .catalogScope :global(.pc-row) {
+    grid-template-columns: 28px minmax(0, 2fr) 120px 88px 100px 104px;
+    column-gap: var(--s2, 8px);
+  }
+  .catalogScope :global(.pc-list--money .pc-row) {
+    grid-template-columns: 28px minmax(0, 2fr) 120px 96px 88px 100px 104px;
+  }
+  .catalogScope :global(.pc-row > .pc-cell--status),
+  .catalogScope :global(.pc-row--head > .pc-cell--status) {
+    display: none;
+  }
+  .catalogScope :global(.pc-row-flag) {
+    display: block;
+  }
+  .catalogScope :global(.pc-row-title small:first-of-type) {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+  }
+}
+
+@container pclist (max-width: 759px) {
+  .catalogScope :global(.pc-row) {
+    grid-template-columns: 28px minmax(0, 2fr) 120px 88px 104px;
+  }
+  .catalogScope :global(.pc-list--money .pc-row) {
+    grid-template-columns: 28px minmax(0, 2fr) 120px 96px 88px 104px;
+  }
+  .catalogScope :global(.pc-row > .pc-cell--br),
+  .catalogScope :global(.pc-row--head > .pc-cell--br) {
+    display: none;
+  }
+  .catalogScope :global(.pc-stock-sub) {
+    display: none;
+  }
+  .catalogScope :global(.pc-stock-br) {
+    display: block;
+  }
+}
+
+@container pclist (max-width: 679px) {
+  .catalogScope :global(.pc-row),
+  .catalogScope :global(.pc-list--money .pc-row) {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: var(--s2, 8px) var(--s3, 12px);
+  }
+  .catalogScope :global(.pc-row--head) {
+    display: none;
+  }
+  .catalogScope :global(.pc-row > .pc-pick) {
+    grid-row: 1;
+    align-self: center;
+  }
+  .catalogScope :global(.pc-row-main) {
+    grid-column: 2 / -1;
+  }
+  .catalogScope :global(.pc-row > .pc-cell--status) {
+    display: grid;
+    grid-column: 2;
+    justify-items: start;
+  }
+  .catalogScope :global(.pc-row-flag) {
+    display: none;
+  }
+  .catalogScope :global(.pc-row > .pc-cell--br) {
+    display: flex;
+  }
+  .catalogScope :global(.pc-cell[data-label]) {
+    grid-column: 2 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--s2, 8px) var(--s3, 12px);
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .catalogScope :global(.pc-cell[data-label]::before) {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: var(--text-xs, 0.75rem);
+    margin-right: auto;
+  }
+  .catalogScope :global(.pc-cell--stock small),
+  .catalogScope :global(.pc-stock-br) {
+    display: none;
+  }
 }
 
 .catalogScope :global(.pc-model) {
@@ -574,11 +1061,90 @@
   }
 }
 
+@media (max-width: 1180px) {
+  .catalogScope :global(.pc-stats--4) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 680px) {
   .catalogScope :global(.pc-stats--4) {
     grid-template-columns: 1fr;
   }
-  .catalogScope :global(.pc-cards) {
+  .catalogScope :global(.pc-cards),
+  .catalogScope :global(.pc-section.is-full .pc-cards) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s2, 8px);
+  }
+  .catalogScope :global(.pc-toolbar) {
+    padding: var(--s2, 8px) var(--s3, 12px);
+  }
+  .catalogScope :global(.pc-view) {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .catalogScope :global(.pc-cost-btn) {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .catalogScope :global(.pc-seg) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .catalogScope :global(.pc-seg button) {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0 var(--s2, 8px);
+  }
+  .catalogScope :global(.pc-full-btn) {
+    flex: 0 0 auto;
+    padding-inline: var(--s3, 12px);
+  }
+  .catalogScope :global(.pc-bulk) {
+    width: 100%;
+    min-width: 0;
+  }
+  .catalogScope :global(.pc-bulk .btn) {
+    flex: 1 1 140px;
+    min-width: 0;
+    padding-inline: var(--s2, 8px);
+  }
+  .catalogScope :global(.pc-card-body) {
+    padding: var(--s2, 8px) var(--s3, 12px) var(--s3, 12px);
+  }
+  .catalogScope :global(.pc-section.is-full) {
+    --pc-full-pad: var(--s3, 12px);
+    padding: var(--pc-full-pad) var(--s3, 12px) 96px;
+  }
+  .catalogScope :global(.pc-quick) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--s1, 4px));
+    padding-inline: var(--s1, 4px);
+  }
+  .catalogScope :global(.pc-quick::-webkit-scrollbar) {
+    display: none;
+  }
+  .catalogScope :global(.pc-quick button) {
+    flex: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .catalogScope :global(.pc-full-btn span) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .catalogScope :global(.pc-full-btn) {
+    min-width: 44px;
+    justify-content: center;
   }
 }
