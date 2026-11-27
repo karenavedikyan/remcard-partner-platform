@@ -1,45 +1,51 @@
-# Отчёт: этап 1 каталога партнёра из 1С
+# Отчёт: этап 1 каталога партнёра (frontend fix)
 
-**Ветка:** `cursor/catalog-stage1-20261127`  
-**HEAD SHA:** `010fcdf5` (полная цепочка: `978a9d5e` → `14c9d869` → `a29228d8` → `010fcdf5`)
+**Ветка:** `cursor/catalog-stage1-frontend-fix-7a0a` (от `cursor/catalog-stage1-20261127`, база `d9af44fe`)  
+**HEAD SHA:** `999eb706305428a3c4abf69d11d47bfae44fed88` (цепочка: `2f8484bf` → `e5cad940` → `946368f0` → `999eb706`)  
 
-## Флаг и регрессия
+## Флаг
 
-- Каталог включается только при `PARTNER_1C_CATALOG_ENABLED=1` (по умолчанию выключен).
-- Пункт меню «Каталог», маршруты `/catalog`, preview и режим «Из каталога» в калькуляторе — за флагом.
+- `PARTNER_1C_CATALOG_ENABLED=1` — каталог, preview, калькулятор «Из каталога».
+- При включённом флаге `fetchPartnerCatalogSnapshotLive` ходит в navigator `/api/pro/organization/partner-products*`; при ошибке или пустом ответе — фикстуры.
 
-## Принятие (пункт → что сделано → тест)
+## Допущения по API navigator (ветка `cursor/catalog-stage1-20261127`)
 
-| Пункт ТЗ | Что сделано | Тест |
-|----------|-------------|------|
-| Кабинет: «Каталог → Товары», фильтры 1С, поиск, сортировка, карточки/список, групповые действия, полноэкранный режим, статусы модели | `Partner1cCatalogWorkspace`, `Partner1cItemsTab`, `Partner1cFilterPanel`, lib `lk.ts` | `lk.test.ts`, скриншоты `catalog-owner_*` |
-| Закупка/наценка и вкладка «Филиалы и цены» в карточке — только владельцу | `Partner1cModelDetail`, `api.ts` strip cost для сотрудника | `Partner1cModelDetail.test.tsx`, `api.test.ts` |
-| Сотрудник с правом catalog видит раздел; без права — нет в меню | `gate.ts`, nav filter | `gate.test.ts` |
-| «Вид на сайте» | `Partner1cSitePreviewTab`, iframe `/preview/client-catalog/s6` | скриншоты owner tab site |
-| Клиентский сайт: вкладка «Товары» продавца, фильтры, карточка, «Где купить» | `/preview/client-catalog/s6`, `/preview/client-catalog/p/[id]`, `ClientWhereToBuy` | скриншоты `client-seller_*`, `client-product_*` |
-| Калькулятор: «Из каталога» из опубликованных дверей | `door-models.ts`, `resolveDoorCatalogModels()`, doors page prop | `doorCalculator` existing tests + flag gate |
-| Миграции БД не применять | stub SQL (локально `artifacts/catalog-reference/migrations/*.sql`, в .gitignore) | ручная проверка пути в отчёте |
-| tsc / next build / vitest | | `npx tsc --noEmit`, `npm run build`, `npm run test:component` по `partner-1c-catalog` |
+- Кабинет: `GET /api/pro/organization/partner-products` → `{ models, meta, settings }` (`serialize.ts`); публичный список — `{ settings, filter, options, summary, items }` (`publicDto.ts`).
+- Детальные SKU для UI по-прежнему обогащаются из фикстуры `optovik-products.json` по `model.id` до стабилизации полного DTO.
+- `GET .../access` → `{ enabled, canAccess, isOwner?, code?, error? }`.
 
-## Скриншоты
+## Пункт / что сделано / как проверено
 
-Каталог: `artifacts/catalog-reference/out/` — 4 экрана × 3 viewport × 2 темы (рядом с прототипом сверять по `artifacts/catalog-reference/prototype/`).
+| Пункт | Что сделано | Как проверено |
+|-------|-------------|----------------|
+| 1. `/preview/client-catalog/s6` | `parseClientPreviewHidden` в `src/lib/client-catalog/preview-hidden.ts` | `curl` 200 на dev, скриншоты `client-seller_*` |
+| 2. Карточка `p004` | Сетка `.pd`, `overflow-x: clip`, стили specs | Playwright `scrollWidth===390` на 390×844; `client-product_*` |
+| 3. Кабинет «Товары» + сотрудник | `.stats` grid, `pc-list--staff`, скрыты филиалы/закупка у staff | `catalog-employee_*`, `data-testid=pc-model-*` count 20 |
+| 4. API adapter | `navigator-adapter.ts`, `api.ts` live fetch, proxy allowlist | `navigator-adapter.test.ts`, `api.test.ts` |
+| 5. Ошибки публикации/филиала | `catalog-access.ts`, цены `—` при `publicationPricesBlocked`, hint «выберите филиал» | `catalog-access.test.ts` |
+| 6. Калькулятор «Из каталога» | Без изменений: `resolveDoorCatalogModels()` + флаг | `door-models.ts`, существующие тесты |
+| 7. `sections.test.ts` | «Каталог» в BUSINESS_OWNER_CORE | `vitest` 4/4 |
+| 8. tsc / build | — | `npx tsc --noEmit`, `npm run build` |
+| 9. Скриншоты | `scripts/catalog-stage1-capture.mjs` | `artifacts/catalog-reference/out/*` |
 
-Захват: `PARTNER_1C_CATALOG_ENABLED=1 node scripts/catalog-stage1-capture.mjs`
+## Vitest (целевой набор)
 
-## Расхождения с прототипом (осознанные)
+```
+npx vitest run src/lib/business-nav/sections.test.ts src/lib/partner-1c-catalog src/components/partner-1c-catalog/Partner1cModelDetail.test.tsx
+→ 7 files, 20 passed
+```
 
-1. **Вкладки этапа 2/3** — нет «Заявки», «Поставщики», «Обмен с 1С», отдельной вкладки «Филиалы и цены» (настройка филиалов в карточке модели сохранена, как в прототипе).
-2. **Поставщики / catalog-suppliers** — демо-модели поставщика (t001…) не перенесены.
-3. **Клиентский preview** — в prof-репозитории, не на remcard.ru; визуал и фильтры через общий `lk.ts`.
-4. **Тип цены филиала / обмен 1С** — демо-состояние в памяти, без API navigator.
-5. **Иконка меню «Каталог»** — упрощённая SVG, не Lucide из прототипа.
-6. **Число позиций в демо-баннере** — 20 моделей фикстуры vs «4762 позиции» в тексте прототипа (цифра баннера привязана к фикстуре).
+## tsc / build
 
-## Требует миграции или отдельного разрешения
+- `npx tsc --noEmit` — OK  
+- `npm run build` — OK  
 
-- Таблицы публикации каталога 1С, цен по филиалам, снимков обмена — stub `20261127120000_partner_1c_catalog_stub.sql` (не в git из‑за `*.sql` в .gitignore).
-- Включение `PARTNER_1C_CATALOG_ENABLED=1` на prof.
-- Реальный API remcard-navigator вместо `fetchPartnerCatalogSnapshot` mock.
-- Публичные маршруты каталога на remcard.ru (вне этого репозитория).
-- Откат merge на `main` (если требуется): посторонний merge `8b0b78a9` не входил в ТЗ ветки.
+## Отличия от прототипа (осознанные)
+
+1. SKU/варианты при live API — из фикстуры, пока navigator не отдаёт полный номенклатурный срез в list.
+2. Иконка меню «Каталог» — упрощённая (как в предыдущем отчёте).
+3. Этапы 2/3 (заявки, поставщики, обмен 1С) не делались.
+
+## Регрессия prod
+
+- Флаг выключен → прежнее поведение (калькулятор без каталога, нет `/catalog`).
