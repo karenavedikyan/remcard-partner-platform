@@ -2,7 +2,7 @@
 
 **Ветка:** `cursor/catalog-fe-real-branches-c029` (база `cursor/catalog-stage1-fe-branch-stock-api-34b5`, старт `4be10fa3c991b105327131a8bf31d40179a4a53b`)  
 **Бэкенд-контракт (только чтение):** `remcard-navigator` `cursor/catalog-be-prisma-fixes-3cb5` — `meta.branches[]`, `models/{id}.branches[]` по `branchId`  
-**HEAD SHA:** `ba626945`
+**HEAD SHA:** `4aaab8f5`
 
 ## Пункт / что сделано / как проверено
 
