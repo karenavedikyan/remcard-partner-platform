@@ -1,36 +1,47 @@
-# Отчёт: кабинет «Каталог → Товары» (этап 1)
+# Отчёт: кабинет «Каталог → Товары» (этап 1, сборка и снимки)
 
-**Ветка:** `cursor/catalog-stage1-cabinet-view-2745` (база `cursor/catalog-stage1-frontend-fix-7a0a`, старт `a3ca1e31`)  
-**HEAD SHA:** `3555e1efd1215c52a8c5f04a4b7a13f5e90d9324` (`fe6a0a72` → `53e88e9e` → `3b35b01d` → `3555e1ef`)
+**Ветка:** `cursor/catalog-stage1-build-shots-bb5c` (база `cursor/catalog-stage1-cabinet-view-2745`, старт `bdc92901`)  
+**HEAD SHA:** *(подставить после push — `git rev-parse HEAD`)*
 
 ## Пункт / что сделано / как проверено
 
 | Пункт | Что сделано | Как проверено |
 |-------|-------------|----------------|
-| 1. Сегмент «Список / Карточки» и «На весь экран» | Стили `.pc-seg`, `.pc-view`, `.pc-full-btn`, `.pc-cost-btn`, мобильная раскладка 390px | Визуально vs прототип; Playwright `catalog-*_390x844_*` |
-| 2. Паритет с прототипом | Дополнены toolbar, строки таблицы, карточки, fullscreen, container queries `pclist`, чипы, found-bar | Скриншоты `1386×719`, `1460×833`, `390×844`, light/dark |
-| 3. Вид сотрудника | `snapshotForAudience`, скрытие закупки/филиалов в UI; `assertNoOwnerEconomicsInValue` | `employee-snapshot.test.ts`, `Partner1cModelDetail.test.tsx` |
-| 4. SKU из API | `fetchPartnerCatalogModelDetail`, `adaptNavigatorCabinetModelDetail`; список без merge фикстуры; фикстура — fallback | `navigator-model-detail.test.ts`, `navigator-adapter.test.ts` |
-| 5. Скриншоты | `catalog-stage1-capture.mjs`: ожидание testid, снятие `[role=alert]`, предупреждение overflow | `artifacts/catalog-reference/out/*.png` |
-| 6. Сборка | tsc, build, vitest | см. ниже |
+| 1. Сборка | `employee-snapshot.test.ts` → `.tsx` (JSX в vitest); `rg '<[A-Z]'` по `*.test.ts` этапа 1 — других JSX в `.ts` нет | `npx next build`, наличие `.next/BUILD_ID`; vitest |
+| 2. Снимки impl | `catalog-stage1-capture.mjs`: таблица, «Карточки», карточка модели; owner/employee; 1386×719 и 390×844; light/dark; `fullPage`; снятие `[role=alert]`; overflow guard на 390 | `artifacts/catalog-reference/out/catalog-*_{table,cards,model}_*.png` |
+| 3. Снимки proto | Парные кадры в `out/proto/` (те же slug и размеры); прототип `partner/index.html?role=…&open=goods&dataset=demo` | `artifacts/catalog-reference/out/proto/*.png` |
+| 4. Паритет таблицы | Наценка: «+N ₽ с шт.» в списке; колонка «Филиалы» у сотрудника; подпись остатка по филиалам; кнопка `pc-brbtn` у владельца | Снимки + визуальное сравнение с `proto/` |
+| 5. Тесты | Без новых падений | vitest, `npx tsc --noEmit`, `npx next build` |
 
 ## Vitest (целевой набор)
 
 ```bash
-npx vitest run src/lib/business-nav/sections.test.ts \
+PARTNER_1C_CATALOG_ENABLED=1 npx vitest run src/lib/business-nav/sections.test.ts \
   src/lib/partner-1c-catalog \
   src/components/partner-1c-catalog/Partner1cModelDetail.test.tsx \
-  src/app/catalog/dev-fixture/employee-snapshot.test.ts
+  src/app/catalog/dev-fixture/employee-snapshot.test.tsx
 ```
 
 ## tsc / build
 
-- `npx tsc --noEmit` — OK
-- `npm run build` — OK
+- `npx tsc --noEmit` — OK  
+- `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID` присутствует)
 
-## Оставшиеся отличия от прототипа
+## Расхождения impl vs прототип (таблица и карточка модели)
 
-1. При `source: fixture` (флаг выкл. или fallback) SKU по-прежнему из `optovik-products.json`.
-2. Список при live API строится из строк navigator без полного набора свойств фильтра до открытия карточки модели.
-3. Иконка пункта меню «Каталог» — упрощённая SVG (как в предыдущем отчёте).
-4. Этапы 2/3 не реализованы.
+### Исправлено в вёрстке (этот заход)
+
+1. Колонка «Наценка» в списке: добавлена вторая строка «+N ₽ с шт.» как в прототипе.
+2. Сотрудник: в таблице снова видна колонка «Филиалы» (только текст, без закупки/наценки).
+3. Остаток: подпись «все филиалы» / «филиалов: N из 6» под статусом наличия.
+4. Владелец: кнопка филиалов `pc-brbtn` с иконкой (открывает карточку модели для правки филиалов).
+
+### Остаётся (перечень)
+
+| # | Область | Суть |
+|---|---------|------|
+| 1 | Оболочка | Прототип — полный кабинет (sidebar, topbar, вкладки «Заявки», «Филиалы и цены», «Поставщики», «Обмен с 1С»); impl — dev-fixture и только «Товары» + «Вид на сайте» (этап 1 по ТЗ). |
+| 2 | Данные | В фикстуре 20 моделей, в прототипе 21; средняя наценка 51 % vs 52 % — разный состав демо-выборки. |
+| 3 | Логика | Диалог массового редактирования филиалов из списка (`branches:` в прототипе) не реализован — кнопка ведёт в карточку модели. |
+| 4 | Источник SKU | При `source: fixture` SKU из `optovik-products.json`; при live API — navigator без полного набора фильтров до открытия карточки. |
+| 5 | Прочее | Иконка пункта меню «Каталог» упрощённая; этапы 2/3 не делались. |
