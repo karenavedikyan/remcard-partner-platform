@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MiniAppRoot } from "./MiniAppRoot";
-import { buildMiniAppFixture } from "@/app/dev/mini-app-fixture/fixtures-data";
+import { buildMiniAppFixture, MINI_APP_FIXTURE_CREATE_SEED } from "@/app/dev/mini-app-fixture/fixtures-data";
 import * as api from "@/lib/mini-app/api";
 import { RemcardApiError } from "@/lib/api-client";
 
@@ -41,7 +41,7 @@ describe("MiniAppRoot branch pick", () => {
     });
     expect(screen.queryByTestId("mini-app-error")).toBeNull();
     expect(screen.getByTestId("mini-branch-option-b1")).toHaveClass(/branchOptionActive/);
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", "b2");
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", { branchId: "b2", embeddedContext: "default" });
   });
 
   it("passes selected branch to mini bootstrap without patching pro context", async () => {
@@ -64,6 +64,114 @@ describe("MiniAppRoot branch pick", () => {
       expect(screen.getByTestId("mini-app-home")).toBeInTheDocument();
     });
     expect(screen.getByTestId("mini-app-branch-select")).toHaveTextContent("пр. Демо, Казань");
-    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", "b2");
+    expect(api.miniAppFetchBootstrap).toHaveBeenCalledWith("telegram", { branchId: "b2", embeddedContext: "default" });
+  });
+
+  it("opens company wallet on the selected direction and preserves it on return", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppRoot fixtureBootstrap={companyBootstrap} fixturePlatform="telegram" />);
+    expect(screen.getByTestId("mini-wallet-card-confirmed")).toHaveTextContent(/12\s480/);
+    expect(screen.getByTestId("mini-wallet-card-waiting")).toHaveTextContent(/3\s200/);
+    await user.click(screen.getByRole("button", { name: "Я должен" }));
+    expect(screen.getByTestId("mini-wallet-card-confirmed")).toHaveTextContent(/11\s200/);
+    expect(screen.getByTestId("mini-wallet-card-waiting")).toHaveTextContent(/5\s500/);
+    await user.click(screen.getByTestId("mini-wallet-card-open"));
+    expect(screen.getByRole("tab", { name: /Я должен/, selected: true })).toBeInTheDocument();
+    expect(screen.getByTestId("mini-wallet-summary")).toHaveTextContent(/11\s200/);
+    await user.click(screen.getByRole("button", { name: /К кабинету/ }));
+    expect(screen.getByRole("button", { name: "Я должен", pressed: true })).toBeInTheDocument();
+  });
+
+  it.each(["company", "store"] as const)(
+    "resumes certificate creation for %s after a confirmed branch selection",
+    async (role) => {
+      const user = userEvent.setup();
+      const ready = buildMiniAppFixture(role, "telegram", { canCreate: true, canScan: true }, true);
+      vi.mocked(api.miniAppFetchBootstrap).mockResolvedValue(ready);
+      render(
+        <MiniAppRoot
+          fixturePlatform="telegram"
+          fixtureCreateSeed={MINI_APP_FIXTURE_CREATE_SEED}
+          fixtureBootstrap={{
+            ...ready,
+            activeBranchId: null,
+            workplaceLabel: null,
+            workplaceForbidden: true,
+            workplaceForbiddenMessage: "Выберите рабочую точку для выпуска сертификата.",
+          }}
+        />,
+      );
+      expect(screen.getByTestId("mini-app-branch-select")).toHaveTextContent("Сейчас филиал не выбран");
+      await user.click(screen.getByTestId("mini-action-create_certificate"));
+      expect(screen.getByRole("button", { name: /Назад/ })).toBeInTheDocument();
+      await user.click(screen.getByTestId("mini-branch-option-b1"));
+      expect(await screen.findByTestId("mini-create-form")).toBeInTheDocument();
+      expect(screen.queryByTestId("mini-app-home")).toBeNull();
+    },
+  );
+
+  it("does not resume a requested action when the confirmed branch no longer grants it", async () => {
+    const user = userEvent.setup();
+    const denied = buildMiniAppFixture("store", "telegram", { canCreate: false, canScan: true }, true);
+    vi.mocked(api.miniAppFetchBootstrap).mockResolvedValue(denied);
+    render(
+      <MiniAppRoot
+        fixturePlatform="telegram"
+        fixtureBootstrap={{
+          ...buildMiniAppFixture("store", "telegram", { canCreate: true, canScan: true }, true),
+          activeBranchId: null,
+          workplaceLabel: null,
+        }}
+      />,
+    );
+    await user.click(screen.getByTestId("mini-action-create_certificate"));
+    await user.click(screen.getByTestId("mini-branch-option-b1"));
+    expect(await screen.findByTestId("mini-app-home")).toBeInTheDocument();
+    expect(screen.queryByTestId("mini-action-create_certificate")).toBeNull();
+  });
+
+  it("opens the scanner after confirming the requested work location", async () => {
+    const user = userEvent.setup();
+    const ready = buildMiniAppFixture("company", "telegram", { canCreate: true, canScan: true }, true);
+    vi.mocked(api.miniAppFetchBootstrap).mockResolvedValue(ready);
+    render(
+      <MiniAppRoot
+        fixturePlatform="telegram"
+        fixtureBootstrap={{ ...ready, activeBranchId: null, workplaceLabel: null }}
+      />,
+    );
+    await user.click(screen.getByTestId("mini-action-scan_qr"));
+    await user.click(screen.getByTestId("mini-branch-option-b1"));
+    expect(await screen.findByRole("heading", { name: "Сканер" })).toBeInTheDocument();
+  });
+
+  it("applies an owner subset or all branches without changing the working point", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppRoot fixtureBootstrap={companyBootstrap} fixturePlatform="telegram" />);
+    await user.click(screen.getByTestId("mini-app-branch-select"));
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    expect(screen.getByRole("checkbox", { name: "Центральный" })).toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: "Северный" }));
+    await user.click(screen.getByRole("button", { name: "Применить" }));
+    expect(screen.getByTestId("mini-wallet-card-scope")).toHaveTextContent("Выбрано филиалов: 2");
+    expect(screen.getByTestId("mini-app-branch-select")).toHaveTextContent("Центральная точка");
+    await user.click(screen.getByTestId("mini-wallet-card-open"));
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    await user.click(screen.getByRole("checkbox", { name: "Все филиалы (3)" }));
+    await user.click(screen.getByRole("button", { name: "Применить" }));
+    expect(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" })).toHaveTextContent("Все филиалы (3)");
+    await user.click(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" }));
+    await user.click(screen.getByRole("checkbox", { name: "Все филиалы (3)" }));
+    expect(screen.getByRole("button", { name: "Применить" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "← Назад" }));
+    expect(screen.getByRole("button", { name: "Выбрать филиалы для кошелька" })).toHaveTextContent("Все филиалы (3)");
+    expect(api.miniAppFetchBootstrap).not.toHaveBeenCalled();
+  });
+
+  it("does not offer wallet branch selection without the owner capability", async () => {
+    const user = userEvent.setup();
+    render(<MiniAppRoot fixtureBootstrap={{ ...companyBootstrap, canChooseWalletBranches: false }} fixturePlatform="telegram" />);
+    await user.click(screen.getByTestId("mini-app-branch-select"));
+    expect(screen.queryByRole("button", { name: "Выбрать филиалы для кошелька" })).not.toBeInTheDocument();
   });
 });

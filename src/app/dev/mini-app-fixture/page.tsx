@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { notFound, useSearchParams } from "next/navigation";
 import { MiniAppRoot } from "@/components/mini-app/MiniAppRoot";
-import { MINI_APP_FIXTURES } from "./fixtures-data";
+import { MINI_APP_FIXTURE_INVITE_LINK, MINI_APP_FIXTURES } from "./fixtures-data";
 
 function MiniAppFixtureInner() {
   const searchParams = useSearchParams();
@@ -11,9 +11,16 @@ function MiniAppFixtureInner() {
   const fixtureKey = searchParams.get("fixture") ?? "specialist-telegram";
   const row = MINI_APP_FIXTURES[fixtureKey];
   if (!row) notFound();
+  const showInviteReady = searchParams.get("screen") === "invite-ready";
   return (
     <div data-mini-app-synthetic-fixture="1">
-      <MiniAppRoot fixtureBootstrap={row.bootstrap} fixturePlatform={row.platform} />
+      <MiniAppRoot
+        fixtureBootstrap={row.bootstrap}
+        fixturePlatform={row.platform}
+        initialScreen={showInviteReady ? "invite" : row.initialScreen}
+        fixtureInviteLink={showInviteReady ? MINI_APP_FIXTURE_INVITE_LINK : undefined}
+        fixtureWalletData={row.fixtureWalletData}
+      />
     </div>
   );
 }

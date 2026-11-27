@@ -75,8 +75,8 @@ export function PartnersPageChromeProvider({
 }
 
 /** Stable gallery controller for the Partners route (single portal/dialog host). */
-export function useLinkInviteGalleryController(): LinkInviteGalleryController {
-  const [open, setOpen] = useState(false);
+export function useLinkInviteGalleryController(initiallyOpen = false): LinkInviteGalleryController {
+  const [open, setOpen] = useState(initiallyOpen);
   const [refreshToken, setRefreshToken] = useState(0);
   const openerRef = useRef<HTMLElement | null>(null);
 

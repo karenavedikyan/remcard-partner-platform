@@ -14,6 +14,7 @@ describe("business nav sections", () => {
       "Клиенты",
       "Сертификаты",
       "Сканер",
+      "Калькулятор дверей",
       "Партнёры",
       "Кошелёк",
       "Профиль",
@@ -26,12 +27,13 @@ describe("business nav sections", () => {
       "Клиенты",
       "Сертификаты",
       "Сканер",
+      "Калькулятор дверей",
       "Партнёры",
       "Кошелёк",
       "Сотрудники",
       "Профиль",
     ]);
-    expect(COMPANY_DESKTOP_NAV[6]?.href).toBe("/profile?section=team");
+    expect(COMPANY_DESKTOP_NAV[7]?.href).toBe("/profile?section=team");
   });
 
   it("mirrors master mobile bottom and more sheet targets", () => {
@@ -44,6 +46,7 @@ describe("business nav sections", () => {
     expect(businessNavMoreItems(COMPANY_DESKTOP_NAV).map((i) => i.label)).toEqual([
       "Клиенты",
       "Сертификаты",
+      "Калькулятор дверей",
       "Партнёры",
       "Сотрудники",
     ]);

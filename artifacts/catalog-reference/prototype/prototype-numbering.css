@@ -1,0 +1,226 @@
+/* Reviewer-only page chrome. Does not alter product layout. */
+.proto-page-flow {
+  position: fixed;
+  z-index: 25;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  pointer-events: none;
+  font: 12px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+  right: 0.75rem;
+  bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  max-width: min(22rem, calc(100vw - 1rem));
+}
+
+.proto-page-badge,
+.proto-page-toc-btn {
+  pointer-events: auto;
+  border: 1px solid rgba(120, 120, 140, 0.35);
+  background: rgba(248, 249, 252, 0.94);
+  color: #1a1a22;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.proto-page-badge {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.proto-page-toc-btn {
+  cursor: pointer;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.proto-page-toc-btn[aria-expanded="true"] {
+  background: #eef0ff;
+}
+
+.proto-page-panel {
+  position: fixed;
+  z-index: 26;
+  display: none;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(100, 100, 120, 0.25);
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  max-height: min(50vh, 26rem);
+}
+
+.proto-page-panel[data-open="true"] {
+  display: flex;
+}
+
+@media (min-width: 681px) {
+  .proto-page-panel {
+    left: auto;
+    right: 0.75rem;
+    width: min(22rem, calc(100vw - 1rem));
+    bottom: 3.25rem;
+    max-height: min(60vh, 28rem);
+  }
+}
+
+.proto-page-panel-head {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border-bottom: 1px solid #e8e8ef;
+}
+
+.proto-page-search {
+  flex: 1;
+  border: 1px solid #d0d0dc;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 13px;
+}
+
+.proto-page-list {
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  overflow: auto;
+}
+
+.proto-page-list li a,
+.proto-page-list li .proto-page-toc-muted {
+  display: block;
+  padding: 0.4rem 0.85rem;
+  color: #1b1b28;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.proto-page-list li .proto-page-toc-muted {
+  color: #6a6a7a;
+  cursor: not-allowed;
+}
+
+.proto-page-list li a:hover,
+.proto-page-list li a:focus-visible {
+  background: #f3f4fa;
+}
+
+.proto-page-list .n {
+  display: inline-block;
+  min-width: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  color: #5a5a72;
+}
+
+.proto-page-list a[data-current="true"] {
+  background: #eef0ff;
+  font-weight: 600;
+}
+
+/* Partner mobile: above fixed bottom nav (~80px) */
+@media (max-width: 680px) {
+  .proto-page-flow {
+    left: 8px;
+    right: 8px;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px) + 6px);
+    max-width: none;
+    justify-content: stretch;
+  }
+
+  .proto-page-panel {
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 100vw;
+    border-radius: 12px 12px 0 0;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px) + 46px);
+    max-height: min(42vh, 360px);
+  }
+}
+
+/* Native app dialog top layer */
+dialog.proto-page-dialog-host > .proto-page-flow {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  top: auto;
+  z-index: 2;
+  pointer-events: none;
+}
+
+dialog.proto-page-dialog-host > .proto-page-panel[data-open="true"] {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  max-height: min(40vh, 320px);
+  z-index: 3;
+}
+
+@media (max-width: 680px) {
+  dialog.proto-page-dialog-host > .proto-page-flow {
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px) + 6px);
+  }
+
+  dialog.proto-page-dialog-host > .proto-page-panel[data-open="true"] {
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px) + 46px);
+  }
+}
+
+/* Cabinet embed host: keep reviewer dock/TOC above portal iframe */
+html.proto-cabinet-embed-host-active .proto-page-flow {
+  z-index: 5001;
+}
+
+html.proto-cabinet-embed-host-active .proto-page-panel {
+  z-index: 5002;
+}
+
+html[data-theme="dark"] .proto-page-badge,
+html[data-theme="dark"] .proto-page-toc-btn {
+  background: rgba(28, 28, 36, 0.92);
+  color: #ececf4;
+  border-color: rgba(180, 180, 200, 0.2);
+}
+
+html[data-theme="dark"] .proto-page-panel {
+  background: #1c1c24;
+  border-color: rgba(120, 120, 140, 0.35);
+}
+
+html[data-theme="dark"] .proto-page-list li a {
+  color: #ececf4;
+}
+
+/* Мини-кабинет в ботах (стр. 150–157): на телефоне экран занимает всё окно как в мессенджере,
+   поэтому служебная нумерация показывается только вместе с открытой панелью «Демо». */
+@media (max-width: 520px) {
+  [data-proto-mini] .proto-page-flow,
+  [data-proto-mini] .proto-page-panel {
+    display: none;
+  }
+
+  [data-proto-mini] body.rcm-demo-open .proto-page-flow {
+    display: flex;
+    z-index: 60;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  [data-proto-mini] body.rcm-demo-open .proto-page-panel[data-open="true"] {
+    display: flex;
+    z-index: 61;
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  }
+}

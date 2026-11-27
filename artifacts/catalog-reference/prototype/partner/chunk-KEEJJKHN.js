@@ -1,0 +1,1 @@
+import{a as c}from"./chunk-3HBG25M4.js";import{c as n}from"./chunk-5TBO732O.js";var r=n(c(),1);async function i(t,e,a){let o={width:a,margin:4,errorCorrectionLevel:"M"};try{return{src:await r.default.toDataURL(e,o),codeOnly:!1}}catch{return{src:await r.default.toDataURL(t.code,o),codeOnly:!0}}}export{i as a};

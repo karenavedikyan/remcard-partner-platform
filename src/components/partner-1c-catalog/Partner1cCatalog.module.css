@@ -1,0 +1,573 @@
+.catalogScope {
+  display: grid;
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.stack) {
+  display: grid;
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.panel) {
+  padding: var(--s5, 20px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+}
+
+.catalogScope :global(.notice) {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3, 12px);
+  margin: 0;
+  padding: var(--s4, 16px);
+  background: var(--offset);
+  border-radius: 10px;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--muted);
+}
+
+.catalogScope :global(.notice.accent) {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+.catalogScope :global(.muted) {
+  color: var(--muted);
+}
+
+.catalogScope :global(.small) {
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.catalogScope :global(.pill) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  padding: var(--s1, 4px) var(--s3, 12px);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+}
+
+.catalogScope :global(.pill.good) {
+  border-color: color-mix(in srgb, var(--good) 35%, var(--line));
+}
+
+.catalogScope :global(.pill.accent) {
+  color: var(--accent);
+  background: var(--tint);
+  border-color: transparent;
+}
+
+.catalogScope :global(.btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2, 8px);
+  padding: var(--s3, 12px) var(--s4, 16px);
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.catalogScope :global(.btn.primary) {
+  background: var(--accent);
+  color: var(--onaccent, #fff);
+  border-color: transparent;
+}
+
+.catalogScope :global(.linkbtn) {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.catalogScope :global(.row) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3, 12px);
+}
+
+.catalogScope :global(.row.between) {
+  justify-content: space-between;
+}
+
+.catalogScope :global(.field) {
+  display: grid;
+  gap: var(--s1, 4px);
+  margin: 0;
+}
+
+.catalogScope :global(.field input),
+.catalogScope :global(.field select) {
+  width: 100%;
+  min-height: 46px;
+  padding: var(--s3, 12px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+}
+
+.catalogScope :global(.stats) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.stat) {
+  display: grid;
+  gap: 2px;
+  padding: var(--s4, 16px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+}
+
+.catalogScope :global(.stat strong) {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-demo) {
+  max-width: none;
+}
+
+.catalogScope :global(.pc-stats) {
+  margin-bottom: 0;
+}
+
+.catalogScope :global(.pc-stats--4) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.catalogScope :global(.pc-tabrow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3, 12px);
+  justify-content: space-between;
+}
+
+.catalogScope :global(.pc-tabs) {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--offset);
+}
+
+.catalogScope :global(.pc-tabs button) {
+  min-height: 40px;
+  padding: 0 var(--s4, 16px);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-weight: 700;
+  font-size: var(--text-sm, 0.875rem);
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-tabs button.selected) {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.catalogScope :global(.pc-calcbtn) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  min-height: 44px;
+  padding: 0 var(--s4, 16px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+}
+
+.catalogScope :global(.pc-filters) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3, 12px);
+  padding: var(--s4, 16px);
+}
+
+.catalogScope :global(.pc-filters > .field) {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-search) {
+  flex: 2 1 240px;
+}
+
+.catalogScope :global(.pc-list) {
+  container: pclist / inline-size;
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.catalogScope :global(.pc-row) {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 2fr) 128px 96px 108px 124px 124px;
+  align-items: center;
+  gap: var(--s3, 12px);
+  padding: var(--s3, 12px) var(--s4, 16px);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.catalogScope :global(.pc-row:first-child) {
+  border-top: 0;
+}
+
+.catalogScope :global(.pc-row--head) {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--offset);
+}
+
+.catalogScope :global(.pc-list--money .pc-row) {
+  grid-template-columns: 28px minmax(0, 2fr) 128px 104px 96px 108px 124px 124px;
+}
+
+.catalogScope :global(.pc-row-main) {
+  display: flex;
+  align-items: center;
+  gap: var(--s3, 12px);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.catalogScope :global(.pc-thumb) {
+  width: 44px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-thumb--none) {
+  display: grid;
+  place-items: center;
+  background: var(--offset);
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-filter-btn) {
+  flex: 0 0 auto;
+  min-height: 46px;
+}
+
+.catalogScope :global(.pc-filter-btn.is-on) {
+  border-color: var(--ink);
+}
+
+.catalogScope :global(.pc-filter-btn.is-open) {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.catalogScope :global(.pc-filter-btn em) {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-style: normal;
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.catalogScope :global(.pc-filter-btn.is-open em) {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.catalogScope :global(.pc-quick) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px);
+}
+
+.catalogScope :global(.pc-quick button) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  min-height: 40px;
+  padding: var(--s2, 8px) var(--s4, 16px);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-quick button.selected) {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.catalogScope :global(.pc-found) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px) var(--s3, 12px);
+  padding: var(--s3, 12px) var(--s4, 16px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--offset);
+}
+
+.catalogScope :global(.pc-toolbar) {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2, 8px) var(--s4, 16px);
+  padding: var(--s2, 8px) var(--s4, 16px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+}
+
+.catalogScope :global(.pc-toolbar.is-bulk) {
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.catalogScope :global(.pc-cards) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.pc-card) {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.catalogScope :global(.pc-section.is-full) {
+  position: fixed;
+  inset: 0;
+  z-index: 4900;
+  overflow: auto;
+  background: var(--bg);
+  padding: var(--s4, 16px) var(--s5, 20px) 88px;
+}
+
+.catalogScope :global(.pc-section.is-full > .pc-demo),
+.catalogScope :global(.pc-section.is-full > .pc-tabs),
+.catalogScope :global(.pc-section.is-full > .pc-stats),
+.catalogScope :global(.pc-section.is-full > .pc-foot) {
+  display: none;
+}
+
+.catalogScope :global(.pc-model) {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: var(--s6, 24px);
+  align-items: start;
+}
+
+.catalogScope :global(.pc-shot) {
+  width: 100%;
+  height: min(72vh, 640px);
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.catalogScope :global(.pc-site-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.pc-browser) {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.catalogScope :global(.pc-browser iframe) {
+  display: block;
+  width: 100%;
+  height: min(78vh, 860px);
+  min-height: 520px;
+  border: 0;
+}
+
+.catalogScope :global(.pc-browser--phone) {
+  width: min(100%, 392px);
+  justify-self: center;
+}
+
+.catalogScope :global(.pc-mk--ok) {
+  color: var(--good);
+}
+
+.catalogScope :global(.pc-mk--low) {
+  color: #a35a00;
+}
+
+.catalogScope :global(.pc-mk--bad) {
+  color: var(--accent);
+}
+
+.catalogScope :global(.pc-fpanel) {
+  position: fixed;
+  inset: 0;
+  z-index: 4950;
+  pointer-events: none;
+}
+
+.catalogScope :global(.pc-fpanel__back) {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 22, 21, 0.28);
+  pointer-events: auto;
+}
+
+.catalogScope :global(.pc-fpanel__box) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100vw, 340px);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.catalogScope :global(.lkf) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  font-size: 0.9rem;
+}
+
+.catalogScope :global(.lkf-head) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 0.8rem;
+}
+
+.catalogScope :global(.lkf-body) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0.75rem 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.catalogScope :global(.lkf-foot) {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+.catalogScope :global(.lkf-check) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  font-size: 0.875rem;
+}
+
+.catalogScope :global(.lkf-check small) {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.catalogScope :global(.lkf-apply) {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--onaccent, #fff);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.catalogScope :global(.lkf-reset) {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .catalogScope :global(.pc-model) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .catalogScope :global(.pc-stats--4) {
+    grid-template-columns: 1fr;
+  }
+  .catalogScope :global(.pc-cards) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -16,7 +16,7 @@ import { organizationPartnershipReadContextFromProContext } from "@/lib/employee
 export const dynamic = "force-dynamic";
 
 export default async function PartnersPage(props: {
-  searchParams?: Promise<{ terms?: string; partnershipId?: string }>;
+  searchParams?: Promise<{ terms?: string; partnershipId?: string; invites?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const returnPath = partnersPageReturnPath(searchParams);
@@ -82,6 +82,7 @@ export default async function PartnersPage(props: {
         initialProfile={profileResult.data}
         proContext={proContext}
         proContextReady={proContextReady}
+        showInviteGalleryInitially={returnPath === "/partners?invites=1"}
       />
     </CabinetShell>
   );

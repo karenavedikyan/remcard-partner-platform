@@ -30,6 +30,7 @@ import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/acce
 import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
 import { resolveBusinessHomeSurfaceMode } from "@/lib/business-home/access";
 import { shouldDeferPersonalSpecialistHome } from "@/lib/business-home/home-dispatch";
+import { doorCalculatorFeatureVisible } from "@/lib/door-calculator/access";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +142,7 @@ export default async function HomePage(
         />
         <BusinessOwnerHomeDashboard
           partnerType={businessPartnerType}
+          showDoorCalculatorEntry={doorCalculatorFeatureVisible(presentation)}
           homeAccessMode={
             homeSurface === "org-staff-template" ? "org-staff-view" : "owner-operating"
           }

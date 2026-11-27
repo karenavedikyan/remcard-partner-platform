@@ -13,6 +13,25 @@
   min-width: 0;
 }
 
+.compact {
+  gap: 16px;
+}
+
+.compact .openCard {
+  background: var(--offset);
+}
+
+.compact .shareActions {
+  display: grid;
+  align-items: stretch;
+}
+
+.shareUrl {
+  field-sizing: content;
+  min-height: 46px;
+  resize: none;
+}
+
 .result details.messageBlock > summary {
   cursor: pointer;
   font-weight: 600;

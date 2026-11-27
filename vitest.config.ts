@@ -163,6 +163,8 @@ export default defineConfig({
       "src/lib/cabinet-nav/mode.test.ts",
       "src/lib/cabinet-nav/active.test.ts",
       "src/lib/business-nav/sections.test.ts",
+      "src/lib/doorCalculator/**/*.test.ts",
+      "src/lib/door-calculator/**/*.test.ts",
       "src/lib/business-profile/eligibility.test.ts",
       "src/lib/business-profile/wizard-copy.test.ts",
       "src/lib/business-profile/wizard-facts.test.ts",

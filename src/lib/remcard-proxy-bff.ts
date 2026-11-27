@@ -19,7 +19,7 @@ function readProxyIdempotencyKey(request: NextRequest, pathname: string): string
     request.headers.get("idempotency-key") ??
     request.headers.get("x-idempotency-key");
 
-  if (pathname === "/api/store/order") {
+  if (pathname === "/api/store/order" || pathname === "/api/pro/mini-app/store/order") {
     return request.headers.get("Idempotency-Key");
   }
   if (
@@ -47,6 +47,9 @@ function readMiniAppPlatformHeader(request: NextRequest, pathname: string): stri
     return null;
   }
   if (pathname.startsWith("/api/pro/mini-app/")) {
+    return raw.trim();
+  }
+  if (pathname === "/api/pro/mini-app/auth/send-code" || pathname === "/api/pro/mini-app/auth/verify-code") {
     return raw.trim();
   }
   if (
@@ -89,5 +92,7 @@ export async function buildRemcardProxyRequestInput(
     idempotencyKeyHeader: readProxyIdempotencyKey(request, pathname),
     miniAppPlatformHeader: readMiniAppPlatformHeader(request, pathname),
     miniAppCertificateCreateHeader: miniCreate,
+    miniAppLaunchHeader: request.headers.get("x-remcard-mini-app-launch"),
+    miniAppEmbeddedHeader: request.headers.get("x-remcard-mini-app-embedded"),
   };
 }

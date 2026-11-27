@@ -1,4 +1,6 @@
 import type { NavIconKey } from "@/components/layout/NavIcons";
+import { DOORS_CALCULATOR_HREF } from "@/lib/door-calculator/access";
+import { PARTNER_1C_CATALOG_HREF } from "@/lib/partner-1c-catalog/gate";
 import type { MasterNavItem } from "@/lib/master-nav/sections";
 
 export type BusinessNavItem = MasterNavItem;
@@ -9,6 +11,8 @@ const BUSINESS_OWNER_CORE: BusinessNavItem[] = [
   { href: "/clients", label: "Клиенты", icon: "clients" },
   { href: "/recommendations", label: "Сертификаты", icon: "recommendations" },
   { href: "/scanner", label: "Сканер", icon: "scanner" },
+  { href: PARTNER_1C_CATALOG_HREF, label: "Каталог", icon: "catalog" },
+  { href: DOORS_CALCULATOR_HREF, label: "Калькулятор дверей", icon: "doors" },
   { href: "/partners", label: "Партнёры", icon: "partners", badgeKey: "partners" },
   { href: "/settlements", label: "Кошелёк", icon: "wallet" },
 ];
@@ -45,6 +49,8 @@ export function businessPageTitle(pathname: string, desktop: BusinessNavItem[]):
     "/clients": "Клиенты",
     "/recommendations": "Сертификаты",
     "/scanner": "Сканер",
+    "/catalog": "Каталог",
+    "/doors-calculator": "Калькулятор дверей",
     "/partners": "Партнёры",
     "/settlements": "Кошелёк",
     "/profile": "Профиль",

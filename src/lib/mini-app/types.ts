@@ -21,6 +21,7 @@ export type MiniAppBootstrap = {
     prominence: "primary" | "secondary" | "tertiary";
   }>;
   branches: Array<{ id: string; label: string; active: boolean }>;
+  canChooseWalletBranches?: boolean;
   activeBranchId: string | null;
   workplaceForbidden: boolean;
   workplaceForbiddenMessage: string | null;
@@ -45,5 +46,22 @@ export type MiniAppBootstrap = {
 export type MiniAppSessionResult =
   | { status: "ok"; platform: MiniAppPlatform }
   | { status: "unlinked"; message: string; profLoginUrl: string }
-  | { status: "cabinet_blocked"; nextStep?: string }
+  | { status: "cabinet_blocked"; nextStep?: string; message: string }
+  | { status: "session_missing"; message: string; retryable: boolean }
+  | { status: "launch_invalid"; message: string }
+  | { status: "no_access"; message: string }
+  | { status: "error"; message: string };
+
+export type MiniAppAuthSendCodeResult =
+  | { status: "ok"; expiresAt: string; resendAfterSec?: number }
+  | { status: "blocked"; message: string }
+  | { status: "error"; message: string };
+
+export type MiniAppAuthVerifyResult =
+  | { status: "ok"; platform: MiniAppPlatform }
+  | { status: "invalid_code"; message: string }
+  | { status: "expired_code"; message: string }
+  | { status: "no_prof_access"; message: string }
+  | { status: "cabinet_blocked"; message: string; nextStep?: string }
+  | { status: "blocked"; message: string }
   | { status: "error"; message: string };

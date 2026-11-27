@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { StoreCertificate } from "@/lib/certificate-types";
+import type { SettlementsResponse } from "@/lib/settlements-types";
 import { MiniAppCertificateCreate } from "./MiniAppCertificateCreate";
 import { MiniAppWalletCard } from "./MiniAppWalletCard";
+import { MiniAppWallet } from "./MiniAppWallet";
 import { MiniAppScanReceive } from "./MiniAppScanReceive";
+import { MiniAppLoadingScreen } from "./MiniAppLoadingScreen";
 import { MiniAppProfBrand } from "./MiniAppProfBrand";
 import { MiniAppInvitePartner } from "./MiniAppInvitePartner";
 import { MiniAppFullCabinet } from "./MiniAppFullCabinet";
@@ -22,19 +25,37 @@ import {
 import { ensureMiniAppBridgeReady } from "@/lib/mini-app/bridge-loader";
 import { detectMiniAppHost } from "@/lib/mini-app/host";
 import { RemcardApiError } from "@/lib/api-client";
-import { miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
+import { classifyMiniAppBootstrapFailure, miniAppExchangeSession, miniAppFetchBootstrap } from "@/lib/mini-app/api";
+import {
+  detectMiniAppEmbeddedContext,
+  type MiniAppEmbeddedContext,
+} from "@/lib/mini-app/embedded-context";
+import { setMiniAppLaunchPayload, clearMiniAppLaunchPayload } from "@/lib/mini-app/launch-session";
+import { MiniAppSessionProvider } from "@/lib/mini-app/MiniAppSessionContext";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
+import type { WalletDirection } from "@/lib/wallet-accruals/types";
+import { MiniAppMaxEntry } from "./MiniAppMaxEntry";
+import {
+  MiniAppCabinetBlockedScreen,
+  MiniAppLaunchInvalidScreen,
+  MiniAppMaxRecoveryScreen,
+  MiniAppMaxUnlinkedScreen,
+} from "./MiniAppAuthGateScreens";
 import styles from "./mini-app.module.css";
+import type { MiniWalletBranchSelection } from "@/lib/mini-app/wallet/scope";
 
 type Screen =
   | "home"
   | "create"
   | "scan"
-  | "card-info"
+  | "wallet"
   | "invite"
   | "full-cabinet"
   | "certificate-ready"
-  | "branch-pick";
+  | "branch-pick"
+  | "wallet-branch-pick";
+
+type AuthGate = "none" | "max_unlinked" | "max_recovery" | "max_login" | "launch_invalid" | "cabinet_blocked";
 
 type PilotProps = {
   fixtureBootstrap?: MiniAppBootstrap;
@@ -43,6 +64,7 @@ type PilotProps = {
   fixtureCreatedCertificate?: StoreCertificate;
   fixtureCreateSeed?: import("./MiniAppCertificateCreate").MiniAppFixtureCreateSeed;
   fixtureInviteLink?: string | null;
+  fixtureWalletData?: SettlementsResponse;
 };
 
 export function MiniAppRoot({
@@ -52,29 +74,129 @@ export function MiniAppRoot({
   fixtureCreatedCertificate,
   fixtureCreateSeed,
   fixtureInviteLink,
+  fixtureWalletData,
 }: PilotProps = {}) {
   const searchParams = useSearchParams();
   const appealIdFromUrl = searchParams?.get("appealId");
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [walletDirection, setWalletDirection] = useState<WalletDirection>("in");
+  const [walletSnapshot, setWalletSnapshot] = useState<{ scope: string; data: SettlementsResponse } | null>(null);
+  const [walletBranchSelection, setWalletBranchSelection] = useState<MiniWalletBranchSelection>(null);
+  const [walletBranchDraft, setWalletBranchDraft] = useState<string[]>([]);
+  const [walletPickerBack, setWalletPickerBack] = useState<"wallet" | "branch-pick">("branch-pick");
+  const changeWalletBranchSelection = useCallback((next: MiniWalletBranchSelection) => {
+    setWalletSnapshot(null);
+    setWalletBranchSelection(next);
+  }, []);
   const [platform, setPlatform] = useState<MiniAppPlatform | null>(fixturePlatform ?? null);
   const [bootstrap, setBootstrap] = useState<MiniAppBootstrap | null>(fixtureBootstrap ?? null);
   const [loading, setLoading] = useState(!fixtureBootstrap);
   const [error, setError] = useState<string | null>(null);
   const [unlinked, setUnlinked] = useState<{ message: string; url: string } | null>(null);
+  const [cabinetBlocked, setCabinetBlocked] = useState<{ message: string; nextStep?: string } | null>(null);
   const [branchId, setBranchId] = useState<string | null>(fixtureBootstrap?.activeBranchId ?? null);
   const [branchPickError, setBranchPickError] = useState<string | null>(null);
   const [branchSwitching, setBranchSwitching] = useState(false);
+  const [branchNext, setBranchNext] = useState<"home" | "create" | "scan" | "wallet">("home");
   const [createdCertificate, setCreatedCertificate] = useState<StoreCertificate | null>(
     fixtureCreatedCertificate ?? null,
   );
+  const [embeddedContext, setEmbeddedContext] = useState<MiniAppEmbeddedContext>("default");
+  const [authGate, setAuthGate] = useState<AuthGate>("none");
+  const [hostInitData, setHostInitData] = useState<string>("");
+  const [profUrls, setProfUrls] = useState({ login: "/login", register: "/join" });
+  const [maxUnlinkedMessage, setMaxUnlinkedMessage] = useState<string | null>(null);
 
   const loadBootstrap = useCallback(
-    async (hostPlatform: MiniAppPlatform, activeBranch?: string | null) => {
-      const data = await miniAppFetchBootstrap(hostPlatform, activeBranch);
+    async (hostPlatform: MiniAppPlatform, activeBranch?: string | null, ctx?: MiniAppEmbeddedContext) => {
+      const data = await miniAppFetchBootstrap(hostPlatform, {
+        branchId: activeBranch,
+        embeddedContext: ctx ?? embeddedContext,
+      });
       setBootstrap(data);
       setBranchId(data.activeBranchId);
+      changeWalletBranchSelection(null);
     },
-    [],
+    [changeWalletBranchSelection, embeddedContext],
+  );
+
+  const completeSession = useCallback(
+    async (host: NonNullable<ReturnType<typeof detectMiniAppHost>>, ctx: MiniAppEmbeddedContext) => {
+      setPlatform(host.platform);
+      setEmbeddedContext(ctx);
+      setHostInitData(host.initData);
+      setMiniAppLaunchPayload(host.initData);
+      const session = await miniAppExchangeSession(host.platform, host.initData, { embeddedContext: ctx });
+      if (session.status === "unlinked") {
+        if (host.platform === "max") {
+          setAuthGate("max_unlinked");
+          setMaxUnlinkedMessage(session.message);
+          setProfUrls({
+            login: session.profLoginUrl,
+            register: "/join",
+          });
+          setError(null);
+          return;
+        }
+        setUnlinked({ message: session.message, url: session.profLoginUrl });
+        return;
+      }
+      if (session.status === "launch_invalid") {
+        setAuthGate("launch_invalid");
+        setError(null);
+        return;
+      }
+      if (session.status === "session_missing") {
+        if (host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
+        setError(session.message);
+        return;
+      }
+      if (session.status === "no_access") {
+        setError(session.message);
+        return;
+      }
+      if (session.status === "cabinet_blocked") {
+        setCabinetBlocked({ message: session.message, nextStep: session.nextStep });
+        setAuthGate("cabinet_blocked");
+        setError(null);
+        return;
+      }
+      if (session.status === "error") {
+        if (host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(session.message);
+          return;
+        }
+        setError(session.message);
+        return;
+      }
+      if (session.status !== "ok") {
+        return;
+      }
+      setAuthGate("none");
+      try {
+        await loadBootstrap(host.platform, undefined, ctx);
+      } catch (e) {
+        const classified = classifyMiniAppBootstrapFailure(e);
+        if (classified?.status === "session_missing" && host.platform === "max") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
+        if (classified?.status === "cabinet_blocked") {
+          setCabinetBlocked({ message: classified.message, nextStep: classified.nextStep });
+          setAuthGate("cabinet_blocked");
+          setError(null);
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
+      }
+    },
+    [loadBootstrap],
   );
 
   useEffect(() => {
@@ -96,42 +218,31 @@ export function MiniAppRoot({
         }
         host.ready();
         host.expand();
-        setPlatform(host.platform);
-        const session = await miniAppExchangeSession(host.platform, host.initData);
-        if (session.status === "unlinked") {
-          setUnlinked({ message: session.message, url: session.profLoginUrl });
-          return;
-        }
-        if (session.status === "error") {
-          setError(session.message);
-          return;
-        }
-        if (session.status === "cabinet_blocked") {
-          setError("Кабинет ещё не готов. Продолжите на сайте PROF.");
-          return;
-        }
-        if (session.status !== "ok") {
-          return;
-        }
-        await loadBootstrap(host.platform);
+        const ctx = detectMiniAppEmbeddedContext(host.platform);
+        await completeSession(host, ctx);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Не удалось войти");
       } finally {
         setLoading(false);
       }
     })();
-  }, [fixtureBootstrap, loadBootstrap]);
+    return () => clearMiniAppLaunchPayload();
+  }, [fixtureBootstrap, completeSession]);
 
   useEffect(() => {
     const host = detectMiniAppHost();
     if (!host) return;
     const back = () => {
-      if (screen !== "home") setScreen("home");
+      if (screen === "wallet-branch-pick") {
+        setScreen(walletPickerBack);
+        return;
+      }
+      if (screen !== "home" && !(screen === "branch-pick" && branchSwitching)) setScreen("home");
     };
     if (screen !== "home") host.onBack(back);
     else host.offBack(back);
     return () => host.offBack(back);
-  }, [screen]);
+  }, [branchSwitching, screen, walletPickerBack]);
 
   function openProfLink(url: string) {
     const host = detectMiniAppHost(platform);
@@ -139,19 +250,37 @@ export function MiniAppRoot({
     else window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  function openBranchPicker(next: typeof branchNext = "home") {
+    setBranchPickError(null);
+    setWalletSnapshot(null);
+    setBranchNext(next);
+    setScreen("branch-pick");
+  }
+
   async function onBranchChange(id: string) {
     if (!platform) return;
     if (id === branchId) {
-      setScreen("home");
+      if (branchNext === "home" || branchNext === "wallet") changeWalletBranchSelection(null);
+      setScreen(branchNext);
       return;
     }
     setBranchPickError(null);
     setBranchSwitching(true);
     try {
-      const data = await miniAppFetchBootstrap(platform, id);
+      const data = await miniAppFetchBootstrap(platform, { branchId: id, embeddedContext });
+      if (data.activeBranchId !== id) {
+        setBranchPickError("Не удалось подтвердить рабочую точку. Повторите выбор.");
+        return;
+      }
       setBootstrap(data);
-      setBranchId(data.activeBranchId ?? id);
-      setScreen("home");
+      setBranchId(id);
+      setWalletSnapshot(null);
+      if (branchNext === "home" || branchNext === "wallet") changeWalletBranchSelection(null);
+      const requiredAction =
+        branchNext === "create" ? "create_certificate" : branchNext === "scan" ? "scan_qr" : null;
+      setScreen(
+        requiredAction && !data.actions.some((action) => action.id === requiredAction) ? "home" : branchNext,
+      );
     } catch (e) {
       setBranchPickError(
         e instanceof RemcardApiError
@@ -163,11 +292,107 @@ export function MiniAppRoot({
     }
   }
 
+  function openWalletBranchPicker(next: "home" | "wallet") {
+    if (!bootstrap?.canChooseWalletBranches) return;
+    setBranchNext(next);
+    setWalletPickerBack(screen === "branch-pick" ? "branch-pick" : "wallet");
+    setWalletBranchDraft(
+      walletBranchSelection === "all" ? bootstrap.branches.map(({ id }) => id) :
+        walletBranchSelection ? [...walletBranchSelection] : branchId ? [branchId] : [],
+    );
+    setScreen("wallet-branch-pick");
+  }
+
   if (loading) {
+    return <MiniAppLoadingScreen />;
+  }
+
+  function finishOtpBootstrap() {
+    setLoading(true);
+    setError(null);
+    setAuthGate("none");
+    void (async () => {
+      try {
+        await loadBootstrap("max", undefined, embeddedContext);
+      } catch (e) {
+        const classified = classifyMiniAppBootstrapFailure(e);
+        if (classified?.status === "cabinet_blocked") {
+          setCabinetBlocked({ message: classified.message, nextStep: classified.nextStep });
+          setAuthGate("cabinet_blocked");
+          setError(null);
+          return;
+        }
+        if (classified?.status === "session_missing") {
+          setAuthGate("max_recovery");
+          setError(null);
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Не удалось открыть кабинет");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
+
+  if (authGate === "launch_invalid") {
+    return <MiniAppLaunchInvalidScreen />;
+  }
+
+  if (authGate === "cabinet_blocked" && cabinetBlocked) {
     return (
-      <div className={styles.shell} data-testid="mini-app-loading">
-        <p>Загрузка…</p>
-      </div>
+      <MiniAppCabinetBlockedScreen
+        nextStep={cabinetBlocked.nextStep}
+        message={cabinetBlocked.message}
+        onOpenExternal={openProfLink}
+      />
+    );
+  }
+
+  if (authGate === "max_unlinked" && platform === "max" && hostInitData) {
+    return (
+      <MiniAppMaxUnlinkedScreen
+        message={
+          maxUnlinkedMessage ??
+          "Этот MAX ещё не привязан к RemCard PROF. Зарегистрируйтесь или войдите на сайте, либо подтвердите вход одноразовым кодом."
+        }
+        profLoginUrl={profUrls.login}
+        profRegisterUrl={profUrls.register}
+        onOpenExternal={openProfLink}
+        onLoginByCode={() => setAuthGate("max_login")}
+      />
+    );
+  }
+
+  if (authGate === "max_recovery" && platform === "max" && hostInitData) {
+    const host = detectMiniAppHost(platform);
+    return (
+      <MiniAppMaxRecoveryScreen
+        busy={loading}
+        onRetrySession={() => {
+          if (!host) return;
+          setLoading(true);
+          void completeSession(host, embeddedContext).finally(() => setLoading(false));
+        }}
+        onLoginByCode={() => setAuthGate("max_login")}
+      />
+    );
+  }
+
+  if (authGate === "max_login" && platform === "max" && hostInitData) {
+    return (
+      <MiniAppMaxEntry
+        platform="max"
+        initData={hostInitData}
+        embeddedContext={embeddedContext}
+        profLoginUrl={profUrls.login}
+        profRegisterUrl={profUrls.register}
+        onOpenExternal={openProfLink}
+        onCabinetBlocked={(payload) => {
+          setCabinetBlocked(payload);
+          setAuthGate("cabinet_blocked");
+        }}
+        onAuthenticated={finishOtpBootstrap}
+      />
     );
   }
 
@@ -185,10 +410,35 @@ export function MiniAppRoot({
   }
 
   if (error || !bootstrap || !platform) {
+    const host = detectMiniAppHost(platform);
     return (
       <div className={styles.shell} data-testid="mini-app-error">
         <MiniAppProfBrand />
         <p role="alert">{error ?? "Нет данных"}</p>
+        {platform === "max" && host ? (
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            data-testid="mini-app-login-by-code"
+            onClick={() => setAuthGate("max_recovery")}
+          >
+            Войти по коду
+          </button>
+        ) : null}
+        {bootstrap?.fullCabinetUrl || platform ? (
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() =>
+              openProfLink(
+                bootstrap?.fullCabinetUrl?.replace(/\/+$/, "") ??
+                  "https://prof.remcard.ru",
+              )
+            }
+          >
+            Открыть обычный кабинет
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -210,25 +460,19 @@ export function MiniAppRoot({
   if (screen === "create") {
     return (
       <div className={styles.shell}>
-        <MiniAppSubpage
-          title="Новый сертификат"
-          lead="Выберите программу и клиента из доступных в вашем кабинете."
+        <MiniAppCertificateCreate
+          platform={platform}
+          bootstrap={bootstrap}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
+          fixtureCreateSeed={fixtureCreateSeed}
+          fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
           onBack={() => setScreen("home")}
-        >
-          <div className={styles.createWrap}>
-            <MiniAppCertificateCreate
-              platform={platform}
-              bootstrap={bootstrap}
-              branchId={branchId}
-              fixtureCreateSeed={fixtureCreateSeed}
-              fixtureSubmitCertificate={fixtureCreatedCertificate ?? undefined}
-              onCreated={(cert) => {
-                setCreatedCertificate(cert);
-                setScreen("certificate-ready");
-              }}
-            />
-          </div>
-        </MiniAppSubpage>
+          onCreated={(cert) => {
+            setCreatedCertificate(cert);
+            setScreen("certificate-ready");
+          }}
+        />
       </div>
     );
   }
@@ -245,6 +489,7 @@ export function MiniAppRoot({
             platform={platform}
             bootstrap={bootstrap}
             branchId={branchId}
+            embeddedContext={embeddedContext}
             appealId={appealIdFromUrl}
             onDone={() => setScreen("home")}
             onClientsDeepLink={(appealId) => {
@@ -261,8 +506,13 @@ export function MiniAppRoot({
     return (
       <div className={styles.shell}>
         <MiniAppInvitePartner
+          actorUserId={bootstrap.actorUserId}
+          platform={platform}
+          branchId={branchId}
+          embeddedContext={embeddedContext}
           partnersSearchUrl={bootstrap.partnersUrl}
           fixtureInviteLink={fixtureInviteLink}
+          onOpenLink={openProfLink}
           onBack={() => setScreen("home")}
         />
       </div>
@@ -281,15 +531,82 @@ export function MiniAppRoot({
     );
   }
 
+  if (screen === "wallet-branch-pick" && bootstrap.canChooseWalletBranches) {
+    const allIds = bootstrap.branches.map(({ id }) => id);
+    const selectedIds = allIds.filter((id) => walletBranchDraft.includes(id));
+    const allSelected = selectedIds.length === allIds.length;
+    const tooMany = !allSelected && selectedIds.length > 200;
+    return (
+      <div className={styles.shell} data-testid="mini-wallet-branch-picker">
+        <MiniAppSubpage
+          title="Филиалы для кошелька"
+          lead="Выберите филиалы для просмотра баланса. Рабочая точка для операций не изменится."
+          backLabel="← Назад"
+          onBack={() => setScreen(walletPickerBack)}
+        >
+          <div className={styles.branchSheet} role="group" aria-label="Филиалы для кошелька">
+            <label className={styles.branchCheck}>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => setWalletBranchDraft(e.target.checked ? allIds : [])}
+              />
+              <strong>Все филиалы ({allIds.length})</strong>
+            </label>
+            {bootstrap.branches.map(({ id, label }) => (
+              <label key={id} className={styles.branchCheck}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(id)}
+                  onChange={(e) => setWalletBranchDraft(e.target.checked
+                    ? [...selectedIds, id]
+                    : selectedIds.filter((value) => value !== id))}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {tooMany ? <p className={styles.scanBad}>Выберите до 200 филиалов или все сразу.</p> : null}
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={selectedIds.length === 0 || tooMany}
+            onClick={() => {
+              changeWalletBranchSelection(allSelected ? "all" : selectedIds);
+              setScreen(branchNext === "wallet" ? "wallet" : "home");
+            }}
+          >
+            Применить
+          </button>
+        </MiniAppSubpage>
+      </div>
+    );
+  }
+
   if (screen === "branch-pick") {
     return (
       <div className={styles.shell} data-testid="mini-app-branch-pick">
-        <MiniAppSubpage title="Рабочая точка" onBack={() => setScreen("home")}>
+        <MiniAppSubpage
+          title="Рабочая точка"
+          backLabel={branchNext === "home" ? undefined : "← Назад"}
+          onBack={() => setScreen(branchNext === "wallet" ? "wallet" : "home")}
+          backDisabled={branchSwitching}
+        >
           {branchSwitching ? <p className={styles.scanNotice}>Обновление мини-кабинета…</p> : null}
           {branchPickError ? (
             <p className={styles.scanBad} role="alert" data-testid="mini-branch-pick-error">
               {branchPickError}
             </p>
+          ) : null}
+          {bootstrap.canChooseWalletBranches && (branchNext === "home" || branchNext === "wallet") ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={branchSwitching}
+              onClick={() => openWalletBranchPicker(branchNext)}
+            >
+              Выбрать филиалы для кошелька
+            </button>
           ) : null}
           <div className={styles.branchSheet}>
             {bootstrap.branches.map((b) => (
@@ -310,31 +627,43 @@ export function MiniAppRoot({
     );
   }
 
-  if (screen === "card-info") {
+  const walletScope = JSON.stringify([
+    bootstrap.actorUserId,
+    bootstrap.role,
+    platform,
+    embeddedContext,
+    branchId,
+    walletBranchSelection,
+  ]);
+  if (screen === "wallet") {
     return (
-      <div className={styles.shell}>
-        <MiniAppSubpage title="Кошелёк" onBack={() => setScreen("home")}>
-          {bootstrap.presentation.cardIdentifier ? (
-            <p className={styles.scanNotice}>{bootstrap.presentation.cardIdentifier}</p>
-          ) : null}
-          <p>{bootstrap.presentation.cardExplainer}</p>
-          {bootstrap.wallet.status === "error" ? (
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() => void loadBootstrap(platform, branchId)}
-            >
-              Повторить загрузку
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={() => openProfLink(`${bootstrap.fullCabinetUrl.replace(/\/+$/, "")}${bootstrap.presentation.historyHref}`)}
-          >
-            История и «Мне должны / Я должен» в кабинете
-          </button>
-        </MiniAppSubpage>
+      <div className={styles.shell} data-testid="mini-app-wallet">
+        <MiniAppWallet
+          key={walletScope}
+          platform={platform}
+          bootstrap={bootstrap}
+          branchId={branchId}
+          branchSelection={walletBranchSelection}
+          embeddedContext={embeddedContext}
+          fixtureMode={Boolean(fixtureBootstrap)}
+          fixtureWalletData={fixtureWalletData}
+          initialDirection={walletDirection}
+          initialData={walletSnapshot?.scope === walletScope ? walletSnapshot.data : null}
+          onDirectionChange={setWalletDirection}
+          onBack={() => {
+            setWalletSnapshot(null);
+            setScreen("home");
+          }}
+          onOpenProfSettlements={openProfLink}
+          onChooseWalletBranches={bootstrap.canChooseWalletBranches ? () => openWalletBranchPicker("wallet") : undefined}
+          onWalletBranchSelectionChange={bootstrap.canChooseWalletBranches ? changeWalletBranchSelection : undefined}
+          onOpenBranchPicker={
+            (bootstrap.role === "company" || bootstrap.role === "store") && bootstrap.branches.length > 1
+              ? () => openBranchPicker("wallet")
+              : undefined
+          }
+          onWalletAction={(id) => dispatchAction(id, setScreen, bootstrap, branchId, openBranchPicker)}
+        />
       </div>
     );
   }
@@ -349,29 +678,49 @@ export function MiniAppRoot({
       : null);
 
   return (
+    <MiniAppSessionProvider platform={platform} embeddedContext={embeddedContext}>
     <div className={styles.shell} data-testid="mini-app-home">
       <MiniAppProfBrand />
       {introLine ? <p className={styles.heroIntro}>{introLine}</p> : null}
       <h1 className={styles.heroTitle}>{bootstrap.cabinetTitle}</h1>
 
-      {bootstrap.workplaceForbidden ? (
-        <p className={styles.scanNotice}>{bootstrap.workplaceForbiddenMessage}</p>
-      ) : null}
-
-      <MiniAppWalletCard bootstrap={bootstrap} onCardClick={() => setScreen("card-info")} />
+      <MiniAppWalletCard
+        key={walletScope}
+        bootstrap={bootstrap}
+        platform={platform}
+        branchId={branchId}
+        branchSelection={walletBranchSelection}
+        embeddedContext={embeddedContext}
+        fixtureMode={Boolean(fixtureBootstrap)}
+        fixtureWalletData={fixtureWalletData}
+        direction={walletDirection}
+        onDirectionChange={setWalletDirection}
+        onCardClick={(data) => {
+          setWalletSnapshot(data ? { scope: walletScope, data } : null);
+          setScreen("wallet");
+        }}
+      />
 
       {(bootstrap.role === "company" || bootstrap.role === "store") && bootstrap.branches.length > 1 ? (
         <button
           type="button"
-          className={styles.branchButton}
+          className={`${styles.branchButton} ${!bootstrap.workplaceLabel ? styles.branchButtonEmpty : ""}`}
           data-testid="mini-app-branch-select"
-          onClick={() => setScreen("branch-pick")}
+          onClick={() => openBranchPicker()}
         >
           <span className={styles.branchButtonLeft}>
             <MiniIconPin />
-            {bootstrap.workplaceLabel ?? "Выберите филиал"}
+            {bootstrap.workplaceLabel ?? (
+              <span className={styles.branchButtonText}>
+                <strong>Выберите филиал</strong>
+                <small>Сейчас филиал не выбран</small>
+              </span>
+            )}
           </span>
-          <MiniIconChevron />
+          <span className={styles.branchButtonRight}>
+            {bootstrap.workplaceLabel ? "Сменить" : null}
+            <MiniIconChevron />
+          </span>
         </button>
       ) : null}
 
@@ -382,6 +731,7 @@ export function MiniAppRoot({
         </p>
       ) : null}
 
+      {primary.length + secondary.length > 0 ? (
       <section className={styles.quickSection} aria-labelledby="mini-quick-actions">
         <h2 id="mini-quick-actions" className={styles.quickLabel}>
           БЫСТРЫЕ ДЕЙСТВИЯ
@@ -396,7 +746,7 @@ export function MiniAppRoot({
                 type="button"
                 className={styles.actionRowPrimary}
                 data-testid={`mini-action-${action.id}`}
-                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
+                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId, openBranchPicker)}
               >
                 <span className={styles.actionIconPrimary}>
                   {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -412,7 +762,7 @@ export function MiniAppRoot({
                 type="button"
                 className={`${styles.actionTile} ${styles.actionTilePrimary}`}
                 data-testid={`mini-action-${action.id}`}
-                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
+                onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId, openBranchPicker)}
               >
                 <span className={styles.actionIconPrimary}>
                   {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -427,7 +777,7 @@ export function MiniAppRoot({
               type="button"
               className={`${styles.actionTile} ${styles.actionTileSecondary}`}
               data-testid={`mini-action-${action.id}`}
-              onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
+              onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId, openBranchPicker)}
             >
               <span className={styles.actionIconSecondary}>
                 {action.id === "scan_qr" ? <MiniIconScan /> : <MiniIconCertificate />}
@@ -437,6 +787,7 @@ export function MiniAppRoot({
           ))}
         </div>
       </section>
+      ) : null}
 
       <nav className={styles.listNav} aria-label="Дополнительные действия">
         {tertiary.map((action) => (
@@ -445,7 +796,7 @@ export function MiniAppRoot({
             type="button"
             className={styles.listNavItem}
             data-testid={`mini-action-${action.id}`}
-            onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId)}
+            onClick={() => dispatchAction(action.id, setScreen, bootstrap, branchId, openBranchPicker)}
           >
             {action.id === "invite_partner" ? <MiniIconLink /> : <MiniIconExternal />}
             <span>{action.label}</span>
@@ -454,36 +805,35 @@ export function MiniAppRoot({
         ))}
       </nav>
     </div>
+    </MiniAppSessionProvider>
   );
 }
 
 function dispatchAction(
   id: string,
   setScreen: (s: Screen) => void,
-  bootstrap?: MiniAppBootstrap,
-  branchId?: string | null,
+  bootstrap: MiniAppBootstrap,
+  branchId: string | null,
+  openBranchPicker: (next: "create" | "scan" | "home" | "wallet") => void,
 ) {
   if (id === "create_certificate") {
     if (
-      bootstrap &&
       (bootstrap.role === "store" || bootstrap.role === "company") &&
       !branchId &&
       bootstrap.branches.length > 1
     ) {
-      setScreen("branch-pick");
+      openBranchPicker("create");
       return;
     }
     setScreen("create");
     return;
-  }
-  else if (id === "scan_qr") {
+  } else if (id === "scan_qr") {
     if (
-      bootstrap &&
       (bootstrap.role === "store" || bootstrap.role === "company") &&
       !branchId &&
       bootstrap.branches.length > 1
     ) {
-      setScreen("branch-pick");
+      openBranchPicker("scan");
       return;
     }
     setScreen("scan");

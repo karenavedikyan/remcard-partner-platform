@@ -1,0 +1,1662 @@
+/*
+ * RemCard мини-кабинет (Telegram / MAX) — перенос стилей рабочего кабинета prof.remcard.ru/mini-app.
+ * Эталон: src/components/mini-app/mini-app.module.css @ c457512f (значения без изменений),
+ * глобальные токены/сбросы из src/app/globals.css (заскоуплены на .rc-mini через :where, специфичность как в оригинале),
+ * FormField.module.css (TextField в «Проверке QR»), scanner.module.css (.cameraWrap/.qrReader).
+ * Имена классов = локальные имена CSS-модуля. Корень мини-кабинета: <div class="rc-mini" data-theme="light|dark">.
+ */
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/Manrope-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== globals.css ===== */
+.rc-mini {
+  color-scheme: light;
+  --bg: #f6f5f3;
+  --surface: #ffffff;
+  --offset: #f2f1ee;
+  --ink: #252923;
+  --muted: #6c706a;
+  --line: #e5e5df;
+  --primary: #c12b2f;
+  --primary-hover: #a72226;
+  --primary-fg: #ffffff;
+  --primary-fill: #c12b2f;
+  --primary-fill-hover: #a72226;
+  --tab-active-bg: var(--ink);
+  --tab-active-fg: #ffffff;
+  --accent-emphasis: #9f1239;
+  --accent-fill: var(--primary-fill);
+  --accent-fill-hover: var(--primary-fill-hover);
+  --accent-on-fill: var(--primary-fg);
+  --red: var(--primary-fill);
+  --red-hover: var(--primary-fill-hover);
+  --soft: #fcf0ed;
+  --green: #35684b;
+  --green-soft: #eef5ef;
+  --amber: #865c20;
+  --amber-soft: #fbf3e3;
+  --dark: #253e35;
+  --on-dark: #f8fcf8;
+  --shadow: 0 24px 80px rgba(39, 43, 36, 0.15);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --sidebar-width: 14.875rem;
+  --content-max: 81.875rem;
+  --topbar-height: 4.75rem;
+
+  --font-body: "Manrope", sans-serif;
+  --text-xs: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
+  --text-sm: clamp(0.875rem, 0.85rem + 0.1vw, 0.925rem);
+  --text-base: 1rem;
+  --text-lg: clamp(1.125rem, 1rem + 0.35vw, 1.35rem);
+  --text-xl: clamp(1.625rem, 1.25rem + 1vw, 2.125rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+}
+
+.rc-mini[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171a17;
+  --surface: #202520;
+  --offset: #2b312b;
+  --ink: #f0f1ec;
+  --muted: #a6aea4;
+  --line: #394038;
+  --primary: #fda4af;
+  --primary-hover: #fecdd3;
+  --primary-fg: #ffffff;
+  --primary-fill: #b54844;
+  --primary-fill-hover: #9a3834;
+  --tab-active-bg: #343a34;
+  --tab-active-fg: #f0f1ec;
+  --accent-emphasis: #fda4af;
+  --accent-fill: var(--primary-fill);
+  --accent-fill-hover: var(--primary-fill-hover);
+  --accent-on-fill: var(--primary-fg);
+  --red: var(--primary-fill);
+  --red-hover: var(--primary-fill-hover);
+  --soft: #3c2928;
+  --green: #acd5b8;
+  --green-soft: #293d30;
+  --amber: #e5c18a;
+  --amber-soft: #3c3424;
+  --dark: #293f36;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.rc-mini,
+:where(.rc-mini) *,
+:where(.rc-mini) *::before,
+:where(.rc-mini) *::after {
+  box-sizing: border-box;
+}
+
+.rc-mini {
+  margin: 0;
+  min-height: 100%;
+}
+
+.rc-mini {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / 1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+:where(.rc-mini) a {
+  color: inherit;
+}
+
+:where(.rc-mini) h1,
+:where(.rc-mini) h2,
+:where(.rc-mini) h3,
+:where(.rc-mini) p {
+  margin: 0;
+}
+
+:where(.rc-mini) h1 {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+:where(.rc-mini) h2 {
+  font-size: var(--text-lg);
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+:where(.rc-mini) p {
+  color: var(--muted);
+}
+
+:where(.rc-mini) button,
+:where(.rc-mini) input,
+:where(.rc-mini) select,
+:where(.rc-mini) textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:where(.rc-mini) button {
+  cursor: pointer;
+  border: 0;
+}
+
+:where(.rc-mini) input,
+:where(.rc-mini) select,
+:where(.rc-mini) textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+:where(.rc-mini) input::placeholder,
+:where(.rc-mini) textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+:where(.rc-mini) select option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+:where(.rc-mini) :focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+.rc-mini,
+:where(.rc-mini) *,
+:where(.rc-mini) *::before,
+:where(.rc-mini) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* «Документ» мини-кабинета: аналог html/body рабочей страницы /mini-app (body: var(--bg), Manrope 1rem/1.6) */
+.rc-mini {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / 1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-align: left;
+}
+
+/* ===== mini-app.module.css ===== */
+.rc-mini .shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 24.4375rem;
+  margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  min-height: 100%; /* в рабочем коде 100dvh: здесь «окно» = экран мини-кабинета (рамка/весь экран) */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #faf8f5;
+  color: #3a2f35;
+}
+
+.rc-mini .profBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rc-mini .profBrandIcon {
+  color: #b91c1c;
+  display: flex;
+}
+
+.rc-mini .profBrandText {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: #3a2f35;
+  letter-spacing: 0.01em;
+}
+
+.rc-mini .heroIntro {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6f5f68;
+}
+
+.rc-mini .heroTitle {
+  margin: 2px 0 0;
+  font-size: clamp(1.55rem, 6vw, 1.85rem);
+  line-height: 1.15;
+  font-weight: 700;
+  color: #35252f;
+}
+
+.rc-mini .cardWrap {
+  width: 100%;
+  padding: 0 4px;
+}
+
+.rc-mini .walletCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 286px;
+  min-height: 176px;
+  margin: 0 auto;
+  padding: 0 0 36px;
+  border: 1px solid rgba(90, 96, 108, 0.45);
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  color: #f4f5f7;
+  background: linear-gradient(152deg, #454a52 0%, #2a2e35 44%, #15171c 100%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.rc-mini .walletCard:focus-visible {
+  outline: 2px solid #9f1239;
+  outline-offset: 2px;
+}
+
+.rc-mini .walletHead {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.rc-mini .walletRibbon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 54%;
+  padding: 0 12px;
+  height: 30px;
+  line-height: 30px;
+  background: #b52a2e;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 0 0 10px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-mini .walletLockup {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  opacity: 0.92;
+}
+
+.rc-mini .walletLockupDot {
+  font-style: normal;
+  color: #ff9497;
+}
+
+.rc-mini .walletBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 14px 5px;
+  flex: 1;
+  min-height: 0;
+}
+
+.rc-mini .walletLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.rc-mini .walletLabelSecondary {
+  margin-top: 4px;
+}
+
+.rc-mini .walletHero {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 0;
+}
+
+.rc-mini .walletAmount {
+  font-size: 1.52rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.rc-mini .walletUnit {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.rc-mini .walletWaitingRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.rc-mini .walletWaitingAmount {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.rc-mini .walletWaitingUnit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.rc-mini .walletCardFab {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  pointer-events: none;
+}
+
+.rc-mini .miniCreateForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rc-mini .miniField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rc-mini .miniFieldLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6f5f68;
+}
+
+.rc-mini .miniSelect {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  padding: 12px;
+  font-size: 0.95rem;
+  color: #35252f;
+}
+
+.rc-mini .blockedPanel {
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff6f0;
+  border: 1px solid #efd9c8;
+  color: #5c4033;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.rc-mini .certMetaTitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #35252f;
+}
+
+.rc-mini .certMetaClient {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  color: #5c4d56;
+}
+
+.rc-mini .workplacePin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px;
+  font-size: 0.9rem;
+  color: #6f5f68;
+}
+
+.rc-mini .branchButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e8dde4;
+  background: #fff;
+  color: #35252f;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.rc-mini .branchButtonLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rc-mini .branchButtonRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #9f1239;
+}
+
+.rc-mini .branchButtonEmpty {
+  border-color: #9f1239;
+  background: #fdf3f5;
+  color: #9f1239;
+  text-align: left;
+}
+
+.rc-mini .branchButtonEmpty .branchButtonLeft {
+  gap: 10px;
+}
+
+.rc-mini .branchButtonText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.3;
+}
+
+.rc-mini .branchButtonText strong {
+  font-weight: 700;
+}
+
+.rc-mini .branchButtonText span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6f5f68;
+}
+
+.rc-mini .quickSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.rc-mini .quickLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #7d6d76;
+}
+
+.rc-mini .quickGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rc-mini .quickGridSingle {
+  grid-template-columns: 1fr;
+}
+
+.rc-mini .actionTile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 84px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.rc-mini .actionRowPrimary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .actionRowPrimary span:nth-child(2) {
+  flex: 1;
+}
+
+.rc-mini .actionRowChevron {
+  opacity: 0.85;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.rc-mini .actionTilePrimary {
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .actionTileSecondary {
+  background: #fff;
+  color: #3a2f35;
+  border: 1px solid #e5d5dc;
+}
+
+.rc-mini .actionIconPrimary,
+.rc-mini .actionIconSecondary {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-mini .actionIconPrimary {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.rc-mini .actionIconSecondary {
+  background: #fdf1f4;
+  color: #9f1239;
+}
+
+.rc-mini .listNav {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #ebe3e7;
+  margin-top: 4px;
+}
+
+.rc-mini .listNavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 4px;
+  border: none;
+  border-bottom: 1px solid #e3d9de;
+  background: transparent;
+  color: #3a2f35;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+}
+
+.rc-mini .listNavItem span {
+  flex: 1;
+}
+
+.rc-mini .primaryBtn,
+.rc-mini .secondaryBtn,
+.rc-mini .backBtn {
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 16px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rc-mini .primaryBtn {
+  background: #9f1239;
+  color: #fff;
+}
+
+.rc-mini .primaryBtn:disabled {
+  opacity: 0.55;
+}
+
+.rc-mini .secondaryBtn {
+  background: #fff;
+  border: 1px solid #e5d5dc;
+  color: #3a2f35;
+}
+
+.rc-mini .backBtn {
+  background: transparent;
+  color: #5c4d56;
+  padding: 6px 0;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: auto;
+  justify-content: flex-start;
+}
+
+.rc-mini .scanNotice,
+.rc-mini .walletNotice {
+  font-size: 0.9rem;
+  color: #865c20;
+  margin: 0;
+}
+
+.rc-mini .subpage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.rc-mini .subpageTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  color: #35252f;
+}
+
+.rc-mini .subpageLead {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.rc-mini .createWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-mini .scanPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rc-mini .scanLead {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.9rem;
+}
+
+.rc-mini .manualForm {
+  display: grid;
+  gap: 10px;
+}
+
+.rc-mini .scanOk,
+.rc-mini .scanBad {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.rc-mini .scanOk {
+  background: #eef5ef;
+  color: #35684b;
+}
+
+.rc-mini .scanBad {
+  background: #fff5f5;
+  color: #9f1239;
+}
+
+.rc-mini .fieldLabel {
+  font-size: 0.85rem;
+  color: #6f5f68;
+}
+
+.rc-mini .readOnlyField {
+  width: 100%;
+  border: 1px solid #e5d5dc;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.85rem;
+  color: #3a2f35;
+  background: #fff;
+}
+
+.rc-mini .footnote {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #8a7a83;
+  line-height: 1.4;
+}
+
+.rc-mini .infoCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.rc-mini .infoCardTitle {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #35252f;
+}
+
+.rc-mini .infoCardText {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.rc-mini .certResultCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rc-mini .certQr {
+  border-radius: 8px;
+}
+
+.rc-mini .certCode {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #35252f;
+}
+
+.rc-mini .certMeta {
+  margin: 0;
+  color: #6f5f68;
+  font-size: 0.92rem;
+}
+
+.rc-mini .branchSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rc-mini .branchOption {
+  text-align: left;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  cursor: pointer;
+  color: #3a2f35;
+}
+
+.rc-mini .branchOptionActive {
+  border-color: #9f1239;
+  box-shadow: 0 0 0 1px #9f1239;
+}
+
+/* FormField.module.css (TextField) */
+.rc-mini .field { display: grid; gap: var(--space-2); }
+.rc-mini .label { font-size: var(--text-sm); font-weight: 650; }
+.rc-mini .required { color: var(--primary); }
+.rc-mini .input,
+.rc-mini .textarea,
+.rc-mini .select { width: 100%; min-height: 48px; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font: inherit; }
+.rc-mini .hint { font-size: var(--text-xs); color: var(--muted); }
+.rc-mini .error { font-size: var(--text-sm); color: var(--primary); }
+
+/* scanner.module.css — область камеры QrScanner */
+.rc-mini .cameraWrap { margin-top: var(--space-4); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line); background: #000; }
+.rc-mini .qrReader { width: 100%; min-height: 260px; }
+
+/* Button.module.css (components/ui/Button) — кнопка «Остановить камеру» в QrScanner */
+.rc-mini .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 46px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.rc-mini .button:disabled { opacity: 0.55; cursor: not-allowed; }
+.rc-mini .primary { background: var(--accent-fill); color: var(--primary-fg); }
+.rc-mini .primary:hover:not(:disabled) { background: var(--accent-fill-hover); }
+.rc-mini .secondary { background: var(--surface); border: 1px solid var(--line); }
+.rc-mini .secondary:hover:not(:disabled) { background: var(--offset); }
+.rc-mini .text { border: 1px solid transparent; background: transparent; padding-inline: var(--space-2); min-height: 44px; font-weight: 700; }
+.rc-mini .text:hover:not(:disabled) { background: var(--offset); }
+.rc-mini button.controlButton:disabled { opacity: 1; cursor: not-allowed; background: var(--offset); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+
+/* Прототип: пояснения на экранах «мессенджер не привязан» и «настройка кабинета не завершена». */
+.rc-mini .gateText {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #6f5f68;
+}
+
+.rc-mini .gateSteps {
+  list-style: none;
+  counter-reset: gate-step;
+  margin: 2px 0;
+  padding: 2px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #ebe3e7;
+}
+
+.rc-mini .gateSteps li {
+  counter-increment: gate-step;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #35252f;
+}
+
+.rc-mini .gateSteps li + li {
+  border-top: 1px solid #f1eaed;
+}
+
+.rc-mini .gateSteps li::before {
+  content: counter(gate-step);
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -1px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #9f1239;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.rc-mini .gateBadge {
+  width: 48px;
+  height: 48px;
+  margin-top: 6px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: #fbeef1;
+  color: #9f1239;
+}
+
+.rc-mini .shell[data-screen="gate"] > .primaryBtn {
+  margin-top: 6px;
+}
+
+/* Прототип: нет прав на рабочее место — причина и что делать, без баланса и быстрых действий. */
+.rc-mini .accessAsk {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #ebe3e7;
+}
+
+.rc-mini .accessAskIcon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fbeef1;
+  color: #9f1239;
+}
+
+.rc-mini .accessAskText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #6f5f68;
+}
+
+.rc-mini .accessAskText strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #35252f;
+}
+
+.rc-mini .shell[data-screen="gate"] > .primaryBtn + .secondaryBtn {
+  margin-top: -2px;
+}
+
+/* Прототип: вход без авторизации — что сделать, чтобы войти. */
+.rc-mini .loginEyebrow {
+  margin: 0 0 -6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9f1239;
+}
+
+/* Вход: яркая карточка-заставка в фирменном красном */
+.rc-mini .loginHero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 18px 18px 22px;
+  border-radius: 22px;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(145deg, #d1223f 0%, #a8123a 48%, #6f0d2c 100%);
+  box-shadow: 0 18px 34px -18px rgba(159, 18, 57, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.rc-mini .loginHeroArt {
+  position: absolute;
+  right: -34px;
+  bottom: -46px;
+  z-index: -1;
+  color: rgba(255, 255, 255, 0.16);
+  line-height: 0;
+}
+
+.rc-mini .loginHeroTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rc-mini .loginHeroMark {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #b91c1c;
+  box-shadow: 0 6px 14px -6px rgba(60, 0, 20, 0.6);
+}
+
+.rc-mini .loginHeroBrand {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rc-mini .loginHeroHost {
+  display: inline-block;
+  margin: 24px 0 0;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rc-mini .loginHeroTitle {
+  margin: 10px 0 0;
+  font-size: clamp(1.7rem, 7.4vw, 2rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.rc-mini .loginHeroLead {
+  margin: 8px 0 0;
+  max-width: 26ch;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rc-mini .loginHow {
+  margin-top: 6px;
+}
+
+.rc-mini .loginSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rc-mini .loginStep {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 6px 12px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  text-align: center;
+}
+
+.rc-mini .loginStepIcon {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fbeef1;
+  color: #9f1239;
+}
+
+.rc-mini .loginStepIcon b {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #9f1239;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rc-mini .loginStep strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #35252f;
+}
+
+.rc-mini .loginStep > span:last-child {
+  font-size: 0.76rem;
+  line-height: 1.3;
+  color: #6f5f68;
+}
+
+.rc-mini .loginGo {
+  margin-top: 6px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: linear-gradient(145deg, #c81e3a 0%, #9f1239 100%);
+  box-shadow: 0 12px 22px -12px rgba(159, 18, 57, 0.85);
+}
+
+.rc-mini .loginGoArrow {
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.rc-mini .loginGo:hover .loginGoArrow,
+.rc-mini .loginGo:focus-visible .loginGoArrow {
+  transform: translateX(3px);
+}
+
+.rc-mini .loginGo:focus-visible {
+  outline: 2px solid #35252f;
+  outline-offset: 2px;
+}
+
+.rc-mini .loginJoin {
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #6f5f68;
+}
+
+.rc-mini .loginJoin .loginLink {
+  min-height: 0;
+  padding: 6px 2px;
+  display: inline;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rc-mini .loginHero,
+  .rc-mini .loginStep,
+  .rc-mini .loginGo {
+    animation: miniLoginRise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .rc-mini .loginStep:nth-child(1) { animation-delay: 0.08s; }
+  .rc-mini .loginStep:nth-child(2) { animation-delay: 0.16s; }
+  .rc-mini .loginStep:nth-child(3) { animation-delay: 0.24s; }
+  .rc-mini .loginGo { animation-delay: 0.3s; }
+}
+
+@keyframes miniLoginRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (forced-colors: active) {
+  .rc-mini .loginHero { border: 1px solid CanvasText; }
+  .rc-mini .loginStepIcon b { border-color: Canvas; }
+}
+
+.rc-mini .loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.rc-mini .loginForm .miniField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rc-mini .loginCode {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 14px 12px;
+}
+
+.rc-mini .loginCode::placeholder {
+  color: #cdbfc6;
+  letter-spacing: 0.3em;
+}
+
+.rc-mini .loginCode:focus-visible {
+  outline: 2px solid #9f1239;
+  outline-offset: 1px;
+  border-color: #9f1239;
+}
+
+.rc-mini .loginCode[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
+.rc-mini .loginLink {
+  appearance: none;
+  align-self: center;
+  min-height: 40px;
+  padding: 8px 6px;
+  border: 0;
+  background: transparent;
+  color: #9f1239;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.rc-mini .loginLink:focus-visible {
+  outline: 2px solid #9f1239;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.rc-mini .loginNote {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: center;
+  color: #7d6d76;
+}
+
+/* Прототип: экран загрузки. В рабочем коде — строка «Загрузка…»; здесь предложение: знак, фраза и что именно готовится. */
+.rc-mini .miniLoad {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px 15%;
+  text-align: center;
+}
+
+.rc-mini .miniLoadMark {
+  display: flex;
+  border-radius: 15px;
+  color: #b91c1c;
+  box-shadow: 0 10px 24px rgba(185, 28, 28, 0.2);
+  animation: miniLoadHalo 2.6s ease-out infinite;
+}
+
+.rc-mini .miniLoadHouse {
+  stroke-dasharray: 1;
+  animation: miniLoadDraw 2.6s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+
+.rc-mini .miniLoadBrand {
+  margin: 18px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a7a83;
+}
+
+.rc-mini .miniLoadTitle {
+  margin: 8px 0 0;
+  max-width: 16em;
+  font-size: 1.3rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #35252f;
+  text-wrap: balance;
+}
+
+.rc-mini .miniLoadLines {
+  position: relative;
+  width: 100%;
+  height: 1.4em;
+  margin: 10px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #6f5f68;
+}
+
+.rc-mini .miniLoadLines span {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: miniLoadLine 7.8s ease infinite;
+}
+
+.rc-mini .miniLoadLines span:nth-child(2) { animation-delay: 2.6s; }
+.rc-mini .miniLoadLines span:nth-child(3) { animation-delay: 5.2s; }
+
+.rc-mini .miniLoadBar {
+  position: relative;
+  width: 132px;
+  height: 3px;
+  margin-top: 22px;
+  border-radius: 3px;
+  background: #ebe3e7;
+  overflow: hidden;
+}
+
+.rc-mini .miniLoadBar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 3px;
+  background: #b91c1c;
+  animation: miniLoadRun 1.5s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+}
+
+@keyframes miniLoadHalo {
+  0% { box-shadow: 0 10px 24px rgba(185, 28, 28, 0.2), 0 0 0 0 rgba(185, 28, 28, 0.22); }
+  70%, 100% { box-shadow: 0 10px 24px rgba(185, 28, 28, 0.2), 0 0 0 16px rgba(185, 28, 28, 0); }
+}
+
+@keyframes miniLoadDraw {
+  0% { stroke-dashoffset: 1; }
+  45%, 82% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1; }
+}
+
+@keyframes miniLoadLine {
+  0% { opacity: 0; transform: translateY(6px); }
+  5%, 29% { opacity: 1; transform: none; }
+  34%, 100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes miniLoadRun {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-mini .miniLoadMark,
+  .rc-mini .miniLoadHouse,
+  .rc-mini .miniLoadLines span,
+  .rc-mini .miniLoadBar i {
+    animation: none;
+  }
+
+  .rc-mini .miniLoadLines span:first-child { opacity: 1; }
+  .rc-mini .miniLoadBar i { width: 100%; opacity: 0.45; }
+}
+
+/* Прототип: короткое уведомление (аналог системного всплывающего сообщения мессенджера). Не часть рабочего CSS. */
+.rcm-toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(53, 37, 47, 0.94);
+  color: #fff;
+  font: 500 0.88rem/1.35 "Manrope", sans-serif;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.rcm-toast.is-on { opacity: 1; transform: none; }
+
+/* ---------- Сканер: окно после считывания (ScannerHub.tsx, scanner.module.css) — в палитре мини-кабинета ---------- */
+.rc-mini .scWrap { display: grid; gap: 12px; }
+.rc-mini .scCard {
+  background: #fff;
+  border: 1px solid #ebe3e7;
+  border-radius: 14px;
+  padding: 14px;
+}
+.rc-mini .scCard h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 700; line-height: 1.35; color: #35252f; }
+.rc-mini .scMeta { margin: 0; color: #6f5f68; font-size: 0.875rem; line-height: 1.45; }
+.rc-mini .scStrong { margin: 0; font-weight: 700; color: #35252f; }
+.rc-mini .scBanner { display: grid; gap: 4px; background: #fcf3f5; border-color: #f0d9df; }
+.rc-mini .scBanner .scMeta { color: #4a3a43; }
+.rc-mini .scNotice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fbf3e3;
+  color: #6b4a17;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.rc-mini .scLinkBtn {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9f1239;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.rc-mini .scCenter { justify-self: center; }
+.rc-mini .scBranch { margin: 0; font-size: 0.875rem; font-weight: 600; color: #35252f; line-height: 1.4; }
+.rc-mini .lkCertScanner .lkCertPill { background: #fff; color: #1b1f1a; border-color: rgb(255 255 255 / 55%); }
+.rc-mini .lkCertScanner .lkCertWordmarkDot { color: #fff; }
+
+.rc-mini .scReferrerHeading { margin: 0 0 6px; }
+.rc-mini .scReferrerRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.9rem; line-height: 1.45; }
+.rc-mini .scReferrerType { font-weight: 700; color: #9f1239; }
+.rc-mini .scReferrerName { font-weight: 600; color: #35252f; word-break: break-word; }
+.rc-mini .scContacts { list-style: none; margin: 2px 0 0; padding: 0; }
+.rc-mini .scContactLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #9f1239;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-word;
+}
+
+.rc-mini .scIssuer { padding: 0 14px; font-size: 0.9rem; }
+.rc-mini .scIssuer summary,
+.rc-mini .scRewardSummary { cursor: pointer; list-style: none; }
+.rc-mini .scIssuer summary::-webkit-details-marker,
+.rc-mini .scRewardSummary::-webkit-details-marker { display: none; }
+.rc-mini .scIssuer summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  font-weight: 600;
+  color: #35252f;
+}
+.rc-mini .scIssuer summary::after { content: "▾"; color: #6f5f68; }
+.rc-mini .scIssuer[open] summary::after { content: "▴"; }
+.rc-mini .scIssuerBody { display: grid; gap: 6px; padding: 0 0 14px; }
+
+.rc-mini .scFormLead { margin: 0 0 4px; font-size: 1.1rem; font-weight: 700; line-height: 1.35; color: #35252f; }
+.rc-mini .scFormHint { margin: 0 0 8px; font-size: 0.85rem; color: #6f5f68; line-height: 1.45; }
+.rc-mini .scCategories { display: grid; gap: 10px; margin-top: 12px; }
+.rc-mini .scCategory { display: grid; gap: 8px; padding: 12px; border: 1px solid #ebe3e7; border-radius: 12px; }
+.rc-mini .scCategory .field { gap: 4px; }
+.rc-mini .scCategory .label { font-size: 0.82rem; color: #4a3a43; }
+.rc-mini .scCategoryHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #35252f; }
+.rc-mini .scBadge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef5ef;
+  color: #35684b;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.rc-mini .scReward { border: 1px solid #ebe3e7; border-radius: 10px; padding: 0 10px; min-width: 0; }
+.rc-mini .scRewardSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-height: 44px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+}
+.rc-mini .scRewardLabel { flex: 1 1 7rem; color: #6f5f68; font-weight: 600; }
+.rc-mini .scRewardValue { font-weight: 700; color: #35252f; }
+.rc-mini .scRewardAction { color: #9f1239; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.rc-mini .scRewardTerms { display: grid; gap: 8px; padding: 10px 0 12px; border-top: 1px solid #ebe3e7; }
+.rc-mini .scCheck { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 0.9rem; color: #35252f; }
+.rc-mini .scCheck input { width: 20px; height: 20px; accent-color: #9f1239; flex: none; }
+
+.rc-mini .scSummary {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #35252f;
+  color: #fff;
+}
+.rc-mini .scSummaryRow { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: baseline; gap: 12px; font-size: 0.9rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.rc-mini .scSummaryRow > :last-child { text-align: right; white-space: nowrap; }
+.rc-mini .scSummaryTotal { padding-top: 8px; border-top: 1px solid rgb(255 255 255 / 14%); font-size: 1.1rem; font-weight: 700; }
+.rc-mini .scSummaryMeta { margin: 0; color: rgb(255 255 255 / 72%); font-size: 0.85rem; line-height: 1.45; }
+.rc-mini .scReceipt { margin-top: 0; }
+.rc-mini .scReceiptTitle { margin: 0 0 4px; font-size: 1.1rem; font-weight: 700; line-height: 1.3; color: #35252f; }
+.rc-mini .scReceipt .scReceiptTitle { color: #fff; }
+.rc-mini .scReceiptValue { display: inline-flex; align-items: baseline; gap: 6px; }
+.rc-mini .scReceiptPercent { padding: 1px 5px; border-radius: 5px; background: rgb(255 255 255 / 12%); color: #fff; font-size: 0.82rem; font-weight: 700; }
+.rc-mini .scReceiptCombined { padding-top: 8px; border-top: 1px solid rgb(255 255 255 / 14%); font-weight: 700; }
+.rc-mini .scError { margin: 10px 0 0; color: #9f1239; font-size: 0.9rem; line-height: 1.45; }
+.rc-mini .scDiscountError { margin: 0; }
+.rc-mini [data-scan-discount][aria-invalid="true"] { border-color: #9f1239; }
+.rc-mini .scActions { display: grid; grid-template-columns: 1fr 1.7fr; gap: 10px; margin-top: 12px; }
+.rc-mini .scActionsStack { grid-template-columns: 1fr; }
+.rc-mini .scActionsEven { grid-template-columns: 1fr 1fr; }
+.rc-mini .scActions .primaryBtn,
+.rc-mini .scActions .secondaryBtn { padding: 13px 10px; font-size: 0.95rem; }
+.rc-mini .scSuccessBanner {
+  padding: 16px;
+  border-radius: 14px;
+  background: #eef5ef;
+  color: #35684b;
+  text-align: center;
+  font-weight: 700;
+}
+.rc-mini .scDenied {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgb(159 18 57 / 22%);
+  background: #fff5f6;
+  color: #35252f;
+}
+.rc-mini .scDenied .scError { margin: 0 0 6px; }
+
+.rc-mini .scStepper { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.rc-mini .scStepper li {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid #ebe3e7;
+  background: #fff;
+  color: #6f5f68;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+.rc-mini .scStepper li.is-done { background: #eef5ef; border-color: #d5e6d9; color: #35684b; }
+.rc-mini .scStepper li.is-current { background: #9f1239; border-color: #9f1239; color: #fff; }
+.rc-mini .scNext { display: grid; gap: 8px; }
+.rc-mini .scNext h3 { margin: 0; }
+.rc-mini .scDl { display: grid; gap: 6px; margin: 10px 0 0; }
+.rc-mini .scDl > div { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; line-height: 1.4; }
+.rc-mini .scDl dt { flex: none; color: #6f5f68; }
+.rc-mini .scDl dd { margin: 0; min-width: 0; font-weight: 600; color: #35252f; text-align: right; overflow-wrap: anywhere; }
+.rc-mini .scCard > .secondaryBtn { margin-top: 12px; }
+
+/* «Проверьте покупку» (PurchaseReviewModal.tsx) — лист поверх экрана мини-кабинета */
+.rcm-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(27 16 22 / 48%);
+  font-family: "Manrope", sans-serif;
+  color: #35252f;
+}
+.rcm-sheet-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 92%;
+  box-sizing: border-box;
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  box-shadow: 0 -12px 40px rgb(27 16 22 / 22%);
+  animation: rcmSheetIn 0.22s ease-out;
+}
+@keyframes rcmSheetIn { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rcm-sheet-dialog { animation: none; } }
+.rcm-sheet-title { margin: 0; padding: 18px 18px 10px; font-size: 1.15rem; font-weight: 800; line-height: 1.3; }
+.rcm-sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 18px 12px; display: grid; gap: 10px; align-content: start; }
+.rcm-sheet-due { padding: 14px; border-radius: 14px; background: #faf8f5; border: 1px solid #ebe3e7; }
+.rcm-sheet-due-label { margin: 0; color: #6f5f68; font-size: 0.82rem; font-weight: 600; }
+.rcm-sheet-due-value { margin: 2px 0 8px; font-size: 1.7rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.rcm-sheet-rollup { display: grid; gap: 4px; margin: 0; }
+.rcm-sheet-rollup > div { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: baseline; gap: 12px; font-size: 0.875rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.rcm-sheet-rollup dt { margin: 0; min-width: 0; color: #6f5f68; }
+.rcm-sheet-rollup dd { margin: 0; font-weight: 600; text-align: right; white-space: nowrap; }
+.rcm-sheet-cats { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rcm-sheet-cats > li { padding: 12px; border: 1px solid #ebe3e7; border-radius: 12px; }
+.rcm-sheet-cat-title { margin: 0 0 6px; font-weight: 700; font-size: 0.95rem; }
+.rcm-sheet-cat-meta { margin: 6px 0 0; padding: 0; list-style: none; color: #6f5f68; font-size: 0.8rem; line-height: 1.45; }
+.rcm-sheet-foot { margin: 0; color: #6f5f68; font-size: 0.82rem; line-height: 1.4; }
+.rcm-sheet-footer {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+  padding: 12px 18px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid #ebe3e7;
+}
+.rcm-sheet-btn {
+  min-height: 50px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #e5d5dc;
+  background: #fff;
+  color: #3a2f35;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rcm-sheet-btn.is-primary { border-color: #9f1239; background: #9f1239; color: #fff; }
+.rcm-sheet-btn:disabled { opacity: 0.6; cursor: default; }
+.rcm-sheet-btn:focus-visible { outline: 2px solid #9f1239; outline-offset: 2px; }

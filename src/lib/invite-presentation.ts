@@ -24,6 +24,10 @@ const INACTIVE_METADATA: Record<
     title: "Приглашение уже принято",
     description: "Эта ссылка больше недоступна для новых участников.",
   },
+  JOINED: {
+    title: "Приглашение уже принято",
+    description: "Эта ссылка больше недоступна для новых участников.",
+  },
   REVOKED: {
     title: "Приглашение отозвано",
     description: "Отправитель отменил предложение. Запросите новую ссылку.",
@@ -90,88 +94,421 @@ export function inviteOgDescription(
   return NEUTRAL_OG_DESCRIPTION;
 }
 
-export type InviteHeroContent = {
+export type InviteViewer = {
+  partnerType?: string | null;
+  partnerActivities?: string[] | null;
+} | null;
+
+/**
+ * Who recommends whom after acceptance. The server decides it from the real profiles
+ * (`resolvePartnershipSides`), so the page only states a direction it can be sure of.
+ */
+export type InviteDirection = "recipient_recommends" | "neutral";
+
+export type InviteStep = { title: string; hint: string };
+
+export type InviteLandingCopy = {
+  direction: InviteDirection;
+  agentRecipient: boolean;
+  kicker: string;
   headline: string;
+  senderLine: string | null;
   lead: string;
-  bullets: string[];
-  audienceLabel: string | null;
+  flowTitle: string;
+  flow: [string, string, string];
+  termsTitle: string;
+  termsColumn: string;
+  percentExplainer: string;
+  mutual: { title: string; text: string } | null;
+  noteCaption: string;
+  stepsTitle: string;
+  steps: [InviteStep, InviteStep, InviteStep];
 };
 
-export function buildInviteHeroContent(preview: LinkInvitePublicPreview): InviteHeroContent {
+const INVITER_TYPE_LABEL: Record<string, string> = {
+  STORE: "Магазин",
+  COMPANY: "Компания",
+  MASTER: "Специалист",
+};
+
+/** Mirrors the server rule for a pure agent recipient (AGENT activity without trade sides). */
+function isPureAgentViewer(activities: string[] | null | undefined): boolean {
+  const list = activities ?? [];
+  return list.includes("AGENT") && !list.includes("STORE") && !list.includes("SERVICE");
+}
+
+function isSpecialistOrCompany(type: PartnerTypeCode): boolean {
+  return type === "MASTER" || type === "COMPANY";
+}
+
+export function resolveInviteRecipient(
+  intendedType: PartnerTypeCode,
+  viewer: InviteViewer,
+): { agentRecipient: boolean; recipientType: PartnerTypeCode } {
+  const viewerKnown = Boolean(
+    viewer && (viewer.partnerType || (viewer.partnerActivities ?? []).length > 0),
+  );
+  if (viewerKnown && viewer) {
+    return {
+      agentRecipient: isPureAgentViewer(viewer.partnerActivities),
+      recipientType: viewer.partnerType ?? null,
+    };
+  }
+  return {
+    agentRecipient: intendedType === "AGENT",
+    recipientType:
+      intendedType === "MASTER" || intendedType === "STORE" || intendedType === "COMPANY"
+        ? intendedType
+        : null,
+  };
+}
+
+export function resolveInviteDirection(
+  inviterType: PartnerTypeCode,
+  intendedType: PartnerTypeCode,
+  viewer: InviteViewer = null,
+): InviteDirection {
+  const { agentRecipient, recipientType } = resolveInviteRecipient(intendedType, viewer);
+  if (agentRecipient) return "recipient_recommends";
+  if (inviterType === "STORE") return "recipient_recommends";
+  if (isSpecialistOrCompany(inviterType) && isSpecialistOrCompany(recipientType)) {
+    return "recipient_recommends";
+  }
+  return "neutral";
+}
+
+/** Names are never declined: a noun carries the case, the name stays as the sender wrote it. */
+function quotedName(name: string): string {
+  return /[«»"„“”]/.test(name) ? name : `«${name}»`;
+}
+
+type InviterPhrases = {
+  accusative: string;
+  genitive: string;
+  /** Sender as a direct object: «ОПТОВИК» / магазин Студия «Уют» / партнёра. */
+  advise: string;
+  /** Where clients go: в «ОПТОВИК» / к партнёру. */
+  into: string;
+  /** Where clients buy: в «ОПТОВИК» / у партнёра. */
+  at: string;
+  /** Whose clients, from whom: «ОПТОВИК» / партнёра. */
+  of: string;
+};
+
+function inviterPhrases(name: string, inviterType: PartnerTypeCode): InviterPhrases {
+  const quoted = quotedName(name);
+  // A quoted name stands alone in any case; a name with its own quotes needs a noun to carry the case.
+  const standalone = quoted === name ? null : quoted;
+  if (inviterType === "STORE") {
+    return {
+      accusative: `магазин ${quoted}`,
+      genitive: `магазина ${quoted}`,
+      advise: standalone ?? `магазин ${name}`,
+      into: `в ${standalone ?? `магазин ${name}`}`,
+      at: `в ${standalone ?? `магазине ${name}`}`,
+      of: standalone ?? `магазина ${name}`,
+    };
+  }
+  if (inviterType === "COMPANY") {
+    return {
+      accusative: `компанию ${quoted}`,
+      genitive: `компании ${quoted}`,
+      advise: standalone ?? `компанию ${name}`,
+      into: `в ${standalone ?? `компанию ${name}`}`,
+      at: `в ${standalone ?? `компании ${name}`}`,
+      of: standalone ?? `компании ${name}`,
+    };
+  }
+  return {
+    accusative: "партнёра",
+    genitive: "партнёра",
+    advise: "партнёра",
+    into: "к партнёру",
+    at: "у партнёра",
+    of: "партнёра",
+  };
+}
+
+/** Keeps a dash or a one-letter word from being left alone at a line break in the page title. */
+function tidyHeadline(text: string): string {
+  return text.replace(/ — /g, "\u00a0— ").replace(/(^| )([вискуоВИСКУО]) /g, "$1$2\u00a0");
+}
+
+type RecipientCopy = {
+  /** Null keeps the standard headline with the sender name. */
+  headline: string | null;
+  lead: string;
+  mutualText: string | null;
+  thirdStep: InviteStep;
+};
+
+/**
+ * Wording by who opens the link, for the direction "recipient recommends the sender".
+ * Person names are never put into oblique cases, so a specialist sender is "партнёр" there.
+ */
+function recipientCopy(
+  kind: "agent" | "master" | "company" | "store",
+  name: string,
+  inviterType: PartnerTypeCode,
+  phrases: InviterPhrases,
+): RecipientCopy {
+  const fromStore = inviterType === "STORE";
+  const fromOrganization = fromStore || inviterType === "COMPANY";
+  const advisesYou = `${name} может советовать вас своим ${
+    fromStore ? "покупателям" : "клиентам"
+  }. Укажите процент на свои услуги — и заказы пойдут к вам.`;
+
+  if (kind === "agent") {
+    return {
+      headline: fromOrganization ? `Приводите клиентов ${phrases.into} и получайте процент` : null,
+      lead: "Клиенту — скидка, вам — вознаграждение с каждой его покупки. Ничего продавать не нужно.",
+      mutualText: null,
+      thirdStep: {
+        title: "Отправьте клиенту сертификат",
+        hint: "Он купит — вам придёт вознаграждение.",
+      },
+    };
+  }
+  if (kind === "master") {
+    return {
+      headline: fromStore ? "Ваши клиенты покупают материалы — получайте с этого процент" : null,
+      lead: `Советуйте ${phrases.advise} тем, с кем работаете на объекте: им скидка, вам вознаграждение.`,
+      mutualText: advisesYou,
+      thirdStep: {
+        title: "Назовите свой процент",
+        hint: `Тогда ${name} начнёт приводить вам заказчиков.`,
+      },
+    };
+  }
+  if (kind === "company") {
+    return {
+      headline: `${name} предлагает обмениваться клиентами`,
+      lead: `Ваши заказчики покупают ${phrases.at} со скидкой, компания получает вознаграждение с каждой покупки.`,
+      mutualText: fromStore
+        ? `Покупателям ${phrases.of} нужны подрядчики. Предложите свой процент — и ${name} будет направлять их к вам.`
+        : advisesYou,
+      thirdStep: {
+        title: "Укажите процент на услуги компании",
+        hint: fromOrganization
+          ? `Так вы получите заказчиков от ${phrases.of}.`
+          : `Тогда ${name} начнёт приводить вам заказчиков.`,
+      },
+    };
+  }
+  return {
+    headline: `${name} предлагает обмениваться покупателями`,
+    lead: `Вашим покупателям нужно то, чего нет у вас. Направляйте их ${phrases.into}: им скидка, вам вознаграждение.`,
+    mutualText: `Предложите свой процент — и ${name} будет направлять своих покупателей к вам.`,
+    thirdStep: {
+      title: "Назовите процент на свои товары",
+      hint: fromOrganization
+        ? `Так вы получите покупателей от ${phrases.of}.`
+        : `Тогда ${name} начнёт направлять покупателей к вам.`,
+    },
+  };
+}
+
+export function buildInviteLandingCopy(
+  preview: LinkInvitePublicPreview,
+  viewer: InviteViewer = null,
+): InviteLandingCopy {
   const name = inviterDisplayName(preview);
   const inviterType = preview.inviter?.partnerType ?? null;
   const intendedType = preview.intendedPartnerType ?? null;
-  const audience = resolveInviteAudience(inviterType, intendedType);
-  const audienceLabel = formatInviteAudienceLabel(intendedType, inviterType);
+  const recipient = resolveInviteRecipient(intendedType, viewer);
+  const { recipientType } = recipient;
+  const direction = resolveInviteDirection(inviterType, intendedType, viewer);
+  // A link made for agents keeps the agent wording for any account that opens it,
+  // as long as the server still resolves the recipient as the recommending side.
+  const agentRecipient =
+    recipient.agentRecipient || (intendedType === "AGENT" && direction === "recipient_recommends");
+  const phrases = inviterPhrases(name, inviterType);
+  const city = preview.inviter?.city?.trim() || "";
+  const senderLine =
+    [INVITER_TYPE_LABEL[inviterType ?? ""], city].filter(Boolean).join(" · ") || null;
 
-  const headline = `Сотрудничайте с ${name} через RemCard PROF`;
+  const base = {
+    direction,
+    agentRecipient,
+    kicker: "Личное приглашение",
+    headline: `${name} приглашает вас в партнёры`,
+    senderLine,
+    flowTitle: "Как это работает",
+    termsColumn: "Общий процент",
+    noteCaption: `Сообщение от ${phrases.genitive}`,
+    stepsTitle: "Как стать партнёром",
+  };
+  const firstSteps: [InviteStep, InviteStep] = [
+    { title: "Войдите или зарегистрируйтесь", hint: "Вернётесь на эту страницу." },
+    { title: "Примите условия", hint: "Одна кнопка — и вы партнёры." },
+  ];
 
-  if (intendedType === "AGENT") {
+  if (direction === "neutral") {
     return {
-      headline,
-      audienceLabel,
-      lead: "Приглашение для агента в RemCard PROF. Зарегистрируйтесь как агент или войдите в свой кабинет, чтобы ознакомиться с предложением и отдельно подтвердить сотрудничество.",
-      bullets: [
-        "Отдельный личный кабинет агента",
-        "Условия сотрудничества доступны до подтверждения",
-        "Регистрация не означает принятия предложения",
+      ...base,
+      lead: "Рекомендуйте клиентов друг другу: клиент получает скидку, а тот, кто его привёл, — вознаграждение с покупки.",
+      flow: [
+        "Партнёр выдаёт клиенту сертификат на скидку",
+        "Клиент покупает со скидкой",
+        "Тот, кто привёл клиента, получает вознаграждение",
+      ],
+      termsTitle: "Условия предложения",
+      percentExplainer:
+        "Общий процент — это скидка клиенту и вознаграждение за рекомендацию вместе.",
+      mutual: null,
+      steps: [
+        ...firstSteps,
+        { title: "Откройте раздел «Партнёры»", hint: "Там условия и следующие шаги." },
       ],
     };
   }
 
-  if (audience === "master") {
+  const flow: [string, string, string] = [
+    "Выдаёте клиенту сертификат на скидку",
+    `Клиент покупает у ${phrases.genitive}`,
+    "Вы получаете вознаграждение",
+  ];
+  const termsTitle = `Условия ${phrases.genitive}`;
+  const percentExplainer = "Общий процент — это скидка клиенту и ваше вознаграждение вместе.";
+  const recipientKind = agentRecipient
+    ? "agent"
+    : recipientType === "MASTER"
+      ? "master"
+      : recipientType === "COMPANY"
+        ? "company"
+        : recipientType === "STORE"
+          ? "store"
+          : null;
+
+  if (recipientKind) {
+    const typed = recipientCopy(recipientKind, name, inviterType, phrases);
     return {
-      headline,
-      audienceLabel,
-      lead:
-        "Помогайте клиентам выбирать товары для ремонта и получайте вознаграждение за покупки по вашим рекомендациям. Условия сотрудничества и начисления будут доступны в личном кабинете.",
-      bullets: [
-        "Для клиента — скидка по вашей рекомендации",
-        "Для вас — вознаграждение на согласованных условиях",
-        "Для обеих сторон — история покупок и взаиморасчёты",
-      ],
+      ...base,
+      headline: typed.headline ? tidyHeadline(typed.headline) : base.headline,
+      // A benefit-led headline may not name the sender, so the line under it does.
+      senderLine:
+        typed.headline && !typed.headline.includes(name)
+          ? [name, senderLine].filter(Boolean).join(" · ")
+          : senderLine,
+      lead: typed.lead,
+      flow,
+      termsTitle,
+      percentExplainer,
+      mutual: typed.mutualText ? { title: "Можно в обе стороны", text: typed.mutualText } : null,
+      steps: [...firstSteps, typed.thirdStep],
     };
   }
 
-  if (audience === "store") {
-    return {
-      headline,
-      audienceLabel,
-      lead:
-        "Принимайте покупки по рекомендациям специалистов на условиях, зафиксированных в этом предложении. Скидки для клиентов и расчёты — в RemCard PROF.",
-      bullets: [
-        "Для клиента — скидка по рекомендации специалиста",
-        "Для магазина — продажи на согласованных условиях",
-        "Для обеих сторон — история покупок и взаиморасчёты",
-      ],
-    };
-  }
-
+  // Recipient type is unknown until login: generic wording.
   return {
-    headline,
-    audienceLabel,
-    lead:
-      "Предложение о партнёрстве в RemCard PROF. Условия зафиксированы отправителем и будут доступны в личном кабинете после регистрации.",
-    bullets: [
-      "Прозрачные условия по категориям",
-      "Единая история покупок и расчётов",
-      "Подтверждение сотрудничества — отдельным шагом после проверки профиля",
+    ...base,
+    lead: `Рекомендуйте ${phrases.accusative} своим клиентам и получайте вознаграждение с их покупок.`,
+    flow,
+    termsTitle,
+    percentExplainer,
+    mutual: {
+      title: "Можно в обе стороны",
+      text: `${name} тоже сможет приводить клиентов вам. Предложите свой процент на ваши товары и услуги — и рекомендации станут взаимными.`,
+    },
+    steps: [
+      ...firstSteps,
+      {
+        title: "Предложите свои условия",
+        hint: `Тогда ${name} сможет рекомендовать и вас. По желанию — в разделе «Партнёры».`,
+      },
     ],
   };
 }
 
-export const INVITE_PERCENT_EXPLAINER =
-  "Общий процент распределяется между скидкой клиенту и вознаграждением рекомендателю. Это не размер вашей выплаты целиком.";
+export const INVITE_GUEST_FINE_PRINT =
+  "Регистрация — ещё не согласие. Условия вы принимаете отдельно.";
 
-export const INVITE_GUEST_DISCLAIMER =
-  "Регистрация не означает принятие условий. После входа заполните обязательные данные профиля и явно подтвердите сотрудничество на этой странице.";
+export const INVITE_ACCEPT_FINE_PRINT = "Условия зафиксированы в этом приглашении.";
 
-export const INVITE_MODERATION_NOTE =
-  "Завершите обязательные данные профиля в кабинете (имя, город, тип партнёра). Публикация в каталоге для принятия частного приглашения не требуется.";
+export type DiscussionInviteCopy = {
+  fromAgent: boolean;
+  kicker: string;
+  headline: string;
+  senderLine: string | null;
+  lead: string;
+  flowTitle: string;
+  flow: [string, string, string];
+  stepsTitle: string;
+  steps: [InviteStep, InviteStep, InviteStep];
+  finePrint: string;
+  joinedTitle: string;
+  joinedLead: string;
+};
 
-/** Shown next to audience badge; invitation type is not a hard eligibility gate. */
-export const INVITE_AUDIENCE_HINT =
-  "Тип в приглашении — ориентир для текста страницы. Принять ссылку можно с вашим фактическим профилем партнёра, если кабинет готов.";
+/**
+ * Discussion links carry no percents. Only an agent sender has a fixed mechanic
+ * (the agent recommends, the recipient sells); other senders get neutral wording.
+ */
+export function buildDiscussionInviteCopy(input: {
+  inviter?: { displayName?: string | null; partnerType?: string | null; city?: string | null; isAgent?: boolean };
+}): DiscussionInviteCopy {
+  const name = input.inviter?.displayName?.trim() || "Партнёр RemCard";
+  const fromAgent = input.inviter?.isAgent === true;
+  const city = input.inviter?.city?.trim() || "";
+  const typeLabel = fromAgent ? "Агент" : INVITER_TYPE_LABEL[input.inviter?.partnerType ?? ""];
+  const senderLine = [typeLabel, city].filter(Boolean).join(" · ") || null;
+  const firstStep: InviteStep = {
+    title: "Войдите или зарегистрируйтесь",
+    hint: "Вернётесь на эту страницу.",
+  };
+  const joinStep: InviteStep = {
+    title: "Присоединитесь к обсуждению",
+    hint: "Это ещё не согласие на условия.",
+  };
+
+  if (fromAgent) {
+    return {
+      fromAgent,
+      kicker: "Личное приглашение",
+      headline: `${name} хочет приводить вам клиентов`,
+      senderLine,
+      lead: "Агент рекомендует ваши товары и услуги клиентам. Вы платите процент только с покупок, которые состоялись.",
+      flowTitle: "Как это работает",
+      flow: [
+        `${name} выдаёт клиенту сертификат`,
+        "Клиент покупает у вас со скидкой",
+        "Вы платите процент с покупки",
+      ],
+      stepsTitle: "Как стать партнёром",
+      steps: [
+        firstStep,
+        joinStep,
+        { title: "Согласуйте процент", hint: `Предложите свой — и ${name} начнёт приводить клиентов.` },
+      ],
+      finePrint: "Процент пока не согласован: его предлагаете вы.",
+      joinedTitle: "Вы в обсуждении",
+      joinedLead: `Осталось согласовать процент — и ${name} начнёт приводить клиентов.`,
+    };
+  }
+
+  return {
+    fromAgent,
+    kicker: "Личное приглашение",
+    headline: `${name} приглашает обсудить сотрудничество`,
+    senderLine,
+    lead: "Рекомендуйте клиентов друг другу: клиент получает скидку, а тот, кто его привёл, — вознаграждение с покупки.",
+    flowTitle: "Как это работает",
+    flow: [
+      "Партнёр выдаёт клиенту сертификат на скидку",
+      "Клиент покупает со скидкой",
+      "Тот, кто привёл клиента, получает вознаграждение",
+    ],
+    stepsTitle: "Как стать партнёром",
+    steps: [
+      firstStep,
+      joinStep,
+      { title: "Согласуйте условия", hint: "Проценты обсуждаются отдельно, в разделе «Партнёры»." },
+    ],
+    finePrint: "Проценты пока не согласованы: присоединение ни к чему не обязывает.",
+    joinedTitle: "Вы в обсуждении",
+    joinedLead: "Осталось согласовать условия — после этого сотрудничество начнётся.",
+  };
+}
 
 /** Advisory registration choice; never changes an existing account's role. */
 export function inviteRegistrationHref(intendedType: PartnerTypeCode, returnTo: string): string {
@@ -216,9 +553,10 @@ export function buildInviteShareMessage(options: {
 }
 
 export function buildInviteLinkMetadata(input: {
-  preview: LinkInvitePublicPreview | null;
+  preview: Pick<LinkInvitePublicPreview, "status" | "inviter" | "intendedPartnerType"> | null;
   pageUrl: string;
   ogImageUrl: string;
+  kind?: "terms" | "discussion";
 }): Metadata {
   const { pageUrl, ogImageUrl } = input;
   const preview = input.preview;
@@ -242,7 +580,7 @@ export function buildInviteLinkMetadata(input: {
         pageUrl,
         ogImageUrl,
       }),
-      twitter: buildTwitter({ title: inactive.title, description: inactive.description }),
+      twitter: buildTwitter({ title: inactive.title, description: inactive.description, ogImageUrl }),
     };
   }
 
@@ -258,13 +596,13 @@ export function buildInviteLinkMetadata(input: {
         pageUrl,
         ogImageUrl,
       }),
-      twitter: buildTwitter({ title: inactive.title, description: inactive.description }),
+      twitter: buildTwitter({ title: inactive.title, description: inactive.description, ogImageUrl }),
     };
   }
 
   const name = inviterDisplayName(preview);
   const title = `${name} приглашает вас к сотрудничеству`;
-  const description = inviteOgDescription(
+  const description = input.kind === "discussion" ? NEUTRAL_OG_DESCRIPTION : inviteOgDescription(
     preview.inviter?.partnerType ?? null,
     preview.intendedPartnerType ?? null,
   );
@@ -274,7 +612,7 @@ export function buildInviteLinkMetadata(input: {
     title: `${title} · ${SITE_NAME}`,
     description,
     openGraph: buildOpenGraph({ title, description, pageUrl, ogImageUrl }),
-    twitter: buildTwitter({ title, description }),
+    twitter: buildTwitter({ title, description, ogImageUrl }),
   };
 }
 
@@ -305,11 +643,13 @@ function buildOpenGraph(input: {
 function buildTwitter(input: {
   title: string;
   description: string;
+  ogImageUrl: string;
 }): NonNullable<Metadata["twitter"]> {
   return {
     card: "summary_large_image",
     title: input.title,
     description: input.description,
+    images: [input.ogImageUrl],
   };
 }
 

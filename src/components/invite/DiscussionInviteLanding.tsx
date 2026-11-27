@@ -14,9 +14,11 @@ import {
   isStrictPostOk,
   planRouteAfterInviteSuccess,
 } from "@/lib/invite-profile-completion";
+import { buildDiscussionInviteCopy } from "@/lib/invite-presentation";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { InviteAcceptedProfilePrompt } from "./InviteAcceptedProfilePrompt";
+import { InviteDock, InviteFlow, InviteSteps, useOffscreen } from "./InviteLandingParts";
 import styles from "./InviteLanding.module.css";
 
 type Preview = {
@@ -24,7 +26,13 @@ type Preview = {
   viewerRole?: string;
   inviteId?: string;
   canJoin?: boolean;
-  inviter?: { displayName: string; partnerType: string | null; city: string | null };
+  inviter?: {
+    displayName: string;
+    partnerType: string | null;
+    city: string | null;
+    /** Sent by newer servers; absent means "unknown", and the page stays neutral. */
+    isAgent?: boolean;
+  };
   recipientLabel?: string;
   cooperationSubject?: string;
   expiresAt?: string;
@@ -65,6 +73,7 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
   const joinCompletedRef = useRef(false);
   const mountedRef = useRef(true);
   const routeGeneration = useRef(0);
+  const [actionsRef, actionsOffscreen] = useOffscreen<HTMLDivElement>();
 
   const isRequestActive = useCallback((generation: number) => {
     return mountedRef.current && generation === routeGeneration.current;
@@ -300,13 +309,17 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
     );
   }
 
+  const copy = buildDiscussionInviteCopy({ inviter: preview?.inviter });
+
   if (showParticipantContinue && !canShowJoinForm) {
     return (
       <div className={styles.page}>
         <div className={styles.wrap}>
           <BrandMark />
           <div className={styles.card}>
-            <h1 className={styles.title}>{statusTitle(preview, joined)}</h1>
+            <h1 className={styles.title}>
+              {viewerRole === "inviter" ? statusTitle(preview, joined) : copy.joinedTitle}
+            </h1>
             {preview?.cooperationSubject ? (
               <div className={styles.noteBlock}>
                 <strong>Предмет</strong>
@@ -314,8 +327,9 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
               </div>
             ) : null}
             <p className={styles.lead}>
-              Дальше можно предложить условия сотрудничества штатным приглашением — партнёрство создаётся
-              только после согласования.
+              {viewerRole === "inviter"
+                ? "Дальше можно согласовать условия сотрудничества — партнёрство создаётся только после согласования."
+                : copy.joinedLead}
             </p>
             {profileCheckError ? (
               <p className={styles.error} role="alert">
@@ -331,49 +345,60 @@ export function DiscussionInviteLanding({ token }: { token: string }) {
     );
   }
 
+  const joinButton = (
+    <Button className={styles.fullButton} disabled={busy} onClick={() => void join()}>
+      Присоединиться к обсуждению
+    </Button>
+  );
+
   return (
-    <div className={styles.page}>
-      <div className={styles.wrap}>
+    <div className={`${styles.page} ${styles.pageWithDock}`}>
+      <div className={styles.wrapWide}>
         <BrandMark />
-        <div className={styles.card}>
-          <p className={styles.eyebrow}>Приглашение к обсуждению</p>
-          <h1 className={styles.title}>
-            {preview?.inviter?.displayName ?? "Партнёр RemCard"} приглашает обсудить сотрудничество
-          </h1>
-          {preview?.recipientLabel ? (
-            <p className={styles.inviterLine}>Для: {preview.recipientLabel}</p>
-          ) : null}
-          {preview?.cooperationSubject ? (
-            <div className={styles.noteBlock}>
-              <strong>Предмет</strong>
-              <p>{preview.cooperationSubject}</p>
+        <article
+          className={styles.invitation}
+          aria-busy={busy}
+          data-testid="discussion-invite-landing"
+          data-from-agent={copy.fromAgent ? "true" : "false"}
+        >
+          <div className={styles.offer}>
+            <p className={styles.kicker}>{copy.kicker}</p>
+            <h1 className={styles.heroTitle}>{copy.headline}</h1>
+            {copy.senderLine ? <p className={styles.sender}>{copy.senderLine}</p> : null}
+            <p className={styles.heroLead}>{copy.lead}</p>
+
+            <InviteFlow title={copy.flowTitle} items={copy.flow} />
+
+            {preview?.cooperationSubject ? (
+              <figure className={styles.senderNote} data-testid="discussion-invite-subject">
+                <figcaption>
+                  {preview.recipientLabel
+                    ? `О чём хотят договориться · для: ${preview.recipientLabel}`
+                    : "О чём хотят договориться"}
+                </figcaption>
+                <blockquote>{preview.cooperationSubject}</blockquote>
+              </figure>
+            ) : preview?.recipientLabel ? (
+              <p className={styles.explanation}>Для: {preview.recipientLabel}</p>
+            ) : null}
+          </div>
+
+          <aside className={styles.next} data-testid="discussion-invite-next">
+            <h2 className={styles.sectionTitle}>{copy.stepsTitle}</h2>
+            <InviteSteps steps={copy.steps} current={0} />
+            {error ? (
+              <p className={`${styles.error} ${styles.nextCopy}`} role="alert">
+                {error}
+              </p>
+            ) : null}
+            <div className={styles.nextActions} ref={actionsRef}>
+              {joinButton}
             </div>
-          ) : null}
-          <p className={styles.lead}>
-            Присоединение не создаёт партнёрство и не согласует проценты — только открывает обсуждение.
-            Дальнейшие условия оформляются отдельно, если вы решите сотрудничать.
-          </p>
-          {error ? (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          ) : null}
-          {joined ? (
-            <>
-              <p className={styles.notice}>Вы присоединились к обсуждению.</p>
-              <Button disabled={profileChecking} onClick={() => void openDiscussionContext()}>
-                {profileChecking ? "Проверяем профиль…" : "Перейти к обсуждению"}
-              </Button>
-            </>
-          ) : (
-            <div className={styles.actions}>
-              <Button disabled={busy} onClick={() => void join()}>
-                Присоединиться к обсуждению
-              </Button>
-            </div>
-          )}
-        </div>
+            <p className={styles.fine}>{copy.finePrint}</p>
+          </aside>
+        </article>
       </div>
+      <InviteDock visible={actionsOffscreen}>{joinButton}</InviteDock>
     </div>
   );
 }

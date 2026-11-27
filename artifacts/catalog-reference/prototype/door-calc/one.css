@@ -1,0 +1,60 @@
+.top__ctx a{color:var(--brand);font-weight:700;text-decoration:none;font-size:12px}
+.lay{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+.aside{position:sticky;top:76px;display:flex;flex-direction:column;gap:14px}
+.aside .card{margin:0}
+.opc{display:grid;grid-template-columns:300px 1fr;gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.draw{position:relative;width:300px;height:362px}
+.draw svg{position:absolute;left:44px;top:34px}
+.draw .dw{position:absolute;left:84px;top:0;width:120px}
+.draw .dh{position:absolute;left:0;top:140px;width:78px}
+.draw .dd{position:absolute;left:84px;bottom:0;width:120px}
+.draw label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.draw input{padding:6px 8px;font-weight:700;text-align:center}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opts h3{margin:0;font-size:16px;display:flex;align-items:center;gap:10px}
+.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+.optrow{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.optrow input[type=checkbox]{width:auto}
+.optrow select{width:auto;padding:5px 8px}
+.sub2{font-size:12px;color:var(--muted);margin-left:26px;margin-top:-4px}
+.opc .sp{margin-left:auto;display:flex;gap:6px}
+.mini{font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 11px}
+.mini b{color:var(--ink)}
+details.obj{margin-bottom:14px}
+details.obj summary{cursor:pointer;font-weight:800;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+details.obj .grid{padding:14px 2px 0}
+@media(max-width:1000px){.lay{grid-template-columns:1fr}.aside{position:static}}
+@media(max-width:700px){.opc{grid-template-columns:1fr}.draw{margin:0 auto}.optgrid{grid-template-columns:1fr}}
+.opc{grid-template-columns:minmax(0,560px) 1fr;align-items:start}
+.lay{grid-template-columns:minmax(0,1fr) 320px}
+.stagebox{width:100%;max-width:560px;position:relative}
+.stage{position:absolute;left:0;top:0;width:560px;height:630px;transform-origin:0 0}
+.stage svg{position:absolute;left:0;top:0}
+.hot{position:absolute;width:128px;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:6px 9px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.25;box-shadow:0 2px 8px #0001}
+.hot--l{left:10px}.hot--r{right:10px}
+.hot.on{border-color:var(--brand);background:var(--brand-soft)}
+.hot__r{display:flex;align-items:flex-start;gap:6px}
+.hot input{width:auto;margin-top:2px;accent-color:var(--brand)}
+.hot__n{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:3px}
+.hin{position:absolute}
+.hin label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.hin input{padding:7px 8px;font-weight:800;text-align:center;font-size:16px;background:#fff}
+.hin--w{left:205px;top:4px;width:150px}
+.hin--h{left:10px;top:236px;width:116px}
+.hin--d{left:190px;top:556px;width:180px}
+.hin--d label{text-align:center}
+.sp2{display:flex;gap:6px}
+.opts input[type=number]{width:100%}
+@media(max-width:1000px){.lay{grid-template-columns:1fr}.opc{grid-template-columns:1fr}}
+.opts .seg button{white-space:nowrap;padding:6px 10px}
+.mscroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;margin-top:6px}
+.mcard{flex:0 0 150px;font:inherit;text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px;cursor:pointer;color:var(--ink)}
+.mcard:hover{border-color:var(--brand)}
+.mcard.sel{border-color:var(--brand);background:var(--brand-soft)}
+.mcard small{color:var(--muted);font-size:12px}
+.mdoor{display:block;height:44px;border-radius:6px;border:1.5px solid #0002;margin-bottom:4px}
+.mcard--own{border-style:dashed;justify-content:center}
+.mplus{font-size:30px;line-height:1;color:var(--brand);font-weight:300}
+details.pl{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+details.pl summary{cursor:pointer;font-weight:800}
+.lay>*{min-width:0}.card{min-width:0}.mscroll{max-width:100%}body{overflow-x:hidden}

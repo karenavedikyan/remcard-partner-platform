@@ -15,6 +15,7 @@ import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
 import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
 import { isPartnerAssistantContext, withAssistantClientsNav } from "@/lib/business-clients/assistant";
 import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
+import { filterBusinessDesktopNav } from "@/lib/door-calculator/access";
 import { usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import type { MasterNavItem } from "@/lib/master-nav/sections";
@@ -136,7 +137,11 @@ export function AppShell({
   );
 
   const assistantClients = !prototypeShell && isPartnerAssistantContext(presentation.proContext);
-  const navItems = prototypeConfig?.desktop ?? withAssistantClientsNav(BASE_NAV, assistantClients);
+  const rawDesktop =
+    prototypeConfig?.desktop ?? withAssistantClientsNav(BASE_NAV, assistantClients);
+  const navItems = prototypeShell
+    ? filterBusinessDesktopNav(rawDesktop, presentation)
+    : rawDesktop;
   const mobileBottom =
     prototypeConfig?.mobileBottom ?? withAssistantClientsNav(MOBILE_BOTTOM_NAV, assistantClients);
   const section = searchParams.get("section");
@@ -153,7 +158,9 @@ export function AppShell({
   const initials = userInitials(actorName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const moreItems = prototypeConfig?.moreItems() ?? [];
+  const moreItems = prototypeShell
+    ? filterBusinessDesktopNav(prototypeConfig?.moreItems() ?? [], presentation)
+    : prototypeConfig?.moreItems() ?? [];
   const moreActive =
     prototypeShell &&
     moreItems.some((item) => isCabinetNavItemActive(item.href, pathname, searchParams));

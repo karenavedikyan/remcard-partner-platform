@@ -1,0 +1,95 @@
+.invite-preview-entry {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex: none;
+}
+.invite-preview-entry .pill {
+  font-size: 11px;
+}
+.btn.invite-preview-trigger {
+  min-height: 36px;
+  padding: 5px 9px;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.invite-preview-trigger svg {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+.btn.invite-preview-trigger:hover {
+  background: var(--offset);
+}
+#role-dialog.invite-preview-dialog {
+  width: min(780px, calc(100% - 32px));
+  max-height: calc(100dvh - 42px);
+  padding: 16px 20px;
+}
+@media (min-width: 1192px) {
+  #role-dialog.invite-preview-dialog {width: min(1144px, calc(100% - 48px))}
+}
+.invite-preview-dialog .dialog-head {
+  margin-bottom: 4px;
+}
+.invite-preview-dialog .dialog-head h2 {
+  min-width: 0;
+  font-size: 20px;
+  letter-spacing: -.032em;
+}
+.invite-preview-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.invite-preview-tools .btn {
+  min-height: 36px;
+  padding: 5px 8px;
+}
+.invite-preview-tools .btn svg {
+  width: 17px;
+  height: 17px;
+}
+.invite-preview-tools .invite-theme-toggle {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.invite-preview-tools [data-action="close-dialog"] {
+  width: 36px;
+}
+dialog.invite-preview-dialog.proto-page-dialog-host > .proto-page-flow {
+  position: static;
+  max-width: none;
+  margin: 8px 0 -4px;
+  padding: 0;
+}
+dialog.invite-preview-dialog.proto-page-dialog-host > .proto-page-panel[data-open="true"] {
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+}
+[data-theme="dark"] .invite-preview-dialog :is(.proto-page-badge,.proto-page-toc-btn) {
+  background: var(--offset);
+  color: var(--ink);
+  border-color: var(--line);
+}
+@media (max-width: 570px) {
+  .page-header.with-invite-preview {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .invite-preview-entry {justify-content: flex-start}
+  #role-dialog.invite-preview-dialog {
+    width: calc(100% - 16px);
+    padding: 12px 11px;
+    max-height: calc(100dvh - 24px);
+  }
+  .invite-preview-dialog .dialog-head h2 {font-size: 17px}
+  .invite-preview-tools .invite-theme-toggle {
+    width: 36px;
+  }
+  .invite-preview-tools .invite-theme-toggle span {display: none}
+}

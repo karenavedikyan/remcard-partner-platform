@@ -3,6 +3,10 @@ import { partnersPageReturnPath } from "@/lib/partners-return-path";
 import { sanitizeReturnTo } from "@/lib/auth-flow";
 
 describe("partnersPageReturnPath", () => {
+  it("retains the invite gallery through login", () => {
+    expect(partnersPageReturnPath({ invites: "1" })).toBe("/partners?invites=1");
+    expect(partnersPageReturnPath({ invites: "invalid" })).toBe("/partners");
+  });
   it("includes terms query for deep link returnTo", () => {
     const path = partnersPageReturnPath({ terms: "part-abc" });
     expect(path).toBe("/partners?terms=part-abc");

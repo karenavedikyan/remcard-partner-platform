@@ -1,5 +1,7 @@
 import type { StoreCertificate } from "@/lib/certificate-types";
 import type { MiniAppBootstrap, MiniAppPlatform } from "@/lib/mini-app/types";
+import { MINI_WALLET_EMPTY_FIXTURE } from "@/lib/mini-app/wallet/fixtures";
+import type { SettlementsResponse } from "@/lib/settlements-types";
 
 /** Synthetic certificate for dev flow screenshots only — not proof of live create. */
 const FIXTURE_CERT_QR_LOOKUP = "qr-fixture-dev-inert";
@@ -36,7 +38,7 @@ export const MINI_APP_FIXTURE_CREATE_SEED = {
 
 /** Dev-only invite URL for flow screenshots — not a live invite. */
 export const MINI_APP_FIXTURE_INVITE_LINK =
-  "https://prof.remcard.ru/partners/invite/dev-fixture-demo-link";
+  "https://prof.remcard.ru/invite/dev-fixture-demo-link-not-a-live-token";
 
 const CABINET_TITLE: Record<MiniAppBootstrap["role"], string> = {
   agent: "Кабинет агента",
@@ -84,10 +86,12 @@ export function buildMiniAppFixture(
     cabinetTitle: CABINET_TITLE[role],
     workplaceLabel: role === "store" || role === "company" ? "Центральная точка" : null,
     actions,
+    canChooseWalletBranches: withBranches && (role === "store" || role === "company"),
     branches: withBranches
       ? [
           { id: "b1", label: "Центральный", active: true },
           { id: "b2", label: "пр. Демо, Казань", active: false },
+          { id: "b3", label: "Северный", active: false },
         ]
       : [],
     activeBranchId: withBranches ? "b1" : null,
@@ -110,7 +114,14 @@ export function buildMiniAppFixture(
   };
 }
 
-export const MINI_APP_FIXTURES: Record<string, { platform: MiniAppPlatform; bootstrap: MiniAppBootstrap }> = {
+export type MiniAppFixtureRow = {
+  platform: MiniAppPlatform;
+  bootstrap: MiniAppBootstrap;
+  initialScreen?: "wallet" | "home";
+  fixtureWalletData?: SettlementsResponse;
+};
+
+export const MINI_APP_FIXTURES: Record<string, MiniAppFixtureRow> = {
   "agent-telegram": {
     platform: "telegram",
     bootstrap: buildMiniAppFixture("agent", "telegram", { canCreate: true, canScan: false }),
@@ -142,5 +153,19 @@ export const MINI_APP_FIXTURES: Record<string, { platform: MiniAppPlatform; boot
   "company-max": {
     platform: "max",
     bootstrap: buildMiniAppFixture("company", "max", { canCreate: true, canScan: true }, true),
+  },
+  "agent-empty-telegram": {
+    platform: "telegram",
+    bootstrap: buildMiniAppFixture("agent", "telegram", { canCreate: true, canScan: false }),
+    initialScreen: "wallet",
+    fixtureWalletData: MINI_WALLET_EMPTY_FIXTURE,
+  },
+  "company-wallet-telegram": {
+    platform: "telegram",
+    bootstrap: {
+      ...buildMiniAppFixture("company", "telegram", { canCreate: true, canScan: true }, true),
+      workplaceLabel: "Центральный",
+    },
+    initialScreen: "wallet",
   },
 };

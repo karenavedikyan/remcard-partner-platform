@@ -221,7 +221,10 @@ const stubServer = createServer(async (request, response) => {
     return;
   }
 
-  if (url.pathname === "/api/store/order" && request.method === "POST") {
+  if (
+    (url.pathname === "/api/store/order" || url.pathname === "/api/pro/mini-app/store/order") &&
+    request.method === "POST"
+  ) {
     stubState.lastIdempotencyKey = request.headers["idempotency-key"] ?? null;
     response.writeHead(201, {
       "content-type": "application/json",
@@ -240,6 +243,12 @@ const stubServer = createServer(async (request, response) => {
         },
       }),
     );
+    return;
+  }
+
+  if (url.pathname === "/api/pro/mini-app/store/order/preview" && request.method === "POST") {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ allowed: true, certificate: null, partner: null, availableCategories: [] }));
     return;
   }
 
@@ -425,9 +434,19 @@ describe("remcard proxy transport checks", () => {
     );
     assert.equal(isAllowedProxyRoute("PATCH", "/api/partnerships/part-123"), false);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/session"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/auth/send-code"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/auth/verify-code"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/bootstrap"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/wallet/settlements"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/certificate"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order/preview"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/partnership/invite-context"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/partnership/link-invite"), true);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/partnership/discussion-invite"), true);
+    assert.equal(isAllowedProxyRoute("GET", "/api/pro/mini-app/store/order/preview"), false);
+    assert.equal(isAllowedProxyRoute("POST", "/api/pro/mini-app/store/order/extra"), false);
     assert.equal(isAllowedProxyRoute("GET", "/api/store/scan"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order/preview"), true);
     assert.equal(isAllowedProxyRoute("POST", "/api/store/order"), true);
@@ -520,6 +539,11 @@ describe("remcard proxy transport checks", () => {
     assert.equal(isAllowedProxyRoute("POST", "/api/partnership/discussion-invite/join"), true);
     assert.equal(isAllowedProxyRoute("GET", "/api/partnership/discussion-invite/join"), false);
     assert.equal(normalizeProxyPath(["api", "pro", "organization", "branches", "..", "auth"]), null);
+  });
+
+  it("allows mini-app wallet settlements on session cookie path", () => {
+    const allow = extraAllowedCookieNamesForProxyRequest("/api/pro/mini-app/wallet/settlements");
+    assert.ok(allow?.has("remcard-mini-app-session"));
   });
 
   it("scopes mini-app session cookie to mini upstream routes only", () => {
@@ -1338,6 +1362,21 @@ describe("remcard proxy transport checks", () => {
 
     const clientResponse = buildProxyNextResponse(replay);
     assert.equal(clientResponse.headers.get("Idempotent-Replayed"), "true");
+
+    const miniAlias = await proxyRemcardRequest({
+      method: "POST",
+      pathname: "/api/pro/mini-app/store/order",
+      search: "",
+      contentType: "application/json",
+      cookieHeader: `remcard-token=abc; ${MINI_APP_SESSION_COOKIE}=mini-pilot`,
+      origin: "http://localhost:3000",
+      bodyText: JSON.stringify({ certificateCode: "RC-X", items: [] }),
+      idempotencyKeyHeader: "550e8400-e29b-41d4-a716-446655440000",
+      miniAppPlatformHeader: "max",
+    });
+    assert.equal(miniAlias.ok, true);
+    if (!miniAlias.ok) return;
+    assert.equal(stubState.lastIdempotencyKey, "550e8400-e29b-41d4-a716-446655440000");
   });
 
   it("forwards Idempotency-Key only for scoped POST /api/bonus/:id/pay via BFF builder and proxy", async () => {

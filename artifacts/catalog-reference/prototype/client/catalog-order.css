@@ -1,0 +1,89 @@
+/* Заявка продавцу из списка покупок: варианты товара, форма, «Мои заявки». */
+.rco-pick { display: flex; gap: .4rem; align-items: flex-start; margin-top: .9rem; color: var(--muted); }
+.rco-pick .i { width: 14px; height: 14px; margin-top: .15rem; color: var(--green); flex: none; }
+.rco-pick b { color: var(--ink); }
+.rco-vars { display: grid; gap: .35rem; margin-top: .45rem; justify-items: start; }
+.rco-var { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.rco-sel { width: auto; min-height: 36px; padding: .3rem 1.9rem .3rem .65rem; font-size: var(--text-xs); font-weight: 700; border-radius: 999px; }
+.rco-qty button { width: 30px; height: 30px; }
+.rco-del { width: 30px; height: 30px; }
+.rco-add { min-height: 28px; }
+.rco-add .i { width: 12px; height: 12px; }
+.litem--multi > .litem__ctl > .qty { display: none; }
+#rco-mine { margin: .35rem 0 0; }
+.rco-form label { margin-bottom: .35rem; }
+.rco-sellers { display: grid; gap: .4rem; }
+.rco-seller { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--offset); font-size: var(--text-sm); }
+.rco-seller small { display: block; color: var(--muted); font-size: var(--text-xs); font-weight: 600; }
+.rco-seller > b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rco-pickups { display: grid; gap: .5rem; margin-top: .6rem; }
+.rco-pickup { display: grid; gap: .3rem; font-size: var(--text-sm); }
+.rco-pickups[hidden], #rco-delivery[hidden] { display: none; }
+#rco-delivery { margin-top: .6rem; }
+.rco-err { color: var(--primary); font-size: var(--text-xs); font-weight: 700; margin-top: .3rem; }
+.rco-sent { margin: 1rem 0 0; }
+.rco-sent p { margin-top: .15rem; color: inherit; }
+.rco-order { padding: 1.25rem; margin-top: 1rem; display: grid; gap: 1rem; }
+.rco-order__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.rco-order__head small { display: block; color: var(--muted); font-size: var(--text-xs); font-weight: 600; }
+.rco-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
+.rco-steps li { display: grid; gap: .35rem; font-size: var(--text-xs); font-weight: 700; color: var(--muted); }
+.rco-steps i { height: 4px; border-radius: 999px; background: var(--line); }
+.rco-steps li.is-done { color: var(--ink); }
+.rco-steps li.is-done i { background: var(--green); }
+.rco-items { display: grid; gap: .4rem; }
+.rco-total { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-base); }
+.rco-total b { font-variant-numeric: tabular-nums; }
+.rco-dl { margin: 0; display: grid; gap: .35rem; font-size: var(--text-sm); }
+.rco-dl div { display: flex; justify-content: space-between; gap: 1rem; }
+.rco-dl dt { color: var(--muted); flex: none; }
+.rco-dl dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+.rco-order__foot { gap: .5rem; flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .rco-steps li { font-size: .66rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rco-vars { justify-items: stretch; }
+  .rco-var { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: .35rem; }
+  .rco-var .rco-sel { width: 100%; min-width: 0; padding-left: .5rem; padding-right: 1.4rem; }
+  .rco-var .rco-sel:only-of-type { grid-column: 1 / 3; }
+  .rco-var .rco-qty { grid-column: 1 / 3; justify-self: start; }
+  .rco-order__foot .btn { flex: 1 1 100%; justify-content: center; }
+  .rco-dl div { display: grid; gap: 0; }
+  .rco-dl dd { text-align: left; }
+}
+
+/* Чат с продавцом по заявке: связь внутри RemCard, без телефона. */
+.rco-chat { display: grid; gap: .6rem; padding: .9rem; border: 1px solid var(--line); border-radius: 14px; }
+.rco-chat > b { display: flex; align-items: center; gap: .4rem; font-size: var(--text-sm); }
+.rco-chat__log { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.rco-chat__log li { display: grid; justify-items: end; gap: .1rem; }
+.rco-chat__log p { margin: 0; max-width: 88%; padding: .5rem .75rem; border-radius: 14px 14px 4px 14px; background: var(--offset); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.rco-chat__log small { font-size: var(--text-xs); color: var(--muted); }
+.rco-chat__form { display: flex; gap: .5rem; }
+.rco-chat__form input { flex: 1; min-width: 0; }
+/* Предпросмотр каталога в кабинете продавца: служебные элементы прототипа скрыты. */
+.rc-seller-preview .proto-page-flow, .rc-seller-preview .proto-page-panel { display: none !important; }
+.rc-seller-preview .relsw, .rc-seller-preview .mobile-nav__rel { display: none !important; }
+@media (max-width: 560px) {
+  .rco-chat__form { flex-direction: column; }
+  .rco-chat__form .btn { justify-content: center; }
+}
+
+/* Сертификат в заявке */
+.rco-cert { display: grid; gap: .5rem; padding: .85rem 1rem; border: 1px solid var(--line, rgba(0,0,0,.12)); border-radius: var(--r-md, 12px); background: var(--bg-soft, rgba(0,0,0,.025)); }
+.rco-cert label { display: flex; gap: .4rem; align-items: center; font-weight: 600; }
+.rco-cert label svg, .rco-cert__top svg { width: 1em; height: 1em; vertical-align: -.12em; margin-right: .25rem; }
+.rco-cert__row { display: flex; gap: .5rem; }
+.rco-cert__row input { flex: 1; min-width: 0; text-transform: uppercase; }
+.rco-cert__row input::placeholder { text-transform: none; }
+.rco-cert__top { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.rco-cert__res { display: grid; gap: .35rem; }
+.rco-cert__msg { display: flex; gap: .4rem; align-items: flex-start; margin: 0; font-size: var(--text-sm); }
+.rco-cert__msg svg { flex: none; width: 1.1em; height: 1.1em; margin-top: .1em; }
+.rco-cert__msg.is-ok { color: #1f6b45; }
+.rco-cert__msg.is-bad { color: #b3261e; }
+.rco-cert--on { border-color: rgba(31,107,69,.35); background: rgba(31,107,69,.06); }
+.rco-total--disc b { color: #1f6b45; }
+.rco-total--pay { font-weight: 700; }
+html[data-theme="dark"] .rco-cert__msg.is-ok, html[data-theme="dark"] .rco-total--disc b { color: #7fd6a4; }
+html[data-theme="dark"] .rco-cert__msg.is-bad { color: #ff9a92; }
+@media (max-width: 480px) { .rco-cert__row { flex-direction: column; } }

@@ -1,0 +1,4153 @@
+diff --git a/src/app/doors-calculator/offer/page.tsx b/src/app/doors-calculator/offer/page.tsx
+new file mode 100644
+index 00000000..345835a5
+--- /dev/null
++++ b/src/app/doors-calculator/offer/page.tsx
+@@ -0,0 +1,44 @@
++import { SessionGate } from "@/components/auth/SessionGate";
++import { DoorCalculatorUnavailable } from "@/components/doorCalculator/DoorCalculatorUnavailable";
++import { DoorOfferPage } from "@/components/doorCalculator/DoorOfferPage";
++import { CabinetShell } from "@/components/layout/CabinetShell";
++import { doorCalculatorFeatureVisible } from "@/lib/door-calculator/access";
++import { doorOfferPartnerFromProfile } from "@/lib/door-calculator/partner-offer";
++import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
++import { fetchRemcardUpstream } from "@/lib/remcard-server";
++import { requireProPageUser } from "@/lib/session";
++import type { ProProfileResponse } from "@/lib/types";
++import { headers } from "next/headers";
++
++export const dynamic = "force-dynamic";
++
++const RETURN_PATH = "/doors-calculator/offer";
++
++export default async function DoorsCalculatorOfferPage() {
++  const user = await requireProPageUser(RETURN_PATH);
++  if (!user) {
++    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
++  }
++
++  const cookieHeader = (await headers()).get("cookie");
++  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
++  const allowed = doorCalculatorFeatureVisible(presentation);
++  if (!allowed) {
++    return (
++      <CabinetShell returnTo={RETURN_PATH}>
++        <DoorCalculatorUnavailable />
++      </CabinetShell>
++    );
++  }
++
++  const profileResult = await fetchRemcardUpstream<ProProfileResponse>("/api/pro/profile", {
++    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
++  });
++  const initialPartner = profileResult.ok ? doorOfferPartnerFromProfile(profileResult.data) : null;
++
++  return (
++    <CabinetShell returnTo={RETURN_PATH}>
++      <DoorOfferPage context="lk" initialPartner={initialPartner} />
++    </CabinetShell>
++  );
++}
+\ No newline at end of file
+diff --git a/src/app/doors-calculator/page.tsx b/src/app/doors-calculator/page.tsx
+new file mode 100644
+index 00000000..befb606c
+--- /dev/null
++++ b/src/app/doors-calculator/page.tsx
+@@ -0,0 +1,42 @@
++import { Suspense } from "react";
++import { SessionGate } from "@/components/auth/SessionGate";
++import { DoorCalculatorWizard } from "@/components/doorCalculator/DoorCalculatorWizard";
++import { DoorCalculatorUnavailable } from "@/components/doorCalculator/DoorCalculatorUnavailable";
++import { CabinetShell } from "@/components/layout/CabinetShell";
++import { doorCalculatorFeatureVisible } from "@/lib/door-calculator/access";
++import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
++import { requireProPageUser } from "@/lib/session";
++import { headers } from "next/headers";
++
++export const dynamic = "force-dynamic";
++
++const RETURN_PATH = "/doors-calculator";
++
++export default async function DoorsCalculatorPage() {
++  const user = await requireProPageUser(RETURN_PATH);
++  if (!user) {
++    return <SessionGate reason="session" returnTo={RETURN_PATH} />;
++  }
++
++  const cookieHeader = (await headers()).get("cookie");
++  const { presentation } = await fetchCabinetPresentationServer({ user, cookieHeader });
++  const allowed = doorCalculatorFeatureVisible(presentation);
++
++  return (
++    <CabinetShell returnTo={RETURN_PATH}>
++      {allowed ? (
++        <Suspense
++          fallback={
++            <p style={{ padding: "1rem 0" }} role="status">
++              Загрузка калькулятора дверей…
++            </p>
++          }
++        >
++          <DoorCalculatorWizard context="lk" />
++        </Suspense>
++      ) : (
++        <DoorCalculatorUnavailable />
++      )}
++    </CabinetShell>
++  );
++}
+\ No newline at end of file
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index db557dd0..02637200 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -30,6 +30,7 @@ import { resolveCabinetPresentationBlock } from "@/lib/cabinet-presentation/acce
+ import { CabinetPresentationBlockView } from "@/components/layout/CabinetPresentationBlock";
+ import { resolveBusinessHomeSurfaceMode } from "@/lib/business-home/access";
+ import { shouldDeferPersonalSpecialistHome } from "@/lib/business-home/home-dispatch";
++import { doorCalculatorFeatureVisible } from "@/lib/door-calculator/access";
+ 
+ export const dynamic = "force-dynamic";
+ 
+@@ -141,6 +142,7 @@ export default async function HomePage(
+         />
+         <BusinessOwnerHomeDashboard
+           partnerType={businessPartnerType}
++          showDoorCalculatorEntry={doorCalculatorFeatureVisible(presentation)}
+           homeAccessMode={
+             homeSurface === "org-staff-template" ? "org-staff-view" : "owner-operating"
+           }
+diff --git a/src/components/doorCalculator/DoorCalculatorUnavailable.test.tsx b/src/components/doorCalculator/DoorCalculatorUnavailable.test.tsx
+new file mode 100644
+index 00000000..068948a3
+--- /dev/null
++++ b/src/components/doorCalculator/DoorCalculatorUnavailable.test.tsx
+@@ -0,0 +1,12 @@
++import { render, screen } from "@testing-library/react";
++import { describe, expect, it } from "vitest";
++import { DoorCalculatorUnavailable } from "./DoorCalculatorUnavailable";
++
++describe("DoorCalculatorUnavailable", () => {
++  it("shows neutral unavailable copy", () => {
++    render(<DoorCalculatorUnavailable />);
++    expect(screen.getByTestId("door-calculator-unavailable")).toHaveTextContent(
++      "Раздел недоступен для вашего профиля",
++    );
++  });
++});
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorCalculatorUnavailable.tsx b/src/components/doorCalculator/DoorCalculatorUnavailable.tsx
+new file mode 100644
+index 00000000..0cb8a247
+--- /dev/null
++++ b/src/components/doorCalculator/DoorCalculatorUnavailable.tsx
+@@ -0,0 +1,24 @@
++import Link from "next/link";
++
++export function DoorCalculatorUnavailable() {
++  return (
++    <section
++      style={{
++        marginTop: "1.5rem",
++        padding: "1.5rem",
++        borderRadius: "12px",
++        border: "1px solid var(--line)",
++        background: "var(--surface)",
++        maxWidth: "40rem",
++      }}
++      data-testid="door-calculator-unavailable"
++      role="status"
++    >
++      <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.125rem" }}>Калькулятор дверей</h2>
++      <p style={{ margin: 0, color: "var(--muted)" }}>Раздел недоступен для вашего профиля</p>
++      <p style={{ margin: "1rem 0 0" }}>
++        <Link href="/">Вернуться на главную</Link>
++      </p>
++    </section>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorCalculatorWizard.tsx b/src/components/doorCalculator/DoorCalculatorWizard.tsx
+new file mode 100644
+index 00000000..10a76bb5
+--- /dev/null
++++ b/src/components/doorCalculator/DoorCalculatorWizard.tsx
+@@ -0,0 +1,951 @@
++'use client';
++
++import type { CSSProperties, ReactNode } from 'react';
++import Link from 'next/link';
++import { useEffect, useLayoutEffect, useRef } from 'react';
++import {
++  IcCheck,
++  IcChevronLeft,
++  IcChevronRight,
++  IcCopy,
++  IcDoorOpen,
++  IcFileText,
++  IcMinus,
++  IcPencil,
++  IcPlus,
++  IcTrash2,
++  IcX,
++} from '@/components/doorCalculator/DoorWizardIcons';
++import { depthNote, dobEff, bladeOf, priceOfRow } from '@/lib/doorCalculator';
++import type { DoorCatalogModel } from '@/lib/doorCalculator';
++import { emptyDoorModelSource } from '@/lib/doorCalculator/modelSource';
++import { DoorSceneSvg, bladeOptionsForOpening } from './DoorSceneSvg';
++import { DoorCompareSection } from './DoorCompareSection';
++import { DoorMini } from './DoorMini';
++import { useDoorWizard } from './useDoorWizard';
++import { WizardBar } from './WizardBar';
++import './door-wizard.css';
++
++const STEPS = ['Проёмы', 'Размеры', 'Модель', 'Расчёт'];
++
++function plural(n: number, a: string, b: string, c: string) {
++  const m10 = n % 10;
++  const m100 = n % 100;
++  if (m10 === 1 && m100 !== 11) return a;
++  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return b;
++  return c;
++}
++
++export function DoorCalculatorWizard({
++  catalog: catalogProp,
++  context = 'lk',
++}: {
++  catalog?: DoorCatalogModel[];
++  context?: 'site' | 'lk';
++} = {}) {
++  const closeHref = context === 'lk' ? '/' : '/calculators';
++  const catalog = catalogProp ?? emptyDoorModelSource.listModels();
++  const w = useDoorWizard(catalog);
++  const stageRef = useRef<HTMLDivElement>(null);
++
++  useLayoutEffect(() => {
++    const fit = () => {
++      document.querySelectorAll<HTMLElement>('.door-wizard .stagebox').forEach((b) => {
++        const g = b.closest<HTMLElement>('.s2__grid');
++        if (g) {
++          g.style.setProperty(
++            '--scw',
++            `${window.innerWidth > 860 ? Math.max(300, Math.min(400, Math.round((window.innerHeight - 340) * (390 / 612)))) : 400}px`
++          );
++        }
++        const k = b.clientWidth / 390;
++        const st = b.firstElementChild as HTMLElement | null;
++        if (st) st.style.transform = `scale(${k})`;
++        b.style.height = `${Math.round(612 * k)}px`;
++      });
++    };
++    fit();
++    window.addEventListener('resize', fit);
++    return () => window.removeEventListener('resize', fit);
++  }, [w.step, w.cur, w.openings]);
++
++  useEffect(() => {
++    if (w.step === 4 && w.variants.length === 0) {
++      w.setVariants([w.snap()]);
++      w.setVi(0);
++    }
++    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot once on step 4
++  }, [w.step, w.variants.length]);
++
++  const go = (step: number) => {
++    if (step === 4) w.saveVariant();
++    w.setStep(step);
++  };
++
++  const topBar = (
++    <div className="wtop">
++      <button
++        type="button"
++        className="iconbtn"
++        aria-label="Назад"
++        disabled={w.step === 1}
++        onClick={() => {
++          if (w.step === 3 && w.adding) {
++            w.setAdding(false);
++            w.setVi(w.prevVi);
++            w.load(w.variants[w.prevVi]);
++            go(4);
++            return;
++          }
++          if (w.step === 2 && w.cur > 0) {
++            w.setCur(w.cur - 1);
++            return;
++          }
++          if (w.step === 3) w.setCur(w.openings.length - 1);
++          go(w.step - 1);
++        }}
++      >
++        <IcChevronLeft className="i" />
++      </button>
++      <div
++        className="wprog"
++        role="progressbar"
++        aria-valuemin={1}
++        aria-valuemax={4}
++        aria-valuenow={w.step}
++        aria-label={`Шаг ${w.step} из 4`}
++      >
++        {STEPS.map((_, i) => (
++          <i
++            key={STEPS[i]}
++            className={i + 1 < w.step ? 'done' : i + 1 === w.step ? 'on' : ''}
++          />
++        ))}
++      </div>
++      <Link href={closeHref} className="iconbtn" aria-label="Закрыть калькулятор">
++        <IcX className="i" />
++      </Link>
++    </div>
++  );
++
++  const step1 = (
++    <section className="scr scr--narrow">
++      <span className="eyebrow">Шаг 1 из 4 · {STEPS[0]}</span>
++      <h1>Сколько проёмов?</h1>
++      <p className="lead">Размеры и комплектацию каждого проёма укажем на следующем шаге.</p>
++      <div className="count">
++        <button
++          type="button"
++          className="count__b"
++          aria-label="Меньше"
++          disabled={w.openings.length < 2}
++          onClick={() => w.setOpeningCount(w.openings.length - 1)}
++        >
++          <IcMinus className="i" />
++        </button>
++        <div className="count__n">
++          <b>{w.openings.length}</b>
++          <span>
++            {plural(w.openings.length, 'проём', 'проёма', 'проёмов')}
++          </span>
++        </div>
++        <button
++          type="button"
++          className="count__b"
++          aria-label="Больше"
++          onClick={() => w.setOpeningCount(Math.min(20, w.openings.length + 1))}
++        >
++          <IcPlus className="i" />
++        </button>
++      </div>
++      <div className="doors" aria-hidden>
++        {Array.from({ length: Math.min(w.openings.length, 12) }, (_, i) => (
++          <i key={i} />
++        ))}
++        {w.openings.length > 12 ? <span>+{w.openings.length - 12}</span> : null}
++      </div>
++      <div className="quick" role="group" aria-label="Быстрый выбор">
++        {[1, 2, 3, 4, 5, 6].map((k) => (
++          <button
++            key={k}
++            type="button"
++            data-v={k}
++            className={w.openings.length === k ? 'on' : ''}
++            onClick={() => w.setOpeningCount(k)}
++          >
++            {k}
++          </button>
++        ))}
++      </div>
++    </section>
++  );
++
++  const o = w.openings[w.cur];
++  const step2 = o && (
++    <section className="scr s2" data-id={o.id}>
++      <div className="s2__grid">
++        <div className="s2__head">
++          <MotionEyebrow
++            text={`Шаг 2 из 4 · ${STEPS[1]} · проём ${w.cur + 1} из ${w.openings.length}`}
++          />
++          {w.openings.length > 1 ? (
++            <div className="dots">
++              {w.openings.map((x, i) => (
++                <button
++                  key={x.id}
++                  type="button"
++                  className={`dot${i === w.cur ? ' on' : ''}${i !== w.cur && x.w && x.h ? ' full' : ''}`}
++                  aria-label={`Проём ${i + 1}`}
++                  onClick={() => w.setCur(i)}
++                >
++                  {i !== w.cur && x.w && x.h ? '✓' : i + 1}
++                </button>
++              ))}
++            </div>
++          ) : null}
++          <label className="room">
++            <IcPencil className="i" aria-hidden />
++            <input
++              value={o.room}
++              placeholder={`Проём ${w.cur + 1}: название помещения`}
++              aria-label="Название помещения"
++              onChange={(e) => w.updateOpening(o.id, { room: e.target.value })}
++            />
++          </label>
++          <div className="seg seg--full">
++            {(['inter', 'entry', 'arch'] as const).map((t) => (
++              <button
++                key={t}
++                type="button"
++                className={o.type === t ? 'is-on' : ''}
++                onClick={() => {
++                  const patch: Partial<typeof o> = { type: t, nalF: true, nalB: t !== 'entry' };
++                  if (t === 'arch') patch.sill = false;
++                  w.updateOpening(o.id, patch);
++                }}
++              >
++                {t === 'inter' ? 'Межкомнатная' : t === 'entry' ? 'Входная' : 'Без двери'}
++              </button>
++            ))}
++          </div>
++        </div>
++        <div className="s2__scene" ref={stageRef}>
++          <OpeningScene opening={o} model={w.curModel} onChange={(p) => w.updateOpening(o.id, p)} />
++        </div>
++        <div className="s2__more">
++          {o.type !== 'arch' ? (
++            <div className="fld">
++              <span className="fld__l">Петли</span>
++              <div className="seg seg--full">
++                {(['left', 'right'] as const).map((side) => (
++                  <button
++                    key={side}
++                    type="button"
++                    className={o.side === side ? 'is-on' : ''}
++                    onClick={() => w.updateOpening(o.id, { side })}
++                  >
++                    {side === 'left' ? 'Слева' : 'Справа'}
++                  </button>
++                ))}
++              </div>
++            </div>
++          ) : null}
++          <div className="sumbox">
++            <span className="eyebrow">Состав проёма</span>
++            <ul>
++              {w.calcResult.per[w.cur]?.lines.map((l) => (
++                <li key={l}>{l}</li>
++              ))}
++            </ul>
++            <small>
++              {o.type === 'arch'
++                ? 'Облагораживание без двери: добор, наличники.'
++                : o.type === 'entry'
++                  ? 'Входная дверь считается в общем заказе: добор, наличники и порог.'
++                  : 'Отмечайте нужное прямо на проёме. Ширина полотна уточнится после выбора модели.'}
++            </small>
++          </div>
++          <div className="rowbtns">
++            <button
++              type="button"
++              className="btn btn--ghost btn--sm"
++              onClick={() => {
++                const copy = { ...o, id: Date.now(), room: o.room };
++                w.setOpenings((ops) => {
++                  const next = [...ops];
++                  next.splice(w.cur + 1, 0, copy);
++                  return next;
++                });
++                w.setCur(w.cur + 1);
++              }}
++            >
++              <IcCopy className="i" /> Копировать проём
++            </button>
++            <button
++              type="button"
++              className="btn btn--text btn--sm"
++              disabled={w.openings.length < 2}
++              onClick={() => {
++                w.resetCompareVariants();
++                w.setOpenings((ops) => ops.filter((x) => x.id !== o.id));
++                w.setCur(Math.min(w.cur, w.openings.length - 2));
++              }}
++            >
++              <IcTrash2 className="i" /> Удалить
++            </button>
++          </div>
++        </div>
++      </div>
++    </section>
++  );
++
++  const modelOk = !!w.curModel;
++  const taken = w.takenIds();
++
++  const step3 = (
++    <section className="scr">
++      <span className="eyebrow">
++        Шаг 3 из 4 · {STEPS[2]}
++        {w.adding ? ' · сравнение' : ''}
++      </span>
++      <h1>{w.adding ? 'Ещё одна модель' : 'Какая модель?'}</h1>
++      <p className="lead">
++        {w.hasCatalog
++          ? w.adding
++            ? 'Проёмы и комплектация те же. Выберите модель для сравнения.'
++            : 'Выберите дверь из каталога или внесите свою модель и цены вручную.'
++          : 'Каталог пока пуст — введите модель и цены вручную.'}
++      </p>
++      <div className="mgrid">
++        <button
++          type="button"
++          className={`mcard mcard--own${w.manual.on ? ' is-on' : ''}`}
++          onClick={() => w.pickModel('manual')}
++        >
++          <span className="mcard__pic">
++            <DoorMini plus />
++          </span>
++          <b>Вне каталога</b>
++          <small>Своя модель и цены вручную</small>
++          {w.manual.on ? (
++            <span className="mcard__ok">
++              <IcCheck className="i" />
++            </span>
++          ) : null}
++        </button>
++        {w.catalog.map((x) => {
++          const tk = taken.includes(x.id);
++          const on = !w.manual.on && w.modelId === x.id;
++          return (
++            <button
++              key={x.id}
++              type="button"
++              className={`mcard${on ? ' is-on' : ''}${tk ? ' is-taken' : ''}`}
++              disabled={tk}
++              onClick={() => w.pickModel(x.id)}
++            >
++              <span className="mcard__pic">
++                <DoorMini color={x.color} glass={/стекл/i.test(x.name)} />
++              </span>
++              <b>{x.name}</b>
++              <small>{x.maker}</small>
++              <span className="mcard__p">от {w.formatRub(x.price)}</span>
++              {x.blades ? (
++                <span className="pill pill--ok">Размеры в каталоге</span>
++              ) : (
++                <span className="pill pill--warn">Стандартные размеры</span>
++              )}
++              {tk ? <span className="pill pill--more">Уже в сравнении</span> : null}
++              {on ? (
++                <span className="mcard__ok">
++                  <IcCheck className="i" />
++                </span>
++              ) : null}
++            </button>
++          );
++        })}
++      </div>
++      {w.manual.on ? (
++        <div className="card manual">
++          <h2>Своя модель</h2>
++          <div className="g2">
++            <label className="f">
++              Название модели
++              <input
++                value={w.manual.name}
++                placeholder="Например, Престиж 7"
++                onChange={(e) => w.setManual({ ...w.manual, name: e.target.value })}
++              />
++            </label>
++            <label className="f">
++              Производитель
++              <input
++                value={w.manual.maker}
++                placeholder="Необязательно"
++                onChange={(e) => w.setManual({ ...w.manual, maker: e.target.value })}
++              />
++            </label>
++          </div>
++          <p className="note">
++            Цены необязательны: без цены позиция считается только по количеству.
++          </p>
++        </div>
++      ) : null}
++      {modelOk ? (
++        <details className="card pl" open={w.manual.on}>
++          <summary>
++            <span>
++              <b>Цены за штуку</b>
++              <small>
++                {w.manual.on ? 'Введите вручную' : 'Подставлены из каталога, можно изменить'}
++              </small>
++            </span>
++            <IcChevronRight className="i" aria-hidden />
++          </summary>
++          <div className="prg">
++            {w.priceLabels.map(([key, label]) => (
++              <label key={key} className="f">
++                {label}
++                <span className="unit">
++                  <input
++                    type="number"
++                    inputMode="numeric"
++                    value={w.prices[key] ?? ''}
++                    placeholder="не задана"
++                    onChange={(e) =>
++                      w.setPrices({ ...w.prices, [key]: e.target.value === '' ? '' : +e.target.value })
++                    }
++                  />
++                  <i>₽</i>
++                </span>
++              </label>
++            ))}
++          </div>
++        </details>
++      ) : null}
++    </section>
++  );
++
++  const step4 = (
++    <section className="scr">
++      <span className="eyebrow">Шаг 4 из 4 · {STEPS[3]}</span>
++      <h1>Расчёт готов</h1>
++      <p className="lead">
++        {w.curModel?.name ?? ''}
++        {w.curModel?.maker ? ` · ${w.curModel.maker}` : ''} · {w.openings.length}{' '}
++        {plural(w.openings.length, 'проём', 'проёма', 'проёмов')}
++      </p>
++      <div className="cmp" id="cmp">
++        {w.variants.length > 1 ? <DoorCompareSection w={w} /> : null}
++      </div>
++      <div className="res">
++        <aside className="res__side">
++          <div className="sumc">
++            <span className="eyebrow">Итого</span>
++            <div className="sumc__total">{w.formatRub(w.calcTotals.total)}</div>
++            <dl className="sumc__rows">
++              <div>
++                <dt>Без скидки</dt>
++                <dd>{w.formatRub(w.calcTotals.sum)}</dd>
++              </div>
++              <div>
++                <dt>Скидка {w.calcTotals.dp ? `${w.calcTotals.dp} %` : ''}</dt>
++                <dd>{w.calcTotals.dsc ? `− ${w.formatRub(w.calcTotals.dsc)}` : '—'}</dd>
++              </div>
++            </dl>
++            {w.calcTotals.dsc ? (
++              <div className="sumc__gain">
++                <IcCheck className="i" aria-hidden /> Выгода клиента: {w.formatRub(w.calcTotals.dsc)}
++              </div>
++            ) : null}
++            {w.calcTotals.none ? (
++              <div className="sumc__warn">
++                Цена не задана: {w.calcTotals.none} поз. Сумма посчитана без них.
++              </div>
++            ) : null}
++            <label className="sumc__disc">
++              <span>Скидка, %</span>
++              <span className="unit">
++                <input
++                  data-disc
++                  type="number"
++                  inputMode="decimal"
++                  min={0}
++                  max={100}
++                  value={w.disc}
++                  placeholder="0"
++                  onChange={(e) => w.setDisc(e.target.value)}
++                />
++                <i>%</i>
++              </span>
++            </label>
++          </div>
++          <div className="res__edit">
++            <button type="button" className="btn btn--ghost btn--sm" onClick={() => go(2)}>
++              <IcPencil className="i" /> Изменить проёмы
++            </button>
++            <button type="button" className="btn btn--ghost btn--sm" onClick={() => go(3)}>
++              <IcDoorOpen className="i" /> Сменить модель
++            </button>
++            {w.variants.length < 2 ? (
++              <button
++                type="button"
++                className="btn btn--ghost btn--sm res__add"
++                onClick={() => {
++                  w.saveVariant();
++                  w.setPrevVi(w.vi);
++                  w.setVi(w.variants.length);
++                  w.setAdding(true);
++                  w.pickModel('manual');
++                  go(3);
++                }}
++              >
++                <IcPlus className="i" /> Добавить модель для сравнения
++              </button>
++            ) : null}
++          </div>
++        </aside>
++        <div className="res__main">
++          <div className="card">
++            <div className="card__h">
++              <h2>Спецификация</h2>
++              <small>Количество по заказу, округлено вверх</small>
++            </div>
++            <div className="shead">
++              <span>Позиция</span>
++              <span>Цена за шт.</span>
++              <span>Сумма</span>
++            </div>
++            {w.calcResult.rows.map((r) => (
++              <div key={r.k} className="srow" data-rk={r.k}>
++                <div className="srow__n">
++                  <b>{r.name}</b>
++                  <small>{r.q} шт</small>
++                </div>
++                <span className="unit">
++                  <input
++                    data-pr={r.pk}
++                    type="number"
++                    value={w.prices[r.pk] ?? ''}
++                    placeholder="цена"
++                    onChange={(e) =>
++                      w.setPrices({
++                        ...w.prices,
++                        [r.pk]: e.target.value === '' ? '' : +e.target.value,
++                      })
++                    }
++                  />
++                  <i>₽</i>
++                </span>
++                <div className="srow__s">
++                  <SumCell row={r} prices={w.prices} formatRub={w.formatRub} />
++                </div>
++              </div>
++            ))}
++            <label className="chk">
++              <input
++                type="checkbox"
++                checked={w.share}
++                onChange={(e) => w.setShare(e.target.checked)}
++              />
++              <span>Делить добор между проёмами</span>
++            </label>
++          </div>
++          <div className="card">
++            <div className="card__h">
++              <h2>По проёмам</h2>
++            </div>
++            {w.calcResult.per.map((inf) => {
++              const op = inf.o;
++              const bl = bladeOf(w.curModel, op);
++              const ask =
++                op.type === 'inter' &&
++                (bl.src === 'std' || bl.src === 'manual' || bl.src === 'out' || bl.src === 'nowidth');
++              const { opts } = bladeOptionsForOpening(w.curModel, op);
++              const bladeHint =
++                bl.src === 'std'
++                  ? ' · по стандартной сетке'
++                  : bl.src === 'out'
++                    ? ' · проём вне диапазона'
++                    : '';
++              return (
++                <div key={op.id} className="pr" data-id={op.id}>
++                  <div className="pr__h">
++                    <span className="pr__n">{inf.i + 1}</span>
++                    <b>{op.room || `Проём ${inf.i + 1}`}</b>
++                    <small>
++                      {op.w || '?'} × {op.h || '?'}
++                      {op.depth ? ` · стена ${op.depth}` : ''}
++                    </small>
++                  </div>
++                  <ul>
++                    {inf.lines.map((l) => (
++                      <li key={l}>{l}</li>
++                    ))}
++                  </ul>
++                  {ask ? (
++                    <label className="f f--inline">
++                      Ширина полотна{bladeHint}
++                      <select
++                        value={op.blade || (bl.w ? String(bl.w) : '')}
++                        onChange={(e) => w.updateOpening(op.id, { blade: e.target.value })}
++                      >
++                        {!bl.w ? <option value="">выберите</option> : null}
++                        {opts.map((x) => (
++                          <option key={x} value={x}>
++                            {x} мм
++                          </option>
++                        ))}
++                      </select>
++                    </label>
++                  ) : null}
++                </div>
++              );
++            })}
++          </div>
++          <details className="card pl">
++            <summary>
++              <span>
++                <b>{context === 'lk' ? 'Данные заказчика' : 'Ваши данные'}</b>
++                <small>Попадут в предложение, необязательно</small>
++              </span>
++              <IcChevronRight className="i" aria-hidden />
++            </summary>
++            <div className="g2" style={{ marginTop: 14 }}>
++              <label className="f">
++                {context === 'lk' ? 'Заказчик' : 'Имя'}
++                <input
++                  value={w.obj.client}
++                  onChange={(e) => w.setObj({ ...w.obj, client: e.target.value })}
++                />
++              </label>
++              <label className="f">
++                Телефон
++                <input
++                  inputMode="tel"
++                  value={w.obj.phone}
++                  onChange={(e) => w.setObj({ ...w.obj, phone: e.target.value })}
++                />
++              </label>
++              <label className="f f--wide">
++                Адрес объекта
++                <input
++                  value={w.obj.address}
++                  onChange={(e) => w.setObj({ ...w.obj, address: e.target.value })}
++                />
++              </label>
++            </div>
++          </details>
++        </div>
++      </div>
++    </section>
++  );
++
++  const nextDisabledStep3 = !modelOk;
++  const bar =
++    w.step === 1 ? (
++      <WizardBar>
++        <BarNextButton
++          label="Далее: размеры"
++          onClick={() => {
++            w.setCur(0);
++            go(2);
++          }}
++        />
++      </WizardBar>
++    ) : w.step === 2 ? (
++      <WizardBar>
++        <button type="button" className="btn btn--ghost btn--lg bar__back" onClick={() => go(1)}>
++          <IcChevronLeft className="i" /> <span>Назад</span>
++        </button>
++        <BarNextButton
++          label={
++            w.cur < w.openings.length - 1
++              ? `Далее: проём ${w.cur + 2}`
++              : 'Далее: модель'
++          }
++          onClick={() => {
++            if (w.cur < w.openings.length - 1) {
++              w.setCur(w.cur + 1);
++            } else {
++              go(3);
++            }
++          }}
++        />
++      </WizardBar>
++    ) : w.step === 3 ? (
++      <WizardBar
++        hint={
++          nextDisabledStep3
++            ? w.adding
++              ? 'Выберите модель для сравнения'
++              : 'Выберите модель, чтобы получить расчёт'
++            : undefined
++        }
++      >
++        <button type="button" className="btn btn--ghost btn--lg bar__back" onClick={() => go(2)}>
++          <IcChevronLeft className="i" /> <span>Назад</span>
++        </button>
++        <BarNextButton
++          label={w.adding ? 'Добавить к сравнению' : 'Рассчитать'}
++          disabled={nextDisabledStep3}
++          onClick={() => {
++            if (w.adding) {
++              w.setVariants((vars) => {
++                const next = [...vars];
++                next[w.vi] = w.snap();
++                return next;
++              });
++              w.setAdding(false);
++              w.load(w.variants[w.prevVi] ?? w.snap());
++              go(4);
++              return;
++            }
++            go(4);
++          }}
++        />
++      </WizardBar>
++    ) : (
++      <WizardBar>
++        <button type="button" className="btn btn--ghost btn--lg bar__back" onClick={() => go(3)}>
++          <IcChevronLeft className="i" /> <span>Назад</span>
++        </button>
++        <Link
++          href={w.offerHref}
++          target="_blank"
++          rel="noopener noreferrer"
++          className="btn btn--primary btn--lg bar__next"
++        >
++          <IcFileText className="i" /> <span>Предложение PDF</span>
++        </Link>
++      </WizardBar>
++    );
++
++  const shellClass =
++    context === 'lk'
++      ? 'door-wizard ctx-lk embedded-in-cabinet'
++      : 'door-wizard ctx-site';
++
++  return (
++    <div className={shellClass} data-testid="door-calculator-wizard">
++      <div className="page">
++        <div className="page__in">
++          {context === 'site' ? (
++            <nav className="crumbs" aria-label="Хлебные крошки">
++              <Link href="/calculators">Калькулятор</Link>
++              <IcChevronRight className="i" aria-hidden />
++              <Link href="/calculators">Отдельный расчёт</Link>
++              <IcChevronRight className="i" aria-hidden />
++              <span>Двери и проёмы</span>
++            </nav>
++          ) : (
++            <nav className="crumbs" aria-label="Раздел">
++              <Link href="/">Кабинет</Link>
++              <IcChevronRight className="i" aria-hidden />
++              <span>Калькулятор дверей</span>
++            </nav>
++          )}
++          {topBar}
++          <div className={`wz wz--${w.step}`}>
++            {w.step === 1 ? step1 : w.step === 2 ? step2 : w.step === 3 ? step3 : step4}
++          </div>
++        </div>
++      </div>
++      <div id="bar">{bar}</div>
++    </div>
++  );
++}
++
++function MotionEyebrow({ text }: { text: string }) {
++  return <span className="eyebrow">{text}</span>;
++}
++
++function BarNextButton({
++  label,
++  onClick,
++  disabled,
++}: {
++  label: string;
++  onClick: () => void;
++  disabled?: boolean;
++}) {
++  return (
++    <button
++      type="button"
++      className="btn btn--primary btn--lg bar__next"
++      disabled={disabled}
++      onClick={onClick}
++    >
++      <span>{label}</span>
++      <IcChevronRight className="i" />
++    </button>
++  );
++}
++
++function OpeningScene({
++  opening,
++  model,
++  onChange,
++}: {
++  opening: import('@/lib/doorCalculator').DoorOpening;
++  model: import('@/lib/doorCalculator').DoorCatalogModel | null;
++  onChange: (p: Partial<import('@/lib/doorCalculator').DoorOpening>) => void;
++}) {
++  const entry = opening.type === 'entry';
++  const arch = opening.type === 'arch';
++  const left = opening.side === 'left';
++  const chip = (
++    key: 'nalF' | 'nalB' | 'hinge' | 'handle' | 'lock' | 'zav' | 'sill',
++    label: string,
++    sub: string,
++    on: boolean,
++    style: CSSProperties
++  ) => (
++    <label className={`chip${on ? ' on' : ''}`} style={style}>
++      <input
++        type="checkbox"
++        checked={on}
++        onChange={(e) => onChange({ [key]: e.target.checked })}
++      />
++      <span className="chip__i">
++        <IcCheck className="i" aria-hidden />
++        <IcPlus className="i" aria-hidden />
++      </span>
++      <span className="chip__t">
++        {label}
++        {sub ? <small>{sub}</small> : null}
++      </span>
++    </label>
++  );
++
++  const L = 'left:124px;';
++  const R = 'right:38px;';
++  const hs = left ? L : R;
++  const os2 = left ? 'right:78px;' : 'left:164px;';
++
++  return (
++    <div className="stagebox">
++      <div className="stage">
++        <MotionWrap>
++          <DoorSceneSvg opening={opening} model={model} />
++        </MotionWrap>
++        {chip('nalF', 'Наличник', 'лицевой', opening.nalF, { position: 'absolute', ...css(L, 'top:112px') })}
++        {chip('nalB', 'Наличник', 'обратный', opening.nalB, { position: 'absolute', ...css(R, 'top:112px') })}
++        {!entry && !arch
++          ? chip('hinge', 'Петли', '2 шт', opening.hinge, {
++              position: 'absolute',
++              ...css(left ? 'left:138px;' : 'right:52px;', 'top:166px'),
++            })
++          : null}
++        {!entry && !arch
++          ? chip('handle', 'Ручка', '', opening.handle, {
++              position: 'absolute',
++              ...css(os2, 'top:280px'),
++            })
++          : null}
++        {!entry && !arch
++          ? chip('lock', 'Замок', '', opening.lock, {
++              position: 'absolute',
++              ...css(os2, 'top:324px'),
++            })
++          : null}
++        {!entry && !arch
++          ? chip('zav', 'Завёртка', '', opening.zav, {
++              position: 'absolute',
++              ...css(os2, 'top:368px'),
++            })
++          : null}
++        <label
++          className={`chip${dobEff(opening) ? ' on' : ''}`}
++          style={{
++            position: 'absolute',
++            ...css(hs, `top:${entry || arch ? 300 : 416}px`),
++          }}
++        >
++          <input
++            type="checkbox"
++            checked={dobEff(opening)}
++            onChange={(e) => onChange({ dobor: e.target.checked, depth: opening.depth })}
++          />
++          <span className="chip__i">
++            <IcCheck className="i" aria-hidden />
++            <IcPlus className="i" aria-hidden />
++          </span>
++          <span className="chip__t">
++            Добор
++            <small>{depthNote(opening)}</small>
++          </span>
++        </label>
++        {!arch
++          ? chip('sill', 'Порог', '', opening.sill, {
++              position: 'absolute',
++              left: '238px',
++              transform: 'translateX(-50%)',
++              top: '468px',
++            })
++          : null}
++        <label className="hin hin--w">
++          <span>Ширина, мм</span>
++          <input
++            type="number"
++            inputMode="numeric"
++            value={opening.w}
++            placeholder="900"
++            onChange={(e) => onChange({ w: e.target.value })}
++          />
++        </label>
++        <label className="hin hin--h">
++          <span>Высота</span>
++          <input
++            type="number"
++            inputMode="numeric"
++            value={opening.h}
++            placeholder="2050"
++            onChange={(e) => onChange({ h: e.target.value })}
++          />
++        </label>
++        <label className="hin hin--d">
++          <span>Глубина стены, мм</span>
++          <input
++            type="number"
++            inputMode="numeric"
++            value={opening.depth}
++            placeholder="250"
++            onChange={(e) => onChange({ depth: e.target.value, dobor: null })}
++          />
++        </label>
++      </div>
++    </div>
++  );
++}
++
++function css(...parts: string[]) {
++  const out: CSSProperties = {};
++  parts.forEach((p) => {
++    p.split(';').forEach((pair) => {
++      const [k, v] = pair.split(':').map((s) => s.trim());
++      if (k && v) (out as Record<string, string>)[k] = v;
++    });
++  });
++  return out;
++}
++
++function MotionWrap({ children }: { children: ReactNode }) {
++  return <div className="sv">{children}</div>;
++}
++
++function SumCell({
++  row,
++  prices,
++  formatRub,
++}: {
++  row: import('@/lib/doorCalculator').CalcRow;
++  prices: import('@/lib/doorCalculator').DoorPrices;
++  formatRub: (n: number) => string;
++}) {
++  const p = priceOfRow(prices, row.pk);
++  if (p == null) {
++    return <span className="pill pill--warn">нет цены</span>;
++  }
++  return <>{formatRub(p * row.q)}</>;
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorCompareSection.tsx b/src/components/doorCalculator/DoorCompareSection.tsx
+new file mode 100644
+index 00000000..79065cac
+--- /dev/null
++++ b/src/components/doorCalculator/DoorCompareSection.tsx
+@@ -0,0 +1,245 @@
++'use client';
++
++import type { ReactNode } from 'react';
++import { IcChevronRight, IcPlus, IcX } from '@/components/doorCalculator/DoorWizardIcons';
++import { COMPARE_ROW_GROUPS } from '@/lib/doorCalculator/constants';
++import type { CompareVariantRow } from '@/lib/doorCalculator/compare';
++import type { DoorWizardState } from './useDoorWizard';
++import { DoorMini } from './DoorMini';
++
++function plural(n: number, a: string, b: string, c: string) {
++  const m10 = n % 10;
++  const m100 = n % 100;
++  if (m10 === 1 && m100 !== 11) return a;
++  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return b;
++  return c;
++}
++
++export function DoorCompareSection({ w }: { w: DoorWizardState }) {
++  const d = w.compareRows;
++  if (d.length < 2) return null;
++
++  const full = d.filter((x) => !x.t.none);
++  const best =
++    full.length > 1 ? Math.min(...full.map((x) => x.t.total)) : null;
++
++  const pic = (m: CompareVariantRow['m']) => {
++    const manual = 'manual' in m && m.manual;
++    const color = 'color' in m ? m.color : undefined;
++    const name = m.name;
++    return manual || !color ? (
++      <DoorMini color="#d9d4ca" glass={/стекл/i.test(name)} />
++    ) : (
++      <DoorMini color={color} glass={/стекл/i.test(name)} />
++    );
++  };
++
++  const dp = d[0]?.t.dp ?? 0;
++
++  const cols = `minmax(104px,1.1fr) repeat(${d.length},minmax(104px,1fr))`;
++
++  const cell = (g: CompareVariantRow['g'][0]) =>
++    !g.n ? (
++      <div className="cc cc--no">—</div>
++    ) : (
++      <div className="cc">
++        {g.none === g.n ? (
++          <span className="pill pill--warn">нет цены</span>
++        ) : (
++          <b>
++            {w.formatRub(g.sum)}
++            {g.none ? ' *' : ''}
++          </b>
++        )}
++        <small>
++          {g.q} шт{g.det.length ? ` · ${g.det.join(', ')}` : ''}
++        </small>
++      </div>
++    );
++
++  const rows = COMPARE_ROW_GROUPS.map((c, k) =>
++    d.some((x) => x.g[k].n)
++      ? (
++          <CompareTableRow key={c[0]} label={c[0]} d={d} k={k} cell={cell} />
++        )
++      : null
++  );
++
++  return (
++    <>
++      <div className="cmp__h">
++        <h2>Сравнение моделей</h2>
++        <small>
++          {d.length} {plural(d.length, 'модель', 'модели', 'моделей')} · скидка общая
++        </small>
++      </div>
++      <div className="vrow">
++        {d.map((x) => {
++          const on = x.i === w.vi;
++          const m = x.m;
++          const tag = x.t.none ? (
++            <span className="pill pill--warn">Не все цены заданы</span>
++          ) : best == null ? null : x.t.total === best ? (
++            <span className="pill pill--ok">Самая выгодная</span>
++          ) : (
++            <span className="pill pill--more">+ {w.formatRub(x.t.total - best)}</span>
++          );
++          return (
++            <div key={x.i} className={`vcard${on ? ' is-on' : ''}`}>
++              <button
++                type="button"
++                className="vcard__m"
++                aria-pressed={on}
++                onClick={() => {
++                  w.saveVariant();
++                  w.setVi(x.i);
++                  w.load(w.variants[x.i]);
++                }}
++              >
++                <span className="vcard__pic">{pic(m)}</span>
++                <span className="vcard__t">
++                  {on ? <span className="vcard__on">Расчёт ниже</span> : null}
++                  <b>{m.name}</b>
++                  <small>{m.maker}</small>
++                  <span className="vcard__sum">{w.formatRub(x.t.total)}</span>
++                  {tag}
++                </span>
++              </button>
++              <button
++                type="button"
++                className="vcard__x"
++                aria-label={`Убрать из сравнения: ${m.name}`}
++                onClick={() => {
++                  if (w.variants.length < 2) return;
++                  w.saveVariant();
++                  const idx = x.i;
++                  const next = w.variants.filter((_, i) => i !== idx);
++                  w.setVariants(next);
++                  if (w.vi > idx) w.setVi(w.vi - 1);
++                  else if (w.vi === idx) w.setVi(Math.min(idx, next.length - 1));
++                  w.load(next[w.vi]);
++                }}
++              >
++                <IcX className="i" />
++              </button>
++            </div>
++          );
++        })}
++        {w.variants.length < w.maxVariants ? (
++          <button
++            type="button"
++            className="vcard vcard--add"
++            onClick={() => {
++              w.saveVariant();
++              w.setPrevVi(w.vi);
++              w.setVi(w.variants.length);
++              w.setAdding(true);
++              w.pickModel('manual');
++              w.setStep(3);
++            }}
++          >
++            <IcPlus className="i" />
++            <span>Добавить модель</span>
++          </button>
++        ) : null}
++      </div>
++      <details
++        className="card pl ctbl"
++        open={w.cmpOpen}
++        onToggle={(e) => w.setCmpOpen((e.target as HTMLDetailsElement).open)}
++      >
++        <summary>
++          <span>
++            <b>Сравнение по позициям</b>
++            <small>Одинаковые проёмы, цены каждой модели</small>
++          </span>
++          <IcChevronRight className="i" aria-hidden />
++        </summary>
++        <div className="ctbl__sc">
++          <div
++            className="ctbl__g"
++            style={{
++              gridTemplateColumns: cols,
++              minWidth: 108 * (d.length + 1),
++            }}
++          >
++            <div className="ch" />
++            {d.map((x) => (
++              <div key={x.i} className={`ch${x.i === w.vi ? ' on' : ''}`}>
++                {x.m.name}
++              </div>
++            ))}
++            {rows}
++            {dp ? (
++              <>
++                <CompareTotalRow label="Без скидки" d={d} fn={(t) => w.formatRub(t.sum)} cls="cf" />
++                <CompareTotalRow
++                  label={`Скидка ${String(dp).replace('.', ',')} %`}
++                  d={d}
++                  fn={(t) => (t.dsc ? `− ${w.formatRub(t.dsc)}` : '—')}
++                  cls="cf2"
++                />
++              </>
++            ) : null}
++            <CompareTotalRow
++              label="Итого"
++              d={d}
++              fn={(t) => w.formatRub(t.total)}
++              cls={dp ? 'ct' : 'cf ct'}
++            />
++          </div>
++        </div>
++        {d.length > 2 ? (
++          <p className="note ctbl__swipe">Листайте таблицу вправо, чтобы увидеть все модели.</p>
++        ) : null}
++        {d.some((x) => x.t.none) ? (
++          <p className="note">* Цена задана не для всех позиций, сумма посчитана без них.</p>
++        ) : null}
++      </details>
++    </>
++  );
++}
++
++function CompareTableRow({
++  label,
++  d,
++  k,
++  cell,
++}: {
++  label: string;
++  d: CompareVariantRow[];
++  k: number;
++  cell: (g: CompareVariantRow['g'][0]) => ReactNode;
++}) {
++  return (
++    <>
++      <div className="cn">{label}</div>
++      {d.map((x) => (
++        <div key={x.i}>{cell(x.g[k])}</div>
++      ))}
++    </>
++  );
++}
++
++function CompareTotalRow({
++  label,
++  d,
++  fn,
++  cls,
++}: {
++  label: string;
++  d: CompareVariantRow[];
++  fn: (t: CompareVariantRow['t']) => string;
++  cls: string;
++}) {
++  return (
++    <>
++      <div className={`cn ${cls}`}>{label}</div>
++      {d.map((x) => (
++        <div key={x.i} className={`cc ${cls}`}>
++          <b>{fn(x.t)}</b>
++        </div>
++      ))}
++    </>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorMini.tsx b/src/components/doorCalculator/DoorMini.tsx
+new file mode 100644
+index 00000000..2040861b
+--- /dev/null
++++ b/src/components/doorCalculator/DoorMini.tsx
+@@ -0,0 +1,49 @@
++export function DoorMini({
++  color = '#d9d4ca',
++  glass = false,
++  plus = false,
++}: {
++  color?: string;
++  glass?: boolean;
++  plus?: boolean;
++}) {
++  if (plus) {
++    return (
++      <svg className="mdoor" viewBox="0 0 60 84" aria-hidden>
++        <rect
++          x="13"
++          y="5"
++          width="34"
++          height="74"
++          rx="2"
++          fill="none"
++          style={{ stroke: 'var(--muted)' }}
++          strokeWidth="1.5"
++          strokeDasharray="4 4"
++        />
++        <path
++          d="M30 34v16M22 42h16"
++          style={{ stroke: 'var(--primary)' }}
++          strokeWidth="2.4"
++          strokeLinecap="round"
++        />
++      </svg>
++    );
++  }
++  return (
++    <svg className="mdoor" viewBox="0 0 60 84" aria-hidden>
++      <rect x="10" y="2" width="40" height="80" rx="2" fill="#e8d2aa" stroke="#00000022" />
++      <rect x="14" y="6" width="32" height="76" fill={color} stroke="#00000035" />
++      <rect
++        x="19"
++        y="12"
++        width="22"
++        height="28"
++        fill={glass ? '#cfe3ea' : '#ffffff18'}
++        stroke="#00000020"
++      />
++      <rect x="19" y="46" width="22" height="28" fill="#ffffff18" stroke="#00000020" />
++      <rect x="38" y="42" width="6" height="2.4" rx="1.2" fill="#2a2b29" />
++    </svg>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorOfferPage.tsx b/src/components/doorCalculator/DoorOfferPage.tsx
+new file mode 100644
+index 00000000..8dc21e9d
+--- /dev/null
++++ b/src/components/doorCalculator/DoorOfferPage.tsx
+@@ -0,0 +1,319 @@
++'use client';
++
++import { useEffect, useMemo, useState, type ReactNode } from 'react';
++import Link from 'next/link';
++import { decodeOfferPayload } from '@/lib/doorCalculator/offer';
++import type { OfferPayload } from '@/lib/doorCalculator/types';
++import type { DoorOfferPartnerFields } from '@/lib/door-calculator/partner-offer';
++import './door-offer.css';
++
++const SITE_PARTNER = {
++  company: 'RemCard',
++  manager: 'Консультант RemCard',
++  phone: '+7 495 000-00-00',
++  messenger: 'remcard.ru',
++  email: 'hello@remcard.ru',
++  site: 'remcard.ru',
++  address: 'Россия',
++  note: 'Предложение рассчитано по данным замера. Окончательная стоимость подтверждается при оформлении заказа.',
++  logo: '',
++};
++
++function rub(n: number) {
++  return `${Math.round(n).toLocaleString('ru-RU')} ₽`;
++}
++
++type DoorOfferPageProps = {
++  context?: 'site' | 'lk';
++  initialPartner?: DoorOfferPartnerFields | null;
++};
++
++export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOfferPageProps = {}) {
++  const calculatorHref = context === 'lk' ? '/doors-calculator' : '/calculators/doors';
++  const [data, setData] = useState<OfferPayload | null>(null);
++  const [partner, setPartner] = useState<DoorOfferPartnerFields>(
++    initialPartner ?? (context === 'lk' ? emptyPartner() : SITE_PARTNER),
++  );
++
++  useEffect(() => {
++    if (initialPartner) setPartner(initialPartner);
++  }, [initialPartner]);
++
++  useEffect(() => {
++    const h = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
++    if (h) setData(decodeOfferPayload(h));
++  }, []);
++
++  const totals = useMemo(() => {
++    if (!data) return null;
++    let sum = 0;
++    let none = 0;
++    data.rows.forEach((r) => {
++      if (r[2] == null) none++;
++      else sum += r[1] * r[2];
++    });
++    const dp = Math.min(Math.max(+(data.disc || 0), 0), 100);
++    const dsc = Math.round((sum * dp) / 100);
++    return { sum, none, dp, dsc, total: sum - dsc };
++  }, [data]);
++
++  if (!data || !totals) {
++    return (
++      <OfferShell>
++        <p>Загрузка предложения… Откройте страницу из калькулятора дверей.</p>
++        <Link href={calculatorHref}>К калькулятору</Link>
++      </OfferShell>
++    );
++  }
++
++  const ds = new Date().toLocaleDateString('ru-RU');
++  const o = data.obj;
++
++  return (
++    <OfferShell>
++      <div className="screen">
++        <div className="screen__bar">
++          <Link href={calculatorHref} className="back">
++            ← К калькулятору
++          </Link>
++          <button type="button" className="btn" id="print" onClick={() => window.print()}>
++            Сохранить как PDF
++          </button>
++        </div>
++        <aside className="edit">
++          <h2>Профиль партнёра</h2>
++          <p className="note">
++            {context === 'lk'
++              ? 'Данные из профиля организации. Изменения здесь не сохраняются в профиль.'
++              : 'На сайте — фирменный вид RemCard. В кабинете подставятся данные организации.'}
++          </p>
++          {(
++            [
++              ['company', 'Название компании'],
++              ['manager', 'Менеджер'],
++              ['phone', 'Телефон'],
++              ['messenger', 'Мессенджер'],
++              ['email', 'E-mail'],
++              ['site', 'Сайт'],
++              ['address', 'Адрес'],
++            ] as const
++          ).map(([k, label]) => (
++            <label key={k}>
++              {label}
++              <input
++                value={partner[k]}
++                onChange={(e) => setPartner({ ...partner, [k]: e.target.value })}
++              />
++            </label>
++          ))}
++          <label>
++            Примечание в конце
++            <textarea
++              rows={3}
++              value={partner.note}
++              onChange={(e) => setPartner({ ...partner, note: e.target.value })}
++            />
++          </label>
++        </aside>
++      </div>
++      <main>
++        <article className="page">
++          <div className="hd">
++            <div className="logo">
++              {partner.logo ? (
++                // eslint-disable-next-line @next/next/no-img-element
++                <img src={partner.logo} alt="" />
++              ) : (
++                (partner.company || '?').slice(0, 2).toUpperCase()
++              )}
++            </div>
++            <div className="hd__c">
++              <b>{partner.company || '—'}</b>
++              <span>{[partner.phone, partner.site].filter(Boolean).join(' · ') || '—'}</span>
++            </div>
++            <div className="hd__r">
++              <span className="rc">
++                <i aria-hidden>
++                  <svg width="13" height="13" viewBox="0 0 32 32">
++                    <path
++                      d="M8 17l8-7 8 7v8H8z"
++                      fill="none"
++                      stroke="#fff"
++                      strokeWidth="3"
++                      strokeLinejoin="round"
++                    />
++                  </svg>
++                </i>
++                <b>
++                  remcard<span>.</span>
++                </b>
++              </span>
++              <br />
++              Расчёт выполнен в RemCard
++            </div>
++          </div>
++          <h1>Коммерческое предложение</h1>
++          <div className="meta">№ КП от {ds}</div>
++          <div className="two">
++            <div className="box">
++              <small>Заказчик</small>
++              <b>{o.client || 'Не указан'}</b>
++              {o.phone}
++              {o.address ? (
++                <>
++                  <br />
++                  {o.address}
++                </>
++              ) : null}
++            </div>
++            <div className="box">
++              <small>Модель двери</small>
++              <b>{data.model.name}</b>
++              {data.model.maker}
++              <br />
++              Менеджер: {partner.manager}
++            </div>
++          </div>
++          <h3>Проёмы</h3>
++          <table>
++            <thead>
++              <tr>
++                <th>№</th>
++                <th>Проём</th>
++                <th>Размер, мм</th>
++                <th>Состав</th>
++              </tr>
++            </thead>
++            <tbody>
++              {data.per.map((p) => (
++                <tr key={p.n}>
++                  <td>{p.n}</td>
++                  <td>
++                    <b>{p.room || 'Проём'}</b>
++                    <br />
++                    {p.type}
++                  </td>
++                  <td>{p.size}</td>
++                  <td>{p.lines.join(', ')}</td>
++                </tr>
++              ))}
++            </tbody>
++          </table>
++          <h3>Спецификация</h3>
++          <table>
++            <thead>
++              <tr>
++                <th>Позиция</th>
++                <th className="r">Кол-во</th>
++                <th className="r">Цена за шт.</th>
++                <th className="r">Сумма</th>
++              </tr>
++            </thead>
++            <tbody>
++              {data.rows.map((r, i) => {
++                const pr = r[2] == null;
++                return (
++                  <tr key={`${r[0]}-${i}`}>
++                    <td>{r[0]}</td>
++                    <td className="r">{r[1]} шт</td>
++                    <td className="r">{pr ? <span className="na">по запросу</span> : rub(r[2]!)}</td>
++                    <td className="r">{pr ? '—' : rub(r[1] * r[2]!)}</td>
++                  </tr>
++                );
++              })}
++            </tbody>
++          </table>
++          <div className="tot">
++            <div>
++              <span>Стоимость без скидки</span>
++              <b>{rub(totals.sum)}</b>
++            </div>
++            {totals.dsc ? (
++              <div>
++                <span>Скидка {totals.dp} %</span>
++                <b>− {rub(totals.dsc)}</b>
++              </div>
++            ) : null}
++            <div className="big">
++              <span>Итого</span>
++              <span>{rub(totals.total)}</span>
++            </div>
++            {totals.dsc ? (
++              <div className="save">
++                <span>Ваша выгода</span>
++                <span>{rub(totals.dsc)}</span>
++              </div>
++            ) : null}
++            {totals.none ? (
++              <div style={{ fontSize: 11, color: '#8a5a12' }}>
++                Цена по {totals.none} поз. уточняется, в итог не включена.
++              </div>
++            ) : null}
++          </div>
++          <div className="ct">
++            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>{partner.note}</div>
++            <div className="ct__in">
++              <b>Как с нами связаться</b>
++              {partner.manager ? (
++                <span>
++                  <em>Менеджер:</em> {partner.manager}
++                </span>
++              ) : null}
++              {partner.phone ? (
++                <span>
++                  <em>Телефон:</em> {partner.phone}
++                </span>
++              ) : null}
++              {partner.messenger ? (
++                <span>
++                  <em>Мессенджер:</em> {partner.messenger}
++                </span>
++              ) : null}
++              {partner.email ? (
++                <span>
++                  <em>E-mail:</em> {partner.email}
++                </span>
++              ) : null}
++              {partner.site ? (
++                <span>
++                  <em>Сайт:</em> {partner.site}
++                </span>
++              ) : null}
++              {partner.address ? (
++                <span>
++                  <em>Адрес:</em> {partner.address}
++                </span>
++              ) : null}
++            </div>
++            <div className="ft">
++              <span>{partner.company}</span>
++              <span>Калькулятор дверей RemCard</span>
++            </div>
++          </div>
++        </article>
++      </main>
++    </OfferShell>
++  );
++}
++
++function emptyPartner(): DoorOfferPartnerFields {
++  return {
++    company: '',
++    manager: '',
++    phone: '',
++    messenger: '',
++    email: '',
++    site: '',
++    address: '',
++    note: SITE_PARTNER.note,
++    logo: '',
++  };
++}
++
++function OfferShell({ children }: { children: ReactNode }) {
++  return (
++    <div className="door-offer" data-testid="door-offer-page">
++      {children}
++    </div>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorSceneSvg.tsx b/src/components/doorCalculator/DoorSceneSvg.tsx
+new file mode 100644
+index 00000000..3c3bad2c
+--- /dev/null
++++ b/src/components/doorCalculator/DoorSceneSvg.tsx
+@@ -0,0 +1,126 @@
++import type { DoorCatalogModel, DoorOpening } from '@/lib/doorCalculator';
++import { bladeOf, dobEff } from '@/lib/doorCalculator';
++
++const FX1 = 114;
++const FX2 = 362;
++const FY1 = 100;
++const FY2 = 512;
++const VP: [number, number] = [238, 306];
++
++export function DoorSceneSvg({
++  opening,
++  model,
++}: {
++  opening: DoorOpening;
++  model: DoorCatalogModel | null;
++}) {
++  const entry = opening.type === 'entry';
++  const arch = opening.type === 'arch';
++  const dEff = dobEff(opening);
++  const left = opening.side === 'left';
++  const d = parseInt(opening.depth, 10) || 0;
++  const sc = d ? 0.94 - (Math.min(d, 500) / 500) * 0.16 : 0.9;
++
++  const P = (x: number, y: number): [number, number] => [
++    VP[0] + (x - VP[0]) * sc,
++    VP[1] + (y - VP[1]) * sc,
++  ];
++  const bl = P(FX1, FY2);
++  const br = P(FX2, FY2);
++  const tl = P(FX1, FY1);
++  const tr = P(FX2, FY1);
++  const pt = (a: [number, number]) => `${a[0].toFixed(1)},${a[1].toFixed(1)}`;
++  const poly = (a: [number, number][], fill: string) =>
++    `<polygon points="${a.map(pt).join(' ')}" fill="${fill}" stroke="#00000022" stroke-width="1" stroke-linejoin="round"/>`;
++  const frame = (x1: number, y1: number, x2: number, c: string) =>
++  `<path fill-rule="evenodd" d="M${x1} ${y1}H${x2}V${FY2}H${x1}ZM${FX1} ${FY1}H${FX2}V${FY2}H${FX1}Z" fill="${c}" stroke="#0000002b" stroke-width="1"/>`;
++
++  const Ftl: [number, number] = [FX1, FY1];
++  const Ftr: [number, number] = [FX2, FY1];
++  const Fbl: [number, number] = [FX1, FY2];
++  const Fbr: [number, number] = [FX2, FY2];
++  const cT = dEff ? '#dcc097' : '#d8d4c9';
++  const cL = dEff ? '#cdaa78' : '#cfcabf';
++  const cR = dEff ? '#bd9259' : '#c4bfb3';
++  const leaf = entry ? '#5e4f41' : model?.color || '#e9e4da';
++  const x1 = tl[0];
++  const y1 = tl[1];
++  const w = br[0] - x1;
++  const h = br[1] - y1;
++  const x2 = x1 + w;
++
++  let s =
++    '<svg viewBox="0 0 390 612" width="390" height="612" aria-hidden="true"><defs><linearGradient id="lf" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".07"/></linearGradient></defs>' +
++    `<rect width="390" height="612" style="fill:var(--sc-wall)"/><rect y="${FY2}" width="390" height="100" style="fill:var(--sc-floor)"/><path d="M0 ${FY2}H390" stroke="#00000020"/>` +
++    (opening.nalB ? frame(90, 76, 386, '#cfae7f') : '') +
++    (opening.nalF ? frame(97, 83, 379, '#e8d2aa') : '') +
++    `<rect x="${FX1}" y="${FY1}" width="${FX2 - FX1}" height="${FY2 - FY1}" fill="#b9b4a8"/>` +
++    poly([Ftl, Ftr, tr, tl], cT) +
++    poly([Ftl, tl, bl, Fbl], cL) +
++    poly([Ftr, tr, br, Fbr], cR) +
++    poly(
++      [Fbl, Fbr, br, bl],
++      opening.sill && !arch ? '#7d7972' : '#c9c4b8'
++    );
++
++  if (arch) {
++    s +=
++      `<rect x="${x1}" y="${y1}" width="${w}" height="${h}" style="fill:var(--sc-bg)"/>` +
++      `<rect x="${x1}" y="${y1 + h * 0.8}" width="${w}" height="${h * 0.2}" style="fill:var(--sc-floor)" opacity=".7"/>` +
++      `<text x="238" y="${y1 + h * 0.9}" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="700" font-size="13" style="fill:var(--muted)">Проём без двери</text>`;
++  } else {
++    s += `<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${leaf}"/>`;
++    if (entry) {
++      [0.2, 0.4, 0.6, 0.8].forEach((k) => {
++        s += `<path d="M${x1 + 14} ${y1 + h * k}H${x2 - 14}" stroke="#00000030" stroke-width="2"/>`;
++      });
++      s += `<circle cx="${x1 + w / 2}" cy="${y1 + h * 0.3}" r="4" fill="#d8c9a8"/><rect x="${left ? x2 - 24 : x1 + 16}" y="${y1 + h * 0.42}" width="8" height="${h * 0.16}" rx="4" fill="#d8c9a8"/>`;
++    } else {
++      const glass = model && /стекл/i.test(model.name);
++      const px = x1 + w * 0.16;
++      const pw = w * 0.68;
++      s +=
++        `<rect x="${px}" y="${y1 + h * 0.07}" width="${pw}" height="${h * 0.4}" rx="2" fill="${glass ? '#cfe3ea' : '#ffffff14'}" stroke="#00000022"/>` +
++        `<rect x="${px}" y="${y1 + h * 0.53}" width="${pw}" height="${h * 0.4}" rx="2" fill="#ffffff14" stroke="#00000022"/>`;
++    }
++    s += `<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="url(#lf)" stroke="#00000040" stroke-width="1.2"/>`;
++    if (!entry) {
++      const hx = left ? x2 - 20 : x1 + 20;
++      const cy = y1 + h * 0.5;
++      const hg = left ? x1 - 2 : x2 - 4;
++      if (opening.hinge) {
++        [0.12, 0.8].forEach((k) => {
++          s += `<rect x="${hg}" y="${y1 + h * k}" width="6" height="32" rx="2" fill="#2f302e"/>`;
++        });
++      }
++      s += opening.handle
++        ? `<rect x="${left ? hx - 30 : hx}" y="${cy - 3.5}" width="30" height="7" rx="3.5" fill="#2a2b29"/><circle cx="${hx}" cy="${cy}" r="7.5" fill="#2a2b29"/>`
++        : `<circle cx="${hx}" cy="${cy}" r="6" fill="none" stroke="#00000038" stroke-dasharray="3 3"/>`;
++      if (opening.lock) {
++        s += `<rect x="${hx - 5}" y="${cy + 20}" width="10" height="17" rx="3" fill="#4b4c49"/><circle cx="${hx}" cy="${cy + 26}" r="1.8" fill="#d9d5cb"/>`;
++      }
++      if (opening.zav) {
++        s += `<circle cx="${hx}" cy="${cy + 54}" r="6.5" fill="none" stroke="#2a2b29" stroke-width="3"/>`;
++      }
++    }
++  }
++  s +=
++    `<g style="stroke:var(--primary)" stroke-width="1.5" fill="none"><path d="M${FX1} 44H${FX2}M${FX1} 37v14M${FX2} 37v14"/><path d="M84 ${FY1}V${FY2}M77 ${FY1}h14M77 ${FY2}h14"/>` +
++    `<path d="M${pt(Fbr).replace(',', ' ')}L${pt(br).replace(',', ' ')}" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/></g></svg>`;
++
++  return (
++    <div
++      className="door-scene__svg"
++      dangerouslySetInnerHTML={{ __html: s }}
++      data-testid="door-scene"
++    />
++  );
++}
++
++export function bladeOptionsForOpening(model: DoorCatalogModel | null, opening: DoorOpening) {
++  const bl = bladeOf(model, opening);
++  const base = [600, 700, 800, 900];
++  const extra =
++    opening.blade && !base.includes(+opening.blade) ? [+opening.blade] : [];
++  return { bl, opts: [...base, ...extra] };
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/DoorWizardIcons.tsx b/src/components/doorCalculator/DoorWizardIcons.tsx
+new file mode 100644
+index 00000000..491b7652
+--- /dev/null
++++ b/src/components/doorCalculator/DoorWizardIcons.tsx
+@@ -0,0 +1,127 @@
++import type { SVGProps } from "react";
++
++type IconProps = SVGProps<SVGSVGElement>;
++
++function WizardIcon({ children, ...props }: IconProps & { children: React.ReactNode }) {
++  return (
++    <svg
++      width={20}
++      height={20}
++      viewBox="0 0 24 24"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={2}
++      strokeLinecap="round"
++      strokeLinejoin="round"
++      className="i"
++      aria-hidden
++      {...props}
++    >
++      {children}
++    </svg>
++  );
++}
++
++export function IcCheck(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M20 6 9 17l-5-5" />
++    </WizardIcon>
++  );
++}
++
++export function IcChevronLeft(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="m15 18-6-6 6-6" />
++    </WizardIcon>
++  );
++}
++
++export function IcChevronRight(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="m9 18 6-6-6-6" />
++    </WizardIcon>
++  );
++}
++
++export function IcCopy(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <rect width={14} height={14} x={8} y={8} rx={2} ry={2} />
++      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
++    </WizardIcon>
++  );
++}
++
++export function IcDoorOpen(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M13 4h3a2 2 0 0 1 2 2v14" />
++      <path d="M2 20h3" />
++      <path d="M13 20H2" />
++      <path d="M10 12v.01" />
++      <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z" />
++    </WizardIcon>
++  );
++}
++
++export function IcFileText(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
++      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
++      <path d="M10 9H8" />
++      <path d="M16 13H8" />
++      <path d="M16 17H8" />
++    </WizardIcon>
++  );
++}
++
++export function IcMinus(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M5 12h14" />
++    </WizardIcon>
++  );
++}
++
++export function IcPencil(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
++      <path d="m15 5 4 4" />
++    </WizardIcon>
++  );
++}
++
++export function IcPlus(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M5 12h14" />
++      <path d="M12 5v14" />
++    </WizardIcon>
++  );
++}
++
++export function IcTrash2(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M3 6h18" />
++      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
++      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
++      <line x1={10} x2={10} y1={11} y2={17} />
++      <line x1={14} x2={14} y1={11} y2={17} />
++    </WizardIcon>
++  );
++}
++
++export function IcX(props: IconProps) {
++  return (
++    <WizardIcon {...props}>
++      <path d="M18 6 6 18" />
++      <path d="m6 6 12 12" />
++    </WizardIcon>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/WizardBar.tsx b/src/components/doorCalculator/WizardBar.tsx
+new file mode 100644
+index 00000000..f6024259
+--- /dev/null
++++ b/src/components/doorCalculator/WizardBar.tsx
+@@ -0,0 +1,10 @@
++import type { ReactNode } from 'react';
++
++export function WizardBar({ children, hint }: { children: ReactNode; hint?: string }) {
++  return (
++    <div className="bar">
++      <div className="bar__in">{children}</div>
++      {hint ? <div className="bar__h">{hint}</div> : null}
++    </div>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/door-offer.css b/src/components/doorCalculator/door-offer.css
+new file mode 100644
+index 00000000..a7a79e41
+--- /dev/null
++++ b/src/components/doorCalculator/door-offer.css
+@@ -0,0 +1,46 @@
++:root{--brand:#c12b2f;--brand-soft:#fbeeee;--ink:#252923;--muted:#6c706a;--line:#e5e5df;--green:#35684b;--green-soft:#edf4ee}
++*{box-sizing:border-box}
++body{margin:0;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:#eceae6;font-size:13px;line-height:1.4}
++.screen{position:fixed;left:0;top:0;bottom:0;width:300px;background:#fff;border-right:1px solid var(--line);overflow:auto;padding:0 0 24px}
++.screen__bar{display:flex;flex-direction:column;gap:10px;padding:16px;border-bottom:1px solid var(--line)}
++.back{color:var(--brand);font-weight:700;text-decoration:none}
++.btn{font:inherit;font-weight:800;border-radius:10px;padding:10px 16px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
++.edit{padding:16px;display:flex;flex-direction:column;gap:10px}
++.edit h2{margin:0;font-size:17px}.note{font-size:12px;color:var(--muted);margin:0}
++.edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
++.edit input,.edit textarea{font:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
++main{margin-left:300px;padding:24px;display:flex;justify-content:center}
++.page{width:210mm;min-height:297mm;background:#fff;padding:10mm 12mm 8mm;box-shadow:0 8px 40px #0002;display:flex;flex-direction:column}
++.hd{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:3px solid var(--brand)}
++.logo{width:64px;height:64px;border-radius:12px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;font-size:24px;overflow:hidden;flex-shrink:0}
++.logo img{width:100%;height:100%;object-fit:contain;background:#fff}
++.hd__c b{font-size:19px;display:block}.hd__c span{color:var(--muted);font-size:12px}
++.hd__r{margin-left:auto;text-align:right;font-size:11px;color:var(--muted)}
++.rc{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ink);font-size:14px}
++.rc i{width:20px;height:20px;border-radius:6px;background:var(--brand);display:grid;place-items:center}
++.rc b span{color:var(--brand)}
++h1{font-size:21px;margin:12px 0 2px}
++.meta{color:var(--muted);font-size:12px;margin-bottom:12px}
++.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
++.box{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
++.box small{display:block;color:var(--muted);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
++.box b{display:block}
++h3{font-size:13px;margin:10px 0 5px}
++table{border-collapse:collapse;width:100%}
++th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12px}
++th{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;background:#faf9f7}
++td.r,th.r{text-align:right;white-space:nowrap}
++tr{break-inside:avoid}
++.tot{margin-left:auto;margin-top:8px;width:260px}
++.tot div{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
++.tot .big{border-top:2px solid var(--ink);margin-top:4px;padding-top:8px;font-size:18px;font-weight:800;color:var(--brand)}
++.save{margin-top:8px;background:var(--green-soft);color:var(--green);border-radius:10px;padding:9px 12px;font-weight:800;display:flex;justify-content:space-between}
++.na{color:#8a5a12;font-weight:700}
++.ct{margin-top:auto;padding-top:10px}
++.ct__in{border-top:1px solid var(--line);padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:12px}
++.ct__in b{font-size:13px;grid-column:1/-1}
++.ct__in span em{font-style:normal;color:var(--muted)}
++.ft{margin-top:10px;font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
++@page{size:A4;margin:0}
++@media print{html,body{background:#fff;height:296mm;overflow:hidden}.screen{display:none}main{margin:0;padding:0;display:block}.page{box-shadow:none;width:auto;min-height:auto;height:296mm;overflow:hidden}}
++@media(max-width:900px){.screen{position:static;width:auto}main{margin-left:0;padding:8px;overflow:auto;justify-content:flex-start}}
+diff --git a/src/components/doorCalculator/door-wizard.css b/src/components/doorCalculator/door-wizard.css
+new file mode 100644
+index 00000000..d8867eba
+--- /dev/null
++++ b/src/components/doorCalculator/door-wizard.css
+@@ -0,0 +1,330 @@
++/* Калькулятор дверей. Токены совпадают с сайтом remcard.ru и кабинетом партнёра */
++:root{--bg:#f6f5f3;--surface:#fff;--offset:#f2f1ee;--ink:#252923;--muted:#6c706a;--line:#e5e5df;--primary:#c12b2f;--primary-hover:#a72226;--soft:#fcf0ed;--green:#35684b;--green-soft:#eef5ef;--amber:#865c20;--amber-soft:#fbf3e3;--on-ink:#fff;--header-bg:rgba(246,245,243,.9);--glass:rgba(255,255,255,.94);--shadow:0 24px 80px rgba(39,43,36,.15);--shadow-sm:0 6px 24px rgba(39,43,36,.08);--proto-bg:#fdf9ef;--proto-line:#d9c9a3;--sc-bg:#f1efea;--sc-wall:#e9e6de;--sc-floor:#d9d4c8;--r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--font:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
++[data-theme=dark]{--bg:#131917;--surface:#1c2421;--offset:#25312b;--ink:#eaf0ec;--muted:#a6b5ac;--line:rgba(210,236,220,.14);--primary:#f3786d;--primary-hover:#ff9288;--soft:#372a27;--green:#a4d2b1;--green-soft:#253b2c;--amber:#e8c27a;--amber-soft:#3a301b;--on-ink:#141816;--header-bg:rgba(19,25,23,.88);--glass:rgba(28,36,33,.94);--shadow:0 24px 80px rgba(0,0,0,.45);--shadow-sm:0 6px 24px rgba(0,0,0,.35);--proto-bg:#2a2719;--proto-line:#6b5a2e;--sc-bg:#232c28;--sc-wall:#303b36;--sc-floor:#262f2b;color-scheme:dark}
++*{box-sizing:border-box}
++html{-webkit-text-size-adjust:100%}
++.door-wizard{font-family:var(--font);color:var(--ink);line-height:1.5;font-size:1rem;-webkit-font-smoothing:antialiased}
++a{color:inherit;text-decoration:none}
++button,input,select{font:inherit;color:inherit}
++button{cursor:pointer;border:0;background:none;padding:0;-webkit-tap-highlight-color:transparent}
++h1,h2,p,ul,dl,dd{margin:0}
++input,select{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:.65rem .9rem;width:100%;outline:none;min-height:46px;font-weight:600;font-size:1rem}
++input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(193,43,47,.14)}
++input::placeholder{color:var(--muted);opacity:.75;font-weight:500}
++input[type=number]{-moz-appearance:textfield}
++input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
++:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
++input:focus-visible,select:focus-visible{outline:none}
++.i{width:20px;height:20px;flex:none}
++.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
++.eyebrow{display:inline-flex;align-items:center;gap:.45rem;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
++
++/* полоса прототипа */
++.proto{display:flex;align-items:center;gap:14px;padding:6px 20px;background:var(--proto-bg);border-bottom:1px solid var(--proto-line);font-size:12px;font-weight:600;color:var(--muted)}
++.proto__sw{display:inline-flex;margin-left:auto;border:1px solid var(--proto-line);border-radius:99px;overflow:hidden;background:var(--surface)}
++.proto__sw a{padding:4px 12px;font-weight:700;white-space:nowrap}
++.proto__sw a.on{background:var(--ink);color:var(--on-ink)}
++.proto__all{text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
++
++/* шапка */
++.hdr{position:sticky;top:0;z-index:50;background:var(--header-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
++.hdr__in{height:64px;display:flex;align-items:center;gap:1.5rem}
++.hdr__in--lk{padding:0 24px}
++.brand{display:inline-flex;align-items:center;gap:.65rem}
++.brand__mark{width:36px;height:36px;color:var(--primary);flex:none}
++.brand__text{display:flex;flex-direction:column;line-height:1}
++.brand__word{font-size:1.5rem;font-weight:800;letter-spacing:-.07em}
++.brand__word i{font-style:normal;color:var(--primary)}
++.brand__sub{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-top:3px}
++.nav{display:flex;gap:.25rem;margin-left:.5rem}
++.nav a{padding:.5rem .85rem;border-radius:var(--r-sm);font-weight:700;font-size:.875rem;color:var(--muted)}
++.nav a:hover{color:var(--ink);background:var(--offset)}
++.nav a.is-active{color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
++.hdr__right{margin-left:auto;display:flex;gap:.6rem;align-items:center}
++.hdr .hdr__burger{display:none}
++.who{display:flex;align-items:center;gap:.6rem}
++.who__av{width:38px;height:38px;border-radius:50%;background:var(--offset);display:grid;place-items:center;font-weight:800;font-size:.8rem}
++.who__t{display:flex;flex-direction:column;line-height:1.25}.who__t b{font-size:.875rem}.who__t small{font-size:.75rem;color:var(--muted)}
++
++/* кнопки */
++.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:46px;padding:.65rem 1.15rem;border-radius:var(--r-md);font-weight:700;font-size:.875rem;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s,transform .1s;white-space:nowrap}
++.btn:active{transform:translateY(1px)}
++.btn:disabled{opacity:.45;cursor:not-allowed}
++.btn--primary{background:var(--primary);color:#fff}
++[data-theme=dark] .btn--primary{color:#1a0d0b}
++.btn--primary:hover:not(:disabled){background:var(--primary-hover)}
++.btn--ghost{background:var(--surface);border-color:var(--line)}
++.btn--ghost:hover:not(:disabled){border-color:var(--ink)}
++.btn--text{color:var(--muted)}.btn--text:hover:not(:disabled){color:var(--primary)}
++.btn--sm{min-height:38px;padding:.35rem .85rem;font-size:.8125rem;border-radius:10px}
++.btn--sm .i{width:16px;height:16px}
++.btn--lg{min-height:56px;padding:.9rem 1.5rem;font-size:1rem;border-radius:14px}
++.iconbtn{width:44px;height:44px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);display:inline-grid;place-items:center;flex:none;transition:border-color .15s}
++.iconbtn:hover:not(:disabled){border-color:var(--ink)}
++.iconbtn:disabled{opacity:.4;cursor:default}
++
++/* кабинет */
++.ctx-lk .shell{display:grid;grid-template-columns:248px minmax(0,1fr)}
++.side{border-right:1px solid var(--line);padding:20px 16px;position:sticky;top:64px;height:calc(100vh - 64px);overflow:auto;background:var(--surface)}
++.ws{border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;display:flex;flex-direction:column;gap:2px;margin-bottom:16px}
++.ws strong{font-size:1rem}.ws small{color:var(--muted);font-size:.78rem}
++.navbtn{display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;font-weight:700;font-size:.9rem}
++.navbtn:hover{background:var(--offset)}
++.navbtn.on{background:var(--soft);color:var(--primary)}
++.side__n{font-size:.75rem;color:var(--muted);margin-top:16px;padding:0 .5rem}
++.page{padding:20px 20px 150px;min-width:0}
++.page__in{max-width:1040px;margin:0 auto}
++.crumbs{display:flex;align-items:center;gap:.35rem;font-size:.8125rem;color:var(--muted);font-weight:600;margin-bottom:14px;flex-wrap:wrap}
++.crumbs a:hover{color:var(--ink)}.crumbs .i{width:14px;height:14px}.crumbs span{color:var(--ink)}
++
++/* шаги */
++.wtop{display:flex;align-items:center;gap:14px;margin-bottom:26px}
++.wprog{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
++.wprog i{height:6px;border-radius:9px;background:var(--line);transition:background .25s}
++.wprog i.on{background:var(--primary)}.wprog i.done{background:var(--ink)}
++.wz{margin:0 auto}
++.wz.enter{animation:in .28s cubic-bezier(.2,.7,.3,1)}
++@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
++.wz--1{max-width:560px}
++.scr h1{font-size:clamp(1.75rem,1.35rem + 1.8vw,2.5rem);line-height:1.12;font-weight:800;letter-spacing:-.035em;margin:.5rem 0 .6rem}
++.lead{color:var(--muted);font-size:1.0625rem;max-width:56ch}
++
++/* шаг 1 */
++.count{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:36px 0 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-sm)}
++.count__n{display:flex;flex-direction:column;align-items:center;line-height:1}
++.count__n b{font-size:clamp(5rem,4rem + 6vw,7rem);font-weight:800;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
++.count__n span{font-size:.9rem;color:var(--muted);font-weight:700;margin-top:6px}
++.count__b{width:64px;height:64px;border-radius:50%;border:1px solid var(--line);background:var(--offset);display:grid;place-items:center;transition:.15s}
++.count__b .i{width:26px;height:26px}
++.count__b:hover:not(:disabled){background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
++.count__b:disabled{opacity:.35;cursor:default}
++.doors{display:flex;justify-content:center;align-items:flex-end;gap:7px;min-height:40px;flex-wrap:wrap}
++.doors i{width:20px;height:34px;border:2px solid var(--ink);border-radius:3px 3px 0 0;border-bottom-width:0;position:relative;opacity:.8;animation:in .2s}
++.doors i:after{content:"";position:absolute;right:3px;top:16px;width:3px;height:3px;border-radius:50%;background:var(--ink)}
++.doors span{font-weight:800;font-size:.85rem;color:var(--muted)}
++.quick{display:flex;justify-content:center;gap:8px;margin-top:22px}
++.quick button{flex:1;max-width:64px;height:48px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-weight:800;transition:.15s}
++.quick button:hover{border-color:var(--ink)}
++.quick button.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
++
++/* переключатели */
++.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
++.seg--full{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%}
++.seg button{padding:.7rem .5rem;font-weight:700;font-size:.875rem;color:var(--muted);border-right:1px solid var(--line);white-space:nowrap;min-height:46px;transition:.15s}
++.seg button:last-child{border-right:0}
++.seg button:hover{color:var(--ink)}
++.seg button.is-on{background:var(--ink);color:var(--on-ink)}
++
++/* шаг 2 */
++.s2__grid{display:grid;grid-template-columns:minmax(0,var(--scw,400px)) minmax(0,1fr);grid-template-areas:"scene head" "scene more";grid-template-rows:auto 1fr;gap:20px 36px;align-items:start}
++.s2__head{grid-area:head;display:grid;gap:14px}
++.s2__scene{grid-area:scene}
++.s2__more{grid-area:more;display:grid;gap:16px}
++.s2__top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:34px}
++.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
++.dot{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:800;font-size:.78rem;color:var(--muted);display:grid;place-items:center;transition:.15s}
++.dot:hover{border-color:var(--ink)}
++.dot.on{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
++.dot.full{background:var(--green-soft);border-color:transparent;color:var(--green)}
++.dot .i{width:15px;height:15px}
++.room{display:flex;align-items:center;gap:10px;border-bottom:1.5px dashed var(--line);padding-bottom:4px;color:var(--muted)}
++.room:focus-within{border-color:var(--primary);color:var(--primary)}
++.room .i{width:18px;height:18px}
++.room input{border:0;background:none;padding:.2rem 0;min-height:0;font-size:clamp(1.5rem,1.25rem + 1.2vw,2rem);font-weight:800;letter-spacing:-.03em;color:var(--ink);border-radius:0;box-shadow:none!important}
++.room input::placeholder{font-weight:700;font-size:1.05rem;letter-spacing:0}
++.stagebox{position:relative;width:100%;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--line);background:var(--sc-wall);box-shadow:var(--shadow-sm)}
++.stage{position:absolute;left:0;top:0;width:390px;height:612px;transform-origin:0 0}
++.sv,.sv svg{position:absolute;left:0;top:0;display:block}
++.chip{position:absolute;display:flex;align-items:center;gap:7px;min-height:40px;max-width:128px;padding:5px 11px 5px 6px;border-radius:14px;border:1px solid transparent;background:var(--glass);box-shadow:0 4px 14px rgba(0,0,0,.16);cursor:pointer;font-size:12.5px;font-weight:800;line-height:1.15;color:var(--muted);transition:border-color .15s,color .15s,transform .1s;user-select:none;-webkit-user-select:none}
++.chip:active{transform:scale(.97)}
++.chip[style*="translateX"]:active{transform:translateX(-50%) scale(.97)}
++.chip input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;padding:0;border:0}
++.chip:has(input:focus-visible){outline:3px solid var(--primary);outline-offset:2px}
++.chip__i{flex:0 0 24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--offset);color:var(--muted);transition:.15s}
++.chip__i .i{width:14px;height:14px;grid-area:1/1;stroke-width:2.6;transition:opacity .15s,transform .15s}
++.chip__i .i:first-child{opacity:0;transform:scale(.5)}
++.chip__t{display:flex;flex-direction:column;min-width:0}
++.chip__t small{font-size:10.5px;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.15}
++.chip.on{border-color:var(--primary);color:var(--ink)}
++.chip.on .chip__i{background:var(--primary);color:#fff}
++.chip.on .chip__i .i:first-child{opacity:1;transform:none}.chip.on .chip__i .i:last-child{opacity:0}
++.hin{position:absolute;display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:800;color:var(--primary);text-align:center;letter-spacing:.01em}
++.hin input{color:var(--ink);min-height:0;height:44px;font-size:19px;font-weight:800;text-align:center;padding:0 4px;border-radius:12px;border:1.5px solid var(--primary);background:var(--surface);font-variant-numeric:tabular-nums}
++.hin input::placeholder{font-weight:700;opacity:.45}
++.hin--w{left:168px;top:3px;width:140px}
++.hin--h{left:5px;top:265px;width:72px}.hin--h input{font-size:18px}
++.hin--d{left:133px;top:530px;width:210px}
++.fld{display:grid;gap:6px}.fld__l{font-size:.8125rem;font-weight:700;color:var(--muted)}
++.sumbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;display:grid;gap:8px}
++.sumbox ul{list-style:none;padding:0;display:grid;gap:6px;font-weight:600;font-size:.9375rem}
++.sumbox li{display:flex;gap:9px;align-items:baseline}
++.sumbox li:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary);flex:none;transform:translateY(-2px)}
++.sumbox small{color:var(--muted);font-size:.8125rem;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
++.rowbtns{display:flex;gap:8px;flex-wrap:wrap}
++
++/* шаг 3 */
++.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px;margin-top:26px}
++.mcard{position:relative;text-align:left;display:flex;flex-direction:column;gap:3px;padding:12px 12px 14px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);transition:border-color .15s,box-shadow .15s,transform .15s}
++.mcard:hover{border-color:var(--ink);transform:translateY(-2px)}
++.mcard.is-on{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
++.mcard__pic{display:grid;place-items:center;background:var(--offset);border-radius:var(--r-md);height:128px;margin-bottom:8px}
++.mdoor{height:104px;width:auto}
++.mcard b{font-size:.9375rem;font-weight:800;line-height:1.25}
++.mcard small{font-size:.78rem;color:var(--muted)}
++.mcard__p{font-weight:800;font-size:.9375rem;margin-top:4px}
++.mcard--own{border-style:dashed}.mcard--own .mcard__pic{background:none;border:1px dashed var(--line)}
++.mcard__ok{position:absolute;top:20px;right:20px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center}
++.mcard__ok .i{width:15px;height:15px;stroke-width:2.8}
++.pill{display:inline-flex;align-self:flex-start;font-size:.6875rem;font-weight:800;padding:3px 9px;border-radius:99px;margin-top:6px;white-space:nowrap}
++.pill--ok{background:var(--green-soft);color:var(--green)}.pill--warn{background:var(--amber-soft);color:var(--amber)}
++.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:20px;margin-top:16px}
++.card h2{font-size:1.125rem;font-weight:800;letter-spacing:-.02em}
++.card__h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
++.card__h small{color:var(--muted);font-size:.8125rem}
++.manual h2{margin-bottom:12px}
++.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
++.f{display:flex;flex-direction:column;gap:6px;font-size:.8125rem;font-weight:700;color:var(--muted)}
++.f--wide{grid-column:1/-1}
++.note{font-size:.8125rem;color:var(--muted);margin-top:12px}
++details.pl summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none}
++details.pl summary::-webkit-details-marker{display:none}
++details.pl summary span{display:flex;flex-direction:column}
++details.pl summary small{color:var(--muted);font-size:.8125rem;font-weight:600}
++details.pl summary .i{transition:transform .2s;color:var(--muted)}
++details.pl[open] summary .i{transform:rotate(90deg)}
++.prg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:16px}
++.unit{position:relative;display:block}.unit input{padding-right:34px}
++.unit i{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;font-size:.8125rem;color:var(--muted);font-weight:700;pointer-events:none}
++
++/* шаг 4 */
++.res{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"main side";gap:24px;align-items:start;margin-top:24px}
++.res__main{grid-area:main;min-width:0}.res__main>.card:first-child{margin-top:0}
++.res__side{grid-area:side;position:sticky;top:84px;display:grid;gap:12px}
++.sumc{background:var(--ink);color:var(--on-ink);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow)}
++.sumc .eyebrow{color:inherit;opacity:.65}
++.sumc__total{font-size:clamp(2.25rem,1.9rem + 1.4vw,2.75rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin:6px 0 14px;font-variant-numeric:tabular-nums}
++.sumc__rows{display:grid;gap:6px;font-size:.9rem;border-top:1px solid rgba(128,128,128,.35);padding-top:12px}
++.sumc__rows div{display:flex;justify-content:space-between;gap:12px}
++.sumc__rows dt{opacity:.7}.sumc__rows dd{font-weight:700;font-variant-numeric:tabular-nums}
++.sumc__gain{display:flex;align-items:center;gap:6px;margin-top:14px;background:#3d8a5f;color:#fff;border-radius:10px;padding:8px 12px;font-weight:800;font-size:.875rem}
++.sumc__gain .i{width:16px;height:16px;stroke-width:2.8}
++.sumc__warn{margin-top:12px;font-size:.8125rem;background:rgba(232,194,122,.2);border-radius:10px;padding:8px 12px;font-weight:600}
++.sumc__disc{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;font-size:.875rem;font-weight:700}
++.sumc__disc .unit{width:112px}
++.sumc__disc input{background:rgba(128,128,128,.22);border-color:transparent;color:inherit;text-align:right;font-weight:800}
++.sumc__disc input::placeholder{color:inherit;opacity:.5}
++.sumc__disc .unit i{color:inherit;opacity:.7}
++.res__edit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
++.shead,.srow{display:grid;grid-template-columns:minmax(0,1fr) 124px 104px;gap:12px;align-items:center}
++.shead{font-size:.6875rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-bottom:8px}
++.shead span:last-child,.srow__s{text-align:right}
++.srow{padding:10px 0;border-top:1px solid var(--line)}
++.srow__n{display:flex;flex-direction:column;min-width:0}
++.srow__n b{font-size:.9375rem;font-weight:700;line-height:1.3}
++.srow__n small{color:var(--muted);font-size:.8125rem;font-weight:600}
++.srow input{min-height:40px;padding:.4rem 30px .4rem .7rem;font-size:.9375rem}
++.srow__s{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.9375rem}
++.srow__s .pill{margin:0}
++.chk{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.875rem;border-top:1px solid var(--line);padding-top:14px;margin-top:4px;cursor:pointer}
++.chk input{width:20px;height:20px;min-height:0;padding:0;accent-color:var(--primary);flex:none}
++.pr{padding:14px 0;border-top:1px solid var(--line)}.pr:first-child{border-top:0;padding-top:0}.pr:last-child{padding-bottom:0}
++.pr__h{display:flex;align-items:center;gap:10px}
++.pr__h small{margin-left:auto;color:var(--muted);font-size:.8125rem;font-weight:600;white-space:nowrap}
++.pr__n{width:28px;height:28px;border-radius:9px;background:var(--offset);display:grid;place-items:center;font-weight:800;font-size:.8125rem;flex:none}
++.pr ul{list-style:none;padding:0;margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
++.pr li{background:var(--offset);border-radius:99px;padding:4px 11px;font-size:.8125rem;font-weight:600}
++.f--inline{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
++.f--inline select{width:140px;min-height:40px;padding:.3rem .7rem}
++
++/* нижняя панель */
++.bar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--header-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
++.door-wizard.ctx-lk.embedded-in-cabinet .bar{left:var(--sidebar-width,14.875rem)}
++.bar__in{display:flex;gap:10px;max-width:560px;margin:0 auto}
++.bar__next{flex:1}
++.bar__h{text-align:center;font-size:.78rem;color:var(--muted);font-weight:600;margin-top:6px}
++
++/* сравнение моделей */
++.cmp{margin-top:22px}.cmp:empty{display:none}
++.cmp__h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
++.cmp__h h2{font-size:1.125rem;font-weight:800;letter-spacing:-.02em}
++.cmp__h small{color:var(--muted);font-size:.8125rem}
++.vrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
++.vcard{position:relative;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);transition:border-color .15s,box-shadow .15s}
++.vcard:hover{border-color:var(--ink)}
++.vcard.is-on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
++.vcard__m{display:flex;gap:12px;align-items:center;width:100%;height:100%;text-align:left;padding:12px 44px 12px 12px;border-radius:inherit}
++.vcard__pic{flex:none;width:58px;height:80px;border-radius:var(--r-md);background:var(--offset);display:grid;place-items:center}
++.vcard__pic .mdoor{height:64px}
++.vcard__t{display:flex;flex-direction:column;min-width:0}
++.vcard__t b{font-size:.9375rem;font-weight:800;line-height:1.25}
++.vcard__t small{font-size:.78rem;color:var(--muted)}
++.vcard__t .pill{margin-top:5px}
++.vcard__on{font-size:.625rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--primary);margin-bottom:2px}
++.vcard__sum{font-size:1.1875rem;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
++.vcard__x{position:absolute;top:6px;right:6px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
++.vcard__x:hover{background:var(--offset);color:var(--ink)}
++.vcard__x .i{width:16px;height:16px}
++.vcard--add{border-style:dashed;display:flex;align-items:center;justify-content:center;gap:8px;min-height:104px;font-weight:700;font-size:.9375rem;color:var(--muted)}
++.vcard--add:hover{color:var(--ink)}
++.pill--more{background:var(--offset);color:var(--muted)}
++.mcard.is-taken{opacity:.55;cursor:default}.mcard.is-taken:hover{border-color:var(--line);transform:none}
++.res__add{grid-column:1/-1;border-style:dashed}
++details.ctbl{margin-top:12px}
++.ctbl__swipe{display:none}
++.ctbl__sc{overflow-x:auto;margin-top:14px;-webkit-overflow-scrolling:touch}
++.ctbl__g{display:grid;width:100%}
++.ctbl__g>div{padding:9px 10px 9px 0;border-top:1px solid var(--line);min-width:0}
++.ctbl__g .ch{border-top:0;font-size:.75rem;font-weight:800;color:var(--muted);line-height:1.25;padding-top:0;text-align:right}
++.ctbl__g .ch.on{color:var(--ink)}
++.ctbl__g .cn{font-size:.875rem;font-weight:700;position:sticky;left:0;background:var(--surface);z-index:1}
++.ctbl__g .cc{text-align:right;display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}
++.ctbl__g .cc b{font-size:.875rem;font-weight:800;white-space:nowrap}
++.ctbl__g .cc small{font-size:.75rem;color:var(--muted);font-weight:600;white-space:nowrap}
++.ctbl__g .cc .pill{margin:0}
++.ctbl__g .cc--no{color:var(--muted)}
++.ctbl__g .cf{border-top:2px solid var(--ink)}
++.ctbl__g .cf2{border-top:0;padding-top:0}
++.ctbl__g .ct b,.ctbl__g .cn.ct{font-size:1rem;font-weight:800}
++.ctbl__g .cf2 b{font-weight:700}
++@media(max-width:1000px){
++ .ctx-lk .shell{display:block}.side{display:none}.ctx-lk .bar{left:0}
++ .who__t small{display:none}
++}
++@media(max-width:860px){
++ .nav{display:none;position:absolute;left:0;right:0;top:64px;margin:0;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 16px;flex-direction:column;box-shadow:var(--shadow-sm)}
++ .nav.open{display:flex}.nav a{padding:.8rem .85rem;font-size:1rem}
++ .hdr .hdr__burger{display:inline-grid}.hdr__login{display:none}.brand__sub{display:none}
++ .s2__grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "scene" "more";gap:16px}
++ .s2__scene{max-width:470px;width:100%;margin:0 auto}
++ .res{grid-template-columns:minmax(0,1fr);grid-template-areas:"side" "main";gap:16px}
++ .res__side{position:static}
++}
++@media(max-width:560px){
++ .vrow{grid-template-columns:1fr;gap:8px}
++ .vcard__pic{width:46px;height:62px}.vcard__pic .mdoor{height:50px}
++ .vcard--add{min-height:48px}
++ .ctbl__swipe{display:block}
++ .ctbl__g>div{padding-right:8px}.ctbl__g .cn,.ctbl__g .cc b{font-size:.8125rem}
++ .proto{padding:6px 12px;gap:8px}.proto>span:first-child,.proto__all{display:none}.proto__sw{margin:0 auto}
++ .wrap{padding:0 16px}.hdr__in--lk{padding:0 16px}.who__t{display:none}
++ .page{padding:14px 16px 140px}
++ .wtop{margin-bottom:18px;gap:10px}
++ .lead{font-size:1rem}
++ .count{padding:16px;margin-top:26px}.count__b{width:56px;height:56px}
++ .s2__scene{margin:0 -16px;width:auto;max-width:none}
++ .stagebox{border-radius:0;border-left:0;border-right:0}
++ .mgrid{grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
++ .mcard__pic{height:108px}.mdoor{height:88px}
++ .card{padding:16px;border-radius:var(--r-lg)}
++ .g2{grid-template-columns:1fr}
++ .prg{grid-template-columns:1fr 1fr}
++ .shead,.srow{grid-template-columns:minmax(0,1fr) 98px 84px;gap:8px}
++ .srow__s,.srow__n b{font-size:.875rem}
++ .bar{padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
++ .bar__back span{display:none}.bar__back{padding:0;width:56px;flex:none}
++}
++@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
++@media(max-width:1000px){
++ .door-wizard.ctx-lk.embedded-in-cabinet .bar{left:0;bottom:calc(3.75rem + env(safe-area-inset-bottom))}
++ .door-wizard.ctx-lk.embedded-in-cabinet .page{padding-bottom:calc(140px + 3.75rem)}
++}
+diff --git a/src/components/doorCalculator/doorCalculatorWizard.compare.test.tsx b/src/components/doorCalculator/doorCalculatorWizard.compare.test.tsx
+new file mode 100644
+index 00000000..feb5032e
+--- /dev/null
++++ b/src/components/doorCalculator/doorCalculatorWizard.compare.test.tsx
+@@ -0,0 +1,72 @@
++import { describe, expect, it } from 'vitest';
++import { renderHook, act } from '@testing-library/react';
++import { useDoorWizard } from './useDoorWizard';
++import { DEMO_DOOR_MODELS } from '@/lib/doorCalculator/modelSource';
++import { MAX_COMPARE_VARIANTS } from '@/lib/doorCalculator';
++
++describe('useDoorWizard — сравнение моделей', () => {
++  it('сбрасывает варианты при изменении числа проёмов', () => {
++    const { result } = renderHook(() => useDoorWizard(DEMO_DOOR_MODELS));
++    act(() => {
++      result.current.pickModel('m1');
++      result.current.setVariants([result.current.snap()]);
++      result.current.setOpeningCount(2);
++    });
++    expect(result.current.variants).toHaveLength(0);
++    expect(result.current.openings).toHaveLength(2);
++  });
++
++  it('общая скидка применяется ко всем вариантам сравнения', () => {
++    const { result } = renderHook(() => useDoorWizard(DEMO_DOOR_MODELS));
++    act(() => {
++      result.current.pickModel('m1');
++      result.current.updateOpening(result.current.openings[0].id, {
++        w: '900',
++        depth: '250',
++      });
++      result.current.setDisc('10');
++      const v1 = result.current.snap();
++      result.current.pickModel('m3');
++      const v2 = result.current.snap();
++      result.current.setVariants([v1, v2]);
++      result.current.setVi(0);
++      result.current.load(v1);
++    });
++    expect(result.current.compareRows.length).toBe(2);
++    expect(result.current.compareRows[0].t.dp).toBe(10);
++    expect(result.current.compareRows[1].t.dp).toBe(10);
++  });
++
++  it('не более MAX_COMPARE_VARIANTS вариантов', () => {
++    const { result } = renderHook(() => useDoorWizard(DEMO_DOOR_MODELS));
++    const snaps = DEMO_DOOR_MODELS.slice(0, MAX_COMPARE_VARIANTS).map((m) => {
++      let snap = null as ReturnType<typeof result.current.snap>;
++      act(() => {
++        result.current.pickModel(m.id);
++        snap = result.current.snap();
++      });
++      return snap!;
++    });
++    act(() => {
++      result.current.setVariants(snaps);
++    });
++    expect(result.current.variants.length).toBe(MAX_COMPARE_VARIANTS);
++    expect(result.current.maxVariants).toBe(4);
++  });
++
++  it('удаление варианта из сравнения', () => {
++    const { result } = renderHook(() => useDoorWizard(DEMO_DOOR_MODELS));
++    act(() => {
++      result.current.pickModel('m1');
++      const v1 = result.current.snap();
++      result.current.pickModel('m3');
++      const v2 = result.current.snap();
++      result.current.setVariants([v1, v2]);
++      result.current.setVariants([v1]);
++      result.current.setVi(0);
++      result.current.load(v1);
++    });
++    expect(result.current.variants.length).toBe(1);
++    expect(result.current.compareRows.length).toBe(0);
++  });
++});
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/doorCalculatorWizard.test.tsx b/src/components/doorCalculator/doorCalculatorWizard.test.tsx
+new file mode 100644
+index 00000000..27064fa5
+--- /dev/null
++++ b/src/components/doorCalculator/doorCalculatorWizard.test.tsx
+@@ -0,0 +1,39 @@
++import { describe, expect, it } from 'vitest';
++import { render, screen } from '@testing-library/react';
++import userEvent from '@testing-library/user-event';
++import { DoorCalculatorWizard } from './DoorCalculatorWizard';
++
++describe('DoorCalculatorWizard', () => {
++  it('shows step 1 opening count', () => {
++    render(<DoorCalculatorWizard />);
++    expect(screen.getByRole('heading', { name: /Сколько проёмов/i })).toBeInTheDocument();
++    expect(document.querySelector('.count__n b')?.textContent).toBe('1');
++  });
++
++  it('navigates to step 2 and shows scene', async () => {
++    const user = userEvent.setup();
++    render(<DoorCalculatorWizard />);
++    await user.click(screen.getByRole('button', { name: /Далее: размеры/i }));
++    expect(screen.getByPlaceholderText('900')).toBeInTheDocument();
++    expect(screen.getByTestId('door-scene')).toBeInTheDocument();
++  });
++
++  it('lk breadcrumbs point to cabinet home', () => {
++    render(<DoorCalculatorWizard context="lk" />);
++    expect(screen.getByText('Калькулятор дверей')).toBeInTheDocument();
++    expect(screen.getByRole('link', { name: 'Кабинет' })).toHaveAttribute('href', '/');
++  });
++
++  it('step 3 requires manual model when catalog empty', async () => {
++    const user = userEvent.setup();
++    render(<DoorCalculatorWizard />);
++    await user.click(screen.getByRole('button', { name: /Далее: размеры/i }));
++    await user.click(screen.getByRole('button', { name: /Далее:/i }));
++    expect(screen.getByRole('heading', { name: /Какая модель/i })).toBeInTheDocument();
++    expect(screen.getByText(/Каталог пока пуст/i)).toBeInTheDocument();
++    const calcBtn = screen.getByRole('button', { name: /Рассчитать/i });
++    expect(calcBtn).toBeDisabled();
++    await user.click(screen.getByText('Вне каталога'));
++    expect(calcBtn).not.toBeDisabled();
++  });
++});
+\ No newline at end of file
+diff --git a/src/components/doorCalculator/useDoorWizard.ts b/src/components/doorCalculator/useDoorWizard.ts
+new file mode 100644
+index 00000000..c9e403c3
+--- /dev/null
++++ b/src/components/doorCalculator/useDoorWizard.ts
+@@ -0,0 +1,212 @@
++'use client';
++
++import { useCallback, useEffect, useMemo, useState } from 'react';
++import {
++  MAX_COMPARE_VARIANTS,
++  PRICE_LABELS,
++  calcDoors,
++  compareVariants,
++  initPricesFromModel,
++  newOpening,
++  priceOfRow,
++  totals,
++  type DoorCatalogModel,
++  type DoorOpening,
++  type DoorPrices,
++  type ModelVariantSnapshot,
++} from '@/lib/doorCalculator';
++import { buildOfferPayload, encodeOfferPayload } from '@/lib/doorCalculator/offer';
++
++let uid = 0;
++
++export type WizardObj = { client: string; phone: string; address: string };
++
++export function useDoorWizard(catalog: DoorCatalogModel[]) {
++  const [openings, setOpenings] = useState<DoorOpening[]>(() => [newOpening(++uid)]);
++  const [step, setStep] = useState(1);
++  const [cur, setCur] = useState(0);
++  const [modelId, setModelId] = useState<string | null>(null);
++  const [manual, setManual] = useState({ on: false, name: '', maker: '' });
++  const [prices, setPrices] = useState<DoorPrices>({});
++  const [pricesFor, setPricesFor] = useState<string | null>(null);
++  const [disc, setDisc] = useState('');
++  const [share, setShare] = useState(true);
++  const [obj, setObj] = useState<WizardObj>({ client: '', phone: '', address: '' });
++  const [variants, setVariants] = useState<ModelVariantSnapshot[]>([]);
++  const [vi, setVi] = useState(0);
++  const [adding, setAdding] = useState(false);
++  const [prevVi, setPrevVi] = useState(0);
++  const [cmpOpen, setCmpOpen] = useState(
++    typeof window !== 'undefined' ? window.innerWidth > 860 : true
++  );
++
++  const curModel = useMemo((): DoorCatalogModel | null => {
++    if (manual.on) {
++      return {
++        id: 'manual',
++        manual: true,
++        name: manual.name || 'Модель вне каталога',
++        maker: manual.maker || 'Производитель не указан',
++        price: 0,
++        blades: null,
++      };
++    }
++    return catalog.find((x) => x.id === modelId) ?? null;
++  }, [manual, modelId, catalog]);
++
++  useEffect(() => {
++    const key = curModel ? curModel.id : 'none';
++    if (pricesFor === key) return;
++    setPricesFor(key);
++    setPrices(initPricesFromModel(curModel));
++  }, [curModel, pricesFor]);
++
++  const calcResult = useMemo(
++    () => calcDoors(openings, curModel, share),
++    [openings, curModel, share]
++  );
++
++  const calcTotals = useMemo(
++    () => totals(calcResult.rows, prices, disc),
++    [calcResult.rows, prices, disc]
++  );
++
++  const snap = useCallback((): ModelVariantSnapshot => {
++    const bl: Record<number, string> = {};
++    openings.forEach((o) => {
++      bl[o.id] = o.blade;
++    });
++    return {
++      modelId,
++      manual: { ...manual },
++      prices: { ...prices },
++      pricesFor,
++      bl,
++    };
++  }, [openings, modelId, manual, prices, pricesFor]);
++
++  const load = useCallback((v: ModelVariantSnapshot) => {
++    setModelId(v.modelId);
++    setManual({ ...v.manual });
++    setPrices({ ...v.prices });
++    setPricesFor(v.pricesFor);
++    setOpenings((ops) =>
++      ops.map((o) => ({ ...o, blade: v.bl[o.id] || '' }))
++    );
++  }, []);
++
++  const saveVariant = useCallback(() => {
++    setVariants((vars) => {
++      const next = [...vars];
++      next[vi] = snap();
++      return next;
++    });
++  }, [snap, vi]);
++
++  const compareRows = useMemo(() => {
++    if (variants.length < 2) return [];
++    const filled = variants.map((v, i) => (i === vi ? snap() : v));
++    return compareVariants(openings, filled, catalog, disc, share);
++  }, [variants, openings, catalog, disc, share, vi, snap]);
++
++  const offerHref = useMemo(() => {
++    const payload = buildOfferPayload(openings, curModel, prices, disc, share, obj);
++    return `/doors-calculator/offer#${encodeOfferPayload(payload)}`;
++  }, [openings, curModel, prices, disc, share, obj]);
++
++  const resetCompareVariants = useCallback(() => {
++    setVariants([]);
++    setVi(0);
++  }, []);
++
++  const setOpeningCount = (n: number) => {
++    resetCompareVariants();
++    setOpenings((ops) => {
++      const next = [...ops];
++      while (next.length < n) next.push(newOpening(++uid));
++      while (next.length > n) next.pop();
++      return next;
++    });
++  };
++
++  const updateOpening = (id: number, patch: Partial<DoorOpening>) => {
++    setOpenings((ops) => ops.map((o) => (o.id === id ? { ...o, ...patch } : o)));
++  };
++
++  const pickModel = (pick: 'manual' | string) => {
++    if (pick === 'manual') {
++      setManual({ on: true, name: '', maker: '' });
++      setModelId(null);
++    } else {
++      setManual({ on: false, name: '', maker: '' });
++      setModelId(pick);
++    }
++    setOpenings((ops) => ops.map((o) => ({ ...o, blade: '' })));
++    setPrices({});
++    setPricesFor(null);
++  };
++
++  const takenIds = () =>
++    variants
++      .filter((v, i) => i !== vi && !v.manual.on && v.modelId)
++      .map((v) => v.modelId as string);
++
++  const formatRub = (n: number) =>
++    `${Math.round(n).toLocaleString('ru-RU')} ₽`;
++
++  const sumCell = (r: (typeof calcResult.rows)[0]) => {
++    const p = priceOfRow(prices, r.pk);
++    return p == null ? 'нет цены' : formatRub(p * r.q);
++  };
++
++  return {
++    openings,
++    setOpenings,
++    step,
++    setStep,
++    cur,
++    setCur,
++    modelId,
++    manual,
++    setManual,
++    prices,
++    setPrices,
++    disc,
++    setDisc,
++    share,
++    setShare,
++    obj,
++    setObj,
++    variants,
++    setVariants,
++    vi,
++    setVi,
++    adding,
++    setAdding,
++    prevVi,
++    setPrevVi,
++    cmpOpen,
++    setCmpOpen,
++    curModel,
++    catalog,
++    calcResult,
++    calcTotals,
++    compareRows,
++    offerHref,
++    setOpeningCount,
++    updateOpening,
++    pickModel,
++    snap,
++    load,
++    saveVariant,
++    takenIds,
++    formatRub,
++    sumCell,
++    maxVariants: MAX_COMPARE_VARIANTS,
++    priceLabels: PRICE_LABELS,
++    hasCatalog: catalog.length > 0,
++    resetCompareVariants,
++  };
++}
++
++export type DoorWizardState = ReturnType<typeof useDoorWizard>;
+\ No newline at end of file
+diff --git a/src/components/home/BusinessHomeDoorCalculatorEntry.test.tsx b/src/components/home/BusinessHomeDoorCalculatorEntry.test.tsx
+new file mode 100644
+index 00000000..d05a544d
+--- /dev/null
++++ b/src/components/home/BusinessHomeDoorCalculatorEntry.test.tsx
+@@ -0,0 +1,12 @@
++import { render, screen } from "@testing-library/react";
++import { describe, expect, it } from "vitest";
++import { BusinessHomeDoorCalculatorEntry } from "./BusinessHomeDoorCalculatorEntry";
++
++describe("BusinessHomeDoorCalculatorEntry", () => {
++  it("links to doors calculator", () => {
++    render(<BusinessHomeDoorCalculatorEntry />);
++    const link = screen.getByTestId("business-home-door-calculator");
++    expect(link).toHaveAttribute("href", "/doors-calculator");
++    expect(link).toHaveTextContent("Калькулятор дверей");
++  });
++});
+\ No newline at end of file
+diff --git a/src/components/home/BusinessHomeDoorCalculatorEntry.tsx b/src/components/home/BusinessHomeDoorCalculatorEntry.tsx
+new file mode 100644
+index 00000000..ec87f04a
+--- /dev/null
++++ b/src/components/home/BusinessHomeDoorCalculatorEntry.tsx
+@@ -0,0 +1,23 @@
++import Link from "next/link";
++import { DOORS_CALCULATOR_HREF } from "@/lib/door-calculator/access";
++import { IconArrowRight } from "@/components/layout/ThemeIcons";
++import styles from "./SpecialistHomeDashboard.module.css";
++
++export function BusinessHomeDoorCalculatorEntry() {
++  return (
++    <Link
++      href={DOORS_CALCULATOR_HREF}
++      className={styles.actionLine}
++      aria-label="Открыть калькулятор дверей"
++      data-testid="business-home-door-calculator"
++    >
++      <div>
++        <h3>Калькулятор дверей</h3>
++        <small>Расчёт заказа для клиента: проёмы, модель, сравнение, предложение</small>
++      </div>
++      <span className={styles.iconBtn} aria-hidden="true">
++        <IconArrowRight width={20} height={20} />
++      </span>
++    </Link>
++  );
++}
+\ No newline at end of file
+diff --git a/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx b/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
+index e2cb2366..5e33be7e 100644
+--- a/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
++++ b/src/components/home/BusinessOwnerHomeDashboard.staff-view.test.tsx
+@@ -2,9 +2,13 @@ import { render, screen } from "@testing-library/react";
+ import { describe, expect, it, vi } from "vitest";
+ import { BusinessOwnerHomeDashboard } from "./BusinessOwnerHomeDashboard";
+ 
+-vi.mock("@/lib/api-client", () => ({
+-  remcardFetch: vi.fn(),
+-}));
++vi.mock("@/lib/api-client", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("@/lib/api-client")>();
++  return {
++    ...actual,
++    remcardFetch: vi.fn(() => Promise.resolve({ partnerships: [] })),
++  };
++});
+ 
+ vi.mock("@/components/profile/ProfileBranchContextSwitcher", () => ({
+   ProfileBranchContextSwitcher: () => <div data-testid="branch-switcher" />,
+@@ -21,6 +25,27 @@ describe("BusinessOwnerHomeDashboard org-staff-view", () => {
+     expect(screen.getByText("С чего начать")).toBeTruthy();
+     expect(screen.getByText("Ничего лишнего на старте")).toBeTruthy();
+     expect(screen.queryByText(/Разделы/i)).toBeNull();
+-    expect(vi.mocked(remcardFetch)).not.toHaveBeenCalled();
++  });
++
++  it("shows door calculator entry for org staff when enabled", () => {
++    render(
++      <BusinessOwnerHomeDashboard
++        partnerType="COMPANY"
++        homeAccessMode="org-staff-view"
++        showDoorCalculatorEntry
++      />,
++    );
++    expect(screen.getByTestId("business-home-door-calculator-block")).toBeTruthy();
++    expect(screen.getByTestId("business-home-door-calculator")).toHaveAttribute(
++      "href",
++      "/doors-calculator",
++    );
++  });
++
++  it("hides door calculator entry without flag", () => {
++    render(
++      <BusinessOwnerHomeDashboard partnerType="STORE" homeAccessMode="org-staff-view" />,
++    );
++    expect(screen.queryByTestId("business-home-door-calculator-block")).toBeNull();
+   });
+ });
+diff --git a/src/components/home/BusinessOwnerHomeDashboard.tsx b/src/components/home/BusinessOwnerHomeDashboard.tsx
+index 8992a336..7169ca5a 100644
+--- a/src/components/home/BusinessOwnerHomeDashboard.tsx
++++ b/src/components/home/BusinessOwnerHomeDashboard.tsx
+@@ -46,6 +46,7 @@ import type { StoreOrdersResponse } from "@/lib/history-types";
+ import type { PartnershipListResponse } from "@/lib/types";
+ import { HomeSupplementalProbeSkeleton } from "./HomeSupplementalProbeSkeleton";
+ import { PartnerHomeEmptyState } from "./PartnerHomeEmptyState";
++import { BusinessHomeDoorCalculatorEntry } from "./BusinessHomeDoorCalculatorEntry";
+ import styles from "./SpecialistHomeDashboard.module.css";
+ 
+ export type BusinessHomeAccessMode = "owner-operating" | "org-staff-view";
+@@ -57,6 +58,7 @@ type Props = {
+   homeAccessMode?: BusinessHomeAccessMode;
+   /** When false in org-staff-view, company hero CTA stays visible but inactive. */
+   teamActionsEnabled?: boolean;
++  showDoorCalculatorEntry?: boolean;
+ };
+ 
+ function statHints(
+@@ -92,6 +94,7 @@ export function BusinessOwnerHomeDashboard({
+   catalogStatus,
+   homeAccessMode = "owner-operating",
+   teamActionsEnabled = true,
++  showDoorCalculatorEntry = false,
+ }: Props) {
+   const isStaffView = homeAccessMode === "org-staff-view";
+   const copy = businessHomeCopy(partnerType);
+@@ -412,6 +415,12 @@ export function BusinessOwnerHomeDashboard({
+         )
+       ) : null}
+ 
++      {showDoorCalculatorEntry ? (
++        <section className={styles.panel} data-testid="business-home-door-calculator-block">
++          <BusinessHomeDoorCalculatorEntry />
++        </section>
++      ) : null}
++
+       {showEmptyState ? (
+         <PartnerHomeEmptyState role={emptyRole} />
+       ) : metricsPresentationPending || pendingSupplementalProbe ? (
+diff --git a/src/components/layout/AppShell.tsx b/src/components/layout/AppShell.tsx
+index 6c542c19..22885eba 100644
+--- a/src/components/layout/AppShell.tsx
++++ b/src/components/layout/AppShell.tsx
+@@ -15,6 +15,7 @@ import { IconChevronRight, IconMenu } from "@/components/layout/ThemeIcons";
+ import { isCabinetNavItemActive } from "@/lib/cabinet-nav/active";
+ import { isPartnerAssistantContext, withAssistantClientsNav } from "@/lib/business-clients/assistant";
+ import { cabinetNavConfig } from "@/lib/cabinet-nav/config";
++import { filterBusinessDesktopNav } from "@/lib/door-calculator/access";
+ import { usesCabinetPrototypeShell } from "@/lib/cabinet-nav/mode";
+ import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
+ import type { MasterNavItem } from "@/lib/master-nav/sections";
+@@ -136,7 +137,11 @@ export function AppShell({
+   );
+ 
+   const assistantClients = !prototypeShell && isPartnerAssistantContext(presentation.proContext);
+-  const navItems = prototypeConfig?.desktop ?? withAssistantClientsNav(BASE_NAV, assistantClients);
++  const rawDesktop =
++    prototypeConfig?.desktop ?? withAssistantClientsNav(BASE_NAV, assistantClients);
++  const navItems = prototypeShell
++    ? filterBusinessDesktopNav(rawDesktop, presentation)
++    : rawDesktop;
+   const mobileBottom =
+     prototypeConfig?.mobileBottom ?? withAssistantClientsNav(MOBILE_BOTTOM_NAV, assistantClients);
+   const section = searchParams.get("section");
+@@ -153,7 +158,9 @@ export function AppShell({
+   const initials = userInitials(actorName);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+-  const moreItems = prototypeConfig?.moreItems() ?? [];
++  const moreItems = prototypeShell
++    ? filterBusinessDesktopNav(prototypeConfig?.moreItems() ?? [], presentation)
++    : prototypeConfig?.moreItems() ?? [];
+   const moreActive =
+     prototypeShell &&
+     moreItems.some((item) => isCabinetNavItemActive(item.href, pathname, searchParams));
+diff --git a/src/components/layout/NavIcons.tsx b/src/components/layout/NavIcons.tsx
+index d460fae7..1ba3c115 100644
+--- a/src/components/layout/NavIcons.tsx
++++ b/src/components/layout/NavIcons.tsx
+@@ -73,6 +73,18 @@ export function NavIconWallet(props: IconProps) {
+   );
+ }
+ 
++export function NavIconDoors(props: IconProps) {
++  return (
++    <PrototypeNavIcon {...props}>
++      <path d="M14 4h4a2 2 0 0 1 2 2v14" />
++      <path d="M3 20h4" />
++      <path d="M14 20H3" />
++      <path d="M11 12v.01" />
++      <path d="M14 4.6v16.1a1 1 0 0 1-1.2.98L6 20V5.6a2 2 0 0 1 1.5-1.95l3.5-1A2 2 0 0 1 14 4.6Z" />
++    </PrototypeNavIcon>
++  );
++}
++
+ export function NavIconScanner(props: IconProps) {
+   return (
+     <BaseIcon {...props}>
+@@ -146,6 +158,7 @@ export const NAV_ICONS = {
+   partners: NavIconPartners,
+   recommendations: NavIconRecommendations,
+   scanner: NavIconScanner,
++  doors: NavIconDoors,
+   history: NavIconHistory,
+   wallet: NavIconWallet,
+   settlements: NavIconSettlements,
+diff --git a/src/lib/business-nav/sections.test.ts b/src/lib/business-nav/sections.test.ts
+index 57fec9eb..bbfc17db 100644
+--- a/src/lib/business-nav/sections.test.ts
++++ b/src/lib/business-nav/sections.test.ts
+@@ -14,6 +14,7 @@ describe("business nav sections", () => {
+       "Клиенты",
+       "Сертификаты",
+       "Сканер",
++      "Калькулятор дверей",
+       "Партнёры",
+       "Кошелёк",
+       "Профиль",
+@@ -26,12 +27,13 @@ describe("business nav sections", () => {
+       "Клиенты",
+       "Сертификаты",
+       "Сканер",
++      "Калькулятор дверей",
+       "Партнёры",
+       "Кошелёк",
+       "Сотрудники",
+       "Профиль",
+     ]);
+-    expect(COMPANY_DESKTOP_NAV[6]?.href).toBe("/profile?section=team");
++    expect(COMPANY_DESKTOP_NAV[7]?.href).toBe("/profile?section=team");
+   });
+ 
+   it("mirrors master mobile bottom and more sheet targets", () => {
+@@ -44,6 +46,7 @@ describe("business nav sections", () => {
+     expect(businessNavMoreItems(COMPANY_DESKTOP_NAV).map((i) => i.label)).toEqual([
+       "Клиенты",
+       "Сертификаты",
++      "Калькулятор дверей",
+       "Партнёры",
+       "Сотрудники",
+     ]);
+diff --git a/src/lib/business-nav/sections.ts b/src/lib/business-nav/sections.ts
+index 2be9c81b..a2fecc8f 100644
+--- a/src/lib/business-nav/sections.ts
++++ b/src/lib/business-nav/sections.ts
+@@ -1,4 +1,5 @@
+ import type { NavIconKey } from "@/components/layout/NavIcons";
++import { DOORS_CALCULATOR_HREF } from "@/lib/door-calculator/access";
+ import type { MasterNavItem } from "@/lib/master-nav/sections";
+ 
+ export type BusinessNavItem = MasterNavItem;
+@@ -9,6 +10,7 @@ const BUSINESS_OWNER_CORE: BusinessNavItem[] = [
+   { href: "/clients", label: "Клиенты", icon: "clients" },
+   { href: "/recommendations", label: "Сертификаты", icon: "recommendations" },
+   { href: "/scanner", label: "Сканер", icon: "scanner" },
++  { href: DOORS_CALCULATOR_HREF, label: "Калькулятор дверей", icon: "doors" },
+   { href: "/partners", label: "Партнёры", icon: "partners", badgeKey: "partners" },
+   { href: "/settlements", label: "Кошелёк", icon: "wallet" },
+ ];
+@@ -45,6 +47,7 @@ export function businessPageTitle(pathname: string, desktop: BusinessNavItem[]):
+     "/clients": "Клиенты",
+     "/recommendations": "Сертификаты",
+     "/scanner": "Сканер",
++    "/doors-calculator": "Калькулятор дверей",
+     "/partners": "Партнёры",
+     "/settlements": "Кошелёк",
+     "/profile": "Профиль",
+diff --git a/src/lib/door-calculator/access.test.ts b/src/lib/door-calculator/access.test.ts
+new file mode 100644
+index 00000000..fa917eca
+--- /dev/null
++++ b/src/lib/door-calculator/access.test.ts
+@@ -0,0 +1,80 @@
++import { describe, expect, it } from "vitest";
++import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
++import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
++import { COMPANY_DESKTOP_NAV } from "@/lib/business-nav/sections";
++import {
++  DOORS_CALCULATOR_HREF,
++  doorCalculatorFeatureVisible,
++  filterBusinessDesktopNav,
++  organizationHasDoorsCategory,
++} from "./access";
++
++function presentation(
++  navMode: CabinetPresentationSnapshot["navMode"],
++  proContext: ProContextSnapshot | null,
++): Pick<CabinetPresentationSnapshot, "navMode" | "proContext"> {
++  return { navMode, proContext };
++}
++
++const ORG_DOORS: ProContextSnapshot = {
++  role: "ORG_OWNER",
++  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
++};
++
++const EMPLOYEE_DOORS: ProContextSnapshot = {
++  role: "ORG_EMPLOYEE",
++  organization: { id: "1", name: "Co", partnerType: "COMPANY", storeCategories: ["doors"] },
++};
++
++const EMPLOYEE_NO_DOORS: ProContextSnapshot = {
++  role: "ORG_EMPLOYEE",
++  organization: { id: "1", name: "Shop", partnerType: "STORE", storeCategories: ["flooring"] },
++};
++
++function navHasDoorCalc(p: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">): boolean {
++  return filterBusinessDesktopNav(COMPANY_DESKTOP_NAV, p).some((i) => i.href === DOORS_CALCULATOR_HREF);
++}
++
++describe("door calculator access", () => {
++  it("detects doors category on organization", () => {
++    expect(organizationHasDoorsCategory(ORG_DOORS)).toBe(true);
++    expect(organizationHasDoorsCategory(EMPLOYEE_NO_DOORS)).toBe(false);
++  });
++
++  it("owner with doors sees feature and nav item", () => {
++    const p = presentation("business-company", ORG_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(true);
++    expect(navHasDoorCalc(p)).toBe(true);
++  });
++
++  it("employee with doors sees feature and nav item (same org category)", () => {
++    const p = presentation("business-company", EMPLOYEE_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(true);
++    expect(navHasDoorCalc(p)).toBe(true);
++  });
++
++  it("company/store without doors category hides feature and nav", () => {
++    const p = presentation("business-store", EMPLOYEE_NO_DOORS);
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
++  });
++
++  it("master workplace never shows feature", () => {
++    const p = presentation("master", {
++      role: "SOLO_PARTNER",
++      organization: { id: "1", name: "M", storeCategories: ["doors"] },
++    });
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
++  });
++
++  it("agent workplace never shows feature", () => {
++    const p = presentation("agent", {
++      role: "SOLO_PARTNER",
++      partnerActivities: ["AGENT"],
++      organization: null,
++    });
++    expect(doorCalculatorFeatureVisible(p)).toBe(false);
++    expect(navHasDoorCalc(p)).toBe(false);
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/door-calculator/access.ts b/src/lib/door-calculator/access.ts
+new file mode 100644
+index 00000000..8ba176f6
+--- /dev/null
++++ b/src/lib/door-calculator/access.ts
+@@ -0,0 +1,40 @@
++import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
++import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
++import type { MasterNavItem } from "@/lib/master-nav/sections";
++
++export const DOORS_CALCULATOR_HREF = "/doors-calculator";
++export const DOORS_CATEGORY_KEY = "doors";
++
++export function storeCategoriesFromProContext(
++  proContext: ProContextSnapshot | null | undefined,
++): string[] {
++  const org = proContext?.organization?.storeCategories ?? [];
++  if (org.length > 0) return [...org];
++  return [...(proContext?.partnershipPrincipalSide?.storeCategories ?? [])];
++}
++
++export function organizationHasDoorsCategory(
++  proContext: ProContextSnapshot | null | undefined,
++): boolean {
++  return storeCategoriesFromProContext(proContext).includes(DOORS_CATEGORY_KEY);
++}
++
++/** Store/company workplace with product category «Двери». */
++export function doorCalculatorFeatureVisible(
++  presentation: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">,
++): boolean {
++  const mode = presentation.navMode;
++  if (mode !== "business-store" && mode !== "business-company") return false;
++  return organizationHasDoorsCategory(presentation.proContext);
++}
++
++export function filterBusinessDesktopNav(
++  items: readonly MasterNavItem[],
++  presentation: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">,
++): MasterNavItem[] {
++  const visible = doorCalculatorFeatureVisible(presentation);
++  return items.filter((item) => {
++    if (item.href === DOORS_CALCULATOR_HREF) return visible;
++    return true;
++  });
++}
+\ No newline at end of file
+diff --git a/src/lib/door-calculator/partner-offer.ts b/src/lib/door-calculator/partner-offer.ts
+new file mode 100644
+index 00000000..105ad815
+--- /dev/null
++++ b/src/lib/door-calculator/partner-offer.ts
+@@ -0,0 +1,45 @@
++import type { ProProfileResponse } from "@/lib/types";
++
++export type DoorOfferPartnerFields = {
++  company: string;
++  manager: string;
++  phone: string;
++  messenger: string;
++  email: string;
++  site: string;
++  address: string;
++  note: string;
++  logo: string;
++};
++
++const DEFAULT_OFFER_NOTE =
++  "Предложение рассчитано по данным замера. Окончательная стоимость подтверждается при оформлении заказа.";
++
++export function doorOfferPartnerFromProfile(profile: ProProfileResponse): DoorOfferPartnerFields {
++  const catalogOnOrg = profile.catalogPublication?.catalogEntity === "organization";
++  const org = profile.organization;
++  const user = profile.user;
++
++  const company = catalogOnOrg
++    ? org?.name?.trim() ?? ""
++    : user.catalogDisplayName?.trim() || user.displayName?.trim() || "";
++  const phone = (catalogOnOrg ? org?.publicPhone : user.publicPhone)?.trim() ?? "";
++  const email = (catalogOnOrg ? org?.publicEmail : user.publicEmail)?.trim() ?? "";
++  const site = (catalogOnOrg ? org?.website : user.website)?.trim() ?? "";
++  const messenger = (catalogOnOrg ? org?.telegram : user.telegram)?.trim() ?? "";
++  const logo = (catalogOnOrg ? org?.logoUrl : user.photoUrl)?.trim() ?? "";
++  const manager = user.displayName?.trim() ?? "";
++  const address = user.city?.trim() ?? "";
++
++  return {
++    company,
++    manager,
++    phone,
++    messenger,
++    email,
++    site,
++    address,
++    note: DEFAULT_OFFER_NOTE,
++    logo,
++  };
++}
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/calc.ts b/src/lib/doorCalculator/calc.ts
+new file mode 100644
+index 00000000..edf196b5
+--- /dev/null
++++ b/src/lib/doorCalculator/calc.ts
+@@ -0,0 +1,264 @@
++import {
++  BOX_DEPTH_MM,
++  DEFAULT_DOBOR_SIZES,
++  DEFAULT_PRICE_RATIOS,
++  STANDARD_BLADE_GRID,
++} from './constants';
++import type {
++  CalcResult,
++  CalcRow,
++  DoorCatalogModel,
++  DoorOpening,
++  DobInfo,
++  OpeningCalcInfo,
++  Totals,
++  DoorPrices,
++  PriceKey,
++} from './types';
++
++export type BladePick = {
++  w: number | null;
++  src: 'manual' | 'nowidth' | 'std' | 'auto' | 'out';
++};
++
++export function bladeOf(model: DoorCatalogModel | null, opening: DoorOpening): BladePick {
++  if (opening.blade) return { w: +opening.blade, src: 'manual' };
++  const w = parseInt(opening.w, 10);
++  if (!w) return { w: null, src: 'nowidth' };
++  const std = !model || !model.blades;
++  const table = std ? STANDARD_BLADE_GRID : model.blades!;
++  const row = table.filter((x) => w >= x.from && (!x.to || w <= x.to))[0];
++  return row
++    ? { w: row.w, src: std ? 'std' : 'auto' }
++    : { w: null, src: 'out' };
++}
++
++export function dobEff(opening: DoorOpening): boolean {
++  if (opening.dobor !== null) return opening.dobor;
++  const d = parseInt(opening.depth, 10);
++  return !!d && d - BOX_DEPTH_MM > 10;
++}
++
++type RowAcc = Record<string, { k: string; name: string; q: number }>;
++
++export function calcDoors(
++  openings: DoorOpening[],
++  model: DoorCatalogModel | null,
++  shareDoborBetweenOpenings: boolean
++): CalcResult {
++  const rows: RowAcc = {};
++  const order: string[] = [];
++  const per: OpeningCalcInfo[] = [];
++  const sizes = (model && model.dobors) || [...DEFAULT_DOBOR_SIZES];
++  let boxQty = 0;
++  const groups: Record<number, OpeningCalcInfo[]> = {};
++
++  function add(k: string, name: string, q: number) {
++    if (!rows[k]) {
++      rows[k] = { k, name, q: 0 };
++      order.push(k);
++    }
++    rows[k].q += q;
++  }
++
++  openings.forEach((o, i) => {
++    const inter = o.type === 'inter';
++    const info: OpeningCalcInfo = { i, o, lines: [] };
++    per.push(info);
++
++    if (o.type === 'arch') info.lines.push('Без двери: облагораживание');
++
++    if (inter) {
++      const pick = bladeOf(model, o);
++      if (pick.w) {
++        add(`blade${pick.w}`, `Полотно ${pick.w} мм`, 1);
++        info.lines.push(`Полотно ${pick.w} мм`);
++      } else {
++        add('blade?', 'Полотно (ширина не определена)', 1);
++        info.lines.push('Полотно: ширина не определена');
++      }
++      boxQty += 2.5;
++      info.lines.push('Коробка');
++      if (o.hinge) add('hinge', 'Петли', 2);
++      if (o.handle) add('handle', 'Ручка', 1);
++      if (o.lock) add('lock', 'Замок', 1);
++      if (o.zav) {
++        add('zav', 'Завёртка', 1);
++        info.lines.push('Завёртка');
++      }
++    }
++
++    if (o.sill) {
++      add('sill', 'Порог', 1);
++      info.lines.push('Порог');
++    }
++
++    const nalQty = (o.nalF ? 2.5 : 0) + (o.nalB ? 2.5 : 0);
++    if (nalQty) {
++      add('nal', 'Наличник', nalQty);
++      info.lines.push(`Наличник ${String(nalQty).replace('.', ',')} шт`);
++    }
++
++    const d = parseInt(o.depth, 10);
++    if (!dobEff(o)) {
++      info.lines.push(d ? 'Добор не нужен' : 'Добор: глубина не указана');
++      return;
++    }
++    if (!d) {
++      info.lines.push('Добор: глубина не указана');
++      return;
++    }
++
++    const r = d - BOX_DEPTH_MM;
++    info.R = r;
++    if (r <= 0) {
++      info.lines.push('Добор: остаток 0 мм');
++      return;
++    }
++
++    const single = sizes.filter((z) => r <= z + 10)[0];
++    if (single) {
++      info.dob = { size: single, sets: 1, planks: 0 };
++      const sh =
++        o.type !== 'entry' && shareDoborBetweenOpenings
++          ? sizes.filter((z) => r <= z / 2 - 5)[0]
++          : undefined;
++      if (sh !== undefined) {
++        (groups[sh] = groups[sh] || []).push(info);
++      }
++    } else {
++      for (let k = 2; k <= 4 && !info.dob; k++) {
++        const z = sizes.filter((zz) => r / k <= zz + 10)[0];
++        if (z) info.dob = { size: z, sets: k, planks: k - 1, split: true };
++      }
++      if (!info.dob) info.lines.push(`Остаток ${r} мм: добор вручную`);
++    }
++  });
++
++  Object.keys(groups).forEach((zKey) => {
++    const z = +zKey;
++    const g = groups[z];
++    if (g.length < 2) return;
++    g.forEach((inf, idx) => {
++      inf.dob = {
++        size: z,
++        sets: 0,
++        planks: 0,
++        shared: true,
++        mate: g[idx % 2 ? idx - 1 : Math.min(idx + 1, g.length - 1)].i + 1,
++      };
++    });
++    for (let j = 0; j < g.length; j += 2) g[j].dob!.sets = 1;
++  });
++
++  const dq: Record<number, number> = {};
++  let plankaQty = 0;
++  per.forEach((inf) => {
++    const b = inf.dob;
++    if (!b) return;
++    if (b.shared) {
++      inf.lines.push(
++        `Добор ${b.size}${b.sets ? `: общий комплект с проёмом ${b.mate}` : `: на комплекте проёма ${b.mate}`}`
++      );
++    } else if (b.split) {
++      inf.lines.push(
++        `Остаток ${inf.R} мм: ${b.sets} комплекта добора ${b.size} и стыковочная планка`
++      );
++    } else {
++      inf.lines.push(`Добор ${b.size}, остаток ${inf.R} мм`);
++    }
++    dq[b.size] = (dq[b.size] || 0) + b.sets * 2.5;
++    if (b.planks) plankaQty += 2.5 * b.planks;
++  });
++
++  const out: CalcRow[] = [];
++  order.forEach((k) => {
++    if (/^blade/.test(k)) out.push(rowWithPk(rows[k]));
++  });
++  if (boxQty) out.push({ k: 'box', name: 'Коробка', q: boxQty, pk: 'box' });
++  Object.keys(dq)
++    .sort((a, b) => +a - +b)
++    .forEach((z) => {
++      out.push({ k: `d${z}`, name: `Добор ${z} мм`, q: dq[+z], pk: (`d${z}` as PriceKey) });
++    });
++  if (plankaQty) out.push({ k: 'planka', name: 'Стыковочная планка', q: plankaQty, pk: 'planka' });
++  (['nal', 'hinge', 'handle', 'lock', 'zav', 'sill'] as const).forEach((k) => {
++    if (rows[k]) out.push(rowWithPk(rows[k]));
++  });
++  out.forEach((r) => {
++    r.q = Math.ceil(r.q - 1e-9);
++  });
++  return { per, rows: out };
++}
++
++function rowWithPk(r: { k: string; name: string; q: number }): CalcRow {
++  const pk: CalcRow['pk'] = /^blade/.test(r.k) ? 'blade' : (r.k as PriceKey);
++  return { ...r, pk };
++}
++
++export function initPricesFromModel(model: DoorCatalogModel | null): DoorPrices {
++  const prices: DoorPrices = {};
++  if (model && !model.manual) {
++    prices.blade = model.price;
++    (Object.keys(DEFAULT_PRICE_RATIOS) as Exclude<PriceKey, 'blade'>[]).forEach((k) => {
++      prices[k] = Math.round((model.price * DEFAULT_PRICE_RATIOS[k]) / 10) * 10;
++    });
++  }
++  return prices;
++}
++
++export function priceOfRow(prices: DoorPrices, pk: CalcRow['pk']): number | null {
++  const v = prices[pk];
++  if (v === '' || v == null) return null;
++  return +v;
++}
++
++export function totals(
++  rows: CalcRow[],
++  prices: DoorPrices,
++  discountInput: string | number
++): Totals {
++  let sum = 0;
++  let none = 0;
++  rows.forEach((r) => {
++    const p = priceOfRow(prices, r.pk);
++    if (p == null) none++;
++    else sum += p * r.q;
++  });
++  const dp = Math.min(
++    Math.max(parseFloat(String(discountInput).replace(',', '.')) || 0, 0),
++    100
++  );
++  const dsc = Math.round((sum * dp) / 100);
++  return { sum, none, dp, dsc, total: sum - dsc };
++}
++
++export function newOpening(id: number, room = ''): DoorOpening {
++  return {
++    id,
++    room,
++    type: 'inter',
++    w: '',
++    h: '',
++    depth: '',
++    side: 'left',
++    nalF: true,
++    nalB: true,
++    dobor: null,
++    zav: false,
++    hinge: true,
++    handle: true,
++    lock: true,
++    sill: false,
++    blade: '',
++    note: '',
++  };
++}
++
++export function depthNote(opening: DoorOpening): string {
++  const d = parseInt(opening.depth, 10);
++  const r = d - BOX_DEPTH_MM;
++  if (!d) return 'укажите глубину';
++  if (r <= 10) return `остаток ${Math.max(r, 0)} мм, не нужен`;
++  return `остаток ${r} мм`;
++}
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/compare.ts b/src/lib/doorCalculator/compare.ts
+new file mode 100644
+index 00000000..06c76106
+--- /dev/null
++++ b/src/lib/doorCalculator/compare.ts
+@@ -0,0 +1,86 @@
++import { COMPARE_ROW_GROUPS } from './constants';
++import { calcDoors, priceOfRow, totals } from './calc';
++import type {
++  CalcResult,
++  DoorCatalogModel,
++  DoorOpening,
++  DoorPrices,
++  ModelVariantSnapshot,
++  Totals,
++} from './types';
++
++export type CompareGroupCell = {
++  n: number;
++  q: number;
++  sum: number;
++  none: number;
++  det: string[];
++};
++
++export type CompareVariantRow = {
++  i: number;
++  m: DoorCatalogModel | { name: string; maker: string; manual?: boolean };
++  t: Totals;
++  g: CompareGroupCell[];
++};
++
++export function resolveModel(
++  snapshot: ModelVariantSnapshot,
++  catalog: DoorCatalogModel[]
++): DoorCatalogModel | null {
++  if (snapshot.manual.on) {
++    return {
++      id: 'manual',
++      manual: true,
++      name: snapshot.manual.name || 'Модель вне каталога',
++      maker: snapshot.manual.maker || 'Производитель не указан',
++      price: 0,
++      blades: null,
++    };
++  }
++  return catalog.find((x) => x.id === snapshot.modelId) ?? null;
++}
++
++export function applyVariantToOpenings(
++  openings: DoorOpening[],
++  snapshot: ModelVariantSnapshot
++): DoorOpening[] {
++  return openings.map((o) => ({
++    ...o,
++    blade: snapshot.bl[o.id] || '',
++  }));
++}
++
++export function compareVariants(
++  openings: DoorOpening[],
++  variants: ModelVariantSnapshot[],
++  catalog: DoorCatalogModel[],
++  discount: string | number,
++  shareDobor: boolean
++): CompareVariantRow[] {
++  return variants.map((v, i) => {
++    const m = resolveModel(v, catalog);
++    const ops = applyVariantToOpenings(openings, v);
++    const res = calcDoors(ops, m, shareDobor);
++    const t = totals(res.rows, v.prices, discount);
++    const g = COMPARE_ROW_GROUPS.map((c) => groupCell(res, v.prices, c[1]));
++    return { i, m: m || { name: 'Модель не выбрана', maker: '' }, t, g };
++  });
++}
++
++function groupCell(res: CalcResult, prices: DoorPrices, re: RegExp): CompareGroupCell {
++  const rs = res.rows.filter((r) => re.test(r.k));
++  let q = 0;
++  let sum = 0;
++  let none = 0;
++  const det: string[] = [];
++  rs.forEach((r) => {
++    const pr = priceOfRow(prices, r.pk);
++    q += r.q;
++    if (pr == null) none++;
++    else sum += pr * r.q;
++    const z = /(\d+) мм/.exec(r.name);
++    if (z) det.push(z[1]);
++  });
++  return { n: rs.length, q, sum, none, det };
++}
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/constants.ts b/src/lib/doorCalculator/constants.ts
+new file mode 100644
+index 00000000..0d9b9cd0
+--- /dev/null
++++ b/src/lib/doorCalculator/constants.ts
+@@ -0,0 +1,58 @@
++import type { BladeGridRow, PriceKey } from './types';
++
++/** Коробка: вычет из глубины стены, мм */
++export const BOX_DEPTH_MM = 65;
++
++export const STANDARD_BLADE_GRID: BladeGridRow[] = [
++  { w: 600, from: 700, to: 790 },
++  { w: 700, from: 791, to: 850 },
++  { w: 800, from: 851, to: 940 },
++  { w: 900, from: 941, to: 1040 },
++];
++
++export const DEFAULT_DOBOR_SIZES = [100, 150, 200] as const;
++
++/** Коэффициенты цен от полотна (каталог) */
++export const DEFAULT_PRICE_RATIOS: Record<Exclude<PriceKey, 'blade'>, number> = {
++  box: 0.16,
++  d100: 0.12,
++  d150: 0.17,
++  d200: 0.22,
++  planka: 0.08,
++  nal: 0.06,
++  hinge: 0.045,
++  handle: 0.12,
++  lock: 0.08,
++  zav: 0.06,
++  sill: 0.1,
++};
++
++export const PRICE_LABELS: [PriceKey | 'blade', string][] = [
++  ['blade', 'Полотно'],
++  ['box', 'Коробка'],
++  ['d100', 'Добор 100'],
++  ['d150', 'Добор 150'],
++  ['d200', 'Добор 200'],
++  ['planka', 'Стыковочная планка'],
++  ['nal', 'Наличник'],
++  ['sill', 'Порог'],
++  ['hinge', 'Петля'],
++  ['handle', 'Ручка'],
++  ['lock', 'Замок'],
++  ['zav', 'Завёртка'],
++];
++
++export const COMPARE_ROW_GROUPS: [string, RegExp][] = [
++  ['Полотна', /^blade/],
++  ['Коробка', /^box$/],
++  ['Добор', /^d\d/],
++  ['Стыковочная планка', /^planka$/],
++  ['Наличник', /^nal$/],
++  ['Петли', /^hinge$/],
++  ['Ручки', /^handle$/],
++  ['Замки', /^lock$/],
++  ['Завёртки', /^zav$/],
++  ['Порог', /^sill$/],
++];
++
++export const MAX_COMPARE_VARIANTS = 4;
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/doorCalculator.test.ts b/src/lib/doorCalculator/doorCalculator.test.ts
+new file mode 100644
+index 00000000..b380ca33
+--- /dev/null
++++ b/src/lib/doorCalculator/doorCalculator.test.ts
+@@ -0,0 +1,182 @@
++import { describe, expect, it } from 'vitest';
++import {
++  bladeOf,
++  calcDoors,
++  dobEff,
++  depthNote,
++  initPricesFromModel,
++  newOpening,
++  totals,
++} from './calc';
++import { DEMO_DOOR_MODELS } from './modelSource';
++import type { DoorCatalogModel, DoorOpening } from './types';
++
++const skand = DEMO_DOOR_MODELS[0];
++
++function flowsOpenings(): DoorOpening[] {
++  return [
++    { ...newOpening(1), w: '900', h: '2050', depth: '250', sill: false },
++    { ...newOpening(2), w: '800', h: '', depth: '120', sill: false },
++  ];
++}
++
++describe('bladeOf', () => {
++  it('maps 900 mm opening to 800 blade for Скандинавия 01', () => {
++    const o = { ...newOpening(1), w: '900' };
++    expect(bladeOf(skand, o)).toEqual({ w: 800, src: 'auto' });
++  });
++
++  it('manual blade overrides catalog', () => {
++    const o = { ...newOpening(1), w: '900', blade: '700' };
++    expect(bladeOf(skand, o)).toEqual({ w: 700, src: 'manual' });
++  });
++
++  it('returns nowidth without opening width', () => {
++    expect(bladeOf(skand, newOpening(1))).toEqual({ w: null, src: 'nowidth' });
++  });
++
++  it('uses standard grid for model without blades', () => {
++    const klass = DEMO_DOOR_MODELS[2];
++    const o = { ...newOpening(1), w: '820' };
++    expect(bladeOf(klass, o)).toEqual({ w: 700, src: 'std' });
++  });
++});
++
++describe('dobEff', () => {
++  it('false when remainder <= 10 (depth 75 → R=10)', () => {
++    const o = { ...newOpening(1), depth: '75' };
++    expect(dobEff(o)).toBe(false);
++  });
++
++  it('true when remainder 11 (depth 76)', () => {
++    const o = { ...newOpening(1), depth: '76' };
++    expect(dobEff(o)).toBe(true);
++  });
++
++  it('respects manual override off', () => {
++    expect(dobEff({ ...newOpening(1), depth: '250', dobor: false })).toBe(false);
++  });
++
++  it('depth exactly 65 → R=0, dobEff false at auto', () => {
++    expect(dobEff({ ...newOpening(1), depth: '65' })).toBe(false);
++  });
++});
++
++describe('depthNote', () => {
++  it('shows remainder 185 for depth 250', () => {
++    expect(depthNote({ ...newOpening(1), depth: '250' })).toBe('остаток 185 мм');
++  });
++});
++
++describe('calcDoors — FLOWS acceptance (Скандинавия 01, 2 проёма, скидка 10 %)', () => {
++  it('matches prototype totals 49 050 / 44 145 / выгода 4 905', () => {
++    const res = calcDoors(flowsOpenings(), skand, true);
++    const prices = initPricesFromModel(skand);
++    const t = totals(res.rows, prices, '10');
++    expect(t.sum).toBe(49050);
++    expect(t.total).toBe(44145);
++    expect(t.dsc).toBe(4905);
++    expect(t.dp).toBe(10);
++  });
++
++  it('row quantities match prototype', () => {
++    const res = calcDoors(flowsOpenings(), skand, true);
++    const byK = Object.fromEntries(res.rows.map((r) => [r.k, r.q]));
++    expect(byK).toMatchObject({
++      blade800: 1,
++      blade700: 1,
++      box: 5,
++      d100: 3,
++      d200: 3,
++      nal: 10,
++      hinge: 4,
++      handle: 2,
++      lock: 2,
++    });
++  });
++});
++
++describe('calcDoors — добор rules', () => {
++  it('single d100 when R<=110', () => {
++    const o = [{ ...newOpening(1), type: 'inter' as const, w: '800', depth: '110', nalF: false, nalB: false }];
++    const res = calcDoors(o, skand, false);
++    const d100 = res.rows.find((r) => r.k === 'd100');
++    expect(d100?.q).toBe(3);
++  });
++
++  it('split d150 + planka for R=235', () => {
++    const o = [{ ...newOpening(1), type: 'inter' as const, w: '870', depth: '300', nalF: false, nalB: false }];
++    const res = calcDoors(o, skand, false);
++    const d150 = res.rows.find((r) => r.k === 'd150');
++    const pl = res.rows.find((r) => r.k === 'planka');
++    expect(d150?.q).toBe(5);
++    expect(pl?.q).toBe(3);
++  });
++
++  it('arch: no blade or box', () => {
++    const o = [{ ...newOpening(1), type: 'arch' as const, depth: '200', nalF: true, nalB: true }];
++    const res = calcDoors(o, skand, false);
++    expect(res.rows.some((r) => r.k.startsWith('blade'))).toBe(false);
++    expect(res.rows.some((r) => r.k === 'box')).toBe(false);
++  });
++
++  it('shared dobor between two shallow openings', () => {
++    const ops = [
++      { ...newOpening(1), w: '770', depth: '100', nalF: false, nalB: false },
++      { ...newOpening(2), w: '760', depth: '100', nalF: false, nalB: false },
++    ];
++    const res = calcDoors(ops, skand, true);
++    const d100 = res.rows.find((r) => r.k === 'd100');
++    expect(d100?.q).toBe(3);
++    const shared = res.per.filter((p) => p.dob?.shared);
++    expect(shared.length).toBe(2);
++  });
++
++  it('Классика Н uses only dobors 100 and 150', () => {
++    const klass = DEMO_DOOR_MODELS[2];
++    const o = [{ ...newOpening(1), type: 'inter' as const, w: '800', depth: '300', nalF: false, nalB: false }];
++    const res = calcDoors(o, klass, false);
++    expect(res.rows.some((r) => r.k === 'd200')).toBe(false);
++  });
++});
++
++describe('totals edge cases', () => {
++  it('skips rows without price', () => {
++    const res = calcDoors(flowsOpenings(), skand, true);
++    const t = totals(res.rows, { blade: 1000 }, '0');
++    expect(t.none).toBeGreaterThan(0);
++    expect(t.sum).toBe(2000);
++  });
++
++  it('clamps discount 0–100', () => {
++    const res = calcDoors(flowsOpenings(), skand, true);
++    const prices = initPricesFromModel(skand);
++    expect(totals(res.rows, prices, '150').dp).toBe(100);
++    expect(totals(res.rows, prices, '-5').dp).toBe(0);
++  });
++
++  it('accepts comma decimal in discount', () => {
++    const res = calcDoors(flowsOpenings(), skand, true);
++    const prices = initPricesFromModel(skand);
++    expect(totals(res.rows, prices, '10,5').dp).toBe(10.5);
++  });
++});
++
++describe('manual model prices', () => {
++  it('counts with arbitrary prices', () => {
++    const m: DoorCatalogModel = {
++      id: 'manual',
++      manual: true,
++      name: 'X',
++      maker: 'Y',
++      price: 0,
++      blades: null,
++    };
++    const o = [{ ...newOpening(1), w: '800', depth: '120' }];
++    const res = calcDoors(o, m, false);
++    const prices = { blade: 5000, box: 800, d100: 600, nal: 400, hinge: 200, handle: 300, lock: 250 };
++    const t = totals(res.rows, prices, 0);
++    expect(t.sum).toBeGreaterThan(0);
++    expect(t.total).toBe(t.sum);
++  });
++});
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/index.ts b/src/lib/doorCalculator/index.ts
+new file mode 100644
+index 00000000..b7d0f2f6
+--- /dev/null
++++ b/src/lib/doorCalculator/index.ts
+@@ -0,0 +1,6 @@
++export * from './types';
++export * from './constants';
++export * from './calc';
++export * from './compare';
++export * from './offer';
++export * from './modelSource';
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/modelSource.ts b/src/lib/doorCalculator/modelSource.ts
+new file mode 100644
+index 00000000..e97d7708
+--- /dev/null
++++ b/src/lib/doorCalculator/modelSource.ts
+@@ -0,0 +1,78 @@
++import type { DoorCatalogModel, DoorModelSource } from './types';
++
++/** Прод: каталог 1С пока пуст — режим «Из каталога» скрыт */
++export const emptyDoorModelSource: DoorModelSource = {
++  listModels() {
++    return [];
++  },
++};
++
++/** Фикстуры прототипа — только для тестов */
++export const DEMO_DOOR_MODELS: DoorCatalogModel[] = [
++  {
++    id: 'm1',
++    name: 'Скандинавия 01',
++    maker: 'Фабрика «Север»',
++    color: '#e9e4da',
++    price: 9800,
++    blades: [
++      { w: 600, from: 720, to: 790 },
++      { w: 700, from: 791, to: 850 },
++      { w: 800, from: 851, to: 940 },
++      { w: 900, from: 941, to: 1040 },
++    ],
++  },
++  {
++    id: 'm2',
++    name: 'Лофт 2',
++    maker: 'Вега',
++    color: '#8d8a86',
++    price: 11400,
++    blades: [
++      { w: 600, from: 700, to: 770 },
++      { w: 700, from: 771, to: 840 },
++      { w: 800, from: 841, to: 930 },
++      { w: 900, from: 931, to: 1020 },
++    ],
++  },
++  {
++    id: 'm3',
++    name: 'Классика Н',
++    maker: 'Вега',
++    color: '#c9a77c',
++    price: 8600,
++    blades: null,
++    dobors: [100, 150],
++  },
++  {
++    id: 'm4',
++    name: 'Модерн 5 стекло',
++    maker: 'Фабрика «Север»',
++    color: '#f1f1ef',
++    price: 12900,
++    blades: [
++      { w: 700, from: 791, to: 850 },
++      { w: 800, from: 851, to: 940 },
++    ],
++  },
++  {
++    id: 'm5',
++    name: 'Эко 10',
++    maker: 'Дом дверей',
++    color: '#b9b3a8',
++    price: 6900,
++    blades: null,
++  },
++  {
++    id: 'm6',
++    name: 'Тоскана',
++    maker: 'Дом дверей',
++    color: '#6b5b4b',
++    price: 14200,
++    blades: [
++      { w: 600, from: 705, to: 775 },
++      { w: 700, from: 776, to: 845 },
++      { w: 800, from: 846, to: 935 },
++    ],
++  },
++];
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/offer.ts b/src/lib/doorCalculator/offer.ts
+new file mode 100644
+index 00000000..62ac5de8
+--- /dev/null
++++ b/src/lib/doorCalculator/offer.ts
+@@ -0,0 +1,65 @@
++import { calcDoors, priceOfRow, totals } from './calc';
++import type {
++  DoorCatalogModel,
++  DoorOpening,
++  DoorPrices,
++  OfferPayload,
++} from './types';
++
++export function buildOfferPayload(
++  openings: DoorOpening[],
++  model: DoorCatalogModel | null,
++  prices: DoorPrices,
++  discount: string | number,
++  shareDobor: boolean,
++  obj: { client: string; phone: string; address: string }
++): OfferPayload {
++  const res = calcDoors(openings, model, shareDobor);
++  const t = totals(res.rows, prices, discount);
++  const typeLabel = (type: DoorOpening['type']) =>
++    type === 'entry' ? 'Входная' : type === 'arch' ? 'Без двери (облагораживание)' : 'Межкомнатная';
++
++  return {
++    obj,
++    model: {
++      name: model ? model.name : 'Модель не выбрана',
++      maker: model ? model.maker : '',
++    },
++    disc: t.dp,
++    per: res.per.map((inf) => {
++      const o = inf.o;
++      return {
++        n: inf.i + 1,
++        room: o.room,
++        type: typeLabel(o.type),
++        size: `${o.w || '?'} × ${o.h || '?'}` + (o.depth ? `, стена ${o.depth}` : ''),
++        lines: inf.lines,
++      };
++    }),
++    rows: res.rows.map((r) => {
++      const p = priceOfRow(prices, r.pk);
++      return [r.name, r.q, p] as [string, number, number | null];
++    }),
++  };
++}
++
++export function encodeOfferPayload(payload: OfferPayload): string {
++  const json = JSON.stringify(payload);
++  const b64 =
++    typeof btoa !== 'undefined'
++      ? btoa(unescape(encodeURIComponent(json)))
++      : Buffer.from(json, 'utf8').toString('base64');
++  return b64;
++}
++
++export function decodeOfferPayload(hash: string): OfferPayload | null {
++  try {
++    const json =
++      typeof atob !== 'undefined'
++        ? decodeURIComponent(escape(atob(hash)))
++        : Buffer.from(hash, 'base64').toString('utf8');
++    return JSON.parse(json) as OfferPayload;
++  } catch {
++    return null;
++  }
++}
+\ No newline at end of file
+diff --git a/src/lib/doorCalculator/types.ts b/src/lib/doorCalculator/types.ts
+new file mode 100644
+index 00000000..44565726
+--- /dev/null
++++ b/src/lib/doorCalculator/types.ts
+@@ -0,0 +1,113 @@
++export type DoorOpeningType = 'inter' | 'entry' | 'arch';
++
++export type BladeGridRow = { w: number; from: number; to?: number };
++
++export type DoorCatalogModel = {
++  id: string;
++  name: string;
++  maker: string;
++  color?: string;
++  price: number;
++  blades: BladeGridRow[] | null;
++  dobors?: number[];
++  manual?: boolean;
++};
++
++export type DoorOpening = {
++  id: number;
++  room: string;
++  type: DoorOpeningType;
++  w: string;
++  h: string;
++  depth: string;
++  side: 'left' | 'right';
++  nalF: boolean;
++  nalB: boolean;
++  dobor: boolean | null;
++  zav: boolean;
++  hinge: boolean;
++  handle: boolean;
++  lock: boolean;
++  sill: boolean;
++  blade: string;
++  note: string;
++};
++
++export type PriceKey =
++  | 'blade'
++  | 'box'
++  | 'd100'
++  | 'd150'
++  | 'd200'
++  | 'planka'
++  | 'nal'
++  | 'sill'
++  | 'hinge'
++  | 'handle'
++  | 'lock'
++  | 'zav';
++
++export type DoorPrices = Partial<Record<PriceKey, number | '' | null>>;
++
++export type CalcRow = {
++  k: string;
++  name: string;
++  q: number;
++  pk: PriceKey | 'blade';
++};
++
++export type DobInfo = {
++  size: number;
++  sets: number;
++  planks: number;
++  shared?: boolean;
++  mate?: number;
++  split?: boolean;
++};
++
++export type OpeningCalcInfo = {
++  i: number;
++  o: DoorOpening;
++  lines: string[];
++  R?: number;
++  dob?: DobInfo;
++};
++
++export type CalcResult = {
++  per: OpeningCalcInfo[];
++  rows: CalcRow[];
++};
++
++export type Totals = {
++  sum: number;
++  none: number;
++  dp: number;
++  dsc: number;
++  total: number;
++};
++
++export type ModelVariantSnapshot = {
++  modelId: string | null;
++  manual: { on: boolean; name: string; maker: string };
++  prices: DoorPrices;
++  pricesFor: string | null;
++  bl: Record<number, string>;
++};
++
++export type OfferPayload = {
++  obj: { client: string; phone: string; address: string };
++  model: { name: string; maker: string };
++  disc: number;
++  per: Array<{
++    n: number;
++    room: string;
++    type: string;
++    size: string;
++    lines: string[];
++  }>;
++  rows: Array<[string, number, number | null]>;
++};
++
++export type DoorModelSource = {
++  listModels(): DoorCatalogModel[];
++};
+\ No newline at end of file
+diff --git a/vitest.config.ts b/vitest.config.ts
+index 5ab4bc96..d3e946df 100644
+--- a/vitest.config.ts
++++ b/vitest.config.ts
+@@ -163,6 +163,8 @@ export default defineConfig({
+       "src/lib/cabinet-nav/mode.test.ts",
+       "src/lib/cabinet-nav/active.test.ts",
+       "src/lib/business-nav/sections.test.ts",
++      "src/lib/doorCalculator/**/*.test.ts",
++      "src/lib/door-calculator/**/*.test.ts",
+       "src/lib/business-profile/eligibility.test.ts",
+       "src/lib/business-profile/wizard-copy.test.ts",
+       "src/lib/business-profile/wizard-facts.test.ts",

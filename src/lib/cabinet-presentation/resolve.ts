@@ -59,6 +59,14 @@ function normalizeOrgPartnerType(value: unknown): WorkplacePartnerType | null {
   return null;
 }
 
+function serverPartnerCabinet(
+  context: ProContextSnapshot | null,
+  ready: boolean,
+): ProContextSnapshot["partnerCabinet"] {
+  if (!ready || !context || !validateProContextSnapshot(context).ok) return undefined;
+  return context.partnerCabinet;
+}
+
 export type WorkplacePartnerTypeResolution = {
   partnerType: WorkplacePartnerType | null;
   source: WorkplacePartnerTypeSource;
@@ -78,6 +86,14 @@ export function resolveWorkplacePartnerTypeResolution(input: {
   contextReady: boolean;
 }): WorkplacePartnerTypeResolution {
   const { user, proContext, contextReady } = input;
+  const server = serverPartnerCabinet(proContext, contextReady);
+  if (server !== undefined) {
+    const partnerType = normalizeOrgPartnerType(server?.kind);
+    return {
+      partnerType,
+      source: partnerType ? (server?.source === "org-context" ? "org-context" : "personal-profile") : null,
+    };
+  }
   const role = proContext?.role?.trim() ?? null;
 
   if (contextReady && proContext && validateProContextSnapshot(proContext).ok) {
@@ -166,18 +182,23 @@ export function resolveCabinetPresentation(input: {
     contextReady: input.contextReady,
   });
   const workplacePartnerType = workplace.partnerType;
+  const server = serverPartnerCabinet(input.proContext, input.contextReady);
+  const serverWorkplaceKind = server === undefined ? undefined : server?.kind ?? null;
   const navMode: CabinetNavMode = resolveCabinetNavMode(input.user, {
+    serverWorkplaceKind,
     workplacePartnerType,
     workplaceNavFromOrgContext: workplace.source === "org-context",
     employerWorkplaceKind: resolveEmployerWorkplaceKind(input.proContext, input.contextReady),
   });
-  const workplaceKind = resolveWorkplaceKind({
-    user: input.user,
-    proContext: input.proContext,
-    contextReady: input.contextReady,
-    workplacePartnerType,
-    workplacePartnerTypeSource: workplace.source,
-  });
+  const workplaceKind = server !== undefined
+    ? { kind: server?.kind ?? null, source: server?.source ?? null }
+    : resolveWorkplaceKind({
+        user: input.user,
+        proContext: input.proContext,
+        contextReady: input.contextReady,
+        workplacePartnerType,
+        workplacePartnerTypeSource: workplace.source,
+      });
   const actorDisplayName = input.user.displayName?.trim() || "Партнёр RemCard";
 
   return {
@@ -188,6 +209,7 @@ export function resolveCabinetPresentation(input: {
     workplacePartnerTypeSource: workplace.source,
     workplaceKind: workplaceKind.kind,
     workplaceKindSource: workplaceKind.source,
+    ...(serverWorkplaceKind !== undefined ? { serverWorkplaceKind } : {}),
     actorDisplayName,
     workspaceOrganizationName: resolveWorkspaceOrganizationName(input.proContext),
     sessionRoleLabel: resolveCabinetSessionRoleLabel({

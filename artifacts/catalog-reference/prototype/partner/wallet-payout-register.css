@@ -1,0 +1,56 @@
+.wallet-payout-register {display:grid;gap:16px;min-width:0}
+.wallet-payout-register h2 {margin:3px 0;font-size:1.25rem}
+.wallet-payout-register p {margin:4px 0 0}
+.wallet-payout-demo {font-size:.78rem;color:var(--pw-muted)}
+.wallet-payout-layout {display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+.wallet-payout-directions.cab-tabs {margin:0}
+.wallet-payout-directions .pw-btn {flex:1 1 0}
+.wallet-payout-card.wallet-rc-card {cursor:default;min-height:154px;max-height:none}
+.wallet-payout-card.wallet-rc-card:hover {transform:none}
+.wallet-payout-card .wallet-rc-card__body {margin-top:1.5rem}
+.wallet-payout-card .wallet-rc-card__label {font-size:.95rem}
+.wallet-payout-register .wallet-payout-list-title {margin:0;font-size:1rem}
+.wallet-payout-partners {display:grid;gap:8px;min-width:0}
+.wallet-payout-list {display:grid;gap:8px}
+.wallet-payout-item,.wallet-payout-empty {border:1px solid var(--pw-line);border-radius:12px;background:var(--pw-bg);padding:12px 14px;min-width:0}
+.wallet-payout-heading {display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center}
+.wallet-payout-heading h3 {margin:0;font-size:.95rem;overflow-wrap:anywhere}
+.wallet-payout-heading h3:focus {outline:none}
+.wallet-payout-balance {display:grid;gap:2px;white-space:nowrap;text-align:right}
+.wallet-payout-balance span {font-size:.73rem;color:var(--pw-muted)}
+.wallet-payout-status {display:flex;gap:5px;align-items:center;font-size:.83rem;color:var(--pw-muted)}
+.wallet-payout-status.is-success {color:var(--good);font-weight:800}
+.wallet-payout-status svg {width:16px;height:16px}
+.wallet-payout-error:empty {display:none}
+.wallet-payout-heading>.pw-btn {grid-column:-2/-1;justify-self:end}
+.wallet-payout-heading>.pw-btn:not(.primary) {min-width:56px}
+.wallet-payout-history summary,.wallet-payout-demo-toggle summary {cursor:pointer;font-weight:700;font-size:.85rem}
+.wallet-payout-demo-toggle {color:var(--pw-muted)}
+.wallet-payout-history ul,.wallet-payout-demo-toggle ul {list-style:none;margin:6px 0 0;padding:0}
+.wallet-payout-history li,.wallet-payout-demo-toggle li {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:6px 0;border-bottom:1px solid var(--pw-line)}
+.wallet-payout-history-entry {display:grid;gap:1px;min-width:0}
+.wallet-payout-history-entry time {color:var(--pw-muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+.wallet-payout-history-badge {display:inline-flex;gap:6px;align-items:center;padding:4px 9px;border-radius:999px;font-size:.8rem;line-height:1.4;font-variant-numeric:tabular-nums;background:color-mix(in srgb,currentColor 10%,transparent);border:1px solid color-mix(in srgb,currentColor 24%,transparent)}
+.wallet-payout-history-badge svg {width:14px;height:14px}
+.wallet-payout-history-badge[data-direction=in] {color:var(--good)}
+.wallet-payout-history-badge[data-direction=out] {color:#855010}
+[data-theme=dark] .wallet-payout-history-badge[data-direction=out] {color:#f3c378}
+.wallet-payout-dialog {display:grid;gap:12px;background:var(--pw-bg);color:var(--pw-text)}
+.wallet-payout-dialog h3,.wallet-payout-dialog p {margin:0}
+.wallet-payout-field {display:grid;gap:6px;font-weight:700}
+.wallet-payout-field input {width:100%;padding:10px;box-sizing:border-box;border:1px solid var(--pw-line);border-radius:8px;background:var(--pw-bg);color:inherit;font:inherit}
+.wallet-payout-sms {padding:10px;margin-top:8px;background:var(--pw-soft);border-radius:8px}
+.wallet-payout-sms span,.wallet-payout-error {font-size:.85rem}
+.wallet-payout-error {color:var(--pw-accent)}
+.cab-wallet-actions .cab-tabs {flex-wrap:wrap}
+.topbar [data-action="notifications"] {position:relative}
+.payout-notice-count {position:absolute;inset:-5px -5px auto auto;min-width:18px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--onaccent);font-size:.68rem;line-height:18px;font-weight:800}
+.payout-notice-list {list-style:none;padding:0;margin:0}
+.payout-notice-list p {margin:0}
+.payout-notice-list button {margin-top:6px}
+[data-payout-messenger] section {margin-top:8px}
+@media (max-width:1010px) {.wallet-payout-layout {grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px) {
+  .wallet-payout-heading {grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .wallet-payout-heading:has(.wallet-payout-balance)>.pw-btn {grid-column:1/-1;justify-self:start}
+}

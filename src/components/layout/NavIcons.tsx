@@ -73,12 +73,35 @@ export function NavIconWallet(props: IconProps) {
   );
 }
 
+export function NavIconDoors(props: IconProps) {
+  return (
+    <PrototypeNavIcon {...props}>
+      <path d="M14 4h4a2 2 0 0 1 2 2v14" />
+      <path d="M3 20h4" />
+      <path d="M14 20H3" />
+      <path d="M11 12v.01" />
+      <path d="M14 4.6v16.1a1 1 0 0 1-1.2.98L6 20V5.6a2 2 0 0 1 1.5-1.95l3.5-1A2 2 0 0 1 14 4.6Z" />
+    </PrototypeNavIcon>
+  );
+}
+
 export function NavIconScanner(props: IconProps) {
   return (
     <BaseIcon {...props}>
       <path d="M4 7V5a1 1 0 0 1 1-1h2M18 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2" />
       <path d="M8 12h8" />
     </BaseIcon>
+  );
+}
+
+export function NavIconCatalog(props: IconProps) {
+  return (
+    <PrototypeNavIcon {...props}>
+      <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+      <path d="M12 22V12" />
+      <polyline points="3.29 7 12 12 20.71 7" />
+      <path d="m7.5 4.27 9 5.15" />
+    </PrototypeNavIcon>
   );
 }
 
@@ -146,6 +169,8 @@ export const NAV_ICONS = {
   partners: NavIconPartners,
   recommendations: NavIconRecommendations,
   scanner: NavIconScanner,
+  catalog: NavIconCatalog,
+  doors: NavIconDoors,
   history: NavIconHistory,
   wallet: NavIconWallet,
   settlements: NavIconSettlements,

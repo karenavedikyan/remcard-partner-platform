@@ -118,3 +118,22 @@ export async function fetchPublicLinkInvitePreview(
     return null;
   }
 }
+
+/** Anonymous scraper lookup; retain only fields intended for the chat card. */
+export async function fetchPublicDiscussionInviteMetadata(
+  token: string,
+): Promise<Pick<LinkInvitePublicPreview, "status" | "inviter"> | null> {
+  if (!token.trim()) return { status: "NOT_FOUND" };
+  try {
+    const result = await linkInvitePublicPreviewDeps.fetchUpstream<
+      Pick<LinkInvitePublicPreview, "status" | "inviter">
+    >(`/api/partnership/discussion-invite/public/${encodeURIComponent(token.trim())}`, {
+      method: "GET",
+      signal: AbortSignal.timeout(LINK_INVITE_PUBLIC_PREVIEW_TIMEOUT_MS),
+    });
+    if (!result.ok || !result.data) return null;
+    return { status: result.data.status, inviter: result.data.inviter };
+  } catch {
+    return null;
+  }
+}
