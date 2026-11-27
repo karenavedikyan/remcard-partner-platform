@@ -1,30 +1,32 @@
-# Отчёт: остаток по филиалу в карточке модели (этап 1)
+# Отчёт: филиалы каталога по API (реальные branchId)
 
-**Ветка:** `cursor/catalog-stage1-fe-branch-stock-api-34b5` (база `cursor/catalog-stage1-model-content-4ac7`, старт `5337cdb`)  
-**Бэкенд-контракт (только чтение):** `remcard-navigator` `cursor/catalog-stage1-be-branch-stock-brand-feda` — `branches[].stockKind`, `branches[].stockQuantity`  
-**HEAD SHA:** `0653bb69`
+**Ветка:** `cursor/catalog-fe-real-branches-c029` (база `cursor/catalog-stage1-fe-branch-stock-api-34b5`, старт `4be10fa3c991b105327131a8bf31d40179a4a53b`)  
+**Бэкенд-контракт (только чтение):** `remcard-navigator` `cursor/catalog-be-prisma-fixes-3cb5` — `meta.branches[]`, `models/{id}.branches[]` по `branchId`  
+**HEAD SHA:** `ba626945`
 
 ## Пункт / что сделано / как проверено
 
 | Пункт | Что сделано | Как проверено |
 |-------|-------------|----------------|
-| 1. Типы API | В `NavigatorCabinetModelBranch` добавлены `stockKind` и `stockQuantity`; на модели кабинета — `branchStocksFromApi` | `navigator-model-detail.test.ts`, `tsc` |
-| 2. Адаптер | `adaptNavigatorCabinetModelDetail` кладёт остаток по `branchId` в порядок филиалов кабинета (`mapNavigatorBranchesToCabinetStock`) | `models.branch-stock-api.test.ts` (в т.ч. перестановка ответа) |
-| 3. Подписи UI | `formatBranchStockLabel`: KNOWN>0, ZERO/0, UNKNOWN/нет поля → «нет данных»; excluded и снятый филиал — «товар здесь не представлен» | `models.branch-stock-api.test.ts`, `Partner1cModelDetail.tsx` |
-| 4. Фикстура без API | Без `branches[]` в ответе остаётся деление суммарного остатка вариантов (`branchStock`) | `models.branch-stock.test.ts` |
-| 5. Права | Закупка, «Филиалы и цены» и `pc-money` только владельцу; остаток в API доступен в адаптированной модели и для сотрудника | `Partner1cModelDetail.test.tsx`, capture employee |
-| 6. Сборка | — | `tsc`, vitest, `npm run lint`, `PARTNER_1C_CATALOG_ENABLED=1 npx next build` |
+| 1. Источник филиалов | `PartnerCatalogSnapshot.branches` из `meta.branches` (navigator) или `demoCatalogBranches()` (fixture); сопоставление остатков и цен строго по `branchId` | `navigator-adapter.test.ts`, `branches.test.ts` |
+| 2. Убраны индекс / адрес / суффикс `-N` | Удалены `BRANCHES`/`BRANCH_IDS` из `constants.ts`; `mapNavigatorBranchesToStockRecord` без парсинга id | `models.branch-stock-api.test.ts` (cuid id) |
+| 3. PublicationState по id | `branchOff`/`branchPrice`/`branchPct` на `branchId`; payload-хелперы для publication / branch-prices / branch-rules | `publication-payload.test.ts` |
+| 4. UI | Фильтр, таблица, карточка модели, «Филиалы и цены» используют `snapshot.branches`; 0 филиалов — без падения | `Partner1cModelDetail.test.tsx`, capture |
+| 5. Демо-фикстура | 6 филиалов `optovik-branch-0…5` только через `demo-branches.ts` | dev-fixture без `branchSet` (визуально как раньше) |
+| 6. Крайние случаи | 0/1/10 филиалов, филиал только в meta или только в detail | `branches.test.ts`, fixtures `cabinet-meta-branches-real*.json` |
+| 7. Права | Без изменений: закупка и «Филиалы и цены» — владельцу | `Partner1cModelDetail.test.tsx`, `employee-snapshot.test.tsx` |
 
-## Vitest (целевой набор)
+## Vitest
 
 ```bash
 PARTNER_1C_CATALOG_ENABLED=1 npx vitest run \
   src/lib/partner-1c-catalog \
   src/components/partner-1c-catalog \
-  src/app/catalog
+  src/app/catalog \
+  src/lib/client-catalog
 ```
 
-Результат: **38 passed** (10 файлов), включая сценарии KNOWN / ZERO / UNKNOWN / нет поля / excluded / branchId при другом порядке / сотрудник без закупки.
+Результат: **48 passed** (12 файлов), включая cuid id без шаблона `-N`, 0/1/10 филиалов, detail-only / meta-only, payload с реальными `branchId`, сотрудник без закупки.
 
 ## tsc / build / lint
 
@@ -32,29 +34,27 @@ PARTNER_1C_CATALOG_ENABLED=1 npx vitest run \
 - `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID`)  
 - `npm run lint` — OK (предупреждения только в несвязанных файлах)
 
-## Фикстуры API (образцы navigator)
+## Фикстуры API
 
-Для тестов и capture: `src/lib/partner-1c-catalog/fixtures/cabinet-model-detail-owner-branches.json` (по мотивам `artifacts/catalog-stage1-be-branch-stock/cabinet-model-detail-{owner,staff}.json` в remcard-navigator).
+- Демо: `demo-branches.ts`, `fixtures/cabinet-model-detail-owner-branches.json`  
+- Реальные id (cuid-подобные): `fixtures/cabinet-meta-branches-real.json`, `cabinet-meta-branches-real-10.json`, `cabinet-model-detail-real-3branches.json`, `cabinet-model-detail-real-10branches.json`
 
-Dev-fixture: `?branchStock=known|unknown&model=p004` подмешивает detail с API-остатками.
+Dev-fixture:
 
-## Снимки (390×844 и др.)
+- Демо как раньше: `/catalog/dev-fixture?role=owner`
+- 3 / 10 филиалов с cuid: `?branchSet=real3|real10&model=p004`
+- API-остаток (демо id): `?branchStock=known|unknown&model=p004`
+
+## Снимки (390×844 и 1386×719)
 
 ```bash
 PARTNER_1C_CATALOG_ENABLED=1 npm run dev &
-# proto: python3 -m http.server 8765 в artifacts/catalog-reference/prototype
 node scripts/catalog-stage1-capture.mjs
 ```
 
-Обновлены базовые `catalog-{owner,employee}-model_*` и добавлены ветки остатка:
-
-- `catalog-owner-model-branch-known_390x844_{light,dark}.png`
-- `catalog-owner-model-branch-unknown_390x844_{light,dark}.png`
-- `catalog-employee-model-branch-known_390x844_{light,dark}.png`
-- `catalog-employee-model-branch-unknown_390x844_{light,dark}.png`
-
-(Также полный набор 1386×719 для тех же сценариев.)
+- Демо-фикстура (без изменений вида): `catalog-*-table*`, `catalog-*-model*`, `catalog-*-branch-known|unknown_*`
+- Реальные id: `catalog-owner-table-real3_*`, `catalog-owner-model-real3_*`, `catalog-owner-table-real10_*`, `catalog-owner-model-real10_*`
 
 ## Контракт API
 
-Фронт читает per-branch `stockKind` / `stockQuantity` из GET `/api/pro/organization/partner-products/models/{id}`; при `UNKNOWN`, `null` или отсутствии полей показывается **«нет данных»** (не демо-числа из фикстуры).
+Фронт читает список филиалов из `GET …/partner-products` → `meta.branches[]` и остатки из `GET …/models/{id}` → `branches[]`; любые операции публикации/цен отправляют `branchId` из API, не индекс и не распознавание суффикса id.
