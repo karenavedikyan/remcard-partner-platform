@@ -353,7 +353,7 @@
 }
 
 .catalogScope :global(.pc-list--staff .pc-row) {
-  grid-template-columns: 28px minmax(0, 2fr) minmax(0, 112px) 108px 124px 112px;
+  grid-template-columns: 28px minmax(0, 2fr) minmax(0, 112px) 108px 108px 124px 112px;
 }
 
 .catalogScope :global(.pc-row-main) {

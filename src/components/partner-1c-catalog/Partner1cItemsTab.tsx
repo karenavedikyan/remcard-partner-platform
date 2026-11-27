@@ -42,7 +42,7 @@ import {
 } from "@/lib/partner-1c-catalog/models";
 import type { FilterState, ModelStatusCode, PartnerCatalogModel } from "@/lib/partner-1c-catalog/types";
 import type { CatalogListUiAccess } from "@/lib/partner-1c-catalog/catalog-access";
-import { num, plural, rub } from "@/lib/partner-1c-catalog/text";
+import { num, plural, rub, signedRubDelta } from "@/lib/partner-1c-catalog/text";
 import { Partner1cFilterPanel } from "./Partner1cFilterPanel";
 import {
   PcIconEye,
@@ -632,7 +632,10 @@ export function Partner1cItemsTab({
                         <>
                           <span>закупка {rub(m.cost)}</span>
                           {mk ? (
-                            <b className={`pc-mk pc-mk--${mkTone(mk)}`}>{mkPct(mk)}</b>
+                            <>
+                              <b className={`pc-mk pc-mk--${mkTone(mk)}`}>{mkPct(mk)}</b>
+                              <small>{signedRubDelta(mk.rub)} с шт.</small>
+                            </>
                           ) : null}
                         </>
                       ) : (
@@ -667,7 +670,7 @@ export function Partner1cItemsTab({
             <span>Цена{money ? " · закупка" : ""}</span>
             {money ? <span className="pc-cell--mk">Наценка</span> : null}
             <span className="pc-cell--stock">Остаток</span>
-            {manage ? <span className="pc-cell--br">Филиалы</span> : null}
+            <span className="pc-cell--br">Филиалы</span>
             <span className="pc-cell--status">Статус</span>
             <span />
           </div>
@@ -821,6 +824,7 @@ function ModelRow({
           {mk ? (
             <>
               <strong className={`pc-mk pc-mk--${mkTone(mk)}`}>{mkPct(mk)}</strong>
+              <small>{signedRubDelta(mk.rub)} с шт.</small>
             </>
           ) : (
             <span className="muted">—</span>
@@ -830,12 +834,30 @@ function ModelRow({
       <span className="pc-cell pc-cell--stock" data-label="Остаток">
         <span>{stock.text}</span>
         <small className="pc-stock-sub">{stock.sub}</small>
+        <small className="pc-stock-br">
+          {n === BRANCHES.length
+            ? "все филиалы"
+            : `филиалов: ${n} из ${BRANCHES.length}`}
+        </small>
       </span>
-      {manage ? (
-        <span className="pc-cell pc-cell--br" data-label="Филиалы">
-          {branchesText(n)}
-        </span>
-      ) : null}
+      <span className="pc-cell pc-cell--br" data-label="Филиалы">
+        {manage ? (
+          <button
+            type="button"
+            className={`pc-brbtn ${n < BRANCHES.length ? "is-part" : ""}`}
+            data-testid={`pc-branches-${m.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
+          >
+            <PcIconMapPin />
+            <span>{branchesText(n)}</span>
+          </button>
+        ) : (
+          <span>{branchesText(n)}</span>
+        )}
+      </span>
       <span className="pc-cell pc-cell--status">
         <StatusPill code={code} />
       </span>

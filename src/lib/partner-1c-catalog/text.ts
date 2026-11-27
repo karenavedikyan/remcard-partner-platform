@@ -26,3 +26,8 @@ export function plural(n: number, one: string, few: string, many: string): strin
 
 export const num = (n: number) => Math.round(n).toLocaleString("ru-RU");
 export const rub = (n: number) => `${num(n)} ₽`;
+
+/** Signed delta for markup rows (prototype «+3 050 ₽ с шт.»). */
+export function signedRubDelta(n: number) {
+  return `${n < 0 ? "−" : "+"}${num(Math.abs(n))} ₽`;
+}
