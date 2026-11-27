@@ -912,6 +912,27 @@
   align-items: start;
 }
 
+.catalogScope :global(.pc-back) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2, 8px);
+  justify-self: start;
+  min-height: 44px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.catalogScope :global(.pc-back svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.catalogScope :global(.pc-gallery) {
+  display: grid;
+  gap: var(--s3, 12px);
+  min-width: 0;
+}
+
 .catalogScope :global(.pc-shot) {
   width: 100%;
   height: min(72vh, 640px);
@@ -919,6 +940,288 @@
   background: #fff;
   border-radius: 12px;
   border: 1px solid var(--line);
+}
+
+.catalogScope :global(div.pc-shot) {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--s2, 8px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  color: var(--muted);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.catalogScope :global(.pc-shots) {
+  display: flex;
+  gap: var(--s2, 8px);
+  flex-wrap: wrap;
+}
+
+.catalogScope :global(.pc-shots button) {
+  width: 52px;
+  height: 72px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+}
+
+.catalogScope :global(.pc-shots button.selected) {
+  border-color: var(--accent);
+}
+
+.catalogScope :global(.pc-shots img) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.catalogScope :global(.pc-model-info) {
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-model-info h2) {
+  font-size: var(--text-xl, 1.25rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin-top: var(--s1, 4px);
+}
+
+.catalogScope :global(.pc-model-info .eyebrow) {
+  display: block;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-price) {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3, 12px);
+  flex-wrap: wrap;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-price small) {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+}
+
+.catalogScope :global(.pc-price .small) {
+  flex: 1 1 100%;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-table-wrap) {
+  overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.catalogScope :global(.pc-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 0.875rem);
+  min-width: 560px;
+}
+
+.catalogScope :global(.pc-table th) {
+  text-align: left;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 700;
+  color: var(--muted);
+  padding: var(--s2, 8px) var(--s3, 12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.catalogScope :global(.pc-table td) {
+  padding: var(--s3, 12px);
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-table tr:last-child td) {
+  border-bottom: 0;
+}
+
+.catalogScope :global(.pc-table td small) {
+  display: block;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.catalogScope :global(.pc-table tr.is-outside td) {
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-outside) {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-specs) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--s6, 24px);
+  margin: 0;
+}
+
+.catalogScope :global(.pc-specs div) {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4, 16px);
+  padding: var(--s2, 8px) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm, 0.875rem);
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-specs dt) {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-specs dd) {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.catalogScope :global(.pc-money .pill svg) {
+  width: 14px;
+  height: 14px;
+}
+
+.catalogScope :global(.pc-figs) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3, 12px);
+}
+
+.catalogScope :global(.pc-figs > div) {
+  display: grid;
+  gap: 2px;
+  padding: var(--s3, 12px) var(--s4, 16px);
+  border-radius: 12px;
+  background: var(--offset);
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-figs span) {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+}
+
+.catalogScope :global(.pc-figs strong) {
+  font-size: var(--text-lg, 1.125rem);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.catalogScope :global(.pc-disc) {
+  min-width: 440px;
+}
+
+.catalogScope :global(.pc-disc tr.is-loss td) {
+  color: var(--accent);
+}
+
+.catalogScope :global(.pc-brlist) {
+  display: grid;
+}
+
+.catalogScope :global(.pc-brrow) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 168px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s2, 8px) var(--s4, 16px);
+  padding: var(--s3, 12px) 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-brrow:first-child) {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.catalogScope :global(.pc-brrow.is-off .pc-brprice) {
+  opacity: 0.5;
+}
+
+.catalogScope :global(.pc-check) {
+  display: flex;
+  gap: var(--s3, 12px);
+  align-items: flex-start;
+  font-size: var(--text-sm, 0.875rem);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-check input) {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.catalogScope :global(.pc-check span) {
+  display: grid;
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-brrow .pc-check small) {
+  color: var(--muted);
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.catalogScope :global(.pc-brprice) {
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-brprice input) {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 var(--s3, 12px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-brprice strong) {
+  font-size: var(--text-base, 1rem);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .catalogScope :global(.pc-site-head) {
@@ -1059,6 +1362,18 @@
   .catalogScope :global(.pc-model) {
     grid-template-columns: 1fr;
   }
+
+  .catalogScope :global(.pc-gallery) {
+    max-width: 360px;
+  }
+
+  .catalogScope :global(.pc-figs) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalogScope :global(.pc-brrow) {
+    grid-template-columns: minmax(0, 1fr) 150px;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -1068,6 +1383,109 @@
 }
 
 @media (max-width: 680px) {
+  .catalogScope :global(.pc-specs) {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogScope :global(.pc-table-wrap) {
+    overflow-x: clip;
+  }
+
+  .catalogScope :global(.pc-table) {
+    min-width: 0;
+    display: block;
+  }
+
+  .catalogScope :global(.pc-table thead) {
+    display: none;
+  }
+
+  .catalogScope :global(.pc-table tbody) {
+    display: grid;
+    gap: var(--s3, 12px);
+  }
+
+  .catalogScope :global(.pc-table tr) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s1, 4px) var(--s3, 12px);
+    padding: var(--s3, 12px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 12px);
+    background: var(--surface);
+  }
+
+  .catalogScope :global(.pc-table td) {
+    padding: 0;
+    border: 0;
+  }
+
+  .catalogScope :global(.pc-table td:first-child) {
+    grid-column: 1 / -1;
+    font-weight: 700;
+    margin-bottom: var(--s1, 4px);
+  }
+
+  .catalogScope :global(.pc-table td[data-l]::before) {
+    content: attr(data-l) ": ";
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .catalogScope :global(.pc-disc) {
+    min-width: 0;
+  }
+
+  .catalogScope :global(.pc-disc tr) {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogScope :global(.pc-disc td:first-child) {
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: 800;
+    padding-bottom: var(--s1, 4px);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: var(--s2, 8px);
+  }
+
+  .catalogScope :global(.pc-disc td[data-l]) {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s3, 12px);
+    grid-column: 1 / -1;
+    align-items: baseline;
+  }
+
+  .catalogScope :global(.pc-disc td[data-l]::before) {
+    content: attr(data-l);
+    font-weight: 500;
+  }
+
+  .catalogScope :global(.pc-brlist) {
+    gap: var(--s3, 12px);
+  }
+
+  .catalogScope :global(.pc-brrow) {
+    grid-template-columns: 1fr;
+    padding: var(--s3, 12px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 12px);
+  }
+
+  .catalogScope :global(.pc-brrow:first-child) {
+    padding-top: var(--s3, 12px);
+  }
+
+  .catalogScope :global(.pc-brprice) {
+    padding-left: calc(20px + var(--s3, 12px));
+  }
+
+  .catalogScope :global(.pc-section .row > .btn),
+  .catalogScope :global(.pc-model-info .row > .btn) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
   .catalogScope :global(.pc-stats--4) {
     grid-template-columns: 1fr;
   }
