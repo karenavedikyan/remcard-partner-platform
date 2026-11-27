@@ -1,9 +1,22 @@
 import type { DoorCatalogModel, DoorModelSource } from './types';
+import { partner1cCatalogFeatureEnabled } from '@/lib/partner-1c-catalog/constants';
+import { publishedDoorCatalogModels } from '@/lib/partner-1c-catalog/door-models';
 
 /** Прод: каталог 1С пока пуст — режим «Из каталога» скрыт */
 export const emptyDoorModelSource: DoorModelSource = {
   listModels() {
     return [];
+  },
+};
+
+export function resolveDoorCatalogModels(): DoorCatalogModel[] {
+  if (!partner1cCatalogFeatureEnabled()) return [];
+  return publishedDoorCatalogModels();
+}
+
+export const fixtureDoorModelSource: DoorModelSource = {
+  listModels() {
+    return resolveDoorCatalogModels();
   },
 };
 

@@ -4,6 +4,7 @@ import { DoorCalculatorWizard } from "@/components/doorCalculator/DoorCalculator
 import { DoorCalculatorUnavailable } from "@/components/doorCalculator/DoorCalculatorUnavailable";
 import { CabinetShell } from "@/components/layout/CabinetShell";
 import { doorCalculatorFeatureVisible } from "@/lib/door-calculator/access";
+import { resolveDoorCatalogModels } from "@/lib/doorCalculator/modelSource";
 import { fetchCabinetPresentationServer } from "@/lib/cabinet-presentation/server";
 import { requireProPageUser } from "@/lib/session";
 import { headers } from "next/headers";
@@ -32,7 +33,7 @@ export default async function DoorsCalculatorPage() {
             </p>
           }
         >
-          <DoorCalculatorWizard context="lk" />
+          <DoorCalculatorWizard context="lk" catalog={resolveDoorCatalogModels()} />
         </Suspense>
       ) : (
         <DoorCalculatorUnavailable />
