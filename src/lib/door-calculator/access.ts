@@ -1,6 +1,7 @@
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import type { MasterNavItem } from "@/lib/master-nav/sections";
+import { filterBusinessNavForPartner1cCatalog } from "@/lib/partner-1c-catalog/gate";
 
 export const DOORS_CALCULATOR_HREF = "/doors-calculator";
 export const DOORS_CATEGORY_KEY = "doors";
@@ -32,9 +33,9 @@ export function filterBusinessDesktopNav(
   items: readonly MasterNavItem[],
   presentation: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">,
 ): MasterNavItem[] {
-  const visible = doorCalculatorFeatureVisible(presentation);
-  return items.filter((item) => {
-    if (item.href === DOORS_CALCULATOR_HREF) return visible;
+  const afterDoors = items.filter((item) => {
+    if (item.href === DOORS_CALCULATOR_HREF) return doorCalculatorFeatureVisible(presentation);
     return true;
   });
+  return filterBusinessNavForPartner1cCatalog(afterDoors, presentation);
 }
