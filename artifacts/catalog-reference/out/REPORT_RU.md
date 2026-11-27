@@ -1,7 +1,7 @@
 # Отчёт: кабинет «Каталог → Товары» (этап 1, содержимое карточки модели)
 
 **Ветка:** `cursor/catalog-stage1-model-content-4ac7` (база `cursor/catalog-stage1-model-card-mobile-2ec3`, старт `a1dd150`)  
-**HEAD SHA:** _(после push — последний коммит ветки)_
+**HEAD SHA:** `2f4041c814808fcc3a842fae0abc21835583cd79`
 
 ## Пункт / что сделано / как проверено
 
