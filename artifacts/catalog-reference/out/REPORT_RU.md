@@ -2,7 +2,7 @@
 
 **Ветка:** `cursor/catalog-stage1-fe-branch-stock-api-34b5` (база `cursor/catalog-stage1-model-content-4ac7`, старт `5337cdb`)  
 **Бэкенд-контракт (только чтение):** `remcard-navigator` `cursor/catalog-stage1-be-branch-stock-brand-feda` — `branches[].stockKind`, `branches[].stockQuantity`  
-**HEAD SHA:** `9a8d4dfa`
+**HEAD SHA:** `0653bb69`
 
 ## Пункт / что сделано / как проверено
 
