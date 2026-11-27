@@ -1,17 +1,19 @@
-# Отчёт: кабинет «Каталог → Товары» (этап 1, содержимое карточки модели)
+# Отчёт: остаток по филиалу в карточке модели (этап 1)
 
-**Ветка:** `cursor/catalog-stage1-model-content-4ac7` (база `cursor/catalog-stage1-model-card-mobile-2ec3`, старт `a1dd150`)  
-**HEAD SHA:** `bf29af6f8e9c1d2a3b4c5d6e7f8a9b0c1d2e3f4a`
+**Ветка:** `cursor/catalog-stage1-fe-branch-stock-api-34b5` (база `cursor/catalog-stage1-model-content-4ac7`, старт `5337cdb`)  
+**Бэкенд-контракт (только чтение):** `remcard-navigator` `cursor/catalog-stage1-be-branch-stock-brand-feda` — `branches[].stockKind`, `branches[].stockQuantity`  
+**HEAD SHA:** `9a8d4dfa`
 
 ## Пункт / что сделано / как проверено
 
 | Пункт | Что сделано | Как проверено |
 |-------|-------------|----------------|
-| 1. «Филиалы и цены» | Остаток филиала с числом (`в наличии N шт`), блок `pc-brmeta`: «как в 1С» / «своя цена», пересчёт наценки при своей цене | `Partner1cModelDetail.test.tsx`, `models.branch-stock.test.ts`, снимки owner-model |
-| 2. «Варианты из 1С» | Абзац-пояснение под таблицей; остаток варианта числом (как было) | Тесты на текст, снимки |
-| 3. «Свойства из 1С» | Бренд в цепочке данных (`brand` в фикстуре `p004`, проброс из Navigator detail); абзац под таблицей | `navigator-model-detail.test.ts`, визуально owner-model |
-| 4. Права | Без изменений: сотрудник без `pc-money`, `pc-model-branches`, мета цены филиала | `Partner1cModelDetail.test.tsx` |
-| 5. Сборка и тесты | — | `npx tsc --noEmit`, vitest (каталог), `npm run lint`, `PARTNER_1C_CATALOG_ENABLED=1 npx next build` |
+| 1. Типы API | В `NavigatorCabinetModelBranch` добавлены `stockKind` и `stockQuantity`; на модели кабинета — `branchStocksFromApi` | `navigator-model-detail.test.ts`, `tsc` |
+| 2. Адаптер | `adaptNavigatorCabinetModelDetail` кладёт остаток по `branchId` в порядок филиалов кабинета (`mapNavigatorBranchesToCabinetStock`) | `models.branch-stock-api.test.ts` (в т.ч. перестановка ответа) |
+| 3. Подписи UI | `formatBranchStockLabel`: KNOWN>0, ZERO/0, UNKNOWN/нет поля → «нет данных»; excluded и снятый филиал — «товар здесь не представлен» | `models.branch-stock-api.test.ts`, `Partner1cModelDetail.tsx` |
+| 4. Фикстура без API | Без `branches[]` в ответе остаётся деление суммарного остатка вариантов (`branchStock`) | `models.branch-stock.test.ts` |
+| 5. Права | Закупка, «Филиалы и цены» и `pc-money` только владельцу; остаток в API доступен в адаптированной модели и для сотрудника | `Partner1cModelDetail.test.tsx`, capture employee |
+| 6. Сборка | — | `tsc`, vitest, `npm run lint`, `PARTNER_1C_CATALOG_ENABLED=1 npx next build` |
 
 ## Vitest (целевой набор)
 
@@ -22,15 +24,21 @@ PARTNER_1C_CATALOG_ENABLED=1 npx vitest run \
   src/app/catalog
 ```
 
-Результат: **27 passed** (9 файлов).
+Результат: **38 passed** (10 файлов), включая сценарии KNOWN / ZERO / UNKNOWN / нет поля / excluded / branchId при другом порядке / сотрудник без закупки.
 
 ## tsc / build / lint
 
 - `npx tsc --noEmit` — OK  
-- `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID` присутствует)  
+- `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID`)  
 - `npm run lint` — OK (предупреждения только в несвязанных файлах)
 
-## Снимки
+## Фикстуры API (образцы navigator)
+
+Для тестов и capture: `src/lib/partner-1c-catalog/fixtures/cabinet-model-detail-owner-branches.json` (по мотивам `artifacts/catalog-stage1-be-branch-stock/cabinet-model-detail-{owner,staff}.json` в remcard-navigator).
+
+Dev-fixture: `?branchStock=known|unknown&model=p004` подмешивает detail с API-остатками.
+
+## Снимки (390×844 и др.)
 
 ```bash
 PARTNER_1C_CATALOG_ENABLED=1 npm run dev &
@@ -38,24 +46,15 @@ PARTNER_1C_CATALOG_ENABLED=1 npm run dev &
 node scripts/catalog-stage1-capture.mjs
 ```
 
-Обновлены `catalog-{owner,employee}-model_{390x844,1386x719}_{light,dark}.png` (impl и `proto/`).
+Обновлены базовые `catalog-{owner,employee}-model_*` и добавлены ветки остатка:
 
-## Расхождения impl vs прототип (карточка модели)
+- `catalog-owner-model-branch-known_390x844_{light,dark}.png`
+- `catalog-owner-model-branch-unknown_390x844_{light,dark}.png`
+- `catalog-employee-model-branch-known_390x844_{light,dark}.png`
+- `catalog-employee-model-branch-unknown_390x844_{light,dark}.png`
 
-### Исправлено в этом заходе (данные и тексты)
-
-1. Филиалы: числовой остаток, `pc-brmeta`, пояснение внизу блока (без изменения).
-2. Варианты и свойства: тексты-пояснения как в прототипе.
-3. Бренд на карточке `p004` / Mona-58 в демо-фикстуре.
-
-### Остаётся
-
-| # | Область | Суть |
-|---|---------|------|
-| 1 | Демо-модель в capture | Скрипт открывает `p001`, в прототипе эталон визуала часто на `p004` — разный SKU в снимках. |
-| 2 | API | В `NavigatorCabinetModelBranch` нет поля остатка по филиалу: для числа в строке филиала используется сумма `stockQuantity` вариантов со `stockKind: KNOWN` и деление по филиалам (как в `product-catalog.js`), а не отдельное поле API. |
-| 3 | Оболочка | Dev-fixture без полного кабинета прототипа (sidebar, вкладки заявок и т.д.). |
+(Также полный набор 1386×719 для тех же сценариев.)
 
 ## Контракт API
 
-Изменений бэкенда не требовалось. При появлении per-branch stock в ответе detail можно заменить демо-`branchStock` на прямое чтение поля (имя поля в контракте `6f54bc52` пока не зафиксировано в типах).
+Фронт читает per-branch `stockKind` / `stockQuantity` из GET `/api/pro/organization/partner-products/models/{id}`; при `UNKNOWN`, `null` или отсутствии полей показывается **«нет данных»** (не демо-числа из фикстуры).
