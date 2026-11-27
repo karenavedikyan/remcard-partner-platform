@@ -44,7 +44,7 @@ describe("navigator cabinet model detail adapter", () => {
       { ...sample, branches: [{ branchId: "optovik-branch-0", name: "a", city: "Краснодар", address: "Ростовское шоссе, 30/3", excluded: false, adjustPercent: 0, rulePrice: 1, customPrice: null, effectivePrice: 1, stockKind: "KNOWN", stockQuantity: 3 }] },
       { manage: true },
     );
-    expect(model.branchStocksFromApi?.[0]?.stockKind).toBe("KNOWN");
-    expect(model.branchStocksFromApi?.[0]?.stockQuantity).toBe(3);
+    expect(model.branchStocksFromApi?.["optovik-branch-0"]?.stockKind).toBe("KNOWN");
+    expect(model.branchStocksFromApi?.["optovik-branch-0"]?.stockQuantity).toBe(3);
   });
 });

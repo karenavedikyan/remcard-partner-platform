@@ -1,0 +1,58 @@
+{
+  "id": "p004",
+  "name": "Mona-58",
+  "chapter": "Межкомнатные двери",
+  "brand": "Тандор",
+  "unit": "полотно",
+  "status": "live",
+  "sitePrice": 11670,
+  "thumbUrl": "/catalog-fixture/p004-0.webp",
+  "stockLabel": "В наличии",
+  "stockSub": "",
+  "branchCount": 3,
+  "branchTotal": 3,
+  "owner": { "purchasePrice": 6520, "markup": { "pct": 79, "rub": 5150, "room": 44 } },
+  "sitePriceType": "РРЦ Тандор",
+  "variants": [],
+  "branches": [
+    {
+      "branchId": "cm9xbranch000000000000002",
+      "name": "Краснодар · ул. 40 лет Победы, 168",
+      "city": "Краснодар",
+      "address": "ул. 40 лет Победы, 168",
+      "excluded": false,
+      "adjustPercent": 0,
+      "rulePrice": 11670,
+      "customPrice": null,
+      "effectivePrice": 11670,
+      "stockKind": "KNOWN",
+      "stockQuantity": 8
+    },
+    {
+      "branchId": "cm9xbranch000000000000001",
+      "name": "Краснодар · Ростовское шоссе, 30/3",
+      "city": "Краснодар",
+      "address": "Ростовское шоссе, 30/3",
+      "excluded": false,
+      "adjustPercent": 0,
+      "rulePrice": 11670,
+      "customPrice": null,
+      "effectivePrice": 11670,
+      "stockKind": "ZERO",
+      "stockQuantity": 0
+    },
+    {
+      "branchId": "cm9xbranch000000000000003",
+      "name": "Сочи · Курортный проспект, 50",
+      "city": "Сочи",
+      "address": "Курортный проспект, 50",
+      "excluded": false,
+      "adjustPercent": 0,
+      "rulePrice": 11670,
+      "customPrice": null,
+      "effectivePrice": 11670,
+      "stockKind": "UNKNOWN",
+      "stockQuantity": null
+    }
+  ]
+}

@@ -19,6 +19,8 @@ describe("navigator cabinet adapter", () => {
     expect(p004?.cost).toBe(6520);
     expect(snap.publication.hidden.has("p010")).toBe(true);
     expect(snap.source).toBe("navigator");
+    expect(snap.branches.length).toBe(6);
+    expect(snap.branches[0]?.id).toBe("optovik-branch-0");
   });
 
   it("strips owner economics for staff adapter path", () => {
