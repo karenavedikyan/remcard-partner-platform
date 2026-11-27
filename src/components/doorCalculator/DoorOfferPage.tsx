@@ -176,7 +176,7 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
             </div>
           </div>
           <h3>Проёмы</h3>
-          <table>
+          <table className="openings-table">
             <thead>
               <tr>
                 <th>№</th>
@@ -200,8 +200,31 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
               ))}
             </tbody>
           </table>
+          <div className="openings-cards" aria-label="Проёмы">
+            {data.per.map((p) => (
+              <article key={p.n} className="opening-card">
+                <header className="opening-card__head">
+                  <span className="opening-card__num">№ {p.n}</span>
+                  <div className="opening-card__title">
+                    <b>{p.room || 'Проём'}</b>
+                    <span>{p.type}</span>
+                  </div>
+                </header>
+                <dl className="opening-card__rows">
+                  <div>
+                    <dt>Размер, мм</dt>
+                    <dd>{p.size}</dd>
+                  </div>
+                  <div>
+                    <dt>Состав</dt>
+                    <dd>{p.lines.join(', ')}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
           <h3>Спецификация</h3>
-          <table>
+          <table className="spec-table">
             <thead>
               <tr>
                 <th>Позиция</th>

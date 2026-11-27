@@ -17,6 +17,13 @@ describe('DoorOfferPage — мобильная вёрстка и шапка', ()
     expect(css).toMatch(/@media\(max-width:480px\)/);
     expect(css).toContain('.door-offer .hd__c b');
     expect(css).toContain('overflow-wrap:anywhere');
+    expect(css).toContain('.door-offer .openings-cards');
+    expect(css).toContain('.door-offer .openings-table');
+    expect(css).toMatch(/@media\(max-width:480px\)[\s\S]*\.door-offer \.openings-table\{display:none\}/);
+    expect(css).toMatch(
+      /@media\(max-width:480px\)[\s\S]*\.door-offer \.openings-cards\{display:flex/
+    );
+    expect(css).toMatch(/@media print[\s\S]*\.door-offer \.openings-cards\{display:none!important\}/);
   });
 
   it('рендерит длинное название компании без обёртки в page-scale', () => {
@@ -60,4 +67,54 @@ describe('DoorOfferPage — мобильная вёрстка и шапка', ()
     expect(companyInHeader?.textContent).toBe('ООО ДВЕРИ ОПТОВИК');
     expect(document.querySelector('.door-offer .page-scale')).toBeTruthy();
   });
+
+  it('рендерит карточки проёмов для узких экранов', () => {
+    const model = {
+      id: 'manual',
+      manual: true,
+      name: 'Линия',
+      maker: '',
+      price: 0,
+      blades: null,
+    };
+    const payload = buildOfferPayload(
+      [
+        {
+          ...newOpening(1),
+          w: '900',
+          depth: '250',
+          room: 'Межкомнатная',
+        },
+      ],
+      model,
+      { blade: 1 },
+      0,
+      true,
+      { client: '', phone: '', address: '' }
+    );
+    window.location.hash = encodeOfferPayload(payload);
+
+    render(<DoorOfferPage context="lk" initialPartner={emptyPartner()} />);
+
+    const cards = document.querySelector('.door-offer .openings-cards');
+    expect(cards).toBeTruthy();
+    expect(cards).toHaveAttribute('aria-label', 'Проёмы');
+    expect(document.querySelector('.door-offer .openings-table')).toBeTruthy();
+    expect(document.querySelectorAll('.door-offer .opening-card')).toHaveLength(1);
+    expect(document.querySelector('.door-offer .opening-card b')?.textContent).toBe('Межкомнатная');
+  });
 });
+
+function emptyPartner() {
+  return {
+    company: '',
+    manager: '',
+    phone: '',
+    messenger: '',
+    email: '',
+    site: '',
+    address: '',
+    note: '',
+    logo: '',
+  };
+}

@@ -89,6 +89,26 @@
 .door-offer th{font-size:10.5px;color:var(--offer-muted);text-transform:uppercase;letter-spacing:.03em;background:var(--offer-table-head)}
 .door-offer td.r,.door-offer th.r{text-align:right;white-space:nowrap}
 .door-offer tr{break-inside:avoid}
+.door-offer .openings-cards{display:none}
+.door-offer .opening-card{
+  border:1px solid var(--offer-line);border-radius:10px;padding:10px 12px;
+  background:var(--offer-table-head);break-inside:avoid;
+}
+.door-offer .opening-card__head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.door-offer .opening-card__num{
+  flex-shrink:0;font-size:10.5px;font-weight:800;color:var(--offer-muted);
+  text-transform:uppercase;letter-spacing:.03em;min-width:2.5em;
+}
+.door-offer .opening-card__title{min-width:0;flex:1}
+.door-offer .opening-card__title b{display:block;font-size:13px;color:var(--offer-ink);word-break:normal;overflow-wrap:normal}
+.door-offer .opening-card__title span{display:block;font-size:12px;color:var(--offer-muted);margin-top:2px;word-break:normal;overflow-wrap:normal}
+.door-offer .opening-card__rows{margin:0;display:flex;flex-direction:column;gap:8px}
+.door-offer .opening-card__rows > div{margin:0}
+.door-offer .opening-card__rows dt{
+  margin:0;font-size:10.5px;font-weight:700;color:var(--offer-muted);
+  text-transform:uppercase;letter-spacing:.03em;
+}
+.door-offer .opening-card__rows dd{margin:2px 0 0;font-size:12px;color:var(--offer-ink);word-break:normal;overflow-wrap:normal}
 .door-offer .tot{margin-left:auto;margin-top:8px;width:min(260px,100%)}
 .door-offer .tot div{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;gap:8px}
 .door-offer .tot .big{border-top:2px solid var(--offer-ink);margin-top:4px;padding-top:8px;font-size:18px;font-weight:800;color:var(--offer-brand)}
@@ -106,6 +126,8 @@
   .door-offer .screen{display:none}
   .door-offer main{margin:0;padding:0;display:block;overflow:visible;max-width:none}
   .door-offer .page{box-shadow:none;width:auto;min-height:auto;height:296mm;overflow:hidden;max-width:none;transform:none}
+  .door-offer .openings-cards{display:none!important}
+  .door-offer .openings-table{display:table!important;width:100%}
 }
 @media(max-width:900px){
   .door-offer .screen{position:static;width:auto;max-width:100%}
@@ -125,5 +147,7 @@
   .door-offer .ct__in{grid-template-columns:1fr}
   .door-offer .hd{flex-wrap:wrap}
   .door-offer .hd__r{margin-left:0;text-align:left;max-width:100%}
-  .door-offer table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .door-offer .openings-table{display:none}
+  .door-offer .openings-cards{display:flex;flex-direction:column;gap:10px;width:100%;max-width:100%}
+  .door-offer table.spec-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 }
