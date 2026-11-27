@@ -48,22 +48,49 @@ export function DoorCalculatorWizard({
   const catalog = catalogProp ?? emptyDoorModelSource.listModels();
   const w = useDoorWizard(catalog, { persist: context === 'lk' });
   const stageRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const fit = () => {
+      const compact =
+        window.innerWidth > 860 && window.innerHeight < 861 && w.step === 2;
+      rootRef.current?.classList.toggle('is-compact2', compact);
+
       document.querySelectorAll<HTMLElement>('.door-wizard .stagebox').forEach((b) => {
         const g = b.closest<HTMLElement>('.s2__grid');
+        let scw = 400;
         if (g) {
-          g.style.setProperty(
-            '--scw',
-            `${window.innerWidth > 860 ? Math.max(300, Math.min(400, Math.round((window.innerHeight - 340) * (390 / 612)))) : 400}px`
-          );
+          if (window.innerWidth > 860) {
+            if (compact) {
+              const top = b.getBoundingClientRect().top + window.scrollY;
+              scw = Math.round((window.innerHeight - top - 12) * (390 / 612));
+              scw = Math.max(300, Math.min(scw, Math.round(g.clientWidth * 0.52)));
+            } else {
+              scw = Math.max(
+                300,
+                Math.min(400, Math.round((window.innerHeight - 340) * (390 / 612)))
+              );
+            }
+          }
+          g.style.setProperty('--scw', `${scw}px`);
         }
         const k = b.clientWidth / 390;
         const st = b.firstElementChild as HTMLElement | null;
         if (st) st.style.transform = `scale(${k})`;
         b.style.height = `${Math.round(612 * k)}px`;
       });
+
+      const barEl = rootRef.current?.querySelector<HTMLElement>('#bar > .bar');
+      const more = moreRef.current;
+      if (compact && more && barEl) {
+        const r = more.getBoundingClientRect();
+        barEl.style.left = `${r.left}px`;
+        barEl.style.width = `${r.width}px`;
+      } else if (barEl) {
+        barEl.style.left = '';
+        barEl.style.width = '';
+      }
     };
     fit();
     window.addEventListener('resize', fit);
@@ -193,24 +220,26 @@ export function DoorCalculatorWizard({
     <section className="scr s2" data-id={o.id}>
       <div className="s2__grid">
         <div className="s2__head">
-          <MotionEyebrow
-            text={`Шаг 2 из 4 · ${STEPS[1]} · проём ${w.cur + 1} из ${w.openings.length}`}
-          />
-          {w.openings.length > 1 ? (
-            <div className="dots">
-              {w.openings.map((x, i) => (
-                <button
-                  key={x.id}
-                  type="button"
-                  className={`dot${i === w.cur ? ' on' : ''}${i !== w.cur && x.w && x.h ? ' full' : ''}`}
-                  aria-label={`Проём ${i + 1}`}
-                  onClick={() => w.setCur(i)}
-                >
-                  {i !== w.cur && x.w && x.h ? '✓' : i + 1}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          <div className="s2__top">
+            <MotionEyebrow
+              text={`Шаг 2 из 4 · ${STEPS[1]} · проём ${w.cur + 1} из ${w.openings.length}`}
+            />
+            {w.openings.length > 1 ? (
+              <div className="dots">
+                {w.openings.map((x, i) => (
+                  <button
+                    key={x.id}
+                    type="button"
+                    className={`dot${i === w.cur ? ' on' : ''}${i !== w.cur && x.w && x.h ? ' full' : ''}`}
+                    aria-label={`Проём ${i + 1}`}
+                    onClick={() => w.setCur(i)}
+                  >
+                    {i !== w.cur && x.w && x.h ? '✓' : i + 1}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <label className="room">
             <IcPencil className="i" aria-hidden />
             <input
@@ -240,7 +269,7 @@ export function DoorCalculatorWizard({
         <div className="s2__scene" ref={stageRef}>
           <OpeningScene opening={o} model={w.curModel} onChange={(p) => w.updateOpening(o.id, p)} />
         </div>
-        <div className="s2__more">
+        <div className="s2__more" ref={moreRef}>
           {o.type !== 'arch' ? (
             <div className="fld">
               <span className="fld__l">Петли</span>
@@ -739,7 +768,7 @@ export function DoorCalculatorWizard({
       : 'door-wizard ctx-site';
 
   return (
-    <div className={shellClass} data-testid="door-calculator-wizard">
+    <div ref={rootRef} className={shellClass} data-testid="door-calculator-wizard">
       <div className="page">
         <div className="page__in">
           {context === 'site' ? (

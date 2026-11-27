@@ -16,6 +16,18 @@ describe('DoorCalculatorWizard', () => {
     await user.click(screen.getByRole('button', { name: /Далее: размеры/i }));
     expect(screen.getByPlaceholderText('900')).toBeInTheDocument();
     expect(screen.getByTestId('door-scene')).toBeInTheDocument();
+    expect(document.querySelector('.s2__top')).toBeTruthy();
+    expect(document.querySelector('.s2__more')).toBeTruthy();
+  });
+
+  it('step 2 toggles is-compact2 on short wide viewport', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1386 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 719 });
+    render(<DoorCalculatorWizard context="lk" />);
+    await user.click(screen.getByRole('button', { name: /Далее: размеры/i }));
+    const root = document.querySelector('.door-wizard');
+    expect(root?.classList.contains('is-compact2')).toBe(true);
   });
 
   it('lk breadcrumbs point to cabinet home', () => {
