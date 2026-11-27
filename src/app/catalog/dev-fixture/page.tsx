@@ -35,7 +35,7 @@ export default async function CatalogDevFixturePage({ searchParams }: Props) {
   });
 
   return (
-    <main style={{ maxWidth: 1310, margin: "0 auto", padding: "24px 16px" }}>
+    <main style={{ maxWidth: 1310, margin: "0 auto", padding: "24px 16px", overflowX: "clip" }}>
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ margin: "8px 0" }}>Каталог (fixture)</h1>
         <p className="muted" style={{ margin: 0 }}>

@@ -36,7 +36,20 @@ for (const theme of ["light", "dark"]) {
     await page.emulateMedia({ colorScheme: theme });
     for (const p of pages) {
       await page.goto(`${base}${p.url}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-      await page.waitForTimeout(400);
+      const ready = page.locator(
+        '[data-testid="product-catalog-section"], [data-testid="sf"], [data-testid="pd"]',
+      );
+      await ready.first().waitFor({ state: "attached", timeout: 90_000 });
+      await page.waitForTimeout(500);
+      await page.evaluate(() => {
+        document.querySelectorAll('[role="alert"]').forEach((el) => el.remove());
+      });
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      );
+      if (overflow && vp.width <= 400) {
+        console.warn(`Horizontal overflow on ${p.slug} @ ${vp.name}`);
+      }
       const file = path.join(outDir, `${p.slug}_${vp.name}_${theme}.png`);
       await page.screenshot({ path: file, fullPage: false });
     }
