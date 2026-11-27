@@ -32,4 +32,10 @@ describe("navigator cabinet model detail adapter", () => {
     expect(model.skus.length).toBe(sample.variants.length);
     expect(model.skus[0]?.guid).toBe("var-p004-0");
   });
+
+  it("passes brand from API detail onto the cabinet model", () => {
+    const model = adaptNavigatorCabinetModelDetail(sample, { manage: true });
+    expect(model.brand).toBe("Тандор");
+    expect(model.item.brand).toBe("Тандор");
+  });
 });

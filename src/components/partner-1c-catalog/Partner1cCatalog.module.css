@@ -1167,7 +1167,8 @@
   padding-top: 0;
 }
 
-.catalogScope :global(.pc-brrow.is-off .pc-brprice) {
+.catalogScope :global(.pc-brrow.is-off .pc-brprice),
+.catalogScope :global(.pc-brrow.is-off .pc-brmeta) {
   opacity: 0.5;
 }
 
@@ -1222,6 +1223,18 @@
   font-size: var(--text-base, 1rem);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+.catalogScope :global(.pc-brmeta) {
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--muted);
+  min-width: 0;
+}
+
+.catalogScope :global(.pc-brloss) {
+  color: var(--accent);
 }
 
 .catalogScope :global(.pc-site-head) {
@@ -1477,6 +1490,11 @@
   }
 
   .catalogScope :global(.pc-brprice) {
+    padding-left: calc(20px + var(--s3, 12px));
+  }
+
+  .catalogScope :global(.pc-brmeta) {
+    grid-column: 1 / -1;
     padding-left: calc(20px + var(--s3, 12px));
   }
 

@@ -151,6 +151,18 @@ export function stockOf(m: PartnerCatalogModel) {
     : { text: "Нет в наличии", sub: "ожидается поступление" };
 }
 
+/** Branch stock demo: split summed KNOWN variant stock across branches (prototype parity). */
+export function branchStock(m: PartnerCatalogModel, branchIndex: number): number | null {
+  const known = m.skus.filter((k) => k.stock != null);
+  if (!known.length) return null;
+  const total = known.reduce((a, k) => a + (k.stock ?? 0), 0);
+  const w = BRANCH_IDS.map((j) => 1 + (hash(`${m.id}:${j}`) % 5));
+  const sum = w.reduce((a, b) => a + b, 0);
+  const parts = w.map((x) => Math.floor((total * x) / sum));
+  parts[0] += total - parts.reduce((a, b) => a + b, 0);
+  return parts[branchIndex] ?? null;
+}
+
 /** Client-facing list: published live models only, cost stripped. */
 export function toPublicProducts(
   models: PartnerCatalogModel[],

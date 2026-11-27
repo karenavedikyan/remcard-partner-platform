@@ -106,6 +106,14 @@ export function adaptNavigatorCabinetModelDetail(
   if (dto.sitePrice != null) {
     model = { ...model, price: dto.sitePrice };
   }
+  const brand = dto.brand?.trim() || model.brand;
+  if (brand) {
+    model = {
+      ...model,
+      brand,
+      item: { ...model.item, brand },
+    };
+  }
   return model;
 }
 

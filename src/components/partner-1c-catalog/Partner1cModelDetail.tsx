@@ -10,6 +10,7 @@ import {
 } from "@/lib/partner-1c-catalog/constants";
 import {
   branchPrice,
+  branchStock,
   markup,
   mkPct,
   mkTone,
@@ -17,7 +18,6 @@ import {
   modelStatus,
   presentIn,
   rulePrice,
-  stockOf,
   type PublicationState,
 } from "@/lib/partner-1c-catalog/models";
 import { blank, matched, modelProps } from "@/lib/partner-1c-catalog/lk";
@@ -54,6 +54,50 @@ function skuCost(m: PartnerCatalogModel, price: number | null) {
 
 function signed(n: number) {
   return `${n < 0 ? "−" : "+"}${num(Math.abs(n))}`;
+}
+
+function branchStockLabel(m: PartnerCatalogModel, here: boolean, branchIndex: number): string {
+  if (!here) return "товар здесь не представлен";
+  if (m.price == null) return "под заказ · остатка в 1С нет";
+  const stock = branchStock(m, branchIndex);
+  if (stock == null) return "под заказ · остатка в 1С нет";
+  if (stock > 0) return `в наличии ${num(stock)} шт`;
+  return "нет в наличии";
+}
+
+function BranchPriceMeta({
+  pub,
+  m,
+  branchIndex,
+  here,
+  showMarkup,
+}: {
+  pub: PublicationState;
+  m: PartnerCatalogModel;
+  branchIndex: number;
+  here: boolean;
+  showMarkup: boolean;
+}) {
+  const own = pub.branchPrice.get(m.id)?.[branchIndex];
+  const pct = pub.branchPct[branchIndex] ?? 0;
+  const effective = branchPrice(pub, m, branchIndex);
+  const x = markup(effective, m.cost);
+  const source =
+    own != null ? "своя цена" : pct ? `правило филиала: ${signed(pct)} % к цене 1С` : "как в 1С";
+  return (
+    <div className="pc-brmeta" data-testid={`pc-branch-meta-${branchIndex}`}>
+      <span data-testid={`pc-branch-source-${branchIndex}`}>{source}</span>
+      {showMarkup && here && x ? (
+        <span
+          className={x.rub < 0 ? "pc-brloss" : undefined}
+          data-testid={`pc-branch-markup-${branchIndex}`}
+        >
+          наценка <b className={`pc-mk pc-mk--${mkTone(x)}`}>{mkPct(x)}</b> · {signed(x.rub)} ₽
+          {x.rub < 0 ? " · ниже закупки" : ""}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export function Partner1cModelDetail({
@@ -333,13 +377,7 @@ export function Partner1cModelDetail({
                   />
                   <span>
                     <strong>{BRANCHES[i]}</strong>
-                    <small>
-                      {here
-                        ? m.price == null
-                          ? "под заказ · остатка в 1С нет"
-                          : "в наличии"
-                        : "товар здесь не представлен"}
-                    </small>
+                    <small>{branchStockLabel(m, here, i)}</small>
                   </span>
                 </label>
                 {m.price != null && manage ? (
@@ -360,6 +398,15 @@ export function Partner1cModelDetail({
                     <span>Цена в филиале</span>
                     <strong>{p != null ? rub(p) : "—"}</strong>
                   </div>
+                ) : null}
+                {m.price != null ? (
+                  <BranchPriceMeta
+                    pub={pub}
+                    m={m}
+                    branchIndex={i}
+                    here={here}
+                    showMarkup={money}
+                  />
                 ) : null}
               </div>
             );
@@ -429,6 +476,10 @@ export function Partner1cModelDetail({
             </tbody>
           </table>
         </div>
+        <p className="small">
+          Клиент выбирает размер и цвет на сайте — в заявку попадает конкретная позиция 1С. «Нет
+          данных» по остатку не означает ноль: такой вариант показывается как «Под заказ».
+        </p>
       </section>
 
       <section className="panel stack" data-testid="pc-model-props">
@@ -450,6 +501,10 @@ export function Partner1cModelDetail({
             </div>
           ))}
         </dl>
+        <p className="small">
+          Названия и значения свойств приходят из 1С и здесь не редактируются. Пустое свойство в
+          фильтр не попадает и не считается значением «нет».
+        </p>
       </section>
     </div>
   );
