@@ -1,7 +1,7 @@
 # Отчёт: этап 1 каталога партнёра (frontend fix)
 
 **Ветка:** `cursor/catalog-stage1-frontend-fix-7a0a` (от `cursor/catalog-stage1-20261127`, база `d9af44fe`)  
-**HEAD SHA:** `1cb0eace` (полная: `git rev-parse HEAD` на ветке; цепочка: `2f8484bf` → `e5cad940` → `946368f0` → `1cb0eace`)  
+**HEAD SHA:** `4b4c8d65a13cf705acf1ca28676eaae3094ed556` (цепочка: `2f8484bf` → `e5cad940` → `946368f0` → `1cb0eace` → `4b4c8d65`)  
 
 ## Флаг
 
