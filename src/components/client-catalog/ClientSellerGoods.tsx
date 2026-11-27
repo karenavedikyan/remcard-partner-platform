@@ -150,10 +150,3 @@ export function ClientSellerGoods({ initialHidden }: Props) {
     </div>
   );
 }
-
-export function parseClientPreviewHidden(searchParams: Record<string, string | string[] | undefined>) {
-  const h = searchParams.hidden;
-  const raw = Array.isArray(h) ? h[0] : h;
-  if (!raw) return [];
-  return raw.split(".").filter(Boolean);
-}

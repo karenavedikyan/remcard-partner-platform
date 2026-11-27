@@ -1,7 +1,5 @@
-import {
-  ClientSellerGoods,
-  parseClientPreviewHidden,
-} from "@/components/client-catalog/ClientSellerGoods";
+import { ClientSellerGoods } from "@/components/client-catalog/ClientSellerGoods";
+import { parseClientPreviewHidden } from "@/lib/client-catalog/preview-hidden";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

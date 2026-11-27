@@ -34,30 +34,39 @@ export function ClientProductPage({ id }: Props) {
 
   return (
     <div className={styles.page} data-testid="pd">
-      <Link href="/preview/client-catalog/s6">← Оптовик</Link>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.2fr)", gap: 24 }}>
-        <div>
+      <Link className={styles.back} href="/preview/client-catalog/s6">
+        ← Оптовик
+      </Link>
+      <div className={styles.pd}>
+        <div className={styles.pdGal}>
           {model.imgs[0] ? (
-            <Image src={model.imgs[0]} alt={model.name} width={400} height={520} unoptimized />
+            <Image
+              className={styles.pdMainImg}
+              src={model.imgs[0]}
+              alt={model.name}
+              width={400}
+              height={520}
+              unoptimized
+            />
           ) : (
-            <div>Нет фото</div>
+            <div className={styles.pdMainImg}>Нет фото</div>
           )}
         </div>
-        <div className="pd__info">
-          <span className="xs muted" data-testid="rcof-maker">
+        <div className={styles.pdInfo}>
+          <span className={styles.eyebrow} data-testid="rcof-maker">
             Производитель · <b>Тандор</b>
           </span>
-          <h1>{model.name}</h1>
-          <p className="muted">{model.variant}</p>
-          <p className="pd__price">
+          <h1 className={styles.pdName}>{model.name}</h1>
+          <p className={styles.pdVar}>{model.variant}</p>
+          <p className={styles.pdPrice}>
             {model.price != null ? rub(model.price) : "Цена по запросу"}
             <small> / {model.unit}</small>
           </p>
-          {model.desc ? <p>{model.desc}</p> : null}
+          {model.desc ? <p className={styles.pdDesc}>{model.desc}</p> : null}
           <ClientWhereToBuy product={model.item.raw} />
-          <dl>
+          <dl className={styles.pdSpecs}>
             {props.map(([k, vals]) => (
-              <div key={k}>
+              <div key={k} className={styles.pdSpecRow}>
                 <dt>{k}</dt>
                 <dd>{vals.join(", ")}</dd>
               </div>
