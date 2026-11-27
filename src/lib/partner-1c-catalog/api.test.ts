@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchPartnerCatalogSnapshot, snapshotForAudience } from "./api";
+import { assertNoOwnerEconomicsInValue, fetchPartnerCatalogSnapshot, snapshotForAudience } from "./api";
 import {
   fixtureOptovikOwnerProContext,
   fixtureSergeyOrgEmployeeContext,
@@ -22,5 +22,6 @@ describe("partner catalog mock api", () => {
     const snap = snapshotForAudience(fetchPartnerCatalogSnapshot(employee));
     expect(snap.manage).toBe(false);
     expect(snap.models.every((m) => m.cost == null)).toBe(true);
+    expect(() => assertNoOwnerEconomicsInValue(snap)).not.toThrow();
   });
 });

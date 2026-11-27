@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FULL_SNAPSHOT, SELLER_NAME } from "@/lib/partner-1c-catalog/constants";
 import { blank } from "@/lib/partner-1c-catalog/lk";
 import { modelIssues, type PublicationState } from "@/lib/partner-1c-catalog/models";
 import { clonePublication } from "./publication";
-import type { PartnerCatalogSnapshot } from "@/lib/partner-1c-catalog/api";
+import {
+  fetchPartnerCatalogModelDetail,
+  type PartnerCatalogSnapshot,
+} from "@/lib/partner-1c-catalog/api";
+import type { PartnerCatalogModel } from "@/lib/partner-1c-catalog/types";
 import { DOORS_CALCULATOR_HREF } from "@/lib/door-calculator/access";
 import { num } from "@/lib/partner-1c-catalog/text";
 import { PcIconCalc, PcIconInfo } from "./Partner1cIcons";
@@ -40,19 +44,45 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
     clonePublication(snapshot.publication),
   );
   const [viewId, setViewId] = useState("");
+  const [models, setModels] = useState<PartnerCatalogModel[]>(() => snapshot.models);
   const [ui, setUi] = useState<ItemsUiState>(() => ({
     ...initialUi(),
     showCost: snapshot.manage,
   }));
 
+  useEffect(() => {
+    setModels(snapshot.models);
+  }, [snapshot]);
+
+  useEffect(() => {
+    if (!ui.full || tab !== "items") return;
+    const prev = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prev;
+    };
+  }, [ui.full, tab]);
+
   const model = useMemo(
-    () => snapshot.models.find((m) => m.id === viewId) ?? null,
-    [snapshot.models, viewId],
+    () => models.find((m) => m.id === viewId) ?? null,
+    [models, viewId],
   );
+
+  useEffect(() => {
+    if (!viewId || snapshot.source !== "navigator") return;
+    let cancelled = false;
+    void fetchPartnerCatalogModelDetail(viewId, snapshot.manage).then((detailed) => {
+      if (cancelled || !detailed) return;
+      setModels((prev) => prev.map((m) => (m.id === viewId ? detailed : m)));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [viewId, snapshot.manage, snapshot.source]);
 
   const toggleHidden = useCallback(
     (id: string) => {
-      const m = snapshot.models.find((x) => x.id === id);
+      const m = models.find((x) => x.id === id);
       if (!m || modelIssues(m).length) return;
       setPublication((pub) => {
         const next = clonePublication(pub);
@@ -61,7 +91,7 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
         return next;
       });
     },
-    [snapshot.models],
+    [models],
   );
 
   const filterForDetail = useMemo(() => {
@@ -129,10 +159,10 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
           onToggleHidden={() => toggleHidden(model.id)}
         />
       ) : tab === "site" ? (
-        <Partner1cSitePreviewTab models={snapshot.models} publication={publication} />
+        <Partner1cSitePreviewTab models={models} publication={publication} />
       ) : (
         <Partner1cItemsTab
-          models={snapshot.models}
+          models={models}
           publication={publication}
           manage={snapshot.manage}
           priceType={snapshot.priceType}

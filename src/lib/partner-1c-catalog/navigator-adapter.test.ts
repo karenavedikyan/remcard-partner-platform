@@ -4,8 +4,6 @@ import {
   fixtureNavigatorCabinetListSample,
 } from "./navigator-adapter";
 import { fixtureOptovikOwnerProContext } from "@/lib/employee-workspace-data/fixtures";
-import { modelStatus } from "./models";
-
 describe("navigator cabinet adapter", () => {
   it("maps sample list into UI models and publication hidden set", () => {
     const sample = fixtureNavigatorCabinetListSample();
@@ -13,14 +11,13 @@ describe("navigator cabinet adapter", () => {
       proContext: fixtureOptovikOwnerProContext(),
       access: { enabled: true, canAccess: true, isOwner: true },
     });
-    expect(snap.models.length).toBeGreaterThan(10);
+    expect(snap.models.length).toBe(sample.models.length);
     expect(snap.priceType).toBe("РРЦ Тандор");
     expect(snap.manage).toBe(true);
     const p004 = snap.models.find((m) => m.id === "p004");
     expect(p004?.price).toBe(11670);
     expect(p004?.cost).toBe(6520);
-    const hidden = snap.models.find((m) => m.id === "p010");
-    expect(hidden && modelStatus(snap.publication, hidden)).toBe("hidden");
+    expect(snap.publication.hidden.has("p010")).toBe(true);
     expect(snap.source).toBe("navigator");
   });
 

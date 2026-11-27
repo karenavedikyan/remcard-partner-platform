@@ -1,14 +1,13 @@
 import type { ProContextSnapshot } from "@/lib/profile-cabinet-access";
 import { buildPartnerModels, defaultPublicationState } from "./models";
-import { optovikFixtureProducts } from "./fixtures";
 import { isPartnerCatalogOwner } from "./gate";
+import type { CatalogProductRaw } from "./types";
 import type { PartnerCatalogSnapshot } from "./api";
 import type {
   NavigatorCabinetListResponse,
   NavigatorCabinetModelRow,
   NavigatorPublicListResponse,
 } from "./navigator-types";
-import type { CatalogProductRaw } from "./types";
 import type { CatalogListUiAccess } from "./catalog-access";
 import { catalogUiAccessFromNavigator } from "./catalog-access";
 import type { NavigatorCatalogAccessResponse } from "./navigator-types";
@@ -30,25 +29,26 @@ function publicationFromRows(rows: NavigatorCabinetModelRow[]) {
   return pub;
 }
 
-function mergeFixtureProducts(rows: NavigatorCabinetModelRow[]): CatalogProductRaw[] {
-  const fixtures = optovikFixtureProducts();
-  const byId = new Map(fixtures.map((p) => [p.id, p]));
-  const seen = new Set<string>();
-  const merged: CatalogProductRaw[] = [];
+function catalogProductFromRow(row: NavigatorCabinetModelRow): CatalogProductRaw {
+  const chapter = row.chapter ?? "";
+  const cat: CatalogProductRaw["cat"] = chapter.toLowerCase().includes("двер")
+    ? "doors"
+    : "hardware";
+  return {
+    id: row.id,
+    cat,
+    name: row.name,
+    price: row.sitePrice,
+    unit: row.unit ?? "шт",
+    imgs: row.thumbUrl ? [row.thumbUrl] : [],
+    seller: "optovik",
+    avail: "in",
+    brand: row.brand ?? undefined,
+  };
+}
 
-  for (const row of rows) {
-    const base = byId.get(row.id);
-    if (base) {
-      merged.push(overlayRowOnProduct(base, row));
-      seen.add(row.id);
-    }
-  }
-
-  for (const p of fixtures) {
-    if (!seen.has(p.id)) merged.push(p);
-  }
-
-  return merged;
+function productsFromNavigatorRows(rows: NavigatorCabinetModelRow[]): CatalogProductRaw[] {
+  return rows.map((row) => overlayRowOnProduct(catalogProductFromRow(row), row));
 }
 
 export type AdaptCabinetOptions = {
@@ -62,7 +62,7 @@ export function adaptNavigatorCabinetList(
   dto: NavigatorCabinetListResponse,
   opts: AdaptCabinetOptions,
 ): PartnerCatalogSnapshot {
-  const products = mergeFixtureProducts(dto.models);
+  const products = productsFromNavigatorRows(dto.models);
   let models = buildPartnerModels(products);
 
   const uiAccess = catalogUiAccessFromNavigator(opts.access, opts.proContext, opts.branchFilter ?? "");

@@ -70,3 +70,31 @@ export type NavigatorPublicListResponse = {
   summary: { text?: string; models?: number };
   items: NavigatorPublicListItem[];
 };
+
+export type NavigatorCabinetModelVariant = {
+  id: string;
+  name: string;
+  article: string | null;
+  stockKind: "KNOWN" | "ZERO" | "UNKNOWN" | string;
+  stockQuantity: number | null;
+  publicPrice: number | null;
+  properties: Record<string, string>;
+};
+
+export type NavigatorCabinetModelBranch = {
+  branchId: string;
+  name: string;
+  city: string;
+  address: string;
+  excluded: boolean;
+  adjustPercent: number;
+  rulePrice: number | null;
+  customPrice: number | null;
+  effectivePrice: number | null;
+};
+
+export type NavigatorCabinetModelDetail = NavigatorCabinetModelRow & {
+  variants: NavigatorCabinetModelVariant[];
+  branches: NavigatorCabinetModelBranch[];
+  sitePriceType: string;
+};

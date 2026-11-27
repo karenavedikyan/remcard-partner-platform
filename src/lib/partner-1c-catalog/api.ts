@@ -5,10 +5,16 @@ import { optovikFixtureProducts } from "./fixtures";
 import { isPartnerCatalogOwner } from "./gate";
 import { partner1cCatalogFeatureEnabled } from "./constants";
 import type { PartnerCatalogModel } from "./types";
+import { adaptNavigatorCabinetList } from "./navigator-adapter";
 import {
-  adaptNavigatorCabinetList,
-} from "./navigator-adapter";
-import type { NavigatorCabinetListResponse, NavigatorCatalogAccessResponse } from "./navigator-types";
+  adaptNavigatorCabinetModelDetail,
+  partnerCatalogModelFromFixture,
+} from "./navigator-model-detail";
+import type {
+  NavigatorCabinetListResponse,
+  NavigatorCabinetModelDetail,
+  NavigatorCatalogAccessResponse,
+} from "./navigator-types";
 import {
   catalogUiAccessFromNavigator,
   emptyCatalogListUiAccess,
@@ -98,4 +104,50 @@ export function snapshotForAudience(
       ? { ...snap.access, canSeeOwnerEconomics: false }
       : emptyCatalogListUiAccess("fixture"),
   };
+}
+
+/** Client/server: model detail from navigator; fixture only when flag off or request fails. */
+export async function fetchPartnerCatalogModelDetail(
+  modelId: string,
+  manage: boolean,
+): Promise<PartnerCatalogModel | null> {
+  if (!partner1cCatalogFeatureEnabled()) {
+    return partnerCatalogModelFromFixture(modelId);
+  }
+  try {
+    const dto = await remcardFetch<NavigatorCabinetModelDetail>(
+      `/api/pro/organization/partner-products/models/${encodeURIComponent(modelId)}`,
+    );
+    return adaptNavigatorCabinetModelDetail(dto, { manage });
+  } catch {
+    return partnerCatalogModelFromFixture(modelId);
+  }
+}
+
+const OWNER_ONLY_JSON_KEYS = new Set([
+  "purchasePrice",
+  "markup",
+  "internalPrices",
+  "cost",
+  "owner",
+]);
+
+/** Guard: employee snapshots/responses must not contain owner economics fields. */
+export function assertNoOwnerEconomicsInValue(value: unknown, path = ""): void {
+  if (value == null || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((child, i) => assertNoOwnerEconomicsInValue(child, `${path}[${i}]`));
+    return;
+  }
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (
+      OWNER_ONLY_JSON_KEYS.has(key) &&
+      child !== null &&
+      child !== undefined &&
+      child !== false
+    ) {
+      throw new Error(`Forbidden field "${key}" at ${path || "root"}`);
+    }
+    assertNoOwnerEconomicsInValue(child, path ? `${path}.${key}` : key);
+  }
 }
