@@ -165,6 +165,8 @@ export default defineConfig({
       "src/lib/business-nav/sections.test.ts",
       "src/lib/doorCalculator/**/*.test.ts",
       "src/lib/door-calculator/**/*.test.ts",
+      "src/lib/partner-1c-catalog/**/*.test.ts",
+      "src/components/partner-1c-catalog/**/*.test.tsx",
       "src/lib/business-profile/eligibility.test.ts",
       "src/lib/business-profile/wizard-copy.test.ts",
       "src/lib/business-profile/wizard-facts.test.ts",
