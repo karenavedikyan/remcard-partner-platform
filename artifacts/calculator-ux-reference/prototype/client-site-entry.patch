@@ -1,0 +1,55 @@
+diff --git a/client/app.js b/client/app.js
+index afac913..9ce63e5 100644
+--- a/client/app.js
++++ b/client/app.js
+@@ -56,7 +56,7 @@
+       <div><h1>Ремонт по шагам.<br>Без хаоса.</h1>
+         <p class="lead">Посчитать → пройти по шагам → купить у проверенных.</p>
+         <div class="doors doors--hero">
+-          <a class="door" href="#/calc"><span class="door__ico">${icon('calculator', 'i--24')}</span><div><h3>Калькулятор</h3><p>Сколько стоит и сколько займёт</p></div>${icon('arrow-right', 'door__arrow')}</a>
++          <a class="door" href="#/calc/start"><span class="door__ico">${icon('calculator', 'i--24')}</span><div><h3>Калькулятор</h3><p>Сколько стоит и сколько займёт</p></div>${icon('arrow-right', 'door__arrow')}</a>
+           <a class="door door--main" href="#/navigator"><span class="door__ico door__ico--dark" style="background:rgba(255,255,255,.12)">${icon('route', 'i--24')}</span><div><h3>Навигатор</h3><p>${p ? 'Что делать сейчас — продолжить' : 'Что делать сейчас и дальше'}</p></div>${icon('arrow-right', 'door__arrow')}</a>
+           <a class="door" href="#/catalog"><span class="door__ico door__ico--green">${icon('store', 'i--24')}</span><div><h3>Каталог</h3><p>Мастера и магазины со скидкой</p></div>${icon('arrow-right', 'door__arrow')}</a>
+         </div></div>
+diff --git a/client/core.js b/client/core.js
+index 38f7ec0..20a7dd6 100644
+--- a/client/core.js
++++ b/client/core.js
+@@ -241,7 +241,7 @@
+   }
+   function renderHeader() {
+     const { path } = parseHash();
+-    const links = [['#/calc', 'Калькулятор', path.startsWith('/calc') || path.startsWith('/estimate')], ['#/navigator', 'Навигатор', path.startsWith('/navigator')], ['#/catalog', 'Каталог', path.startsWith('/catalog')], ...(R(2) ? [['#/care', 'Сервисы', path.startsWith('/care') || path.startsWith('/service')]] : []), ['#/concierge', 'Консьерж', path.startsWith('/concierge')]];
++    const links = [['#/calc/start', 'Калькулятор', path.startsWith('/calc') || path.startsWith('/estimate')], ['#/navigator', 'Навигатор', path.startsWith('/navigator')], ['#/catalog', 'Каталог', path.startsWith('/catalog')], ...(R(2) ? [['#/care', 'Сервисы', path.startsWith('/care') || path.startsWith('/service')]] : []), ['#/concierge', 'Консьерж', path.startsWith('/concierge')]];
+     const p = activeProject();
+     qs('#header').innerHTML = `<div class="wrap header__in">${brand()}
+       <nav class="nav" aria-label="Разделы">${links.map(([h, t, a]) => `<a href="${h}" class="${a ? 'is-active' : ''}">${t}</a>`).join('')}</nav>
+@@ -261,7 +261,7 @@
+   function renderFooter() {
+     qs('#footer').innerHTML = `<div class="wrap footer__in">
+       <div>${brand()}<p class="xs" style="margin-top:.6rem">Прототип клиентского сайта · ${new Date().getFullYear()}</p></div>
+-      <div class="footer__links"><a href="#/calc">Калькулятор</a><a href="#/navigator">Навигатор</a><a href="#/catalog">Каталог</a>${R(2) ? '<a href="#/care">Сервисы</a>' : ''}<a href="#/concierge">Консьерж</a><a href="#/about">О проекте</a><a href="#/contacts">Контакты</a><a href="#/legal/privacy">Конфиденциальность</a><a href="#/legal/terms">Условия</a><a href="#/legal/cookies">Cookie</a><a href="#/releases">Релизы</a><a href="../partner/index.html">Партнёрам: prof.remcard.ru</a><a href="../index.html">Все кабинеты</a></div></div>`;
++      <div class="footer__links"><a href="#/calc/start">Калькулятор</a><a href="#/navigator">Навигатор</a><a href="#/catalog">Каталог</a>${R(2) ? '<a href="#/care">Сервисы</a>' : ''}<a href="#/concierge">Консьерж</a><a href="#/about">О проекте</a><a href="#/contacts">Контакты</a><a href="#/legal/privacy">Конфиденциальность</a><a href="#/legal/terms">Условия</a><a href="#/legal/cookies">Cookie</a><a href="#/releases">Релизы</a><a href="../partner/index.html">Партнёрам: prof.remcard.ru</a><a href="../index.html">Все кабинеты</a></div></div>`;
+   }
+ 
+   // ---------- Модалка / тост ----------
+diff --git a/client/style.css b/client/style.css
+index 71c8566..2f7f08b 100644
+--- a/client/style.css
++++ b/client/style.css
+@@ -3769,3 +3769,15 @@ fieldset.calc-wizard__fields:disabled textarea {
+ .me-offer-notice{margin-top:.75rem;padding:.65rem .75rem;background:var(--surface-2);border:1px solid var(--line);border-radius:.6rem;font-size:.85rem}
+ .me-offer-notice summary{cursor:pointer;font-weight:750}
+ .me-offer-channel-list{display:flex;gap:.3rem;flex-wrap:wrap;margin:.55rem 0}
++
++/* Вход в калькулятор: выбор «весь ремонт» или «отдельный расчёт» */
++.cs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
++.cs-card { display: grid; grid-template-columns: auto 1fr auto; gap: .9rem; align-items: center; padding: 1.1rem 1.15rem; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); color: var(--ink); text-decoration: none; transition: .15s; min-width: 0; }
++.cs-card:hover { border-color: var(--ink); }
++.cs-card b { display: block; font-size: var(--text-lg, 1.1rem); margin-bottom: .2rem; }
++.cs-card small { color: var(--muted); font-size: var(--text-sm); line-height: 1.4; display: block; }
++.cs-h2 { font-size: var(--text-base, 1rem); margin: 1.6rem 0 .7rem; }
++.cs-tiles { margin-top: 0; }
++@media (max-width: 720px) { .cs-grid { grid-template-columns: 1fr; } }
++.cs-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
++@media (max-width: 720px) { .cs-tiles { grid-template-columns: 1fr 1fr; } }
