@@ -1,47 +1,49 @@
-# Отчёт: кабинет «Каталог → Товары» (этап 1, сборка и снимки)
+# Отчёт: кабинет «Каталог → Товары» (этап 1, карточка модели 390px)
 
-**Ветка:** `cursor/catalog-stage1-build-shots-bb5c` (база `cursor/catalog-stage1-cabinet-view-2745`, старт `bdc92901`)  
-**HEAD SHA:** `363bf3210bcecec8347272f2b58d96f40d5537d8`
+**Ветка:** `cursor/catalog-stage1-model-card-mobile-2ec3` (база `cursor/catalog-stage1-build-shots-bb5c`, старт `8b8145e4`)  
+**HEAD SHA:** `1be2a728354a2bb2f52fc39e4ab61a8c18f01d84` 
 
 ## Пункт / что сделано / как проверено
 
 | Пункт | Что сделано | Как проверено |
 |-------|-------------|----------------|
-| 1. Сборка | `employee-snapshot.test.ts` → `.tsx` (JSX в vitest); `rg '<[A-Z]'` по `*.test.ts` этапа 1 — других JSX в `.ts` нет | `npx next build`, наличие `.next/BUILD_ID`; vitest |
-| 2. Снимки impl | `catalog-stage1-capture.mjs`: таблица, «Карточки», карточка модели; owner/employee; 1386×719 и 390×844; light/dark; `fullPage`; снятие `[role=alert]`; overflow guard на 390 | `artifacts/catalog-reference/out/catalog-*_{table,cards,model}_*.png` |
-| 3. Снимки proto | Парные кадры в `out/proto/` (те же slug и размеры); прототип `partner/index.html?role=…&open=goods&dataset=demo` | `artifacts/catalog-reference/out/proto/*.png` |
-| 4. Паритет таблицы | Наценка: «+N ₽ с шт.» в списке; колонка «Филиалы» у сотрудника; подпись остатка по филиалам; кнопка `pc-brbtn` у владельца | Снимки + визуальное сравнение с `proto/` |
-| 5. Тесты | Без новых падений | vitest, `npx tsc --noEmit`, `npx next build` |
+| 1. Вёрстка карточки модели (390×844) | В `Partner1cCatalog.module.css` перенесены стили прототипа: галерея и миниатюры, `pc-price`, плитки `pc-figs`, таблицы `pc-table` / `pc-disc` как карточки на ≤680px, филиалы `pc-brrow` как карточки на мобиле, `pc-specs` (подпись слева — значение справа), чекбоксы и поля цены филиала | Снимки `catalog-{owner,employee}-model_390x844_{light,dark}.png` vs `proto/`; overflow guard в `catalog-stage1-capture.mjs` |
+| 2. Горизонтальный скролл | `overflow-x: clip` на обёртках таблиц, `min-width: 0` у таблиц на мобиле | Capture не падает на `assertNoMobileOverflow` для model @ 390 |
+| 3. Снимки | Обновлены impl и proto: model/table/cards, 1386×719 и 390×844, light/dark | `node scripts/catalog-stage1-capture.mjs` |
+| 4. Права | Логика не менялась: сотрудник без `pc-money` и `pc-model-branches` | `Partner1cModelDetail.test.tsx`, снимки employee-model |
+| 5. Сборка и тесты | — | `npx tsc --noEmit`, vitest (каталог), `npm run lint`, `PARTNER_1C_CATALOG_ENABLED=1 npx next build` |
 
 ## Vitest (целевой набор)
 
 ```bash
-PARTNER_1C_CATALOG_ENABLED=1 npx vitest run src/lib/business-nav/sections.test.ts \
+PARTNER_1C_CATALOG_ENABLED=1 npx vitest run \
   src/lib/partner-1c-catalog \
-  src/components/partner-1c-catalog/Partner1cModelDetail.test.tsx \
-  src/app/catalog/dev-fixture/employee-snapshot.test.tsx
+  src/components/partner-1c-catalog \
+  src/app/catalog
 ```
 
-## tsc / build
+Результат: **21 passed** (8 файлов).
+
+## tsc / build / lint
 
 - `npx tsc --noEmit` — OK  
-- `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID` присутствует)
+- `PARTNER_1C_CATALOG_ENABLED=1 npx next build` — OK (`.next/BUILD_ID` присутствует)  
+- `npm run lint` — OK (предупреждения только в несвязанных файлах)
 
-## Расхождения impl vs прототип (таблица и карточка модели)
+## Расхождения impl vs прототип (карточка модели @ 390px)
 
-### Исправлено в вёрстке (этот заход)
+### Исправлено в этом заходе (только CSS)
 
-1. Колонка «Наценка» в списке: добавлена вторая строка «+N ₽ с шт.» как в прототипе.
-2. Сотрудник: в таблице снова видна колонка «Филиалы» (только текст, без закупки/наценки).
-3. Остаток: подпись «все филиалы» / «филиалов: N из 6» под статусом наличия.
-4. Владелец: кнопка филиалов `pc-brbtn` с иконкой (открывает карточку модели для правки филиалов).
+1. «Закупка и наценка»: плитки 2×2, скидки 5–20 % — отдельные карточки со строками «Цена со скидкой» / «Ваш доход с единицы» / «Наценка».
+2. «Филиалы и цены»: карточка на филиал, чекбокс не налезает на адрес, оформленное поле цены.
+3. «Варианты из 1С» и «Свойства из 1С»: карточки/пары подпись–значение вместо широкой таблицы.
+4. Верх: галерея, заголовок, цена, кнопки действий, «Ко всем товарам».
 
-### Остаётся (перечень)
+### Остаётся (вне рамки «только вёрстка»)
 
 | # | Область | Суть |
 |---|---------|------|
-| 1 | Оболочка | Прототип — полный кабинет (sidebar, topbar, вкладки «Заявки», «Филиалы и цены», «Поставщики», «Обмен с 1С»); impl — dev-fixture и только «Товары» + «Вид на сайте» (этап 1 по ТЗ). |
-| 2 | Данные | В фикстуре 20 моделей, в прототипе 21; средняя наценка 51 % vs 52 % — разный состав демо-выборки. |
-| 3 | Логика | Диалог массового редактирования филиалов из списка (`branches:` в прототипе) не реализован — кнопка ведёт в карточку модели. |
-| 4 | Источник SKU | При `source: fixture` SKU из `optovik-products.json`; при live API — navigator без полного набора фильтров до открытия карточки. |
-| 5 | Прочее | Иконка пункта меню «Каталог» упрощённая; этапы 2/3 не делались. |
+| 1 | Филиалы | В прототипе под ценой строка `pc-brmeta` («наценка …% · …₽») — в impl нет соответствующей разметки/логики `branchMeta` (не добавлялось). |
+| 2 | Оболочка | Dev-fixture без полного кабинета прототипа (sidebar, вкладки заявок и т.д.). |
+| 3 | Данные | Другая демо-модель в фикстуре (`p001`) vs визуал прототипа; 20 vs 21 моделей. |
+| 4 | Таблица списка | Паритет списка товаров — в ветке `build-shots` (наценка «+N ₽», филиалы сотрудника и т.д.). |
