@@ -40,7 +40,10 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
     clonePublication(snapshot.publication),
   );
   const [viewId, setViewId] = useState("");
-  const [ui, setUi] = useState<ItemsUiState>(initialUi);
+  const [ui, setUi] = useState<ItemsUiState>(() => ({
+    ...initialUi(),
+    showCost: snapshot.manage,
+  }));
 
   const model = useMemo(
     () => snapshot.models.find((m) => m.id === viewId) ?? null,
@@ -133,6 +136,7 @@ export function Partner1cCatalogWorkspace({ snapshot }: Props) {
           publication={publication}
           manage={snapshot.manage}
           priceType={snapshot.priceType}
+          access={snapshot.access}
           ui={ui}
           onUi={setUi}
           onPublication={setPublication}

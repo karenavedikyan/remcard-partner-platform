@@ -1,10 +1,17 @@
 .catalogScope {
   display: grid;
   gap: var(--s4, 16px);
+  min-width: 0;
 }
 
 .catalogScope :global(.stack) {
   display: grid;
+  gap: var(--s4, 16px);
+}
+
+.catalogScope :global(.stats) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--s4, 16px);
 }
 
@@ -253,6 +260,10 @@
 
 .catalogScope :global(.pc-list--money .pc-row) {
   grid-template-columns: 28px minmax(0, 2fr) 128px 104px 96px 108px 124px 124px;
+}
+
+.catalogScope :global(.pc-list--staff .pc-row) {
+  grid-template-columns: 28px minmax(0, 2fr) minmax(0, 112px) 108px 124px 112px;
 }
 
 .catalogScope :global(.pc-row-main) {

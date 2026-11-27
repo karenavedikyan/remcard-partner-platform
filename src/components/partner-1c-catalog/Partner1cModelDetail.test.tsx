@@ -50,5 +50,6 @@ describe("Partner1cModelDetail permissions", () => {
       />,
     );
     expect(screen.queryByTestId("pc-money")).toBeNull();
+    expect(screen.queryByTestId("pc-model-branches")).toBeNull();
   });
 });

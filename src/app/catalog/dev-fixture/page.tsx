@@ -9,6 +9,7 @@ import { defaultPublicationState } from "@/lib/partner-1c-catalog/models";
 import { buildPartnerModels } from "@/lib/partner-1c-catalog/models";
 import { optovikFixtureProducts } from "@/lib/partner-1c-catalog/fixtures";
 import { partner1cCatalogFeatureEnabled } from "@/lib/partner-1c-catalog/constants";
+import { emptyCatalogListUiAccess } from "@/lib/partner-1c-catalog/catalog-access";
 
 type Props = {
   searchParams: Promise<{ role?: string }>;
@@ -23,11 +24,14 @@ export default async function CatalogDevFixturePage({ searchParams }: Props) {
   const employee = role === "employee";
   const models = employee ? stripCostFromModels(buildPartnerModels(optovikFixtureProducts())) : buildPartnerModels(optovikFixtureProducts());
 
+  const access = emptyCatalogListUiAccess(employee ? "employee-fixture" : "owner-fixture");
+  access.canSeeOwnerEconomics = !employee;
   const snap = snapshotForAudience({
     ...fetchPartnerCatalogSnapshot(null),
     manage: !employee,
     models,
     publication: defaultPublicationState(),
+    access,
   });
 
   return (

@@ -301,6 +301,7 @@ export function Partner1cModelDetail({
         </section>
       ) : null}
 
+      {manage ? (
       <section className="panel stack pc-brs" data-testid="pc-model-branches">
         <div className="row between">
           <h3>Филиалы и цены</h3>
@@ -370,6 +371,7 @@ export function Partner1cModelDetail({
             : "Филиалы и цены настраивает владелец кабинета."}
         </p>
       </section>
+      ) : null}
 
       <section className="panel stack">
         <div className="row between">

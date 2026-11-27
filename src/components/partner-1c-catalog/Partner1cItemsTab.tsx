@@ -41,6 +41,7 @@ import {
   type PublicationState,
 } from "@/lib/partner-1c-catalog/models";
 import type { FilterState, ModelStatusCode, PartnerCatalogModel } from "@/lib/partner-1c-catalog/types";
+import type { CatalogListUiAccess } from "@/lib/partner-1c-catalog/catalog-access";
 import { num, plural, rub } from "@/lib/partner-1c-catalog/text";
 import { Partner1cFilterPanel } from "./Partner1cFilterPanel";
 import {
@@ -77,6 +78,7 @@ type Props = {
   publication: PublicationState;
   manage: boolean;
   priceType: string;
+  access?: CatalogListUiAccess;
   ui: ItemsUiState;
   onUi: (next: ItemsUiState) => void;
   onPublication: (pub: PublicationState) => void;
@@ -110,6 +112,7 @@ export function Partner1cItemsTab({
   publication: pub,
   manage,
   priceType,
+  access,
   ui,
   onUi,
   onPublication,
@@ -137,6 +140,10 @@ export function Partner1cItemsTab({
   const list = found.map((r) => r.m);
   const opts = options(pool, st);
   const money = manage && ui.showCost;
+  const showRetailPrices =
+    !access?.publicationPricesBlocked &&
+    access?.branchHint !== "pick-active-branch" &&
+    (access?.showBranchRetailPrices !== false || ui.branch !== "");
   const partial = skuLevel(st);
   const active = activeCount(st);
 
@@ -233,6 +240,12 @@ export function Partner1cItemsTab({
 
   return (
   <div className={styles.catalogScope}>
+      {access?.branchHint === "pick-active-branch" ? (
+        <p className="notice" role="status" data-testid="pc-branch-hint">
+          Выберите рабочий филиал в шапке кабинета, чтобы видеть цены по точке. Это не отказ в доступе к
+          каталогу.
+        </p>
+      ) : null}
       <div className={`stats pc-stats ${money && avg ? "pc-stats--4" : ""}`}>
         <div className="stat" data-testid="pc-stat-models">
           <span className="small">Моделей из 1С</span>
@@ -325,21 +338,23 @@ export function Partner1cItemsTab({
             ))}
           </select>
         </label>
-        <label className="field">
-          <span className="pc-flabel">Филиал</span>
-          <select
-            data-testid="pc-branch-filter"
-            value={ui.branch}
-            onChange={(e) => setUi({ branch: e.target.value })}
-          >
-            <option value="">Все филиалы</option>
-            {BRANCH_IDS.map((i) => (
-              <option key={i} value={String(i)}>
-                {BRANCH_SHORT[i]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {manage ? (
+          <label className="field">
+            <span className="pc-flabel">Филиал</span>
+            <select
+              data-testid="pc-branch-filter"
+              value={ui.branch}
+              onChange={(e) => setUi({ branch: e.target.value })}
+            >
+              <option value="">Все филиалы</option>
+              {BRANCH_IDS.map((i) => (
+                <option key={i} value={String(i)}>
+                  {BRANCH_SHORT[i]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <button
           type="button"
           className={`btn pc-filter-btn ${active ? "is-on" : ""} ${panelOpen ? "is-open" : ""}`}
@@ -560,7 +575,8 @@ export function Partner1cItemsTab({
           {list.map((m) => {
             const code = modelStatus(pub, m);
             const stock = stockOf(m);
-            const mk = money ? markup(priceIn(pub, m, ui.branch), m.cost) : null;
+            const mk =
+              money && showRetailPrices ? markup(priceIn(pub, m, ui.branch), m.cost) : null;
             const n = presentIn(pub, m).length;
             return (
               <article
@@ -603,8 +619,8 @@ export function Partner1cItemsTab({
                     </small>
                   </button>
                   <div className="pc-card-nums">
-                    {m.price == null ? (
-                      <span className="muted">не задана</span>
+                    {m.price == null || !showRetailPrices ? (
+                      <span className="muted">{m.price == null ? "не задана" : "—"}</span>
                     ) : (
                       <strong>{rub(priceIn(pub, m, ui.branch)!)}</strong>
                     )}
@@ -624,10 +640,12 @@ export function Partner1cItemsTab({
                       )}
                     </div>
                   ) : null}
-                  <div className="pc-card-br">
-                    <PcIconMapPin />
-                    {n === BRANCHES.length ? "во всех филиалах" : `в ${n} из ${BRANCHES.length} филиалов`}
-                  </div>
+                  {manage ? (
+                    <div className="pc-card-br">
+                      <PcIconMapPin />
+                      {n === BRANCHES.length ? "во всех филиалах" : `в ${n} из ${BRANCHES.length} филиалов`}
+                    </div>
+                  ) : null}
                   <div className="pc-card-foot">
                     <StatusPill code={code} />
                     <RowAction pub={pub} m={m} onOpen={onOpenModel} onToggle={toggleHidden} />
@@ -639,7 +657,7 @@ export function Partner1cItemsTab({
         </section>
       ) : (
         <section
-          className={`pc-list ${money ? "pc-list--money" : ""}`}
+          className={`pc-list ${money ? "pc-list--money" : ""} ${!manage ? "pc-list--staff" : ""}`}
           data-testid="pc-list"
           aria-label="Товары каталога"
         >
@@ -649,7 +667,7 @@ export function Partner1cItemsTab({
             <span>Цена{money ? " · закупка" : ""}</span>
             {money ? <span className="pc-cell--mk">Наценка</span> : null}
             <span className="pc-cell--stock">Остаток</span>
-            <span className="pc-cell--br">Филиалы</span>
+            {manage ? <span className="pc-cell--br">Филиалы</span> : null}
             <span className="pc-cell--status">Статус</span>
             <span />
           </div>
@@ -660,6 +678,8 @@ export function Partner1cItemsTab({
               pub={pub}
               ui={ui}
               money={money}
+              manage={manage}
+              showRetailPrices={showRetailPrices}
               branch={ui.branch}
               note={variantsNote(m)}
               selected={ui.selected.has(m.id)}
@@ -723,6 +743,8 @@ function ModelRow({
   pub,
   ui,
   money,
+  manage,
+  showRetailPrices,
   branch,
   note,
   selected,
@@ -734,6 +756,8 @@ function ModelRow({
   pub: PublicationState;
   ui: ItemsUiState;
   money: boolean;
+  manage: boolean;
+  showRetailPrices: boolean;
   branch: string;
   note: string;
   selected: boolean;
@@ -743,8 +767,8 @@ function ModelRow({
 }) {
   const code = modelStatus(pub, m);
   const stock = stockOf(m);
-  const p = priceIn(pub, m, branch);
-  const range = branch === "" ? branchRange(pub, m) : null;
+  const p = showRetailPrices ? priceIn(pub, m, branch) : null;
+  const range = showRetailPrices && branch === "" ? branchRange(pub, m) : null;
   const mk = money ? markup(p, m.cost) : null;
   const n = presentIn(pub, m).length;
 
@@ -774,8 +798,8 @@ function ModelRow({
         </span>
       </button>
       <span className="pc-cell pc-cell--price" data-label="Цена">
-        {m.price == null ? (
-          <span className="muted">не задана</span>
+        {m.price == null || !showRetailPrices ? (
+          <span className="muted">{m.price == null ? "не задана" : "—"}</span>
         ) : (
           <>
             <strong>{rub(p!)}</strong>
@@ -807,9 +831,11 @@ function ModelRow({
         <span>{stock.text}</span>
         <small className="pc-stock-sub">{stock.sub}</small>
       </span>
-      <span className="pc-cell pc-cell--br" data-label="Филиалы">
-        {branchesText(n)}
-      </span>
+      {manage ? (
+        <span className="pc-cell pc-cell--br" data-label="Филиалы">
+          {branchesText(n)}
+        </span>
+      ) : null}
       <span className="pc-cell pc-cell--status">
         <StatusPill code={code} />
       </span>
