@@ -1,6 +1,7 @@
 # Отчёт: кабинет «Каталог → Товары» (этап 1)
 
-**Ветка:** `cursor/catalog-stage1-cabinet-view-2745` (база `cursor/catalog-stage1-frontend-fix-7a0a`, старт `a3ca1e31`)
+**Ветка:** `cursor/catalog-stage1-cabinet-view-2745` (база `cursor/catalog-stage1-frontend-fix-7a0a`, старт `a3ca1e31`)  
+**HEAD SHA:** `2b621319083aea2afea99e80beeb093cffd23bb7` (`fe6a0a72` → `53e88e9e` → `3b35b01d` → `2b621319`)
 
 ## Пункт / что сделано / как проверено
 
