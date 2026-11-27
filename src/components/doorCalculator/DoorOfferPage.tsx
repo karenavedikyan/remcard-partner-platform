@@ -133,24 +133,24 @@ export function DoorOfferPage({ context = 'lk', initialPartner = null }: DoorOff
               <span>{[partner.phone, partner.site].filter(Boolean).join(' · ') || '—'}</span>
             </div>
             <div className="hd__r">
-              <span className="rc">
-                <i aria-hidden>
-                  <svg width="13" height="13" viewBox="0 0 32 32">
-                    <path
-                      d="M8 17l8-7 8 7v8H8z"
-                      fill="none"
-                      stroke="#fff"
-                      strokeWidth="3"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </i>
-                <b>
-                  remcard<span>.</span>
-                </b>
+              <span className="rcb">
+                <svg width="32" height="32" viewBox="0 0 36 36" aria-hidden>
+                  <rect width="36" height="36" rx="10" fill="var(--offer-brand)" />
+                  <path
+                    d="M10 26V12l8-5 8 5v14h-5v-8h-6v8z"
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth="2.2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="rcb__t">
+                  <b>
+                    remcard<span>.</span>
+                  </b>
+                  <small>калькулятор ремонта</small>
+                </span>
               </span>
-              <br />
-              Расчёт выполнен в RemCard
             </div>
           </div>
           <h1>Коммерческое предложение</h1>

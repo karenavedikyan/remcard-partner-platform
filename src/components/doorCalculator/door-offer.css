@@ -74,9 +74,12 @@
 .door-offer .hd__c b{font-size:19px;display:block;overflow-wrap:anywhere;line-height:1.2}
 .door-offer .hd__c span{color:var(--offer-muted);font-size:12px}
 .door-offer .hd__r{margin-left:auto;text-align:right;font-size:11px;color:var(--offer-muted);flex-shrink:0;max-width:42%}
-.door-offer .rc{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--offer-ink);font-size:14px}
-.door-offer .rc i{width:20px;height:20px;border-radius:6px;background:var(--offer-brand);display:grid;place-items:center}
-.door-offer .rc b span{color:var(--offer-brand)}
+.door-offer .rcb{display:inline-flex;align-items:center;gap:8px;text-align:left}
+.door-offer .rcb__t{display:grid;line-height:1.1}
+.door-offer .rcb__t b{font-size:17px;font-weight:800;letter-spacing:-.03em;color:var(--offer-ink)}
+.door-offer .rcb__t b span{color:var(--offer-brand)}
+.door-offer .rcb__t small{font-size:10px;font-weight:600;color:var(--offer-muted);letter-spacing:.01em}
+.door-offer .rcb svg{flex-shrink:0}
 .door-offer h1{font-size:21px;margin:12px 0 2px;color:#252923}
 .door-offer .meta{color:var(--offer-muted);font-size:12px;margin-bottom:12px}
 .door-offer .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
