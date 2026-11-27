@@ -323,6 +323,36 @@ const ALLOWED_ROUTES: ReadonlyArray<{ methods: ReadonlySet<string>; pattern: Reg
     { methods: new Set(["POST"]), pattern: /^\/api\/pro\/notification-bind\/start$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/notification-bind\/status$/ },
     { methods: new Set(["GET", "POST", "PATCH"]), pattern: /^\/api\/pro\/organization\/branches$/ },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/partner-products\/access$/ },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/organization\/partner-products$/,
+    },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/organization\/partner-products\/models\/[\w.-]+$/,
+    },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/organization\/partner-products\/branch-rules$/,
+    },
+    {
+      methods: new Set(["GET", "PATCH"]),
+      pattern: /^\/api\/pro\/organization\/partner-products\/branch-prices$/,
+    },
+    {
+      methods: new Set(["PATCH", "POST"]),
+      pattern: /^\/api\/pro\/organization\/partner-products\/publication$/,
+    },
+    { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/partner-products\/preview$/ },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/catalog\/org\/[\w-]+\/partner-products$/,
+    },
+    {
+      methods: new Set(["GET"]),
+      pattern: /^\/api\/catalog\/org\/[\w-]+\/partner-products\/[\w.-]+$/,
+    },
     { methods: new Set(["GET", "PATCH"]), pattern: branchByIdPath() },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/organization\/employees-overview$/ },
     { methods: new Set(["GET"]), pattern: /^\/api\/pro\/business-home\/metrics$/ },

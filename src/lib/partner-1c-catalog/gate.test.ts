@@ -4,6 +4,7 @@ import {
   partner1cCatalogNavVisible,
 } from "./gate";
 import { fixtureOptovikOwnerProContext, fixtureSergeyOrgEmployeeContext } from "@/lib/employee-workspace-data/fixtures";
+import { flagsFromActionIds } from "@/lib/prof-i-permissions";
 import type { CabinetPresentationSnapshot } from "@/lib/cabinet-presentation/types";
 
 describe("partner1cCatalog gate", () => {
@@ -37,5 +38,16 @@ describe("partner1cCatalog gate", () => {
     process.env.PARTNER_1C_CATALOG_ENABLED = "1";
     const employee = fixtureSergeyOrgEmployeeContext({ canManageLeads: true });
     expect(canManagePartner1cCatalog(employee)).toBe(false);
+  });
+
+  it("employee with catalog right sees nav when flag on", () => {
+    process.env.PARTNER_1C_CATALOG_ENABLED = "1";
+    const employee = fixtureSergeyOrgEmployeeContext({ canManageLeads: true });
+    employee.effectivePermissions = flagsFromActionIds(["own", "catalog"]);
+    const presentation: Pick<CabinetPresentationSnapshot, "navMode" | "proContext"> = {
+      navMode: "business-company",
+      proContext: employee,
+    };
+    expect(partner1cCatalogNavVisible(presentation)).toBe(true);
   });
 });

@@ -11,13 +11,18 @@ export function canManagePartner1cCatalog(proContext: ProContextSnapshot | null 
   return Boolean(proContext.effectivePermissions?.canManageCatalog);
 }
 
+/** Сотрудник с правом catalog (без расширения набора прав). */
+export function canViewPartner1cCatalog(proContext: ProContextSnapshot | null | undefined): boolean {
+  return canManagePartner1cCatalog(proContext);
+}
+
 export function partner1cCatalogNavVisible(
   presentation: Pick<CabinetPresentationSnapshot, "navMode" | "proContext">,
 ): boolean {
   if (!partner1cCatalogFeatureEnabled()) return false;
   const mode = presentation.navMode;
   if (mode !== "business-store" && mode !== "business-company") return false;
-  return canManagePartner1cCatalog(presentation.proContext);
+  return canViewPartner1cCatalog(presentation.proContext);
 }
 
 export function filterBusinessNavForPartner1cCatalog(
