@@ -21,18 +21,6 @@ export const STOCK_MODES: [string, string][] = [
   ["none", "Не показывать"],
 ];
 
-export const BRANCHES = [
-  "Краснодар, Ростовское шоссе, 30/3",
-  "Краснодар, ул. 40 лет Победы, 168",
-  "Краснодар, ул. Красных Партизан, 235",
-  "Краснодар, ул. Новороссийская, 216/5",
-  "Краснодар, ул. Российская, 414",
-  "Новороссийск, ул. Исаева, 19",
-];
-
-export const BRANCH_IDS = BRANCHES.map((_, i) => i);
-export const BRANCH_SHORT = BRANCHES.map((b) => b.replace(/^Краснодар, /, ""));
-
 export const LOW_MARKUP = 25;
 export const DISCOUNTS = [5, 10, 15, 20];
 

@@ -1,4 +1,4 @@
-import { BRANCHES } from "@/lib/partner-1c-catalog/constants";
+import { demoCatalogBranches } from "@/lib/partner-1c-catalog/demo-branches";
 import { hash, num, plural, rub } from "@/lib/partner-1c-catalog/text";
 import type { CatalogProductRaw } from "@/lib/partner-1c-catalog/types";
 
@@ -50,7 +50,7 @@ export function catalogOffers(p: CatalogProductRaw): OfferRow[] {
       sellerId: HOME,
       sellerName: "Оптовик",
       city: "Новороссийск",
-      addr: BRANCHES[5]!,
+      addr: demoCatalogBranches()[5]!.label,
       price: shift(p, "nvr", 2, 4, true),
       avail: p.avail === "in" ? "Под заказ · 2–3 дня" : own!,
     },

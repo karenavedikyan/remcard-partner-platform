@@ -9,6 +9,6 @@ export function clonePublication(pub: PublicationState): PublicationState {
     branchPrice: new Map(
       [...pub.branchPrice.entries()].map(([id, prices]) => [id, { ...prices }]),
     ),
-    branchPct: [...pub.branchPct],
+    branchPct: { ...pub.branchPct },
   };
 }

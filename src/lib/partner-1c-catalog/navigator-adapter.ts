@@ -11,6 +11,8 @@ import type {
 import type { CatalogListUiAccess } from "./catalog-access";
 import { catalogUiAccessFromNavigator } from "./catalog-access";
 import type { NavigatorCatalogAccessResponse } from "./navigator-types";
+import { catalogBranchesFromNavigator } from "./branches";
+import { demoCatalogBranches } from "./demo-branches";
 
 function overlayRowOnProduct(p: CatalogProductRaw, row: NavigatorCabinetModelRow): CatalogProductRaw {
   return {
@@ -21,8 +23,8 @@ function overlayRowOnProduct(p: CatalogProductRaw, row: NavigatorCabinetModelRow
   };
 }
 
-function publicationFromRows(rows: NavigatorCabinetModelRow[]) {
-  const pub = defaultPublicationState();
+function publicationFromRows(rows: NavigatorCabinetModelRow[], branchIds: string[]) {
+  const pub = defaultPublicationState(branchIds);
   rows.forEach((row) => {
     if (row.status === "hidden") pub.hidden.add(row.id);
   });
@@ -78,12 +80,15 @@ export function adaptNavigatorCabinetList(
   }
 
   const manage = isPartnerCatalogOwner(opts.proContext);
-  const publication = publicationFromRows(dto.models);
+  const branches = catalogBranchesFromNavigator(dto.meta?.branches ?? []);
+  const branchIds = branches.map((b) => b.id);
+  const publication = publicationFromRows(dto.models, branchIds);
   const priceType = dto.settings?.sitePriceType?.trim() || "РРЦ Тандор";
 
   return {
     models,
     publication,
+    branches,
     manage,
     priceType,
     access: uiAccess,
@@ -136,7 +141,12 @@ export function fixtureNavigatorCabinetListSample(): NavigatorCabinetListRespons
     ],
     meta: {
       counts: { live: 18, hidden: 2, nophoto: 0, noprice: 0 },
-      branches: [],
+      branches: demoCatalogBranches().map((b) => ({
+        id: b.id,
+        name: b.name,
+        city: b.city,
+        address: b.address,
+      })),
       isOwner: true,
     },
     settings: { sitePriceType: "РРЦ Тандор", stockDisplayMode: "STATUS" },

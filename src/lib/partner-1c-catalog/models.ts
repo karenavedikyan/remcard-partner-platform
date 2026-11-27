@@ -1,4 +1,5 @@
-import { BRANCH_IDS, BRANCHES, LOW_MARKUP } from "./constants";
+import { demoCatalogBranches } from "./demo-branches";
+import { LOW_MARKUP } from "./constants";
 import { itemOf } from "./lk-items";
 import { hash } from "./text";
 import { num, rub } from "./text";
@@ -13,17 +14,21 @@ import type { NavigatorCabinetModelBranch } from "./navigator-types";
 
 export type PublicationState = {
   hidden: Set<string>;
-  branchOff: Map<string, Set<number>>;
-  branchPrice: Map<string, Record<number, number>>;
-  branchPct: number[];
+  branchOff: Map<string, Set<string>>;
+  branchPrice: Map<string, Record<string, number>>;
+  branchPct: Record<string, number>;
 };
 
-export function defaultPublicationState(): PublicationState {
+export function defaultPublicationState(
+  branchIds: string[] = demoCatalogBranches().map((b) => b.id),
+): PublicationState {
+  const branchPct: Record<string, number> = {};
+  for (const id of branchIds) branchPct[id] = 0;
   return {
     hidden: new Set(),
     branchOff: new Map(),
     branchPrice: new Map(),
-    branchPct: BRANCHES.map(() => 0),
+    branchPct,
   };
 }
 
@@ -75,13 +80,22 @@ export function modelStatus(
   return pub.hidden.has(m.id) ? "hidden" : "live";
 }
 
-export function presentIn(pub: PublicationState, m: PartnerCatalogModel): number[] {
-  return BRANCH_IDS.filter((i) => !pub.branchOff.get(m.id)?.has(i));
+export function presentIn(
+  pub: PublicationState,
+  m: PartnerCatalogModel,
+  catalogBranchIds: string[],
+): string[] {
+  const off = pub.branchOff.get(m.id);
+  return catalogBranchIds.filter((id) => !off?.has(id));
 }
 
-export function rulePrice(pub: PublicationState, m: PartnerCatalogModel, i: number): number | null {
+export function rulePrice(
+  pub: PublicationState,
+  m: PartnerCatalogModel,
+  branchId: string,
+): number | null {
   if (m.price == null) return null;
-  const pct = pub.branchPct[i] ?? 0;
+  const pct = pub.branchPct[branchId] ?? 0;
   return pct
     ? Math.max(10, Math.round((m.price * (1 + pct / 100)) / 10) * 10)
     : m.price;
@@ -90,9 +104,9 @@ export function rulePrice(pub: PublicationState, m: PartnerCatalogModel, i: numb
 export function branchPrice(
   pub: PublicationState,
   m: PartnerCatalogModel,
-  i: number,
+  branchId: string,
 ): number | null {
-  return pub.branchPrice.get(m.id)?.[i] ?? rulePrice(pub, m, i);
+  return pub.branchPrice.get(m.id)?.[branchId] ?? rulePrice(pub, m, branchId);
 }
 
 export function priceIn(
@@ -101,13 +115,13 @@ export function priceIn(
   branchFilter: string,
 ): number | null {
   if (branchFilter === "") return m.price;
-  return branchPrice(pub, m, Number(branchFilter));
+  return branchPrice(pub, m, branchFilter);
 }
 
-export function branchRange(pub: PublicationState, m: PartnerCatalogModel) {
+export function branchRange(pub: PublicationState, m: PartnerCatalogModel, branchIds: string[]) {
   if (m.price == null) return null;
-  const ps = presentIn(pub, m)
-    .map((i) => branchPrice(pub, m, i))
+  const ps = presentIn(pub, m, branchIds)
+    .map((id) => branchPrice(pub, m, id))
     .filter((v): v is number => v != null);
   if (!ps.length) return null;
   const lo = Math.min(...ps);
@@ -153,59 +167,19 @@ export function stockOf(m: PartnerCatalogModel) {
     : { text: "Нет в наличии", sub: "ожидается поступление" };
 }
 
-function parseCabinetBranchIndexFromId(branchId: string): number | null {
-  const match = /(?:^|[-_])(\d+)$/.exec(branchId.trim());
-  if (!match) return null;
-  const idx = Number(match[1]);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= BRANCHES.length) return null;
-  return idx;
-}
-
-function parseCabinetBranchIndexFromAddress(branch: NavigatorCabinetModelBranch): number | null {
-  const addr = (branch.address ?? "").trim().toLowerCase();
-  const city = (branch.city ?? "").trim().toLowerCase();
-  if (!addr && !city) return null;
-  const line = city && addr ? `${city}, ${addr}` : city || addr;
-  for (let i = 0; i < BRANCHES.length; i++) {
-    const cabinet = BRANCHES[i]!.toLowerCase();
-    if (cabinet === line) return i;
-    if (addr && cabinet.includes(addr)) return i;
-  }
-  return null;
-}
-
-export function cabinetBranchIndexFromNavigatorBranch(
-  branch: NavigatorCabinetModelBranch,
-): number | null {
-  return (
-    parseCabinetBranchIndexFromId(branch.branchId) ??
-    parseCabinetBranchIndexFromAddress(branch)
-  );
-}
-
-function emptyCabinetBranchStocks(): BranchApiStock[] {
-  return Array.from({ length: BRANCHES.length }, () => ({
-    stockKind: null,
-    stockQuantity: null,
-    excluded: false,
-  }));
-}
-
 function stockKindFromWire(kind: string | undefined): BranchApiStock["stockKind"] {
   if (kind === "KNOWN" || kind === "ZERO" || kind === "UNKNOWN") return kind;
   return null;
 }
 
-/** Map navigator detail branches[] onto fixed cabinet branch order (by branchId, not response order). */
-export function mapNavigatorBranchesToCabinetStock(
+/** Map navigator detail branches[] by branchId (response order preserved in record keys only). */
+export function mapNavigatorBranchesToStockRecord(
   branches: NavigatorCabinetModelBranch[] | undefined,
-): BranchApiStock[] | null {
+): Record<string, BranchApiStock> | null {
   if (branches === undefined) return null;
-  const out = emptyCabinetBranchStocks();
+  const out: Record<string, BranchApiStock> = {};
   for (const branch of branches) {
-    const idx = cabinetBranchIndexFromNavigatorBranch(branch);
-    if (idx == null) continue;
-    out[idx] = {
+    out[branch.branchId] = {
       stockKind: stockKindFromWire(branch.stockKind),
       stockQuantity: branch.stockQuantity ?? null,
       excluded: Boolean(branch.excluded),
@@ -214,21 +188,24 @@ export function mapNavigatorBranchesToCabinetStock(
   return out;
 }
 
+/** @deprecated use mapNavigatorBranchesToStockRecord */
+export const mapNavigatorBranchesToCabinetStock = mapNavigatorBranchesToStockRecord;
+
 export function branchApiStockAt(
   m: PartnerCatalogModel,
-  branchIndex: number,
+  branchId: string,
 ): BranchApiStock | undefined {
-  return m.branchStocksFromApi?.[branchIndex];
+  return m.branchStocksFromApi?.[branchId];
 }
 
 export function usesBranchStockFromApi(m: PartnerCatalogModel): boolean {
   return m.branchStocksFromApi != null;
 }
 
-/** Branch stock demo: split summed KNOWN variant stock across branches (prototype parity). */
-export function branchStock(m: PartnerCatalogModel, branchIndex: number): number | null {
+/** Branch stock demo: split summed KNOWN variant stock across demo branches (fixture parity). */
+export function branchStock(m: PartnerCatalogModel, branchId: string): number | null {
   if (usesBranchStockFromApi(m)) {
-    const api = branchApiStockAt(m, branchIndex);
+    const api = branchApiStockAt(m, branchId);
     if (!api || api.stockKind == null || api.stockKind === "UNKNOWN") return null;
     if (api.stockKind === "ZERO") return 0;
     if (api.stockKind === "KNOWN") return api.stockQuantity ?? 0;
@@ -237,20 +214,23 @@ export function branchStock(m: PartnerCatalogModel, branchIndex: number): number
   const known = m.skus.filter((k) => k.stock != null);
   if (!known.length) return null;
   const total = known.reduce((a, k) => a + (k.stock ?? 0), 0);
-  const w = BRANCH_IDS.map((j) => 1 + (hash(`${m.id}:${j}`) % 5));
-  const sum = w.reduce((a, b) => a + b, 0);
-  const parts = w.map((x) => Math.floor((total * x) / sum));
-  parts[0] += total - parts.reduce((a, b) => a + b, 0);
-  return parts[branchIndex] ?? null;
+  const ids = demoCatalogBranches().map((b) => b.id);
+  const weights = ids.map((id) => 1 + (hash(`${m.id}:${id}`) % 5));
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const parts = weights.map((x) => Math.floor((total * x) / sum));
+  parts[0]! += total - parts.reduce((a, b) => a + b, 0);
+  const idx = ids.indexOf(branchId);
+  if (idx < 0) return null;
+  return parts[idx] ?? null;
 }
 
 export function formatBranchStockLabel(
   m: PartnerCatalogModel,
   here: boolean,
-  branchIndex: number,
+  branchId: string,
 ): string {
   if (usesBranchStockFromApi(m)) {
-    const api = branchApiStockAt(m, branchIndex);
+    const api = branchApiStockAt(m, branchId);
     if (!here || api?.excluded) return "товар здесь не представлен";
     if (!api || api.stockKind == null || api.stockKind === "UNKNOWN") return "нет данных";
     if (api.stockKind === "ZERO") return "нет в наличии";
@@ -262,7 +242,7 @@ export function formatBranchStockLabel(
   }
   if (!here) return "товар здесь не представлен";
   if (m.price == null) return "под заказ · остатка в 1С нет";
-  const stock = branchStock(m, branchIndex);
+  const stock = branchStock(m, branchId);
   if (stock == null) return "под заказ · остатка в 1С нет";
   if (stock > 0) return `в наличии ${num(stock)} шт`;
   return "нет в наличии";

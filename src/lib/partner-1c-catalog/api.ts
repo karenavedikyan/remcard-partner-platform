@@ -5,6 +5,9 @@ import { optovikFixtureProducts } from "./fixtures";
 import { isPartnerCatalogOwner } from "./gate";
 import { partner1cCatalogFeatureEnabled } from "./constants";
 import type { PartnerCatalogModel } from "./types";
+import { demoCatalogBranches } from "./demo-branches";
+import type { CatalogBranch } from "./branches";
+import { catalogBranchesFromNavigator } from "./branches";
 import { adaptNavigatorCabinetList } from "./navigator-adapter";
 import {
   adaptNavigatorCabinetModelDetail,
@@ -24,13 +27,15 @@ import {
 export type PartnerCatalogSnapshot = {
   models: PartnerCatalogModel[];
   publication: PublicationState;
+  branches: CatalogBranch[];
   manage: boolean;
   priceType: string;
   access?: CatalogListUiAccess;
   source?: "fixture" | "navigator";
 };
 
-const demoPublication = defaultPublicationState();
+const demoBranches = demoCatalogBranches();
+const demoPublication = defaultPublicationState(demoBranches.map((b) => b.id));
 
 /** Fixture snapshot — used when flag off or navigator unavailable. */
 export function fetchPartnerCatalogSnapshot(
@@ -44,6 +49,7 @@ export function fetchPartnerCatalogSnapshot(
   return {
     models,
     publication: demoPublication,
+    branches: demoBranches,
     manage,
     priceType: "РРЦ Тандор",
     access,

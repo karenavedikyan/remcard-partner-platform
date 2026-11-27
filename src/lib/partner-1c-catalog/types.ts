@@ -1,3 +1,5 @@
+import type { NavigatorCabinetModelBranch } from "./navigator-types";
+
 export type CatalogAvail = "in" | "soon" | "order";
 
 export type CatalogProductRaw = {
@@ -24,7 +26,7 @@ export type SkuStockState = "in" | "zero" | "unknown";
 
 export type BranchStockKind = "KNOWN" | "ZERO" | "UNKNOWN";
 
-/** Per cabinet branch index when model detail API supplies branches[]. */
+/** Per branchId when model detail API supplies branches[]. */
 export type BranchApiStock = {
   stockKind: BranchStockKind | null;
   stockQuantity: number | null;
@@ -92,7 +94,9 @@ export type PartnerCatalogModel = {
   onSite: boolean;
   supplier: null;
   /** Set when detail response includes branches[] (fixture stock must not be used). */
-  branchStocksFromApi?: BranchApiStock[] | null;
+  branchStocksFromApi?: Record<string, BranchApiStock> | null;
+  /** Raw detail branches[] for labels when a row is not in meta.branches. */
+  detailBranches?: NavigatorCabinetModelBranch[];
 };
 
 export type CatalogAudience = "partner" | "client";

@@ -1,4 +1,4 @@
-import { buildPartnerModels, mapNavigatorBranchesToCabinetStock } from "./models";
+import { buildPartnerModels, mapNavigatorBranchesToStockRecord } from "./models";
 import { optovikFixtureProducts } from "./fixtures";
 import type {
   CatalogProductRaw,
@@ -7,7 +7,7 @@ import type {
   SkuStockState,
 } from "./types";
 import ownerBranchesFixture from "./fixtures/cabinet-model-detail-owner-branches.json";
-import { BRANCHES } from "./constants";
+import { demoCatalogBranches } from "./demo-branches";
 import type {
   NavigatorCabinetModelBranch,
   NavigatorCabinetModelDetail,
@@ -117,9 +117,9 @@ export function adaptNavigatorCabinetModelDetail(
       item: { ...model.item, brand },
     };
   }
-  const branchStocksFromApi = mapNavigatorBranchesToCabinetStock(dto.branches);
+  const branchStocksFromApi = mapNavigatorBranchesToStockRecord(dto.branches);
   if (branchStocksFromApi) {
-    model = { ...model, branchStocksFromApi };
+    model = { ...model, branchStocksFromApi, detailBranches: dto.branches ?? [] };
   }
   return model;
 }
@@ -179,25 +179,14 @@ export function fixtureNavigatorCabinetModelDetailSample(): NavigatorCabinetMode
   };
 }
 
-function branchFixtureIndex(branchId: string): number | null {
-  const match = /(?:^|[-_])(\d+)$/.exec(branchId.trim());
-  if (!match) return null;
-  const idx = Number(match[1]);
-  return Number.isInteger(idx) ? idx : null;
-}
-
-function reorderBranches(
+function reorderBranchesByIds(
   branches: NavigatorCabinetModelBranch[],
-  order: number[],
+  orderIds: string[],
 ): NavigatorCabinetModelBranch[] {
-  const byIndex = new Map<number, NavigatorCabinetModelBranch>();
-  for (const branch of branches) {
-    const idx = branchFixtureIndex(branch.branchId);
-    if (idx != null) byIndex.set(idx, branch);
-  }
-  return order.map((i) => {
-    const hit = byIndex.get(i);
-    if (!hit) throw new Error(`missing branch fixture for index ${i}`);
+  const byId = new Map(branches.map((b) => [b.branchId, b]));
+  return orderIds.map((id) => {
+    const hit = byId.get(id);
+    if (!hit) throw new Error(`missing branch fixture for id ${id}`);
     return hit;
   });
 }
@@ -225,24 +214,24 @@ export function fixtureNavigatorCabinetModelDetailWithApiBranches(
 /** Branches in reverse cabinet order — mapping must use branchId, not array index. */
 export function fixtureNavigatorCabinetModelDetailShuffledBranches(): NavigatorCabinetModelDetail {
   const base = fixtureNavigatorCabinetModelDetailSample();
-  const branches = reorderBranches(
+  const ids = demoCatalogBranches().map((b) => b.id);
+  const branches = reorderBranchesByIds(
     ownerBranchesFixture as NavigatorCabinetModelBranch[],
-    [5, 4, 3, 2, 1, 0],
+    [...ids].reverse(),
   );
   return { ...base, branches };
 }
 
 export function navigatorBranchStubsForCapture(mode: "known" | "unknown"): NavigatorCabinetModelBranch[] {
   const price = 11670;
-  return BRANCHES.map((_, i) => {
-    const [city, ...rest] = BRANCHES[i]!.split(", ");
-    const address = rest.join(", ");
+  const fromFile = ownerBranchesFixture as NavigatorCabinetModelBranch[];
+  return demoCatalogBranches().map((b) => {
     if (mode === "unknown") {
       return {
-        branchId: `optovik-branch-${i}`,
-        name: `${city} · ${address}`,
-        city: city!,
-        address,
+        branchId: b.id,
+        name: b.name,
+        city: b.city,
+        address: b.address,
         excluded: false,
         adjustPercent: 0,
         rulePrice: price,
@@ -252,15 +241,12 @@ export function navigatorBranchStubsForCapture(mode: "known" | "unknown"): Navig
         stockQuantity: null,
       };
     }
-    const row = (ownerBranchesFixture as NavigatorCabinetModelBranch[]).find((b) =>
-      b.branchId.endsWith(`-${i}`),
-    );
-    return (
-      row ?? {
-        branchId: `optovik-branch-${i}`,
-        name: `${city} · ${address}`,
-        city: city!,
-        address,
+  return (
+      fromFile.find((row) => row.branchId === b.id) ?? {
+        branchId: b.id,
+        name: b.name,
+        city: b.city,
+        address: b.address,
         excluded: false,
         adjustPercent: 0,
         rulePrice: price,
