@@ -124,8 +124,7 @@
 .door-offer .ft{margin-top:10px;font-size:10px;color:var(--offer-muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 @page{size:A4;margin:0}
 @media print{
-  html,body{background:#fff;height:296mm;overflow:hidden}
-  .door-offer{background:#fff}
+  .door-offer{background:#fff;min-height:296mm;overflow:hidden}
   .door-offer .screen{display:none}
   .door-offer main{margin:0;padding:0;display:block;overflow:visible;max-width:none}
   .door-offer .page{box-shadow:none;width:auto;min-height:auto;height:296mm;overflow:hidden;max-width:none;transform:none}
